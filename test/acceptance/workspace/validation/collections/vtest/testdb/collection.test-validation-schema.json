@@ -1,0 +1,99 @@
+{
+    "fields": {
+        "field_string": {
+            "type": "String",
+            "label": "Title",
+            "comments": "The title of the entry",
+            "limit": "",
+            "placement": "Main content",
+            "validation_rule": "",
+            "required": false,
+            "message": "",
+            "display": { 
+                "index": true,
+                "edit": true
+            }
+        },
+        "field_number": {
+            "type": "Number",
+            "label": "Title",
+            "comments": "The title of the entry",
+            "limit": "",
+            "placement": "Main content",
+            "validation_rule": "",
+            "required": false,
+            "message": "",
+            "display": { 
+                "index": true,
+                "edit": true
+            }
+        },
+        "field_bool": {
+            "type": "Boolean",
+            "label": "Title",
+            "comments": "The title of the entry",
+            "limit": "",
+            "placement": "Main content",
+            "validation_rule": "",
+            "required": false,
+            "message": "",
+            "display": { 
+                "index": true,
+                "edit": true
+            }
+        },
+        "field_mixed": {
+            "type": "Mixed",
+            "label": "Title",
+            "comments": "The title of the entry",
+            "limit": "",
+            "placement": "Main content",
+            "validation_rule": "",
+            "required": false,
+            "message": "",
+            "display": { 
+                "index": true,
+                "edit": true
+            }
+        },
+        "field_regex": {
+            "type": "Mixed",
+            "label": "Title",
+            "comments": "The title of the entry",
+            "limit": "",
+            "placement": "Main content",
+            "validation_rule": "^q+$",
+            "required": false,
+            "message": "",
+            "display": { 
+                "index": true,
+                "edit": true
+            }
+        },
+        "field_limit": {
+            "type": "Some type",
+            "label": "Title",
+            "comments": "The title of the entry",
+            "limit": "7",
+            "placement": "Main content",
+            "validation_rule": "",
+            "required": false,
+            "message": "",
+            "display": { 
+                "index": true,
+                "edit": true
+            }
+        }
+    },
+    "settings": {
+        "cache": true,
+        "cacheTTL": 300,
+        "authenticate": true,
+        "callback": null,
+        "defaultFilters": null,
+        "fieldLimiters": null,
+        "allowExtension": false,
+        "count": 40,
+        "sort_order": 1
+    }
+}

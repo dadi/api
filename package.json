@@ -1,0 +1,22 @@
+{
+  "name": "serama",
+  "version": "0.0.1-beta",
+  "dependencies": {
+    "moment": "~2.8.1",
+    "underscore": "~1.6.0",
+    "mongodb": "~1.4.8",
+    "path-to-regexp": "~1.0.0",
+    "body-parser": "~1.6.5",
+    "node-uuid": "~1.4.1"
+  },
+  "devDependencies": {
+    "mocha": "~1.21.3",
+    "should": "~4.0.4",
+    "sinon": "~1.10.3",
+    "supertest": "~0.13.0"
+  },
+  "scripts": {
+    "test": "mocha",
+    "start": "node bantam/main"
+  }
+}

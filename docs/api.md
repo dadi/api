@@ -1,17 +1,14 @@
 ![Serama](../serama.png)
 
-Docs: API
-========
+# Docs: API
 
-##Overview
-========
+## Overview
 
 this module is responsible for creating a server and dispatching requests to middleware and routing.
 
 The main function this exposes is `use`.  It is similar to express.js's `app.use`. A default error handler and a 404 handler are automatically added.
 
-##Example Usage
-=============
+## Example Usage
 
 The `use` method does different things depending on what is passed to it -
 

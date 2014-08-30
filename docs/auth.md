@@ -1,10 +1,8 @@
 ![Serama](../serama.png)
 
-Docs: Auth
-========
+# Auth
 
-##Overview
-========
+## Overview
 
 This is exposed as middleware that both issues bearer tokens and validates bearer tokens.  It is an implementation of 2-legged oAuth2.
 

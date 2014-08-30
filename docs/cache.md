@@ -1,10 +1,8 @@
 ![Serama](../serama.png)
 
-Docs: Cache
-========
+# Cache
 
-##Overview
-========
+## Overview
 
 This is a file based cache that may be configured in config.json.
 
@@ -12,8 +10,7 @@ Due to the thin nature of the server, and I assume mongo's mem caching, the cach
 
 Benchmarks undertaken with ApacheBenchmark (ab) can be seen below.
 
-##Config
-======
+## Config
 
 inside config.json *ex:* 
     "caching": {
@@ -28,15 +25,13 @@ inside config.json *ex:*
   - `directory` path to the directory where files should be stored. **Important:** this dir must already exist! (required if cache is enabled)
   - `extension` the file extension to use when naming the cache files. This has no bearing on the `content-type` of the response, so feel free to put anything here (required if cache is enabled)
 
-##Notes
-=====
+## Notes
 
 The naming convention for files is done by creating a hex string from a sha1 hash of node's `req.url` value, then appending the extension per config. This keeps cache values unique and avoids naming conflicts.
 
-##Benchmarks
-==========
+## Benchmarks
 
-###Benchmarks With disk Cache
+### Benchmarks With disk Cache
 
     Server Hostname:        localhost
     Server Port:            3000
@@ -74,7 +69,7 @@ The naming convention for files is done by creating a hex string from a sha1 has
       99%     14
      100%     17 (longest request)
 
-###Benchmarks Without disk Cache
+### Benchmarks Without disk Cache
 
     Server Hostname:        localhost
     Server Port:            3000

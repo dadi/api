@@ -1,10 +1,8 @@
 ![Serama](../serama.png)
 
-Docs: Logger
-========
+# Logger
 
-##Overview
-========
+## Overview
 
 This module exposes three methods -
 
@@ -16,15 +14,13 @@ This module exposes three methods -
 
 Depending on the level specified in the config.json file, calls to these messages either log to the file system, or do nothing.
 
-##Levels
-======
+## Levels
 
   - 'DEBUG' - most verbose, all logging is persisted
   - 'STAGE' - medium logging, calls to `stage`, and `prod` are persisted.  Calls to `debug` are ignored
   - 'PROD' - least amount of logging, only calls to `prod` are persisted.  All others are ignored
 
-##Example Usage
-=============
+## Example Usage
 
 `var logger = require('./bantam/lib/log');`
 

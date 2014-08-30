@@ -1,10 +1,8 @@
 ![Serama](../serama.png)
 
-Docs: Connection
-========
+# Connection
 
-##Overview
-========
+## Overview
 
 This module handles connecting to database(s). The main config **must** have a `database` field.  Within this field, the default connection is specified via top level fields. For example, inside the main config you might see -
 
@@ -27,8 +25,7 @@ This would mean that the default mongodb connection was mongodb://localhost:2701
 
 There is also a second database available at mongodb://127.0.0.1:27018/secondary
 
-##Example Usage
-=============
+## Example Usage
 
     var connection = require('./bantam/lib/model/connection');
     var conn1 = connection(); // connect to default db

@@ -1,6 +1,6 @@
 ![Serama](../serama.png)
 
-# Docs: API
+# API
 
 ## Overview
 

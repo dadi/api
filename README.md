@@ -6,7 +6,14 @@ Serama is a high performance RESTful API layer designed in support of API-first 
 
 It is built on Node.JS and MongoDB, using latest stable versions.
 
+Serama has built in support for oAuth2, can connect to multiple databases out of the box, supports static endpoints, has a caching layer and can be run in a clustered configuration.
+
 Serama is part of the Bantam toolkit, a modern development stack built for performance and scale.
+
+## Requirements
+
+* Node.js (latest)
+* MongoDB (latest)
 
 ## Setup and Installation
 
@@ -14,11 +21,11 @@ For tests to run you will need stand alone `mongod`s running at localhost:27017 
 
 `cd serama`
 
-`npm install`
+`[sudo] npm install`
 
-`npm test`
+`[sudo] npm test`
 
-`npm start`
+`[sudo] npm start`
 
 You may want to look at a handy QA testing tool called [Postman](http://www.getpostman.com/).
 
@@ -40,6 +47,10 @@ Once you have the token, each request to the api should include a header similar
     Authorization: Bearer 171c8c12-6e9b-47a8-be29-0524070b0c65
 
 There is an example collection endpoint and custom endpoint included in the `workspace` directory.
+
+Pro tip: to background Serama, install [Forever](https://github.com/nodejitsu/forever). You can then start Serama using -
+
+`[sudo] forever start bantam/main.js`
 
 ## Example API requests
 

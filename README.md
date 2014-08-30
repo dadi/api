@@ -1,7 +1,6 @@
 ![Serama](serama.png)
 
-##Overview
-======================
+## Overview
 
 Serama is a high performance RESTful API layer designed in support of API-first development and the principle of COPE.
 
@@ -9,8 +8,7 @@ It is built on Node.JS and MongoDB, using latest stable versions.
 
 Serama is part of the Bantam toolkit, a modern development stack built for performance and scale.
 
-##Setup and Installation
-======================
+## Setup and Installation
 
 For tests to run you will need stand alone `mongod`s running at localhost:27017 and localhost:27018
 
@@ -43,10 +41,9 @@ Once you have the token, each request to the api should include a header similar
 
 There is an example collection endpoint and custom endpoint included in the `workspace` directory.
 
-##Example API requests
-======================
+## Example API requests
 
-###Collections POST request
+### Collections POST request
 
     POST /vtest/testdb/test-schema HTTP/1.1
     Host: localhost:3000
@@ -56,7 +53,7 @@ There is an example collection endpoint and custom endpoint included in the `wor
     { "field_1": "hi world!", "field_2": 123293582345 }
 
 
-###Endpoint GET request
+### Endpoint GET request
 
 This will return a "Hello World" example -
 
@@ -65,8 +62,7 @@ This will return a "Hello World" example -
     content-type: application/json
     Authorization: Bearer 171c8c12-6e9b-47a8-be29-0524070b0c65
 
-##Configuration notes
-======================
+## Configuration notes
 
 The `server.host` config is passed to node's `server.listen` function
 http://nodejs.org/api/http.html#http_server_listen_port_hostname_backlog_callback
@@ -75,8 +71,7 @@ You should be able to set it to your IP as well, but depending on your hosting, 
 
 The proper name should always resolve correctly. Alternately, you can set it to null, to accept connections on any IPv4 address.
 
-##Further reading
-======================
+## Further reading
 
 The `docs/` directory contains additional documentation on the compenent parts of the system -
 
@@ -92,8 +87,7 @@ The `docs/` directory contains additional documentation on the compenent parts o
 
 Feel free to contact the Bantam core development team on team@bant.am with questions.
 
-##Development team
-======================
+## Development team
 
 Serama was conceived, developed and is maintained by the engineering team at DADI+ ([https://dadi.co](https://dadi.co)).
 
@@ -106,14 +100,13 @@ Core contributors -
 * Niklas Iversen
 * Dave Longworth
 
-###Contributing
+### Contributing
 
 Very daring.
 
 Fork, hack, possibly even add some tests, then send a pull request :)
 
-##Licence
-======================
+## Licence
 
 Copyright (c) 2014, DADI+ Limited (https://dadi.co).
 

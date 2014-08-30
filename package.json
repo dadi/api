@@ -18,5 +18,9 @@
   "scripts": {
     "test": "mocha",
     "start": "node bantam/main"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/dadiplus/serama.git"
   }
 }

@@ -87,7 +87,7 @@ The `docs/` directory contains additional documentation on the compenent parts o
 
 Feel free to contact the Bantam core development team on team@bant.am with questions.
 
-## Development team
+## Development
 
 Serama was conceived, developed and is maintained by the engineering team at DADI+ ([https://dadi.co](https://dadi.co)).
 

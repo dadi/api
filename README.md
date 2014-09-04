@@ -10,16 +10,14 @@ It is built on Node.JS and MongoDB, using latest stable versions.
 
 Serama has built in support for oAuth2, can connect to multiple databases out of the box, supports static endpoints, has a caching layer and can be run in a clustered configuration.
 
-Serama is part of the Bantam toolkit, a modern development stack built for performance and scale.
+Serama is part of the Bantam toolkit ([bant.am](https://bant.am)), a modern development stack built for performance and scale.
 
 ## Requirements
 
 * Node.js (latest)
 * MongoDB (latest)
 
-## Setup and Installation
-
-For tests to run you will need stand alone `mongod`s running at localhost:27017 and localhost:27018
+## Setup and installation
 
 `cd serama`
 
@@ -29,13 +27,13 @@ For tests to run you will need stand alone `mongod`s running at localhost:27017 
 
 `[sudo] npm start`
 
-You may want to look at a handy QA testing tool called [Postman](http://www.getpostman.com/).
+_Note: for tests to run you will need stand alone `mongod`s running at localhost:27017 and localhost:27018_
 
 In order to get up and running you will also need to create a client document in the db.  To automate this do -
 
 `node utils/create-client.js`
 
-You can then get a bearer token with the following request -
+once done you can get a bearer token with the following request -
 
     POST /token HTTP/1.1
     Host: localhost:3000
@@ -50,11 +48,17 @@ Once you have the token, each request to the api should include a header similar
 
 There is an example collection endpoint and custom endpoint included in the `workspace` directory.
 
-Pro tip: to background Serama, install [Forever](https://github.com/nodejitsu/forever). You can then start Serama using -
+Pro tip: to background Serama, install [Forever](https://github.com/nodejitsu/forever) -
+
+`[sudo] npm install forever -g`
+
+You can then start Serama using -
 
 `[sudo] forever start bantam/main.js`
 
 ## Example API requests
+
+_You may want to look at a handy QA testing tool called [Postman](http://www.getpostman.com/)_
 
 ### Collections POST request
 

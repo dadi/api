@@ -88,15 +88,15 @@ The proper name should always resolve correctly. Alternately, you can set it to 
 
 The `docs/` directory contains additional documentation on the compenent parts of the system -
 
-* API module
-* Authorisation middleware
-* Caching
-* Connection module
-* Endpoints
-* Logging
-* Model module
-* Monitor module
-* Validation
+* [API module](/dadiplus/serama/blob/master/docs/api.md)
+* [Authorisation middleware](/dadiplus/serama/blob/master/docs/auth.md)
+* [Caching](/dadiplus/serama/blob/master/docs/cache.md)
+* [Connection module](/dadiplus/serama/blob/master/docs/connection.md)
+* [Endpoints](/dadiplus/serama/blob/master/docs/endpoints.md)
+* [Logging](/dadiplus/serama/blob/master/docs/logger.md)
+* [Model module](/dadiplus/serama/blob/master/docs/model.md)
+* [Monitor module](/dadiplus/serama/blob/master/docs/monitor.md)
+* [Validation](/dadiplus/serama/blob/master/docs/validation.md)
 
 Feel free to contact the Bantam core development team on team@bant.am with questions.
 

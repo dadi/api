@@ -1,5 +1,8 @@
 ![Serama](serama.png)
 
+![Build Status](http://img.shields.io/badge/release-0.1.0-green.svg?style=flat-square)
+[![License](http://img.shields.io/:license-mit-blue.svg?style=flat-square)](http://dadi.mit-license.org)
+
 ## Overview
 
 Serama is a high performance RESTful API layer designed in support of API-first development and the principle of COPE.
@@ -108,8 +111,38 @@ Core contributors -
 * Viktor Fero
 * James Lambie
 * Joe Warner
-* Niklas Iversen
-* Dave Longworth
+
+### Roadmap
+
+Planned updates and additions -
+
+`Version 0.1.1 - September 2014`
+
+* Move to camelCase throughout the build
+* Enable the reading and management of the config through the API
+* Enable the reading and management of collection configurations through the API
+* Enable the setup, modification and deletion of collections through the API
+
+`Version 0.1.2 - October 2014`
+
+* Enable the setup, modification and deletion of endpoints through the API
+* The provision of an endpoint SDK for custom endpoints to enable the accessing of data from collecitons
+
+`Version 0.1.3 - November 2014`
+
+* The provision of an architecture for extensions - exposed middleware for the addition of new functionality
+
+### Versioning
+
+Semantic Versioning 2.0.0
+
+Given a version number MAJOR.MINOR.PATCH, increment the -
+
+* MAJOR version when you make incompatible API changes,
+* MINOR version when you add functionality in a backwards-compatible manner, and
+* PATCH version when you make backwards-compatible bug fixes.
+
+_Additional labels for pre-release and build metadata are available as extensions to the MAJOR.MINOR.PATCH format._
 
 ### Contributing
 

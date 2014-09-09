@@ -8,6 +8,7 @@ var app = require(__dirname + '/../../bantam/lib/');
 var help = require(__dirname + '/help');
 
 var bearerToken;
+
 describe('Cache', function (done) {
     before(function (done) {
         app.start({
@@ -203,6 +204,7 @@ describe('Cache', function (done) {
         .end(function (err, res1) {
             if (err) return done(err);
 
+
             client
             .post('/vtest/testdb/test-schema')
             .set('Authorization', 'Bearer ' + bearerToken)
@@ -212,7 +214,6 @@ describe('Cache', function (done) {
                 if (err) return done(err);
 
                 setTimeout(function () {
-
                     // ttl should have expired
                     client
                     .get('/vtest/testdb/test-schema')

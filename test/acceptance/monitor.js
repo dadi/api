@@ -12,6 +12,7 @@ var originalEndpointPath = __dirname + '/workspace/monitor-collection/endpoint.m
 var testEndpointPath = __dirname + '/workspace/endpoints/endpoint.monitor-test-endpoint.js';
 
 var bearerToken; // used through out tests
+
 describe('File system watching', function () {
     beforeEach(function (done) {
 
@@ -63,7 +64,6 @@ describe('File system watching', function () {
 
             // Change the schema file's content
             var schemaPath = __dirname + '/workspace/collections/vtest/testdb/collection.monitor-test-schema.json'
-
             // clone so that `require.cache` is unaffected
             var schema = JSON.parse(JSON.stringify(require(schemaPath)));
             schema.fields.field_1.type = 'Number';
@@ -122,7 +122,6 @@ describe('File system watching', function () {
         var newEndpointPath = __dirname + '/workspace/endpoints/endpoint.new-test-endpoint.js';
 
         before(function (done) {
-
             // tests are going to try to create these directories and they shouldn't exist before hand
             if (fs.existsSync(__dirname + '/workspace/collections/vtest2/testdb')) {
                 fs.rmdirSync(__dirname + '/workspace/collections/vtest2/testdb');
@@ -143,7 +142,6 @@ describe('File system watching', function () {
         });
 
         it('should add to collections api when file is added', function (done) {
-
             // make a copy of the test schema in a new collections dir
             var testSchema = fs.readFileSync(originalSchemaPath);
 
@@ -165,7 +163,6 @@ describe('File system watching', function () {
         });
 
         it('should add to endpoints api when file is added', function (done) {
-
             // Change the endpoint file's content
             var endpoint = fs.readFileSync(testEndpointPath).toString();
 

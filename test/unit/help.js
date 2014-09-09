@@ -49,14 +49,12 @@ module.exports.addUserToDb = function (userObj, dbObj, done) {
     var Server = require('mongodb').Server;
 
     var db = new Db(dbObj.databaseName, new Server(dbObj.host, dbObj.port), {w: 'majority'});
-
     // Establish connection to db
     db.open(function (err, db) {
         if (err) return done(err);
 
         // Add a user to the database
         db.addUser(userObj.username, userObj.password, function (err) {
-
             // notice no error handling!
             // This is because we want this to be an idempotent func that ensures
             // the user exists in the database.  Since `addUser` will error if

@@ -68,6 +68,7 @@ Api.prototype.listen = function (port, host, backlog, done) {
  *  @api public
  */
 Api.prototype.listener = function (req, res) {
+
     // clone the middleware stack
     var stack = this.all.slice(0);
     var paths = this.paths;

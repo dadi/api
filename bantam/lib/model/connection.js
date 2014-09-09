@@ -5,7 +5,6 @@ var Server = mongodb.Server;
 var EventEmitter = require('events').EventEmitter;
 var util = require('util');
 
-
 /**
  * Create `new Connection` with given options
  *

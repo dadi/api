@@ -13,7 +13,6 @@ describe('Authentication', function () {
             endpointPath: __dirname + '/workspace/endpoints'
         }, function (err) {
             if (err) return done(err);
-
             // give it a moment for http.Server to finish starting
             setTimeout(function () {
                 done();

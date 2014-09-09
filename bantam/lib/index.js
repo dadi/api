@@ -7,6 +7,7 @@ var auth = require(__dirname + '/auth');
 var cache = require(__dirname + '/cache')();
 var monitor = require(__dirname + '/monitor');
 var logger = require(__dirname + '/log');
+var help = require(__dirname + '/help');
 var bodyParser = require('body-parser');
 
 var config = require(__dirname + '/../../config');
@@ -48,6 +49,10 @@ Server.prototype.start = function (options, done) {
 
     // configure authentication after bodyParser middleware
     auth(app);
+
+    app.use('/serama/config', function (req, res, next) {
+        help.sendBackJSON(200, res, next)(null, config);
+    });
 
     // caching layer
     app.use(cache);
@@ -98,6 +103,7 @@ Server.prototype.loadApi = function (options) {
 
     this.addMonitor(endpointPath, function (endpointFile) {
         var filepath = path.join(endpointPath, endpointFile);
+
         // need to ensure filepath exists since this could be a removal
         if (endpointFile && fs.existsSync(filepath)) {
             return self.addEndpointResource({
@@ -188,7 +194,8 @@ Server.prototype.addCollectionResource = function (options) {
 
     this.addComponent({
         route: options.route,
-        component: control
+        component: control,
+        filepath: options.filepath
     });
 
     var self = this;
@@ -269,6 +276,20 @@ Server.prototype.addComponent = function (options) {
     if (this.components[options.route]) return;
 
     this.components[options.route] = options.component;
+
+    // setup config route first so "config" isn't treated as an ID
+    this.app.use(options.route +'/config', function (req, res, next) {
+        var method = req.method && req.method.toLowerCase();
+        
+        // send schema
+        if (method === 'get' && options.filepath) {
+            return help.sendBackJSON(200, res, next)(null, require(options.filepath));
+        }
+
+        var err = new Error('Not Found');
+        err.statusCode = 404;
+        next(err);
+    });
 
     this.app.use(options.route, function (req, res, next) {
 

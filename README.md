@@ -1,6 +1,6 @@
 ![Serama](serama.png)
 
-![Build Status](http://img.shields.io/badge/release-0.1.0-green.svg?style=flat-square)&nbsp;[![License](http://img.shields.io/:license-mit-blue.svg?style=flat-square)](http://dadi.mit-license.org)
+![Build Status](http://img.shields.io/badge/release-0.1.1_beta-green.svg?style=flat-square)&nbsp;[![License](http://img.shields.io/:license-mit-blue.svg?style=flat-square)](http://dadi.mit-license.org)
 
 ## Overview
 
@@ -119,19 +119,19 @@ Core contributors -
 
 Planned updates and additions -
 
-`Version 0.1.1 - September 2014`
+`Version 0.1.2 - September 2014`
 
 * Move to camelCase throughout the build
 * Enable the reading and management of the config through the API
 * Enable the reading and management of collection configurations through the API
 * Enable the setup, modification and deletion of collections through the API
 
-`Version 0.1.2 - October 2014`
+`Version 0.2.0 - October 2014`
 
 * Enable the setup, modification and deletion of endpoints through the API
 * The provision of an endpoint SDK for custom endpoints to enable the accessing of data from collecitons
 
-`Version 0.1.3 - November 2014`
+`Version 0.3.0 - November 2014`
 
 * The provision of an architecture for extensions - exposed middleware for the addition of new functionality
 

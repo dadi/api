@@ -41,7 +41,6 @@ module.exports.createClient = function (done) {
 };
 
 module.exports.clearCache = function () {
-
     // all sync stuff
     fs.readdirSync(config.caching.directory).forEach(function (filename) {
         fs.unlinkSync(path.join(config.caching.directory, filename));

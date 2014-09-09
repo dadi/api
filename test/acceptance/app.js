@@ -31,7 +31,6 @@ describe('Application', function () {
             var client = request('http://' + config.server.host + ':' + config.server.port);
             client
             .get('/')
-
             // just need to test that we get some kind of response
             .expect(401)
             .end(function (err) {
@@ -383,11 +382,11 @@ describe('Application', function () {
                     });
                 });
 
-                it('should allow specifying sort order', function (done) {
+                it('should allow specifying descending sort order', function (done) {
                     var client = request('http://' + config.server.host + ':' + config.server.port);
 
                     client
-                    .get('/vtest/testdb/test-schema?sort=field_1&sort_order=-1')
+                    .get('/vtest/testdb/test-schema?sort=field_1&sort_order=desc')
                     .set('Authorization', 'Bearer ' + bearerToken)
                     .expect(200)
                     .expect('content-type', 'application/json')
@@ -400,6 +399,30 @@ describe('Application', function () {
                         var last = '';
                         res.body.forEach(function (doc) {
                             if (last) doc.field_1.should.not.be.above(last);
+                            last = doc.field_1;
+                        });
+
+                        done();
+                    });
+                });
+
+                it('should allow specifying ascending sort order', function (done) {
+                    var client = request('http://' + config.server.host + ':' + config.server.port);
+
+                    client
+                    .get('/vtest/testdb/test-schema?sort=field_1&sort_order=asc')
+                    .set('Authorization', 'Bearer ' + bearerToken)
+                    .expect(200)
+                    .expect('content-type', 'application/json')
+                    .end(function (err, res) {
+                        if (err) return done(err);
+
+                        res.body.should.be.Array;
+                        res.body.length.should.equal(40);
+
+                        var last = '';
+                        res.body.forEach(function (doc) {
+                            if (last) doc.field_1.should.not.be.below(last);
                             last = doc.field_1;
                         });
 
@@ -502,6 +525,33 @@ describe('Application', function () {
                 });
             });
         });
+
+        describe('GET config', function () {
+            it('should return the schema file', function (done) {
+                request('http://' + config.server.host + ':' + config.server.port)
+                .get('/vtest/testdb/test-schema/config')
+                .set('Authorization', 'Bearer ' + bearerToken)
+                .expect(200)
+                .expect('content-type', 'application/json')
+                .end(function (err, res) {
+                    if (err) return done(err);
+
+                    res.body.should.be.Object;
+                    res.body.should.not.be.Array;
+                    should.exist(res.body.fields);
+                    should.exist(res.body.settings);
+
+                    done();
+                });
+            });
+
+            it('should only allow authenticated users access', function (done) {
+                request('http://' + config.server.host + ':' + config.server.port)
+                .get('/vtest/testdb/test-schema/config')
+                .set('Authorization', 'Bearer e91e69b4-6563-43bd-a793-cb2af4ba62f4') // invalid token
+                .expect(401, done);
+            });
+        });
     });
 
     describe('endpoint api', function () {
@@ -528,6 +578,49 @@ describe('Application', function () {
 
                 res.body.message.should.equal('Hello World');
                 done();
+            });
+        });
+    });
+
+    describe('config api', function () {
+        before(function (done) {
+            app.start({
+                endpointPath: __dirname + '/workspace/endpoints',
+                collectionPath: __dirname + '/workspace/collections'
+            }, done);
+        });
+
+        after(function (done) {
+            app.stop(done);
+        });
+
+        describe('GET', function () {
+            it('should return the current config', function (done) {
+                request('http://' + config.server.host + ':' + config.server.port)
+                .get('/serama/config')
+                .set('Authorization', 'Bearer ' + bearerToken)
+                .expect(200)
+                .expect('content-type', 'application/json')
+                .end(function (err, res) {
+                    if (err) return done(err);
+
+                    res.body.should.be.Object;
+                    should.exist(res.body.database);
+                    should.exist(res.body.logging);
+                    should.exist(res.body.server);
+                    should.exist(res.body.auth);
+                    should.exist(res.body.caching);
+                    should.deepEqual(res.body, config);
+
+                    done();
+                });
+            });
+
+            it('should only allow authenticated users access', function (done) {
+                request('http://' + config.server.host + ':' + config.server.port)
+                .get('/serama/config')
+                .set('Authorization', 'Bearer e91e69b4-6563-43bd-a793-cb2af4ba62f4') // invalid token
+                .expect(401, done);
             });
         });
     });

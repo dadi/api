@@ -8,6 +8,7 @@ var _ = require('underscore');
 var _models = {};
 
 var Model = function (name, schema, conn, settings) {
+
     // attach collection name
     this.name = name;
 
@@ -231,6 +232,7 @@ Model.prototype.castToBSON = function (obj) {
         obj._id = new ObjectID.createFromHexString(obj._id);
     }
 }
+
 
 // exports
 module.exports = function (name, schema, conn, settings) {

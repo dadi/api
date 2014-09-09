@@ -6,6 +6,7 @@ var conn = connection(config.auth.database);
 var clientCollectionName = config.auth.client_collection || 'client-store';
 
 conn.on('connect', function (db) {
+
     // Note: this is for QA testing or example purposes only
     db.collection(clientCollectionName).insert({
         client_id: 'test-client',

@@ -14,6 +14,13 @@ implements methods corrisponding to the http methods it needs to support
 
 */
 var url = require('url');
+var help = require(__dirname + '/../help');
+
+// helpers
+var sendBackJSON = help.sendBackJSON;
+var sendBackJSONP = help.sendBackJSONP;
+var parseQuery = help.parseQuery;
+
 
 var Controller = function (model) {
     if (!model) throw new Error('Model instance required');
@@ -36,10 +43,10 @@ Controller.prototype.get = function (req, res, next) {
 
     if (options.sort) {
         var sort = {};
-        var order = Number(options.sort_order || settings.sort_order);
 
-        // check for NaN
-        if (order !== order) order = 1;
+        // default to 'asc'
+        var order = (options.sort_order || settings.sort_order) === 'desc' ? -1 : 1;
+
         sort[options.sort] = order;
     }
 
@@ -91,47 +98,3 @@ module.exports = function (model) {
 };
 
 module.exports.Controller = Controller;
-
-// helper that sends json response
-function sendBackJSON(successCode, res, next) {
-    return function (err, results) {
-        if (err) return next(err);
-
-        res.statusCode = successCode;
-
-        var resBody = JSON.stringify(results);
-        res.setHeader('content-type', 'application/json');
-        res.setHeader('content-length', resBody.length);
-        res.end(resBody);
-    }
-}
-
-function sendBackJSONP(callbackName, res, next) {
-    return function (err, results) {
-
-        // callback MUST be made up of letters only
-        if (!callbackName.match(/^[a-zA-Z]+$/)) return res.send(400);
-
-        res.statusCode = 200;
-
-        var resBody = JSON.stringify(results);
-        resBody = callbackName + '(' + resBody + ');';
-        res.setHeader('content-type', 'text/javascript');
-        res.setHeader('content-length', resBody.length);
-        res.end(resBody);
-    }
-}
-
-// function to wrap try - catch for JSON.parse to mitigate pref losses
-function parseQuery(queryStr) {
-    var ret;
-    try {
-        ret = JSON.parse(queryStr);
-    } catch (e) {
-        ret = {};
-    }
-
-    // handle case where queryStr is "null" or some other malicious string
-    if (typeof ret !== 'object' || ret === null) ret = {};
-    return ret;
-}

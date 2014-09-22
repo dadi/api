@@ -5,7 +5,7 @@ var connection = require(__dirname + '/../../bantam/lib/model/connection');
 var config = require(__dirname + '/../../config');
 var request = require('supertest');
 
-var clientCollectionName = config.auth.clientCollection || 'client-store';
+var clientCollectionName = config.auth.clientCollection || 'clientStore';
 
 // create a document with random string via the api
 module.exports.createDoc = function (token, done) {

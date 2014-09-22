@@ -1,7 +1,7 @@
 var connection = require(__dirname + '/../model/connection');
 var config = require(__dirname + '/../../../config');
 
-var storeCollectionName = config.auth.tokenCollection || 'token-store';
+var storeCollectionName = config.auth.tokenCollection || 'tokenStore';
 
 var Store = function () {
     this.connection = connection(config.auth.database);

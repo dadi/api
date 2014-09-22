@@ -34,8 +34,8 @@
             "username":"",
             "password":"",
             "database":"serama",
-            "clientCollection": "client-store",
-            "tokenCollection": "token-store"
+            "clientCollection": "clientStore",
+            "tokenCollection": "tokenStore"
         }
     },
     "caching": {

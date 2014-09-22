@@ -28,19 +28,19 @@ describe('API server', function () {
         var app = api();
 
         it('should have instance of Controller attached as handler', function (done) {
-            app.use('/foo/bar', controller(model('api_test', help.getModelSchema())));
+            app.use('/foo/bar', controller(model('apiTest', help.getModelSchema())));
             app.paths['/foo/bar'].handler.should.be.an.instanceOf(controller.Controller);
             done();
         });
 
         it('should have regexp attached to test path matches', function (done) {
-            app.use('/foo/bar/:baz', controller(model('api_test')));
+            app.use('/foo/bar/:baz', controller(model('apiTest')));
             app.paths['/foo/bar/:baz'].regex.should.be.an.instanceOf(RegExp);
             done();
         });
 
         it('should have keys for each path attached', function (done) {
-            app.use('/foo/bar/baz/:qux', controller(model('api_test')));
+            app.use('/foo/bar/baz/:qux', controller(model('apiTest')));
             app.paths['/foo/bar/baz/:qux'].regex.keys.should.be.an.instanceOf(Array);
             app.paths['/foo/bar/baz/:qux'].regex.keys[0].name.should.equal('qux');
             done();
@@ -74,7 +74,7 @@ describe('API server', function () {
         });
 
         it('should add url to paths', function (done) {
-            app.use('/foo/bar', controller(model('api_test', help.getModelSchema())));
+            app.use('/foo/bar', controller(model('apiTest', help.getModelSchema())));
             app.paths['/foo/bar'].should.be.Object;
             done();
         });
@@ -108,7 +108,7 @@ describe('API server', function () {
         });
 
         it('should remove url from paths', function (done) {
-            app.use('/foo/bar', controller(model('api_test', help.getModelSchema())));
+            app.use('/foo/bar', controller(model('apiTest', help.getModelSchema())));
             app.paths['/foo/bar'].should.be.Object;
 
             app.unuse('/foo/bar');

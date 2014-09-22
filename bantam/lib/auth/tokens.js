@@ -4,14 +4,13 @@ var connection = require(__dirname + '/../model/connection');
 
 var tokenStore = require(__dirname + '/tokenStore')();
 var clientStore = connection(config.auth.database);
-var clientCollectionName = config.auth.client_collection || 'client-store';
+var clientCollectionName = config.auth.clientCollection || 'client-store';
 
 module.exports.generate = function (req, res, next) {
-
     // look up the creds in clientStore
     var _done = function (database) {
         database.collection(clientCollectionName).findOne({
-            client_id: req.body.client_id,
+            clientId: req.body.clientId,
             secret: req.body.secret
         }, function (err, client) {
             if (err) return next(err);
@@ -26,8 +25,8 @@ module.exports.generate = function (req, res, next) {
                     if (err) return next(err);
 
                     var tok = {
-                        access_token: token,
-                        token_type: 'Bearer'
+                        accessToken: token,
+                        tokenType: 'Bearer'
                     };
 
                     var json = JSON.stringify(tok);

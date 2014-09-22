@@ -167,7 +167,6 @@ Model.prototype.update = function (query, update, internals, done) {
 
     var self = this;
     var _update = function (database) {
-        console.log(self.name);
         database.collection(self.name).update(query, setUpdate, function (err, numAffected) {
             if (err) return done(err);
             if (!numAffected) {

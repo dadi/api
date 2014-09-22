@@ -5,7 +5,7 @@ var help = require(__dirname + '/help');
 var app = require(__dirname + '/../../bantam/lib/');
 
 describe('Authentication', function () {
-    var tokenRoute = config.auth.token_url;
+    var tokenRoute = config.auth.tokenUrl;
 
     before(function (done) {
         app.start({
@@ -13,6 +13,7 @@ describe('Authentication', function () {
             endpointPath: __dirname + '/workspace/endpoints'
         }, function (err) {
             if (err) return done(err);
+
             // give it a moment for http.Server to finish starting
             setTimeout(function () {
                 done();
@@ -30,8 +31,8 @@ describe('Authentication', function () {
         client
         .post(tokenRoute)
         .send({
-            client_id: 'test123',
-            secret: 'super_secret'
+            clientId: 'test123',
+            secret: 'superSecret'
         })
         .expect('content-type', 'application/json')
         .expect('pragma', 'no-cache')
@@ -45,8 +46,8 @@ describe('Authentication', function () {
         client
         .post(tokenRoute)
         .send({
-            client_id: 'test123',
-            secret: 'bad_secret',
+            clientId: 'test123',
+            secret: 'badSecret',
             code: ' '
         })
         .expect(401, done);
@@ -77,11 +78,11 @@ describe('Authentication', function () {
     it('should not allow requests with expired tokens', function (done) {
         this.timeout(4000);
 
-        var oldTtl = Number(config.auth.token_ttl);
-        config.auth.token_ttl = 1;
+        var oldTtl = Number(config.auth.tokenTtl);
+        config.auth.tokenTtl = 1;
 
         var _done = function (err) {
-            config.auth.token_ttl = oldTtl;
+            config.auth.tokenTtl = oldTtl;
             done(err);
         };
 

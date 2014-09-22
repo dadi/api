@@ -1,9 +1,9 @@
 {
     "fields": {
-        "field1": {
+        "name": {
             "type": "String",
-            "label": "Title",
-            "comments": "The title of the entry",
+            "label": "name",
+            "comments": "This is the human name",
             "limit": "",
             "placement": "Main content",
             "validationRule": "",
@@ -16,8 +16,7 @@
         }
     },
     "settings": {
-        "cache": true,
-        "cacheTTL": 300,
+        "cache": false,
         "authenticate": true,
         "callback": null,
         "defaultFilters": null,

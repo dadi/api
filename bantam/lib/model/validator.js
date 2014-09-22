@@ -67,7 +67,7 @@ function _validate(field, schema) {
     if (len && field.length > len) return schema.message || 'is too long';
 
     // check validation regex
-    if (schema.validation_rule && !(new RegExp(schema.validation_rule)).test(field)) return schema.message || 'is invalid';
+    if (schema.validationRule && !(new RegExp(schema.validationRule)).test(field)) return schema.message || 'is invalid';
 
     // enforce schema type
     var type = schema.type.toLowerCase();

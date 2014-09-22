@@ -1,6 +1,6 @@
 ![Serama](serama.png)
 
-![Build Status](http://img.shields.io/badge/release-0.1.1_beta-green.svg?style=flat-square)&nbsp;[![License](http://img.shields.io/:license-mit-blue.svg?style=flat-square)](http://dadi.mit-license.org)
+![Build Status](http://img.shields.io/badge/release-0.1.3_beta-green.svg?style=flat-square)&nbsp;[![License](http://img.shields.io/:license-mit-blue.svg?style=flat-square)](http://dadi.mit-license.org)
 
 ## Overview
 
@@ -111,29 +111,13 @@ Serama was conceived, developed and is maintained by the engineering team at DAD
 Core contributors -
 
 * Joseph Denne
+* Joe Warner
 * Viktor Fero
 * James Lambie
-* Joe Warner
 
 ### Roadmap
 
-Planned updates and additions -
-
-`Version 0.1.2 - September 2014`
-
-* Move to camelCase throughout the build
-* Enable the reading and management of the config through the API
-* Enable the reading and management of collection configurations through the API
-* Enable the setup, modification and deletion of collections through the API
-
-`Version 0.2.0 - October 2014`
-
-* Enable the setup, modification and deletion of endpoints through the API
-* The provision of an endpoint SDK for custom endpoints to enable the accessing of data from collecitons
-
-`Version 0.3.0 - November 2014`
-
-* The provision of an architecture for extensions - exposed middleware for the addition of new functionality
+We will capture planned updates and additions here. If you have anythign to contribute in terms of furutre direction, please add as an enhancement request within [issues](https://github.com/dadiplus/serama/issues).
 
 ### Versioning
 

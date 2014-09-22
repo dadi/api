@@ -1,5 +1,7 @@
 var fs = require('fs');
 var path = require('path');
+var bodyParser = require('body-parser');
+var _ = require('underscore');
 var controller = require(__dirname + '/controller');
 var model = require(__dirname + '/model');
 var api = require(__dirname + '/api');
@@ -8,9 +10,12 @@ var cache = require(__dirname + '/cache')();
 var monitor = require(__dirname + '/monitor');
 var logger = require(__dirname + '/log');
 var help = require(__dirname + '/help');
-var bodyParser = require('body-parser');
 
-var config = require(__dirname + '/../../config');
+var configPath = path.resolve(__dirname + '/../../config.json');
+var config = require(configPath);
+
+// add an optional id component to the path, that is formatted to be matched by the `path-to-regexp` module
+var idParam = ':id([a-fA-F0-9]{24})?';
 
 var Server = function () {
     this.components = {};
@@ -29,6 +34,7 @@ Server.prototype.start = function (options, done) {
     // add necessary middlewares in order below here...
 
     app.use(bodyParser.json());
+    app.use(bodyParser.text());
 
     // example request logging middleware
     app.use(function (req, res, next) {
@@ -50,9 +56,7 @@ Server.prototype.start = function (options, done) {
     // configure authentication after bodyParser middleware
     auth(app);
 
-    app.use('/serama/config', function (req, res, next) {
-        help.sendBackJSON(200, res, next)(null, config);
-    });
+    this.loadConfigApi();
 
     // caching layer
     app.use(cache);
@@ -88,8 +92,8 @@ Server.prototype.loadApi = function (options) {
     options || (options = {});
 
     var self = this;
-    var collectionPath = options.collectionPath || __dirname + '/../../workspace/collections';
-    var endpointPath = options.endpointPath || __dirname + '/../../workspace/endpoints';
+    var collectionPath = this.collectionPath = options.collectionPath || __dirname + '/../../workspace/collections';
+    var endpointPath = this.endpointPath = options.endpointPath || __dirname + '/../../workspace/endpoints';
 
     // Load initial api descriptions
     this.updateVersions(collectionPath);
@@ -112,6 +116,97 @@ Server.prototype.loadApi = function (options) {
             });
         }
         self.updateEndpoints(endpointPath);
+    });
+};
+
+Server.prototype.loadConfigApi = function () {
+    var self = this;
+
+    // allow getting main config from API
+    this.app.use('/serama/config', function (req, res, next) {
+        var method = req.method && req.method.toLowerCase();
+
+        if (method === 'get') return help.sendBackJSON(200, res, next)(null, config);
+
+        if (method === 'post') {
+
+            // update the config file
+            var newConfig = _.extend({}, config, req.body);
+
+            return fs.writeFile(configPath, JSON.stringify(newConfig), function (err) {
+                help.sendBackJSON(200, res, next)(err, {
+                    result: 'success',
+                    message: 'server restart required'
+                });
+            });
+        }
+
+        next();
+    });
+
+    // listen for requests to add to the API
+    this.app.use('/:version/:database/:collectionName/config', function (req, res, next) {
+        var method = req.method && req.method.toLowerCase();
+        if (method !== 'post') return next();
+
+        var schemaString = typeof req.body === 'object' ? JSON.stringify(req.body) : req.body;
+        if (typeof schemaString !== 'string') {
+            var err = new Error('Bad Syntax');
+            err.statusCode = 400;
+            return next(err);
+        }
+
+        var params = req.params;
+
+        var route = ['', params.version, params.database, params.collectionName, idParam].join('/');
+
+        // create schema
+        if (!self.components[route]) {
+            self.createDirectoryStructure(path.join(params.version, params.database));
+
+            var schemaPath = path.join(
+                self.collectionPath,
+                params.version,
+                params.database,
+                'collection.' + params.collectionName + '.json'
+            );
+
+            return fs.writeFile(schemaPath, schemaString, function (err) {
+                if (err) return next(err);
+
+                res.statusCode = 200;
+                res.setHeader('content-type', 'application/json');
+                res.end(JSON.stringify({
+                    result: 'success',
+                    message: params.collectionName + ' collection created'
+                }));
+            });
+        }
+
+        next();
+    });
+
+    this.app.use('/endpoints/:endpointName/config', function (req, res, next) {
+        var method = req.method && req.method.toLowerCase();
+        if (method !== 'post') return next();
+
+        var name = req.params.endpointName;
+        if (!self.components['/endpoints/' + name]) {
+            var filepath = path.join(self.endpointPath, 'endpoint.' + name + '.js');
+
+            return fs.writeFile(filepath, req.body, function (err) {
+                if (err) return next(err);
+
+                res.statusCode = 200;
+                res.setHeader('content-type', 'application/json');
+                res.end(JSON.stringify({
+                    result: 'success',
+                    message: req.params.endpointName + ' endpoint created'
+                }));
+            });
+        }
+
+        next();
     });
 };
 
@@ -173,7 +268,7 @@ Server.prototype.updateCollections = function (collectionsPath) {
         var name = collection.slice(collection.indexOf('.') + 1, collection.indexOf('.json'));
 
         self.addCollectionResource({
-            route: ['', version, database, name, ':id?'].join('/'),
+            route: ['', version, database, name, idParam].join('/'),
             filepath: cpath,
             name: name
         });
@@ -248,7 +343,8 @@ Server.prototype.addEndpointResource = function (options) {
     // done by changing reference value
     var opts = {
         route: '/endpoints/' + name,
-        component: require(filepath)
+        component: require(filepath),
+        filepath: filepath
     };
 
     self.addComponent(opts);
@@ -259,6 +355,7 @@ Server.prototype.addEndpointResource = function (options) {
         try {
             opts.component = require(filepath);
         } catch (e) {
+
             // if file was removed "un-use" this component
             if (e && e.code === 'ENOENT') {
                 self.removeMonitor(filepath);
@@ -277,18 +374,39 @@ Server.prototype.addComponent = function (options) {
 
     this.components[options.route] = options.component;
 
-    // setup config route first so "config" isn't treated as an ID
     this.app.use(options.route +'/config', function (req, res, next) {
         var method = req.method && req.method.toLowerCase();
-        
+
         // send schema
         if (method === 'get' && options.filepath) {
-            return help.sendBackJSON(200, res, next)(null, require(options.filepath));
+
+            // only allow getting collection endpoints
+            if (options.filepath.slice(-5) === '.json') {
+                return help.sendBackJSON(200, res, next)(null, require(options.filepath));
+            }
+            // continue
         }
 
-        var err = new Error('Not Found');
-        err.statusCode = 404;
-        next(err);
+        // set schema
+        if (method === 'post' && options.filepath) {
+            return fs.writeFile(options.filepath, req.body, function (err) {
+                help.sendBackJSON(200, res, next)(err, {result: 'success'});
+            });
+        }
+
+        // delete schema
+        if (method === 'delete' && options.filepath) {
+
+            // only allow removing collection type endpoints
+            if (options.filepath.slice(-5) === '.json') {
+                return fs.unlink(options.filepath, function (err) {
+                    help.sendBackJSON(200, res, next)(err, {result: 'success'});
+                });
+            }
+            // continue
+        }
+
+        next();
     });
 
     this.app.use(options.route, function (req, res, next) {
@@ -323,5 +441,71 @@ Server.prototype.removeMonitor = function (filepath) {
     delete this.monitors[filepath];
 };
 
+// Synchronously create directory structure to match path
+Server.prototype.createDirectoryStructure = function (dpath) {
+    var self = this;
+
+    var directories = dpath.split(path.sep);
+    var npath = self.collectionPath;
+    directories.forEach(function (dirname) {
+        npath = path.join(npath, dirname);
+        try {
+            fs.mkdirSync(npath);
+        } catch (err) {}
+    });
+};
+
+/**
+ *  expose VERB type methods for adding routes and middlewares 
+ *  @param {String} [route] optional
+ *  @param {function} callback, any number of callback to be called in order
+ *  @return undefined
+ *  @api public
+ */
+Server.prototype.options = buildVerbMethod('options');
+Server.prototype.get = buildVerbMethod('get');
+Server.prototype.head = buildVerbMethod('head');
+Server.prototype.post = buildVerbMethod('post');
+Server.prototype.put = buildVerbMethod('put');
+Server.prototype.delete = buildVerbMethod('delete');
+Server.prototype.trace = buildVerbMethod('trace');
+
 // singleton
 module.exports = new Server();
+
+
+// generate a method for http request methods matching `verb`
+// if a route is passed, the node module `path-to-regexp` is
+// used to create the RegExp that will test requests for this route
+function buildVerbMethod(verb) {
+    return function () {
+        var args = [].slice.call(arguments, 0);
+        var route = typeof arguments[0] === 'string' ? args.shift() : null;
+
+        var handler = function (req, res, next) {
+            if (!(req.method && req.method.toLowerCase() === verb)) {
+                next();
+            }
+
+            // push the next route on to the bottom of callback stack in case none of these callbacks send a response
+            args.push(next);
+            var doCallbacks = function (i) {
+                return function (err) {
+                    if (err) return next(err);
+
+                    args[i](req, res, doCallbacks(++i));
+                }
+            }
+
+            doCallbacks(0)();
+        };
+
+        // if there is a route provided, only call for matching requests
+        if (route) {
+            return this.app.use(route, handler);
+        }
+
+        // if no route is provided, call this for all requests
+        this.app.use(handler);
+    };
+}

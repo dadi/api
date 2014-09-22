@@ -1,6 +1,6 @@
 {
     "fields": {
-        "field1": {
+        "newField": {
             "type": "String",
             "label": "Title",
             "comments": "The title of the entry",

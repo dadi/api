@@ -1,9 +1,9 @@
 {
     "fields": {
-        "field1": {
+        "name": {
             "type": "String",
-            "label": "Title",
-            "comments": "The title of the entry",
+            "label": "name",
+            "comments": "This is the book's name",
             "limit": "",
             "placement": "Main content",
             "validationRule": "",
@@ -14,14 +14,14 @@
                 "edit": true
             }
         },
-        "field2": {
-            "type": "Number",
-            "label": "Title",
-            "comments": "The title of the entry",
+        "authorId": {
+            "type": "String",
+            "label": "author",
+            "comments": "This is the _id of the book's author",
             "limit": "",
             "placement": "Main content",
-            "validationRule": "",
-            "required": false,
+            "validationRule": "^[0-9a-fA-F]{24}$",
+            "required": true,
             "message": "",
             "display": { 
                 "index": true,
@@ -30,8 +30,7 @@
         }
     },
     "settings": {
-        "cache": true,
-        "cacheTTL": 300,
+        "cache": false,
         "authenticate": true,
         "callback": null,
         "defaultFilters": null,

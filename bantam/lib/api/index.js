@@ -34,6 +34,12 @@ Api.prototype.use = function (path, handler) {
     };
 };
 
+/**
+ *  Removes a handler or removes the handler attached to a specific path
+ *  @param {String} path
+ *  @return undefined
+ *  @api public
+ */
 Api.prototype.unuse = function (path) {
     var indx;
     if (typeof path === 'function') {
@@ -68,10 +74,8 @@ Api.prototype.listen = function (port, host, backlog, done) {
  *  @api public
  */
 Api.prototype.listener = function (req, res) {
-
     // clone the middleware stack
     var stack = this.all.slice(0);
-    var paths = this.paths;
     var path = url.parse(req.url).pathname;
 
     // get matching routes, and add req.params
@@ -112,7 +116,6 @@ Api.prototype._match = function (path, req) {
     var paths = this.paths;
     var matches = [];
     var handlers = [];
-
     // always add params object to avoid need for checking later
     req.params = {};
 

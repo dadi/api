@@ -17,25 +17,25 @@
         "enabled": true,
         "level": "DEBUG",
         "path": "./log/serama",
-        "date_format": "YYYY-MM-DD",
+        "dateFormat": "YYYY-MM-DD",
         "extension": "log",
-        "message_format": "<%= label %> - <%= date %> - <%= message %>"
+        "messageFormat": "<%= label %> - <%= date %> - <%= message %>"
     },
     "server": {
         "host": "localhost",
         "port": 3000
     },
     "auth": {
-        "token_url": "/token",
-        "token_ttl": 2592000,
+        "tokenUrl": "/token",
+        "tokenTtl": 2592000,
         "database": {
             "host":"localhost",
             "port":27017,
             "username":"",
             "password":"",
             "database":"serama",
-            "client_collection": "client-store",
-            "token_collection": "token-store"
+            "clientCollection": "client-store",
+            "tokenCollection": "token-store"
         }
     },
     "caching": {

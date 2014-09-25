@@ -4,7 +4,7 @@
 
 ## Overview
 
-Serama is built on Node.JS and MongoDB. It is a high performance RESTful API layer designed in support of [API-first development](https://github.com/dadiplus/serama/blob/master/docs/apiFirst.md) and the principle of COPE.
+Serama is built on Node.JS and MongoDB. It is a high performance RESTful API layer designed in support of [API-first development and the principle of COPE](https://github.com/dadiplus/serama/blob/master/docs/apiFirst.md).
 
 You can think of Serama as the data layer within a platform (including the data model). It is designed to be plugged into a templating layer, a mobile application or to be used with any other data consumer.
 

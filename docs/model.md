@@ -10,10 +10,10 @@ This module handles data validation and CRUD. A model instance will try to conne
 
 Model(name, fields, [connection], settings) -
 
-  - `name` a String that will be unique among models
-  - `fields` an Object that describes this models fields, as per the spec
-  - `connection` Optionally, a connection instance that is already initialized. If not passed in, the model will try to connect with data from config
-  - `settings` an Object that describes the default behaviour of this model
+* `name` a String that will be unique among models
+* `fields` an Object that describes this models fields, as per the spec
+* `connection` Optionally, a connection instance that is already initialized. If not passed in, the model will try to connect with data from config
+* `settings` an Object that describes the default behaviour of this model
 
 ## Example Usage
 

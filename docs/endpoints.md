@@ -10,9 +10,9 @@ Each function will recieve three arguments -
 
 `(request, response, next)`
 
-  - `request` is an instance of node's [http.IncomingMessage](http://nodejs.org/api/http.html#http_http_incomingmessage) as created internally by node
-  - `response` is an instance of node's [http.ServerResponse](http://nodejs.org/api/http.html#http_class_http_serverresponse) as created internally by node
-  - `next` is a function that can be passed an error, or called if this endpoint has nothing to do.  This will result in a 500, or 404 respectively.
+1. `request` is an instance of node's [http.IncomingMessage](http://nodejs.org/api/http.html#http_http_incomingmessage) as created internally by node
+2. `response` is an instance of node's [http.ServerResponse](http://nodejs.org/api/http.html#http_class_http_serverresponse) as created internally by node
+3. `next` is a function that can be passed an error, or called if this endpoint has nothing to do.  This will result in a 500, or 404 respectively.
 
 ## Example Usage
 

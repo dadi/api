@@ -76,25 +76,25 @@ This exposes the follwing methods -
 
 ### app.api.use([route], handler)
 
-- route
-	- An optional string that limits this handler to the given path string
-- handler
-	- A function that is passed (http.IncomingMessage, http.ServerResponse, next)
-	- The first two arguments are the request and response instances that node.js creates internally, the third argument is a function that can be called to start the next middleware
-	- If next is called with anything as the first argument, the rest of your middleware and routes are skipped and your error handlers are called
+* route
+	* An optional string that limits this handler to the given path string
+* handler
+	* A function that is passed (http.IncomingMessage, http.ServerResponse, next)
+	* The first two arguments are the request and response instances that node.js creates internally, the third argument is a function that can be called to start the next middleware
+	* If next is called with anything as the first argument, the rest of your middleware and routes are skipped and your error handlers are called
 
 ### app.api.unuse(route or function)
 
-- the first argument to `unuse` is either a String or Function
-	- If it is a Function Serama will remove the Function from the middleware if it exists
-	- If the first argument is a string, it will remove that route from the middleware
+* The first argument to `unuse` is either a String or Function
+	* If it is a Function Serama will remove the Function from the middleware if it exists
+	* If the first argument is a string, it will remove that route from the middleware
 
 ### app.VERB(route, handler, [any number of additional handlers])
 
 `VERB` can be any of the http methods, e.g. `app.get`, `app.post`, `app.head`
 
-- route must be a path string for use with [path-to-regexp](https://github.com/component/path-to-regexp)
-- handler is a function that recieves (req, res, next) just like the middleware declared with `.use`
+* route must be a path string for use with [path-to-regexp](https://github.com/component/path-to-regexp)
+* handler is a function that recieves (req, res, next) just like the middleware declared with `.use`
 
 _NOTE: you can add any number of handlers, and they will be called in the order they were added_
 
@@ -102,7 +102,7 @@ _NOTE: you can add any number of handlers, and they will be called in the order 
 
 On top of routes for collections and endpoints, some middleware is added by Serama for use internally, these include -
 
-  - [body-parser](https://github.com/expressjs/body-parser).  The `json` and `text` middlewares are used
-  - A request logger middleware is added
-  - A middleware for serving and authorizing Bearer tokens is used
-  - A request caching middleware is added
+* [body-parser](https://github.com/expressjs/body-parser).  The `json` and `text` middlewares are used
+* A request logger middleware is added
+* A middleware for serving and authorizing Bearer tokens is used
+* A request caching middleware is added

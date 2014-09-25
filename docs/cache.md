@@ -20,10 +20,10 @@ inside config.json *ex:*
         "extension": "json"
     }
 
-  - `enabled` if app should use caching (defaults to false)
-  - `ttl` how long in seconds a cached file should be considered valid (required if cache is enabled)
-  - `directory` path to the directory where files should be stored. **Important:** this dir must already exist! (required if cache is enabled)
-  - `extension` the file extension to use when naming the cache files. This has no bearing on the `content-type` of the response, so feel free to put anything here (required if cache is enabled)
+* `enabled` if app should use caching (defaults to false)
+* `ttl` how long in seconds a cached file should be considered valid (required if cache is enabled)
+* `directory` path to the directory where files should be stored. **Important:** this dir must already exist! (required if cache is enabled)
+* `extension` the file extension to use when naming the cache files. This has no bearing on the `content-type` of the response, so feel free to put anything here (required if cache is enabled)
 
 ## Notes
 

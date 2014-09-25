@@ -16,9 +16,9 @@ Depending on the level specified in the config.json file, calls to these message
 
 ## Levels
 
-  - 'DEBUG' - most verbose, all logging is persisted
-  - 'STAGE' - medium logging, calls to `stage`, and `prod` are persisted.  Calls to `debug` are ignored
-  - 'PROD' - least amount of logging, only calls to `prod` are persisted.  All others are ignored
+* 'DEBUG' - most verbose, all logging is persisted
+* 'STAGE' - medium logging, calls to `stage`, and `prod` are persisted.  Calls to `debug` are ignored
+* 'PROD' - least amount of logging, only calls to `prod` are persisted.  All others are ignored
 
 ## Example Usage
 

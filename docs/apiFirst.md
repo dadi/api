@@ -8,7 +8,7 @@ Traditional product design is channel and device centric. But users inhabit in a
 
 Channel and/or device centric product design results in duplicated effort and wasted engineering work. API-first development is focused on removing this technical debt through the separation of the data backend and the data consuming frontend.
 
-COPE stands for Create Once, Publish Everywhere. It is about reducing editorial overhead by freeing content for use in multiple different contexts.
+COPE stands for Create Once, Publish Everywhere. It is about reducing editorial overhead by freeing content for use in multiple different contexts. Simply put, COPE seperates data from design, making your content reusable and future-proof for new devices or platforms.
 
 Taking an API-first development approach enables COPE and brings several additional benefits -
 

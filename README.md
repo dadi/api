@@ -37,7 +37,102 @@ In order to get up and running you will also need to create a client document in
 
 `node utils/create-client.js`
 
-once done you can get a bearer token with the following request -
+Pro tip: to background Serama, install [Forever](https://github.com/nodejitsu/forever) -
+
+`[sudo] npm install forever -g`
+
+You can then start Serama using -
+
+`[sudo] forever start bantam/main.js`
+
+## Rest API specification
+
+Serama accepts GET, POST, PUT, PATCH and DELETE requests.
+
+---
+
+**GET** *http(s)://{url}/{version number}/{database name}/{collection name}*
+
+Returns a json object with all results from the *{collection name}* collection and *{database name}* database. The result set will be paginated and limited to a number of records as defined as the default view in the collection schema file in *./workspace/collections/{version number}/{database name}/collection.{collection name}.json*.
+
+Default views can be overridden using parameters at the point of API request.
+
+You can read about this and the about the collection schema [here](https://github.com/dadiplus/serama/blob/master/docs/endpoints.md).
+
+---
+
+**GET** *http://{url}/endpoints/{endpoint name}*
+
+Returns a JSON object. Parameters and return are completely customisable. The output is generated using the file -
+
+*workspace/endpoints/endpoint.{endpoint name}.js*
+
+See `test/acceptance/workspace/endpoints/endpoint.test-endpoint.js` for a "Hello World" example.
+
+---
+
+**GET** *http://{url}/{version number}/{database name}/{collection name}/config*
+
+Returns a JSON object of the schema file -
+
+*./workspace/collections/v{version number}/{database name}/collection.{collection name}.json*
+
+---
+
+**GET** *http://{url}/serama/config*
+
+Returns a JSON object of the main config file -
+
+*./config.json*
+
+You can red more about this [here](https://github.com/dadiplus/serama/blob/master/docs/configApi.md).
+
+---
+
+**POST** *http://{url}/serama/config*
+
+Updates the main config file -
+
+*./config.json*
+
+You can red more about this [here](https://github.com/dadiplus/serama/blob/master/docs/configApi.md).
+
+---
+
+**POST** *http://{url}/{version number}/{database name}/{collection name}*
+
+Adds a new record to the collection specified by *{collection name}* in the *{database name}* database.
+
+If the record passes validation it is inserted into the collection.
+
+The following additional fields are saved alongside with every record -
+
+* *created_at*: timestamp of creation
+* *created_by*: user id of creator
+* *api_version*: api version number passed in the url ({version number}). i.e. v1
+
+---
+
+**POST** *http://{url}/{version number}/{database name}/{collection name}/{:id}*
+
+Updates an existing record with the id of *{:id}* in the *{collection name}* collection and *{database name}* database. 
+
+If the record passes validation it will be updated.
+
+The following additional fields are added/updated alongside every passed field -
+
+* *last_modified_at*: timestamp of modification
+* *last_modified_by*: user id of updater
+
+---
+
+**DELETE** *http://{url}/{version number}/{database name}/{collection name}/{:id}*
+
+Deletes the record with the id of *{:id}* in the *{collection name}* collection and *{database name}* database.
+
+### Authorisation
+
+You can get a bearer token as follows -
 
     POST /token HTTP/1.1
     Host: localhost:3000
@@ -50,21 +145,13 @@ Once you have the token, each request to the api should include a header similar
 
     Authorization: Bearer 171c8c12-6e9b-47a8-be29-0524070b0c65
 
-There is an example collection endpoint and custom endpoint included in the `workspace` directory.
+### Working with endpoints
 
-Pro tip: to background Serama, install [Forever](https://github.com/nodejitsu/forever) -
-
-`[sudo] npm install forever -g`
-
-You can then start Serama using -
-
-`[sudo] forever start bantam/main.js`
-
-## Example API requests
+You can read about collections and custom endpoints in detail [here](https://github.com/dadiplus/serama/blob/master/docs/endpoints.md). If you just want to jump right in, here are some sample API requests -
 
 _You may want to look at a handy QA testing tool called [Postman](http://www.getpostman.com/)_
 
-### Collections POST request
+#### Collections POST request
 
     POST /vtest/testdb/test-schema HTTP/1.1
     Host: localhost:3000
@@ -74,7 +161,7 @@ _You may want to look at a handy QA testing tool called [Postman](http://www.get
     { "field_1": "hi world!", "field_2": 123293582345 }
 
 
-### Endpoint GET request
+#### Endpoint GET request
 
 This will return a "Hello World" example -
 

@@ -83,8 +83,8 @@ Each field is defined in the following way:
             }
         }
 
-Parameter | Description | Default | Example
--|-|-|-
+ Parameter       | Description        |  Default                                  | Example
+:----------------|:-------------------|:------------------------------------------|:-------
 field_name | The name of the field | | ```"title"```
 type | The type of the field. Possible values TBC | | ```"Text"```
 label | The label for the field | | ```"Title"```
@@ -145,7 +145,7 @@ If a record fails validation an errors collection should be returned with the re
 It is possible to override the default view for a collection using the parameters specified below, opening up the possibility of defining your busines/domain logic within the API request itself.
 
  Parameter       | Type        |  Description                                  | Default value        |  Example
------------------|-------------|-----------------------------------------------|----------------------|---------------
+:----------------|:------------|:----------------------------------------------|:---------------------|:--------------
 count            | integer     | Number of results to be displayed on a page   | 50                   | 10
 page             | integer     | Page number                                   | 1                    | 2
 sort             | string      | Field id for sorting                          | _id                  |

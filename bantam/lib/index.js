@@ -455,6 +455,7 @@ Server.prototype.createDirectoryStructure = function (dpath) {
     });
 };
 
+
 /**
  *  expose VERB type methods for adding routes and middlewares 
  *  @param {String} [route] optional
@@ -472,7 +473,6 @@ Server.prototype.trace = buildVerbMethod('trace');
 
 // singleton
 module.exports = new Server();
-
 
 // generate a method for http request methods matching `verb`
 // if a route is passed, the node module `path-to-regexp` is

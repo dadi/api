@@ -22,7 +22,6 @@ var Server = function () {
     this.monitors = {};
 };
 
-
 Server.prototype.start = function (options, done) {
     var self = this;
 

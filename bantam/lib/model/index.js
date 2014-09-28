@@ -21,7 +21,8 @@ var Model = function (name, schema, conn, settings) {
     // create connection for this model
     if (conn) {
         this.connection = conn;
-    } else if (config[name]) {
+    }
+    else if (config[name]) {
         this.connection = connection({
             database: name,
             host: config[name].host,
@@ -29,7 +30,8 @@ var Model = function (name, schema, conn, settings) {
             username: config[name].username,
             password: config[name].password
         });
-    } else {
+    }
+    else {
         this.connection = connection();
     }
 

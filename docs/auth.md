@@ -19,7 +19,7 @@ Example -
     content-type: application/json
     Cache-Control: no-cache
     
-    { "client_id": "test-client", "secret": "super_secret" }
+    { "clientId": "testClient", "secret": "superSecret" }
 
 All requests, aside from requesting a token, require that a token be present.
 
@@ -27,4 +27,4 @@ The storage of client credentials and tokens is specified in `config.auth.databa
 
 Token expiration is specified in seconds at `config.auth.token_ttl`.
 
-**Important:** For deployment a ttl index should be created in mongo that corresponds to the maximum ttl you would expect to have for a token. This will be the only mechanism to remove expired tokens. 
+**Important:** For deployment a ttl index should be created in MongoDB that corresponds to the maximum ttl you would expect to have for a token. This will be the only mechanism to remove expired tokens. 

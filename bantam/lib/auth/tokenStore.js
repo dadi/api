@@ -1,7 +1,7 @@
 var connection = require(__dirname + '/../model/connection');
 var config = require(__dirname + '/../../../config');
 
-var storeCollectionName = config.auth.tokenCollection || 'tokenStore';
+var storeCollectionName = config.auth.database.tokenCollection;
 
 var Store = function () {
     this.connection = connection(config.auth.database);
@@ -37,7 +37,6 @@ Store.prototype.set = function(token, value, done) {
     // if the db is not connected queue the insert
     this.connection.once('connect', _done);
 };
-
 
 module.exports = function () {
     return new Store();

@@ -11,6 +11,7 @@ type of endpoints
 *http://{url}/enpoints/{enpoint name}* type endpoints should create a custom controller that
 implements methods corrisponding to the http methods it needs to support
 
+
 */
 var url = require('url');
 var config = require(__dirname + '/../../../config');

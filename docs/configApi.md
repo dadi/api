@@ -4,7 +4,7 @@
 
 ## Overview
 
-Serama exposes it's own API to allow for the creation new collection endpoints as well as custom endpoints. This allows authorised users to, for example, create a new collection endpoint by sending a POST request to `/version/database/collection/config`.
+Serama exposes its own API to allow for the creation new collection endpoints as well as custom endpoints. This allows authorised users to, for example, create a new collection endpoint by sending a POST request to `/version/database/collection/config`.
 
 ## Collections
 

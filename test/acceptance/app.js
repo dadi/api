@@ -274,7 +274,6 @@ describe('Application', function () {
 
             describe('query string params', function () {
                 before(function (done) {
-
                     // create a bunch of docs
                     var asyncControl = new EventEmitter();
                     var count = 0;
@@ -569,13 +568,11 @@ describe('Application', function () {
     });
 
     describe('collections config api', function () {
-
         // mimic a file that could be sent to the server
         var jsSchemaString = fs.readFileSync(__dirname + '/../new-schema.json', {encoding: 'utf8'});
 
         var cleanup = function (done) {
             try {
-
                 // try to cleanup these tests directory tree
                 fs.unlinkSync(__dirname + '/workspace/collections/vapicreate/testdb/collection.api-create.json');
                 fs.rmdirSync(__dirname + '/workspace/collections/vapicreate/testdb');
@@ -776,6 +773,7 @@ describe('Application', function () {
     });
 
     describe('endpoint config api', function () {
+
         // mimic a file that could be sent to the server
         var jsSchemaString = fs.readFileSync(__dirname + '/../new-endpoint.js', {encoding: 'utf8'});
 

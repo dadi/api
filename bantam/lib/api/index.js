@@ -74,6 +74,7 @@ Api.prototype.listen = function (port, host, backlog, done) {
  *  @api public
  */
 Api.prototype.listener = function (req, res) {
+
     // clone the middleware stack
     var stack = this.all.slice(0);
     var path = url.parse(req.url).pathname;
@@ -116,6 +117,7 @@ Api.prototype._match = function (path, req) {
     var paths = this.paths;
     var matches = [];
     var handlers = [];
+
     // always add params object to avoid need for checking later
     req.params = {};
 

@@ -1,10 +1,10 @@
 {
     "database": {
-        "host":"localhost",
-        "port":27017,
-        "username":"",
-        "password":"",
-        "database":"serama",
+        "host": "localhost",
+        "port": 27017,
+        "username": "",
+        "password": "",
+        "database": "serama",
         "secondary": {
             "enabled": true,
             "host": "127.0.0.1",

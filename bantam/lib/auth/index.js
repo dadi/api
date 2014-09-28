@@ -7,6 +7,7 @@ module.exports = function (app) {
 
     // authorize
     app.use(function (req, res, next) {
+
         // let requests for tokens through
         if (req.url === tokenRoute) return next();
 

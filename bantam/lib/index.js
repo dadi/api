@@ -22,6 +22,7 @@ var Server = function () {
     this.monitors = {};
 };
 
+
 Server.prototype.start = function (options, done) {
     var self = this;
 
@@ -454,7 +455,6 @@ Server.prototype.createDirectoryStructure = function (dpath) {
         } catch (err) {}
     });
 };
-
 
 /**
  *  expose VERB type methods for adding routes and middlewares 

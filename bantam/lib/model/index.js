@@ -232,7 +232,6 @@ Model.prototype.castToBSON = function (obj) {
     }
 }
 
-
 // exports
 module.exports = function (name, schema, conn, settings) {
     if (schema) return new Model(name, schema, conn, settings);

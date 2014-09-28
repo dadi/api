@@ -4,9 +4,10 @@ var connection = require(__dirname + '/../model/connection');
 
 var tokenStore = require(__dirname + '/tokenStore')();
 var clientStore = connection(config.auth.database);
-var clientCollectionName = config.auth.clientCollection || 'clientStore';
+var clientCollectionName = config.auth.database.clientCollection || 'clientStore';
 
 module.exports.generate = function (req, res, next) {
+
     // look up the creds in clientStore
     var _done = function (database) {
         database.collection(clientCollectionName).findOne({

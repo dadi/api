@@ -6,7 +6,7 @@
 
 This is a file based cache that may be configured in config.json.
 
-Due to the thin nature of the server, and I assume mongo's mem caching, the cache doesn't have a major impact on performance in a dev environment. If network traffic were required to hit the db this should change significantly.
+Due to the thin nature of the server, and we assume mongo's mem caching, the cache doesn't have a major impact on performance in a dev environment. If network traffic were required to hit the db this should change significantly.
 
 Benchmarks undertaken with ApacheBenchmark (ab) can be seen below.
 

@@ -6,15 +6,15 @@
 
 Serama is built on Node.JS and MongoDB. It is a high performance RESTful API layer designed in support of [API-first development and the principle of COPE](https://github.com/dadiplus/serama/blob/master/docs/apiFirst.md).
 
-You can think of Serama as the data layer within a platform (including the data model). It is designed to be plugged into a templating layer, a mobile application or to be used with any other data consumer.
+You can consider Serama as the data layer within a platform (including the data model). It is designed to be plugged into a templating layer, a mobile application or to be used with any other data consumer.
 
-Calls to a Serama API can contain your business/domain logic (the part of a platform that encodes the real-world business rules that determine how data is created, displayed, stored, and changed). It has full support for searching, filtering limiting, sorting, offseting and input validation.
+Calls to a Serama API can contain your business/domain logic (the part of a platform that encodes the real-world business rules that determine how data is created, displayed, stored and changed). It has full support for searching, filtering limiting, sorting, offsetting and input validation.
 
 It has built in support for oAuth2, can connect to multiple databases out of the box, supports static endpoints, has a caching layer and can be run in a clustered configuration.
 
 Serama provides a starting point that's further advanced than a framework. It allows you to get a complete data layer up and running in minutes.
 
-It is part of Bantam ([bant.am](https://bant.am)), a suite of components covering the full development stack, built for performance and scale.
+It is part of [Bantam](https://bant.am), a suite of components covering the full development stack, built for performance and scale.
 
 ## Requirements
 
@@ -87,7 +87,7 @@ Returns a JSON object of the main config file -
 
 *./config.json*
 
-You can red more about this [here](https://github.com/dadiplus/serama/blob/master/docs/configApi.md).
+You can read more about this [here](https://github.com/dadiplus/serama/blob/master/docs/configApi.md).
 
 #### 5.
 
@@ -97,7 +97,7 @@ Updates the main config file -
 
 *./config.json*
 
-You can red more about this [here](https://github.com/dadiplus/serama/blob/master/docs/configApi.md).
+You can read more about this [here](https://github.com/dadiplus/serama/blob/master/docs/configApi.md).
 
 #### 6.
 
@@ -141,7 +141,7 @@ You can get a bearer token as follows -
     content-type: application/json
     Cache-Control: no-cache
 
-    { "client_id": "test-client", "secret": "super_secret" }
+    { "clientId": "testClient", "secret": "superSecret" }
 
 Once you have the token, each request to the api should include a header similar to the one below (of course use your specific token) -
 
@@ -183,7 +183,7 @@ The proper name should always resolve correctly. Alternately, you can set it to 
 
 ## Further reading
 
-The `docs/` directory contains additional documentation on the compenent parts of the system -
+The `docs/` directory contains additional documentation on the component parts of the system -
 
 * [API module](https://github.com/dadiplus/serama/blob/master/docs/api.md)
 * [Authorisation middleware](https://github.com/dadiplus/serama/blob/master/docs/auth.md)
@@ -212,7 +212,7 @@ Core contributors -
 
 ### Roadmap
 
-We will capture planned updates and additions here. If you have anythign to contribute in terms of furutre direction, please add as an enhancement request within [issues](https://github.com/dadiplus/serama/issues).
+We will capture planned updates and additions here. If you have anything to contribute in terms of future direction, please add as an enhancement request within [issues](https://github.com/dadiplus/serama/issues).
 
 ### Versioning
 

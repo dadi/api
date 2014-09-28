@@ -28,6 +28,7 @@ module.exports.get = function (req, res, next) {
                     if (err) return next(err);
 
                     var book = books[0];
+
                     // attach the author data to the book, unless its not found
                     book.authorId = users.length ? users[0] : null;
 

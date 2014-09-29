@@ -209,6 +209,8 @@ Core contributors -
 * Joe Warner
 * Viktor Fero
 * James Lambie
+* Dave Allen
+* Niklas Iversen
 
 ### Roadmap
 

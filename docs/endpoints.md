@@ -2,7 +2,7 @@
 
 # Endpoints
 
-Endpoints in Sermama can be either be mapped directly to collections in MongoDB or custom based on a wider requirements set.
+Endpoints in Serama can be either be mapped directly to collections in MongoDB or custom based on a wider requirements set.
 
 ## Collections
 

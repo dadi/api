@@ -28,7 +28,7 @@ Completely separating your front end and back end codebases helps to simplify fu
 
 ### 3. Reduction of Language Barriers
 
-Your API should be a reflection of your business logic. Separating it our gives you the capability of expanding into different channels and in support of different devices while utilising the same backend.
+Your API should be a reflection of your business logic. Separating it out gives you the capability of expanding into different channels and in support of different devices while utilising the same backend.
 
 Your API acts as a universal language, which any of your clients can interact with. Even as you expand, every team will be speaking and understanding the same language. The expectations are always the same: same successes, same errors. Better yet, everybody knows JSON and almost everyone is up to speed with REST, so the API is globally understood.
 

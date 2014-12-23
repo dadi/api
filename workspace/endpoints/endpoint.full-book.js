@@ -12,9 +12,10 @@ module.exports.get = function (req, res, next) {
     var query = url.parse(req.url, true).query;
     var bookid = query && query.bookid;
     var bookQuery = bookid && {_id: bookid};
-    books.castToBSON(bookQuery);
 
     if (bookQuery) {
+
+        books.castToBSON(bookQuery);
 
         // TODO: use an async lib to avoid nesting callbacks
         return books.find(bookQuery, function (err, books) {

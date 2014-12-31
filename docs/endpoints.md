@@ -74,7 +74,7 @@ Each field is defined in the following way:
             "comments": "The title of the entry",
             "limit": "",
             "placement": "Main content",
-            "validation_rule": "",
+            "validationRule": "",
             "required": false,
             "message": "",
             "display": { 
@@ -91,7 +91,7 @@ label | The label for the field | | ```"Title"```
 comments | The description of the field | | ```"The article title"```
 limit | Length limit for the field | unlimited | ```"20"```
 placement | Determines where to display the field in the backend interface (planned functionality) | | ```"Main content"```
-validation_rule | Regex validation rule. Field is be validated against this | | ```[A-Z]*```
+validationRule | Regex validation rule. Field is be validated against this | | ```[A-Z]*```
 required | Defines if field is required. Field is be validated against this | ```false``` | ```true```
 message | The message to return if field validation fails. | ```"is invalid"``` | ```"must contain uppercase letters only"```
 display | Determines in which view states the field should be visible within the backend interface (planned functionality) | | ```{ "index": true, "edit": false } ```

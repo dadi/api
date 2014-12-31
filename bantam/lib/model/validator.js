@@ -29,6 +29,7 @@ Validator.prototype.schema = function (obj) {
         success: true,
         errors: []
     };
+
     var schema = this.model.schema;
 
     // check that all required fields are present
@@ -78,7 +79,7 @@ function _validate(field, schema) {
     if (len && field.length > len) return schema.message || 'is too long';
 
     // check validation regex
-    if (schema.validation_rule && !(new RegExp(schema.validation_rule)).test(field)) return schema.message || 'is invalid';
+    if (schema.validationRule && !(new RegExp(schema.validationRule)).test(field)) return schema.message || 'is invalid';
 
     // check constructor of field against primitive types and check the type of field == the specified type
     // using constructor.name as array === object in typeof comparisons

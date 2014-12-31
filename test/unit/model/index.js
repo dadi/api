@@ -179,6 +179,43 @@ describe('Model', function () {
         });
     });
 
+    describe('`revisions` method', function () {
+        it('should be added to model', function (done) {
+            model('testModelName', help.getModelSchema()).revisions.should.be.Function;
+            done();
+        });
+
+        it('should accept id param and return history collection', function (done) {
+            var conn = connection();
+            var mod = model('testModelName', help.getModelSchema(), conn, { storeRevisions : true })
+            
+            mod.create({fieldName: 'foo'}, function (err, result) {
+                if (err) return done(err);
+
+                mod.find({fieldName: 'foo'}, function (err, doc) {
+                    if (err) return done(err);
+
+                    var doc_id = doc[0]._id;
+                    var revision_id = doc[0].history[0]; // expected history object
+
+                    model('testModelName', help.getModelSchema()).revisions(doc_id, function (err, result) {
+                        if (err) return done(err);
+
+                        result.should.be.Array;
+
+                        if (result[0]) {
+                            result[0]._id.toString().should.equal(revision_id.toString());
+                        }
+
+                    });
+
+                    done();
+                });
+
+            });
+        });
+    });
+
     describe('`create` method', function () {
         beforeEach(help.cleanUpDB);
 

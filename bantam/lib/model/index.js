@@ -150,6 +150,36 @@ Model.prototype.find = function (query, options, done) {
     });
 };
 
+Model.prototype.revisions = function (id, done) {
+
+    var self = this;
+    var _done = function (database) {
+        database.collection(self.name).findOne({"_id":id}, {}, function (err, doc) {
+            if (err) return done(err);
+
+            if (self.history) {
+
+                database.collection(self.revisionCollection).find( { _id : { "$in" : doc.history } }, {}, function (err, cursor) {
+                    if (err) return done(err);
+
+                    // pass back the full results array
+                    cursor.toArray(done);
+                });
+            }
+
+            done(null, []);
+
+        });
+    }
+
+    if (this.connection.db) return _done(this.connection.db);
+
+    // if the db is not connected queue the find
+    this.connection.once('connect', function (database) {
+        _done(database);
+    });
+};
+
 /**
  * Log string to file system
  *

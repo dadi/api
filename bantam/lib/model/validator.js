@@ -49,9 +49,10 @@ Validator.prototype.schema = function (obj) {
 
 function _parseDocument(obj, schema, response) {
 
+
     for (var key in obj) {
         if (typeof obj[key] === 'object' && obj[key] !== null && !util.isArray(obj[key])) {
-            _parseDocument(obj[key], schema[key], response);
+            _parseDocument(obj[key], schema, response);
         }
         else {
             if (!schema[key]) {
@@ -81,9 +82,12 @@ function _validate(field, schema) {
     // check validation regex
     if (schema.validationRule && !(new RegExp(schema.validationRule)).test(field)) return schema.message || 'is invalid';
 
-    // check constructor of field against primitive types and check the type of field == the specified type
-    // using constructor.name as array === object in typeof comparisons
-    if(~primitives.indexOf(field.constructor.name) && schema.type !== field.constructor.name) return schema.message || 'is wrong type';
+    // allow 'Mixed' fields through
+    if(schema.type !== 'Mixed') {
+        // check constructor of field against primitive types and check the type of field == the specified type
+        // using constructor.name as array === object in typeof comparisons
+        if(~primitives.indexOf(field.constructor.name) && schema.type !== field.constructor.name) return schema.message || 'is wrong type';
+    }
 
     // validation passes
     return;

@@ -14,37 +14,23 @@ History.prototype.create = function (obj, model, done) {
     // create copy of original  
     var revisionObj = _.clone(obj);
     revisionObj._id = new ObjectID();
-
-    logger.debug('creating history...');
-    //JSON.stringify(revisionObj));
     
     var _done = function (database) {
         database.collection(model.revisionCollection).insert(revisionObj, function(err, doc) {
             
             if (err) return err;
 
-            logger.debug(obj._id);
-            logger.debug(revisionObj._id);
-
-            database.collection(model.name).findAndModify(
-                    { _id : obj._id }, 
-                    [['_id', 'asc']],
-                    { $push : { "history" : revisionObj._id } }, 
-                    { new : true }, 
-                    function(err, doc) {
-                        if (err) {
-                            return done(err, null);
-                        }
-                        else {
-                            logger.debug('pushed id to array...' + JSON.stringify(doc));
-                            logger.debug('created history');
-                        }
-
-                        return done(null, doc);
-                    });
-
-            //done();
-        });
+            database.collection(model.name).findAndModify (
+                    
+                { _id : obj._id }, 
+                [ ['_id', 'asc']],
+                { $push : { "history" : revisionObj._id } }, 
+                { new : true }, 
+                function(err, doc) {
+                    if (err) return done(err, null);
+                    return done(null, doc);
+                });
+            });
     };
 
     if (model.connection.db) return _done(model.connection.db);

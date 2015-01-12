@@ -9,14 +9,13 @@ var app = require(__dirname + '/../../bantam/lib/');
 var bearerToken;
 var connectionString = 'http://' + config.server.host + ':' + config.server.port;
 
-describe('middleware extension', function () {
+describe('middleware extension', function (done) {
     before(function (done) {
         app.start({
             endpointPath: __dirname + '/workspace/endpoints',
             collectionPath: __dirname + '/workspace/collections'
         }, function (err) {
             if (err) return done(err);
-
             help.dropDatabase(function (err) {
                 if (err) return done(err);
 
@@ -28,6 +27,7 @@ describe('middleware extension', function () {
                     done();
                 });
             });
+
         });
     });
 

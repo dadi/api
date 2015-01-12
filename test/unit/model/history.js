@@ -40,25 +40,31 @@ describe('History', function () {
             done();
         });
 
-        it('should save model to database', function (done) {
+        it('should save model to history', function (done) {
             var conn = connection();
             var mod = model('testModelName', help.getModelSchema(), conn, { storeRevisions : true });
-            
-            should.exist(mod.revisionCollection);
 
-            mod.history.create(mod, mod, function (err, res) {
+            mod.create({fieldName: 'foo'}, function (err, result) {
                 if (err) return done(err);
 
+                // find the obj we just created
                 mod.find({fieldName: 'foo'}, function (err, doc) {
                     if (err) return done(err);
 
-                    should.exist(doc);
-                    doc[0].history.length.should.equal(2);
-                    done();
+                    mod.history.create(doc[0], mod, function (err, res) {
+                        if (err) return done(err);
+
+                        mod.find({fieldName: 'foo'}, function (err, doc) {
+                            if (err) return done(err);
+
+                            should.exist(doc);
+                            doc[0].history.length.should.equal(2);
+                            done();
+                        });
+                    });
                 });
             });
         });
-
     });
 
     describe('`createEach` method', function () {
@@ -70,35 +76,36 @@ describe('History', function () {
             done();
         });
 
-    });
+        it('should save all models to history', function (done) {
+            var conn = connection();
+            var mod = model('testModelName', help.getModelSchema(), conn, { storeRevisions : true });
 
-    describe('`create` method', function () {
-
-        it('should save model to history collection', function (done) {
-            var mod = null;//model('testModelName', help.getModelSchema());
-            mod.create({fieldName: 'foo'}, function (err) {
+            mod.create({fieldName: 'foo-1'}, function (err, result) {
                 if (err) return done(err);
-
-                mod.find({fieldName: 'foo'}, function (err, doc) {
+                mod.create({fieldName: 'foo-2'}, function (err, result) {
                     if (err) return done(err);
+                    // find the objs we just created
+                    mod.find({}, function (err, docs) {
+                        if (err) return done(err);
 
-                    should.exist(doc);
-                    doc[0].history.should.be.Array;
-                    doc[0].history.length.should.equal(1);
-                    done();
+                        mod.history.createEach(docs, mod, function (err, res) {
+                            if (err) return done(err);
+
+                            mod.find({}, function (err, docs) {
+                                if (err) return done(err);
+
+                                docs[0].history.length.should.equal(2);
+                                docs[1].history.length.should.equal(2);
+                                done();
+                            });
+                        });
+                    });
                 });
+
             });
+            
         });
 
-        it('should pass error to callback if validation fails', function (done) {
-            var schema = help.getModelSchema();
-            _.extend(schema.fieldName, {limit: 5});
-            var mod = null;//model('testModelName', schema);
-            mod.create({fieldName: '123456'}, function (err) {
-                should.exist(err);
-                done();
-            });
-        });
     });
 
 });

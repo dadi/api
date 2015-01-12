@@ -180,6 +180,7 @@ describe('Model', function () {
     });
 
     describe('`revisions` method', function () {
+        
         it('should be added to model', function (done) {
             model('testModelName', help.getModelSchema()).revisions.should.be.Function;
             done();

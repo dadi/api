@@ -27,7 +27,8 @@ module.exports.generate = function (req, res, next) {
 
                     var tok = {
                         accessToken: token,
-                        tokenType: 'Bearer'
+                        tokenType: 'Bearer',
+                        expiresIn: config.auth.tokenTtl
                     };
 
                     var json = JSON.stringify(tok);

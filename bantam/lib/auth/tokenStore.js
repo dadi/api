@@ -18,7 +18,19 @@ Store.prototype.get = function(token, done) {
 
     if (this.connection.db) return _done(this.connection.db);
 
-    // if the db is not connected queue the insert
+    // If the db is not connected queue the insert
+    this.connection.once('connect', _done);
+};
+
+Store.prototype.expire = function(done) {
+    var self = this;
+    var _done = function (database) {
+        database.collection(storeCollectionName).ensureIndex({'created': 1}, {expireAfterSeconds: config.auth.tokenTtl}, done);
+    };
+
+    if (this.connection.db) return _done(this.connection.db);
+
+    // If the db is not connected queue the index check
     this.connection.once('connect', _done);
 };
 
@@ -34,7 +46,7 @@ Store.prototype.set = function(token, value, done) {
 
     if (this.connection.db) return _done(this.connection.db);
 
-    // if the db is not connected queue the insert
+    // If the db is not connected queue the insert
     this.connection.once('connect', _done);
 };
 

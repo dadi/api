@@ -8,7 +8,7 @@ var clientCollectionName = config.auth.database.clientCollection || 'clientStore
 
 module.exports.generate = function (req, res, next) {
 
-    // look up the creds in clientStore
+    // Look up the creds in clientStore
     var _done = function (database) {
         database.collection(clientCollectionName).findOne({
             clientId: req.body.clientId,
@@ -18,10 +18,13 @@ module.exports.generate = function (req, res, next) {
 
             if (client) {
 
-                // generate token
+                // Generate token
                 var token = uuid.v4();
 
-                // save token
+                // Ensure we have a TTL for token documents
+                tokenStore.expire(function (err) {});
+
+                // Save token
                 return tokenStore.set(token, client, function (err) {
                     if (err) return next(err);
 

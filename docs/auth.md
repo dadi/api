@@ -29,4 +29,4 @@ A script that creates a client - `testClient / superSecret` - for QA testing can
 
 Token expiration is specified in seconds at `config.auth.tokenTtl`.
 
-The removal of expired tokens within MongoDB is handled via a ttl index - [expireAfterSeconds](http://docs.mongodb.org/manual/tutorial/expire-data/) - on the tokens collection.
+The removal of expired tokens within MongoDB is handled via a ttl index - [expireAfterSeconds](http://docs.mongodb.org/manual/tutorial/expire-data/) - on the tokenStore collection.

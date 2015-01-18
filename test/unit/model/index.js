@@ -59,6 +59,41 @@ describe('Model', function () {
             done();
         });
 
+        it('should attach history collection by default if not specified and `storeRevisions` is not false', function (done) {
+            var conn = connection();
+            var mod = model('testModelName', help.getModelSchema(), conn)
+            should.exist(mod.settings);
+            mod.revisionCollection.should.equal('testModelNameHistory');
+
+            done();
+        });
+
+        it('should attach history collection if specified', function (done) {
+            var conn = connection();
+            var mod = model('testModelName', help.getModelSchema(), conn, { revisionCollection : 'modelHistory' })
+            mod.revisionCollection.should.equal('modelHistory');
+
+            done();
+        });
+
+        it('should attach history collection if `storeRevisions` is true', function (done) {
+            var conn = connection();
+            var mod = model('testModelName', help.getModelSchema(), conn, { storeRevisions : true });
+            should.exist(mod.revisionCollection);
+            mod.revisionCollection.should.equal('testModelNameHistory');
+            
+            done();
+        });
+
+        it('should attach specified history collection if `storeRevisions` is true', function (done) {
+            var conn = connection();
+            var mod = model('testModelName', help.getModelSchema(), conn, { storeRevisions : true, revisionCollection : 'modelHistory' });
+            should.exist(mod.revisionCollection);
+            mod.revisionCollection.should.equal('modelHistory');
+            
+            done();
+        });
+
         it('should attach `type` definition to model', function (done) {
             var val = 'test type';
 
@@ -144,6 +179,44 @@ describe('Model', function () {
         });
     });
 
+    describe('`revisions` method', function () {
+        
+        it('should be added to model', function (done) {
+            model('testModelName', help.getModelSchema()).revisions.should.be.Function;
+            done();
+        });
+
+        it('should accept id param and return history collection', function (done) {
+            var conn = connection();
+            var mod = model('testModelName', help.getModelSchema(), conn, { storeRevisions : true })
+            
+            mod.create({fieldName: 'foo'}, function (err, result) {
+                if (err) return done(err);
+
+                mod.find({fieldName: 'foo'}, function (err, doc) {
+                    if (err) return done(err);
+
+                    var doc_id = doc[0]._id;
+                    var revision_id = doc[0].history[0]; // expected history object
+
+                    model('testModelName', help.getModelSchema()).revisions(doc_id, function (err, result) {
+                        if (err) return done(err);
+
+                        result.should.be.Array;
+
+                        if (result[0]) {
+                            result[0]._id.toString().should.equal(revision_id.toString());
+                        }
+
+                    });
+
+                    done();
+                });
+
+            });
+        });
+    });
+
     describe('`create` method', function () {
         beforeEach(help.cleanUpDB);
 
@@ -167,6 +240,22 @@ describe('Model', function () {
 
                     should.exist(doc);
                     doc[0].fieldName.should.equal('foo');
+                    done();
+                });
+            });
+        });
+
+        it('should save model to history collection', function (done) {
+            var mod = model('testModelName', help.getModelSchema());
+            mod.create({fieldName: 'foo'}, function (err) {
+                if (err) return done(err);
+
+                mod.find({fieldName: 'foo'}, function (err, doc) {
+                    if (err) return done(err);
+
+                    should.exist(doc);
+                    doc[0].history.should.be.Array;
+                    doc[0].history.length.should.equal(1);
                     done();
                 });
             });
@@ -227,6 +316,31 @@ describe('Model', function () {
 
                     should.exist(result && result[0]);
                     result[0].fieldName.should.equal('bar');
+                    done();
+                })
+            });
+        });
+
+        it('should create new history revision when updating an existing document and `storeRevisions` is true', function (done) {
+            var conn = connection();
+            var mod = model('testModelName', help.getModelSchema(), conn, { storeRevisions : true })
+            var updateDoc = {fieldName: 'bar'};
+
+            mod.update({fieldName: 'foo'}, updateDoc, function (err, result) {
+                if (err) return done(err);
+
+                result.should.equal(updateDoc);
+
+                // make sure document was updated
+                mod.find({fieldName: 'bar'}, function (err, result) {
+                    if (err) return done(err);
+
+                    should.exist(result && result[0]);
+                    result[0].fieldName.should.equal('bar');
+
+                    should.exist(result[0].history);
+                    result[0].history.length.should.equal(2); // two revisions, one from initial create and one from the update
+
                     done();
                 })
             });

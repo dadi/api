@@ -282,7 +282,7 @@ Server.prototype.addCollectionResource = function (options) {
 
     // With each schema we create a model.
     // With each model we create a controller, that acts as a component of the REST api.
-    // We then add the componenet to the api by adding a route to the app and mapping
+    // We then add the component to the api by adding a route to the app and mapping
     // `req.method` to component methods
     var mod = model(options.name, schema.fields, null, schema.settings);
     var control = controller(mod);

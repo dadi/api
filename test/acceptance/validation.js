@@ -129,8 +129,12 @@ describe('validation', function () {
                             client
                             .post('/vtest/testdb/test-validation-schema')
                             .set('Authorization', 'Bearer ' + bearerToken)
-                            .send({fieldMixed: { foo: new Date() }})
-                            .expect(200, done);
+                            .send({fieldMixed: { foo: new Date() }})  // foo must be included in the schema document to be validated
+                            .expect(200)
+                            .end(function (err, res) {
+                                if (err) return done(err);
+                                done();
+                            });
                         });
                     });
                 });

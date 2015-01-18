@@ -1,6 +1,7 @@
 var connection = require(__dirname + '/connection');
 var config = require(__dirname + '/../../../config').database;
 var Validator = require(__dirname + '/validator');
+var History = require(__dirname + '/history');
 var ObjectID = require('mongodb').ObjectID;
 var _ = require('underscore');
 
@@ -46,6 +47,16 @@ var Model = function (name, schema, conn, settings) {
 
     // setup validation context
     this.validate = new Validator(this);
+
+    // setup history context unless requested not to
+    this.storeRevisions = (this.settings.storeRevisions != false);
+
+    if (this.storeRevisions) {
+        this.history = new History(this);
+        // attach revision collection for this model.
+        // if no value is specified, use 'History' suffix by default
+        this.revisionCollection = (this.settings.revisionCollection ? this.settings.revisionCollection : this.name + 'History');
+    }
 };
 
 /**
@@ -77,7 +88,19 @@ Model.prototype.create = function (obj, internals, done) {
 
     var self = this;
     var _done = function (database) {
-        database.collection(self.name).insert(obj, done);
+        database.collection(self.name).insert(obj, function(err, doc) {
+            if (err) return done(err);
+
+            if (self.history) {
+                self.history.create(obj, self, function(err, res) {
+                    if (err) return done(err);
+                    done(null, doc);
+                });
+            }
+            else {
+                done(null, doc);
+            }
+        });
     };
 
     if (this.connection.db) return _done(this.connection.db);
@@ -116,6 +139,36 @@ Model.prototype.find = function (query, options, done) {
 
             // pass back the full results array
             cursor.toArray(done);
+        });
+    }
+
+    if (this.connection.db) return _done(this.connection.db);
+
+    // if the db is not connected queue the find
+    this.connection.once('connect', function (database) {
+        _done(database);
+    });
+};
+
+Model.prototype.revisions = function (id, done) {
+
+    var self = this;
+    var _done = function (database) {
+        database.collection(self.name).findOne({"_id":id}, {}, function (err, doc) {
+            if (err) return done(err);
+
+            if (self.history) {
+
+                database.collection(self.revisionCollection).find( { _id : { "$in" : doc.history } }, {}, function (err, cursor) {
+                    if (err) return done(err);
+
+                    // pass back the full results array
+                    cursor.toArray(done);
+                });
+            }
+
+            done(null, []);
+
         });
     }
 
@@ -169,6 +222,15 @@ Model.prototype.update = function (query, update, internals, done) {
 
     var self = this;
     var _update = function (database) {
+
+        // get a reference to the documents 
+        // that will be updated
+        var updatedDocs = [];
+        self.find(query, {}, function(err, docs) {
+            if (err) return done(err);
+            updatedDocs = docs;
+        });
+
         database.collection(self.name).update(query, setUpdate, function (err, numAffected) {
             if (err) return done(err);
             if (!numAffected) {
@@ -179,7 +241,18 @@ Model.prototype.update = function (query, update, internals, done) {
 
             // query and doc `_id` should be equal
             query._id && (update._id = query._id);
-            done(null, update);
+
+            // for each of the updated documents, create
+            // a history revision for it
+            if (self.history && updatedDocs.length > 0) {
+                self.history.createEach(updatedDocs, self, function(err, docs) {
+                    if (err) return done(err);
+                    done(null, update);
+                });
+            }
+            else {
+                done(null, update);
+            }
         });
     };
 

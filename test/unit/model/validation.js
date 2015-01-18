@@ -58,7 +58,7 @@ describe('Model validator', function () {
                             required: true
                         },
                         field2: {
-                            type: 'Mixed',
+                            type: 'Number',
                             required: false
                         }
                     }

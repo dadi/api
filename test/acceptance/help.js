@@ -25,7 +25,12 @@ module.exports.createDoc = function (token, done) {
 // helper function to cleanup the `serama` db
 module.exports.dropDatabase = function (done) {
     connection().on('connect', function (db) {
-        db.dropDatabase(done);
+
+        db.dropDatabase(function (err) {
+            if (err) return done(err);
+            
+            db.close(true, done);
+        });
     });
 };
 

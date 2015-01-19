@@ -261,6 +261,9 @@ Server.prototype.updateDatabases = function (databasesPath) {
 };
 
 Server.prototype.updateCollections = function (collectionsPath) {
+    
+    if (!fs.existsSync(collectionsPath)) return;
+
     var self = this;
     var collections = fs.readdirSync(collectionsPath);
 

@@ -23,7 +23,7 @@ This guide assumes a single server holding both the database and the API.
 
 1. `sudo apt-get install mongodb`
 
-_For Serama's tests to run you will need stand alone 'mongod's running at localhost:27017 and localhost:27018_
+For Serama's tests to run you will need stand alone mongods running at localhost:27017 and localhost:27018. To do this you need to define a new mongod on 27108 -
 
 1. `sudo mkdir data`
 2. `sudo mkdir data/db1`
@@ -32,35 +32,35 @@ _For Serama's tests to run you will need stand alone 'mongod's running at localh
 
 ### Serama
 
-_Install GCC to provide the latest build of the c++ bson extension (not required, but improves performance)_
+Install GCC to provide the latest build of the c++ bson extension (not required, but improves performance) -
 
 `sudo apt-get install gcc make build-essential`
 
-_Install Git and pull down the latest stable build of Serama_
+Install Git and pull down the latest stable build of Serama -
 
 1. `sudo apt-get install git`
 2. `sudo git clone https://github.com/dadiplus/serama.git`
 3. `cd serama/`
 
-_You will need to create Serama's log and cache directories_
+You will need to create Serama's log and cache directories -
 
-1. `sudo mkdir log`
-2. `sudo mkdir cache`
-3. `sudo mkdir cache/serama`
+1. `[sudo] mkdir log`
+2. `[sudo] mkdir cache`
+3. `[sudo] mkdir cache/serama`
 
-_Install Serama_
+Install Serama -
 
-`sudo npm install`
+`[sudo] npm install`
 
-_Perform Serama's tests_
+Perform Serama's tests -
 
-`sudo npm test`
+`[sudo] npm test`
 
-_In order to get up and running you will also need to create a client document in the db. To automate this do_
+In order to get up and running you will also need to create a client document in the db. To automate this do -
 
-`node utils/create-client.js`
+`[node] utils/create-client.js`
 
-_Start Serama_
+Start Serama -
 
 `[sudo] npm start`
 

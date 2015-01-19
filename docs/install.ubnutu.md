@@ -4,7 +4,7 @@
 
 ## Overview
 
-This document provides a simple step by step guide to installation on Ubuntu 14.04.1 LTS.
+This document provides a simple step by step guide to installation on Ubuntu [14.04.1 LTS](http://releases.ubuntu.com/14.04.1/).
 
 This guide assumes a single server holding both the database and the API.
 

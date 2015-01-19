@@ -51,38 +51,38 @@ For example:
 
 `db.testModelName.find()`
 
-```
-/* Main document stored in the model's collection, with revisions referenced in the history array */
-{
-	"_id" : ObjectId("548efd7687fd8b50f3dca6e5"),
-	"fieldName" : "bar",
-	"history" : [
-		ObjectId("548efd7687fd8b50f3dca6e6"),
-		ObjectId("548efd7687fd8b50f3dca6e7")
-	]
-}
-```
+	/* Main document stored in the model's collection, with revisions referenced in the
+	history array */
+	
+	{
+		"_id" : ObjectId("548efd7687fd8b50f3dca6e5"),
+		"fieldName" : "bar",
+		"history" : [
+			ObjectId("548efd7687fd8b50f3dca6e6"),
+			ObjectId("548efd7687fd8b50f3dca6e7")
+		]
+	}
 
 `db.testModelNameHistory.find()`
 
-```
-/* Two revision documents stored in the model's revision collection, one created at the same time as the original document was created, the second created after an update operation to change the value of `fieldName` */
+	/* Two revision documents stored in the model's revision collection, one created at
+	the same time as the original document was created, the second created after an
+	update operation to change the value of `fieldName` */
+	
+	{ 
+		"_id" : ObjectId("548efd7687fd8b50f3dca6e6"),
+		"fieldName" : "foo"
+	}
+	
+	{
+		"_id" : ObjectId("548efd7687fd8b50f3dca6e7"),
+		"fieldName" : "foo",
+		"history" : [
+			ObjectId("548efd7687fd8b50f3dca6e6")
+		]
+	}
 
-{ 
-	"_id" : ObjectId("548efd7687fd8b50f3dca6e6"),
-	"fieldName" : "foo"
-}
-
-{
-	"_id" : ObjectId("548efd7687fd8b50f3dca6e7"),
-	"fieldName" : "foo",
-	"history" : [
-		ObjectId("548efd7687fd8b50f3dca6e6")
-	]
-}
-```
-
-**N.B.** the API does not add or update any date/time fields to indicate the order in which revision documents were created, nor does it perform any sort operations when returning a document's revision history. It is up to the API consumer to include appropriate date/time fields and perform sort operations on the returned revision collection.
+_**Note:** the API does not add or update any date/time fields to indicate the order in which revision documents were created, nor does it perform any sort operations when returning a document's revision history. It is up to the API consumer to include appropriate date/time fields and perform sort operations on the returned revision collection_
 
 ## Example Usage
 

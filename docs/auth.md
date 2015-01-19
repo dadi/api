@@ -23,8 +23,10 @@ Example -
 
 All requests, aside from requesting a token, require that a token be present.
 
-The storage of client credentials and tokens is specified in `config.auth.database`. A script that creates a client for QA testing can be found in `utils/create-client.js`.
+The storage of client credentials and tokens is specified in `config.auth.database`. 
 
-Token expiration is specified in seconds at `config.auth.token_ttl`.
+A script that creates a client - `testClient / superSecret` - for QA testing can be found in `utils/create-client.js`.
 
-**Important:** For deployment a ttl index should be created in MongoDB that corresponds to the maximum ttl you would expect to have for a token. This will be the only mechanism to remove expired tokens. 
+Token expiration is specified in seconds at `config.auth.tokenTtl`.
+
+The removal of expired tokens within MongoDB is handled via a ttl index - [expireAfterSeconds](http://docs.mongodb.org/manual/tutorial/expire-data/) - on the tokenStore collection.

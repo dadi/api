@@ -1,6 +1,6 @@
 ![Serama](serama.png)
 
-![Build Status](http://img.shields.io/badge/release-0.1.3_beta-green.svg?style=flat-square)&nbsp;[![License](http://img.shields.io/:license-mit-blue.svg?style=flat-square)](http://dadi.mit-license.org)
+![Build Status](http://img.shields.io/badge/release-0.1.4_beta-green.svg?style=flat-square)&nbsp;[![License](http://img.shields.io/:license-mit-blue.svg?style=flat-square)](http://dadi.mit-license.org)
 
 ## Overview
 
@@ -10,7 +10,7 @@ You can consider Serama as the data layer within a platform (including the data 
 
 Calls to a Serama API can contain your business/domain logic (the part of a platform that encodes the real-world business rules that determine how data is created, displayed, stored and changed). It has full support for searching, filtering, limiting, sorting, offsetting and input validation.
 
-It has built in support for oAuth2, can connect to multiple databases out of the box, supports static endpoints, has a caching layer and can be run in a clustered configuration.
+It has built in support for oAuth2, can connect to multiple databases out of the box, provides native document versioning at collection level, supports static endpoints, has a caching layer and can be run in a clustered configuration.
 
 Serama provides a starting point that's further advanced than a framework. It allows you to get a complete data layer up and running in minutes.
 
@@ -23,6 +23,8 @@ It is part of Bantam, a suite of components covering the full development stack,
 
 ## Setup and installation
 
+`[sudo] git clone https://github.com/dadiplus/serama.git`
+
 `cd serama`
 
 `[sudo] npm install`
@@ -31,9 +33,9 @@ It is part of Bantam, a suite of components covering the full development stack,
 
 `[sudo] npm start`
 
-_Note: for tests to run you will need stand alone `mongod`s running at localhost:27017 and localhost:27018_
+_Note: for tests to run you will need stand alone 'mongod's running at localhost:27017 and localhost:27018_
 
-In order to get up and running you will also need to create a client document in the db.  To automate this do -
+In order to get up and running you will also need to create a client document in the db. To automate this do -
 
 `node utils/create-client.js`
 
@@ -44,6 +46,16 @@ Pro tip: to background Serama, install [Forever](https://github.com/nodejitsu/fo
 You can then start Serama using -
 
 `[sudo] forever start bantam/main.js`
+
+### Troubleshooting
+
+#### Ubuntu 14.04.1 LTS
+
+	/usr/bin/env: node: No such file or directory
+
+The nodejs binary has been renamed from node to nodejs. You'll need to symlink /usr/bin/node to /usr/bin/nodejs -
+
+`sudo ln -s /usr/bin/nodejs /usr/bin/node`
 
 ## Rest API specification
 
@@ -215,6 +227,11 @@ Core contributors -
 ### Roadmap
 
 We will capture planned updates and additions here. If you have anything to contribute in terms of future direction, please add as an enhancement request within [issues](https://github.com/dadiplus/serama/issues).
+
+Planned additions -
+
+* Auto documentator
+* Collection level ACL
 
 ### Versioning
 

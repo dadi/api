@@ -177,7 +177,7 @@ Server.prototype.loadConfigApi = function () {
 
             try {
                 
-                fs.writeFile(schemaPath, schemaString);
+                fs.writeFileSync(schemaPath, schemaString);
 
                 res.statusCode = 200;
                 res.setHeader('content-type', 'application/json');

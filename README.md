@@ -47,15 +47,9 @@ You can then start Serama using -
 
 `[sudo] forever start bantam/main.js`
 
-### Troubleshooting
+### Additional reading
 
-#### Ubuntu 14.04.1 LTS
-
-	/usr/bin/env: node: No such file or directory
-
-The nodejs binary has been renamed from node to nodejs. You'll need to symlink /usr/bin/node to /usr/bin/nodejs -
-
-`sudo ln -s /usr/bin/nodejs /usr/bin/node`
+You can see a complete installation guide for Serama udner Ubuntu [here](https://github.com/dadiplus/serama/blob/master/docs/install.ubnutu.md).
 
 ## Rest API specification
 

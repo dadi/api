@@ -19,7 +19,7 @@ This guide assumes a single server holding both the database and the API.
 5. `sudo apt-get update`
 6. `sudo apt-get install nodejs`
 
-### Mongodb
+### MongoDB
 
 1. `sudo apt-get install mongodb`
 

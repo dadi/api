@@ -10,7 +10,7 @@ var cache = require(__dirname + '/cache')();
 var monitor = require(__dirname + '/monitor');
 var logger = require(__dirname + '/log');
 var help = require(__dirname + '/help');
-var doc = require(__dirname + '/api/doc');
+//var doc = require(__dirname + '/api/doc');
 
 var configPath = path.resolve(__dirname + '/../../config.json');
 var config = require(configPath);
@@ -120,7 +120,7 @@ Server.prototype.loadApi = function (options) {
     });
 
     // load API auto-documenting middleware
-    this.app.use('/docs', doc(this));
+    //this.app.use('/docs', doc(this));
 };
 
 Server.prototype.loadConfigApi = function () {

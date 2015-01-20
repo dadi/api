@@ -1,10 +1,10 @@
 {
     "fields": {
-        "name": {
+        "make": {
             "type": "String",
-            "label": "name",
-            "example": "War and Peace",
-            "comments": "This is the book's name",
+            "label": "Make",
+            "example": "Ford",
+            "comments": "This is the car's manufacturer",
             "limit": "",
             "placement": "Main content",
             "validationRule": "",
@@ -15,15 +15,30 @@
                 "edit": true
             }
         },
-        "authorId": {
+        "model": {
             "type": "String",
-            "label": "author",
-            "example": "b8b285ae-53d1-47a5-9e69-ec042cfff580",
-            "comments": "This is the _id of the book's author",
+            "label": "Model",
+            "example": "Fiesta",
+            "comments": "This is the car's model name",
             "limit": "",
             "placement": "Main content",
-            "validationRule": "^[0-9a-fA-F]{24}$",
+            "validationRule": "",
             "required": true,
+            "message": "",
+            "display": { 
+                "index": true,
+                "edit": true
+            }
+        },
+        "edition": {
+            "type": "String",
+            "label": "Edition",
+            "example": "5 door SE",
+            "comments": "This is the edition of the car",
+            "limit": "",
+            "placement": "Main content",
+            "validationRule": "",
+            "required": false,
             "message": "",
             "display": { 
                 "index": true,
@@ -39,7 +54,6 @@
         "fieldLimiters": null,
         "allowExtension": false,
         "count": 40,
-        "sortOrder": 1,
-        "description": "Allows for a [Markdown](http://daringfireball.net/projects/markdown/syntax) **formatted** description to explain the purpose of this **model**."
+        "sortOrder": 1
     }
 }

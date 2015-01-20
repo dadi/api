@@ -11,7 +11,10 @@ module.exports = function (app) {
         // Let requests for tokens through
         if (req.url === tokenRoute) return next();
 
-        // Require an authorization header for every request
+        // let requests for API documentation through        
+        if (req.url.indexOf("apidoc") > 0) return next();
+
+        // require an authorization header for every request
         if (!(req.headers && req.headers.authorization)) return fail();
 
         // Strip token value out of request headers

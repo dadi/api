@@ -41,3 +41,9 @@ module.exports.parseQuery = function (queryStr) {
     if (typeof ret !== 'object' || ret === null) ret = {};
     return ret;
 }
+
+module.exports.pad = function (width) {
+  z = ' ';
+  n = '';
+  return n.length >= width ? n : new Array(width - n.length + 1).join(z) + n;
+}

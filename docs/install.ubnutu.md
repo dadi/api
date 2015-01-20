@@ -58,7 +58,7 @@ Perform Serama's tests -
 
 In order to get up and running you will also need to create a client document in the db. To automate this do -
 
-`[node] utils/create-client.js`
+`node utils/create-client.js`
 
 Start Serama -
 

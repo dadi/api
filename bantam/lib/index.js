@@ -53,8 +53,8 @@ Server.prototype.start = function (options, done) {
         next();
     });
 
-    // configure authentication after bodyParser middleware
-    auth(app);
+    // configure authentication middleware
+    auth(self);
 
     this.loadConfigApi();
 

@@ -3,6 +3,7 @@ var request = require('supertest');
 var config = require(__dirname + '/../../config');
 var help = require(__dirname + '/help');
 var app = require(__dirname + '/../../bantam/lib/');
+var fs = require('fs');
 
 describe('Authentication', function () {
     var tokenRoute = config.auth.tokenUrl;
@@ -67,12 +68,15 @@ describe('Authentication', function () {
     });
 
     it('should not allow requests containing invalid token', function (done) {
-        var client = request('http://' + config.server.host + ':' + config.server.port);
+        
+        help.getBearerToken(function (err, token) {
+            var client = request('http://' + config.server.host + ':' + config.server.port);
 
-        client
-        .get('/vtest/testdb/test-schema')
-        .set('Authorization', 'Bearer badtokenvalue')
-        .expect(401, done);
+            client
+            .get('/vtest/testdb/test-schema')
+            .set('Authorization', 'Bearer badtokenvalue')
+            .expect(401, done);
+        });
     });
 
     it('should not allow requests with expired tokens', function (done) {
@@ -105,4 +109,42 @@ describe('Authentication', function () {
             });
         });
     });
+
+    it('should allow unauthenticated request for collection specifying authenticate = false', function (done) {
+
+        var jsSchemaString = fs.readFileSync(__dirname + '/../new-schema.json', {encoding: 'utf8'});
+
+        help.getBearerToken(function (err, token) {
+            var client = request('http://' + config.server.host + ':' + config.server.port);
+
+            // update the schema
+            var schema = JSON.parse(jsSchemaString);
+            schema.settings.authenticate = false;
+
+            client
+            .post('/vtest/testdb/test-schema/config')
+            .send(JSON.stringify(schema))
+            .set('content-type', 'text/plain')
+            .set('Authorization', 'Bearer ' + token)
+            .expect(200)
+            .expect('content-type', 'application/json')
+            .end(function (err, res) {
+                if (err) return done(err);
+
+                // Wait, then test that we can make an unauthenticated request
+                setTimeout(function () {
+                    client
+                    .get('/vtest/testdb/test-schema')
+                    .expect(200)
+                    .expect('content-type', 'application/json')
+                    .end(function(err,res) {
+                        schema.settings.authenticate = true;
+                        fs.writeFileSync(__dirname + '/workspace/collections/vtest/testdb/collection.test-schema.json', JSON.stringify(schema, null, 4));
+                        done();
+                    });
+                }, 300);
+            });
+        });
+    });
+
 });

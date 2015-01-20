@@ -956,7 +956,11 @@ describe('Application', function () {
                 request(connectionString)
                 .get('/serama/config')
                 .set('Authorization', 'Bearer e91e69b4-6563-43bd-a793-cb2af4ba62f4') // invalid token
-                .expect(401, done);
+                .expect(401)
+                .end(function (err, res) {
+                    if (err) return done(err);
+                    done();
+                })
             });
         });
 

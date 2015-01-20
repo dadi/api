@@ -24,6 +24,8 @@
         "fieldLimiters": null,
         "allowExtension": false,
         "count": 40,
-        "sortOrder": 1
+        "sortOrder": 1,
+        "storeRevisions": true,
+        "revisionCollection": "testSchemaHistory"
     }
 }

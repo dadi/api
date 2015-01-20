@@ -36,6 +36,9 @@ Server.prototype.start = function (options, done) {
     app.use(bodyParser.json());
     app.use(bodyParser.text());
 
+    // configure authentication middleware
+    auth(self);
+
     // example request logging middleware
     app.use(function (req, res, next) {
         var start = Date.now();
@@ -52,9 +55,6 @@ Server.prototype.start = function (options, done) {
         };
         next();
     });
-
-    // configure authentication middleware
-    auth(self);
 
     this.loadConfigApi();
 

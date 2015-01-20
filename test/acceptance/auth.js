@@ -5,6 +5,9 @@ var help = require(__dirname + '/help');
 var app = require(__dirname + '/../../bantam/lib/');
 var fs = require('fs');
 
+var originalSchemaPath = __dirname + '/../new-schema.json';
+var testSchemaPath = __dirname + '/workspace/collections/vtest/testdb/collection.test-schema.json';
+
 describe('Authentication', function () {
     var tokenRoute = config.auth.tokenUrl;
 
@@ -18,13 +21,22 @@ describe('Authentication', function () {
             // give it a moment for http.Server to finish starting
             setTimeout(function () {
                 done();
-            }, 200);
+            }, 500);
         });
     });
 
-    after(function (done) {
+    after(function (done) {        
         app.stop(done);
     });
+
+    afterEach(function (done) {
+        var testSchema = fs.readFileSync(originalSchemaPath, {encoding: 'utf8'});
+        testSchema = testSchema.replace('newField', 'field1');
+        fs.writeFile(testSchemaPath, testSchema, function (err) {
+          if (err) throw err;
+          done();
+        });
+    })
 
     it('should issue a bearer token', function (done) {
         var client = request('http://' + config.server.host + ':' + config.server.port);
@@ -112,13 +124,13 @@ describe('Authentication', function () {
 
     it('should allow unauthenticated request for collection specifying authenticate = false', function (done) {
 
-        var jsSchemaString = fs.readFileSync(__dirname + '/../new-schema.json', {encoding: 'utf8'});
-
         help.getBearerToken(function (err, token) {
             var client = request('http://' + config.server.host + ':' + config.server.port);
 
-            // update the schema
+            var jsSchemaString = fs.readFileSync(testSchemaPath, {encoding: 'utf8'});
             var schema = JSON.parse(jsSchemaString);
+
+            // update the schema
             schema.settings.authenticate = false;
 
             client
@@ -138,8 +150,7 @@ describe('Authentication', function () {
                     .expect(200)
                     .expect('content-type', 'application/json')
                     .end(function(err,res) {
-                        schema.settings.authenticate = true;
-                        fs.writeFileSync(__dirname + '/workspace/collections/vtest/testdb/collection.test-schema.json', JSON.stringify(schema, null, 4));
+                        if (err) return done(err);
                         done();
                     });
                 }, 300);

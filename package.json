@@ -1,6 +1,6 @@
 {
   "name": "serama",
-  "version": "0.1.3-beta",
+  "version": "0.1.4-beta",
   "dependencies": {
     "moment": "~2.8.1",
     "underscore": "~1.6.0",

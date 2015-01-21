@@ -3,11 +3,12 @@
         "name": {
             "type": "String",
             "label": "name",
+            "example": "War and Peace",
             "comments": "This is the book's name",
             "limit": "",
             "placement": "Main content",
             "validationRule": "",
-            "required": false,
+            "required": true,
             "message": "",
             "display": { 
                 "index": true,
@@ -17,6 +18,7 @@
         "authorId": {
             "type": "String",
             "label": "author",
+            "example": "b8b285ae-53d1-47a5-9e69-ec042cfff580",
             "comments": "This is the _id of the book's author",
             "limit": "",
             "placement": "Main content",
@@ -37,6 +39,7 @@
         "fieldLimiters": null,
         "allowExtension": false,
         "count": 40,
-        "sortOrder": 1
+        "sortOrder": 1,
+        "description": "Allows for a [Markdown](http://daringfireball.net/projects/markdown/syntax) **formatted** description to explain the purpose of this **model**."
     }
 }

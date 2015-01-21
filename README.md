@@ -2,6 +2,17 @@
 
 ![Build Status](http://img.shields.io/badge/release-0.1.4_beta-green.svg?style=flat-square)&nbsp;[![License](http://img.shields.io/:license-mit-blue.svg?style=flat-square)](http://dadi.mit-license.org)
 
+* [Overview](#overview)
+* [Requirements](#requirements)
+* [Setup and installation](#setup-and-installation)
+* [Rest API specification](#rest-api-specification)
+* [Authorisation](#authorisation)
+* [Working with endpoints](#working-with-endpoints)
+* [Configuration notes](#configuration-notes)
+* [Further reading](#further-reading)
+* [Development](#development)
+
+
 ## Overview
 
 Serama is built on Node.JS and MongoDB. It is a high performance RESTful API layer designed in support of [API-first development and the principle of COPE](https://github.com/dadiplus/serama/blob/master/docs/apiFirst.md).
@@ -23,27 +34,52 @@ It is part of Bantam, a suite of components covering the full development stack,
 
 ## Setup and installation
 
-`[sudo] git clone https://github.com/dadiplus/serama.git`
+`$ [sudo] git clone https://github.com/dadiplus/serama.git`
 
-`cd serama`
+`$ cd serama`
 
-`[sudo] npm install`
+### Installing dependencies
 
-`[sudo] npm test`
+To ensure your system has all the required dependencies, run the following command:
 
-`[sudo] npm start`
+`$ [sudo] npm install`
 
-_Note: for tests to run you will need stand alone 'mongod's running at localhost:27017 and localhost:27018_
 
-In order to get up and running you will also need to create a client document in the db. To automate this do -
+### Running tests
 
-`node utils/create-client.js`
+Serama uses [Mocha](http://mochajs.org/) for unit and acceptance tests. Tests can be run using the following command. _**Note**: for tests to run you will need standalone `mongod` instances running at `localhost:27017` and `localhost:27018`_
 
-Pro tip: to background Serama, install [Forever](https://github.com/nodejitsu/forever) -
+`$ [sudo] npm test`
+
+
+### Starting the server
+
+To start Serama, issue the following command. This will start the server using the configuration settings found in the `config.json` file.
+
+`$ [sudo] npm start`
+
+Before you really start using Serama you will need to create an API client, enabling you to send authenticated requests to the API. This is described in the next section.
+
+##### Creating an API client
+
+An API client is simply a document in the database representing a consumer of your data. An API client requires two fields, `clientId` and `secret`. Your first API client can be created automatically by running the following script:
+
+`$ node utils/create-client.js`
+
+This will create a new API client in the database and collection specified by Serama's `config.json` file.
+
+```
+{ clientId: 'testClient', secret: 'superSecret' } 
+```
+
+
+#### Running the server in the background 
+
+Pro tip: to run Serama in the background, install [Forever](https://github.com/nodejitsu/forever)
 
 `[sudo] npm install forever -g`
 
-You can then start Serama using -
+You can then start Serama using the following command:
 
 `[sudo] forever start bantam/main.js`
 
@@ -61,7 +97,7 @@ Serama accepts GET, POST, PUT, PATCH and DELETE requests.
 
 **GET** *http(s)://{url}/{version number}/{database name}/{collection name}*
 
-Returns a json object with all results from the *{collection name}* collection and *{database name}* database. The result set will be paginated and limited to a number of records as defined as the default view in the collection schema file in *./workspace/collections/{version number}/{database name}/collection.{collection name}.json*.
+Returns a JSON object with all results from the *{collection name}* collection and *{database name}* database. The result set will be paginated and limited to a number of records as defined as the default view in the collection schema file in *./workspace/collections/{version number}/{database name}/collection.{collection name}.json*.
 
 Default views can be overridden using parameters at the point of API request.
 
@@ -189,7 +225,7 @@ The proper name should always resolve correctly. Alternately, you can set it to 
 
 ## Further reading
 
-The `docs/` directory contains additional documentation on the component parts of the system -
+The `docs/` directory contains additional documentation on the component parts of the system:
 
 * [API module](https://github.com/dadiplus/serama/blob/master/docs/api.md)
 * [Authorisation middleware](https://github.com/dadiplus/serama/blob/master/docs/auth.md)

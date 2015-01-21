@@ -169,6 +169,15 @@ Each function will recieve three arguments -
 
 There is an example custom endpoint included in the `workspace` directory.
 
+### Authentication
+
+Serama's authentication can be bypassed for your custom endpoint by adding the following to your endpoint file:
+
+```
+module.exports.model = {} 
+module.exports.model.settings = { authenticate : false }
+```
+
 ### Example Usage
 
 See `test/acceptance/workspace/endpoints/endpoint.test-endpoint.js` for a "Hello World" example.

@@ -10,7 +10,6 @@ var cache = require(__dirname + '/cache')();
 var monitor = require(__dirname + '/monitor');
 var logger = require(__dirname + '/log');
 var help = require(__dirname + '/help');
-//var doc = require(__dirname + '/api/doc');
 
 var configPath = path.resolve(__dirname + '/../../config.json');
 var config = require(configPath);
@@ -37,6 +36,9 @@ Server.prototype.start = function (options, done) {
     app.use(bodyParser.json());
     app.use(bodyParser.text());
 
+    // configure authentication middleware
+    auth(self);
+
     // example request logging middleware
     app.use(function (req, res, next) {
         var start = Date.now();
@@ -53,9 +55,6 @@ Server.prototype.start = function (options, done) {
         };
         next();
     });
-
-    // configure authentication after bodyParser middleware
-    auth(app);
 
     this.loadConfigApi();
 
@@ -118,9 +117,6 @@ Server.prototype.loadApi = function (options) {
         }
         self.updateEndpoints(endpointPath);
     });
-
-    // load API auto-documenting middleware
-    //this.app.use('/docs', doc(this));
 };
 
 Server.prototype.loadConfigApi = function () {

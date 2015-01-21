@@ -54,7 +54,7 @@ Api.prototype.unuse = function (path) {
 }
 
 /**
- *  convience method that creates http server and attaches listener
+ *  convenience method that creates http server and attaches listener
  *  @param {Number} port
  *  @param {String} host
  *  @param {Number} backlog

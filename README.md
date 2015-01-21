@@ -67,7 +67,7 @@ An API client is simply a document in the database representing a consumer of yo
 This will create a new API client in the database and collection specified by Serama's `config.json` file.
 
 ```
-{ clientId: 'testClient', secret: 'superSecret' } 
+{ "clientId": "testClient", "secret": "superSecret" } 
 ```
 
 #### Running the server in the background 

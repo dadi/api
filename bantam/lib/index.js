@@ -6,7 +6,7 @@ var controller = require(__dirname + '/controller');
 var model = require(__dirname + '/model');
 var api = require(__dirname + '/api');
 var auth = require(__dirname + '/auth');
-var cache = require(__dirname + '/cache')();
+var cache = require(__dirname + '/cache');
 var monitor = require(__dirname + '/monitor');
 var logger = require(__dirname + '/log');
 var help = require(__dirname + '/help');
@@ -59,7 +59,7 @@ Server.prototype.start = function (options, done) {
     this.loadConfigApi();
 
     // caching layer
-    app.use(cache);
+    cache(self);
 
     // start listening
     var server = this.server = app.listen(config.server.port, config.server.host);
@@ -99,21 +99,22 @@ Server.prototype.loadApi = function (options) {
     this.updateVersions(collectionPath);
 
     this.addMonitor(collectionPath, function (versionName) {
-        if (path) return self.updateDatabases(path.join(collectionPath, versionName));
+        if (path) self.updateDatabases(path.join(collectionPath, versionName));
         self.updateVersions(collectionPath);
     });
 
     this.updateEndpoints(endpointPath);
 
     this.addMonitor(endpointPath, function (endpointFile) {
-        var filepath = path.join(endpointPath, endpointFile);
-
         // need to ensure filepath exists since this could be a removal
-        if (endpointFile && fs.existsSync(filepath)) {
-            return self.addEndpointResource({
-                endpoint: endpointFile,
-                filepath: filepath
-            });
+        if (endpointFile) {
+            var filepath = path.join(endpointPath, endpointFile);
+            if (filepath && fs.existsSync(filepath)) {
+                return self.addEndpointResource({
+                    endpoint: endpointFile,
+                    filepath: filepath
+                });
+            }
         }
         self.updateEndpoints(endpointPath);
     });
@@ -305,16 +306,15 @@ Server.prototype.addCollectionResource = function (options) {
 
     // watch the schema's file and update it in place
     this.addMonitor(options.filepath, function (filename) {
-
         // invalidate schema file cache then reload
         delete require.cache[options.filepath];
-        try {
 
+        try {
             // This leverages the fact that Javscript's Object keys are references
             self.components[options.route].model.schema = require(options.filepath).fields;
             self.components[options.route].model.settings = require(options.filepath).settings;
-        } catch (e) {
-
+        }
+        catch (e) {
             // if file was removed "un-use" this component
             if (e && e.code === 'ENOENT') {
                 self.removeMonitor(options.filepath);
@@ -362,8 +362,8 @@ Server.prototype.addEndpointResource = function (options) {
         delete require.cache[filepath];
         try {
             opts.component = require(filepath);
-        } catch (e) {
-
+        }
+        catch (e) {
             // if file was removed "un-use" this component
             if (e && e.code === 'ENOENT') {
                 self.removeMonitor(filepath);

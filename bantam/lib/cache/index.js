@@ -4,16 +4,29 @@ var url = require('url');
 var crypto = require('crypto');
 var config = require(__dirname + '/../../../config');
 var logger = require(__dirname + '/../../../bantam/lib/log');
+var _ = require('underscore');
 
 var cacheEncoding = 'utf8';
+var options = {};
 
-module.exports = function (options) {
-    options || (options = {});
+function cachingEnabled(endpoints, url) {
+    
+    var endpointKey = _.find(_.keys(endpoints), function (k){ return k.indexOf(url) > -1; });
+    
+    if (!endpointKey) return false;
 
-    return function (req, res, next) {
+    if (endpoints[endpointKey].model && endpoints[endpointKey].model.settings) {
+        options = endpoints[endpointKey].model.settings;
+    }
 
-        // check if cache is enabled, this makes it disabled by default
-        if (options.enabled === false || !config.caching.enabled) return next();
+    return (config.caching.enabled && options.cache);
+}
+
+module.exports = function (server) {
+
+    server.app.use(function (req, res, next) {
+
+        if (!cachingEnabled(server.components, req.url)) return next();
 
         // only cache GET requests
         if (!(req.method && req.method.toLowerCase() === 'get')) return next();
@@ -88,5 +101,5 @@ module.exports = function (options) {
             };
             return next();
         }
-    }
+    });
 };

@@ -3,6 +3,7 @@
   "version": "0.1.4-beta",
   "dependencies": {
     "body-parser": "~1.6.5",
+    "chokidar": "^0.12.6",
     "moment": "~2.8.1",
     "mongodb": "~1.4.8",
     "node-uuid": "~1.4.1",

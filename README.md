@@ -1,6 +1,6 @@
 ![Serama](serama.png)
 
-![Build Status](http://img.shields.io/badge/release-0.1.4_beta-green.svg?style=flat-square)&nbsp;[![License](http://img.shields.io/:license-mit-blue.svg?style=flat-square)](http://dadi.mit-license.org)
+![Build Status](http://img.shields.io/badge/release-0.1.5_beta-green.svg?style=flat-square)&nbsp;[![License](http://img.shields.io/:license-mit-blue.svg?style=flat-square)](http://dadi.mit-license.org)
 
 * [Overview](#overview)
 * [Requirements](#requirements)
@@ -11,7 +11,6 @@
 * [Configuration notes](#configuration-notes)
 * [Further reading](#further-reading)
 * [Development](#development)
-
 
 ## Overview
 
@@ -51,7 +50,6 @@ Serama uses [Mocha](http://mochajs.org/) for unit and acceptance tests. Tests ca
 
 `$ [sudo] npm test`
 
-
 ### Starting the server
 
 To start Serama, issue the following command. This will start the server using the configuration settings found in the `config.json` file.
@@ -69,9 +67,8 @@ An API client is simply a document in the database representing a consumer of yo
 This will create a new API client in the database and collection specified by Serama's `config.json` file.
 
 ```
-{ clientId: 'testClient', secret: 'superSecret' } 
+{ "clientId": "testClient", "secret": "superSecret" } 
 ```
-
 
 #### Running the server in the background 
 

@@ -4,7 +4,7 @@ var config = require(__dirname + '/../../config').logging;
 var moment = require('moment');
 var _ = require('underscore');
 
-var logPath = path.resolve(config.path + '.' + config.extension);
+var logPath = path.resolve(config.path + '/' + config.filename + '.' + config.extension);
 var logLevel = config.level;
 
 var levelMap = {
@@ -16,8 +16,17 @@ var levelMap = {
 // generate formatter function
 var formatter = compile(config.messageFormat);
 
+var stream;
+
+// create log directory if it doesn't exist
+if (!fs.existsSync(logPath)) {
+    mkdirParent(config.path, function() {
+        fs.writeFileSync(logPath, 'LOG FILE CREATED\n================\n\n');
+    });
+}
+
 // create writeStream to log
-var stream = fs.createWriteStream(logPath, {encoding: 'utf8', flags: 'a'});
+stream = fs.createWriteStream(logPath, {encoding: 'utf8', flags: 'a'});
 
 stream.on('error', function (err) {
     console.log('stream error');
@@ -38,7 +47,9 @@ stream.on('finish', function () {
  * @api private
  */
 module.exports._log = function (message, done) {
-    stream.write(message);
+    if (stream) {
+        stream.write(message);
+    }
     done && done();
 };
 
@@ -103,3 +114,21 @@ module.exports.prod = function (message, done) {
 function compile(fmt) {
     return _.template(fmt);
 }
+
+/**
+ * Recursively create directories.
+ */
+function mkdirParent(dirPath, mode, callback) {
+  fs.mkdir(dirPath, mode, function(error) {
+    // When it fails because the parent doesn't exist, call it again
+    if (error && error.errno === 34) {
+      // Create all the parents recursively
+      mkdirParent(path.dirname(dirPath), mode, callback);
+      // And then finally the directory
+      mkdirParent(dirPath, mode, callback);
+    }
+    
+    // Manually run the callback
+    callback && callback(error);
+  });
+};

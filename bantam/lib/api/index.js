@@ -34,6 +34,12 @@ Api.prototype.use = function (path, handler) {
     };
 };
 
+/**
+ *  Removes a handler or removes the handler attached to a specific path
+ *  @param {String} path
+ *  @return undefined
+ *  @api public
+ */
 Api.prototype.unuse = function (path) {
     var indx;
     if (typeof path === 'function') {
@@ -48,7 +54,7 @@ Api.prototype.unuse = function (path) {
 }
 
 /**
- *  convience method that creates http server and attaches listener
+ *  convenience method that creates http server and attaches listener
  *  @param {Number} port
  *  @param {String} host
  *  @param {Number} backlog
@@ -71,7 +77,6 @@ Api.prototype.listener = function (req, res) {
 
     // clone the middleware stack
     var stack = this.all.slice(0);
-    var paths = this.paths;
     var path = url.parse(req.url).pathname;
 
     // get matching routes, and add req.params

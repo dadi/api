@@ -14,7 +14,7 @@ var levelMap = {
 };
 
 // generate formatter function
-var formatter = compile(config.message_format);
+var formatter = compile(config.messageFormat);
 
 // create writeStream to log
 var stream = fs.createWriteStream(logPath, {encoding: 'utf8', flags: 'a'});
@@ -50,8 +50,9 @@ module.exports._log = function (message, done) {
  * @api public
  */
 module.exports.format = function (data) {
+
     // add default info
-    data.date = moment().format(config.date_format);
+    data.date = moment().format(config.dateFormat);
     data.label = config.level;
     return formatter(data) + '\n';
 };

@@ -1,12 +1,12 @@
 {
     "fields": {
-        "field_1": {
+        "field1": {
             "type": "String",
             "label": "Title",
             "comments": "The title of the entry",
             "limit": "",
             "placement": "Main content",
-            "validation_rule": "",
+            "validationRule": "",
             "required": false,
             "message": "",
             "display": { 
@@ -24,6 +24,8 @@
         "fieldLimiters": null,
         "allowExtension": false,
         "count": 40,
-        "sort_order": 1
+        "sortOrder": 1,
+        "storeRevisions": true,
+        "revisionCollection": "testSchemaHistory"
     }
 }

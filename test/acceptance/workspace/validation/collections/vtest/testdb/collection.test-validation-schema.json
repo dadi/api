@@ -1,12 +1,12 @@
 {
     "fields": {
-        "field_string": {
+        "fieldString": {
             "type": "String",
             "label": "Title",
             "comments": "The title of the entry",
             "limit": "",
             "placement": "Main content",
-            "validation_rule": "",
+            "validationRule": "",
             "required": false,
             "message": "",
             "display": { 
@@ -14,13 +14,13 @@
                 "edit": true
             }
         },
-        "field_number": {
+        "fieldNumber": {
             "type": "Number",
             "label": "Title",
             "comments": "The title of the entry",
             "limit": "",
             "placement": "Main content",
-            "validation_rule": "",
+            "validationRule": "",
             "required": false,
             "message": "",
             "display": { 
@@ -28,13 +28,13 @@
                 "edit": true
             }
         },
-        "field_bool": {
+        "fieldBool": {
             "type": "Boolean",
             "label": "Title",
             "comments": "The title of the entry",
             "limit": "",
             "placement": "Main content",
-            "validation_rule": "",
+            "validationRule": "",
             "required": false,
             "message": "",
             "display": { 
@@ -42,13 +42,13 @@
                 "edit": true
             }
         },
-        "field_mixed": {
+        "fieldMixed": {
             "type": "Mixed",
             "label": "Title",
             "comments": "The title of the entry",
             "limit": "",
             "placement": "Main content",
-            "validation_rule": "",
+            "validationRule": "",
             "required": false,
             "message": "",
             "display": { 
@@ -56,13 +56,27 @@
                 "edit": true
             }
         },
-        "field_regex": {
+        "foo": {
+            "type": "Mixed",
+            "label": "Foo",
+            "comments": "A sub field",
+            "limit": "",
+            "placement": "Main content",
+            "validationRule": "",
+            "required": false,
+            "message": "",
+            "display": { 
+                "index": true,
+                "edit": true
+            }
+        },
+        "fieldRegex": {
             "type": "Mixed",
             "label": "Title",
             "comments": "The title of the entry",
             "limit": "",
             "placement": "Main content",
-            "validation_rule": "^q+$",
+            "validationRule": "^q+$",
             "required": false,
             "message": "",
             "display": { 
@@ -70,13 +84,13 @@
                 "edit": true
             }
         },
-        "field_limit": {
-            "type": "Some type",
+        "fieldLimit": {
+            "type": "Mixed",
             "label": "Title",
             "comments": "The title of the entry",
             "limit": "7",
             "placement": "Main content",
-            "validation_rule": "",
+            "validationRule": "",
             "required": false,
             "message": "",
             "display": { 
@@ -94,6 +108,6 @@
         "fieldLimiters": null,
         "allowExtension": false,
         "count": 40,
-        "sort_order": 1
+        "sortOrder": 1
     }
 }

@@ -1,27 +1,29 @@
 {
     "fields": {
-        "field1": {
+        "name": {
             "type": "String",
-            "label": "Title",
-            "comments": "The title of the entry",
+            "label": "name",
+            "example": "War and Peace",
+            "comments": "This is the book's name",
             "limit": "",
             "placement": "Main content",
             "validationRule": "",
-            "required": false,
+            "required": true,
             "message": "",
             "display": { 
                 "index": true,
                 "edit": true
             }
         },
-        "field2": {
-            "type": "Number",
-            "label": "Title",
-            "comments": "The title of the entry",
+        "authorId": {
+            "type": "String",
+            "label": "author",
+            "example": "b8b285ae-53d1-47a5-9e69-ec042cfff580",
+            "comments": "This is the _id of the book's author",
             "limit": "",
             "placement": "Main content",
-            "validationRule": "",
-            "required": false,
+            "validationRule": "^[0-9a-fA-F]{24}$",
+            "required": true,
             "message": "",
             "display": { 
                 "index": true,
@@ -30,14 +32,14 @@
         }
     },
     "settings": {
-        "cache": true,
-        "cacheTTL": 300,
+        "cache": false,
         "authenticate": true,
         "callback": null,
         "defaultFilters": null,
         "fieldLimiters": null,
         "allowExtension": false,
         "count": 40,
-        "sortOrder": 1
+        "sortOrder": 1,
+        "description": "Allows for a [Markdown](http://daringfireball.net/projects/markdown/syntax) **formatted** description to explain the purpose of this **model**."
     }
 }

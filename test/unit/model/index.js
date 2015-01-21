@@ -16,29 +16,29 @@ describe('Model', function () {
     });
 
     it('should export function that creates an instance of Model when passed schema', function (done) {
-        model('test_model_name', help.getModelSchema()).should.be.an.instanceOf(model.Model);
+        model('testModelName', help.getModelSchema()).should.be.an.instanceOf(model.Model);
         done();
     });
 
     it('should export function that gets instance of Model when not passed schema', function (done) {
-        model('test_model_name').should.be.an.instanceOf(model.Model);
+        model('testModelName').should.be.an.instanceOf(model.Model);
         done();
     });
 
     it('should only create one instance of Model for a specific name', function (done) {
-        model('test_model_name').should.equal(model('test_model_name'));
+        model('testModelName').should.equal(model('testModelName'));
         done();
     });
 
     describe('initialization options', function () {
         it('should take model name and schema as arguments', function (done) {
-            model('test_model_name', help.getModelSchema()).name.should.equal('test_model_name');
+            model('testModelName', help.getModelSchema()).name.should.equal('testModelName');
             done();
         });
 
         it('should accept database connection as third agrument', function (done) {
             var conn = connection();
-            var mod = model('test_model_name', help.getModelSchema(), conn)
+            var mod = model('testModelName', help.getModelSchema(), conn)
             should.exist(mod.connection);
             mod.connection.host.should.equal('localhost');
             mod.connection.port.should.equal(27017);
@@ -48,7 +48,7 @@ describe('Model', function () {
         });
 
         it('should accept model settings as fourth argument', function (done) {
-            var mod = model('test_model_name', help.getModelSchema(), null, {
+            var mod = model('testModelName', help.getModelSchema(), null, {
                 cache: true,
                 count: 25
             });
@@ -56,6 +56,41 @@ describe('Model', function () {
             mod.settings.cache.should.be.true;
             mod.settings.count.should.equal(25);
 
+            done();
+        });
+
+        it('should attach history collection by default if not specified and `storeRevisions` is not false', function (done) {
+            var conn = connection();
+            var mod = model('testModelName', help.getModelSchema(), conn)
+            should.exist(mod.settings);
+            mod.revisionCollection.should.equal('testModelNameHistory');
+
+            done();
+        });
+
+        it('should attach history collection if specified', function (done) {
+            var conn = connection();
+            var mod = model('testModelName', help.getModelSchema(), conn, { revisionCollection : 'modelHistory' })
+            mod.revisionCollection.should.equal('modelHistory');
+
+            done();
+        });
+
+        it('should attach history collection if `storeRevisions` is true', function (done) {
+            var conn = connection();
+            var mod = model('testModelName', help.getModelSchema(), conn, { storeRevisions : true });
+            should.exist(mod.revisionCollection);
+            mod.revisionCollection.should.equal('testModelNameHistory');
+            
+            done();
+        });
+
+        it('should attach specified history collection if `storeRevisions` is true', function (done) {
+            var conn = connection();
+            var mod = model('testModelName', help.getModelSchema(), conn, { storeRevisions : true, revisionCollection : 'modelHistory' });
+            should.exist(mod.revisionCollection);
+            mod.revisionCollection.should.equal('modelHistory');
+            
             done();
         });
 
@@ -94,10 +129,10 @@ describe('Model', function () {
             done();
         });
 
-        it('should attach `validation_rule` definition to model', function (done) {
-            var val = 'test validation_rule';
+        it('should attach `validationRule` definition to model', function (done) {
+            var val = 'test validationRule';
 
-            help.testModelProperty('validation_rule', val);
+            help.testModelProperty('validationRule', val);
             done();
         });
 
@@ -128,18 +163,56 @@ describe('Model', function () {
 
     describe('`find` method', function () {
         it('should be added to model', function (done) {
-            model('test_model_name', help.getModelSchema()).find.should.be.Function;
+            model('testModelName', help.getModelSchema()).find.should.be.Function;
             done();
         });
 
         it('should accept query object and callback', function (done) {
-            model('test_model_name', help.getModelSchema()).find({}, done);
+            model('testModelName', help.getModelSchema()).find({}, done);
         });
 
         it('should pass error to callback when query uses `$` operators', function (done) {
-            model('test_model_name').find({$where: 'this.field_name === "foo"'}, function (err) {
+            model('testModelName').find({$where: 'this.fieldName === "foo"'}, function (err) {
                 should.exist(err);
                 done();
+            });
+        });
+    });
+
+    describe('`revisions` method', function () {
+        
+        it('should be added to model', function (done) {
+            model('testModelName', help.getModelSchema()).revisions.should.be.Function;
+            done();
+        });
+
+        it('should accept id param and return history collection', function (done) {
+            var conn = connection();
+            var mod = model('testModelName', help.getModelSchema(), conn, { storeRevisions : true })
+            
+            mod.create({fieldName: 'foo'}, function (err, result) {
+                if (err) return done(err);
+
+                mod.find({fieldName: 'foo'}, function (err, doc) {
+                    if (err) return done(err);
+
+                    var doc_id = doc[0]._id;
+                    var revision_id = doc[0].history[0]; // expected history object
+
+                    model('testModelName', help.getModelSchema()).revisions(doc_id, function (err, result) {
+                        if (err) return done(err);
+
+                        result.should.be.Array;
+
+                        if (result[0]) {
+                            result[0]._id.toString().should.equal(revision_id.toString());
+                        }
+
+                    });
+
+                    done();
+                });
+
             });
         });
     });
@@ -148,25 +221,41 @@ describe('Model', function () {
         beforeEach(help.cleanUpDB);
 
         it('should be added to model', function (done) {
-            model('test_model_name', help.getModelSchema()).create.should.be.Function;
+            model('testModelName', help.getModelSchema()).create.should.be.Function;
             done();
         });
 
         it('should accept and object and callback', function (done) {
-            var mod = model('test_model_name', help.getModelSchema());
-            mod.create({field_name: 'foo'}, done);
+            var mod = model('testModelName', help.getModelSchema());
+            mod.create({fieldName: 'foo'}, done);
         });
 
         it('should save model to database', function (done) {
-            var mod = model('test_model_name', help.getModelSchema());
-            mod.create({field_name: 'foo'}, function (err) {
+            var mod = model('testModelName', help.getModelSchema());
+            mod.create({fieldName: 'foo'}, function (err) {
                 if (err) return done(err);
 
-                mod.find({field_name: 'foo'}, function (err, doc) {
+                mod.find({fieldName: 'foo'}, function (err, doc) {
                     if (err) return done(err);
 
                     should.exist(doc);
-                    doc[0].field_name.should.equal('foo');
+                    doc[0].fieldName.should.equal('foo');
+                    done();
+                });
+            });
+        });
+
+        it('should save model to history collection', function (done) {
+            var mod = model('testModelName', help.getModelSchema());
+            mod.create({fieldName: 'foo'}, function (err) {
+                if (err) return done(err);
+
+                mod.find({fieldName: 'foo'}, function (err, doc) {
+                    if (err) return done(err);
+
+                    should.exist(doc);
+                    doc[0].history.should.be.Array;
+                    doc[0].history.length.should.equal(1);
                     done();
                 });
             });
@@ -174,9 +263,9 @@ describe('Model', function () {
 
         it('should pass error to callback if validation fails', function (done) {
             var schema = help.getModelSchema();
-            _.extend(schema.field_name, {limit: 5});
-            var mod = model('test_model_name', schema);
-            mod.create({field_name: '123456'}, function (err) {
+            _.extend(schema.fieldName, {limit: 5});
+            var mod = model('testModelName', schema);
+            mod.create({fieldName: '123456'}, function (err) {
                 should.exist(err);
                 done();
             });
@@ -189,13 +278,13 @@ describe('Model', function () {
                 if (err) return done(err);
 
                 // create model to be updated by tests
-                model('test_model_name', help.getModelSchema()).create({
-                    field_name: 'foo'
+                model('testModelName', help.getModelSchema()).create({
+                    fieldName: 'foo'
                 }, function (err, result) {
                     if (err) return done(err);
 
                     should.exist(result && result[0]);
-                    result[0].field_name.should.equal('foo');
+                    result[0].fieldName.should.equal('foo');
 
                     done();
                 });
@@ -203,30 +292,55 @@ describe('Model', function () {
         });
 
         it('should be added to model', function (done) {
-            model('test_model_name').update.should.be.Function;
+            model('testModelName').update.should.be.Function;
             done();
         });
 
         it('should accept query, update object, and callback', function (done) {
-            var mod = model('test_model_name');
-            mod.update({field_name: 'foo'}, {field_name: 'bar'}, done);
+            var mod = model('testModelName');
+            mod.update({fieldName: 'foo'}, {fieldName: 'bar'}, done);
         });
 
         it('should update an existing document', function (done) {
-            var mod = model('test_model_name');
-            var updateDoc = {field_name: 'bar'};
+            var mod = model('testModelName');
+            var updateDoc = {fieldName: 'bar'};
 
-            mod.update({field_name: 'foo'}, updateDoc, function (err, result) {
+            mod.update({fieldName: 'foo'}, updateDoc, function (err, result) {
                 if (err) return done(err);
 
                 result.should.equal(updateDoc);
 
                 // make sure document was updated
-                mod.find({field_name: 'bar'}, function (err, result) {
+                mod.find({fieldName: 'bar'}, function (err, result) {
                     if (err) return done(err);
 
                     should.exist(result && result[0]);
-                    result[0].field_name.should.equal('bar');
+                    result[0].fieldName.should.equal('bar');
+                    done();
+                })
+            });
+        });
+
+        it('should create new history revision when updating an existing document and `storeRevisions` is true', function (done) {
+            var conn = connection();
+            var mod = model('testModelName', help.getModelSchema(), conn, { storeRevisions : true })
+            var updateDoc = {fieldName: 'bar'};
+
+            mod.update({fieldName: 'foo'}, updateDoc, function (err, result) {
+                if (err) return done(err);
+
+                result.should.equal(updateDoc);
+
+                // make sure document was updated
+                mod.find({fieldName: 'bar'}, function (err, result) {
+                    if (err) return done(err);
+
+                    should.exist(result && result[0]);
+                    result[0].fieldName.should.equal('bar');
+
+                    should.exist(result[0].history);
+                    result[0].history.length.should.equal(2); // two revisions, one from initial create and one from the update
+
                     done();
                 })
             });
@@ -234,16 +348,16 @@ describe('Model', function () {
 
         it('should pass error to callback if schema validation fails', function (done) {
             var schema = help.getModelSchema();
-            _.extend(schema.field_name, {limit: 5});
-            var mod = model('test_model_name', schema);
-            mod.update({field_name: 'foo'}, {field_name: '123456'}, function (err) {
+            _.extend(schema.fieldName, {limit: 5});
+            var mod = model('testModelName', schema);
+            mod.update({fieldName: 'foo'}, {fieldName: '123456'}, function (err) {
                 should.exist(err);
                 done();
             });
         });
 
         it('should pass error to callback when query uses `$` operators', function (done) {
-            model('test_model_name').update({$where: 'this.field_name === "foo"'}, {field_name: 'bar'}, function (err) {
+            model('testModelName').update({$where: 'this.fieldName === "foo"'}, {fieldName: 'bar'}, function (err) {
                 should.exist(err);
                 done();
             });
@@ -254,21 +368,21 @@ describe('Model', function () {
         beforeEach(help.cleanUpDB);
 
         it('should be added to model', function (done) {
-            model('test_model_name', help.getModelSchema()).delete.should.be.Function;
+            model('testModelName', help.getModelSchema()).delete.should.be.Function;
             done();
         });
 
         it('should accept a query object and callback', function (done) {
-            model('test_model_name').delete({field_name: 'foo'}, done);
+            model('testModelName').delete({fieldName: 'foo'}, done);
         });
 
         it('should delete a document', function (done) {
-            var mod = model('test_model_name');
-            mod.create({field_name: 'foo'}, function (err, result) {
+            var mod = model('testModelName');
+            mod.create({fieldName: 'foo'}, function (err, result) {
                 if (err) return done(err);
 
-                result[0].field_name.should.equal('foo');
-                mod.delete({field_name: 'foo'}, function (err, numAffected) {
+                result[0].fieldName.should.equal('foo');
+                mod.delete({fieldName: 'foo'}, function (err, numAffected) {
                     if (err) return done(err);
 
                     numAffected.should.equal(1);
@@ -283,7 +397,7 @@ describe('Model', function () {
         });
 
         it('should pass error to callback when query uses `$` operators', function (done) {
-            model('test_model_name').delete({$where: 'this.field_name === "foo"'}, function (err) {
+            model('testModelName').delete({$where: 'this.fieldName === "foo"'}, function (err) {
                 should.exist(err);
                 done();
             });
@@ -292,7 +406,7 @@ describe('Model', function () {
 
     describe('validator', function () {
         it('should be attached to Model', function (done) {
-            var mod = model('test_model_name', help.getModelSchema());
+            var mod = model('testModelName', help.getModelSchema());
             mod.validate.should.be.Object;
             mod.validate.query.should.be.Function;
             mod.validate.schema.should.be.Function;
@@ -301,59 +415,59 @@ describe('Model', function () {
 
         describe('query', function () {
             it('should not allow the use of `$where` in queries', function (done) {
-                var mod = model('test_model_name');
+                var mod = model('testModelName');
                 mod.validate.query({$where: 'throw new Error("Insertion Attack!")'}).success.should.be.false;
                 done();
             });
 
             it('should allow querying with key values', function (done) {
-                var mod = model('test_model_name');
-                mod.validate.query({field_name: 'foo'}).success.should.be.true;
+                var mod = model('testModelName');
+                mod.validate.query({fieldName: 'foo'}).success.should.be.true;
                 done();
             });
         });
 
         describe('schema', function () {
             beforeEach(function (done) {
-                model('schema_test', help.getModelSchema());
+                model('schemaTest', help.getModelSchema());
                 done();
             });
 
             it('should return true for object that matches schema', function (done) {
-                var mod = model('schema_test');
-                mod.validate.schema({field_name: 'foobar'}).success.should.be.true;
+                var mod = model('schemaTest');
+                mod.validate.schema({fieldName: 'foobar'}).success.should.be.true;
                 done();
             });
 
             it('should return false for object that contains undefined field', function (done) {
-                var mod = model('schema_test');
-                mod.validate.schema({non_schema_field: 'foobar', field_name: 'baz'}).success.should.be.false;
+                var mod = model('schemaTest');
+                mod.validate.schema({nonSchemaField: 'foobar', fieldName: 'baz'}).success.should.be.false;
                 done();
             });
 
             it('should check length limit for field', function (done) {
                 var schema = help.getModelSchema();
-                _.extend(schema.field_name, {limit: 5});
-                var mod = model('limit_test', schema);
-                mod.validate.schema({field_name: '123456'}).success.should.be.false;
+                _.extend(schema.fieldName, {limit: 5});
+                var mod = model('limitTest', schema);
+                mod.validate.schema({fieldName: '123456'}).success.should.be.false;
                 done();
             });
 
             it('should ensure all required fields are present', function (done) {
                 var schema = help.getModelSchema();
-                schema.required_field = _.extend({}, schema.field_name, {required: true});
+                schema.requiredField = _.extend({}, schema.fieldName, {required: true});
 
-                var mod = model('required_test', schema);
-                mod.validate.schema({field_name: 'foo'}).success.should.be.false;
+                var mod = model('requiredTest', schema);
+                mod.validate.schema({fieldName: 'foo'}).success.should.be.false;
                 done();
             });
 
-            it('should check `validation_rule` if available', function (done) {
+            it('should check `validationRule` if available', function (done) {
                 var schema = help.getModelSchema();
-                _.extend(schema.field_name, {validation_rule: '\\w+'});
-                var mod = model('validation_rule_test', schema);
-                mod.validate.schema({field_name: '@#$%'}).success.should.be.false;
-                mod.validate.schema({field_name: 'qwerty'}).success.should.be.true;
+                _.extend(schema.fieldName, {validationRule: '\\w+'});
+                var mod = model('validationRuleTest', schema);
+                mod.validate.schema({fieldName: '@#$%'}).success.should.be.false;
+                mod.validate.schema({fieldName: 'qwerty'}).success.should.be.true;
                 done();
             });
         });

@@ -1,16 +1,30 @@
 ![Serama](serama.png)
 
-![Build Status](http://img.shields.io/badge/release-0.1.1_beta-green.svg?style=flat-square)&nbsp;[![License](http://img.shields.io/:license-mit-blue.svg?style=flat-square)](http://dadi.mit-license.org)
+![Build Status](http://img.shields.io/badge/release-0.1.5_beta-green.svg?style=flat-square)&nbsp;[![License](http://img.shields.io/:license-mit-blue.svg?style=flat-square)](http://dadi.mit-license.org)
+
+* [Overview](#overview)
+* [Requirements](#requirements)
+* [Setup and installation](#setup-and-installation)
+* [Rest API specification](#rest-api-specification)
+* [Authorisation](#authorisation)
+* [Working with endpoints](#working-with-endpoints)
+* [Configuration notes](#configuration-notes)
+* [Further reading](#further-reading)
+* [Development](#development)
 
 ## Overview
 
-Serama is a high performance RESTful API layer designed in support of API-first development and the principle of COPE.
+Serama is built on Node.JS and MongoDB. It is a high performance RESTful API layer designed in support of [API-first development and the principle of COPE](https://github.com/dadiplus/serama/blob/master/docs/apiFirst.md).
 
-It is built on Node.JS and MongoDB, using latest stable versions.
+You can consider Serama as the data layer within a platform (including the data model). It is designed to be plugged into a templating layer, a mobile application or to be used with any other data consumer.
 
-Serama has built in support for oAuth2, can connect to multiple databases out of the box, supports static endpoints, has a caching layer and can be run in a clustered configuration.
+Calls to a Serama API can contain your business/domain logic (the part of a platform that encodes the real-world business rules that determine how data is created, displayed, stored and changed). It has full support for searching, filtering, limiting, sorting, offsetting and input validation.
 
-Serama is part of the Bantam toolkit ([bant.am](https://bant.am)), a modern development stack built for performance and scale.
+It has built in support for oAuth2, can connect to multiple databases out of the box, provides native document versioning at collection level, supports static endpoints, has a caching layer and can be run in a clustered configuration.
+
+Serama provides a starting point that's further advanced than a framework. It allows you to get a complete data layer up and running in minutes.
+
+It is part of Bantam, a suite of components covering the full development stack, built for performance and scale.
 
 ## Requirements
 
@@ -19,48 +33,166 @@ Serama is part of the Bantam toolkit ([bant.am](https://bant.am)), a modern deve
 
 ## Setup and installation
 
-`cd serama`
+`$ [sudo] git clone https://github.com/dadiplus/serama.git`
 
-`[sudo] npm install`
+`$ cd serama`
 
-`[sudo] npm test`
+### Installing dependencies
 
-`[sudo] npm start`
+To ensure your system has all the required dependencies, run the following command:
 
-_Note: for tests to run you will need stand alone `mongod`s running at localhost:27017 and localhost:27018_
+`$ [sudo] npm install`
 
-In order to get up and running you will also need to create a client document in the db.  To automate this do -
 
-`node utils/create-client.js`
+### Running tests
 
-once done you can get a bearer token with the following request -
+Serama uses [Mocha](http://mochajs.org/) for unit and acceptance tests. Tests can be run using the following command. _**Note**: for tests to run you will need standalone `mongod` instances running at `localhost:27017` and `localhost:27018`_
+
+`$ [sudo] npm test`
+
+### Starting the server
+
+To start Serama, issue the following command. This will start the server using the configuration settings found in the `config.json` file.
+
+`$ [sudo] npm start`
+
+Before you really start using Serama you will need to create an API client, enabling you to send authenticated requests to the API. This is described in the next section.
+
+##### Creating an API client
+
+An API client is simply a document in the database representing a consumer of your data. An API client requires two fields, `clientId` and `secret`. Your first API client can be created automatically by running the following script:
+
+`$ node utils/create-client.js`
+
+This will create a new API client in the database and collection specified by Serama's `config.json` file.
+
+```
+{ clientId: 'testClient', secret: 'superSecret' } 
+```
+
+#### Running the server in the background 
+
+Pro tip: to run Serama in the background, install [Forever](https://github.com/nodejitsu/forever)
+
+`[sudo] npm install forever -g`
+
+You can then start Serama using the following command:
+
+`[sudo] forever start bantam/main.js`
+
+### Additional reading
+
+You can see a complete installation guide for Serama udner Ubuntu [here](https://github.com/dadiplus/serama/blob/master/docs/install.ubnutu.md).
+
+## Rest API specification
+
+Serama accepts GET, POST, PUT, PATCH and DELETE requests.
+
+### Examples
+
+#### 1.
+
+**GET** *http(s)://{url}/{version number}/{database name}/{collection name}*
+
+Returns a JSON object with all results from the *{collection name}* collection and *{database name}* database. The result set will be paginated and limited to a number of records as defined as the default view in the collection schema file in *./workspace/collections/{version number}/{database name}/collection.{collection name}.json*.
+
+Default views can be overridden using parameters at the point of API request.
+
+You can read about this and the about the collection schema [here](https://github.com/dadiplus/serama/blob/master/docs/endpoints.md).
+
+#### 2.
+
+**GET** *http://{url}/endpoints/{endpoint name}*
+
+Returns a JSON object. Parameters and return are completely customisable. The output is generated using the file -
+
+*workspace/endpoints/endpoint.{endpoint name}.js*
+
+See `test/acceptance/workspace/endpoints/endpoint.test-endpoint.js` for a "Hello World" example.
+
+#### 3.
+
+**GET** *http://{url}/{version number}/{database name}/{collection name}/config*
+
+Returns a JSON object of the schema file -
+
+*./workspace/collections/v{version number}/{database name}/collection.{collection name}.json*
+
+#### 4.
+
+**GET** *http://{url}/serama/config*
+
+Returns a JSON object of the main config file -
+
+*./config.json*
+
+You can read more about this [here](https://github.com/dadiplus/serama/blob/master/docs/configApi.md).
+
+#### 5.
+
+**POST** *http://{url}/serama/config*
+
+Updates the main config file -
+
+*./config.json*
+
+You can read more about this [here](https://github.com/dadiplus/serama/blob/master/docs/configApi.md).
+
+#### 6.
+
+**POST** *http://{url}/{version number}/{database name}/{collection name}*
+
+Adds a new record to the collection specified by *{collection name}* in the *{database name}* database.
+
+If the record passes validation it is inserted into the collection.
+
+The following additional fields are saved alongside with every record -
+
+* *created_at*: timestamp of creation
+* *created_by*: user id of creator
+* *api_version*: api version number passed in the url ({version number}). i.e. v1
+
+#### 7.
+
+**POST** *http://{url}/{version number}/{database name}/{collection name}/{:id}*
+
+Updates an existing record with the id of *{:id}* in the *{collection name}* collection and *{database name}* database. 
+
+If the record passes validation it will be updated.
+
+The following additional fields are added/updated alongside every passed field -
+
+* *last_modified_at*: timestamp of modification
+* *last_modified_by*: user id of updater
+
+#### 8.
+
+**DELETE** *http://{url}/{version number}/{database name}/{collection name}/{:id}*
+
+Deletes the record with the id of *{:id}* in the *{collection name}* collection and *{database name}* database.
+
+### Authorisation
+
+You can get a bearer token as follows -
 
     POST /token HTTP/1.1
     Host: localhost:3000
     content-type: application/json
     Cache-Control: no-cache
 
-    { "client_id": "test-client", "secret": "super_secret" }
+    { "clientId": "testClient", "secret": "superSecret" }
 
 Once you have the token, each request to the api should include a header similar to the one below (of course use your specific token) -
 
     Authorization: Bearer 171c8c12-6e9b-47a8-be29-0524070b0c65
 
-There is an example collection endpoint and custom endpoint included in the `workspace` directory.
+### Working with endpoints
 
-Pro tip: to background Serama, install [Forever](https://github.com/nodejitsu/forever) -
-
-`[sudo] npm install forever -g`
-
-You can then start Serama using -
-
-`[sudo] forever start bantam/main.js`
-
-## Example API requests
+You can read about collections and custom endpoints in detail [here](https://github.com/dadiplus/serama/blob/master/docs/endpoints.md). If you just want to jump right in, here are some sample API requests -
 
 _You may want to look at a handy QA testing tool called [Postman](http://www.getpostman.com/)_
 
-### Collections POST request
+#### Collections POST request
 
     POST /vtest/testdb/test-schema HTTP/1.1
     Host: localhost:3000
@@ -70,7 +202,7 @@ _You may want to look at a handy QA testing tool called [Postman](http://www.get
     { "field_1": "hi world!", "field_2": 123293582345 }
 
 
-### Endpoint GET request
+#### Endpoint GET request
 
 This will return a "Hello World" example -
 
@@ -90,13 +222,15 @@ The proper name should always resolve correctly. Alternately, you can set it to 
 
 ## Further reading
 
-The `docs/` directory contains additional documentation on the compenent parts of the system -
+The `docs/` directory contains additional documentation on the component parts of the system:
 
 * [API module](https://github.com/dadiplus/serama/blob/master/docs/api.md)
 * [Authorisation middleware](https://github.com/dadiplus/serama/blob/master/docs/auth.md)
 * [Caching](https://github.com/dadiplus/serama/blob/master/docs/cache.md)
+* [Config API](https://github.com/dadiplus/serama/blob/master/docs/configApi.md)
 * [Connection module](https://github.com/dadiplus/serama/blob/master/docs/connection.md)
 * [Endpoints](https://github.com/dadiplus/serama/blob/master/docs/endpoints.md)
+* [Extension API](https://github.com/dadiplus/serama/blob/master/docs/extensionApi.md)
 * [Logging](https://github.com/dadiplus/serama/blob/master/docs/logger.md)
 * [Model module](https://github.com/dadiplus/serama/blob/master/docs/model.md)
 * [Monitor module](https://github.com/dadiplus/serama/blob/master/docs/monitor.md)
@@ -111,29 +245,20 @@ Serama was conceived, developed and is maintained by the engineering team at DAD
 Core contributors -
 
 * Joseph Denne
+* Joe Warner
 * Viktor Fero
 * James Lambie
-* Joe Warner
+* Dave Allen
+* Niklas Iversen
 
 ### Roadmap
 
-Planned updates and additions -
+We will capture planned updates and additions here. If you have anything to contribute in terms of future direction, please add as an enhancement request within [issues](https://github.com/dadiplus/serama/issues).
 
-`Version 0.1.2 - September 2014`
+Planned additions -
 
-* Move to camelCase throughout the build
-* Enable the reading and management of the config through the API
-* Enable the reading and management of collection configurations through the API
-* Enable the setup, modification and deletion of collections through the API
-
-`Version 0.2.0 - October 2014`
-
-* Enable the setup, modification and deletion of endpoints through the API
-* The provision of an endpoint SDK for custom endpoints to enable the accessing of data from collecitons
-
-`Version 0.3.0 - November 2014`
-
-* The provision of an architecture for extensions - exposed middleware for the addition of new functionality
+* Auto documentator
+* Collection level ACL
 
 ### Versioning
 

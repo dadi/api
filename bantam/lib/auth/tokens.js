@@ -4,30 +4,34 @@ var connection = require(__dirname + '/../model/connection');
 
 var tokenStore = require(__dirname + '/tokenStore')();
 var clientStore = connection(config.auth.database);
-var clientCollectionName = config.auth.client_collection || 'client-store';
+var clientCollectionName = config.auth.database.clientCollection || 'clientStore';
 
 module.exports.generate = function (req, res, next) {
 
-    // look up the creds in clientStore
+    // Look up the creds in clientStore
     var _done = function (database) {
         database.collection(clientCollectionName).findOne({
-            client_id: req.body.client_id,
+            clientId: req.body.clientId,
             secret: req.body.secret
         }, function (err, client) {
             if (err) return next(err);
 
             if (client) {
 
-                // generate token
+                // Generate token
                 var token = uuid.v4();
 
-                // save token
+                // Ensure we have a TTL for token documents
+                tokenStore.expire(function (err) {});
+
+                // Save token
                 return tokenStore.set(token, client, function (err) {
                     if (err) return next(err);
 
                     var tok = {
-                        access_token: token,
-                        token_type: 'Bearer'
+                        accessToken: token,
+                        tokenType: 'Bearer',
+                        expiresIn: config.auth.tokenTtl
                     };
 
                     var json = JSON.stringify(tok);

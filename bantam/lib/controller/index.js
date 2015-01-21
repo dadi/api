@@ -8,19 +8,19 @@ POST, GET, and DELETE methods that can be accessed by the request router
 This will only be used for *http://{url}/{version number}/{database name}/{collection name}*
 type of endpoints
 
-*http://{url}/enpoints/{enpoint name}* type endpoints should create a custom controller that
-implements methods corrisponding to the http methods it needs to support
+*http://{url}/endpoints/{endpoint name}* type endpoints should create a custom controller that
+implements methods corresponding to the HTTP methods it needs to support
 
 
 */
 var url = require('url');
+var config = require(__dirname + '/../../../config');
 var help = require(__dirname + '/../help');
 
 // helpers
 var sendBackJSON = help.sendBackJSON;
 var sendBackJSONP = help.sendBackJSONP;
 var parseQuery = help.parseQuery;
-
 
 var Controller = function (model) {
     if (!model) throw new Error('Model instance required');
@@ -45,7 +45,7 @@ Controller.prototype.get = function (req, res, next) {
         var sort = {};
 
         // default to 'asc'
-        var order = (options.sort_order || settings.sort_order) === 'desc' ? -1 : 1;
+        var order = (options.sortOrder || settings.sortOrder) === 'desc' ? -1 : 1;
 
         sort[options.sort] = order;
     }
@@ -64,19 +64,21 @@ Controller.prototype.post = function (req, res, next) {
 
     // internal fields
     var internals = {
-        api_version: req.url.split('/')[1],
+        apiVersion: req.url.split('/')[1]
     };
 
+    // if id is present in the url, then this is an update
     if (req.params.id) {
-        internals.last_modified_at = Date.now();
-        internals.last_modified_by = req.client && req.client.client_id;
+        internals.lastModifiedAt = Date.now();
+        internals.lastModifiedBy = req.client && req.client.clientId;
         return this.model.update({
             _id: req.params.id
         }, req.body, internals, sendBackJSON(200, res, next));
     }
 
-    internals.created_at = Date.now();
-    internals.created_by = req.client && req.client.client_id;
+    // if no id is present, then this is a create
+    internals.createdAt = Date.now();
+    internals.createdBy = req.client && req.client.clientId;
 
     this.model.create(req.body, internals, sendBackJSON(200, res, next));
 };
@@ -88,6 +90,16 @@ Controller.prototype.delete = function (req, res, next) {
     this.model.delete({_id: id}, function (err, results) {
         if (err) return next(err);
 
+        if (config.feedback) {
+
+            // send 200 with json message
+            return help.sendBackJSON(200, res, next)(null, {
+                status: 'success',
+                message: 'Document deleted successfully'
+            });
+        }
+
+        // send no-content success 
         res.statusCode = 204;
         res.end();
     });

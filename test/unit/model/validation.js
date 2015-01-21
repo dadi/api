@@ -35,16 +35,16 @@ describe('Model validator', function () {
             it('should inform of bad type', function (done) {
                 var validator = new Validator({
                     schema: {
-                        field_1: {
+                        field1: {
                             type: 'String',
                             required: true
                         }
                     }
                 });
-                var val = validator.schema({field_1: 123});
+                var val = validator.schema({field1: 123});
                 val.success.should.be.false;
                 val.errors.length.should.equal(1);
-                val.errors[0].field.should.equal('field_1');
+                val.errors[0].field.should.equal('field1');
                 val.errors[0].message.should.equal('is wrong type');
 
                 done();
@@ -53,20 +53,20 @@ describe('Model validator', function () {
             it('should inform of missing field', function (done) {
                 var validator = new Validator({
                     schema: {
-                        field_1: {
+                        field1: {
                             type: 'String',
                             required: true
                         },
-                        field_2: {
-                            type: 'Mixed',
+                        field2: {
+                            type: 'Number',
                             required: false
                         }
                     }
                 });
-                var val = validator.schema({field_2: 123});
+                var val = validator.schema({field2: 123});
                 val.success.should.be.false;
                 val.errors.length.should.equal(1);
-                val.errors[0].field.should.equal('field_1');
+                val.errors[0].field.should.equal('field1');
                 val.errors[0].message.should.equal('can\'t be blank');
 
                 done();
@@ -75,53 +75,54 @@ describe('Model validator', function () {
             it('should inform of additional fields', function (done) {
                 var validator = new Validator({
                     schema: {
-                        field_1: {
+                        field1: {
                             type: 'String',
                             required: false
                         },
-                        field_2: {
+                        field2: {
                             type: 'Mixed',
                             required: false
                         }
                     }
                 });
-                var val = validator.schema({field_3: 123});
+                var val = validator.schema({field3: 123});
                 val.success.should.be.false;
                 val.errors.length.should.equal(1);
-                val.errors[0].field.should.equal('field_3');
+                val.errors[0].field.should.equal('field3');
                 val.errors[0].message.should.equal('is invalid');
 
                 done();
             });
 
             it('should inform if field is to long', function (done) {
+
                 // make sure limit works for number and string that can be coerced to number
                 var validator = new Validator({
                     schema: {
-                        field_1: {
+                        field1: {
                             type: 'String',
                             required: false,
                             limit: "9"
                         },
-                        field_2: {
+                        field2: {
                             type: 'String',
                             limit: 9
                         }
                     }
                 });
-                var val = validator.schema({field_2: '1234567890'});
+                var val = validator.schema({field2: '1234567890'});
                 val.success.should.be.false;
                 val.errors.length.should.equal(1);
-                val.errors[0].field.should.equal('field_2');
+                val.errors[0].field.should.equal('field2');
                 val.errors[0].message.should.equal('is too long');
 
-                val = validator.schema({field_1: '1234567890'});
+                val = validator.schema({field1: '1234567890'});
                 val.success.should.be.false;
                 val.errors.length.should.equal(1);
-                val.errors[0].field.should.equal('field_1');
+                val.errors[0].field.should.equal('field1');
                 val.errors[0].message.should.equal('is too long');
 
-                val = validator.schema({field_1: '123456789', field_2: '123456789'});
+                val = validator.schema({field1: '123456789', field2: '123456789'});
                 val.success.should.be.true;
 
                 done();

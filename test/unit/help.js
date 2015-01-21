@@ -5,13 +5,13 @@ var connection = require(__dirname + '/../../bantam/lib/model/connection');
 // return valid model definition object
 module.exports.getModelSchema = function () {
     return {
-        "field_name": {
+        "fieldName": {
             "type": "String",
             "label": "Title",
             "comments": "The title of the entry",
             "limit": "",
             "placement": "Main content",
-            "validation_rule": "",
+            "validationRule": "",
             "required": false,
             "message": "",
             "display": { 
@@ -28,16 +28,18 @@ module.exports.testModelProperty = function (key, val) {
     obj[key] = val;
 
     var schema = module.exports.getModelSchema();
-    _.extend(schema.field_name, obj);
+    _.extend(schema.fieldName, obj);
 
-    model('test_model_name', schema).schema.field_name[key].should.equal(val);
+    model('testModelName', schema).schema.fieldName[key].should.equal(val);
 };
 
 module.exports.cleanUpDB = function (done) {
     connection().on('connect', function (db) {
+
         // drop all data
         db.dropDatabase(function (err) {
             if (err) return done(err);
+
             // force close this connection
             db.close(true, done);
         });
@@ -49,12 +51,14 @@ module.exports.addUserToDb = function (userObj, dbObj, done) {
     var Server = require('mongodb').Server;
 
     var db = new Db(dbObj.databaseName, new Server(dbObj.host, dbObj.port), {w: 'majority'});
+
     // Establish connection to db
     db.open(function (err, db) {
         if (err) return done(err);
 
         // Add a user to the database
         db.addUser(userObj.username, userObj.password, function (err) {
+
             // notice no error handling!
             // This is because we want this to be an idempotent func that ensures
             // the user exists in the database.  Since `addUser` will error if

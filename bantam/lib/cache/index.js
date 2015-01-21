@@ -52,6 +52,7 @@ module.exports = function (options) {
                 res.statusCode = 200;
                 res.setHeader('content-type', dataType);
                 res.setHeader('content-length', resBody.length);
+
                 // notice resBody is already a string
                 res.end(resBody);
             });

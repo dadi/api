@@ -5,7 +5,7 @@ var tokens = require(__dirname + '/../../bantam/lib/auth/tokens');
 var tokenStore = require(__dirname + '/../../bantam/lib/auth/tokenStore');
 var connection = require(__dirname + '/../../bantam/lib/model/connection');
 
-var clientCollectionName = config.auth.client_collection || 'client-store';
+var clientCollectionName = config.auth.database.clientCollection;
 
 describe('Tokens', function () {
     before(function (done) {
@@ -37,8 +37,8 @@ describe('Tokens', function () {
 
             clientStore.on('connect', function (db) {
                 db.collection(clientCollectionName).insert({
-                    client_id: 'test123',
-                    secret: 'super_secret'
+                    clientId: 'test123',
+                    secret: 'superSecret'
                 }, done);
             });
         });
@@ -46,8 +46,8 @@ describe('Tokens', function () {
         it('should return object for valid token', function (done) {
             var req = {
                 body: {
-                    client_id: 'test123',
-                    secret: 'super_secret'
+                    clientId: 'test123',
+                    secret: 'superSecret'
                 }
             };
 
@@ -56,8 +56,8 @@ describe('Tokens', function () {
                 end: function (data) {
                     data = JSON.parse(data);
 
-                    should.exist(data.access_token);
-                    data.token_type.should.equal('Bearer');
+                    should.exist(data.accessToken);
+                    data.tokenType.should.equal('Bearer');
                     done();
                 }
             }

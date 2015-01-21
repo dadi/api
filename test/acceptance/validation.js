@@ -39,7 +39,7 @@ describe('validation', function () {
                 client
                 .post('/vtest/testdb/test-validation-schema')
                 .set('Authorization', 'Bearer ' + bearerToken)
-                .send({field_string: 1337})
+                .send({fieldString: 1337})
                 .expect(400, done);
             });
 
@@ -49,7 +49,7 @@ describe('validation', function () {
                 client
                 .post('/vtest/testdb/test-validation-schema')
                 .set('Authorization', 'Bearer ' + bearerToken)
-                .send({field_string: '1337'})
+                .send({fieldString: '1337'})
                 .expect(200, done);
             });
         });
@@ -61,7 +61,7 @@ describe('validation', function () {
                 client
                 .post('/vtest/testdb/test-validation-schema')
                 .set('Authorization', 'Bearer ' + bearerToken)
-                .send({field_number: '123'})
+                .send({fieldNumber: '123'})
                 .expect(400, done);
             });
 
@@ -71,7 +71,7 @@ describe('validation', function () {
                 client
                 .post('/vtest/testdb/test-validation-schema')
                 .set('Authorization', 'Bearer ' + bearerToken)
-                .send({field_number: 1337})
+                .send({fieldNumber: 1337})
                 .expect(200, done);
             });
         });
@@ -83,7 +83,7 @@ describe('validation', function () {
                 client
                 .post('/vtest/testdb/test-validation-schema')
                 .set('Authorization', 'Bearer ' + bearerToken)
-                .send({field_bool: 'true'})
+                .send({fieldBool: 'true'})
                 .expect(400, done);
             });
 
@@ -93,7 +93,7 @@ describe('validation', function () {
                 client
                 .post('/vtest/testdb/test-validation-schema')
                 .set('Authorization', 'Bearer ' + bearerToken)
-                .send({field_bool: true})
+                .send({fieldBool: true})
                 .expect(200, done);
             });
         });
@@ -105,7 +105,7 @@ describe('validation', function () {
                 client
                 .post('/vtest/testdb/test-validation-schema')
                 .set('Authorization', 'Bearer ' + bearerToken)
-                .send({field_mixed: true})
+                .send({fieldMixed: true})
                 .expect(200)
                 .end(function (err, res) {
                     if (err) return done(err);
@@ -113,7 +113,7 @@ describe('validation', function () {
                     client
                     .post('/vtest/testdb/test-validation-schema')
                     .set('Authorization', 'Bearer ' + bearerToken)
-                    .send({field_mixed: 'stringy'})
+                    .send({fieldMixed: 'stringy'})
                     .expect(200)
                     .end(function (err) {
                         if (err) return done(err);
@@ -121,7 +121,7 @@ describe('validation', function () {
                         client
                         .post('/vtest/testdb/test-validation-schema')
                         .set('Authorization', 'Bearer ' + bearerToken)
-                        .send({field_mixed: 1337})
+                        .send({fieldMixed: 1337})
                         .expect(200)
                         .end(function (err) {
                             if (err) return done(err);
@@ -129,8 +129,12 @@ describe('validation', function () {
                             client
                             .post('/vtest/testdb/test-validation-schema')
                             .set('Authorization', 'Bearer ' + bearerToken)
-                            .send({field_mixed: { foo: new Date() }})
-                            .expect(200, done);
+                            .send({fieldMixed: { foo: new Date() }})  // foo must be included in the schema document to be validated
+                            .expect(200)
+                            .end(function (err, res) {
+                                if (err) return done(err);
+                                done();
+                            });
                         });
                     });
                 });
@@ -144,7 +148,7 @@ describe('validation', function () {
                 client
                 .post('/vtest/testdb/test-validation-schema')
                 .set('Authorization', 'Bearer ' + bearerToken)
-                .send({field_bool: 'true'})
+                .send({fieldBool: 'true'})
                 .expect(400)
                 .expect('content-type', 'application/json')
                 .end(function (err, res) {
@@ -152,7 +156,7 @@ describe('validation', function () {
 
                     res.body.should.be.json;
                     res.body.success.should.be.false;
-                    res.body.errors[0].field.should.equal('field_bool');
+                    res.body.errors[0].field.should.equal('fieldBool');
                     res.body.errors[0].message.should.equal('is wrong type');
 
                     done();
@@ -161,14 +165,14 @@ describe('validation', function () {
         });
     });
 
-    describe('field validation_rule', function () {
+    describe('field validationRule', function () {
         it('should allow fields that pass regex', function (done) {
             var client = request('http://' + config.server.host + ':' + config.server.port);
 
             client
             .post('/vtest/testdb/test-validation-schema')
             .set('Authorization', 'Bearer ' + bearerToken)
-            .send({field_regex: 'qqqqq'})
+            .send({fieldRegex: 'qqqqq'})
             .expect(200, done);
         });
 
@@ -178,7 +182,7 @@ describe('validation', function () {
             client
             .post('/vtest/testdb/test-validation-schema')
             .set('Authorization', 'Bearer ' + bearerToken)
-            .send({field_regex: 'qqpqq'})
+            .send({fieldRegex: 'qqpqq'})
             .expect(400, done);
         });
 
@@ -189,7 +193,7 @@ describe('validation', function () {
                 client
                 .post('/vtest/testdb/test-validation-schema')
                 .set('Authorization', 'Bearer ' + bearerToken)
-                .send({field_regex: 'qqpqq'})
+                .send({fieldRegex: 'qqpqq'})
                 .expect(400)
                 .expect('content-type', 'application/json')
                 .end(function (err, res) {
@@ -197,7 +201,7 @@ describe('validation', function () {
 
                     res.body.should.be.json;
                     res.body.success.should.be.false;
-                    res.body.errors[0].field.should.equal('field_regex');
+                    res.body.errors[0].field.should.equal('fieldRegex');
                     res.body.errors[0].message.should.equal('is invalid');
 
                     done();
@@ -213,7 +217,7 @@ describe('validation', function () {
             client
             .post('/vtest/testdb/test-validation-schema')
             .set('Authorization', 'Bearer ' + bearerToken)
-            .send({field_limit: '1234567'})
+            .send({fieldLimit: '1234567'})
             .expect(200, done);
         });
 
@@ -223,7 +227,7 @@ describe('validation', function () {
             client
             .post('/vtest/testdb/test-validation-schema')
             .set('Authorization', 'Bearer ' + bearerToken)
-            .send({field_limit: '12345678'})
+            .send({fieldLimit: '12345678'})
             .expect(400, done);
         });
 
@@ -234,7 +238,7 @@ describe('validation', function () {
                 client
                 .post('/vtest/testdb/test-validation-schema')
                 .set('Authorization', 'Bearer ' + bearerToken)
-                .send({field_limit: '12345678'})
+                .send({fieldLimit: '12345678'})
                 .expect(400)
                 .expect('content-type', 'application/json')
                 .end(function (err, res) {
@@ -242,7 +246,7 @@ describe('validation', function () {
 
                     res.body.should.be.json;
                     res.body.success.should.be.false;
-                    res.body.errors[0].field.should.equal('field_limit');
+                    res.body.errors[0].field.should.equal('fieldLimit');
                     res.body.errors[0].message.should.equal('is too long');
 
                     done();

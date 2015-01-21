@@ -29,6 +29,7 @@ Validator.prototype.schema = function (obj) {
         success: true,
         errors: []
     };
+
     var schema = this.model.schema;
 
     // check that all required fields are present
@@ -48,14 +49,12 @@ Validator.prototype.schema = function (obj) {
 
 function _parseDocument(obj, schema, response) {
 
+
     for (var key in obj) {
-        if (typeof obj[key] === "object" && obj[key] !== null && !util.isArray(obj[key])) {
-
-            _parseDocument(obj[key], schema[key], response);
-
+        if (typeof obj[key] === 'object' && obj[key] !== null && !util.isArray(obj[key])) {
+            _parseDocument(obj[key], schema, response);
         }
         else {
-
             if (!schema[key]) {
                 response.success = false;
                 response.errors.push({field: key, message: 'is invalid'});
@@ -73,7 +72,7 @@ function _parseDocument(obj, schema, response) {
 
 function _validate(field, schema) {
 
-    //todo add date primitive
+    // todo add date primitive
     var primitives = ['String', 'Number', 'Boolean', 'Array'];
 
     // check length
@@ -81,13 +80,14 @@ function _validate(field, schema) {
     if (len && field.length > len) return schema.message || 'is too long';
 
     // check validation regex
-    if (schema.validation_rule && !(new RegExp(schema.validation_rule)).test(field)) return schema.message || 'is invalid';
+    if (schema.validationRule && !(new RegExp(schema.validationRule)).test(field)) return schema.message || 'is invalid';
 
-    //check constructor of field against primitive types and check the type of field == the specified type
-    //using constructor.name as array === object in typeof comparisons
-
-    if(~primitives.indexOf(field.constructor.name) && schema.type !== field.constructor.name) return schema.message || 'is wrong type';
-
+    // allow 'Mixed' fields through
+    if(schema.type !== 'Mixed') {
+        // check constructor of field against primitive types and check the type of field == the specified type
+        // using constructor.name as array === object in typeof comparisons
+        if(~primitives.indexOf(field.constructor.name) && schema.type !== field.constructor.name) return schema.message || 'is wrong type';
+    }
 
     // validation passes
     return;

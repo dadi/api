@@ -1,23 +1,43 @@
 var config = require(__dirname + '/../../../config');
 var tokens = require(__dirname + '/tokens');
+var _ = require('underscore');
 
+
+function mustAuthenticate(endpoints, url) {
+    
+    // all /config requests must be authenticated
+    if (url.indexOf('config') > -1) return true;
+
+    var endpointKey = _.find(_.keys(endpoints), function (k){ return k.indexOf(url) > -1; });
+    
+    if (!endpointKey) return true;
+
+    if (endpoints[endpointKey].model && endpoints[endpointKey].model.settings) {
+        return endpoints[endpointKey].model.settings.authenticate;
+    }
+    else {
+        return true;
+    }
+}
 
 // This attaches middleware to the passed in app instance
-module.exports = function (app) {
-    var tokenRoute = config.auth.token_url || '/token';
+module.exports = function (server) {
+    var tokenRoute = config.auth.tokenUrl || '/token';
 
-    // authorize
-    app.use(function (req, res, next) {
-        // let requests for tokens through
-        if (req.url === tokenRoute) return next();
+    // Authorize
+    server.app.use(function (req, res, next) {
+
+        // Let requests for tokens through, along with endpoints configured to not use authentication
+        if (req.url === tokenRoute || !mustAuthenticate(server.components, req.url)) return next();
 
         // require an authorization header for every request
         if (!(req.headers && req.headers.authorization)) return fail();
 
-        // strip token value out of request headers
+        // Strip token value out of request headers
         var parts = req.headers.authorization.split(' ');
         var token;
-        // headers should be `Authorization: Bearer <%=tokenvalue%>`
+
+        // Headers should be `Authorization: Bearer <%=tokenvalue%>`
         if (parts.length == 2 && /^Bearer$/i.test(parts[0])) {
             token = parts[1];
         }
@@ -26,9 +46,11 @@ module.exports = function (app) {
 
         tokens.validate(token, function (err, client) {
             if (err) return next(err);
-            // if token is good continue, else `fail()`
+
+            // If token is good continue, else `fail()`
             if (client) {
-                // token is valid attach client to request
+
+                // Token is valid attach client to request
                 req.client = client;
                 return next();
             }
@@ -43,9 +65,8 @@ module.exports = function (app) {
         }
     });
 
-
-    // setup token service
-    app.use(tokenRoute, function (req, res, next) {
+    // Setup token service
+    server.app.use(tokenRoute, function (req, res, next) {
         var method = req.method && req.method.toLowerCase();
         if (method === 'post') {
             return tokens.generate(req, res, next);
@@ -53,4 +74,3 @@ module.exports = function (app) {
         next();
     });
 };
-

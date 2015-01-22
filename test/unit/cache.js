@@ -1,26 +1,35 @@
 var should = require('should');
+var request = require('supertest');
 var fs = require('fs');
 var path = require('path');
 var sinon = require('sinon');
 var config = require(__dirname + '/../../config');
 var cache = require(__dirname + '/../../bantam/lib/cache');
-var api = require(__dirname + '/../../bantam/lib/api');
-var controller = require(__dirname + '/../../bantam/lib/controller');
-var model = require(__dirname + '/../../bantam/lib/model');
-var help = require(__dirname + '/help');
+var app = require(__dirname + '/../../bantam/lib/');
+var acceptanceTestHelper = require(__dirname + '/../acceptance/help');
 
 var main = require(__dirname + '/../../bantam/lib');
 
+var bearerToken;
+
 describe('Cache', function (done) {
 
-    var app, server;
     before(function (done) {
-        app = api();
-        server = app.listen(config.server.port, config.server.host, null, done);
+        app.start({
+            collectionPath: __dirname + '/../acceptance/workspace/collections'
+        }, done);
     });
 
     after(function (done) {
-        server.close(done);
+        done();
+    });
+
+    beforeEach(function (done) {
+        acceptanceTestHelper.getBearerToken(function (err, token) {
+            if (err) return done(err);
+            bearerToken = token;
+            done();
+        });
     });
 
     it('should export middleware', function (done) {
@@ -30,34 +39,30 @@ describe('Cache', function (done) {
         done();
     });
 
-    // it('should call file system stat', function (done) {
-    //     var stub = sinon.stub(fs, 'stat');
+    it('should call file system stat', function (done) {
 
-    //     var req = {
-    //         method: 'GET',
-    //         url: '/vtest/testdb/test-schema?filter={}'
-    //     };
+        var stub = sinon.stub(fs, 'stat', function() {
+            stub.called.should.be.true;
 
-    //     var res = {};
+            var args = stub.getCall(0).args;
+            var pathName = args[0];
 
-    //     main.start();
-    //     cache(main);
+            // pathName should be hex string json file
+            pathName.should.match(/[a-g1-9]+\.json$/);
+            args[1].should.be.Function;
 
-    //     var mod = model('test-schema', help.getModelSchema());
-    //     controller(mod).get(req);
+            stub.restore();
 
-    //     stub.called.should.be.true;
-        
-    //     var args = stub.getCall(0).args;
-    //     console.log(args);
-    //     var pathName = args[0];
+            done();
+        });
 
-    //     // pathName should be hex string json file
-    //     pathName.should.match(/[a-g1-9]+\.json$/);
-    //     args[1].should.be.Function;
+        request('http://' + config.server.host + ':' + config.server.port)
+        .get('/vtest/testdb/test-schema')
+        .set('Authorization', 'Bearer ' + bearerToken)
+        .expect(200)
+        .end(function (err, res) {
+            if (err) return done(err);
+        });
 
-    //     stub.restore();
-
-    //     done();
-    // });
+    });
 });

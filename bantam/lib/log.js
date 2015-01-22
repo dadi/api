@@ -1,6 +1,7 @@
+var config = require(__dirname + '/../../config').logging;
+var help = require(__dirname + '/help');
 var path = require('path');
 var fs = require('fs');
-var config = require(__dirname + '/../../config').logging;
 var moment = require('moment');
 var _ = require('underscore');
 
@@ -19,11 +20,9 @@ var formatter = compile(config.messageFormat);
 var stream;
 
 // create log directory if it doesn't exist
-if (!fs.existsSync(logPath)) {
-    mkdirParent(config.path, function() {
-        fs.writeFileSync(logPath, 'LOG FILE CREATED\n================\n\n');
-    });
-}
+help.mkdirParent(config.path, function() {
+    fs.writeFileSync(logPath, 'LOG FILE CREATED\n================\n\n');
+});
 
 // create writeStream to log
 stream = fs.createWriteStream(logPath, {encoding: 'utf8', flags: 'a'});
@@ -114,21 +113,3 @@ module.exports.prod = function (message, done) {
 function compile(fmt) {
     return _.template(fmt);
 }
-
-/**
- * Recursively create directories.
- */
-function mkdirParent(dirPath, mode, callback) {
-  fs.mkdir(dirPath, mode, function(error) {
-    // When it fails because the parent doesn't exist, call it again
-    if (error && error.errno === 34) {
-      // Create all the parents recursively
-      mkdirParent(path.dirname(dirPath), mode, callback);
-      // And then finally the directory
-      mkdirParent(dirPath, mode, callback);
-    }
-    
-    // Manually run the callback
-    callback && callback(error);
-  });
-};

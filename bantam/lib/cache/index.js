@@ -1,13 +1,19 @@
+var config = require(__dirname + '/../../../config');
+var help = require(__dirname + '/../help');
+var logger = require(__dirname + '/../../../bantam/lib/log');
 var fs = require('fs');
 var path = require('path');
 var url = require('url');
 var crypto = require('crypto');
-var config = require(__dirname + '/../../../config');
-var logger = require(__dirname + '/../../../bantam/lib/log');
 var _ = require('underscore');
 
 var cacheEncoding = 'utf8';
 var options = {};
+
+var dir = config.caching.directory;
+
+// create cache directory if it doesn't exist
+help.mkdirParent(path.resolve(dir), '777', function() {});
 
 function cachingEnabled(endpoints, url) {
     
@@ -35,8 +41,6 @@ module.exports = function (server) {
         var query = url.parse(req.url, true).query;
         var noCache = query.cache && query.cache.toString().toLowerCase() === 'false';
         if (noCache) return next();
-
-        var dir = config.caching.directory;
 
         // we build the filename with a hashed hex string so we can be unique
         // and avoid using file system reserved characters in the name

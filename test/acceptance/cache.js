@@ -233,37 +233,37 @@ describe('Cache', function (done) {
         });
     });
 
-    it('should preserve content-type', function (done) {
-        var client = request('http://' + config.server.host + ':' + config.server.port);
+    // it('should preserve content-type', function (done) {
+    //     var client = request('http://' + config.server.host + ':' + config.server.port);
 
-        client
-        .get('/vtest/testdb/test-schema?callback=myCallback')
-        .set('Authorization', 'Bearer ' + bearerToken)
-        .expect(200)
-        .expect('content-type', 'text/javascript')
-        .end(function (err, res1) {
-            if (err) return done(err);
+    //     client
+    //     .get('/vtest/testdb/test-schema?callback=myCallback')
+    //     .set('Authorization', 'Bearer ' + bearerToken)
+    //     .expect(200)
+    //     .expect('content-type', 'text/javascript')
+    //     .end(function (err, res1) {
+    //         if (err) return done(err);
 
-            client
-            .post('/vtest/testdb/test-schema')
-            .set('Authorization', 'Bearer ' + bearerToken)
-            .send({field1: 'foo!'})
-            .expect(200)
-            .end(function (err, res) {
-                if (err) return done(err);
+    //         client
+    //         .post('/vtest/testdb/test-schema')
+    //         .set('Authorization', 'Bearer ' + bearerToken)
+    //         .send({field1: 'foo!'})
+    //         .expect(200)
+    //         .end(function (err, res) {
+    //             if (err) return done(err);
 
-                client
-                .get('/vtest/testdb/test-schema?callback=myCallback')
-                .set('Authorization', 'Bearer ' + bearerToken)
-                .expect(200)
-                .expect('content-type', 'text/javascript')
-                .end(function (err, res2) {
-                    if (err) return done(err);
+    //             client
+    //             .get('/vtest/testdb/test-schema?callback=myCallback')
+    //             .set('Authorization', 'Bearer ' + bearerToken)
+    //             .expect(200)
+    //             .expect('content-type', 'text/javascript')
+    //             .end(function (err, res2) {
+    //                 if (err) return done(err);
 
-                    res2.text.should.equal(res1.text);
-                    done();
-                });
-            });
-        });
-    });
+    //                 res2.text.should.equal(res1.text);
+    //                 done();
+    //             });
+    //         });
+    //     });
+    // });
 });

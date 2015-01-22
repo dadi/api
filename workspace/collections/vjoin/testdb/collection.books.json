@@ -32,7 +32,7 @@
         }
     },
     "settings": {
-        "cache": false,
+        "cache": true,
         "authenticate": true,
         "callback": null,
         "defaultFilters": null,

@@ -82,7 +82,7 @@ You can then start Serama using the following command:
 
 ### Additional reading
 
-You can see a complete installation guide for Serama udner Ubuntu [here](https://github.com/dadiplus/serama/blob/master/docs/install.ubnutu.md).
+You can see a complete installation guide for Serama under Ubuntu [here](https://github.com/dadiplus/serama/blob/master/docs/install.ubuntu.md).
 
 ## Rest API specification
 

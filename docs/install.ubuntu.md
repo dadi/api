@@ -42,13 +42,10 @@ Install Git and pull down the latest stable build of Serama -
 2. `sudo git clone https://github.com/dadiplus/serama.git`
 3. `cd serama/`
 
-You will need to create Serama's log and cache directories -
-
-1. `[sudo] mkdir log`
-2. `[sudo] mkdir cache`
-3. `[sudo] mkdir cache/serama`
-
 Install Serama -
+
+*Note:* Serama's log and cache directories are created at startup using settings in the main configuration file `config.json`.
+
 
 `[sudo] npm install`
 

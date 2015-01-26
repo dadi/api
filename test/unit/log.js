@@ -4,7 +4,7 @@ var fs = require('fs');
 var should = require('should');
 
 var resetLog = function (done) {
-    var logpath = config.logging.path + '.' + config.logging.extension;
+    var logpath = config.logging.path + '/' + config.logging.filename  + '.' + config.logging.extension;
     logpath.should.be.String;
 
     // empty the log for each test
@@ -23,7 +23,7 @@ describe('bantam logger', function () {
             _log(logMessage, function (err) {
                 if (err) return done(err);
 
-                var logpath = config.logging.path + '.' + config.logging.extension;
+                var logpath = config.logging.path + '/' + config.logging.filename + '.' + config.logging.extension;
                 logpath.should.be.String;
 
                 var logEntry = fs.readFileSync(logpath, {encoding: 'utf8'}).should.equal(logMessage);
@@ -35,7 +35,7 @@ describe('bantam logger', function () {
             var logMessage = 'no callback';
             _log(logMessage);
             setTimeout(function () {
-                var logpath = config.logging.path + '.' + config.logging.extension;
+                var logpath = config.logging.path + '/' + config.logging.filename + '.' + config.logging.extension;
                 logpath.should.be.String;
 
                 var logEntry = fs.readFileSync(logpath, {encoding: 'utf8'}).should.equal(logMessage);
@@ -47,7 +47,7 @@ describe('bantam logger', function () {
             _log('line 1\n');
             _log('line 2\n');
             setTimeout(function () {
-                var logpath = config.logging.path + '.' + config.logging.extension;
+                var logpath = config.logging.path + '/' + config.logging.filename + '.' + config.logging.extension;
                 var logEntry = fs.readFileSync(logpath, {encoding: 'utf8'});
                 logEntry.should.equal('line 1\nline 2\n');
                 done();
@@ -87,7 +87,7 @@ describe('bantam logger', function () {
             logger.debug('log to fs', function (err) {
                 if (err) return done(err);
 
-                var logpath = config.logging.path + '.' + config.logging.extension;
+                var logpath = config.logging.path + '/' + config.logging.filename + '.' + config.logging.extension;
                 logpath.should.be.String;
 
                 var logEntry = fs.readFileSync(logpath, {encoding: 'utf8'}).should.match(/log to fs/);

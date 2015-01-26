@@ -1,10 +1,11 @@
+var config = require(__dirname + '/../../config').logging;
+var help = require(__dirname + '/help');
 var path = require('path');
 var fs = require('fs');
-var config = require(__dirname + '/../../config').logging;
 var moment = require('moment');
 var _ = require('underscore');
 
-var logPath = path.resolve(config.path + '.' + config.extension);
+var logPath = path.resolve(config.path + '/' + config.filename + '.' + config.extension);
 var logLevel = config.level;
 
 var levelMap = {
@@ -16,8 +17,15 @@ var levelMap = {
 // generate formatter function
 var formatter = compile(config.messageFormat);
 
+var stream;
+
+// create log directory if it doesn't exist
+help.mkdirParent(config.path, function() {
+    fs.writeFileSync(logPath, 'LOG FILE CREATED\n================\n\n');
+});
+
 // create writeStream to log
-var stream = fs.createWriteStream(logPath, {encoding: 'utf8', flags: 'a'});
+stream = fs.createWriteStream(logPath, {encoding: 'utf8', flags: 'a'});
 
 stream.on('error', function (err) {
     console.log('stream error');
@@ -38,7 +46,9 @@ stream.on('finish', function () {
  * @api private
  */
 module.exports._log = function (message, done) {
-    stream.write(message);
+    if (stream) {
+        stream.write(message);
+    }
     done && done();
 };
 

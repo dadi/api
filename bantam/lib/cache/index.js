@@ -1,19 +1,38 @@
+var config = require(__dirname + '/../../../config');
+var help = require(__dirname + '/../help');
+var logger = require(__dirname + '/../../../bantam/lib/log');
 var fs = require('fs');
 var path = require('path');
 var url = require('url');
 var crypto = require('crypto');
-var config = require(__dirname + '/../../../config');
-var logger = require(__dirname + '/../../../bantam/lib/log');
+var _ = require('underscore');
 
 var cacheEncoding = 'utf8';
+var options = {};
 
-module.exports = function (options) {
-    options || (options = {});
+var dir = config.caching.directory;
 
-    return function (req, res, next) {
+// create cache directory if it doesn't exist
+help.mkdirParent(path.resolve(dir), '777', function() {});
 
-        // check if cache is enabled, this makes it disabled by default
-        if (options.enabled === false || !config.caching.enabled) return next();
+function cachingEnabled(endpoints, requestUrl) {
+
+    var endpointKey = _.find(_.keys(endpoints), function (k){ return k.indexOf(url.parse(requestUrl).pathname) > -1; });
+    
+    if (!endpointKey) return false;
+
+    if (endpoints[endpointKey].model && endpoints[endpointKey].model.settings) {
+        options = endpoints[endpointKey].model.settings;
+    }
+
+    return (config.caching.enabled && options.cache);
+}
+
+module.exports = function (server) {
+
+    server.app.use(function (req, res, next) {
+
+        if (!cachingEnabled(server.components, req.url)) return next();
 
         // only cache GET requests
         if (!(req.method && req.method.toLowerCase() === 'get')) return next();
@@ -22,8 +41,6 @@ module.exports = function (options) {
         var query = url.parse(req.url, true).query;
         var noCache = query.cache && query.cache.toString().toLowerCase() === 'false';
         if (noCache) return next();
-
-        var dir = config.caching.directory;
 
         // we build the filename with a hashed hex string so we can be unique
         // and avoid using file system reserved characters in the name
@@ -88,5 +105,5 @@ module.exports = function (options) {
             };
             return next();
         }
-    }
+    });
 };

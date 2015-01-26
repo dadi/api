@@ -16,7 +16,8 @@
     "logging": {
         "enabled": true,
         "level": "DEBUG",
-        "path": "./log/serama",
+        "path": "./log",
+        "filename": "serama",
         "dateFormat": "YYYY-MM-DD",
         "extension": "log",
         "messageFormat": "<%= label %> - <%= date %> - <%= message %>"

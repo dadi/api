@@ -6,7 +6,7 @@ var controller = require(__dirname + '/controller');
 var model = require(__dirname + '/model');
 var api = require(__dirname + '/api');
 var auth = require(__dirname + '/auth');
-var cache = require(__dirname + '/cache')();
+var cache = require(__dirname + '/cache');
 var monitor = require(__dirname + '/monitor');
 var logger = require(__dirname + '/log');
 var help = require(__dirname + '/help');
@@ -59,7 +59,7 @@ Server.prototype.start = function (options, done) {
     this.loadConfigApi();
 
     // caching layer
-    app.use(cache);
+    cache(self);
 
     // start listening
     var server = this.server = app.listen(config.server.port, config.server.host);

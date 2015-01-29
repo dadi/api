@@ -56,7 +56,7 @@ module.exports.addUserToDb = function (userObj, dbObj, done) {
     db.open(function (err, db) {
         if (err) return done(err);
 
-        // Add a user to the database
+        // Add a user to the database        
         db.addUser(userObj.username, userObj.password, function (err) {
 
             // notice no error handling!

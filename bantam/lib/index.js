@@ -63,7 +63,17 @@ Server.prototype.start = function (options, done) {
 
     // start listening
     var server = this.server = app.listen(config.server.port, config.server.host);
-    logger.prod('Started server on ' + config.server.host + ':' + config.server.port);
+
+    server.on('listening', function (e) {
+      logger.prod('Started server on ' + config.server.host + ':' + config.server.port);
+    });
+
+    server.on('error', function (e) {
+      if (e.code == 'EADDRINUSE') {
+        console.log('Error ' + e.code + ': Address ' + config.server.host + ':' + config.server.port + ' is already in use, is something else listening on port ' + config.server.port + '?\n\n');
+        process.exit(0);
+      }
+    });
 
     this.loadApi(options);
 

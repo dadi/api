@@ -2,6 +2,8 @@
 
 ![Build Status](http://img.shields.io/badge/release-0.1.5_beta-green.svg?style=flat-square)&nbsp;[![License](http://img.shields.io/:license-mit-blue.svg?style=flat-square)](http://dadi.mit-license.org)
 
+## Contents
+
 * [Overview](#overview)
 * [Requirements](#requirements)
 * [Setup and installation](#setup-and-installation)

@@ -37,7 +37,8 @@ module.exports.sendBackJSONP = function (callbackName, res, next) {
 module.exports.parseQuery = function (queryStr) {
     var ret;
     try {
-        ret = JSON.parse(queryStr);
+        // strip leading zeroes from querystring before attempting to parse
+        ret = JSON.parse(queryStr.replace(/\b0(\d+)/, "\$1"));
     } catch (e) {
         ret = {};
     }

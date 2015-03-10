@@ -3,6 +3,36 @@ var sinon = require('sinon');
 var help = require(__dirname + '/../../bantam/lib/help');
 
 describe('Help', function (done) {
+    describe('validateCollectionSchem', function() {
+        it('should inform of missing sections', function (done) {
+            var schema = {
+                    
+                }
+;
+            var val = help.validateCollectionSchema(schema);
+            val.success.should.be.false;
+            val.errors.length.should.equal(2);
+            val.errors[0].section.should.equal('fields');
+            val.errors[0].message.should.equal('must be provided');
+
+            done();
+        });
+        
+        it('should inform of missing settings', function (done) {
+            var schema = {
+                   fields:{},
+                   settings:{cache:true} 
+                }
+;
+            var val = help.validateCollectionSchema(schema);
+            val.success.should.be.false;
+            val.errors[0].setting.should.equal('authenticate');
+            val.errors[0].message.should.equal('must be provided');
+
+            done();
+        });
+    });
+    
     describe('parseQuery', function () {
         it('should export method', function (done) {
             help.parseQuery.should.be.Function;

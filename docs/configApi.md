@@ -18,6 +18,8 @@ _WARNING: If this version, database, and collection already exists, the request 
 
 The request body should either contain an `application/json` or a `text/plain` content-type that describes that schema. The schema must be valid and complete, i.e. on updates the client must send the entire schema.
 
+Validation is performed against schema updates to ensure that the minimum viable structure is present and correct.
+
 You may remove a collection endpoint by sending a DELETE request to the url described above.
 
 You may also get a copy of the schema by sending a GET request.

@@ -20,14 +20,43 @@ describe('Help', function (done) {
         
         it('should inform of missing settings', function (done) {
             var schema = {
-                   fields:{},
+                   fields:{
+                        "field1": {
+                            "type": "String",
+                            "label": "Title",
+                            "comments": "The title of the entry",
+                            "limit": "",
+                            "placement": "Main content",
+                            "validationRule": "",
+                            "required": false,
+                            "message": "",
+                            "display": { 
+                                "index": true,
+                                "edit": true
+                            }
+                        }
+                   },
                    settings:{cache:true} 
-                }
-;
+            };
+                
             var val = help.validateCollectionSchema(schema);
             val.success.should.be.false;
             val.errors[0].setting.should.equal('authenticate');
             val.errors[0].message.should.equal('must be provided');
+
+            done();
+        });
+        
+        it('should inform that minimum number of fields not supplied', function (done) {
+            var schema = {
+                   fields:{},
+                   settings:{cache:true,authenticate:true,callback:null,defaultFilters:null,fieldLimiters:null,allowExtension:true,count:10,sortOrder:1}
+                }
+;
+            var val = help.validateCollectionSchema(schema);
+            val.success.should.be.false;
+            val.errors[0].section.should.equal('fields');
+            val.errors[0].message.should.equal('must include at least one field');
 
             done();
         });

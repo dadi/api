@@ -629,6 +629,29 @@ describe('Application', function () {
         });
 
         describe('POST', function () {
+            it('should validate schema', function (done) {
+                var client = request(connectionString);
+                var schema = JSON.parse(jsSchemaString);
+                delete schema.settings;
+                var newString = JSON.stringify(schema);
+                
+                client
+                .post('/vapicreate/testdb/api-create/config')
+                .send(newString)
+                .set('content-type', 'text/plain')
+                .set('Authorization', 'Bearer ' + bearerToken)
+                .expect(400)
+                .expect('content-type', 'application/json')
+                .end(function (err, res) {
+                    if (err) return done(err);
+
+                    res.body.should.be.Object;
+                    res.body.should.not.be.Array;
+                    should.exist(res.body.errors);
+
+                    done();
+                });
+            });
             it('should allow creating a new collection endpoint', function (done) {
                 var client = request(connectionString);
 

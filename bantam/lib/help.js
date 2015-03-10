@@ -1,5 +1,6 @@
 var fs = require('fs');
 var path = require('path');
+var util = require('util');
 
 var self = this;
 
@@ -46,6 +47,39 @@ module.exports.parseQuery = function (queryStr) {
     // handle case where queryStr is "null" or some other malicious string
     if (typeof ret !== 'object' || ret === null) ret = {};
     return ret;
+}
+
+module.exports.validateCollectionSchema = function(obj) {
+
+    // `obj` must be a "hash type object", i.e. { ... }
+    if (typeof obj !== 'object' || util.isArray(obj) || obj === null) return false;
+
+    var response = {
+        success: true,
+        errors: []
+    };
+    
+    var requiredSections = ['fields', 'settings'];
+    var requiredSettings = ["cache","authenticate","callback","defaultFilters","fieldLimiters","allowExtension","count","sortOrder"];
+
+    requiredSections.forEach(function (key) {
+        if (!obj.hasOwnProperty(key)) {
+            response.success = false;
+            response.errors.push({section: key, message: 'must be provided'})
+        }
+    });
+        
+    if (!response.success) return response;
+
+    // check that all required settings are present
+    requiredSettings.forEach(function (key) {
+        if (!obj.settings.hasOwnProperty(key)) {
+            response.success = false;
+            response.errors.push({setting: key, message: 'must be provided'})
+        }
+    }); 
+    
+    return response;
 }
 
 /**

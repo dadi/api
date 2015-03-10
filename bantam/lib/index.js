@@ -165,6 +165,15 @@ Server.prototype.loadConfigApi = function () {
             err.statusCode = 400;
             return next(err);
         }
+        
+        var validation = help.validateCollectionSchema(JSON.parse(schemaString));
+ 
+        if (!validation.success) {
+            var err = new Error('Collection schema validation failed');
+            err.statusCode = 400;
+            err.json = validation;
+            return next(err);
+        }
 
         var params = req.params;
 

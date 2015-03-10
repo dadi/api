@@ -170,6 +170,7 @@ Server.prototype.loadConfigApi = function () {
  
         if (!validation.success) {
             var err = new Error('Collection schema validation failed');
+            err.statusCode = 400;
             err.json = validation;
             return next(err);
         }

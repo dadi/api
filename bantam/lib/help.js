@@ -63,14 +63,14 @@ module.exports.validateCollectionSchema = function(obj) {
     var requiredSettings = ["cache","authenticate","callback","defaultFilters","fieldLimiters","allowExtension","count","sortOrder"];
 
     requiredSections.forEach(function (key) {
-        if (!obj[key]) {
+        if (!obj.hasOwnProperty(key)) {
             response.success = false;
             response.errors.push({section: key, message: 'must be provided'})
         }
     });
-    
+        
     if (!response.success) return response;
-    
+
     // check that all required settings are present
     requiredSettings.forEach(function (key) {
         if (!obj.settings.hasOwnProperty(key)) {

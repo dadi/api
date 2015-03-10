@@ -65,17 +65,24 @@ module.exports.validateCollectionSchema = function(obj) {
     requiredSections.forEach(function (key) {
         if (!obj.hasOwnProperty(key)) {
             response.success = false;
-            response.errors.push({section: key, message: 'must be provided'})
+            response.errors.push({section: key, message: 'must be provided'});
         }
     });
         
     if (!response.success) return response;
+    
+    // check at least one field has been provided
+    if (Object.keys(obj.fields).length == 0) {
+        response.success = false;
+        response.errors.push({section: 'fields', message: 'must include at least one field'});
+        return response;
+    }
 
     // check that all required settings are present
     requiredSettings.forEach(function (key) {
         if (!obj.settings.hasOwnProperty(key)) {
             response.success = false;
-            response.errors.push({setting: key, message: 'must be provided'})
+            response.errors.push({setting: key, message: 'must be provided'});
         }
     }); 
     

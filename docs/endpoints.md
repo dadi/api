@@ -149,9 +149,8 @@ It is possible to override the default view for a collection using the parameter
 count            | integer     | Number of results to be displayed on a page   | 50                   | 10
 page             | integer     | Page number                                   | 1                    | 2
 sort             | string      | Field id for sorting                          | _id                  |
-sort_order       | string      | Sort direction                                | asc                  | desc
-filter           | json        | MongoDB query json (find)                     |                      | {fieldName: {"$in": ["a", "b"]}}
-distinct           | json        | MongoDB query json (distinct)               |                      | {fieldName: {"$in": ["a", "b"]}}
+sortOrder       | string      | Sort direction                                | asc                  | desc
+filter           | json        | MongoDB query json                            |                      | {fieldName: {"$in": ["a", "b"]}}
 callback         | string      | Callback function to wrap the return result set in.  |               | thisIsMyCallback
 
 ## Custom endpoints

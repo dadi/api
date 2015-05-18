@@ -165,9 +165,9 @@ Server.prototype.loadConfigApi = function () {
             err.statusCode = 400;
             return next(err);
         }
-        
+
         var validation = help.validateCollectionSchema(JSON.parse(schemaString));
- 
+
         if (!validation.success) {
             var err = new Error('Collection schema validation failed');
             err.statusCode = 400;
@@ -191,7 +191,7 @@ Server.prototype.loadConfigApi = function () {
             );
 
             try {
-                
+
                 fs.writeFileSync(schemaPath, schemaString);
 
                 res.statusCode = 200;
@@ -276,12 +276,13 @@ Server.prototype.updateDatabases = function (databasesPath) {
 };
 
 Server.prototype.updateCollections = function (collectionsPath) {
-    
+
     if (!fs.existsSync(collectionsPath)) return;
+    if (!fs.lstatSync(collectionsPath).isDirectory()) return;
 
     var self = this;
     var collections = fs.readdirSync(collectionsPath);
-
+    
     collections.forEach(function (collection) {
         if (collection.indexOf('.') === 0) return;
 
@@ -483,7 +484,7 @@ Server.prototype.createDirectoryStructure = function (dpath) {
 };
 
 /**
- *  expose VERB type methods for adding routes and middlewares 
+ *  expose VERB type methods for adding routes and middlewares
  *  @param {String} [route] optional
  *  @param {function} callback, any number of callback to be called in order
  *  @return undefined

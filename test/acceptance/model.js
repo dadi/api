@@ -2,12 +2,13 @@ var should = require('should');
 var request = require('supertest');
 var connection = require(__dirname + '/../../bantam/lib/model/connection');
 var model = require(__dirname + '/../../bantam/lib/model');
+var help = require(__dirname + '/../../bantam/lib/help');
 var config = require(__dirname + '/../../config');
 
 describe('Model', function () {
     it('should connect to database matching name', function (done) {
         var schema = require(__dirname + '/workspace/secondary-db/vtest/secondary/collection.secondary-schema.json');
-        var mod = model('secondary', schema.fields);
+        var mod = model('secondary', help.getFieldsFromSchema());
 
         var conn = mod.connection;
         conn.database.should.equal('secondary');

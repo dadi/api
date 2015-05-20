@@ -49,6 +49,25 @@ module.exports.parseQuery = function (queryStr) {
     return ret;
 }
 
+function getKeys(obj, keyName, result) {
+    for (var key in obj) {
+        if (obj.hasOwnProperty(key)) {
+            if (key === keyName) {
+                result.push(obj[key]);
+            }
+            else if ("object" == typeof(obj[key])) {
+                getKeys(obj[key], keyName, result);
+            }
+        }
+    }
+}
+
+module.exports.getFieldsFromSchema = function(obj) {
+    var fields = [];
+    getKeys(obj, 'fields', fields);
+    return fields[0] || {};
+}
+
 module.exports.validateCollectionSchema = function(obj) {
 
     // `obj` must be a "hash type object", i.e. { ... }
@@ -58,27 +77,34 @@ module.exports.validateCollectionSchema = function(obj) {
         success: true,
         errors: []
     };
-    
-    var requiredSections = ['fields', 'settings'];
-    var requiredSettings = ["cache","authenticate","callback","defaultFilters","fieldLimiters","allowExtension","count","sortOrder"];
+            
+    var fields = [];
+    var settings = [];
 
-    requiredSections.forEach(function (key) {
-        if (!obj.hasOwnProperty(key)) {
-            response.success = false;
-            response.errors.push({section: key, message: 'must be provided'});
-        }
-    });
-        
+    getKeys(obj, 'fields', fields);
+    if (fields.length === 0) {
+        response.success = false;
+        response.errors.push({section: 'fields', message: 'must be provided at least once'});
+    }
+
+    getKeys(obj, 'settings', settings);
+    if (settings.length === 0) {
+        response.success = false;
+        response.errors.push({section: 'settings', message: 'must be provided'});
+    }
+
     if (!response.success) return response;
-    
+
     // check at least one field has been provided
-    if (Object.keys(obj.fields).length == 0) {
+    if (Object.keys(fields[0]) == 0) {
         response.success = false;
         response.errors.push({section: 'fields', message: 'must include at least one field'});
         return response;
     }
 
     // check that all required settings are present
+    var requiredSettings = ["cache","authenticate","callback","defaultFilters","fieldLimiters","allowExtension","count","sortOrder"];
+
     requiredSettings.forEach(function (key) {
         if (!obj.settings.hasOwnProperty(key)) {
             response.success = false;

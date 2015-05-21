@@ -12,11 +12,10 @@ module.exports.createDoc = function (token, done) {
     request('http://' + config.server.host + ':' + config.server.port)
     .post('/vtest/testdb/test-schema')
     .set('Authorization', 'Bearer ' + token)
-    .send({field1: ((Math.random() * 10) | 0).toString()})
+    .send({field1: ((Math.random() * 10) | 0).toString(), field2: (Math.random() * 10) | 0})
     .expect(200)
     .end(function (err, res) {
         if (err) return done(err);
-
         res.body.length.should.equal(1);
         done(null, res.body[0]);
     });

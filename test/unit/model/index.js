@@ -1,5 +1,7 @@
 var should = require('should');
+var sinon = require('sinon');
 var model = require(__dirname + '/../../../bantam/lib/model');
+var Validator = require(__dirname + '/../../../bantam/lib/model/validator');
 var connection = require(__dirname + '/../../../bantam/lib/model/connection');
 var _ = require('underscore');
 var help = require(__dirname + '/../help');
@@ -169,6 +171,27 @@ describe('Model', function () {
 
         it('should accept query object and callback', function (done) {
             model('testModelName', help.getModelSchema()).find({}, done);
+        });
+
+        it('should accept JSON array for aggregation queries and callback', function (done) {
+            var query = [
+                { $match: { status: "A" } }
+            ];
+            model('testModelName', help.getModelSchema()).find(query, done);
+        });
+
+        it('should', function (done) {
+            var mod = model('testModelName', help.getModelSchema());
+            var validator = sinon.stub(mod.validate, 'query').returns({ success: 'truex' });
+            //var stub = sinon.stub(mod.validate, 'query');
+
+            mod.find({$where : "a"}, {}, function(result) {
+            //mod.find('a',{}, function(result) {
+                //validator.callCount.should.equal(1);
+                validator.restore();
+
+                done();
+            });
         });
 
         it('should pass error to callback when query uses `$` operators', function (done) {

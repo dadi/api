@@ -123,6 +123,8 @@ Model.prototype.find = function (query, options, done) {
         options = {};
     }
 
+    var self = this;
+
     var validation = this.validate.query(query);
     if (!validation.success) {
         var err = validationError('Bad Query');
@@ -130,16 +132,42 @@ Model.prototype.find = function (query, options, done) {
         return done(err);
     }
 
-    this.castToBSON(query);
+    // limit == 1, perform a findOne query
+    if (options.limit && options.limit === 1) {
+        _done = function (database) {
+            database.collection(self.name).findOne(query, options, function (err, doc) {
+                if (err) return done(err);
+                return done(doc);
+            });
+        }        
+    }
 
-    var self = this;
-    var _done = function (database) {
-        database.collection(self.name).find(query, options, function (err, cursor) {
-            if (err) return done(err);
+    if (_.isArray(query)) {
+        // have we been passed an aggregation pipeline query?
+        _done = function (database) {
+            database.collection(self.name).aggregate(query, options, function (err, result) {
+                if (err) return done(err);
+                done(null, result);
+            });
+        }
+    }
+    else if (_.isObject(query)) {
 
-            // pass back the full results array
-            cursor.toArray(done);
-        });
+        this.castToBSON(query);
+
+        _done = function (database) {
+            database.collection(self.name).find(query, options, function (err, cursor) {
+                if (err) return done(err);
+                cursor.toArray(done);
+            });
+        }
+
+    }
+    else {
+        var err = validationError('Bad Query');
+        // err.json = {success: false, errors: [{message: 'Query must be either a JSON array or a JSON object.'}]};
+        // console.log(err);
+        return done(err);
     }
 
     if (this.connection.db) return _done(this.connection.db);

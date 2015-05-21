@@ -16,6 +16,7 @@ implements methods corresponding to the HTTP methods it needs to support
 var url = require('url');
 var config = require(__dirname + '/../../../config');
 var help = require(__dirname + '/../help');
+var _ = require('underscore');
 
 // helpers
 var sendBackJSON = help.sendBackJSON;
@@ -33,9 +34,16 @@ Controller.prototype.get = function (req, res, next) {
 
     var settings = this.model.settings || {};
 
-    var limit = options.count || settings.count || 50;
-    var skip = limit * ((options.page || 1) - 1);
+    var limit = options.count || settings.count;
+    if (_.isFinite(limit)) {
+        limit = parseInt(limit);
+    }
+    else {
+        limit = 50;
+    }
 
+    var skip = limit * ((options.page || 1) - 1);
+    
     // determine if this is jsonp
     var done = options.callback
         ? sendBackJSONP(options.callback, res, next)

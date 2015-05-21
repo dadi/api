@@ -272,6 +272,152 @@ describe('Application', function () {
                 });
             });
 
+            it('should find specific documents using a standard query', function (done) {
+               help.createDoc(bearerToken, function (err, doc1) {
+                    if (err) return done(err);
+                   help.createDoc(bearerToken, function (err, doc2) {
+                        if (err) return done(err);
+
+                        var client = request(connectionString);
+                        var docId = doc2._id
+                        var query = {
+                            _id: doc2._id
+                        };
+
+                        query = encodeURIComponent(JSON.stringify(query));
+                        client
+                        .get('/vtest/testdb/test-schema?filter=' + query)
+                        .set('Authorization', 'Bearer ' + bearerToken)
+                        .expect(200)
+                        .expect('content-type', 'application/json')
+                        .end(function (err, res) {
+                            if (err) return done(err);
+
+                            res.body.should.be.Array;
+                            res.body.length.should.equal(1);
+                            res.body[0]._id.should.equal(docId);
+                            done();
+                        });
+                    });
+                });
+            });
+
+            it('should find all documents using a standard query', function (done) {
+               help.createDoc(bearerToken, function (err, doc1) {
+                    if (err) return done(err);
+                   help.createDoc(bearerToken, function (err, doc2) {
+                        if (err) return done(err);
+
+                        var client = request(connectionString);
+                        var docId = doc2._id
+                        var query = {
+                            
+                        };
+
+                        query = encodeURIComponent(JSON.stringify(query));
+                        client
+                        .get('/vtest/testdb/test-schema?filter=' + query)
+                        .set('Authorization', 'Bearer ' + bearerToken)
+                        .expect(200)
+                        .expect('content-type', 'application/json')
+                        .end(function (err, res) {
+                            if (err) return done(err);
+
+                            res.body.should.be.Array;
+                            res.body.length.should.be.above(1);
+                            done();
+                        });
+                    });
+                });
+            });
+
+            it('should allow use of an aggregation query', function (done) {
+               
+                // create a bunch of docs
+                var asyncControl = new EventEmitter();
+                var count = 0;
+
+                for (var i = 0; i < 10; ++i) {
+                   help.createDoc(bearerToken, function (err) {
+                        if (err) return asyncControl.emit('error', err);
+                        count += 1;
+                        if (count > 9) asyncControl.emit('ready');
+                    });
+                }
+
+                asyncControl.on('ready', function () {
+
+                    // documents are loaded and test can start
+                    
+                    var client = request(connectionString);
+                    
+                    var query = [
+                        {
+                            $group : {
+                               _id : null,
+                               averageNumber: { $avg: "$field2" },
+                               count: { $sum: 1 }
+                            }
+                        }
+                    ];
+
+                    query = encodeURIComponent(JSON.stringify(query));
+                    client
+                        .get('/vtest/testdb/test-schema?filter=' + query)
+                        .set('Authorization', 'Bearer ' + bearerToken)
+                        .expect(200)
+                        .expect('content-type', 'application/json')
+                        .end(function (err, res) {
+                            if (err) return done(err);
+
+                            res.body.should.be.Array;
+                            res.body.length.should.equal(1);
+                            res.body[0].averageNumber.should.be.above(0);
+                            done();
+                        });
+                });
+
+            });
+
+            it('should return single document when querystring param count=1', function (done) {
+               
+                // create a bunch of docs
+                var ac = new EventEmitter();
+                var count = 0;
+
+                for (var i = 0; i < 10; ++i) {
+                   help.createDoc(bearerToken, function (err) {
+                        if (err) return ac.emit('error', err);
+                        count += 1;
+                        if (count > 9) ac.emit('ready');
+                    });
+                }
+
+                ac.on('ready', function () {
+
+                    // documents are loaded and test can start
+                    var client = request(connectionString);
+                    
+                    var query = {};
+                    query = encodeURIComponent(JSON.stringify(query));
+
+                    client
+                        .get('/vtest/testdb/test-schema?count=1')
+                        .set('Authorization', 'Bearer ' + bearerToken)
+                        .expect(200)
+                        .expect('content-type', 'application/json')
+                        .end(function (err, res) {
+                            if (err) return done(err);
+
+                            res.body.should.be.Array;
+                            res.body.length.should.equal(1);
+                            res.body[0].field2.should.be.above(0);
+                            done();
+                        });
+                });
+
+            });
+
             describe('query string params', function () {
                 before(function (done) {
                     // create a bunch of docs

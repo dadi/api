@@ -16,7 +16,7 @@
 
 ## Overview
 
-Serama is built on Node.JS and MongoDB. It is a high performance RESTful API layer designed in support of [API-first development and the principle of COPE](https://github.com/dadiplus/serama/blob/master/docs/apiFirst.md).
+Serama is built on Node.JS and MongoDB. It is a high performance RESTful API layer designed in support of [API-first development and the principle of COPE](https://github.com/bantam-framework/serama/blob/master/docs/apiFirst.md).
 
 You can consider Serama as the data layer within a platform (including the data model). It is designed to be plugged into a templating layer, a mobile application or to be used with any other data consumer.
 
@@ -35,7 +35,7 @@ It is part of Bantam, a suite of components covering the full development stack,
 
 ## Setup and installation
 
-`$ [sudo] git clone https://github.com/dadiplus/serama.git`
+`$ [sudo] git clone https://github.com/bantam-framework/serama.git`
 
 `$ cd serama`
 
@@ -84,7 +84,7 @@ You can then start Serama using the following command:
 
 ### Additional reading
 
-You can see a complete installation guide for Serama under Ubuntu [here](https://github.com/dadiplus/serama/blob/master/docs/install.ubuntu.md).
+You can see a complete installation guide for Serama under Ubuntu [here](https://github.com/bantam-framework/serama/blob/master/docs/install.ubuntu.md).
 
 ## Rest API specification
 
@@ -100,7 +100,7 @@ Returns a JSON object with all results from the *{collection name}* collection a
 
 Default views can be overridden using parameters at the point of API request.
 
-You can read about this and the about the collection schema [here](https://github.com/dadiplus/serama/blob/master/docs/endpoints.md).
+You can read about this and the about the collection schema [here](https://github.com/bantam-framework/serama/blob/master/docs/endpoints.md).
 
 #### 2.
 
@@ -128,7 +128,7 @@ Returns a JSON object of the main config file -
 
 *./config.json*
 
-You can read more about this [here](https://github.com/dadiplus/serama/blob/master/docs/configApi.md).
+You can read more about this [here](https://github.com/bantam-framework/serama/blob/master/docs/configApi.md).
 
 #### 5.
 
@@ -138,7 +138,7 @@ Updates the main config file -
 
 *./config.json*
 
-You can read more about this [here](https://github.com/dadiplus/serama/blob/master/docs/configApi.md).
+You can read more about this [here](https://github.com/bantam-framework/serama/blob/master/docs/configApi.md).
 
 #### 6.
 
@@ -190,7 +190,7 @@ Once you have the token, each request to the api should include a header similar
 
 ### Working with endpoints
 
-You can read about collections and custom endpoints in detail [here](https://github.com/dadiplus/serama/blob/master/docs/endpoints.md). If you just want to jump right in, here are some sample API requests -
+You can read about collections and custom endpoints in detail [here](https://github.com/bantam-framework/serama/blob/master/docs/endpoints.md). If you just want to jump right in, here are some sample API requests -
 
 _You may want to look at a handy QA testing tool called [Postman](http://www.getpostman.com/)_
 
@@ -226,17 +226,17 @@ The proper name should always resolve correctly. Alternately, you can set it to 
 
 The `docs/` directory contains additional documentation on the component parts of the system:
 
-* [API module](https://github.com/dadiplus/serama/blob/master/docs/api.md)
-* [Authorisation middleware](https://github.com/dadiplus/serama/blob/master/docs/auth.md)
-* [Caching](https://github.com/dadiplus/serama/blob/master/docs/cache.md)
-* [Config API](https://github.com/dadiplus/serama/blob/master/docs/configApi.md)
-* [Connection module](https://github.com/dadiplus/serama/blob/master/docs/connection.md)
-* [Endpoints](https://github.com/dadiplus/serama/blob/master/docs/endpoints.md)
-* [Extension API](https://github.com/dadiplus/serama/blob/master/docs/extensionApi.md)
-* [Logging](https://github.com/dadiplus/serama/blob/master/docs/logger.md)
-* [Model module](https://github.com/dadiplus/serama/blob/master/docs/model.md)
-* [Monitor module](https://github.com/dadiplus/serama/blob/master/docs/monitor.md)
-* [Validation](https://github.com/dadiplus/serama/blob/master/docs/validation.md)
+* [API module](https://github.com/bantam-framework/serama/blob/master/docs/api.md)
+* [Authorisation middleware](https://github.com/bantam-framework/serama/blob/master/docs/auth.md)
+* [Caching](https://github.com/bantam-framework/serama/blob/master/docs/cache.md)
+* [Config API](https://github.com/bantam-framework/serama/blob/master/docs/configApi.md)
+* [Connection module](https://github.com/bantam-framework/serama/blob/master/docs/connection.md)
+* [Endpoints](https://github.com/bantam-framework/serama/blob/master/docs/endpoints.md)
+* [Extension API](https://github.com/bantam-framework/serama/blob/master/docs/extensionApi.md)
+* [Logging](https://github.com/bantam-framework/serama/blob/master/docs/logger.md)
+* [Model module](https://github.com/bantam-framework/serama/blob/master/docs/model.md)
+* [Monitor module](https://github.com/bantam-framework/serama/blob/master/docs/monitor.md)
+* [Validation](https://github.com/bantam-framework/serama/blob/master/docs/validation.md)
 
 Feel free to contact the Bantam core development team on team@bant.am with questions.
 
@@ -255,7 +255,7 @@ Core contributors -
 
 ### Roadmap
 
-We will capture planned updates and additions here. If you have anything to contribute in terms of future direction, please add as an enhancement request within [issues](https://github.com/dadiplus/serama/issues).
+We will capture planned updates and additions here. If you have anything to contribute in terms of future direction, please add as an enhancement request within [issues](https://github.com/bantam-framework/serama/issues).
 
 Planned additions -
 

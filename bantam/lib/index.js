@@ -159,7 +159,7 @@ Server.prototype.loadConfigApi = function () {
         var method = req.method && req.method.toLowerCase();
         if (method !== 'post') return next();
 
-        var schemaString = typeof req.body === 'object' ? JSON.stringify(req.body) : req.body;
+        var schemaString = typeof req.body === 'object' ? JSON.stringify(req.body, null, 4) : req.body;
         if (typeof schemaString !== 'string') {
             var err = new Error('Bad Syntax');
             err.statusCode = 400;
@@ -313,7 +313,7 @@ Server.prototype.addCollectionResource = function (options) {
     // With each model we create a controller, that acts as a component of the REST api.
     // We then add the component to the api by adding a route to the app and mapping
     // `req.method` to component methods
-    var mod = model(options.name, fields, null, schema.settings);
+    var mod = model(options.name, JSON.parse(fields), null, schema.settings);
     var control = controller(mod);
 
     this.addComponent({
@@ -330,10 +330,11 @@ Server.prototype.addCollectionResource = function (options) {
         // invalidate schema file cache then reload
         delete require.cache[options.filepath];
         try {
-
+	    var schemaObj = require(options.filepath);
+    	    var fields = help.getFieldsFromSchema(schemaObj);
             // This leverages the fact that Javscript's Object keys are references
-            self.components[options.route].model.schema = require(options.filepath).fields;
-            self.components[options.route].model.settings = require(options.filepath).settings;
+            self.components[options.route].model.schema = JSON.parse(fields);
+            self.components[options.route].model.settings = schemaObj.settings;
         } catch (e) {
 
             // if file was removed "un-use" this component
@@ -418,7 +419,8 @@ Server.prototype.addComponent = function (options) {
 
         // set schema
         if (method === 'post' && options.filepath) {
-            return fs.writeFile(options.filepath, req.body, function (err) {
+	    var schemaString = typeof req.body === 'object' ? JSON.stringify(req.body, null, 4) : req.body;
+            return fs.writeFile(options.filepath, schemaString, function (err) {
                 help.sendBackJSON(200, res, next)(err, {result: 'success'});
             });
         }

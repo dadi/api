@@ -86,7 +86,11 @@ function _validate(field, schema) {
     if(schema.type !== 'Mixed') {
         // check constructor of field against primitive types and check the type of field == the specified type
         // using constructor.name as array === object in typeof comparisons
-        if(~primitives.indexOf(field.constructor.name) && schema.type !== field.constructor.name) return schema.message || 'is wrong type';
+        try {
+            if(~primitives.indexOf(field.constructor.name) && schema.type !== field.constructor.name) return schema.message || 'is wrong type';
+        } catch(e) {
+            return schema.message || 'is wrong type';
+        }
     }
 
     // validation passes

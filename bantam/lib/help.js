@@ -65,7 +65,7 @@ function getKeys(obj, keyName, result) {
 module.exports.getFieldsFromSchema = function(obj) {
     var fields = [];
     getKeys(obj, 'fields', fields);
-    return fields[0] || {};
+    return JSON.stringify(fields[0]);
 }
 
 module.exports.validateCollectionSchema = function(obj) {

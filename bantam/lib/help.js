@@ -13,7 +13,7 @@ module.exports.sendBackJSON = function (successCode, res, next) {
 
         var resBody = JSON.stringify(results);
         res.setHeader('content-type', 'application/json');
-        res.setHeader('content-length', resBody.length);
+        res.setHeader('content-length', Buffer.byteLength(resBody));
         res.end(resBody);
     }
 }
@@ -29,7 +29,7 @@ module.exports.sendBackJSONP = function (callbackName, res, next) {
         var resBody = JSON.stringify(results);
         resBody = callbackName + '(' + resBody + ');';
         res.setHeader('content-type', 'text/javascript');
-        res.setHeader('content-length', resBody.length);
+        res.setHeader('content-length', Buffer.byteLength(resBody));
         res.end(resBody);
     }
 }

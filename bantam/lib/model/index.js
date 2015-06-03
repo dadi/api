@@ -57,7 +57,30 @@ var Model = function (name, schema, conn, settings) {
         // if no value is specified, use 'History' suffix by default
         this.revisionCollection = (this.settings.revisionCollection ? this.settings.revisionCollection : this.name + 'History');
     }
+
+    if (this.settings.hasOwnProperty('index') 
+        && this.settings.index.hasOwnProperty('enabled') 
+        && this.settings.index.enabled == true) {
+
+    }
+
 };
+
+Model.prototype.createIndex = function(done) {
+
+    var self = this;
+    _done = function (database) {
+        database.collection(self.name).createIndex(self.settings.index.keys, function (err, doc) {
+            if (err) return done(err);
+            return done(doc);
+        });
+    }
+
+    if (this.connection.db) return _done(this.connection.db);
+
+    // if the db is not connected queue the index creation
+    this.connection.once('connect', _done);
+}
 
 /**
  * Create a document in the database

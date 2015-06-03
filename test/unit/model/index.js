@@ -96,6 +96,21 @@ describe('Model', function () {
             done();
         });
 
+        it('should accept collection indexing settings', function (done) {
+            var mod = model('testModelName', help.getModelSchema(), null, {
+                index: {
+                    enabled: true,
+                    keys: { orderDate: 1 }
+                }
+
+            });
+            should.exist(mod.settings);
+            JSON.parse(JSON.stringify(mod.settings.index)).enabled.should.be.true;
+            JSON.stringify(mod.settings.index.keys).should.equal(JSON.stringify({ orderDate: 1 }));
+
+            done();
+        });
+
         it('should attach `type` definition to model', function (done) {
             var val = 'test type';
 

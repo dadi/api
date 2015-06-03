@@ -208,6 +208,7 @@ describe('Application', function () {
 
         describe('GET', function () {
             before(function (done) {
+
                 help.dropDatabase(function (err) {
                     if (err) return done(err);
 
@@ -216,10 +217,54 @@ describe('Application', function () {
 
                         bearerToken = token;
 
-                        done();
+                        // add a new field to the schema
+                        var jsSchemaString = fs.readFileSync(__dirname + '/../new-schema.json', {encoding: 'utf8'});
+                        jsSchemaString = jsSchemaString.replace('newField', 'field1');
+                        var schema = JSON.parse(jsSchemaString);
+                        schema.fields.field2 = _.extend({}, schema.fields.newField, {
+                            type: 'Number',
+                            required: false
+                        });
+
+                        var client = request(connectionString);
+
+                        client
+                        .post('/vtest/testdb/test-schema/config')
+                        .send(JSON.stringify(schema, null, 4))
+                        .set('content-type', 'text/plain')
+                        .set('Authorization', 'Bearer ' + bearerToken)
+                        .expect(200)
+                        .expect('content-type', 'application/json')
+                        .end(function (err, res) {
+                            if (err) return done(err);
+
+                            done();
+                        });
                     });
                 });
             });
+
+            after(function (done) {
+                // reset the schema
+                var jsSchemaString = fs.readFileSync(__dirname + '/../new-schema.json', {encoding: 'utf8'});
+                jsSchemaString = jsSchemaString.replace('newField', 'field1');
+                var schema = JSON.parse(jsSchemaString);
+
+                var client = request(connectionString);
+
+                client
+                .post('/vtest/testdb/test-schema/config')
+                .send(JSON.stringify(schema, null, 4))
+                .set('content-type', 'text/plain')
+                .set('Authorization', 'Bearer ' + bearerToken)
+                .expect(200)
+                .expect('content-type', 'application/json')
+                .end(function (err, res) {
+                    if (err) return done(err);
+
+                    done();
+                });
+            })
 
             it('should get documents', function (done) {
                help.createDoc(bearerToken, function (err) {
@@ -331,14 +376,15 @@ describe('Application', function () {
                 });
             });
 
-            it('should allow use of an aggregation query', function (done) {
+            it('should return grouped result set when using $group in an aggregation query', function (done) {
                
                 // create a bunch of docs
                 var asyncControl = new EventEmitter();
                 var count = 0;
 
                 for (var i = 0; i < 10; ++i) {
-                   help.createDoc(bearerToken, function (err) {
+                   var doc = {field1: ((Math.random() * 10) | 0).toString(), field2: (Math.random() * 10) | 0};
+                   help.createDocWithParams(bearerToken, doc, function (err) {
                         if (err) return asyncControl.emit('error', err);
                         count += 1;
                         if (count > 9) asyncControl.emit('ready');
@@ -368,11 +414,59 @@ describe('Application', function () {
                         .expect(200)
                         .expect('content-type', 'application/json')
                         .end(function (err, res) {
-                            if (err) return done(err);
+                            if (err) {
+                                return done(err);
+                            }
 
                             res.body.should.be.Array;
                             res.body.length.should.equal(1);
                             res.body[0].averageNumber.should.be.above(0);
+                            done();
+                        });
+                });
+
+            });
+
+            it('should return normal result set when only using $match in an aggregation query', function (done) {
+               
+                // create a bunch of docs
+                var asyncControl = new EventEmitter();
+                var count = 0;
+
+                for (var i = 0; i < 10; ++i) {
+                   var doc = {field1: ((Math.random() * 10) | 0).toString(), field2: (Math.random() * 10) | 0};
+                   help.createDocWithParams(bearerToken, doc, function (err) {
+                        if (err) return asyncControl.emit('error', err);
+                        count += 1;
+                        if (count > 9) asyncControl.emit('ready');
+                    });
+                }
+
+                asyncControl.on('ready', function () {
+
+                    // documents are loaded and test can start
+                    
+                    var client = request(connectionString);
+                    
+                    var query = [
+                        { $match : { "field2" : { "$gte" : 1 } } },
+                        { $limit : 2 }
+                    ];
+
+                    query = encodeURIComponent(JSON.stringify(query));
+                    client
+                        .get('/vtest/testdb/test-schema?filter=' + query)
+                        .set('Authorization', 'Bearer ' + bearerToken)
+                        .expect(200)
+                        .expect('content-type', 'application/json')
+                        .end(function (err, res) {
+                            if (err) {
+                                return done(err);
+                            }
+
+                            res.body.should.be.Array;
+                            res.body.length.should.equal(2);
+                            res.body[0].field1.should.not.be.null;
                             done();
                         });
                 });
@@ -386,7 +480,8 @@ describe('Application', function () {
                 var count = 0;
 
                 for (var i = 0; i < 10; ++i) {
-                   help.createDoc(bearerToken, function (err) {
+                   var doc = {field1: ((Math.random() * 10) | 0).toString(), field2: (Math.random() * 10) | 0}
+                   help.createDocWithParams(bearerToken, doc, function (err) {
                         if (err) return ac.emit('error', err);
                         count += 1;
                         if (count > 9) ac.emit('ready');
@@ -408,10 +503,8 @@ describe('Application', function () {
                         .expect('content-type', 'application/json')
                         .end(function (err, res) {
                             if (err) return done(err);
-
                             res.body.should.be.Array;
                             res.body.length.should.equal(1);
-                            res.body[0].field2.should.be.above(0);
                             done();
                         });
                 });

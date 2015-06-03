@@ -9,21 +9,7 @@
             "validationRule": "",
             "required": false,
             "message": "",
-            "display": { 
-                "index": true,
-                "edit": true
-            }
-        },
-        "field2": {
-            "type": "Number",
-            "label": "Title",
-            "comments": "The title of the entry",
-            "limit": "",
-            "placement": "Main content",
-            "validationRule": "",
-            "required": false,
-            "message": "",
-            "display": { 
+            "display": {
                 "index": true,
                 "edit": true
             }

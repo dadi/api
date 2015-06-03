@@ -60,8 +60,11 @@ var Model = function (name, schema, conn, settings) {
 
     if (this.settings.hasOwnProperty('index') 
         && this.settings.index.hasOwnProperty('enabled') 
-        && this.settings.index.enabled == true) {
-
+        && this.settings.index.enabled == true
+        && this.settings.index.hasOwnProperty('keys') ) {
+        this.createIndex(function(err, indexName) {
+            if (err) console.log(err);
+        });
     }
 
 };
@@ -70,10 +73,14 @@ Model.prototype.createIndex = function(done) {
 
     var self = this;
     _done = function (database) {
-        database.collection(self.name).createIndex(self.settings.index.keys, function (err, doc) {
-            if (err) return done(err);
-            return done(doc);
-        });
+        // Create an index on the specified field(s)
+        database.createIndex(self.name,
+            self.settings.index.keys,
+            self.settings.index.options || {},
+            function (err, indexName) {
+                if (err) return done(err);
+                return done(null, indexName);
+            });
     }
 
     if (this.connection.db) return _done(this.connection.db);
@@ -99,6 +106,7 @@ Model.prototype.create = function (obj, internals, done) {
     }
 
     var validation = this.validate.schema(obj);
+    
     if (!validation.success) {
         var err = validationError('Validation Failed');
         err.json = validation;

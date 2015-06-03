@@ -92,6 +92,28 @@ describe('Application', function () {
                 });
             });
 
+            it('should create new documents when body is urlencoded', function (done) {
+                var body = "field1=foo!";
+                var client = request(connectionString);
+                client
+                .post('/vtest/testdb/test-schema')
+                .set('Authorization', 'Bearer ' + bearerToken)
+                .send(body)
+                .expect(200)
+                .end(function (err, res) {
+                    if (err) return done(err);
+
+                    should.exist(res.body);
+
+                    res.body.should.be.Array;
+                    res.body.length.should.equal(1);
+                    should.exist(res.body[0]._id);
+                    should.exist(res.body[0].field1);
+                    res.body[0].field1.should.equal('foo!');
+                    done();
+                });
+            });
+
             it('should add internal fields to new documents', function (done) {
                 var client = request(connectionString);
                 client
@@ -891,6 +913,7 @@ describe('Application', function () {
                     done();
                 });
             });
+
             it('should allow creating a new collection endpoint', function (done) {
                 var client = request(connectionString);
 

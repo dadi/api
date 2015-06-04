@@ -34,6 +34,7 @@ Server.prototype.start = function (options, done) {
     // add necessary middlewares in order below here...
 
     app.use(bodyParser.json());
+    app.use(bodyParser.urlencoded({ extended: false }));
     app.use(bodyParser.text());
 
     // configure authentication middleware

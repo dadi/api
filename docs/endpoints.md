@@ -112,7 +112,7 @@ Default values for the collection endpoint are set the following way -
         "sortOrder": 1
     }
 
-It is be possible to override these values using parameters at the point of API query (see [Querying a collection](https://github.com/bantam-framework/serama/blob/master/docs/querying.md)).
+It is possible to override these values using parameters at the point of API query (see [Querying a collection](https://github.com/bantam-framework/serama/blob/master/docs/querying.md)).
 
 #### Validation
 

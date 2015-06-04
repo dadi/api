@@ -57,7 +57,37 @@ var Model = function (name, schema, conn, settings) {
         // if no value is specified, use 'History' suffix by default
         this.revisionCollection = (this.settings.revisionCollection ? this.settings.revisionCollection : this.name + 'History');
     }
+
+    if (this.settings.hasOwnProperty('index') 
+        && this.settings.index.hasOwnProperty('enabled') 
+        && this.settings.index.enabled == true
+        && this.settings.index.hasOwnProperty('keys') ) {
+        this.createIndex(function(err, indexName) {
+            if (err) console.log(err);
+        });
+    }
+
 };
+
+Model.prototype.createIndex = function(done) {
+
+    var self = this;
+    _done = function (database) {
+        // Create an index on the specified field(s)
+        database.createIndex(self.name,
+            self.settings.index.keys,
+            self.settings.index.options || {},
+            function (err, indexName) {
+                if (err) return done(err);
+                return done(null, indexName);
+            });
+    }
+
+    if (this.connection.db) return _done(this.connection.db);
+
+    // if the db is not connected queue the index creation
+    this.connection.once('connect', _done);
+}
 
 /**
  * Create a document in the database
@@ -76,6 +106,7 @@ Model.prototype.create = function (obj, internals, done) {
     }
 
     var validation = this.validate.schema(obj);
+    
     if (!validation.success) {
         var err = validationError('Validation Failed');
         err.json = validation;

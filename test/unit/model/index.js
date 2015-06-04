@@ -96,6 +96,21 @@ describe('Model', function () {
             done();
         });
 
+        it('should accept collection indexing settings', function (done) {
+            var mod = model('testModelName', help.getModelSchema(), null, {
+                index: {
+                    enabled: true,
+                    keys: { orderDate: 1 }
+                }
+            });
+
+            should.exist(mod.settings);
+            JSON.parse(JSON.stringify(mod.settings.index)).enabled.should.be.true;
+            JSON.stringify(mod.settings.index.keys).should.equal(JSON.stringify({ orderDate: 1 }));
+
+            done();
+        });
+
         it('should attach `type` definition to model', function (done) {
             var val = 'test type';
 
@@ -236,6 +251,91 @@ describe('Model', function () {
                     done();
                 });
 
+            });
+        });
+    });
+
+    describe('`createIndex` method', function () {
+        
+        it('should be added to model', function (done) {
+            model('testModelName', help.getModelSchema()).createIndex.should.be.Function;
+            done();
+        });
+
+        it('should create index if indexing settings are supplied', function (done) {
+            var conn = connection();
+            var mod = model('testModelName',
+                            help.getModelSchema(),
+                            conn, 
+                            { 
+                                index: 
+                                { 
+                                    enabled: true, 
+                                    keys: { 
+                                        fieldName: 1 
+                                    }, 
+                                    options: { 
+                                        unique: false, 
+                                        background: true, 
+                                        dropDups: false, 
+                                        w: 1
+                                    } 
+                                } 
+                            }
+                        );
+            
+            mod.create({fieldName: "ABCDEF"}, function (err, result) {
+                if (err) return done(err);
+                // Peform a query, with explain to show we hit the query
+                mod.find({"fieldName":"ABC"}, {explain:true}, function(err, explanation) {
+            
+                    explanation[0].indexBounds.fieldName.should.not.be.null;
+
+                    done();
+                });
+            });
+        });
+
+        it('should support compound indexes', function (done) {
+            var conn = connection();
+            var fields = help.getModelSchema();
+            var schema = {};
+            schema.fields = fields;
+            
+            schema.fields.field2 = _.extend({}, schema.fields.fieldName, {
+                type: 'Number',
+                required: false
+            });
+            
+            var mod = model('testModelName',
+                            schema.fields,
+                            conn, 
+                            { 
+                                index: 
+                                { 
+                                    enabled: true, 
+                                    keys: { 
+                                        fieldName: 1,
+                                        field2: 1 
+                                    }, 
+                                    options: { 
+                                        unique: false, 
+                                        background: true, 
+                                        dropDups: false, 
+                                        w: 1
+                                    } 
+                                } 
+                            }
+                        );
+            
+            mod.create({fieldName: "ABCDEF", field2: 2}, function (err, result) {
+                if (err) return done(err);
+                // Peform a query, with explain to show we hit the query
+                mod.find({"fieldName":"ABC", "field2":1}, {explain:true}, function(err, explanation) {
+                    explanation[0].indexBounds.fieldName.should.not.be.null;
+                    explanation[0].indexBounds.field2.should.not.be.null;
+                    done();
+                });
             });
         });
     });

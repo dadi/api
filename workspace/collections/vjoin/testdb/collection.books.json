@@ -40,6 +40,14 @@
         "allowExtension": false,
         "count": 40,
         "sortOrder": 1,
+        "storeRevisions": true,
+        "revisionCollection": "booksHistory",
+        "index": { 
+            "enabled": true, 
+            "keys": { 
+                "authorId": 1
+            } 
+        },
         "description": "Allows for a [Markdown](http://daringfireball.net/projects/markdown/syntax) **formatted** description to explain the purpose of this **model**."
     }
 }

@@ -68,7 +68,7 @@ module.exports = function (server) {
 
                 res.statusCode = 200;
                 res.setHeader('content-type', dataType);
-                res.setHeader('content-length', resBody.length);
+                res.setHeader('content-length', Buffer.byteLength(resBody));
 
                 // notice resBody is already a string
                 res.end(resBody);

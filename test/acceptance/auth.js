@@ -3,6 +3,7 @@ var request = require('supertest');
 var config = require(__dirname + '/../../config');
 var help = require(__dirname + '/help');
 var app = require(__dirname + '/../../bantam/lib/');
+var tokens = require(__dirname + '/../../bantam/lib/auth/tokens');
 var fs = require('fs');
 
 var originalSchemaPath = __dirname + '/../new-schema.json';
@@ -155,6 +156,52 @@ describe('Authentication', function () {
                     });
                 }, 300);
             });
+        });
+    });
+
+    it('should allow access to collection specified in client permissions list', function (done) {
+
+        var permissions = { permissions: { collections: [ "test-schema" ] } } 
+
+        help.getBearerTokenWithPermissions(permissions, function (err, token) {
+                
+            var client = request('http://' + config.server.host + ':' + config.server.port);
+
+            // Wait, then test that we can make an unauthenticated request
+            setTimeout(function () {
+                client
+                .get('/vtest/testdb/test-schema?cache=false')
+                .set('Authorization', 'Bearer ' + token)
+                .expect(200)
+                //.expect('content-type', 'application/json')
+                .end(function(err,res) {
+                    if (err) return done(err);
+                    done();
+                });
+            }, 300);
+        });
+    });
+
+    it('should not allow access to collection not specified in client permissions list', function (done) {
+
+        var permissions = { permissions: { collections: [ "books" ] } } 
+
+        help.getBearerTokenWithPermissions(permissions, function (err, token) {
+
+            var client = request('http://' + config.server.host + ':' + config.server.port);
+
+            // Wait, then test that we can make an unauthenticated request
+            setTimeout(function () {
+                client
+                .get('/vtest/testdb/test-schema?cache=false')
+                .set('Authorization', 'Bearer ' + token)
+                .expect(401)
+                //.expect('content-type', 'application/json')
+                .end(function(err,res) {
+                    if (err) return done(err);
+                    done();
+                });
+            }, 300);
         });
     });
 

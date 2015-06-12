@@ -30,10 +30,17 @@ function isAuthorized(endpoints, path, client) {
 
     if (!endpointKey) return true;
 
-    if (!client.permissions || !client.permissions.collections) return true;
-    
-    if (client.permissions.collections.indexOf(endpoints[endpointKey].model.name) > -1) {
-        return true;
+    if (!client.permissions || !(client.permissions.collections || client.permissions.endpoints)) return true;
+
+    if (endpoints[endpointKey].model) {
+        if (client.permissions.collections.indexOf(endpoints[endpointKey].model.name) > -1) {
+            return true;
+        }
+    }
+    else if (endpoints[endpointKey].get) {
+        if (client.permissions.endpoints.indexOf(endpointKey.replace('/endpoints/','')) > -1) {
+            return true;
+        }
     }
     else {
         return false;

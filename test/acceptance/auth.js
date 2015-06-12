@@ -205,4 +205,92 @@ describe('Authentication', function () {
         });
     });
 
+    it('should allow access to endpoint specified in client permissions list', function (done) {
+
+        var permissions = { permissions: { endpoints: [ "test-endpoint" ] } } 
+
+        help.getBearerTokenWithPermissions(permissions, function (err, token) {
+                
+            var client = request('http://' + config.server.host + ':' + config.server.port);
+
+            // Wait, then test that we can make an unauthenticated request
+            setTimeout(function () {
+                client
+                .get('/endpoints/test-endpoint')
+                .set('Authorization', 'Bearer ' + token)
+                .expect(200)
+                //.expect('content-type', 'application/json')
+                .end(function(err,res) {
+                    if (err) return done(err);
+                    done();
+                });
+            }, 300);
+        });
+    });
+
+    it('should not allow access to endpoint not specified in client permissions list', function (done) {
+
+        var permissions = { permissions: { endpoints: [ "xxxx-endpoint" ] } } 
+
+        help.getBearerTokenWithPermissions(permissions, function (err, token) {
+
+            var client = request('http://' + config.server.host + ':' + config.server.port);
+
+            // Wait, then test that we can make an unauthenticated request
+            setTimeout(function () {
+                client
+                .get('/endpoints/test-endpoint')
+                .set('Authorization', 'Bearer ' + token)
+                .expect(401)
+                //.expect('content-type', 'application/json')
+                .end(function(err,res) {
+                    if (err) return done(err);
+                    done();
+                });
+            }, 300);
+        });
+    });
+
+    it('should allow access to collection when no permissions specified', function (done) {
+
+        help.getBearerToken(function (err, token) {
+                
+            var client = request('http://' + config.server.host + ':' + config.server.port);
+
+            // Wait, then test that we can make an unauthenticated request
+            setTimeout(function () {
+                client
+                .get('/vtest/testdb/test-schema')
+                .set('Authorization', 'Bearer ' + token)
+                .expect(200)
+                //.expect('content-type', 'application/json')
+                .end(function(err,res) {
+                    if (err) return done(err);
+                    done();
+                });
+            }, 300);
+        });
+    });
+
+    it('should allow access to endpoint when no permissions specified', function (done) {
+
+        help.getBearerToken(function (err, token) {
+                
+            var client = request('http://' + config.server.host + ':' + config.server.port);
+
+            // Wait, then test that we can make an unauthenticated request
+            setTimeout(function () {
+                client
+                .get('/endpoints/test-endpoint')
+                .set('Authorization', 'Bearer ' + token)
+                .expect(200)
+                //.expect('content-type', 'application/json')
+                .end(function(err,res) {
+                    if (err) return done(err);
+                    done();
+                });
+            }, 300);
+        });
+    });
+
 });

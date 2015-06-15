@@ -1,14 +1,16 @@
+var url = require('url');
 var config = require(__dirname + '/../../../config');
 var tokens = require(__dirname + '/tokens');
 var _ = require('underscore');
 
-
-function mustAuthenticate(endpoints, url) {
+function mustAuthenticate(endpoints, path) {
+    
+    path = url.parse(path, true);
     
     // all /config requests must be authenticated
-    if (url.indexOf('config') > -1) return true;
+    if (path.pathname.indexOf('config') > -1) return true;
 
-    var endpointKey = _.find(_.keys(endpoints), function (k){ return k.indexOf(url) > -1; });
+    var endpointKey = _.find(_.keys(endpoints), function (k){ return k.indexOf(path.pathname) > -1; });
     
     if (!endpointKey) return true;
 
@@ -17,6 +19,31 @@ function mustAuthenticate(endpoints, url) {
     }
     else {
         return true;
+    }
+}
+
+function isAuthorized(endpoints, path, client) {
+
+    path = url.parse(path, true);
+    
+    var endpointKey = _.find(_.keys(endpoints), function (k){ return k.indexOf(path.pathname) > -1; });
+
+    if (!endpointKey) return true;
+
+    if (!client.permissions || !(client.permissions.collections || client.permissions.endpoints)) return true;
+
+    if (endpoints[endpointKey].model) {
+        if (client.permissions.collections.indexOf(endpoints[endpointKey].model.name) > -1) {
+            return true;
+        }
+    }
+    else if (endpoints[endpointKey].get) {
+        if (client.permissions.endpoints.indexOf(endpointKey.replace('/endpoints/','')) > -1) {
+            return true;
+        }
+    }
+    else {
+        return false;
     }
 }
 
@@ -45,14 +72,22 @@ module.exports = function (server) {
         if (!token) return fail();
 
         tokens.validate(token, function (err, client) {
+
             if (err) return next(err);
 
             // If token is good continue, else `fail()`
             if (client) {
 
-                // Token is valid attach client to request
-                req.client = client;
-                return next();
+                if (!isAuthorized(server.components, req.url, client)) {
+                    var err = new Error('ClientId not authorized to access requested collection.');
+                    err.statusCode = 401;
+                    next(err);
+                }
+                else {
+                    // Token is valid attach client to request
+                    req.client = client;
+                    return next();
+                }
             }
 
             fail();

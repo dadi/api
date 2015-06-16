@@ -458,7 +458,7 @@ describe('Model', function () {
                 mod.find({fieldName: 'bar'}, function (err, result) {
                     if (err) return done(err);
 
-                    should.exist(result && result[0]);
+                    should.exist(result['results'] && result['results'][0]);
                     result['results'][0].fieldName.should.equal('bar');
 
                     should.exist(result['results'][0].history);

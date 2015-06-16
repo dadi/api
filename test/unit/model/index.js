@@ -437,8 +437,8 @@ describe('Model', function () {
                 mod.find({fieldName: 'bar'}, function (err, result) {
                     if (err) return done(err);
 
-                    should.exist(result && result[0]);
-                    result[0].fieldName.should.equal('bar');
+                    should.exist(result['results'] && result['results'][0]);
+                    result['results'][0].fieldName.should.equal('bar');
                     done();
                 })
             });
@@ -459,10 +459,10 @@ describe('Model', function () {
                     if (err) return done(err);
 
                     should.exist(result && result[0]);
-                    result[0].fieldName.should.equal('bar');
+                    result['results'][0].fieldName.should.equal('bar');
 
-                    should.exist(result[0].history);
-                    result[0].history.length.should.equal(2); // two revisions, one from initial create and one from the update
+                    should.exist(result['results'][0].history);
+                    result['results'][0].history.length.should.equal(2); // two revisions, one from initial create and one from the update
 
                     done();
                 })
@@ -512,7 +512,7 @@ describe('Model', function () {
                     mod.find({}, function (err, result) {
                         if (err) return done(err);
 
-                        result.length.should.equal(0);
+                        result['results'].length.should.equal(0);
                         done();
                     });
                 });

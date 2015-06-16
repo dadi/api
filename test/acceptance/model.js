@@ -8,7 +8,7 @@ var config = require(__dirname + '/../../config');
 describe('Model', function () {
     it('should connect to database matching name', function (done) {
         var schema = require(__dirname + '/workspace/secondary-db/vtest/secondary/collection.secondary-schema.json');
-        var mod = model('secondary', help.getFieldsFromSchema());
+        var mod = model('secondary', help.getFieldsFromSchema(schema));
 
         var conn = mod.connection;
         conn.database.should.equal('secondary');

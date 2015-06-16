@@ -442,7 +442,6 @@ Server.prototype.addComponent = function (options) {
     });
 
     this.app.use(options.route, function (req, res, next) {
-
         // map request method to controller method
         var method = req.method && req.method.toLowerCase();
         if (method && options.component[method]) return options.component[method](req, res, next);

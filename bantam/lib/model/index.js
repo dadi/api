@@ -189,7 +189,22 @@ Model.prototype.find = function (query, options, done) {
         _done = function (database) {
             database.collection(self.name).find(query, options, function (err, cursor) {
                 if (err) return done(err);
-                cursor.toArray(done);
+
+                var results = {};
+
+                cursor.count(function (err, count) {
+                    if (err) return done(err);
+
+                    var resultArray = cursor.toArray(function (err, result) {
+                        if (err) return done(err);
+
+                        results.results = result;
+                        results.metadata = getMetadata(options, count);
+                        
+                        done(null, results);
+                    });
+                });
+
             });
         }
 
@@ -378,4 +393,24 @@ function validationError(message) {
     var err = new Error(message || 'Model Validation Failed');
     err.statusCode = 400
     return err;
+}
+
+function getMetadata(options, count) {
+    var meta = _.extend({}, options);    
+    delete meta.skip;
+
+    meta.page = options.page || 1;
+    meta.offset = options.skip || 0;
+    meta.totalCount = count;
+    meta.totalPages = Math.ceil(count / options.limit);
+
+    if (meta.page < meta.totalPages) {
+        meta.nextPage = (meta.page + 1);
+    }
+
+    if (meta.page > 1 && meta.page <= meta.totalPages) {
+        meta.prevPage = meta.page - 1;
+    }
+
+    return meta;
 }

@@ -51,14 +51,14 @@ describe('History', function () {
                 mod.find({fieldName: 'foo'}, function (err, doc) {
                     if (err) return done(err);
 
-                    mod.history.create(doc[0], mod, function (err, res) {
+                    mod.history.create(doc['results'][0], mod, function (err, res) {
                         if (err) return done(err);
 
                         mod.find({fieldName: 'foo'}, function (err, doc) {
                             if (err) return done(err);
 
-                            should.exist(doc);
-                            doc[0].history.length.should.equal(2);
+                            should.exist(doc['results']);
+                            doc['results'][0].history.length.should.equal(2);
                             done();
                         });
                     });
@@ -88,14 +88,14 @@ describe('History', function () {
                     mod.find({}, function (err, docs) {
                         if (err) return done(err);
 
-                        mod.history.createEach(docs, mod, function (err, res) {
+                        mod.history.createEach(docs['results'], mod, function (err, res) {
                             if (err) return done(err);
 
                             mod.find({}, function (err, docs) {
                                 if (err) return done(err);
 
-                                docs[0].history.length.should.equal(2);
-                                docs[1].history.length.should.equal(2);
+                                docs['results'][0].history.length.should.equal(2);
+                                docs['results'][1].history.length.should.equal(2);
                                 done();
                             });
                         });

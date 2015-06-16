@@ -234,8 +234,8 @@ describe('Model', function () {
                 mod.find({fieldName: 'foo'}, function (err, doc) {
                     if (err) return done(err);
 
-                    var doc_id = doc[0]._id;
-                    var revision_id = doc[0].history[0]; // expected history object
+                    var doc_id = doc['results'][0]._id;
+                    var revision_id = doc['results'][0].history[0]; // expected history object
 
                     model('testModelName', help.getModelSchema()).revisions(doc_id, function (err, result) {
                         if (err) return done(err);
@@ -289,7 +289,7 @@ describe('Model', function () {
                 // Peform a query, with explain to show we hit the query
                 mod.find({"fieldName":"ABC"}, {explain:true}, function(err, explanation) {
             
-                    explanation[0].indexBounds.fieldName.should.not.be.null;
+                    explanation['results'][0].indexBounds.fieldName.should.not.be.null;
 
                     done();
                 });
@@ -332,8 +332,8 @@ describe('Model', function () {
                 if (err) return done(err);
                 // Peform a query, with explain to show we hit the query
                 mod.find({"fieldName":"ABC", "field2":1}, {explain:true}, function(err, explanation) {
-                    explanation[0].indexBounds.fieldName.should.not.be.null;
-                    explanation[0].indexBounds.field2.should.not.be.null;
+                    explanation['results'][0].indexBounds.fieldName.should.not.be.null;
+                    explanation['results'][0].indexBounds.field2.should.not.be.null;
                     done();
                 });
             });
@@ -361,8 +361,8 @@ describe('Model', function () {
                 mod.find({fieldName: 'foo'}, function (err, doc) {
                     if (err) return done(err);
 
-                    should.exist(doc);
-                    doc[0].fieldName.should.equal('foo');
+                    should.exist(doc['results']);
+                    doc['results'][0].fieldName.should.equal('foo');
                     done();
                 });
             });
@@ -376,9 +376,9 @@ describe('Model', function () {
                 mod.find({fieldName: 'foo'}, function (err, doc) {
                     if (err) return done(err);
 
-                    should.exist(doc);
-                    doc[0].history.should.be.Array;
-                    doc[0].history.length.should.equal(1);
+                    should.exist(doc['results']);
+                    doc['results'][0].history.should.be.Array;
+                    doc['results'][0].history.length.should.equal(1);
                     done();
                 });
             });

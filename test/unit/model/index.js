@@ -297,7 +297,8 @@ describe('Model', function () {
         });
 
         it('should support compound indexes', function (done) {
-            var conn = connection();
+	    help.cleanUpDB();  
+	    var conn = connection();
             var fields = help.getModelSchema();
             var schema = {};
             schema.fields = fields;
@@ -332,8 +333,8 @@ describe('Model', function () {
                 if (err) return done(err);
                 // Peform a query, with explain to show we hit the query
                 mod.find({"fieldName":"ABC", "field2":1}, {explain:true}, function(err, explanation) {
-                    explanation['results'][0].indexBounds.fieldName.should.not.be.null;
-                    explanation['results'][0].indexBounds.field2.should.not.be.null;
+                    explanation['results'][0].indexBounds.fieldName.should.exist;
+                    explanation['results'][0].indexBounds.field2.should.exist;
                     done();
                 });
             });
@@ -375,7 +376,6 @@ describe('Model', function () {
 
                 mod.find({fieldName: 'foo'}, function (err, doc) {
                     if (err) return done(err);
-
                     should.exist(doc['results']);
                     doc['results'][0].history.should.be.Array;
                     doc['results'][0].history.length.should.equal(1);

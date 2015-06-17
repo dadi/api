@@ -302,31 +302,31 @@ Model.prototype.update = function (query, update, internals, done) {
         var updatedDocs = [];
         self.find(query, {}, function(err, docs) {
             if (err) return done(err);
-            updatedDocs = docs;
-        });
+            updatedDocs = docs['results'];
 
-        database.collection(self.name).update(query, setUpdate, function (err, numAffected) {
-            if (err) return done(err);
-            if (!numAffected) {
-                err = new Error('Not Found');
-                err.statusCode = 404;
-                return done(err);
-            }
+            database.collection(self.name).update(query, setUpdate, function (err, numAffected) {
+                if (err) return done(err);
+                if (!numAffected) {
+                    err = new Error('Not Found');
+                    err.statusCode = 404;
+                    return done(err);
+                }
 
-            // query and doc `_id` should be equal
-            query._id && (update._id = query._id);
+                // query and doc `_id` should be equal
+                query._id && (update._id = query._id);
 
-            // for each of the updated documents, create
-            // a history revision for it
-            if (self.history && updatedDocs.length > 0) {
-                self.history.createEach(updatedDocs, self, function(err, docs) {
-                    if (err) return done(err);
+                // for each of the updated documents, create
+                // a history revision for it
+                if (self.history && updatedDocs.length > 0) {
+                    self.history.createEach(updatedDocs, self, function(err, docs) {
+                        if (err) return done(err);
+                        done(null, update);
+                    });
+                }
+                else {
                     done(null, update);
-                });
-            }
-            else {
-                done(null, update);
-            }
+                }
+            });
         });
     };
 

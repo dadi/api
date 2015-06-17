@@ -399,16 +399,17 @@ describe('Model', function () {
         beforeEach(function (done) {
             help.cleanUpDB(function (err) {
                 if (err) return done(err);
+                var mod = model('testModelName', help.getModelSchema());
 
                 // create model to be updated by tests
-                model('testModelName', help.getModelSchema()).create({
+                mod.create({
                     fieldName: 'foo'
                 }, function (err, result) {
                     if (err) return done(err);
 
                     should.exist(result && result[0]);
                     result[0].fieldName.should.equal('foo');
-
+                    
                     done();
                 });
             });

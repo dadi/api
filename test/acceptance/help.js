@@ -4,6 +4,7 @@ var should = require('should');
 var connection = require(__dirname + '/../../bantam/lib/model/connection');
 var config = require(__dirname + '/../../config');
 var request = require('supertest');
+var _ = require('underscore');
 
 var clientCollectionName = config.auth.database.clientCollection;
 
@@ -47,14 +48,28 @@ module.exports.dropDatabase = function (done) {
     });
 };
 
-module.exports.createClient = function (done) {
+module.exports.createClient = function (client, done) {
+
+    if (!client) {
+        client = {
+            clientId: 'test123',
+            secret: 'superSecret'
+        }
+    }
+
     var clientStore = connection(config.auth.database);
 
     clientStore.on('connect', function (db) {
-        db.collection(clientCollectionName).insert({
-            clientId: 'test123',
-            secret: 'superSecret'
-        }, done);
+        db.collection(clientCollectionName).insert(client, done);
+    });
+};
+
+module.exports.removeClients = function (done) {
+
+    var clientStore = connection(config.auth.database);
+
+    clientStore.on('connect', function (db) {
+        db.collection(clientCollectionName).remove(done);
     });
 };
 
@@ -67,7 +82,12 @@ module.exports.clearCache = function () {
 }
 
 module.exports.getBearerToken = function (done) {
-    module.exports.createClient(function (err) {
+
+    module.exports.removeClients(function() {
+        //console.log('module.exports.getBearerToken: removed clients');
+    });
+
+    module.exports.createClient(null, function (err) {
         if (err) return done(err);
 
         request('http://' + config.server.host + ':' + config.server.port)
@@ -82,6 +102,38 @@ module.exports.getBearerToken = function (done) {
             if (err) return done(err);
 
             var bearerToken = res.body.accessToken;
+            should.exist(bearerToken);
+            done(null, bearerToken);
+        });
+    });
+};
+
+module.exports.getBearerTokenWithPermissions = function (permissions, done) {
+
+    var client = {
+        clientId: 'test123',
+        secret: 'superSecret'
+    }
+
+    var clientWithPermissions = _.extend(client, permissions);
+
+    module.exports.removeClients(function() {
+        //console.log('module.exports.getBearerTokenWithPermissions: removed clients');
+    });
+
+    module.exports.createClient(clientWithPermissions, function (err) {
+        if (err) return done(err);
+
+        request('http://' + config.server.host + ':' + config.server.port)
+        .post(config.auth.tokenUrl)
+        .send(client)
+        .expect(200)
+        //.expect('content-type', 'application/json')
+        .end(function (err, res) {
+            if (err) return done(err);
+
+            var bearerToken = res.body.accessToken;
+
             should.exist(bearerToken);
             done(null, bearerToken);
         });

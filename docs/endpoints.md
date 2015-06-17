@@ -112,7 +112,7 @@ Default values for the collection endpoint are set the following way -
         "sortOrder": 1
     }
 
-It is be possible to override these values using parameters at the point of API query (see "Querying a collection" below).
+It is possible to override these values using parameters at the point of API query (see [Querying a collection](https://github.com/bantam-framework/serama/blob/master/docs/querying.md)).
 
 #### Validation
 
@@ -139,19 +139,6 @@ If a record fails validation an errors collection should be returned with the re
     }
 
 **Note:** The default message for a field that fails validation rules is "is invalid". If a `required` field has been left blank the message should change to "can't be blank". 
-
-### Querying a collection
-
-It is possible to override the default view for a collection using the parameters specified below, opening up the possibility of defining your busines/domain logic within the API request itself.
-
- Parameter       | Type        |  Description                                  | Default value        |  Example
-:----------------|:------------|:----------------------------------------------|:---------------------|:--------------
-count            | integer     | Number of results to be displayed on a page   | 50                   | 10
-page             | integer     | Page number                                   | 1                    | 2
-sort             | string      | Field id for sorting                          | _id                  |
-sortOrder       | string      | Sort direction                                | asc                  | desc
-filter           | json        | MongoDB query json                            |                      | {fieldName: {"$in": ["a", "b"]}}
-callback         | string      | Callback function to wrap the return result set in.  |               | thisIsMyCallback
 
 ## Custom endpoints
 

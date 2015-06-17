@@ -21,7 +21,7 @@ describe('Cache', function (done) {
     });
 
     after(function (done) {
-        done();
+        app.stop(done);
     });
 
     beforeEach(function (done) {
@@ -41,7 +41,7 @@ describe('Cache', function (done) {
 
     it('should call file system stat', function (done) {
 
-        var stub = sinon.stub(fs, 'stat', function() {
+        var stub = sinon.stub(fs, 'stat', function (path, done) {
             stub.called.should.be.true;
 
             var args = stub.getCall(0).args;
@@ -62,6 +62,8 @@ describe('Cache', function (done) {
         .expect(200)
         .end(function (err, res) {
             if (err) return done(err);
+
+            done();
         });
 
     });

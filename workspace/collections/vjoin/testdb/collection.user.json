@@ -23,6 +23,15 @@
         "fieldLimiters": null,
         "allowExtension": false,
         "count": 40,
-        "sortOrder": 1
+        "sortOrder": 1,
+        "storeRevisions": true,
+        "revisionCollection": "userHistory",
+        "index": { 
+            "enabled": true, 
+            "keys": { 
+                "name": 1
+            } 
+        },
+        "description": "Represents members who have registered with the system."
     }
 }

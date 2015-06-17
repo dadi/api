@@ -28,12 +28,16 @@ Model(name, fields, [connection], settings) -
 * `sortOrder` 1
 * `storeRevisions` true
 * `revisionCollection` "testSchemaHistory"
+* `index`
 
 ## Database Indexes
 
-Database indexes can be automatically created for a collection by specifying the fields to be indexed in the `settings` object. 
+Indexes provide high performance read operations for frequently used queries and are fundmental in ensuring performance under load and at scale.
 
+Database indexes can be automatically created for a collection by specifying the fields to be indexed in the `settings` object. 
 An index will be created on the collection using the fields specified in the `index.keys` setting. A value of `keys: { fieldName: 1 }` will create an index for field `fieldName` using an ascending order. `keys: { fieldName: -1 }` will create an index for field `fieldName` using a descending order. Specifying multiple fields will create a compound index.
+
+The index will be created in the background to avoid blocking other database operations.
 
 #### settings.index
 

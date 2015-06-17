@@ -291,13 +291,13 @@ describe('Application', function () {
             })
 
             it('should get documents', function (done) {
-               help.createDoc(bearerToken, function (err) {
+               help.createDoc(bearerToken, function (err, doc) {
                     if (err) return done(err);
 
                     var client = request(connectionString);
 
                     client
-                    .get('/vtest/testdb/test-schema')
+                    .get('/vtest/testdb/test-schema?cache=false')
                     .set('Authorization', 'Bearer ' + bearerToken)
                     .expect(200)
                     .expect('content-type', 'application/json')

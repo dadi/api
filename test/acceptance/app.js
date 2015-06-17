@@ -1111,7 +1111,6 @@ describe('Application', function () {
             //.expect('content-type', 'application/json')
             .end(function (err, res) {
                 if (err) return done(err);
-
                 res.body.message.should.equal('Hello World');
                 done();
             });

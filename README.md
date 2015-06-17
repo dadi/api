@@ -236,7 +236,7 @@ The `docs/` directory contains additional documentation on the component parts o
 * [Logging](https://github.com/bantam-framework/serama/blob/master/docs/logger.md)
 * [Model module](https://github.com/bantam-framework/serama/blob/master/docs/model.md)
 * [Monitor module](https://github.com/bantam-framework/serama/blob/master/docs/monitor.md)
-* [Querying](https://github.com/bantam-framework/serama/blob/master/docs/querying.md)
+* [Querying a collection](https://github.com/bantam-framework/serama/blob/master/docs/querying.md)
 * [Validation](https://github.com/bantam-framework/serama/blob/master/docs/validation.md)
 
 Feel free to contact the Bantam core development team on team@bant.am with questions.

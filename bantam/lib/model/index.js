@@ -402,7 +402,7 @@ function getMetadata(options, count) {
     meta.page = options.page || 1;
     meta.offset = options.skip || 0;
     meta.totalCount = count;
-    meta.totalPages = Math.ceil(count / options.limit);
+    meta.totalPages = Math.ceil(count / (options.limit || 1));
 
     if (meta.page < meta.totalPages) {
         meta.nextPage = (meta.page + 1);

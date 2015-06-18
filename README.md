@@ -106,7 +106,7 @@ You can read about this and the about the collection schema [here](https://githu
 
 **GET** *http://{url}/endpoints/{endpoint name}*
 
-Returns a JSON object. Parameters and return are completely customisable. The output is generated using the file -
+Returns a JSON object. Parameters and return are completely customisable. The output is generated using the file:
 
 *workspace/endpoints/endpoint.{endpoint name}.js*
 
@@ -116,7 +116,7 @@ See `test/acceptance/workspace/endpoints/endpoint.test-endpoint.js` for a "Hello
 
 **GET** *http://{url}/{version number}/{database name}/{collection name}/config*
 
-Returns a JSON object of the schema file -
+Returns a JSON object of the schema file:
 
 *./workspace/collections/v{version number}/{database name}/collection.{collection name}.json*
 
@@ -124,7 +124,7 @@ Returns a JSON object of the schema file -
 
 **GET** *http://{url}/serama/config*
 
-Returns a JSON object of the main config file -
+Returns a JSON object of the main config file:
 
 *./config.json*
 
@@ -134,7 +134,7 @@ You can read more about this [here](https://github.com/bantam-framework/serama/b
 
 **POST** *http://{url}/serama/config*
 
-Updates the main config file -
+Updates the main config file:
 
 *./config.json*
 
@@ -148,7 +148,7 @@ Adds a new record to the collection specified by *{collection name}* in the *{da
 
 If the record passes validation it is inserted into the collection.
 
-The following additional fields are saved alongside with every record -
+The following additional fields are saved alongside with every record:
 
 * *created_at*: timestamp of creation
 * *created_by*: user id of creator
@@ -162,7 +162,7 @@ Updates an existing record with the id of *{:id}* in the *{collection name}* col
 
 If the record passes validation it will be updated.
 
-The following additional fields are added/updated alongside every passed field -
+The following additional fields are added/updated alongside every passed field:
 
 * *last_modified_at*: timestamp of modification
 * *last_modified_by*: user id of updater
@@ -175,7 +175,7 @@ Deletes the record with the id of *{:id}* in the *{collection name}* collection 
 
 ### Authorisation
 
-You can get a bearer token as follows -
+You can get a bearer token as follows:
 
     POST /token HTTP/1.1
     Host: localhost:3000
@@ -184,13 +184,13 @@ You can get a bearer token as follows -
 
     { "clientId": "testClient", "secret": "superSecret" }
 
-Once you have the token, each request to the api should include a header similar to the one below (of course use your specific token) -
+Once you have the token, each request to the api should include a header similar to the one below (of course use your specific token):
 
     Authorization: Bearer 171c8c12-6e9b-47a8-be29-0524070b0c65
 
 ### Working with endpoints
 
-You can read about collections and custom endpoints in detail [here](https://github.com/bantam-framework/serama/blob/master/docs/endpoints.md). If you just want to jump right in, here are some sample API requests -
+You can read about collections and custom endpoints in detail [here](https://github.com/bantam-framework/serama/blob/master/docs/endpoints.md). If you just want to jump right in, here are some sample API requests:
 
 _You may want to look at a handy QA testing tool called [Postman](http://www.getpostman.com/)_
 
@@ -206,7 +206,7 @@ _You may want to look at a handy QA testing tool called [Postman](http://www.get
 
 #### Endpoint GET request
 
-This will return a "Hello World" example -
+This will return a "Hello World" example:
 
     GET /endpoints/test-endpoint HTTP/1.1
     Host: localhost:3000
@@ -236,6 +236,7 @@ The `docs/` directory contains additional documentation on the component parts o
 * [Logging](https://github.com/bantam-framework/serama/blob/master/docs/logger.md)
 * [Model module](https://github.com/bantam-framework/serama/blob/master/docs/model.md)
 * [Monitor module](https://github.com/bantam-framework/serama/blob/master/docs/monitor.md)
+* [Querying a collection](https://github.com/bantam-framework/serama/blob/master/docs/querying.md)
 * [Validation](https://github.com/bantam-framework/serama/blob/master/docs/validation.md)
 
 Feel free to contact the Bantam core development team on team@bant.am with questions.
@@ -244,7 +245,7 @@ Feel free to contact the Bantam core development team on team@bant.am with quest
 
 Serama was conceived, developed and is maintained by the engineering team at DADI+ ([https://dadi.co](https://dadi.co)).
 
-Core contributors -
+Core contributors:
 
 * Joseph Denne
 * Joe Warner
@@ -257,7 +258,7 @@ Core contributors -
 
 We will capture planned updates and additions here. If you have anything to contribute in terms of future direction, please add as an enhancement request within [issues](https://github.com/bantam-framework/serama/issues).
 
-Planned additions -
+Planned additions:
 
 * Auto documentator
 * Collection level ACL
@@ -266,7 +267,7 @@ Planned additions -
 
 Semantic Versioning 2.0.0
 
-Given a version number MAJOR.MINOR.PATCH, increment the -
+Given a version number MAJOR.MINOR.PATCH, increment the:
 
 * MAJOR version when you make incompatible API changes,
 * MINOR version when you add functionality in a backwards-compatible manner, and

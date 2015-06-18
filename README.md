@@ -248,7 +248,7 @@ Serama was conceived, developed and is maintained by the engineering team at DAD
 Core contributors:
 
 * Joseph Denne
-* Joe Warner
+* Joe Wagner
 * Viktor Fero
 * James Lambie
 * Dave Allen

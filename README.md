@@ -283,7 +283,7 @@ Fork, hack, possibly even add some tests, then send a pull request :)
 
 ## Licence
 
-Copyright (c) 2014, DADI+ Limited (https://dadi.co).
+Copyright (c) 2015, DADI+ Limited (https://dadi.co).
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal

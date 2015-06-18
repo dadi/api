@@ -234,8 +234,8 @@ describe('Model', function () {
                 mod.find({fieldName: 'foo'}, function (err, doc) {
                     if (err) return done(err);
 
-                    var doc_id = doc[0]._id;
-                    var revision_id = doc[0].history[0]; // expected history object
+                    var doc_id = doc['results'][0]._id;
+                    var revision_id = doc['results'][0].history[0]; // expected history object
 
                     model('testModelName', help.getModelSchema()).revisions(doc_id, function (err, result) {
                         if (err) return done(err);
@@ -289,7 +289,7 @@ describe('Model', function () {
                 // Peform a query, with explain to show we hit the query
                 mod.find({"fieldName":"ABC"}, {explain:true}, function(err, explanation) {
             
-                    explanation[0].indexBounds.fieldName.should.not.be.null;
+                    explanation['results'][0].indexBounds.fieldName.should.not.be.null;
 
                     done();
                 });
@@ -297,7 +297,8 @@ describe('Model', function () {
         });
 
         it('should support compound indexes', function (done) {
-            var conn = connection();
+	    help.cleanUpDB();  
+	    var conn = connection();
             var fields = help.getModelSchema();
             var schema = {};
             schema.fields = fields;
@@ -332,8 +333,8 @@ describe('Model', function () {
                 if (err) return done(err);
                 // Peform a query, with explain to show we hit the query
                 mod.find({"fieldName":"ABC", "field2":1}, {explain:true}, function(err, explanation) {
-                    explanation[0].indexBounds.fieldName.should.not.be.null;
-                    explanation[0].indexBounds.field2.should.not.be.null;
+                    explanation['results'][0].indexBounds.fieldName.should.exist;
+                    explanation['results'][0].indexBounds.field2.should.exist;
                     done();
                 });
             });
@@ -361,8 +362,8 @@ describe('Model', function () {
                 mod.find({fieldName: 'foo'}, function (err, doc) {
                     if (err) return done(err);
 
-                    should.exist(doc);
-                    doc[0].fieldName.should.equal('foo');
+                    should.exist(doc['results']);
+                    doc['results'][0].fieldName.should.equal('foo');
                     done();
                 });
             });
@@ -375,10 +376,9 @@ describe('Model', function () {
 
                 mod.find({fieldName: 'foo'}, function (err, doc) {
                     if (err) return done(err);
-
-                    should.exist(doc);
-                    doc[0].history.should.be.Array;
-                    doc[0].history.length.should.equal(1);
+                    should.exist(doc['results']);
+                    doc['results'][0].history.should.be.Array;
+                    doc['results'][0].history.length.should.equal(1);
                     done();
                 });
             });
@@ -399,16 +399,17 @@ describe('Model', function () {
         beforeEach(function (done) {
             help.cleanUpDB(function (err) {
                 if (err) return done(err);
+                var mod = model('testModelName', help.getModelSchema());
 
                 // create model to be updated by tests
-                model('testModelName', help.getModelSchema()).create({
+                mod.create({
                     fieldName: 'foo'
                 }, function (err, result) {
                     if (err) return done(err);
 
                     should.exist(result && result[0]);
                     result[0].fieldName.should.equal('foo');
-
+                    
                     done();
                 });
             });
@@ -437,8 +438,8 @@ describe('Model', function () {
                 mod.find({fieldName: 'bar'}, function (err, result) {
                     if (err) return done(err);
 
-                    should.exist(result && result[0]);
-                    result[0].fieldName.should.equal('bar');
+                    should.exist(result['results'] && result['results'][0]);
+                    result['results'][0].fieldName.should.equal('bar');
                     done();
                 })
             });
@@ -458,11 +459,11 @@ describe('Model', function () {
                 mod.find({fieldName: 'bar'}, function (err, result) {
                     if (err) return done(err);
 
-                    should.exist(result && result[0]);
-                    result[0].fieldName.should.equal('bar');
+                    should.exist(result['results'] && result['results'][0]);
+                    result['results'][0].fieldName.should.equal('bar');
 
-                    should.exist(result[0].history);
-                    result[0].history.length.should.equal(2); // two revisions, one from initial create and one from the update
+                    should.exist(result['results'][0].history);
+                    result['results'][0].history.length.should.equal(2); // two revisions, one from initial create and one from the update
 
                     done();
                 })
@@ -512,7 +513,7 @@ describe('Model', function () {
                     mod.find({}, function (err, result) {
                         if (err) return done(err);
 
-                        result.length.should.equal(0);
+                        result['results'].length.should.equal(0);
                         done();
                     });
                 });

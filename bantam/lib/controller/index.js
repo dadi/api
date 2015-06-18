@@ -61,8 +61,10 @@ Controller.prototype.get = function (req, res, next) {
     // white list user specified options
     options = {
         limit: limit,
-        skip: skip
+        skip: skip,
+        page: parseInt(options.page)
     };
+
     if (sort) options.sort = sort;
 
     this.model.find(query, options, done);

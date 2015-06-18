@@ -84,7 +84,10 @@ module.exports = function (server) {
             var data = '';
 
             res.write = function (chunk) {
-                if (chunk) data += chunk;
+
+		// with this line, we get cache files with duplicate content
+                //if (chunk) data += chunk;
+
                 _write.apply(res, arguments);
             };
 

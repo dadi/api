@@ -83,27 +83,27 @@ module.exports.clearCache = function () {
 
 module.exports.getBearerToken = function (done) {
 
-    module.exports.removeClients(function() {
-        //console.log('module.exports.getBearerToken: removed clients');
-    });
-
-    module.exports.createClient(null, function (err) {
+    module.exports.removeClients(function (err) {
         if (err) return done(err);
 
-        request('http://' + config.server.host + ':' + config.server.port)
-        .post(config.auth.tokenUrl)
-        .send({
-            clientId: 'test123',
-            secret: 'superSecret'
-        })
-        .expect(200)
-        //.expect('content-type', 'application/json')
-        .end(function (err, res) {
+        module.exports.createClient(null, function (err) {
             if (err) return done(err);
 
-            var bearerToken = res.body.accessToken;
-            should.exist(bearerToken);
-            done(null, bearerToken);
+            request('http://' + config.server.host + ':' + config.server.port)
+            .post(config.auth.tokenUrl)
+            .send({
+                clientId: 'test123',
+                secret: 'superSecret'
+            })
+            .expect(200)
+            //.expect('content-type', 'application/json')
+            .end(function (err, res) {
+                if (err) return done(err);
+
+                var bearerToken = res.body.accessToken;
+                should.exist(bearerToken);
+                done(null, bearerToken);
+            });
         });
     });
 };
@@ -117,25 +117,25 @@ module.exports.getBearerTokenWithPermissions = function (permissions, done) {
 
     var clientWithPermissions = _.extend(client, permissions);
 
-    module.exports.removeClients(function() {
-        //console.log('module.exports.getBearerTokenWithPermissions: removed clients');
-    });
-
-    module.exports.createClient(clientWithPermissions, function (err) {
+    module.exports.removeClients(function (err) {
         if (err) return done(err);
 
-        request('http://' + config.server.host + ':' + config.server.port)
-        .post(config.auth.tokenUrl)
-        .send(client)
-        .expect(200)
-        //.expect('content-type', 'application/json')
-        .end(function (err, res) {
+        module.exports.createClient(clientWithPermissions, function (err) {
             if (err) return done(err);
 
-            var bearerToken = res.body.accessToken;
+            request('http://' + config.server.host + ':' + config.server.port)
+            .post(config.auth.tokenUrl)
+            .send(client)
+            .expect(200)
+            //.expect('content-type', 'application/json')
+            .end(function (err, res) {
+                if (err) return done(err);
 
-            should.exist(bearerToken);
-            done(null, bearerToken);
+                var bearerToken = res.body.accessToken;
+
+                should.exist(bearerToken);
+                done(null, bearerToken);
+            });
         });
     });
 };

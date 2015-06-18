@@ -189,7 +189,22 @@ Model.prototype.find = function (query, options, done) {
         _done = function (database) {
             database.collection(self.name).find(query, options, function (err, cursor) {
                 if (err) return done(err);
-                cursor.toArray(done);
+
+                var results = {};
+
+                cursor.count(function (err, count) {
+                    if (err) return done(err);
+
+                    var resultArray = cursor.toArray(function (err, result) {
+                        if (err) return done(err);
+
+                        results.results = result;
+                        results.metadata = getMetadata(options, count);
+                        
+                        done(null, results);
+                    });
+                });
+
             });
         }
 
@@ -287,31 +302,31 @@ Model.prototype.update = function (query, update, internals, done) {
         var updatedDocs = [];
         self.find(query, {}, function(err, docs) {
             if (err) return done(err);
-            updatedDocs = docs;
-        });
+            updatedDocs = docs['results'];
 
-        database.collection(self.name).update(query, setUpdate, function (err, numAffected) {
-            if (err) return done(err);
-            if (!numAffected) {
-                err = new Error('Not Found');
-                err.statusCode = 404;
-                return done(err);
-            }
+            database.collection(self.name).update(query, setUpdate, function (err, numAffected) {
+                if (err) return done(err);
+                if (!numAffected) {
+                    err = new Error('Not Found');
+                    err.statusCode = 404;
+                    return done(err);
+                }
 
-            // query and doc `_id` should be equal
-            query._id && (update._id = query._id);
+                // query and doc `_id` should be equal
+                query._id && (update._id = query._id);
 
-            // for each of the updated documents, create
-            // a history revision for it
-            if (self.history && updatedDocs.length > 0) {
-                self.history.createEach(updatedDocs, self, function(err, docs) {
-                    if (err) return done(err);
+                // for each of the updated documents, create
+                // a history revision for it
+                if (self.history && updatedDocs.length > 0) {
+                    self.history.createEach(updatedDocs, self, function(err, docs) {
+                        if (err) return done(err);
+                        done(null, update);
+                    });
+                }
+                else {
                     done(null, update);
-                });
-            }
-            else {
-                done(null, update);
-            }
+                }
+            });
         });
     };
 
@@ -378,4 +393,24 @@ function validationError(message) {
     var err = new Error(message || 'Model Validation Failed');
     err.statusCode = 400
     return err;
+}
+
+function getMetadata(options, count) {
+    var meta = _.extend({}, options);    
+    delete meta.skip;
+
+    meta.page = options.page || 1;
+    meta.offset = options.skip || 0;
+    meta.totalCount = count;
+    meta.totalPages = Math.ceil(count / (options.limit || 1));
+
+    if (meta.page < meta.totalPages) {
+        meta.nextPage = (meta.page + 1);
+    }
+
+    if (meta.page > 1 && meta.page <= meta.totalPages) {
+        meta.prevPage = meta.page - 1;
+    }
+
+    return meta;
 }

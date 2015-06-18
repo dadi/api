@@ -170,9 +170,10 @@ describe('Application', function () {
                         .end(function (err, res) {
                             if (err) return done(err);
 
-                            res.body.should.be.Array;
-                            res.body.length.should.equal(1);
-                            res.body[0].field1.should.equal('updated doc');
+                            res.body['results'].should.exist;
+                            res.body['results'].should.be.Array;
+                            res.body['results'].length.should.equal(1);
+                            res.body['results'][0].field1.should.equal('updated doc');
 
                             done();
                         })
@@ -214,12 +215,13 @@ describe('Application', function () {
                         .end(function (err, res) {
                             if (err) return done(err);
 
-                            res.body.should.be.Array;
-                            res.body.length.should.equal(1);
-                            res.body[0].lastModifiedBy.should.equal('test123');
-                            res.body[0].lastModifiedAt.should.be.Number;
-                            res.body[0].lastModifiedAt.should.not.be.above(Date.now());
-                            res.body[0].apiVersion.should.equal('vtest');
+                            res.body['results'].should.exist;
+                            res.body['results'].should.be.Array;
+                            res.body['results'].length.should.equal(1);
+                            res.body['results'][0].lastModifiedBy.should.equal('test123');
+                            res.body['results'][0].lastModifiedAt.should.be.Number;
+                            res.body['results'][0].lastModifiedAt.should.not.be.above(Date.now());
+                            res.body['results'][0].apiVersion.should.equal('vtest');
 
                             done();
                         })
@@ -289,21 +291,22 @@ describe('Application', function () {
             })
 
             it('should get documents', function (done) {
-               help.createDoc(bearerToken, function (err) {
+               help.createDoc(bearerToken, function (err, doc) {
                     if (err) return done(err);
 
                     var client = request(connectionString);
 
                     client
-                    .get('/vtest/testdb/test-schema')
+                    .get('/vtest/testdb/test-schema?cache=false')
                     .set('Authorization', 'Bearer ' + bearerToken)
                     .expect(200)
                     .expect('content-type', 'application/json')
                     .end(function (err, res) {
                         if (err) return done(err);
 
-                        res.body.should.be.Array;
-                        res.body.length.should.be.above(0)
+                        res.body['results'].should.exist;
+                        res.body['results'].should.be.Array;
+                        res.body['results'].length.should.be.above(0)
                         done();
                     });
                 });
@@ -330,9 +333,10 @@ describe('Application', function () {
                         .end(function (err, res) {
                             if (err) return done(err);
 
-                            res.body.should.be.Array;
-                            res.body.length.should.equal(1);
-                            res.body[0]._id.should.equal(docId);
+                            res.body['results'].should.exist;
+                            res.body['results'].should.be.Array;
+                            res.body['results'].length.should.equal(1);
+                            res.body['results'][0]._id.should.equal(docId);
                             done();
                         });
                     });
@@ -360,9 +364,10 @@ describe('Application', function () {
                         .end(function (err, res) {
                             if (err) return done(err);
 
-                            res.body.should.be.Array;
-                            res.body.length.should.equal(1);
-                            res.body[0]._id.should.equal(docId);
+                            res.body['results'].should.exist;
+                            res.body['results'].should.be.Array;
+                            res.body['results'].length.should.equal(1);
+                            res.body['results'][0]._id.should.equal(docId);
                             done();
                         });
                     });
@@ -390,8 +395,9 @@ describe('Application', function () {
                         .end(function (err, res) {
                             if (err) return done(err);
 
-                            res.body.should.be.Array;
-                            res.body.length.should.be.above(1);
+                            res.body['results'].should.exist;
+                            res.body['results'].should.be.Array;
+                            res.body['results'].length.should.be.above(1);
                             done();
                         });
                     });
@@ -525,8 +531,10 @@ describe('Application', function () {
                         .expect('content-type', 'application/json')
                         .end(function (err, res) {
                             if (err) return done(err);
-                            res.body.should.be.Array;
-                            res.body.length.should.equal(1);
+                            
+                            res.body['results'].should.exist;
+                            res.body['results'].should.be.Array;
+                            res.body['results'].length.should.equal(1);
                             done();
                         });
                 });
@@ -539,11 +547,12 @@ describe('Application', function () {
                     var asyncControl = new EventEmitter();
                     var count = 0;
 
-                    for (var i = 0; i < 100; ++i) {
+                    for (var i = 0; i < 75; ++i) {
                        help.createDoc(bearerToken, function (err) {
                             if (err) return asyncControl.emit('error', err);
                             count += 1;
-                            if (count > 99) asyncControl.emit('ready');
+
+                            if (count > 74) asyncControl.emit('ready');
                         });
                     }
 
@@ -568,8 +577,53 @@ describe('Application', function () {
                     .end(function (err, res) {
                         if (err) return done(err);
 
-                        res.body.should.be.Array;
-                        res.body.length.should.equal(docCount);
+                        res.body['results'].should.exist;
+                        res.body['results'].should.be.Array;
+                        res.body['results'].length.should.equal(docCount);
+
+                        done();
+                    });
+                });
+
+                it('should return pagination metadata', function (done) {
+                    var client = request(connectionString);
+                    var docCount = 20;
+
+                    client
+                    .get('/vtest/testdb/test-schema?page=1&count=' + docCount)
+                    .set('Authorization', 'Bearer ' + bearerToken)
+                    .expect(200)
+                    .expect('content-type', 'application/json')
+                    .end(function (err, res) {
+                        if (err) return done(err);
+
+                        res.body['metadata'].should.exist;
+                        res.body['metadata'].page.should.equal(1);
+                        res.body['metadata'].limit.should.equal(docCount);
+                        res.body['metadata'].totalPages.should.be.above(1); // Math.ceil(# documents/20 per page)
+                        res.body['metadata'].nextPage.should.equal(2);
+
+                        done();
+                    });
+                });
+
+                it('should return correct pagination nextPage value', function (done) {
+                    var client = request(connectionString);
+                    var docCount = 20;
+
+                    client
+                    .get('/vtest/testdb/test-schema?page=2&count=' + docCount)
+                    .set('Authorization', 'Bearer ' + bearerToken)
+                    .expect(200)
+                    .expect('content-type', 'application/json')
+                    .end(function (err, res) {
+                        if (err) return done(err);
+
+                        res.body['metadata'].should.exist;
+                        res.body['metadata'].page.should.equal(2);
+                        res.body['metadata'].nextPage.should.equal(3);
+                        res.body['metadata'].prevPage.should.equal(1);
+
                         done();
                     });
                 });
@@ -585,8 +639,9 @@ describe('Application', function () {
                     .end(function (err, res) {
                         if (err) return done(err);
 
-                        res.body.should.be.Array;
-                        res.body.length.should.equal(40);
+                        res.body['results'].should.exist;
+                        res.body['results'].should.be.Array;
+                        res.body['results'].length.should.equal(40);
                         done();
                     });
                 });
@@ -602,10 +657,11 @@ describe('Application', function () {
                     .end(function (err, res) {
                         if (err) return done(err);
 
-                        res.body.should.be.Array;
-                        res.body.length.should.equal(20);
+                        res.body['results'].should.exist;
+                        res.body['results'].should.be.Array;
+                        res.body['results'].length.should.equal(20);
 
-                        var eleventhDoc = res.body[10];
+                        var eleventhDoc = res.body['results'][10];
 
                         client
                         .get('/vtest/testdb/test-schema?count=10&page=2')
@@ -615,11 +671,12 @@ describe('Application', function () {
                         .end(function (err, res) {
                             if (err) return done(err);
 
-                            res.body.should.be.Array;
-                            res.body.length.should.equal(10);
+                            res.body['results'].should.exist;
+                            res.body['results'].should.be.Array;
+                            res.body['results'].length.should.equal(10);
 
                             // make sure second page starts in correct position
-                            res.body[0]._id.should.equal(eleventhDoc._id);
+                            res.body['results'][0]._id.should.equal(eleventhDoc._id);
 
                             done();
                         });
@@ -637,11 +694,12 @@ describe('Application', function () {
                     .end(function (err, res) {
                         if (err) return done(err);
 
-                        res.body.should.be.Array;
-                        res.body.length.should.equal(40);
+                        res.body['results'].should.exist;
+                        res.body['results'].should.be.Array;
+                        res.body['results'].length.should.equal(40);
 
                         var max = '';
-                        res.body.forEach(function (doc) {
+                        res.body['results'].forEach(function (doc) {
                             doc.field1.should.not.be.below(max);
                             max = doc.field1;
                         });
@@ -661,11 +719,12 @@ describe('Application', function () {
                     .end(function (err, res) {
                         if (err) return done(err);
 
-                        res.body.should.be.Array;
-                        res.body.length.should.equal(40);
+                        res.body['results'].should.exist;
+                        res.body['results'].should.be.Array;
+                        res.body['results'].length.should.equal(40);
 
                         var last = '';
-                        res.body.forEach(function (doc) {
+                        res.body['results'].forEach(function (doc) {
                             if (last) doc.field1.should.not.be.above(last);
                             last = doc.field1;
                         });
@@ -685,11 +744,12 @@ describe('Application', function () {
                     .end(function (err, res) {
                         if (err) return done(err);
 
-                        res.body.should.be.Array;
-                        res.body.length.should.equal(40);
+                        res.body['results'].should.exist;
+                        res.body['results'].should.be.Array;
+                        res.body['results'].length.should.equal(40);
 
                         var last = '';
-                        res.body.forEach(function (doc) {
+                        res.body['results'].forEach(function (doc) {
                             if (last) doc.field1.should.not.be.below(last);
                             last = doc.field1;
                         });
@@ -782,9 +842,10 @@ describe('Application', function () {
                             .end(function (err, res) {
                                 if (err) return done(err);
 
-                                res.body.should.be.Array;
-                                res.body.length.should.equal(1);
-                                res.body[0]._id.should.equal(doc2._id);
+                                res.body['results'].should.exist;
+                                res.body['results'].should.be.Array;
+                                res.body['results'].length.should.equal(1);
+                                res.body['results'][0]._id.should.equal(doc2._id);
 
                                 done();
                             });
@@ -1050,7 +1111,6 @@ describe('Application', function () {
             //.expect('content-type', 'application/json')
             .end(function (err, res) {
                 if (err) return done(err);
-
                 res.body.message.should.equal('Hello World');
                 done();
             });

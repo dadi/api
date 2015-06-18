@@ -106,7 +106,7 @@ describe('Cache', function (done) {
         .end(function (err, res1) {
             if (err) return done(err);
 
-            res1.body.length.should.equal(0);
+            res1.body['results'].length.should.equal(0);
 
             client
             .post('/vtest/testdb/test-schema')
@@ -124,7 +124,7 @@ describe('Cache', function (done) {
                     if (err) return done(err);
 
 
-                    res2.body.length.should.equal(1);
+                    res2.body['results'].length.should.equal(1);
                     spy.called.should.be.false;
 
                     spy.restore();
@@ -154,7 +154,7 @@ describe('Cache', function (done) {
         .end(function (err, res1) {
             if (err) return done(err);
 
-            res1.body.length.should.equal(0);
+            res1.body['results'].length.should.equal(0);
 
             client
             .post('/vtest/testdb/test-schema')
@@ -172,7 +172,7 @@ describe('Cache', function (done) {
                     if (err) return done(err);
 
 
-                    res2.body.length.should.equal(1);
+                    res2.body['results'].length.should.equal(1);
                     spy.called.should.be.false;
 
                     spy.restore();
@@ -222,8 +222,8 @@ describe('Cache', function (done) {
                     .end(function (err, res2) {
                         if (err) return done(err);
 
-                        res1.body.length.should.equal(0);
-                        res2.body.length.should.equal(1);
+                        res1.body['results'].length.should.equal(0);
+                        res2.body['results'].length.should.equal(1);
                         res2.text.should.not.equal(res1.text);
 
                         done();

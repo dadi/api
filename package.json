@@ -1,6 +1,6 @@
 {
   "name": "serama",
-  "version": "0.1.6-beta",
+  "version": "0.1.7-beta",
   "dependencies": {
     "body-parser": "~1.6.5",
     "moment": "~2.8.1",

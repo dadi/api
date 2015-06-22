@@ -163,16 +163,6 @@ Model.prototype.find = function (query, options, done) {
         return done(err);
     }
 
-    // limit == 1, perform a findOne query
-    if (options.limit && options.limit === 1) {
-        _done = function (database) {
-            database.collection(self.name).findOne(query, options, function (err, doc) {
-                if (err) return done(err);
-                return done(doc);
-            });
-        }        
-    }
-
     if (_.isArray(query)) {
         // have we been passed an aggregation pipeline query?
         _done = function (database) {

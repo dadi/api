@@ -404,6 +404,32 @@ describe('Application', function () {
                 });
             });
 
+            it('should find one documents using a standard query with count=1', function (done) {
+               help.createDoc(bearerToken, function (err, doc1) {
+                    if (err) return done(err);
+                   help.createDoc(bearerToken, function (err, doc2) {
+                        if (err) return done(err);
+
+                        var client = request(connectionString);
+                        var docId = doc2._id
+
+                        client
+                        .get('/vtest/testdb/test-schema?count=1&cache=false')
+                        .set('Authorization', 'Bearer ' + bearerToken)
+                        .expect(200)
+                        .expect('content-type', 'application/json')
+                        .end(function (err, res) {
+                            if (err) return done(err);
+
+                            res.body['results'].should.exist;
+                            res.body['results'].should.be.Array;
+                            res.body['results'].length.should.equal(1);
+                            done();
+                        });
+                    });
+                });
+            });
+
             it('should return grouped result set when using $group in an aggregation query', function (done) {
                
                 // create a bunch of docs

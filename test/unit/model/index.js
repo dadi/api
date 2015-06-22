@@ -195,20 +195,6 @@ describe('Model', function () {
             model('testModelName', help.getModelSchema()).find(query, done);
         });
 
-        it('should', function (done) {
-            var mod = model('testModelName', help.getModelSchema());
-            var validator = sinon.stub(mod.validate, 'query').returns({ success: 'truex' });
-            //var stub = sinon.stub(mod.validate, 'query');
-
-            mod.find({$where : "a"}, {}, function(result) {
-            //mod.find('a',{}, function(result) {
-                //validator.callCount.should.equal(1);
-                validator.restore();
-
-                done();
-            });
-        });
-
         it('should pass error to callback when query uses `$` operators', function (done) {
             model('testModelName').find({$where: 'this.fieldName === "foo"'}, function (err) {
                 should.exist(err);

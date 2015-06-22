@@ -9,7 +9,7 @@
             "validationRule": "",
             "required": false,
             "message": "",
-            "display": { 
+            "display": {
                 "index": true,
                 "edit": true
             }

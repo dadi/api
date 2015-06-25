@@ -158,7 +158,7 @@ Model.prototype.find = function (query, options, done) {
 
     // make the query case-insensitive
     _.each(Object.keys(query), function(key) {
-        query[key] = new RegExp(query[key], 'i');
+        query[key] = new RegExp(["^", query[key], "$"].join(""), "i");
     });
 
     var validation = this.validate.query(query);

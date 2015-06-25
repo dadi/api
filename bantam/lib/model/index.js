@@ -156,6 +156,11 @@ Model.prototype.find = function (query, options, done) {
 
     var self = this;
 
+    // make the query case-insensitive
+    _.each(Object.keys(query), function(key) {
+        query[key] = new RegExp(query[key], 'i');
+    });
+
     var validation = this.validate.query(query);
     if (!validation.success) {
         var err = validationError('Bad Query');

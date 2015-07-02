@@ -920,15 +920,16 @@ describe('Application', function () {
         var jsSchemaString = fs.readFileSync(__dirname + '/../new-schema.json', {encoding: 'utf8'});
 
         var cleanup = function (done) {
+            var err;
             try {
                 // try to cleanup these tests directory tree
                 fs.unlinkSync(__dirname + '/workspace/collections/vapicreate/testdb/collection.api-create.json');
                 fs.rmdirSync(__dirname + '/workspace/collections/vapicreate/testdb');
                 fs.rmdirSync(__dirname + '/workspace/collections/vapicreate');
-            } catch (err) {
-                //console.log(err);
+            } catch (e) {
+                err = e;
             }
-            done();
+            done(err);
         };
 
         before(function (done) {

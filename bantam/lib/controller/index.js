@@ -49,25 +49,27 @@ Controller.prototype.get = function (req, res, next) {
         ? sendBackJSONP(options.callback, res, next)
         : sendBackJSON(200, res, next);
 
-    if (options.sort) {
-        var sort = {};
-
-        // default to 'asc'
+    var sort = {};
+    var sortOptions = help.isJSON(options.sort);
+    if (!sortOptions || _.isEmpty(sortOptions)) {
+        var field = !sortOptions ? options.sort || settings.sort : settings.sort;
         var order = (options.sortOrder || settings.sortOrder) === 'desc' ? -1 : 1;
-
-        sort[options.sort] = order;
+        if (field) sort[field] = order;
+    }
+    else {
+        sort = sortOptions;
     }
 
     // white list user specified options
-    options = {
+    var queryOptions = {
         limit: limit,
         skip: skip,
         page: parseInt(options.page)
     };
 
-    if (sort) options.sort = sort;
+    if (sort && !_.isEmpty(sort)) queryOptions.sort = sort;
 
-    this.model.find(query, options, done);
+    this.model.find(query, queryOptions, done);
 };
 
 Controller.prototype.post = function (req, res, next) {

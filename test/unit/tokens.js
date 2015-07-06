@@ -4,6 +4,7 @@ var config = require(__dirname + '/../../config');
 var tokens = require(__dirname + '/../../bantam/lib/auth/tokens');
 var tokenStore = require(__dirname + '/../../bantam/lib/auth/tokenStore');
 var connection = require(__dirname + '/../../bantam/lib/model/connection');
+var acceptanceTestHelper = require(__dirname + '/../acceptance/help');
 
 var clientCollectionName = config.auth.database.clientCollection;
 
@@ -14,6 +15,10 @@ describe('Tokens', function () {
         conn.on('connect', function (db) {
             db.dropDatabase(done);
         });
+    });
+
+    after(function (done) {
+        acceptanceTestHelper.removeTestClients(done);
     });
 
     it('should export generate function', function (done) {

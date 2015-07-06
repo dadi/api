@@ -28,7 +28,9 @@ describe('validation', function () {
     });
 
     after(function (done) {
-        app.stop(done);
+        help.removeTestClients(function() {
+            app.stop(done);
+        });
     });
 
     describe('field types', function () {

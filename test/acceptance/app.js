@@ -14,6 +14,11 @@ var bearerToken;
 var connectionString = 'http://' + config.server.host + ':' + config.server.port;
 
 describe('Application', function () {
+
+    after(function (done) {
+        help.removeTestClients(done);
+    });
+
     it('should start from specific directory', function (done) {
         app.start({
             collectionPath: __dirname + '/workspace/collections'

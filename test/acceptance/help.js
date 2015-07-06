@@ -64,12 +64,13 @@ module.exports.createClient = function (client, done) {
     });
 };
 
-module.exports.removeClients = function (done) {
+module.exports.removeTestClients = function (done) {
 
     var clientStore = connection(config.auth.database);
 
     clientStore.on('connect', function (db) {
-        db.collection(clientCollectionName).remove(done);
+        var query = { "clientId": { $regex: /^test/ } };
+        db.collection(clientCollectionName).remove(query, done);
     });
 };
 
@@ -83,7 +84,7 @@ module.exports.clearCache = function () {
 
 module.exports.getBearerToken = function (done) {
 
-    module.exports.removeClients(function (err) {
+    module.exports.removeTestClients(function (err) {
         if (err) return done(err);
 
         module.exports.createClient(null, function (err) {
@@ -117,7 +118,7 @@ module.exports.getBearerTokenWithPermissions = function (permissions, done) {
 
     var clientWithPermissions = _.extend(client, permissions);
 
-    module.exports.removeClients(function (err) {
+    module.exports.removeTestClients(function (err) {
         if (err) return done(err);
 
         module.exports.createClient(clientWithPermissions, function (err) {

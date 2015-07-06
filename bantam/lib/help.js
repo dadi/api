@@ -35,10 +35,10 @@ module.exports.sendBackJSONP = function (callbackName, res, next) {
 }
 
 // function to wrap try - catch for JSON.parse to mitigate pref losses
+// strip leading zeroes from querystring before attempting to parse
 module.exports.parseQuery = function (queryStr) {
     var ret;
     try {
-        // strip leading zeroes from querystring before attempting to parse
         ret = JSON.parse(queryStr.replace(/\b0(\d+)/, "\$1"));
     } catch (e) {
         ret = {};
@@ -66,6 +66,23 @@ module.exports.getFieldsFromSchema = function(obj) {
     var fields = [];
     getKeys(obj, 'fields', fields);
     return JSON.stringify(fields[0]);
+}
+
+module.exports.isJSON = function(jsonString) {
+    try {
+        var o = JSON.parse(jsonString);
+
+        // Handle non-exception-throwing cases:
+        // Neither JSON.parse(false) or JSON.parse(1234) throw errors, hence the type-checking,
+        // but... JSON.parse(null) returns 'null', and typeof null === "object", 
+        // so we must check for that, too.
+        if (o && typeof o === "object" && o !== null) {
+            return o;
+        }
+    }
+    catch (e) { }
+
+    return false;
 }
 
 module.exports.validateCollectionSchema = function(obj) {

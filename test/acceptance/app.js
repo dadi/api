@@ -409,7 +409,7 @@ describe('Application', function () {
                 });
             });
 
-            it('should find one documents using a standard query with count=1', function (done) {
+            it('should find one document using a standard query with count=1', function (done) {
                help.createDoc(bearerToken, function (err, doc1) {
                     if (err) return done(err);
                    help.createDoc(bearerToken, function (err, doc2) {

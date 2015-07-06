@@ -44,7 +44,9 @@ describe('File system watching', function () {
         if (fs.existsSync(testSchemaPath)) fs.unlinkSync(testSchemaPath);
         if (fs.existsSync(testEndpointPath)) fs.unlinkSync(testEndpointPath);
 
-        app.stop(done);
+        help.removeTestClients(function() {
+            app.stop(done);
+        });
     });
 
     beforeEach(function (done) {

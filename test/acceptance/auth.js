@@ -13,6 +13,9 @@ describe('Authentication', function () {
     var tokenRoute = config.auth.tokenUrl;
 
     before(function (done) {
+
+        help.createClient(null, function() { 
+        
         app.start({
             collectionPath: __dirname + '/workspace/collections',
             endpointPath: __dirname + '/workspace/endpoints'
@@ -23,11 +26,14 @@ describe('Authentication', function () {
             setTimeout(function () {
                 done();
             }, 500);
+        })
         });
     });
 
     after(function (done) {        
-        app.stop(done);
+        help.removeTestClients(function() {
+            app.stop(done);
+        });
     });
 
     afterEach(function (done) {

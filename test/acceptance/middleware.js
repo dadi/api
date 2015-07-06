@@ -32,7 +32,9 @@ describe('middleware extension', function (done) {
     });
 
     after(function (done) {
-        app.stop(done);
+        help.removeTestClients(function() {
+            app.stop(done);
+        });
     });
 
     it('should expose a .get method', function (done) {

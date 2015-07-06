@@ -16,8 +16,10 @@ describe('Cache', function (done) {
     });
 
     after(function (done) {
-        help.clearCache();
-        app.stop(done);
+        help.removeTestClients(function() {
+            help.clearCache();
+            app.stop(done);
+        });
     });
 
     beforeEach(function (done) {

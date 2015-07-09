@@ -37,7 +37,11 @@ Connection.prototype.connect = function (options) {
     options || (options = {});
     this.readyState = 2;
 
-    this.mongoClient = new MongoClient(new Server(options.host || this.host, options.port || this.port));
+    if (global.process.env.npm_lifecycle_event == 'test') {
+        this.mongoClient = new MongoClient(new Server(options.host || this.host, options.port || this.port, { poolSize: 1 }));
+    } else {
+        this.mongoClient = new MongoClient(new Server(options.host || this.host, options.port || this.port));
+    }
 
     var self = this;
     this.mongoClient.open(function (err, mongoClient) {

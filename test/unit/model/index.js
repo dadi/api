@@ -340,6 +340,11 @@ describe('Model', function () {
             mod.create({fieldName: 'foo'}, done);
         });
 
+        it('should accept and Array and callback', function (done) {
+            var mod = model('testModelName', help.getModelSchema());
+            mod.create([{fieldName: 'foo'}, {fieldName: 'bar'}], done);
+        });
+
         it('should save model to database', function (done) {
             var mod = model('testModelName', help.getModelSchema());
             mod.create({fieldName: 'foo'}, function (err) {

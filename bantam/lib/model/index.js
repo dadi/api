@@ -105,8 +105,20 @@ Model.prototype.create = function (obj, internals, done) {
         done = internals;
     }
 
-    var validation = this.validate.schema(obj);
-    
+    // handle both an Array of documents and a single document
+    var validation;
+    if (obj instanceof Array) {
+        var self = this;
+        // validate each doc
+        obj.forEach(function (doc) {
+            if (validation === undefined || validation.success) {
+                validation = self.validate.schema(doc);
+            }
+        });
+    } else {
+        validation = this.validate.schema(obj);
+    }
+
     if (!validation.success) {
         var err = validationError('Validation Failed');
         err.json = validation;
@@ -199,7 +211,7 @@ Model.prototype.find = function (query, options, done) {
 
                         results.results = result;
                         results.metadata = getMetadata(options, count);
-                        
+
                         done(null, results);
                     });
                 });

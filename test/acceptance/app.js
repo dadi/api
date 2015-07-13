@@ -930,8 +930,8 @@ describe('Application', function () {
                 fs.unlinkSync(__dirname + '/workspace/collections/vapicreate/testdb/collection.api-create.json');
                 fs.rmdirSync(__dirname + '/workspace/collections/vapicreate/testdb');
                 fs.rmdirSync(__dirname + '/workspace/collections/vapicreate');
-            } catch (err) {
-                //console.log(err);
+            } catch (e) {
+                // don't catch the error, since the above paths may not exist
             }
             done();
         };

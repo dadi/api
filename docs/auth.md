@@ -30,3 +30,21 @@ A script that creates a client - `testClient / superSecret` - for QA testing can
 Token expiration is specified in seconds at `config.auth.tokenTtl`.
 
 The removal of expired tokens within MongoDB is handled via a ttl index - [expireAfterSeconds](http://docs.mongodb.org/manual/tutorial/expire-data/) - on the tokenStore collection.
+
+
+## Collection / Endpoint Authentication
+
+The client record can be extended with a `permissions` object containing an array of collections and/or endpoints to which that client has access. Access to any collections/endpoints not in the permissions list will be denied.
+
+```
+{
+  clientId: 'clientX',
+  secret: 'secret',
+  permissions: { 
+    collections: [ "test-collection" ],
+    endpoints: [ "test-endpoint" ]
+  }
+}
+```
+
+

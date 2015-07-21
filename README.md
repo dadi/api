@@ -22,7 +22,7 @@ You can consider Serama as the data layer within a platform (including the data 
 
 Calls to a Serama API can contain your business/domain logic (the part of a platform that encodes the real-world business rules that determine how data is created, displayed, stored and changed). It has full support for searching, filtering, limiting, sorting, offsetting, input validation and data aggregation (through support for MongoDB's aggregation pipeline).
 
-It has built in support for oAuth2, can connect to multiple databases out of the box, provides native document versioning at collection level, supports static endpoints, includes automatic indexing, has a caching layer and can be run in a clustered configuration.
+It has built in support for oAuth2, includes full collection-level ACL, can connect to multiple databases out of the box, provides native document versioning at collection level, supports static endpoints, includes automatic indexing, has a caching layer and can be run in a clustered configuration.
 
 Serama provides a starting point that's further advanced than a framework. It allows you to get a complete data layer up and running in minutes.
 
@@ -261,7 +261,6 @@ We will capture planned updates and additions here. If you have anything to cont
 Planned additions:
 
 * Auto documentator
-* Collection level ACL
 
 ### Versioning
 

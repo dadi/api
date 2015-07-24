@@ -129,14 +129,17 @@ describe('Authentication', function () {
         });
     });
 
-    it('should not allow requests for collection config by clients with accessType `user`', function (done) {
+    it('should not allow POST requests for collection config by clients with accessType `user`', function (done) {
 
         help.getBearerTokenWithAccessType("user", function (err, token) {
 
             var client = request('http://' + config.server.host + ':' + config.server.port);
 
+            var testSchema = fs.readFileSync(originalSchemaPath, {encoding: 'utf8'});
+
             client
-            .get('/vtest/testdb/test-schema/config')
+            .post('/vtest/testdb/test-schema/config')
+            .send(testSchema)
             .set('Authorization', 'Bearer ' + token)
             .expect(401)
             //.expect('content-type', 'application/json')
@@ -147,14 +150,35 @@ describe('Authentication', function () {
         });
     });
 
-    it('should not allow requests for collection config by clients with no accessType specified', function (done) {
+    it('should allow GET requests for collection config by clients with accessType `user`', function (done) {
 
-        help.getBearerToken(function (err, token) {
+        help.getBearerTokenWithAccessType("user", function (err, token) {
 
             var client = request('http://' + config.server.host + ':' + config.server.port);
 
             client
             .get('/vtest/testdb/test-schema/config')
+            .set('Authorization', 'Bearer ' + token)
+            .expect(200)
+            //.expect('content-type', 'application/json')
+            .end(function(err,res) {
+                if (err) return done(err);
+                done();
+            });
+        });
+    });
+
+    it('should not allow POST requests for collection config by clients with no accessType specified', function (done) {
+
+        help.getBearerToken(function (err, token) {
+
+            var client = request('http://' + config.server.host + ':' + config.server.port);
+
+            var testSchema = fs.readFileSync(originalSchemaPath, {encoding: 'utf8'});
+
+            client
+            .post('/vtest/testdb/test-schema/config')
+            .send(testSchema)
             .set('Authorization', 'Bearer ' + token)
             .expect(401)
             //.expect('content-type', 'application/json')
@@ -185,7 +209,7 @@ describe('Authentication', function () {
 
     it('should allow unauthenticated request for collection specifying authenticate = false', function (done) {
 
-        help.getBearerToken(function (err, token) {
+        help.getBearerTokenWithAccessType("admin", function (err, token) {
             var client = request('http://' + config.server.host + ':' + config.server.port);
 
             var jsSchemaString = fs.readFileSync(testSchemaPath, {encoding: 'utf8'});
@@ -200,7 +224,7 @@ describe('Authentication', function () {
             .set('content-type', 'text/plain')
             .set('Authorization', 'Bearer ' + token)
             .expect(200)
-            .expect('content-type', 'application/json')
+            //.expect('content-type', 'application/json')
             .end(function (err, res) {
                 if (err) return done(err);
 

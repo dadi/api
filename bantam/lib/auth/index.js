@@ -22,10 +22,10 @@ function mustAuthenticate(endpoints, path) {
     }
 }
 
-function isAuthorized(endpoints, path, client) {
+function isAuthorized(endpoints, req, client) {
 
-    path = url.parse(path, true);
-    
+    var path = url.parse(req.url, true);
+
     var endpointKey = _.find(_.keys(endpoints), function (k){ return k.indexOf(path.pathname) > -1; });
     
     // check if this is a master config request first
@@ -40,12 +40,14 @@ function isAuthorized(endpoints, path, client) {
     }
 
     // check if user accessType allows access to collection config
-    if (path.pathname.indexOf('config') > -1 && client.accessType && client.accessType === 'admin') {
+    if (path.pathname.indexOf('config') > -1 && req.method === 'POST') {
+      if (client.accessType && client.accessType === 'admin') {
         return true;
-    }
-    else {
+      }
+      else {
         return false;
-    }
+      }  
+    } 
 
     if (!endpointKey) return true;
 
@@ -97,7 +99,7 @@ module.exports = function (server) {
             // If token is good continue, else `fail()`
             if (client) {
 
-                if (!isAuthorized(server.components, req.url, client)) {
+                if (!isAuthorized(server.components, req, client)) {
                     var err = new Error('ClientId not authorized to access requested collection.');
                     err.statusCode = 401;
                     next(err);

@@ -140,3 +140,34 @@ module.exports.getBearerTokenWithPermissions = function (permissions, done) {
         });
     });
 };
+
+module.exports.getBearerTokenWithAccessType = function (accessType, done) {
+
+    var client = {
+        clientId: 'test123',
+        secret: 'superSecret',
+        accessType: accessType
+    }
+
+    module.exports.removeTestClients(function (err) {
+        if (err) return done(err);
+
+        module.exports.createClient(client, function (err) {
+            if (err) return done(err);
+
+            request('http://' + config.server.host + ':' + config.server.port)
+            .post(config.auth.tokenUrl)
+            .send(client)
+            .expect(200)
+            //.expect('content-type', 'application/json')
+            .end(function (err, res) {
+                if (err) return done(err);
+
+                var bearerToken = res.body.accessToken;
+
+                should.exist(bearerToken);
+                done(null, bearerToken);
+            });
+        });
+    });
+};

@@ -241,7 +241,7 @@ describe('Application', function () {
                 help.dropDatabase(function (err) {
                     if (err) return done(err);
 
-                    help.getBearerToken(function (err, token) {
+                    help.getBearerTokenWithAccessType("admin", function (err, token) {
                         if (err) return done(err);
 
                         bearerToken = token;
@@ -982,6 +982,24 @@ describe('Application', function () {
         });
 
         describe('POST', function () {
+
+            before(function (done) {
+                help.getBearerTokenWithAccessType("admin", function (err, token) {
+                    if (err) return done(err);
+
+                    bearerToken = token;
+
+                    done();
+                });
+            });
+
+            after(function (done) {
+                help.removeTestClients(function (err) {
+                    if (err) return done(err);
+                    done();
+                });
+            });
+
             it('should validate schema', function (done) {
                 var client = request(connectionString);
                 var schema = JSON.parse(jsSchemaString);

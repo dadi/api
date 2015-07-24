@@ -241,7 +241,7 @@ describe('Application', function () {
                 help.dropDatabase(function (err) {
                     if (err) return done(err);
 
-                    help.getBearerToken(function (err, token) {
+                    help.getBearerTokenWithAccessType("admin", function (err, token) {
                         if (err) return done(err);
 
                         bearerToken = token;

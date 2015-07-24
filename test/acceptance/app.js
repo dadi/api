@@ -988,6 +988,8 @@ describe('Application', function () {
                     if (err) return done(err);
 
                     bearerToken = token;
+
+                    done();
                 });
             });
 

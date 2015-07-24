@@ -28,6 +28,7 @@ function isAuthorized(endpoints, path, client) {
     
     var endpointKey = _.find(_.keys(endpoints), function (k){ return k.indexOf(path.pathname) > -1; });
     
+    // check if this is a master config request first
     if (path.pathname.indexOf('serama/config') > -1 && client.permissions) {
         if (client.permissions.collections && client.permissions.collections.indexOf(path.pathname) < 0) {
             return false;
@@ -36,6 +37,14 @@ function isAuthorized(endpoints, path, client) {
         if (client.permissions.endpoints && client.permissions.endpoints.indexOf(path.pathname) < 0) {
             return false;
         }
+    }
+
+    // check if user accessType allows access to collection config
+    if (path.pathname.indexOf('config') > -1 && client.accessType && client.accessType === 'admin') {
+        return true;
+    }
+    else {
+        return false;
     }
 
     if (!endpointKey) return true;

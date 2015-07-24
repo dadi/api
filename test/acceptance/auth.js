@@ -129,6 +129,60 @@ describe('Authentication', function () {
         });
     });
 
+    it('should not allow requests for collection config by clients with accessType `user`', function (done) {
+
+        help.getBearerTokenWithAccessType("user", function (err, token) {
+
+            var client = request('http://' + config.server.host + ':' + config.server.port);
+
+            client
+            .get('/vtest/testdb/test-schema/config')
+            .set('Authorization', 'Bearer ' + token)
+            .expect(401)
+            //.expect('content-type', 'application/json')
+            .end(function(err,res) {
+                if (err) return done(err);
+                done();
+            });
+        });
+    });
+
+    it('should not allow requests for collection config by clients with no accessType specified', function (done) {
+
+        help.getBearerToken(function (err, token) {
+
+            var client = request('http://' + config.server.host + ':' + config.server.port);
+
+            client
+            .get('/vtest/testdb/test-schema/config')
+            .set('Authorization', 'Bearer ' + token)
+            .expect(401)
+            //.expect('content-type', 'application/json')
+            .end(function(err,res) {
+                if (err) return done(err);
+                done();
+            });
+        });
+    });
+
+    it('should allow requests for collection config by clients with accessType `admin`', function (done) {
+
+        help.getBearerTokenWithAccessType("admin", function (err, token) {
+
+            var client = request('http://' + config.server.host + ':' + config.server.port);
+
+            client
+            .get('/vtest/testdb/test-schema/config')
+            .set('Authorization', 'Bearer ' + token)
+            .expect(200)
+            //.expect('content-type', 'application/json')
+            .end(function(err,res) {
+                if (err) return done(err);
+                done();
+            });
+        });
+    });
+
     it('should allow unauthenticated request for collection specifying authenticate = false', function (done) {
 
         help.getBearerToken(function (err, token) {

@@ -982,6 +982,22 @@ describe('Application', function () {
         });
 
         describe('POST', function () {
+
+            before(function (done) {
+                help.getBearerTokenWithAccessType("admin", function (err, token) {
+                    if (err) return done(err);
+
+                    bearerToken = token;
+                });
+            });
+
+            after(function (done) {
+                help.removeTestClients(function (err) {
+                    if (err) return done(err);
+                    done();
+                });
+            });
+
             it('should validate schema', function (done) {
                 var client = request(connectionString);
                 var schema = JSON.parse(jsSchemaString);

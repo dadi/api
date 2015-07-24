@@ -257,6 +257,29 @@ describe('Authentication', function () {
         });
     });
 
+    it('should not allow access to serama config when client permissions specified', function (done) {
+
+        var permissions = { permissions: { collections: [ "books" ] } } 
+
+        help.getBearerTokenWithPermissions(permissions, function (err, token) {
+
+            var client = request('http://' + config.server.host + ':' + config.server.port);
+
+            // Wait, then test that we can make an unauthenticated request
+            setTimeout(function () {
+                client
+                .get('/serama/config')
+                .set('Authorization', 'Bearer ' + token)
+                .expect(401)
+                //.expect('content-type', 'application/json')
+                .end(function(err,res) {
+                    if (err) return done(err);
+                    done();
+                });
+            }, 300);
+        });
+    });
+
     it('should allow access to collection when no permissions specified', function (done) {
 
         help.getBearerToken(function (err, token) {

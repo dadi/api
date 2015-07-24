@@ -27,6 +27,16 @@ function isAuthorized(endpoints, path, client) {
     path = url.parse(path, true);
     
     var endpointKey = _.find(_.keys(endpoints), function (k){ return k.indexOf(path.pathname) > -1; });
+    
+    if (path.pathname.indexOf('serama/config') > -1 && client.permissions) {
+        if (client.permissions.collections && client.permissions.collections.indexOf(path.pathname) < 0) {
+            return false;
+        }
+
+        if (client.permissions.endpoints && client.permissions.endpoints.indexOf(path.pathname) < 0) {
+            return false;
+        }
+    }
 
     if (!endpointKey) return true;
 

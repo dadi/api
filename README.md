@@ -100,9 +100,15 @@ Returns a JSON object with all results from the *{collection name}* collection a
 
 Default views can be overridden using parameters at the point of API request.
 
-You can read about this and the about the collection schema [here](https://github.com/bantam-framework/serama/blob/master/docs/endpoints.md).
+You can read more about this and about the collection schema [here](https://github.com/bantam-framework/serama/blob/master/docs/endpoints.md).
 
 #### 2.
+
+**GET** *http(s)://{url}/{version number}/{database name}/{collection name}/{:id}*
+
+Returns the record with the id of *{:id}* in the *{collection name}* collection and *{database name}* database. 
+
+#### 3.
 
 **GET** *http://{url}/endpoints/{endpoint name}*
 
@@ -112,7 +118,7 @@ Returns a JSON object. Parameters and return are completely customisable. The ou
 
 See `test/acceptance/workspace/endpoints/endpoint.test-endpoint.js` for a "Hello World" example.
 
-#### 3.
+#### 4.
 
 **GET** *http://{url}/{version number}/{database name}/{collection name}/config*
 
@@ -120,7 +126,7 @@ Returns a JSON object of the schema file:
 
 *./workspace/collections/v{version number}/{database name}/collection.{collection name}.json*
 
-#### 4.
+#### 5.
 
 **GET** *http://{url}/serama/config*
 
@@ -130,7 +136,7 @@ Returns a JSON object of the main config file:
 
 You can read more about this [here](https://github.com/bantam-framework/serama/blob/master/docs/configApi.md).
 
-#### 5.
+#### 6.
 
 **POST** *http://{url}/serama/config*
 
@@ -140,7 +146,7 @@ Updates the main config file:
 
 You can read more about this [here](https://github.com/bantam-framework/serama/blob/master/docs/configApi.md).
 
-#### 6.
+#### 7.
 
 **POST** *http://{url}/{version number}/{database name}/{collection name}*
 
@@ -154,7 +160,7 @@ The following additional fields are saved alongside with every record:
 * *created_by*: user id of creator
 * *api_version*: api version number passed in the url ({version number}). i.e. v1
 
-#### 7.
+#### 8.
 
 **POST** *http://{url}/{version number}/{database name}/{collection name}/{:id}*
 
@@ -167,7 +173,7 @@ The following additional fields are added/updated alongside every passed field:
 * *last_modified_at*: timestamp of modification
 * *last_modified_by*: user id of updater
 
-#### 8.
+#### 9.
 
 **DELETE** *http://{url}/{version number}/{database name}/{collection name}/{:id}*
 

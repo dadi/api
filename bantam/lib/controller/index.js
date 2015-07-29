@@ -60,6 +60,11 @@ Controller.prototype.get = function (req, res, next) {
         sort = sortOptions;
     }
 
+    // if id is present in the url, add to the query
+    if (req.params.id) {
+        _.extend(query, { _id : req.params.id });
+    }
+
     // white list user specified options
     var queryOptions = {
         limit: limit,

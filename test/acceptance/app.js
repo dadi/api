@@ -317,7 +317,7 @@ describe('Application', function () {
                 });
             });
 
-            it('should find specific documents', function (done) {
+            it('should find specific document using filter param', function (done) {
                help.createDoc(bearerToken, function (err, doc1) {
                     if (err) return done(err);
                    help.createDoc(bearerToken, function (err, doc2) {
@@ -332,6 +332,65 @@ describe('Application', function () {
                         query = encodeURIComponent(JSON.stringify(query));
                         client
                         .get('/vtest/testdb/test-schema?filter=' + query)
+                        .set('Authorization', 'Bearer ' + bearerToken)
+                        .expect(200)
+                        .expect('content-type', 'application/json')
+                        .end(function (err, res) {
+                            if (err) return done(err);
+
+                            res.body['results'].should.exist;
+                            res.body['results'].should.be.Array;
+                            res.body['results'].length.should.equal(1);
+                            res.body['results'][0]._id.should.equal(docId);
+                            done();
+                        });
+                    });
+                });
+            });
+
+            it('should find specific document using request param', function (done) {
+               help.createDoc(bearerToken, function (err, doc1) {
+                    if (err) return done(err);
+                   help.createDoc(bearerToken, function (err, doc2) {
+                        if (err) return done(err);
+
+                        var client = request(connectionString);
+                        var docId = doc2._id
+
+                        client
+                        .get('/vtest/testdb/test-schema/' + doc2._id)
+                        .set('Authorization', 'Bearer ' + bearerToken)
+                        .expect(200)
+                        .expect('content-type', 'application/json')
+                        .end(function (err, res) {
+                            if (err) return done(err);
+
+                            res.body['results'].should.exist;
+                            res.body['results'].should.be.Array;
+                            res.body['results'].length.should.equal(1);
+                            res.body['results'][0]._id.should.equal(docId);
+                            done();
+                        });
+                    });
+                });
+            });
+
+            it('should find documents when using request param and filter', function (done) {
+               help.createDoc(bearerToken, function (err, doc1) {
+                    if (err) return done(err);
+                   help.createDoc(bearerToken, function (err, doc2) {
+                        if (err) return done(err);
+
+                        var client = request(connectionString);
+                        var docId = doc2._id
+                        var query = {
+                            field1: { '$gt' : '0' }
+                        };
+
+                        query = encodeURIComponent(JSON.stringify(query));
+
+                        client
+                        .get('/vtest/testdb/test-schema/' + doc2._id + '?filter=' + query)
                         .set('Authorization', 'Bearer ' + bearerToken)
                         .expect(200)
                         .expect('content-type', 'application/json')

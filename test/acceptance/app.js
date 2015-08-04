@@ -1259,7 +1259,7 @@ describe('Application', function () {
                         .get('/endpoints/new-endpoint-routing/55bb8f0a8d76f74b1303a135')
                         .set('Authorization', 'Bearer ' + adminBearerToken)
                         .expect(200)
-                        //.expect('content-type', 'application/json')
+                        .expect('content-type', 'application/json')
                         .end(function (err, res) {
                             if (err) return done(err);
 

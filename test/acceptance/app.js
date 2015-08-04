@@ -1200,25 +1200,10 @@ describe('Application', function () {
 
     describe('endpoint api', function () {
 
-        var cleanup = function (done) {
-            try {
-
-                // try to cleanup these tests directory tree
-                fs.unlinkSync(__dirname + '/workspace/endpoints/endpoint.new-endpoint-routing.js');
-            } catch (err) {
-                //console.log(err);
-            }
-            done();
-        };
-
         before(function (done) {
-            cleanup(function (err) {
-                if (err) return done(err);
-
-                app.start({
+            app.start({
                     endpointPath: __dirname + '/workspace/endpoints'
                 }, done);
-            });
         });
 
         after(function (done) {
@@ -1242,41 +1227,21 @@ describe('Application', function () {
 
         it('should allow custom routing via config() function', function (done) {
             
-            var jsSchemaString = fs.readFileSync(__dirname + '/../endpoint.new-endpoint-routing.js', {encoding: 'utf8'});
             var client = request(connectionString);
 
-            help.getBearerTokenWithAccessType("admin", function (err, token) {
+            client
+            .get('/endpoints/new-endpoint-routing/55bb8f0a8d76f74b1303a135')
+            .set('Authorization', 'Bearer ' + bearerToken)
+            .expect(200)
+            .expect('content-type', 'application/json')
+            .end(function (err, res) {
                 if (err) return done(err);
 
-                var adminBearerToken = token;
+                res.body.message.should.equal('Endpoint with custom route provided through config() function...ID passed = 55bb8f0a8d76f74b1303a135');
 
-                // create endpoint
-                client
-                .post('/endpoints/new-endpoint-routing/config')
-                .send(jsSchemaString)
-                .set('content-type', 'text/plain')
-                .set('Authorization', 'Bearer ' + adminBearerToken)
-                .expect(200)
-                .end(function (err, res) {
-                    if (err) return done(err);
-
-                    // wait, then test that endpoint was created
-                    setTimeout(function () {
-                        client
-                        .get('/endpoints/new-endpoint-routing/55bb8f0a8d76f74b1303a135')
-                        .set('Authorization', 'Bearer ' + adminBearerToken)
-                        .expect(200)
-                        //.expect('content-type', 'application/json')
-                        .end(function (err, res) {
-                            if (err) return done(err);
-
-                            res.body.message.should.equal('Endpoint with custom route provided through config() function...ID passed = 55bb8f0a8d76f74b1303a135');
-
-                            done();
-                        });
-                    }, 1000);
-                });
+                done();
             });
+
         });
     });
 

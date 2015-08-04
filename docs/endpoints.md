@@ -165,6 +165,19 @@ module.exports.model = {}
 module.exports.model.settings = { authenticate : false }
 ```
 
+## Collection Configuration Requests
+
+
+### Creating a new collection
+
+### Updating an existing collection
+
+### Viewing a collection's schema
+
+Creating or 
+Updates the specified collection config file, or creates it if it doesn't exist. This operation requires client credentials with `accessType: "admin"`.
+
+
 ### Example Usage
 
 See `test/acceptance/workspace/endpoints/endpoint.test-endpoint.js` for a "Hello World" example.

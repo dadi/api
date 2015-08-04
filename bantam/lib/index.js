@@ -400,10 +400,23 @@ Server.prototype.addEndpointResource = function (options) {
 
 Server.prototype.addComponent = function (options) {
 
+    // check if the endpoint is supplying a custom config block
+    if (options.component.config && typeof options.component.config === 'function') {
+        var config = options.component.config();
+        if (config && config.route) {
+            options.route = config.route;
+        }
+    }
+
+    console.log(options);
+
     // only add a route once
     if (this.components[options.route]) return;
 
     this.components[options.route] = options.component;
+
+    console.log(options.route);
+    console.log(this.components);
 
     this.app.use(options.route +'/config', function (req, res, next) {
         var method = req.method && req.method.toLowerCase();
@@ -444,6 +457,10 @@ Server.prototype.addComponent = function (options) {
     this.app.use(options.route, function (req, res, next) {
         // map request method to controller method
         var method = req.method && req.method.toLowerCase();
+
+        console.log(method);
+        console.log(options.route);
+
         if (method && options.component[method]) return options.component[method](req, res, next);
 
         next();

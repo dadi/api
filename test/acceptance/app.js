@@ -1242,7 +1242,7 @@ describe('Application', function () {
 
         it('should allow custom routing via config() function', function (done) {
             
-            var jsSchemaString = fs.readFileSync(__dirname + '/../new-endpoint-routing.js', {encoding: 'utf8'});
+            var jsSchemaString = fs.readFileSync(__dirname + '/../endpoint.new-endpoint-routing.js', {encoding: 'utf8'});
             var client = request(connectionString);
 
             help.getBearerTokenWithAccessType("admin", function (err, token) {

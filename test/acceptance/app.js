@@ -1233,7 +1233,7 @@ describe('Application', function () {
             });
         });
 
-        it.only('should allow custom routing via config() function', function (done) {
+        it('should allow custom routing via config() function', function (done) {
             
             var jsSchemaString = fs.readFileSync(__dirname + '/../new-endpoint-routing.js', {encoding: 'utf8'});
             var client = request(connectionString);
@@ -1253,19 +1253,17 @@ describe('Application', function () {
                 .end(function (err, res) {
                     if (err) return done(err);
 
-                    console.log('done');
-
                     // wait, then test that endpoint was created
                     setTimeout(function () {
                         client
-                        .get('/endpoints/new-endpoint-routing')
+                        .get('/endpoints/new-endpoint-routing/55bb8f0a8d76f74b1303a135')
                         .set('Authorization', 'Bearer ' + adminBearerToken)
                         .expect(200)
                         //.expect('content-type', 'application/json')
                         .end(function (err, res) {
                             if (err) return done(err);
 
-                            res.body.message.should.equal('Endpoint with custom route provided through config() function...ID passed = 1234');
+                            res.body.message.should.equal('Endpoint with custom route provided through config() function...ID passed = 55bb8f0a8d76f74b1303a135');
 
                             done();
                         });

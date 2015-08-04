@@ -126,7 +126,25 @@ Returns a JSON object of the schema file:
 
 *./workspace/collections/v{version number}/{database name}/collection.{collection name}.json*
 
+
 #### 5.
+
+**POST** *http://{url}/{version number}/{database name}/{collection name}/config*
+
+Updates the specified collection config file, or creates it if it doesn't exist. This operation requires client credentials with `accessType: "admin"`.
+
+```
+{
+  clientId: 'clientX-admin',
+  secret: 'secret',
+  accessType: 'admin'
+}
+```
+
+See [Authorisation](https://github.com/bantam-framework/serama/blob/master/docs/auth.md) for more information regarding the client credentials record.
+
+
+#### 6.
 
 **GET** *http://{url}/serama/config*
 
@@ -136,7 +154,7 @@ Returns a JSON object of the main config file:
 
 You can read more about this [here](https://github.com/bantam-framework/serama/blob/master/docs/configApi.md).
 
-#### 6.
+#### 7.
 
 **POST** *http://{url}/serama/config*
 
@@ -146,7 +164,7 @@ Updates the main config file:
 
 You can read more about this [here](https://github.com/bantam-framework/serama/blob/master/docs/configApi.md).
 
-#### 7.
+#### 8.
 
 **POST** *http://{url}/{version number}/{database name}/{collection name}*
 
@@ -160,7 +178,7 @@ The following additional fields are saved alongside with every record:
 * *created_by*: user id of creator
 * *api_version*: api version number passed in the url ({version number}). i.e. v1
 
-#### 8.
+#### 9.
 
 **POST** *http://{url}/{version number}/{database name}/{collection name}/{:id}*
 
@@ -173,7 +191,7 @@ The following additional fields are added/updated alongside every passed field:
 * *last_modified_at*: timestamp of modification
 * *last_modified_by*: user id of updater
 
-#### 9.
+#### 10.
 
 **DELETE** *http://{url}/{version number}/{database name}/{collection name}/{:id}*
 

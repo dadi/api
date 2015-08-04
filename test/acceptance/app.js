@@ -1212,17 +1212,17 @@ describe('Application', function () {
         };
 
         before(function (done) {
-            app.start({
-                endpointPath: __dirname + '/workspace/endpoints'
-            }, done);
+            cleanup(function (err) {
+                if (err) return done(err);
+
+                app.start({
+                    endpointPath: __dirname + '/workspace/endpoints'
+                }, done);
+            });
         });
 
         after(function (done) {
-            app.stop(function (err) {
-                if (err) return done(err);
-
-                cleanup(done);
-            });
+            app.stop(done);
         });
 
         it('should return hello world', function (done) {

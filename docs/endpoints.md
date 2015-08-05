@@ -156,6 +156,30 @@ Each function will recieve three arguments -
 
 There is an example custom endpoint included in the `workspace` directory.
 
+#### Custom Endpoint Routing
+
+It is possible to override the default endpoint route by including a `config` function in the endpoint file. The function should return a `config` option with a `route` property. The value of this property will be used for the endpoint's route.
+
+The following example returns a config block with a route that specifies an optional request parameter, `id`.
+
+```
+module.exports.config = function () {
+  return { "route": "/endpoints/example/:id([a-fA-F0-9]{24})?" }
+}
+```
+
+This route will now respond to requests such as 
+
+```
+http://api.example.com/endpoints/example/55bb8f688d76f74b1303a137
+```
+
+Without this custom route, the same could be achieved by requesting the default route with a querystring parameter.
+
+```
+http://api.example.com/endpoints/example?id=55bb8f688d76f74b1303a137
+```
+
 ### Authentication
 
 Serama's authentication can be bypassed for your custom endpoint by adding the following to your endpoint file:
@@ -167,16 +191,33 @@ module.exports.model.settings = { authenticate : false }
 
 ## Collection Configuration Requests
 
-
 ### Creating a new collection
+
+A new collection can be created by sending a POST request to the `config` endpoint of a collection that doesn't already exist. The body of the request should be a JSON string specifying the collection schema.
+
+This operation requires client credentials with `accessType: "admin"`.
+
+```
+POST http://api.example.com/:apiVersion/:database/:newCollection/config
+```
 
 ### Updating an existing collection
 
+An existing collection can be updated by sending a POST request to the `config` endpoint of an existing collection. The body of the request should be a JSON string specifying the collection schema.
+
+This operation requires client credentials with `accessType: "admin"`.
+
+```
+POST http://api.example.com/:apiVersion/:database/:existingCollection/config
+```
+
 ### Viewing a collection's schema
 
-Creating or 
-Updates the specified collection config file, or creates it if it doesn't exist. This operation requires client credentials with `accessType: "admin"`.
+An existing collection's schema can be viewed by sending a GET request to the `config` endpoint of an existing collection. The body of the response will contain a JSON string containing the collection schema.
 
+```
+GET http://api.example.com/:apiVersion/:database/:existingCollection/config
+```
 
 ### Example Usage
 

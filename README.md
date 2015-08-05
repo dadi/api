@@ -141,7 +141,7 @@ Updates the specified collection config file, or creates it if it doesn't exist.
 }
 ```
 
-See [Authorisation](https://github.com/bantam-framework/serama/blob/master/docs/auth.md) for more information regarding the client credentials record.
+See [Authorisation](https://github.com/bantam-framework/serama/blob/master/docs/auth.md) for more information regarding the client credentials record, and [Endpoints](https://github.com/bantam-framework/serama/blob/master/docs/endpoints.md) for more information regarding endpoint configuration requests.
 
 
 #### 6.

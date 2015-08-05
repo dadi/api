@@ -50,5 +50,14 @@ The client record can be extended with a `permissions` object containing an arra
 
 ## Collection Configuration Authorisation
 
-Creating or 
-Updates the specified collection config file, or creates it if it doesn't exist. This operation requires client credentials with `accessType: "admin"`.
+Creating or updating a collection schema requires client credentials with `accessType: "admin"`.
+
+```
+{
+  clientId: 'clientX',
+  secret: 'secret',
+  accessType: 'admin'
+}
+```
+
+See [Endpoints](https://github.com/bantam-framework/serama/blob/master/docs/endpoints.md) for more information regarding endpoint configuration requests.

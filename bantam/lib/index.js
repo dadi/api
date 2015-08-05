@@ -400,6 +400,14 @@ Server.prototype.addEndpointResource = function (options) {
 
 Server.prototype.addComponent = function (options) {
 
+    // check if the endpoint is supplying a custom config block
+    if (options.component.config && typeof options.component.config === 'function') {
+        var config = options.component.config();
+        if (config && config.route) {
+            options.route = config.route;
+        }
+    }
+
     // only add a route once
     if (this.components[options.route]) return;
 

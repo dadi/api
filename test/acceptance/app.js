@@ -1199,10 +1199,11 @@ describe('Application', function () {
     });
 
     describe('endpoint api', function () {
+
         before(function (done) {
             app.start({
-                endpointPath: __dirname + '/workspace/endpoints'
-            }, done);
+                    endpointPath: __dirname + '/workspace/endpoints'
+                }, done);
         });
 
         after(function (done) {
@@ -1222,6 +1223,25 @@ describe('Application', function () {
                 res.body.message.should.equal('Hello World');
                 done();
             });
+        });
+
+        it('should allow custom routing via config() function', function (done) {
+            
+            var client = request(connectionString);
+
+            client
+            .get('/endpoints/new-endpoint-routing/55bb8f0a8d76f74b1303a135')
+            .set('Authorization', 'Bearer ' + bearerToken)
+            .expect(200)
+            .expect('content-type', 'application/json')
+            .end(function (err, res) {
+                if (err) return done(err);
+
+                res.body.message.should.equal('Endpoint with custom route provided through config() function...ID passed = 55bb8f0a8d76f74b1303a135');
+
+                done();
+            });
+
         });
     });
 

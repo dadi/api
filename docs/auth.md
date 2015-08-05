@@ -32,7 +32,7 @@ Token expiration is specified in seconds at `config.auth.tokenTtl`.
 The removal of expired tokens within MongoDB is handled via a ttl index - [expireAfterSeconds](http://docs.mongodb.org/manual/tutorial/expire-data/) - on the tokenStore collection.
 
 
-## Collection / Endpoint Authentication
+## Collection / Endpoint Authorisation
 
 The client record can be extended with a `permissions` object containing an array of collections and/or endpoints to which that client has access. Access to any collections/endpoints not in the permissions list will be denied.
 
@@ -40,6 +40,7 @@ The client record can be extended with a `permissions` object containing an arra
 {
   clientId: 'clientX',
   secret: 'secret',
+  accessType: 'user',
   permissions: { 
     collections: [ "test-collection" ],
     endpoints: [ "test-endpoint" ]
@@ -47,4 +48,16 @@ The client record can be extended with a `permissions` object containing an arra
 }
 ```
 
+## Collection Configuration Authorisation
 
+Creating or updating a collection schema requires client credentials with `accessType: "admin"`.
+
+```
+{
+  clientId: 'clientX',
+  secret: 'secret',
+  accessType: 'admin'
+}
+```
+
+See [Endpoints](https://github.com/bantam-framework/serama/blob/master/docs/endpoints.md) for more information regarding endpoint configuration requests.

@@ -51,6 +51,65 @@ describe('Application', function () {
         });
     });
 
+    describe('collection initialisation', function () {
+        
+        var newSchemaPath = __dirname + '/workspace/collections/vtest/testdb/collection.new-test-schema.json';
+        
+        before(function (done) {
+
+            // Add a schema file to the collection path
+            var newSchema = JSON.parse(JSON.stringify(require(__dirname + '/workspace/schemas/collection.new-test-schema.json')));
+            fs.writeFileSync(newSchemaPath, JSON.stringify(newSchema));
+
+            app.start({
+                collectionPath: __dirname + '/workspace/collections'
+            }, done);
+        });
+
+        after(function (done) {
+
+            if (fs.existsSync(newSchemaPath)) fs.unlinkSync(newSchemaPath);
+
+            app.stop(done);
+        });
+
+        describe('on app start', function () {
+            before(function (done) {
+                help.dropDatabase(function (err) {
+                    if (err) return done(err);
+
+                    help.getBearerToken(function (err, token) {
+                        if (err) return done(err);
+
+                        bearerToken = token;
+
+                        done();
+                    });
+                });
+            });
+
+            it('should initialise model using collection schema filename as model name', function (done) {
+
+                var loadedModels = _.compact(_.pluck(app.components, 'model'));
+                var model = _.where(loadedModels, { name: "test-schema" });
+                
+                model.length.should.equal(1);
+
+                done();
+            });
+
+            it('should initialise model using property from schema file as model name', function (done) {
+
+                var loadedModels = _.compact(_.pluck(app.components, 'model'));
+                var model = _.where(loadedModels, { name: "modelNameFromSchema" });
+                
+                model.length.should.equal(1);
+                
+                done();
+            });
+        })
+    })
+
     describe('collections api', function () {
         before(function (done) {
             app.start({
@@ -984,14 +1043,33 @@ describe('Application', function () {
         var jsSchemaString = fs.readFileSync(__dirname + '/../new-schema.json', {encoding: 'utf8'});
 
         var cleanup = function (done) {
+            // try to cleanup these tests directory tree
+            // don't catch errors here, since the paths may not exist
             try {
-                // try to cleanup these tests directory tree
                 fs.unlinkSync(__dirname + '/workspace/collections/vapicreate/testdb/collection.api-create.json');
+            } catch (e) {
+            }
+
+            try {
+                fs.unlinkSync(__dirname + '/workspace/collections/vapicreate/testdb/collection.api-create-model-name.json');
+            } catch (e) {
+            }
+
+            try {
+                fs.unlinkSync(__dirname + '/workspace/collections/vapicreate/testdb/collection.modelNameFromSchema.json');
+            } catch (e) {
+            }
+
+            try {
                 fs.rmdirSync(__dirname + '/workspace/collections/vapicreate/testdb');
+            } catch (e) {
+            }
+
+            try {
                 fs.rmdirSync(__dirname + '/workspace/collections/vapicreate');
             } catch (e) {
-                // don't catch the error, since the above paths may not exist
             }
+
             done();
         };
 
@@ -1108,6 +1186,57 @@ describe('Application', function () {
                 });
             });
 
+            it('should use collection schema filename as model name', function (done) {
+
+                var client = request(connectionString);
+
+                client
+                .post('/vapicreate/testdb/api-create-model-name/config')
+                .send(jsSchemaString)
+                .set('content-type', 'text/plain')
+                .set('Authorization', 'Bearer ' + bearerToken)
+                .expect(200)
+                .expect('content-type', 'application/json')
+                .end(function (err, res) {
+                    if (err) return done(err);
+
+                    
+                    var body = JSON.stringify(res.body);
+                    var index = body.indexOf('api-create-model-name collection created');
+                    index.should.be.above(0);
+
+                    done();
+                });
+            });
+
+            it('should use property from schema file as model name', function (done) {
+                
+                var client = request(connectionString);
+
+                var schema = JSON.parse(jsSchemaString);
+                schema["model"] = "modelNameFromSchema";
+                jsSchemaString = JSON.stringify(schema);
+
+                client
+                .post('/vapicreate/testdb/api-create-model-name/config')
+                .send(jsSchemaString)
+                .set('content-type', 'text/plain')
+                .set('Authorization', 'Bearer ' + bearerToken)
+                .expect(200)
+                .expect('content-type', 'application/json')
+                .end(function (err, res) {
+                    if (err) return done(err);
+
+                    
+                    var body = JSON.stringify(res.body);
+
+                    var index = body.indexOf('modelNameFromSchema collection created');
+                    index.should.be.above(0);
+
+                    done();
+                });
+            });
+
             it('should allow updating a new collection endpoint', function (done) {
                 var client = request(connectionString);
 
@@ -1137,6 +1266,7 @@ describe('Application', function () {
                     .expect(200)
                     .expect('content-type', 'application/json')
                     .end(function (err, res) {
+
                         if (err) return done(err);
 
                         // Wait, then test that the schema was updated
@@ -1149,7 +1279,10 @@ describe('Application', function () {
                             .set('Authorization', 'Bearer ' + bearerToken)
                             .expect(200)
                             .expect('content-type', 'application/json')
-                            .end(done);
+                            .end(function (err, res) {
+                                //
+                                done();
+                            });
                         }, 300);
                     });
                 });

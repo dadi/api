@@ -136,15 +136,36 @@ module.exports.validateCollectionSchema = function(obj) {
  * 
  * Remove each file in the specified cache folder.
  */
-module.exports.clearCache = function (path) {
-    if (fs.existsSync(path)) {
-        fs.readdirSync(path).forEach(function (filename) {
-            if (fs.existsSync(filename)) {
-                fs.unlinkSync(filename);
-            }
-        });
-    }
+module.exports.clearCache = function (cachePath, callback) {
+    console.log('clearing cache...');
+    var i = 0;
+    console.log(cachePath);
+    fs.exists(cachePath, function (exists) {
+        console.log("path exists: " + exists);
+        if (exists) {
+            fs.readdir(cachePath, function (err, files) {
+                files.forEach(function (filename) {
+                    console.log(filename);
+                    var file = path.join(cachePath, filename);
+                    fs.writeFile(file, '', function (err) {
+                        if (err) throw err;
+                        console.log('It\'s blanked!');
+
+                        i++;
+                        if (i == files.length) {
+                            console.log('done.');
+                            callback(null);
+                        }
+                    });
+                });
+            });
+        }
+        else {
+            callback(null);
+        }
+    });
 }
+
 /**
  * Recursively create directories.
  */

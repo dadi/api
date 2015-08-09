@@ -86,11 +86,19 @@ describe('Cache', function (done) {
                 .end(function (err, res2) {
                     if (err) return done(err);
 
-                    res2.text.should.equal(res1.text);
-                    spy.called.should.be.true;
+                    client
+                    .get('/vtest/testdb/test-schema')
+                    .set('Authorization', 'Bearer ' + bearerToken)
+                    .expect(200)
+                    .end(function (err, res3) {
+                        if (err) return done(err);
 
-                    spy.restore();
-                    done();
+                        res2.text.should.equal(res3.text);
+                        spy.called.should.be.true;
+
+                        spy.restore();
+                        done();
+                    });
                 });
             });
         });
@@ -235,6 +243,62 @@ describe('Cache', function (done) {
         });
     });
 
+    it('should flush on POST request', function (done) {
+
+        help.createDoc(bearerToken, function (err, doc) {
+            if (err) return done(err);
+
+            help.createDoc(bearerToken, function (err, doc) {
+                if (err) return done(err);
+
+                var client = request('http://' + config.server.host + ':' + config.server.port);
+
+                client
+                .get('/vtest/testdb/test-schema')
+                .set('Authorization', 'Bearer ' + bearerToken)
+                .expect(200)
+                .end(function (err, res1) {
+                    if (err) return done(err);
+
+                    console.log("res1.body")
+                    console.log(res1.body)
+
+                    client
+                    .post('/vtest/testdb/test-schema')
+                    .set('Authorization', 'Bearer ' + bearerToken)
+                    .send({field1: 'foo!'})
+                    .expect(200)
+                    .end(function (err, res2) {
+                        if (err) return done(err);
+
+                        console.log("res2.body")
+                        console.log(res2.body)
+
+                        setTimeout(function () {
+
+                            client
+                            .get('/vtest/testdb/test-schema')
+                            .set('Authorization', 'Bearer ' + bearerToken)
+                            .expect(200)
+                            .end(function (err, res3) {
+                                if (err) return done(err);
+                                
+                                console.log("res3.body")
+                                console.log(res3.body)
+
+                                // res1.body['results'].length.should.equal(0);
+                                // res2.body['results'].length.should.equal(1);
+                                res3.text.should.not.equal(res1.text);
+
+                                done();
+                            });
+                        }, 300);
+                    });
+                });
+            });
+        });
+    });
+
     it('should preserve content-type', function (done) {
         var client = request('http://' + config.server.host + ':' + config.server.port);
 
@@ -262,7 +326,7 @@ describe('Cache', function (done) {
                 .end(function (err, res2) {
                     if (err) return done(err);
 
-                    res2.text.should.equal(res1.text);
+                    res2.text.should.not.equal(res1.text);
                     done();
                 });
             });

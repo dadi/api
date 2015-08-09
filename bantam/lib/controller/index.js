@@ -17,6 +17,8 @@ var url = require('url');
 var config = require(__dirname + '/../../../config');
 var help = require(__dirname + '/../help');
 var _ = require('underscore');
+var crypto = require('crypto');
+var path = require('path');
 
 // helpers
 var sendBackJSON = help.sendBackJSON;
@@ -97,7 +99,15 @@ Controller.prototype.post = function (req, res, next) {
     internals.createdAt = Date.now();
     internals.createdBy = req.client && req.client.clientId;
 
-    this.model.create(req.body, internals, sendBackJSON(200, res, next));
+    // flush cache for POST and DELETE requests
+    var modelDir = crypto.createHash('sha1').update(url.parse(req.url).pathname).digest('hex');
+    var cacheDir = path.join(config.caching.directory, modelDir);
+    
+    console.log('controller flush');
+    var self = this;
+    help.clearCache(cacheDir, function (err) {
+        self.model.create(req.body, internals, sendBackJSON(200, res, next));
+    });
 };
 
 Controller.prototype.delete = function (req, res, next) {

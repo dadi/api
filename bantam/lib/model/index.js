@@ -315,6 +315,9 @@ Model.prototype.update = function (query, update, internals, done) {
             if (err) return done(err);
             updatedDocs = docs['results'];
 
+            console.log(query);
+            console.log(setUpdate);
+
             database.collection(self.name).update(query, setUpdate, function (err, numAffected) {
                 if (err) return done(err);
                 if (!numAffected) {
@@ -325,6 +328,8 @@ Model.prototype.update = function (query, update, internals, done) {
 
                 // query and doc `_id` should be equal
                 query._id && (update._id = query._id);
+
+                console.log(updatedDocs);
 
                 // for each of the updated documents, create
                 // a history revision for it

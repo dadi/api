@@ -3,6 +3,7 @@
   "version": "0.1.7-beta",
   "dependencies": {
     "body-parser": "~1.6.5",
+    "mkdirp": "^0.5.1",
     "moment": "~2.8.1",
     "mongodb": "~1.4.8",
     "node-uuid": "~1.4.1",

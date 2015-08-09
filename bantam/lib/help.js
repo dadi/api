@@ -133,6 +133,19 @@ module.exports.validateCollectionSchema = function(obj) {
 }
 
 /**
+ * 
+ * Remove each file in the specified cache folder.
+ */
+module.exports.clearCache = function (path) {
+    if (fs.existsSync(path)) {
+        fs.readdirSync(path).forEach(function (filename) {
+            if (fs.existsSync(filename)) {
+                fs.unlinkSync(filename);
+            }
+        });
+    }
+}
+/**
  * Recursively create directories.
  */
 module.exports.mkdirParent =  function(dirPath, mode, callback) {

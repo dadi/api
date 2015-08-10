@@ -167,7 +167,8 @@ Server.prototype.loadConfigApi = function () {
             return next(err);
         }
 
-        var validation = help.validateCollectionSchema(JSON.parse(schemaString));
+        var schema = JSON.parse(schemaString);
+        var validation = help.validateCollectionSchema(schema);
 
         if (!validation.success) {
             var err = new Error('Collection schema validation failed');
@@ -178,7 +179,11 @@ Server.prototype.loadConfigApi = function () {
 
         var params = req.params;
 
-        var route = ['', params.version, params.database, params.collectionName, idParam].join('/');
+        // use params.collectionName as default, override if the schema supplies a 'model' property
+        var name = params.collectionName;
+        if (schema.hasOwnProperty("model")) name = schema.model;
+
+        var route = ['', params.version, params.database, name, idParam].join('/');
 
         // create schema
         if (!self.components[route]) {
@@ -188,7 +193,7 @@ Server.prototype.loadConfigApi = function () {
                 self.collectionPath,
                 params.version,
                 params.database,
-                'collection.' + params.collectionName + '.json'
+                'collection.' + name + '.json'
             );
 
             try {
@@ -199,7 +204,7 @@ Server.prototype.loadConfigApi = function () {
                 res.setHeader('content-type', 'application/json');
                 res.end(JSON.stringify({
                     result: 'success',
-                    message: params.collectionName + ' collection created'
+                    message: name + ' collection created'
                 }));
 
             }
@@ -294,27 +299,32 @@ Server.prototype.updateCollections = function (collectionsPath) {
         var database = dirs[dirs.length - 2];
 
         // collection should be json file containing schema
+    
+        // get the schema
+        var schema = require(cpath);
         var name = collection.slice(collection.indexOf('.') + 1, collection.indexOf('.json'));
+
+        // override the default name using the supplied property
+        if (schema.hasOwnProperty("model")) name = schema.model;
 
         self.addCollectionResource({
             route: ['', version, database, name, idParam].join('/'),
             filepath: cpath,
-            name: name
+            name: name,
+            schema: schema
         });
     });
 };
 
 Server.prototype.addCollectionResource = function (options) {
 
-    // get the schema
-    var schema = require(options.filepath);
-    var fields = help.getFieldsFromSchema(schema);
+    var fields = help.getFieldsFromSchema(options.schema);
 
     // With each schema we create a model.
     // With each model we create a controller, that acts as a component of the REST api.
     // We then add the component to the api by adding a route to the app and mapping
     // `req.method` to component methods
-    var mod = model(options.name, JSON.parse(fields), null, schema.settings);
+    var mod = model(options.name, JSON.parse(fields), null, options.schema.settings);
     var control = controller(mod);
 
     this.addComponent({
@@ -450,6 +460,7 @@ Server.prototype.addComponent = function (options) {
     });
 
     this.app.use(options.route, function (req, res, next) {
+
         // map request method to controller method
         var method = req.method && req.method.toLowerCase();
         if (method && options.component[method]) return options.component[method](req, res, next);

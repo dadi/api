@@ -61,7 +61,7 @@ Controller.prototype.get = function (req, res, next) {
     }
 
     // if id is present in the url, add to the query
-    if (req.params.id) {
+    if (req.params && req.params.id) {
         _.extend(query, { _id : req.params.id });
     }
 

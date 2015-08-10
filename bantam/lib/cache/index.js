@@ -42,13 +42,6 @@ module.exports = function (server) {
         var cacheDir = path.join(dir, modelDir);
         var cachepath = path.join(cacheDir, filename + '.' + config.caching.extension);
 
-        // flush cache for POST and DELETE requests
-        // console.log('IS POST FOR? ' + cachepath);
-        // if (req.method && (req.method.toLowerCase() === 'post' || req.method.toLowerCase() === 'delete')) {
-        //     console.log('flush');
-        //     help.clearCache(cacheDir);
-        // }
-
         // only cache GET requests
         if (!(req.method && req.method.toLowerCase() === 'get')) return next();
 
@@ -56,16 +49,6 @@ module.exports = function (server) {
         var query = url.parse(req.url, true).query;
         var noCache = query.cache && query.cache.toString().toLowerCase() === 'false';
         if (noCache) return next();
-
-        //console.log('getting stats for ' + cachepath);
-
-        // console.log(fs.existsSync(cacheDir));
-        // console.log(fs.existsSync(cachepath));
-        // fs.readFile(cachepath, {encoding: cacheEncoding}, function (err, resBody) {
-        //     if (err) {
-        //         console.log(err);
-        //     }
-        // });
 
         fs.stat(cachepath, function (err, stats) {
 
@@ -87,12 +70,9 @@ module.exports = function (server) {
                 // there are only two possible types javascript or json
                 var dataType = query.callback ? 'text/javascript' : 'application/json';
 
-                console.log("read");
-                console.log(resBody);
                 if (resBody === "") {
                     return cacheResponse();
                 }
-                //console.log(res);
 
                 res.statusCode = 200;
                 res.setHeader('content-type', dataType);
@@ -128,9 +108,6 @@ module.exports = function (server) {
 
                 // if response is not 200 don't cache
                 if (res.statusCode !== 200) return;
-
-                console.log(cachepath);
-                console.log(data);
 
                 // TODO: do we need to grab a lock here?
                 mkdirp(cacheDir, {}, function (err, made) {

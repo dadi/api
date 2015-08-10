@@ -137,33 +137,33 @@ module.exports.validateCollectionSchema = function(obj) {
  * Remove each file in the specified cache folder.
  */
 module.exports.clearCache = function (cachePath, callback) {
-    console.log('clearing cache...');
     var i = 0;
-    console.log(cachePath);
-    fs.exists(cachePath, function (exists) {
-        console.log("path exists: " + exists);
-        if (exists) {
-            fs.readdir(cachePath, function (err, files) {
-                files.forEach(function (filename) {
-                    console.log(filename);
-                    var file = path.join(cachePath, filename);
-                    fs.writeFile(file, '', function (err) {
-                        if (err) throw err;
-                        console.log('It\'s blanked!');
+    var exists = fs.existsSync(cachePath);
+    
+    if (!exists) {
+        return callback(null);
+    }
+    else {
+        fs.readdir(cachePath, function (err, files) {
+            files.forEach(function (filename) {
+                var file = path.join(cachePath, filename);
+                
+                // write empty string to file, as we
+                // can't effectively remove it whilst 
+                // the node process is running
+                fs.writeFile(file, '', function (err) {
+                    if (err) throw err;
 
-                        i++;
-                        if (i == files.length) {
-                            console.log('done.');
-                            callback(null);
-                        }
-                    });
+                    i++;
+
+                    // finished, all files processed
+                    if (i == files.length) {
+                        return callback(null);
+                    }
                 });
             });
-        }
-        else {
-            callback(null);
-        }
-    });
+        });
+    }
 }
 
 /**

@@ -260,9 +260,6 @@ describe('Cache', function (done) {
                 .end(function (err, res1) {
                     if (err) return done(err);
 
-                    console.log("res1.body")
-                    console.log(res1.body)
-
                     client
                     .post('/vtest/testdb/test-schema')
                     .set('Authorization', 'Bearer ' + bearerToken)
@@ -270,9 +267,6 @@ describe('Cache', function (done) {
                     .expect(200)
                     .end(function (err, res2) {
                         if (err) return done(err);
-
-                        console.log("res2.body")
-                        console.log(res2.body)
 
                         setTimeout(function () {
 
@@ -283,11 +277,6 @@ describe('Cache', function (done) {
                             .end(function (err, res3) {
                                 if (err) return done(err);
                                 
-                                console.log("res3.body")
-                                console.log(res3.body)
-
-                                // res1.body['results'].length.should.equal(0);
-                                // res2.body['results'].length.should.equal(1);
                                 res3.text.should.not.equal(res1.text);
 
                                 done();

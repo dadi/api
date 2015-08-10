@@ -103,7 +103,6 @@ Controller.prototype.post = function (req, res, next) {
     var modelDir = crypto.createHash('sha1').update(url.parse(req.url).pathname).digest('hex');
     var cacheDir = path.join(config.caching.directory, modelDir);
     
-    console.log('controller flush');
     var self = this;
     help.clearCache(cacheDir, function (err) {
         self.model.create(req.body, internals, sendBackJSON(200, res, next));

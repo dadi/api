@@ -111,6 +111,15 @@ describe('Model', function () {
             done();
         });
 
+        it('should accept collection displayName setting', function (done) {
+            var mod = model('testModelName', help.getModelSchema(), null, { displayName: "TEST MODEL" });
+
+            should.exist(mod.settings);
+            mod.settings.displayName.should.equal("TEST MODEL");
+
+            done();
+        });
+
         it('should attach `type` definition to model', function (done) {
             var val = 'test type';
 

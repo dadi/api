@@ -19,6 +19,11 @@ var Model = function (name, schema, conn, settings) {
     // attach default settings
     this.settings = settings || {};
 
+    // attach display name if supplied
+    if (this.settings.hasOwnProperty("displayName")) {
+        this.displayName = this.settings.displayName;
+    }
+
     // create connection for this model
     if (conn) {
         this.connection = conn;

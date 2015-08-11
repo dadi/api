@@ -408,6 +408,45 @@ describe('Application', function () {
                 });
             });
 
+            it('should allow case insensitive regex query', function (done) {
+               
+                var doc = { field1: "Test", field2: null };
+                
+                help.createDocWithParams(bearerToken, doc, function (err) {
+                
+                   if (err) return done(err);
+                    
+                    var client = request(connectionString);
+                    var query = {
+                        field1: { "$regex" : "tes" }
+                    };
+
+                    query = encodeURIComponent(JSON.stringify(query));
+
+                    client
+                    .get('/vtest/testdb/test-schema?cache=false&filter=' + query)
+                    .set('Authorization', 'Bearer ' + bearerToken)
+                    .expect(200)
+                    .expect('content-type', 'application/json')
+                    .end(function (err, res) {
+                        if (err) return done(err);
+
+                        var found = false;
+
+                        res.body['results'].should.exist;
+                        res.body['results'].should.be.Array;
+                        
+                        _.each(res.body['results'], function (value, key) {
+                            if (value.field1 === "Test") found = true;
+                        });
+
+                        found.should.be.true;
+
+                        done();
+                    });
+                });
+            });
+
             it('should allow null values in query when converting to case insensitive', function (done) {
                
                 var doc = { field1: "Test", field2: null };
@@ -431,8 +470,17 @@ describe('Application', function () {
                     .end(function (err, res) {
                         if (err) return done(err);
 
+                        var found = false;
+
                         res.body['results'].should.exist;
                         res.body['results'].should.be.Array;
+                        
+                        _.each(res.body['results'], function (value, key) {
+                            if (value.field1 === "Test") found = true;
+                        });
+
+                        found.should.be.true;
+
                         done();
                     });
                 });

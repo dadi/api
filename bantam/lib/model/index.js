@@ -172,7 +172,7 @@ var makeCaseInsensitive = function (obj) {
             return obj;
         }
         else {
-            return new RegExp(["^", obj].join(""), "i");
+            return new RegExp(obj, "i");
         }
     }
     else if (typeof obj === 'object' && obj !== null) {

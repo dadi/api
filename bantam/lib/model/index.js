@@ -168,13 +168,20 @@ Model.prototype.create = function (obj, internals, done) {
 
 var makeCaseInsensitive = function (obj) {
     if (typeof obj === 'string') {
-        if (!ObjectID.isValid(obj)) {
+        if (ObjectID.isValid(obj)) {
+            return obj;
+        }
+        else {
             return new RegExp(["^", obj, "$"].join(""), "i");
         }
     }
     else if (typeof obj === 'object') {
         _.each(Object.keys(obj), function(key) {
-            obj[key] = makeCaseInsensitive(obj[key]);
+            if (key[0] === '$' && key !== '$regex') {
+            }
+            else {
+                obj[key] = makeCaseInsensitive(obj[key]);
+            }
         });
         return obj;
     }

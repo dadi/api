@@ -89,7 +89,7 @@ describe('Model validator', function () {
                 val.success.should.be.false;
                 val.errors.length.should.equal(1);
                 val.errors[0].field.should.equal('field3');
-                val.errors[0].message.should.equal('is invalid');
+                val.errors[0].message.should.equal('doesn\'t exist in the collection schema');
 
                 done();
             });

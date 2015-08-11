@@ -49,15 +49,20 @@ Validator.prototype.schema = function (obj) {
 
 function _parseDocument(obj, schema, response) {
 
-
     for (var key in obj) {
-        if (typeof obj[key] === 'object' && obj[key] !== null && !util.isArray(obj[key])) {
-            _parseDocument(obj[key], schema, response);
+        // handle objects first
+        if (typeof obj[key] === 'object') {
+            if (schema[key] && schema[key].type === 'Object') {
+                // do nothing
+            }
+            else if (obj[key] !== null && !util.isArray(obj[key])) {
+                _parseDocument(obj[key], schema, response);
+            }
         }
         else {
             if (!schema[key]) {
                 response.success = false;
-                response.errors.push({field: key, message: 'is invalid'});
+                response.errors.push({field: key, message: 'doesn\'t exist in the collection schema'});
                 return;
             }
 

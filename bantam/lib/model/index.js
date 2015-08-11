@@ -199,9 +199,7 @@ Model.prototype.find = function (query, options, done) {
 
     var self = this;
 
-    console.log(query);
     query = makeCaseInsensitive(query);
-    console.log(query);
 
     var validation = this.validate.query(query);
     if (!validation.success) {

@@ -167,28 +167,31 @@ Model.prototype.create = function (obj, internals, done) {
  */
 
 var makeCaseInsensitive = function (obj) {
-    if (typeof obj === 'string') {
-        if (ObjectID.isValid(obj)) {
-            return obj;
-        }
-        else {
-            return new RegExp(obj, "i");
-        }
-    }
-    else if (typeof obj === 'object' && obj !== null) {
-        _.each(Object.keys(obj), function(key) {
-            if (key[0] === '$' && key !== '$regex') {
-                // ignore all other $ operators
+
+    _.each(Object.keys(obj), function(key) {
+
+        if (typeof obj[key] === 'string') {
+            if (ObjectID.isValid(obj[key])) {
+                obj[key] = obj[key];
+            }
+            else if (key[0] === '$' && key === '$regex') {
+                obj[key] = new RegExp(obj[key], "i");
+            }
+            else if (key[0] === '$' && key !== '$regex') {
+                obj[key] = obj[key];
             }
             else {
-                obj[key] = makeCaseInsensitive(obj[key]);
+                obj[key] = new RegExp(["^", obj[key], "$"].join(""), "i");
             }
-        });
-        return obj;
-    }
-    else {
-        return obj;   
-    }
+        }
+        else if (typeof obj[key] === 'object' && obj[key] !== null) {
+            obj[key] = makeCaseInsensitive(obj[key]);
+        }
+        else {
+            return obj;
+        }
+    });
+    return obj;
 }
 
 Model.prototype.find = function (query, options, done) {

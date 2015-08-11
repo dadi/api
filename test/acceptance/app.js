@@ -376,6 +376,68 @@ describe('Application', function () {
                 });
             });
 
+            it('should allow case insensitive query', function (done) {
+               
+                var doc = { field1: "Test", field2: null };
+                
+                help.createDocWithParams(bearerToken, doc, function (err) {
+                
+                   if (err) return done(err);
+                    
+                    var client = request(connectionString);
+                    var query = {
+                        field1: "test"
+                    };
+
+                    query = encodeURIComponent(JSON.stringify(query));
+
+                    client
+                    .get('/vtest/testdb/test-schema?cache=false&filter=' + query)
+                    .set('Authorization', 'Bearer ' + bearerToken)
+                    .expect(200)
+                    .expect('content-type', 'application/json')
+                    .end(function (err, res) {
+                        if (err) return done(err);
+
+                        res.body['results'].should.exist;
+                        res.body['results'].should.be.Array;
+                        res.body['results'].length.should.equal(1);
+                        res.body['results'][0].field1.should.equal("Test");
+                        done();
+                    });
+                });
+            });
+
+            it('should allow null values in query when converting to case insensitive', function (done) {
+               
+                var doc = { field1: "Test", field2: null };
+                
+                help.createDocWithParams(bearerToken, doc, function (err) {
+                
+                   if (err) return done(err);
+                    
+                    var client = request(connectionString);
+                    var query = {
+                        field2: null
+                    };
+
+                    query = encodeURIComponent(JSON.stringify(query));
+
+                    client
+                    .get('/vtest/testdb/test-schema?cache=false&filter=' + query)
+                    .set('Authorization', 'Bearer ' + bearerToken)
+                    .expect(200)
+                    .expect('content-type', 'application/json')
+                    .end(function (err, res) {
+                        if (err) return done(err);
+
+                        res.body['results'].should.exist;
+                        res.body['results'].should.be.Array;
+                        done();
+                    });
+                });
+            });
+
             it('should find specific document using filter param', function (done) {
                help.createDoc(bearerToken, function (err, doc1) {
                     if (err) return done(err);

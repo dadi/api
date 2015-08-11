@@ -135,7 +135,16 @@ describe('validation', function () {
                             .expect(200)
                             .end(function (err, res) {
                                 if (err) return done(err);
-                                done();
+                                
+                                client
+                                .post('/vtest/testdb/test-validation-schema')
+                                .set('Authorization', 'Bearer ' + bearerToken)
+                                .send({fieldObject: { "foo": "bar", "baz": "qux" }})
+                                .expect(200)
+                                .end(function (err, res) {
+                                    if (err) return done(err);
+                                    done();
+                                });
                             });
                         });
                     });

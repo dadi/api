@@ -10,7 +10,6 @@ var Validator = function (model) {
 };
 
 Validator.prototype.query = function (query) {
-    console.log(Object.keys(query));
     var valid = Object.keys(query).every(function (key) {
         return key[0] !== '$';
     });

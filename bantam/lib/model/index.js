@@ -198,6 +198,25 @@ var makeCaseInsensitive = function (obj) {
     return newObj;
 }
 
+var convertApparentObjectIds = function (query) {
+    var newObj = _.clone(query);
+    _.each(Object.keys(newObj), function(key) {
+        if (typeof newObj[key] === 'object' && _.isArray(newObj[key])) {
+            var arr = newObj[key];
+            _.each(arr, function (value, key) {
+                if (typeof value === 'string' && ObjectID.isValid(value)) {
+                    arr[key] = new ObjectID.createFromHexString(value);
+                }
+            });
+            newObj[key] = arr;
+        }
+        else if (typeof newObj[key] === 'object' && newObj[key] !== null) {
+            newObj[key] = convertApparentObjectIds(newObj[key]);
+        }
+    });
+    return newObj;
+}
+
 Model.prototype.find = function (query, options, done) {
     if (typeof options === 'function') {
         done = options
@@ -207,6 +226,7 @@ Model.prototype.find = function (query, options, done) {
     var self = this;
 
     query = makeCaseInsensitive(query);
+    query = convertApparentObjectIds(query);
 
     var validation = this.validate.query(query);
     if (!validation.success) {

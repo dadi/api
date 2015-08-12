@@ -199,22 +199,26 @@ var makeCaseInsensitive = function (obj) {
 }
 
 var convertApparentObjectIds = function (query) {
-    var newObj = _.clone(query);
-    _.each(Object.keys(newObj), function(key) {
-        if (typeof newObj[key] === 'object' && _.isArray(newObj[key])) {
-            var arr = newObj[key];
-            _.each(arr, function (value, key) {
-                if (typeof value === 'string' && ObjectID.isValid(value)) {
-                    arr[key] = new ObjectID.createFromHexString(value);
-                }
-            });
-            newObj[key] = arr;
+    _.each(Object.keys(query), function(key) {
+        if (key === '$in') {
+            if (typeof query[key] === 'object' && _.isArray(query[key])) {
+                var arr = query[key];
+                _.each(arr, function (value, key) {
+                    if (typeof value === 'string' && ObjectID.isValid(value)) {
+                        arr[key] = new ObjectID.createFromHexString(value);
+                    }
+                });
+                query[key] = arr;
+            }
         }
-        else if (typeof newObj[key] === 'object' && newObj[key] !== null) {
-            newObj[key] = convertApparentObjectIds(newObj[key]);
+        else if (typeof query[key] === 'object' && query[key] !== null) {
+            query[key] = convertApparentObjectIds(query[key]);
+        }
+        else {
+            // nothing
         }
     });
-    return newObj;
+    return query;
 }
 
 Model.prototype.find = function (query, options, done) {

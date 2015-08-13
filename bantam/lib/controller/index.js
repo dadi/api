@@ -60,8 +60,6 @@ Controller.prototype.get = function (req, res, next) {
         sort = sortOptions;
     }
 
-    var fields = JSON.parse(options.fields) || {};
-
     // if id is present in the url, add to the query
     if (req.params && req.params.id) {
         _.extend(query, { _id : req.params.id });
@@ -71,9 +69,12 @@ Controller.prototype.get = function (req, res, next) {
     var queryOptions = {
         limit: limit,
         skip: skip,
-        fields: fields,
         page: parseInt(options.page)
     };
+
+    if (options.fields && help.isJSON(options.fields)) {
+        queryOptions.fields = JSON.parse(options.field);
+    }
 
     if (sort && !_.isEmpty(sort)) queryOptions.sort = sort;
 

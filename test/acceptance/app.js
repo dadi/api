@@ -486,6 +486,37 @@ describe('Application', function () {
                 });
             });
 
+            it.only('should return specified fields only when supplying `fields` param', function (done) {
+               
+               var doc = { field1: "Test", field2: null };
+                
+                help.createDocWithParams(bearerToken, doc, function (err) {
+                    if (err) return done(err);
+
+                    var client = request(connectionString);
+
+                    var fields = {
+                        "field1" : 1, "_id": 0
+                    };
+
+                    query = encodeURIComponent(JSON.stringify(fields));
+                    client
+                    .get('/vtest/testdb/test-schema?cache=false&fields=' + query)
+                    .set('Authorization', 'Bearer ' + bearerToken)
+                    .expect(200)
+                    .expect('content-type', 'application/json')
+                    .end(function (err, res) {
+                        if (err) return done(err);
+
+                        res.body['results'].should.exist;
+                        res.body['results'].should.be.Array;
+                        res.body['results'].length.should.equal(1);
+                        JSON.stringify(res.body['results'][0]).should.equal(JSON.stringify({ field1: 'Test' }));
+                        done();
+                    });
+                });
+            });
+
             it('should find specific document using filter param', function (done) {
                help.createDoc(bearerToken, function (err, doc1) {
                     if (err) return done(err);

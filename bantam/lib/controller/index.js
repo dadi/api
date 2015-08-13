@@ -72,6 +72,10 @@ Controller.prototype.get = function (req, res, next) {
         page: parseInt(options.page)
     };
 
+    if (options.fields && help.isJSON(options.fields)) {
+        queryOptions.fields = JSON.parse(options.fields);
+    }
+
     if (sort && !_.isEmpty(sort)) queryOptions.sort = sort;
 
     this.model.find(query, queryOptions, done);

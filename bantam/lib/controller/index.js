@@ -73,7 +73,7 @@ Controller.prototype.get = function (req, res, next) {
     };
 
     if (options.fields && help.isJSON(options.fields)) {
-        queryOptions.fields = JSON.parse(options.field);
+        queryOptions.fields = JSON.parse(options.fields);
     }
 
     if (sort && !_.isEmpty(sort)) queryOptions.sort = sort;

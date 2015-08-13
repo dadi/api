@@ -486,7 +486,7 @@ describe('Application', function () {
                 });
             });
 
-            it.only('should return specified fields only when supplying `fields` param', function (done) {
+            it('should return specified fields only when supplying `fields` param', function (done) {
                
                var doc = { field1: "Test", field2: null };
                 
@@ -510,8 +510,11 @@ describe('Application', function () {
 
                         res.body['results'].should.exist;
                         res.body['results'].should.be.Array;
-                        res.body['results'].length.should.equal(1);
-                        JSON.stringify(res.body['results'][0]).should.equal(JSON.stringify({ field1: 'Test' }));
+
+                        var obj = _.sample(res.body['results']);
+                        Object.keys(obj).length.should.equal(1);
+                        Object.keys(obj)[0].should.equal("field1");
+
                         done();
                     });
                 });

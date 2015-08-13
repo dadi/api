@@ -11,6 +11,8 @@ page             | integer     | Page number                                   |
 sort             | string      | Field to sort on                          | _id                  |
 sortOrder       | string      | Sort direction                                | asc                  | desc
 filter           | json        | MongoDB query object or Aggregation Pipeline array                            |                      | { fieldName: {"$in": ["a", "b"]}object}
+fields           | json        | Specify the fields to return in the dataset. Use `1` to include and `0` to exclude a field  |          | {"field1":1,"field2":1,"_id":0}
+
 callback         | string      | Callback function to wrap the return result set in.  |               | thisIsMyCallback
 
 

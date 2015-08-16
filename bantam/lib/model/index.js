@@ -1,5 +1,6 @@
 var connection = require(__dirname + '/connection');
 var config = require(__dirname + '/../../../config').database;
+var help = require(__dirname + '/../help');
 var Validator = require(__dirname + '/validator');
 var History = require(__dirname + '/history');
 var ObjectID = require('mongodb').ObjectID;
@@ -157,17 +158,9 @@ Model.prototype.create = function (obj, internals, done) {
     this.connection.once('connect', _done);
 };
 
-/**
- * Lookup documents in the database
- *
- * @param {Object} query
- * @param {Function} done
- * @return undefined
- * @api public
- */
-
-var makeCaseInsensitive = function (obj) {
+Model.prototype.makeCaseInsensitive = function (obj) {
     var newObj = _.clone(obj);
+    var self = this;
     _.each(Object.keys(obj), function(key) {
         if (typeof obj[key] === 'string') {
             if (ObjectID.isValid(obj[key])) {
@@ -180,7 +173,7 @@ var makeCaseInsensitive = function (obj) {
                 newObj[key] = obj[key];
             }
             else {
-                newObj[key] = new RegExp(["^", obj[key], "$"].join(""), "i");
+                newObj[key] = new RegExp(["^", help.regExpEscape(obj[key]), "$"].join(""), "i");
             }
         }
         else if (typeof obj[key] === 'object' && obj[key] !== null) {
@@ -188,7 +181,7 @@ var makeCaseInsensitive = function (obj) {
                 newObj[key] = obj[key];
             }
             else {
-                newObj[key] = makeCaseInsensitive(obj[key]);
+                newObj[key] = self.makeCaseInsensitive(obj[key]);
             }
         }
         else {
@@ -221,6 +214,14 @@ var convertApparentObjectIds = function (query) {
     return query;
 }
 
+/**
+ * Lookup documents in the database
+ *
+ * @param {Object} query
+ * @param {Function} done
+ * @return undefined
+ * @api public
+ */
 Model.prototype.find = function (query, options, done) {
     if (typeof options === 'function') {
         done = options
@@ -229,7 +230,7 @@ Model.prototype.find = function (query, options, done) {
 
     var self = this;
 
-    query = makeCaseInsensitive(query);
+    query = this.makeCaseInsensitive(query);
     query = convertApparentObjectIds(query);
 
     var validation = this.validate.query(query);

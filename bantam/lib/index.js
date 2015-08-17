@@ -33,9 +33,9 @@ Server.prototype.start = function (options, done) {
 
     // add necessary middlewares in order below here...
 
-    app.use(bodyParser.json());
-    app.use(bodyParser.urlencoded({ extended: false }));
-    app.use(bodyParser.text());
+    app.use(bodyParser.json({ limit: '50mb' }));
+    app.use(bodyParser.urlencoded({ extended: false, limit: '50mb' }));
+    app.use(bodyParser.text({ limit: '50mb' }));
 
     // configure authentication middleware
     auth(self);

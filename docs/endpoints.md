@@ -77,6 +77,7 @@ Each field is defined in the following way:
             "validationRule": "",
             "required": false,
             "message": "",
+            "default": "0"
             "display": { 
                 "index": true,
                 "edit": true
@@ -94,6 +95,7 @@ placement | Determines where to display the field in the backend interface (plan
 validationRule | Regex validation rule. Field is be validated against this | | ```[A-Z]*```
 required | Defines if field is required. Field is be validated against this | ```false``` | ```true```
 message | The message to return if field validation fails. | ```"is invalid"``` | ```"must contain uppercase letters only"```
+default | (optional) The value to use as a default if no value is supplied for this field | | "0"
 display | Determines in which view states the field should be visible within the backend interface (planned functionality) | | ```{ "index": true, "edit": false } ```
 
 #### Default response
@@ -134,6 +136,10 @@ If a record fails validation an errors collection should be returned with the re
         "error": {
           "field": "start_date",
           "message": "is invalid" 
+        },
+        "error": {
+          "field": "extra_field",
+          "message": "doesn't exist in the collection schema"
         }
       }
     }

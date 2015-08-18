@@ -72,6 +72,30 @@ describe('Model validator', function () {
                 done();
             });
 
+            it('should add default value if field is missing', function (done) {
+                var validator = new Validator({
+                    schema: {
+                        field1: {
+                            type: 'String',
+                            required: true
+                        },
+                        field2: {
+                            type: 'Number',
+                            required: false
+                        },
+                        field3: {
+                            type: 'String',
+                            required: true,
+                            default: 'foo'
+                        }
+                    }
+                });
+                var val = validator.schema({field1: 'bar', field2: 123});
+                val.success.should.be.true;
+
+                done();
+            });
+
             it('should inform of additional fields', function (done) {
                 var validator = new Validator({
                     schema: {

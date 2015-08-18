@@ -265,4 +265,48 @@ describe('validation', function () {
             });
         });
     });
+
+    describe('default value', function () {
+        it('should be added to the request object if not supplied', function (done) {
+            var client = request('http://' + config.server.host + ':' + config.server.port);
+
+            client
+            .post('/vtest/testdb/test-validation-schema')
+            .set('Authorization', 'Bearer ' + bearerToken)
+            .send({fieldString: 'stringy'})
+            .expect(200)
+            .expect('content-type', 'application/json')
+            .end(function (err, res) {
+                if (err) return done(err);
+
+                res.body.should.be.json;
+                res.body.should.be.an.Array;
+                res.body[0].fieldDefault.should.exist;
+                res.body[0].fieldDefault.should.eql("FOO!");
+
+                done();
+            });
+        });
+
+        it('should not be added to the request object if it is already supplied', function (done) {
+            var client = request('http://' + config.server.host + ':' + config.server.port);
+
+            client
+            .post('/vtest/testdb/test-validation-schema')
+            .set('Authorization', 'Bearer ' + bearerToken)
+            .send({fieldString: 'string', fieldDefault: 'bean'})
+            .expect(200)
+            .expect('content-type', 'application/json')
+            .end(function (err, res) {
+                if (err) return done(err);
+
+                res.body.should.be.json;
+                res.body.should.be.an.Array;
+                res.body[0].fieldDefault.should.exist;
+                res.body[0].fieldDefault.should.eql("bean");
+
+                done();
+            });
+        });
+    });
 });

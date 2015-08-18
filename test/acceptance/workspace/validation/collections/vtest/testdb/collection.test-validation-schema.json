@@ -56,6 +56,21 @@
                 "edit": true
             }
         },
+        "fieldDefault": {
+            "type": "String",
+            "label": "Title",
+            "comments": "The title of the entry",
+            "limit": "",
+            "placement": "Main content",
+            "validationRule": "",
+            "required": false,
+            "default": "FOO!",
+            "message": "",
+            "display": { 
+                "index": true,
+                "edit": true
+            }
+        },
         "fieldMixed": {
             "type": "Mixed",
             "label": "Title",

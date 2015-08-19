@@ -8,7 +8,7 @@ POST, GET, and DELETE methods that can be accessed by the request router
 This will only be used for *http://{url}/{version number}/{database name}/{collection name}*
 type of endpoints
 
-*http://{url}/endpoints/{endpoint name}* type endpoints should create a custom controller that
+*http://{url}/endpoints/{version number}/{endpoint name}* type endpoints should create a custom controller that
 implements methods corresponding to the HTTP methods it needs to support
 
 

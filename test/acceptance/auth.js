@@ -291,7 +291,7 @@ describe('Authentication', function () {
 
     it('should allow access to endpoint specified in client permissions list', function (done) {
 
-        var permissions = { permissions: { endpoints: [ "test-endpoint" ] } } 
+        var permissions = { permissions: { endpoints: [ "v1/test-endpoint" ] } } 
 
         help.getBearerTokenWithPermissions(permissions, function (err, token) {
                 
@@ -300,7 +300,7 @@ describe('Authentication', function () {
             // Wait, then test that we can make an unauthenticated request
             setTimeout(function () {
                 client
-                .get('/endpoints/test-endpoint')
+                .get('/endpoints/v1/test-endpoint')
                 .set('Authorization', 'Bearer ' + token)
                 .expect(200)
                 //.expect('content-type', 'application/json')
@@ -314,7 +314,7 @@ describe('Authentication', function () {
 
     it('should not allow access to endpoint not specified in client permissions list', function (done) {
 
-        var permissions = { permissions: { endpoints: [ "xxxx-endpoint" ] } } 
+        var permissions = { permissions: { endpoints: [ "v1/xxxx-endpoint" ] } } 
 
         help.getBearerTokenWithPermissions(permissions, function (err, token) {
 
@@ -323,7 +323,7 @@ describe('Authentication', function () {
             // Wait, then test that we can make an unauthenticated request
             setTimeout(function () {
                 client
-                .get('/endpoints/test-endpoint')
+                .get('/endpoints/v1/test-endpoint')
                 .set('Authorization', 'Bearer ' + token)
                 .expect(401)
                 //.expect('content-type', 'application/json')
@@ -388,7 +388,7 @@ describe('Authentication', function () {
             // Wait, then test that we can make an unauthenticated request
             setTimeout(function () {
                 client
-                .get('/endpoints/test-endpoint')
+                .get('/endpoints/v1/test-endpoint')
                 .set('Authorization', 'Bearer ' + token)
                 .expect(200)
                 //.expect('content-type', 'application/json')

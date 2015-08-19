@@ -1572,13 +1572,13 @@ describe('Application', function () {
                     client
                     .post('/endpoints/v1/new-endpoint/config')
                     .send(jsSchemaString)
-                    //.set('content-type', 'text/plain')
+                    .set('content-type', 'text/plain')
                     .set('Authorization', 'Bearer ' + bearerToken)
                     .expect(200)
                     .end(function (err, res) {
                         if (err) return done(err);
 
-                        res.body.message.should.equal('v1:new-endpoint endpoint created');
+                        res.body.message.should.equal('Endpoint "v1:new-endpoint" created');
 
                         // wait, then test that endpoint was created
                         setTimeout(function () {
@@ -1593,7 +1593,7 @@ describe('Application', function () {
                                 res.body.message.should.equal('endpoint created through the API');
                                 done();
                             });
-                        }, 1000);
+                        }, 1500);
                     });
                 });
             });

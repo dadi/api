@@ -226,7 +226,7 @@ Server.prototype.loadConfigApi = function () {
     });
 
     this.app.use('/endpoints/:version/:endpointName/config', function (req, res, next) {
-        console.log("Endpoint CREATE");
+
         var method = req.method && req.method.toLowerCase();
         if (method !== 'post') return next();
 
@@ -239,8 +239,7 @@ Server.prototype.loadConfigApi = function () {
             return fs.writeFile(filepath, req.body, function (err) {
                 if (err) return next(err);
 
-                var message = version + ':' + name + ' endpoint created';
-                console.log(message);
+                var message = 'Endpoint "' + version + ':' + name + '" created';
 
                 res.statusCode = 200;
                 res.setHeader('content-type', 'application/json');
@@ -277,6 +276,10 @@ Server.prototype.updateVersions = function (versionsPath) {
         }
         else {
             self.updateEndpoints(dirname);
+
+            self.addMonitor(dirname, function (endpoint) {
+                self.updateEndpoints(dirname);
+            });
         }
     });
 };
@@ -386,7 +389,6 @@ Server.prototype.updateEndpoints = function (endpointsPath) {
     var endpoints = fs.readdirSync(endpointsPath);
 
     endpoints.forEach(function (endpoint) {
-
         // parse the url out of the directory structure
         var cpath = path.join(endpointsPath, endpoint);
         var dirs = cpath.split('/');

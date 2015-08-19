@@ -1532,8 +1532,9 @@ describe('Application', function () {
 
                 // try to cleanup these tests directory tree
                 fs.unlinkSync(__dirname + '/workspace/endpoints/v1/endpoint.new-endpoint.js');
+                fs.unlinkSync(__dirname + '/workspace/endpoints/v2/endpoint.new-endpoint.js');
             } catch (err) {
-                //console.log(err);
+                console.log(err);
             }
             done();
         };
@@ -1638,6 +1639,48 @@ describe('Application', function () {
                                 done();
                             });
                         }, 1000);
+                    });
+                });
+            });
+
+            it('should allow creating a new endpoint for a new version number', function (done) {
+                var client = request(connectionString);
+
+                // make sure the endpoint is not already there
+                client
+                .get('/endpoints/v2/new-endpoint?cache=false')
+                .set('Authorization', 'Bearer ' + bearerToken)
+                .expect(404)
+                .end(function (err) {
+                    if (err) return done(err);
+
+                    // create endpoint
+                    client
+                    .post('/endpoints/v2/new-endpoint/config')
+                    .send(jsSchemaString)
+                    .set('content-type', 'text/plain')
+                    .set('Authorization', 'Bearer ' + bearerToken)
+                    .expect(200)
+                    .end(function (err, res) {
+                        if (err) return done(err);
+
+                        console.log(res.body);
+                        res.body.message.should.equal('Endpoint "v2:new-endpoint" created');
+
+                        // wait, then test that endpoint was created
+                        setTimeout(function () {
+                            client
+                            .get('/endpoints/v2/new-endpoint?cache=false')
+                            .set('Authorization', 'Bearer ' + bearerToken)
+                            .expect(200)
+                            //.expect('content-type', 'application/json')
+                            .end(function (err, res) {
+                                if (err) return done(err);
+
+                                res.body.message.should.equal('endpoint created through the API');
+                                done();
+                            });
+                        }, 1500);
                     });
                 });
             });

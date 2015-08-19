@@ -2,6 +2,7 @@ var fs = require('fs');
 var path = require('path');
 var url = require('url');
 var bodyParser = require('body-parser');
+var mkdirp = require('mkdirp');
 var _ = require('underscore');
 var controller = require(__dirname + '/controller');
 var model = require(__dirname + '/model');
@@ -115,7 +116,7 @@ Server.prototype.loadApi = function (options) {
         self.updateVersions(collectionPath);
     });
 
-    //this.updateEndpoints(endpointPath);
+    // Load custom endpoints
     this.updateVersions(endpointPath);
 
     this.addMonitor(endpointPath, function (endpointFile) {
@@ -236,18 +237,31 @@ Server.prototype.loadConfigApi = function () {
         if (!self.components['/endpoints/' + version + '/' + name]) {
             var filepath = path.join(self.endpointPath, version, 'endpoint.' + name + '.js');
 
-            return fs.writeFile(filepath, req.body, function (err) {
-                if (err) return next(err);
+            try {
+                // create endpoint version directory if it doesn't exist
+                mkdirp.sync(path.join(self.endpointPath, version));
 
-                var message = 'Endpoint "' + version + ':' + name + '" created';
+                console.log("write: " + filepath);
+                fs.writeFile(filepath, req.body, function (err) {
+                    if (err) return next(err);
 
-                res.statusCode = 200;
-                res.setHeader('content-type', 'application/json');
-                res.end(JSON.stringify({
-                    result: 'success',
-                    message: message
-                }));
-            });
+                    var message = 'Endpoint "' + version + ':' + name + '" created';
+
+                    console.log(message);
+
+                    res.statusCode = 200;
+                    res.setHeader('content-type', 'application/json');
+                    res.end(JSON.stringify({
+                        result: 'success',
+                        message: message
+                    }));
+
+                    return next();
+                });
+            }
+            catch (e) {
+                console.log(e);
+            }
         }
 
         next();
@@ -385,6 +399,13 @@ Server.prototype.addCollectionResource = function (options) {
 };
 
 Server.prototype.updateEndpoints = function (endpointsPath) {
+    
+    if (!fs.lstatSync(endpointsPath).isDirectory()) {
+      var endpointFilename = path.basename(endpointsPath);
+      console.log("Endpoint file '" + endpointFilename + "' not loaded, please move it to a version folder (e.g. 'workspace/endpoints/1.0/" + endpointFilename + "')");
+      return;  
+    } 
+
     var self = this;
     var endpoints = fs.readdirSync(endpointsPath);
 

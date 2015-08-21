@@ -119,17 +119,20 @@ Server.prototype.loadApi = function (options) {
     // Load custom endpoints
     this.updateVersions(endpointPath);
 
-    this.addMonitor(endpointPath, function (endpointFile) {
-        var filepath = path.join(endpointPath, endpointFile);
+    this.addMonitor(endpointPath, function (versionName) {
+        
+        //var filepath = path.join(endpointPath, endpointFile);
+
+        //if (path) return self.updateDatabases(path.join(collectionPath, versionName));
 
         // need to ensure filepath exists since this could be a removal
-        if (endpointFile && fs.existsSync(filepath)) {
-            return self.addEndpointResource({
-                endpoint: endpointFile,
-                filepath: filepath
-            });
-        }
-        self.updateEndpoints(endpointPath);
+        // if (endpointFile && fs.existsSync(filepath)) {
+        //     return self.addEndpointResource({
+        //         endpoint: endpointFile,
+        //         filepath: filepath
+        //     });
+        // }
+        self.updateVersions(endpointPath);
     });
 };
 
@@ -160,12 +163,6 @@ Server.prototype.loadConfigApi = function () {
 
     // listen for requests to add to the API
     this.app.use('/:version/:database/:collectionName/config', function (req, res, next) {
-        
-        // collection and endpoint paths now have the same structure
-        // i.e. /version/database/collection and /endpoints/version/endpoint
-        // so test here for `endpoints` in the request url, processing the next
-        // handler if required.
-        if (url.parse(req.url).pathname.indexOf('endpoints') > 0) return next();
 
         var method = req.method && req.method.toLowerCase();
         if (method !== 'post') return next();
@@ -226,7 +223,7 @@ Server.prototype.loadConfigApi = function () {
         next();
     });
 
-    this.app.use('/endpoints/:version/:endpointName/config', function (req, res, next) {
+    this.app.use('/:version/:endpointName/config', function (req, res, next) {
 
         var method = req.method && req.method.toLowerCase();
         if (method !== 'post') return next();
@@ -234,20 +231,17 @@ Server.prototype.loadConfigApi = function () {
         var version = req.params.version;
         var name = req.params.endpointName;
 
-        if (!self.components['/endpoints/' + version + '/' + name]) {
+        if (!self.components['/' + version + '/' + name]) {
             var filepath = path.join(self.endpointPath, version, 'endpoint.' + name + '.js');
 
             try {
                 // create endpoint version directory if it doesn't exist
                 mkdirp.sync(path.join(self.endpointPath, version));
 
-                console.log("write: " + filepath);
-                fs.writeFile(filepath, req.body, function (err) {
+                return fs.writeFile(filepath, req.body, function (err) {
                     if (err) return next(err);
 
                     var message = 'Endpoint "' + version + ':' + name + '" created';
-
-                    console.log(message);
 
                     res.statusCode = 200;
                     res.setHeader('content-type', 'application/json');
@@ -256,7 +250,7 @@ Server.prototype.loadConfigApi = function () {
                         message: message
                     }));
 
-                    return next();
+                    next();
                 });
             }
             catch (e) {
@@ -436,7 +430,7 @@ Server.prototype.addEndpointResource = function (options) {
         // keep reference to component so hot loading component can be
         // done by changing reference value
         var opts = {
-            route: '/endpoints/' + options.version + '/' + name,
+            route: '/' + options.version + '/' + name,
             component: require(filepath),
             filepath: filepath
         };

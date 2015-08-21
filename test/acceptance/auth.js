@@ -291,7 +291,7 @@ describe('Authentication', function () {
 
     it('should allow access to endpoint specified in client permissions list', function (done) {
 
-        var permissions = { permissions: { endpoints: [ "v1/test-endpoint" ] } } 
+        var permissions = { permissions: { endpoints: [ "/v1/test-endpoint" ] } } 
 
         help.getBearerTokenWithPermissions(permissions, function (err, token) {
                 
@@ -314,7 +314,7 @@ describe('Authentication', function () {
 
     it('should not allow access to endpoint not specified in client permissions list', function (done) {
 
-        var permissions = { permissions: { endpoints: [ "v1/xxxx-endpoint" ] } } 
+        var permissions = { permissions: { endpoints: [ "/v1/xxxx-endpoint" ] } } 
 
         help.getBearerTokenWithPermissions(permissions, function (err, token) {
 

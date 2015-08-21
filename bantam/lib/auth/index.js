@@ -59,7 +59,7 @@ function isAuthorized(endpoints, req, client) {
         }
     }
     else if (endpoints[endpointKey].get) {
-        if (!client.permissions.endpoints || client.permissions.endpoints.indexOf(endpointKey.replace('/endpoints/','')) > -1) {
+        if (!client.permissions.endpoints || client.permissions.endpoints.indexOf(endpointKey) > -1) {
             return true;
         }
     }

@@ -300,7 +300,7 @@ describe('Authentication', function () {
             // Wait, then test that we can make an unauthenticated request
             setTimeout(function () {
                 client
-                .get('/endpoints/v1/test-endpoint')
+                .get('/v1/test-endpoint')
                 .set('Authorization', 'Bearer ' + token)
                 .expect(200)
                 //.expect('content-type', 'application/json')
@@ -323,7 +323,7 @@ describe('Authentication', function () {
             // Wait, then test that we can make an unauthenticated request
             setTimeout(function () {
                 client
-                .get('/endpoints/v1/test-endpoint')
+                .get('/v1/test-endpoint')
                 .set('Authorization', 'Bearer ' + token)
                 .expect(401)
                 //.expect('content-type', 'application/json')
@@ -388,7 +388,7 @@ describe('Authentication', function () {
             // Wait, then test that we can make an unauthenticated request
             setTimeout(function () {
                 client
-                .get('/endpoints/v1/test-endpoint')
+                .get('/v1/test-endpoint')
                 .set('Authorization', 'Bearer ' + token)
                 .expect(200)
                 //.expect('content-type', 'application/json')

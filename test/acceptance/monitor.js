@@ -102,7 +102,7 @@ describe('File system watching', function () {
             var client = request('http://' + config.server.host + ':' + config.server.port);
 
             client
-            .get('/endpoints/v1/monitor-test-endpoint?cache=false')
+            .get('/v1/monitor-test-endpoint?cache=false')
             .set('Authorization', 'Bearer ' + bearerToken)
             .expect(200)
             //.expect('content-type', 'application/json')
@@ -120,7 +120,7 @@ describe('File system watching', function () {
 
                 setTimeout(function () {
                     client
-                    .get('/endpoints/v1/monitor-test-endpoint?cache=false')
+                    .get('/v1/monitor-test-endpoint?cache=false')
                     .set('Authorization', 'Bearer ' + bearerToken)
                     .expect(200)
                     .expect('content-type', 'application/json')
@@ -196,7 +196,7 @@ describe('File system watching', function () {
                 var client = request('http://' + config.server.host + ':' + config.server.port);
 
                 client
-                .get('/endpoints/v1/new-test-endpoint')
+                .get('/v1/new-test-endpoint')
                 .set('Authorization', 'Bearer ' + bearerToken)
                 .expect(200)
                 .expect('content-type', 'application/json')
@@ -217,7 +217,7 @@ describe('File system watching', function () {
             var client = request('http://' + config.server.host + ':' + config.server.port);
 
             client
-            .get('/endpoints/v1/monitor-test-endpoint?cache=false')
+            .get('/v1/monitor-test-endpoint?cache=false')
             .set('Authorization', 'Bearer ' + bearerToken)
             .expect(404)
             .end(done);

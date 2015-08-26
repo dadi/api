@@ -1,8 +1,10 @@
 // Create a client object, enabling access to the api
 var connection = require(__dirname + '/../bantam/lib/model/connection');
-var config = require(__dirname + '/../config');
+var config = require(__dirname + '/../config').database;
 
-var conn = connection(config.auth.database);
+config.database = 'testdb';
+
+var conn = connection(config);
 
 conn.on('connect', function (db) {
 
@@ -12,6 +14,8 @@ conn.on('connect', function (db) {
     }, function (err, doc) {
         if (err) throw err;
 
+        console.log(db);
+
         db.collection('books').insert({
             name: 'War and Peace',
             authorId: doc[0]._id
@@ -19,7 +23,7 @@ conn.on('connect', function (db) {
             if (err) throw err;
 
             console.log('Send a GET request to the following URL in Postman to see joined collection:')
-            console.log('\thttp://localhost:3000/endpoints/v1/full-book?bookid=' + books[0]._id);
+            console.log('\thttp://localhost:3000/v1/full-book?bookid=' + books[0]._id);
             conn.mongoClient.close();
         });
     });

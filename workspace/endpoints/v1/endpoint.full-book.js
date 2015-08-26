@@ -15,20 +15,20 @@ module.exports.get = function (req, res, next) {
 
     if (bookQuery) {
 
-        books.castToBSON(bookQuery);
+        //books.castToBSON(bookQuery);
 
         // TODO: use an async lib to avoid nesting callbacks
         return books.find(bookQuery, function (err, books) {
             if (err) return next(err);
 
-            if (books.length) {
-                var userQuery = { _id: books[0].authorId };
+            if (books.results.length) {
+                var userQuery = { _id: books.results[0].authorId };
                 user.castToBSON(userQuery);
 
                 return user.find(userQuery, function (err, users) {
                     if (err) return next(err);
 
-                    var book = books[0];
+                    var book = books.results[0];
 
                     // attach the author data to the book, unless its not found
                     book.authorId = users.length ? users[0] : null;

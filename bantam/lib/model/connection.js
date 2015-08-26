@@ -14,6 +14,10 @@ var _ = require('underscore');
  */
 var Connection = function (options) {
 
+    if (options.database && config[options.database]) {
+        options = _.extend(options, config[options.database]);
+    }
+
     this.connectionOptions = options || config;
 
     this.connectionOptions.host = (options && options.host) ? options.host : config.host;

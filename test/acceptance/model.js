@@ -11,9 +11,9 @@ describe('Model', function () {
         var mod = model('secondary-schema', help.getFieldsFromSchema(schema), null, schema.settings, 'secondary');
 
         var conn = mod.connection;
-        conn.database.should.equal('secondary');
-        conn.host.should.equal('127.0.0.1');
-        conn.port.should.equal(27018);
+        conn.connectionOptions.database.should.equal('secondary');
+        conn.connectionOptions.host.should.equal('127.0.0.1');
+        conn.connectionOptions.port.should.equal(27018);
 
         done();
     });

@@ -56,27 +56,27 @@ describe('validation', function () {
             });
         });
 
-        describe('date', function () {
-            it('should not allow setting non-date', function (done) {
-                var client = request('http://' + config.server.host + ':' + config.server.port);
+        // describe('date', function () {
+        //     it('should not allow setting non-date', function (done) {
+        //         var client = request('http://' + config.server.host + ':' + config.server.port);
 
-                client
-                .post('/vtest/testdb/test-validation-schema')
-                .set('Authorization', 'Bearer ' + bearerToken)
-                .send({fieldDate: 1337})
-                .expect(400, done);
-            });
+        //         client
+        //         .post('/vtest/testdb/test-validation-schema')
+        //         .set('Authorization', 'Bearer ' + bearerToken)
+        //         .send({fieldDate: 1337})
+        //         .expect(400, done);
+        //     });
 
-            it('should allow setting date', function (done) {
-                var client = request('http://' + config.server.host + ':' + config.server.port);
+        //     it('should allow setting date', function (done) {
+        //         var client = request('http://' + config.server.host + ':' + config.server.port);
 
-                client
-                .post('/vtest/testdb/test-validation-schema')
-                .set('Authorization', 'Bearer ' + bearerToken)
-                .send({fieldDate: "2013/12/08"})
-                .expect(200, done);
-            });
-        });
+        //         client
+        //         .post('/vtest/testdb/test-validation-schema')
+        //         .set('Authorization', 'Bearer ' + bearerToken)
+        //         .send({fieldDate: "2013/12/08"})
+        //         .expect(200, done);
+        //     });
+        // });
 
         describe('number', function () {
             it('should not allow setting non-number', function (done) {

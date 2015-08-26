@@ -146,12 +146,11 @@ describe('Application', function () {
                 .end(function (err, res) {
                     if (err) return done(err);
 
-                    should.exist(res.body);
-
-                    res.body.should.be.Array;
-                    res.body.length.should.equal(1);
-                    should.exist(res.body[0]._id);
-                    res.body[0].field1.should.equal('foo!');
+                    should.exist(res.body.results);
+                    res.body.results.should.be.Array;
+                    res.body.results.length.should.equal(1);
+                    should.exist(res.body.results[0]._id);
+                    res.body.results[0].field1.should.equal('foo!');
                     done();
                 });
             });
@@ -167,13 +166,13 @@ describe('Application', function () {
                 .end(function (err, res) {
                     if (err) return done(err);
 
-                    should.exist(res.body);
+                    should.exist(res.body.results);
 
-                    res.body.should.be.Array;
-                    res.body.length.should.equal(1);
-                    should.exist(res.body[0]._id);
-                    should.exist(res.body[0].field1);
-                    res.body[0].field1.should.equal('foo!');
+                    res.body.results.should.be.Array;
+                    res.body.results.length.should.equal(1);
+                    should.exist(res.body.results[0]._id);
+                    should.exist(res.body.results[0].field1);
+                    res.body.results[0].field1.should.equal('foo!');
                     done();
                 });
             });
@@ -188,14 +187,14 @@ describe('Application', function () {
                 .end(function (err, res) {
                     if (err) return done(err);
 
-                    should.exist(res.body);
+                    should.exist(res.body.results);
 
-                    res.body.should.be.Array;
-                    res.body.length.should.equal(1);
-                    res.body[0].createdBy.should.equal('test123');
-                    res.body[0].createdAt.should.be.Number;
-                    res.body[0].createdAt.should.not.be.above(Date.now());
-                    res.body[0].apiVersion.should.equal('vtest');
+                    res.body.results.should.be.Array;
+                    res.body.results.length.should.equal(1);
+                    res.body.results[0].createdBy.should.equal('test123');
+                    res.body.results[0].createdAt.should.be.Number;
+                    res.body.results[0].createdAt.should.not.be.above(Date.now());
+                    res.body.results[0].apiVersion.should.equal('vtest');
                     done();
                 });
             });
@@ -1097,7 +1096,7 @@ describe('Application', function () {
                 .end(function (err, res) {
                     if (err) return done(err);
 
-                    var doc = res.body[0];
+                    var doc = res.body.results[0];
                     should.exist(doc);
                     doc.field1.should.equal('doc to remove');
 
@@ -1161,7 +1160,7 @@ describe('Application', function () {
                 .end(function (err, res) {
                     if (err) return done(err);
 
-                    var doc = res.body[0];
+                    var doc = res.body.results[0];
                     should.exist(doc);
                     doc.field1.should.equal('doc to remove 2');
 

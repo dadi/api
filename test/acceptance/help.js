@@ -17,8 +17,8 @@ module.exports.createDoc = function (token, done) {
     .expect(200)
     .end(function (err, res) {
         if (err) return done(err);
-        res.body.length.should.equal(1);
-        done(null, res.body[0]);
+        res.body.results.length.should.equal(1);
+        done(null, res.body.results[0]);
     });
 };
 
@@ -31,8 +31,8 @@ module.exports.createDocWithParams = function (token, doc, done) {
     .expect(200)
     .end(function (err, res) {
         if (err) return done(err);
-        res.body.length.should.equal(1);
-        done(null, res.body[0]);
+        res.body.results.length.should.equal(1);
+        done(null, res.body.results[0]);
     });
 };
 

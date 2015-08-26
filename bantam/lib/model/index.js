@@ -141,14 +141,19 @@ Model.prototype.create = function (obj, internals, done) {
         database.collection(self.name).insert(obj, function(err, doc) {
             if (err) return done(err);
 
+            var results = {
+                results: doc
+            };
+
             if (self.history) {
                 self.history.create(obj, self, function(err, res) {
                     if (err) return done(err);
-                    done(null, doc);
+                    
+                    done(null, results);
                 });
             }
             else {
-                done(null, doc);
+                done(null, results);
             }
         });
     };
@@ -392,11 +397,18 @@ Model.prototype.update = function (query, update, internals, done) {
                         if (err) return done(err);
                         
                         results.results = docs;
+
                         done(null, results);
                     });
                 }
                 else {
-                    done(null, updatedDocs);
+                    self.find({ _id: update._id.toString() }, {}, function(err, doc) {
+                        if (err) return done(err);
+
+                        results = doc;
+
+                        done(null, results);
+                    });
                 }
             });
         });

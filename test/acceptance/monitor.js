@@ -91,9 +91,9 @@ describe('File system watching', function () {
                         .expect(200)
                         .expect('content-type', 'application/json')
                         .end(done);
-                    }, 300);
+                    }, 100);
                 });
-            }, 300);
+            }, 100);
 
         });
 

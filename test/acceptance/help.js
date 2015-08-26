@@ -36,11 +36,10 @@ module.exports.createDocWithParams = function (token, doc, done) {
     });
 };
 
-// helper function to cleanup the `serama` db
+// helper function to cleanup the dbs
 module.exports.dropDatabase = function (database, done) {
     var database = connection({database:database});
     database.on('connect', function (db) {
-        console.log("dropping " + db.databaseName);
         db.dropDatabase(function (err) {
             if (err) return done(err);
             

@@ -450,9 +450,8 @@ describe('Model', function () {
                 }, function (err, result) {
                     if (err) return done(err);
 
-                    should.exist(result && result[0]);
-                    result[0].field1.should.equal('foo');
-                    
+		    should.exist(result && result.results);
+                    result.results[0].field1.should.equal('foo');                    
                     done();
                 });
             });
@@ -550,7 +549,8 @@ describe('Model', function () {
             mod.create({fieldName: 'foo'}, function (err, result) {
                 if (err) return done(err);
 
-                result[0].fieldName.should.equal('foo');
+		result.results[0].fieldName.should.equal('foo');
+
                 mod.delete({fieldName: 'foo'}, function (err, numAffected) {
                     if (err) return done(err);
 

@@ -60,7 +60,7 @@ Connection.prototype.connect = function () {
         self.readyState = 1;
         self.db = db;
 
-        console.log("Connected to " + self.connectionString);
+        //console.log("Connected to " + self.connectionString);
 
         if (!self.connectionOptions.username || !self.connectionOptions.password) {
             return self.emit('connect', self.db);
@@ -97,7 +97,7 @@ function constructConnectionString(options) {
             connectionOptions.hosts.push(host.host + ":" + host.port);
         });
         connectionOptions.options.replicaSet = options.replicaSet.name;
-        connectionOptions.options['ssl'] = options.replicaSet.ssl;
+	if (options.replicaSet.ssl) connectionOptions.options['ssl'] = options.replicaSet.ssl;
     }
 
     return 'mongodb://' 
@@ -147,7 +147,7 @@ function encodeOptions(options) {
   if (!options || _.isEmpty(options)) return "";
 
   return "?" + Object.keys(options).map(function(key) {
-      return encodeURIComponent(key) + "=" + encodeURIComponent(options[key] || "");
+	return encodeURIComponent(key) + "=" + encodeURIComponent(options[key] || "");
     }).join('&');
 }
 

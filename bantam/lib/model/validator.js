@@ -45,17 +45,21 @@ Validator.prototype.schema = function (obj, update) {
         }
     });
 
-    if (update === false) {
-        // check that all required fields are present
-        Object.keys(schema)
-        .filter(function (key) { return schema[key].required; })
-        .forEach(function (key) {
-            if (!obj[key]) {
-                response.success = false;
-                response.errors.push({field: key, message: 'can\'t be blank'})
-            }
-        });
-    }
+    // check that all required fields are present
+    Object.keys(schema)
+    .filter(function (key) { return schema[key].required; })
+    .forEach(function (key) {
+        // if it's an insert and a required field isn't found, error
+        if (!obj.hasOwnProperty(key) && !update) {
+            response.success = false;
+            response.errors.push({field: key, message: 'must be specified'})
+        }
+        // if it's a required field and is blank or null, error
+        else if (obj.hasOwnProperty(key) && !obj[key]) {
+            response.success = false;
+            response.errors.push({field: key, message: 'can\'t be blank'})
+        }
+    });
 
     // check all `obj` fields
     _parseDocument(obj, schema, response);

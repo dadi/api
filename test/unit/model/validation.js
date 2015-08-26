@@ -67,7 +67,71 @@ describe('Model validator', function () {
                 val.success.should.be.false;
                 val.errors.length.should.equal(1);
                 val.errors[0].field.should.equal('field1');
+                val.errors[0].message.should.equal('must be specified');
+
+                done();
+            });
+
+            it('should inform of blank field', function (done) {
+                var validator = new Validator({
+                    schema: {
+                        field1: {
+                            type: 'String',
+                            required: true
+                        },
+                        field2: {
+                            type: 'Number',
+                            required: false
+                        }
+                    }
+                });
+                var val = validator.schema({field1: '', field2: 123});
+                val.success.should.be.false;
+                val.errors.length.should.equal(1);
+                val.errors[0].field.should.equal('field1');
                 val.errors[0].message.should.equal('can\'t be blank');
+
+                done();
+            });
+
+            it('should inform of blank field on update', function (done) {
+                var validator = new Validator({
+                    schema: {
+                        field1: {
+                            type: 'String',
+                            required: true
+                        },
+                        field2: {
+                            type: 'Number',
+                            required: false
+                        }
+                    }
+                });
+                var val = validator.schema({field1: '', field2: 123}, true); // update == true
+                val.success.should.be.false;
+                val.errors.length.should.equal(1);
+                val.errors[0].field.should.equal('field1');
+                val.errors[0].message.should.equal('can\'t be blank');
+
+                done();
+            });
+
+            it('should allow missing field on update', function (done) {
+                var validator = new Validator({
+                    schema: {
+                        field1: {
+                            type: 'String',
+                            required: true
+                        },
+                        field2: {
+                            type: 'Number',
+                            required: false
+                        }
+                    }
+                });
+                
+                var val = validator.schema({field2: 123}, true); // update == true
+                val.success.should.be.true;
 
                 done();
             });

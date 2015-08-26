@@ -93,7 +93,7 @@ describe('File system watching', function () {
                         .end(done);
                     }, 100);
                 });
-            }, 100);
+            }, 50);
 
         });
 

@@ -14,11 +14,13 @@ var _ = require('underscore');
  */
 var Connection = function (options) {
 
+    options = options || {};
+
     if (options.database && config[options.database]) {
         options = _.extend(options, config[options.database]);
     }
 
-    this.connectionOptions = options || config;
+    this.connectionOptions = _.isEmpty(options) ? config : options;
 
     this.connectionOptions.host = (options && options.host) ? options.host : config.host;
     this.connectionOptions.port = (options && options.port) ? options.port : config.port;

@@ -22,6 +22,39 @@ module.exports.getModelSchema = function () {
     };
 };
 
+module.exports.getModelSchemaWithMultipleFields = function () {
+    return {
+        "field1": {
+            "type": "String",
+            "label": "Title",
+            "comments": "The title of the entry",
+            "limit": "",
+            "placement": "Main content",
+            "validationRule": "",
+            "required": false,
+            "message": "",
+            "display": { 
+                "index": true,
+                "edit": true
+            }
+        },
+        "field2": {
+            "type": "String",
+            "label": "Title",
+            "comments": "The title of the entry",
+            "limit": "",
+            "placement": "Main content",
+            "validationRule": "",
+            "required": false,
+            "message": "",
+            "display": { 
+                "index": true,
+                "edit": true
+            }
+        }
+    };
+};
+
 // sync test that a property is correctly attached to a model
 module.exports.testModelProperty = function (key, val) {
     var obj = {};
@@ -37,7 +70,7 @@ module.exports.cleanUpDB = function (done) {
     connection().on('connect', function (db) {
 
         // drop all data
-        db.dropDatabase(function (err) {
+        db.dropDatabase('serama', function (err) {
             if (err) return done(err);
 
             // force close this connection

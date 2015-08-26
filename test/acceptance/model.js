@@ -6,9 +6,9 @@ var help = require(__dirname + '/../../bantam/lib/help');
 var config = require(__dirname + '/../../config');
 
 describe('Model', function () {
-    it('should connect to database matching name', function (done) {
+    it('should connect to specified database', function (done) {
         var schema = require(__dirname + '/workspace/secondary-db/vtest/secondary/collection.secondary-schema.json');
-        var mod = model('secondary', help.getFieldsFromSchema(schema));
+        var mod = model('secondary-schema', help.getFieldsFromSchema(schema), null, schema.settings, 'secondary');
 
         var conn = mod.connection;
         conn.database.should.equal('secondary');

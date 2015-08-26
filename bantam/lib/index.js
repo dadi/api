@@ -344,7 +344,8 @@ Server.prototype.updateCollections = function (collectionsPath) {
             route: ['', version, database, name, idParam].join('/'),
             filepath: cpath,
             name: name,
-            schema: schema
+            schema: schema,
+            database: database
         });
     });
 };
@@ -357,7 +358,8 @@ Server.prototype.addCollectionResource = function (options) {
     // With each model we create a controller, that acts as a component of the REST api.
     // We then add the component to the api by adding a route to the app and mapping
     // `req.method` to component methods
-    var mod = model(options.name, JSON.parse(fields), null, options.schema.settings);
+
+    var mod = model(options.name, JSON.parse(fields), null, options.schema.settings, options.database);
     var control = controller(mod);
 
     this.addComponent({

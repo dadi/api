@@ -23,7 +23,7 @@ describe('File system watching', function () {
         }, function (err) {
             if (err) return done(err);
             
-            help.dropDatabase(function (err) {
+            help.dropDatabase('testdb', function (err) {
                 if (err) return done(err);
 
                 help.getBearerToken(function (err, token) {

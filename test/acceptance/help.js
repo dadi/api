@@ -1,4 +1,4 @@
-var fs = require('fs');
+    var fs = require('fs');
 var path = require('path');
 var should = require('should');
 var connection = require(__dirname + '/../../bantam/lib/model/connection');
@@ -37,9 +37,10 @@ module.exports.createDocWithParams = function (token, doc, done) {
 };
 
 // helper function to cleanup the `serama` db
-module.exports.dropDatabase = function (done) {
-    connection().on('connect', function (db) {
-
+module.exports.dropDatabase = function (database, done) {
+    var database = connection({database:database});
+    database.on('connect', function (db) {
+        console.log("dropping " + db.databaseName);
         db.dropDatabase(function (err) {
             if (err) return done(err);
             

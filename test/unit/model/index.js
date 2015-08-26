@@ -43,9 +43,9 @@ describe('Model', function () {
             var conn = connection();
             var mod = model('testModelName', help.getModelSchema(), conn)
             should.exist(mod.connection);
-            mod.connection.host.should.equal('localhost');
-            mod.connection.port.should.equal(27017);
-            mod.connection.database.should.equal('serama');
+            mod.connection.connectionOptions.host.should.equal('localhost');
+            mod.connection.connectionOptions.port.should.equal(27017);
+            mod.connection.connectionOptions.database.should.equal('serama');
 
             done();
         });
@@ -442,16 +442,16 @@ describe('Model', function () {
         beforeEach(function (done) {
             help.cleanUpDB(function (err) {
                 if (err) return done(err);
-                var mod = model('testModelName', help.getModelSchema());
+                var mod = model('testModelName', help.getModelSchemaWithMultipleFields());
 
                 // create model to be updated by tests
                 mod.create({
-                    fieldName: 'foo'
+                    field1: 'foo', field2: 'bar'
                 }, function (err, result) {
                     if (err) return done(err);
 
                     should.exist(result && result[0]);
-                    result[0].fieldName.should.equal('foo');
+                    result[0].field1.should.equal('foo');
                     
                     done();
                 });
@@ -465,24 +465,25 @@ describe('Model', function () {
 
         it('should accept query, update object, and callback', function (done) {
             var mod = model('testModelName');
-            mod.update({fieldName: 'foo'}, {fieldName: 'bar'}, done);
+            mod.update({field1: 'foo'}, {field1: 'bar'}, done);
         });
 
         it('should update an existing document', function (done) {
             var mod = model('testModelName');
-            var updateDoc = {fieldName: 'bar'};
+            var updateDoc = {field1: 'bar'};
 
-            mod.update({fieldName: 'foo'}, updateDoc, function (err, result) {
+            mod.update({field1: 'foo'}, updateDoc, function (err, result) {
                 if (err) return done(err);
 
-                result.should.equal(updateDoc);
+                result.results.should.exist;
+                result.results[0].field1.should.equal('bar');
 
                 // make sure document was updated
-                mod.find({fieldName: 'bar'}, function (err, result) {
+                mod.find({field1: 'bar'}, function (err, result) {
                     if (err) return done(err);
 
                     should.exist(result['results'] && result['results'][0]);
-                    result['results'][0].fieldName.should.equal('bar');
+                    result['results'][0].field1.should.equal('bar');
                     done();
                 })
             });
@@ -490,20 +491,21 @@ describe('Model', function () {
 
         it('should create new history revision when updating an existing document and `storeRevisions` is true', function (done) {
             var conn = connection();
-            var mod = model('testModelName', help.getModelSchema(), conn, { storeRevisions : true })
-            var updateDoc = {fieldName: 'bar'};
+            var mod = model('testModelName', help.getModelSchemaWithMultipleFields(), conn, { storeRevisions : true })
+            var updateDoc = {field1: 'bar'};
 
-            mod.update({fieldName: 'foo'}, updateDoc, function (err, result) {
+            mod.update({field1: 'foo'}, updateDoc, function (err, result) {
                 if (err) return done(err);
 
-                result.should.equal(updateDoc);
+                result.results.should.exist
+                result.results[0].field1.should.equal('bar');
 
                 // make sure document was updated
-                mod.find({fieldName: 'bar'}, function (err, result) {
+                mod.find({field1: 'bar'}, function (err, result) {
                     if (err) return done(err);
 
                     should.exist(result['results'] && result['results'][0]);
-                    result['results'][0].fieldName.should.equal('bar');
+                    result['results'][0].field1.should.equal('bar');
 
                     should.exist(result['results'][0].history);
                     result['results'][0].history.length.should.equal(2); // two revisions, one from initial create and one from the update

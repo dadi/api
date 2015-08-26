@@ -41,14 +41,19 @@ History.prototype.create = function (obj, model, done) {
 };
 
 History.prototype.createEach = function (objs, model, done) {
+
     var self = this;
+    var updatedDocs = [];
+
     objs.forEach(function (obj, index, array) {
 
         self.create(obj, model, function(err, doc) {
             if (err) return done(err);
 
+            updatedDocs.push(doc);
+
             if (index === array.length - 1) {
-                done(null, objs);
+                done(null, updatedDocs);
             }
         }); 
     });

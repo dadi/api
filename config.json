@@ -5,12 +5,23 @@
         "username": "",
         "password": "",
         "database": "serama",
+        "replicaSet": {
+            "name": "test",
+            "hosts": [
+            ]
+        },
         "secondary": {
             "enabled": true,
             "host": "127.0.0.1",
             "port": 27018,
             "username": "",
             "password": ""
+        },
+        "testdb": {
+            "host": "127.0.0.1",
+            "port": 27017,
+            "username": "",
+            "password": ""  
         }
     },
     "logging": {

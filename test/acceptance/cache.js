@@ -23,7 +23,7 @@ describe('Cache', function (done) {
     });
 
     beforeEach(function (done) {
-        help.dropDatabase(function (err) {
+        help.dropDatabase('testdb', function (err) {
             if (err) return done(err);
 
             help.getBearerToken(function (err, token) {

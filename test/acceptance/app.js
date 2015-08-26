@@ -75,7 +75,7 @@ describe('Application', function () {
 
         describe('on app start', function () {
             before(function (done) {
-                help.dropDatabase(function (err) {
+                help.dropDatabase('testdb', function (err) {
                     if (err) return done(err);
 
                     help.getBearerToken(function (err, token) {
@@ -123,7 +123,7 @@ describe('Application', function () {
 
         describe('POST', function () {
             before(function (done) {
-                help.dropDatabase(function (err) {
+                help.dropDatabase('testdb', function (err) {
                     if (err) return done(err);
 
                     help.getBearerToken(function (err, token) {
@@ -297,7 +297,7 @@ describe('Application', function () {
         describe('GET', function () {
             before(function (done) {
 
-                help.dropDatabase(function (err) {
+                help.dropDatabase('testdb', function (err) {
                     if (err) return done(err);
 
                     help.getBearerTokenWithAccessType("admin", function (err, token) {
@@ -1073,7 +1073,7 @@ describe('Application', function () {
 
         describe('DELETE', function () {
             before(function (done) {
-                help.dropDatabase(function (err) {
+                help.dropDatabase('testdb', function (err) {
                     if (err) return done(err);
 
                     help.getBearerToken(function (err, token) {

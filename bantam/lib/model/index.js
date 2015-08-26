@@ -9,7 +9,7 @@ var _ = require('underscore');
 // track all models that have been instantiated by this process
 var _models = {};
 
-var Model = function (name, schema, conn, settings) {
+var Model = function (name, schema, conn, settings, database) {
 
     // attach collection name
     this.name = name;
@@ -29,13 +29,13 @@ var Model = function (name, schema, conn, settings) {
     if (conn) {
         this.connection = conn;
     }
-    else if (config[name]) {
+    else if (database) {
         this.connection = connection({
-            database: name,
-            host: config[name].host,
-            port: config[name].port,
-            username: config[name].username,
-            password: config[name].password
+            database: database,
+            host: config[database] ? config[database].host : config.host,
+            port: config[database] ? config[database].port : config.port,
+            username: config[database] ? config[database].username : config.username,
+            password: config[database] ? config[database].password : config.password
         });
     }
     else {
@@ -64,6 +64,7 @@ var Model = function (name, schema, conn, settings) {
         this.revisionCollection = (this.settings.revisionCollection ? this.settings.revisionCollection : this.name + 'History');
     }
 
+    // add any configured indexes
     if (this.settings.hasOwnProperty('index') 
         && this.settings.index.hasOwnProperty('enabled') 
         && this.settings.index.enabled == true
@@ -382,16 +383,20 @@ Model.prototype.update = function (query, update, internals, done) {
                 // query and doc `_id` should be equal
                 query._id && (update._id = query._id);
 
+                var results = {};
+
                 // for each of the updated documents, create
                 // a history revision for it
                 if (self.history && updatedDocs.length > 0) {
                     self.history.createEach(updatedDocs, self, function(err, docs) {
                         if (err) return done(err);
-                        done(null, update);
+                        
+                        results.results = docs;
+                        done(null, results);
                     });
                 }
                 else {
-                    done(null, update);
+                    done(null, updatedDocs);
                 }
             });
         });
@@ -449,8 +454,8 @@ Model.prototype.castToBSON = function (obj) {
 }
 
 // exports
-module.exports = function (name, schema, conn, settings) {
-    if (schema) return new Model(name, schema, conn, settings);
+module.exports = function (name, schema, conn, settings, database) {
+    if (schema) return new Model(name, schema, conn, settings, database);
     return _models[name];
 };
 

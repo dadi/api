@@ -4,6 +4,7 @@ var MongoClient = mongodb.MongoClient;
 var Server = mongodb.Server;
 var EventEmitter = require('events').EventEmitter;
 var util = require('util');
+var _ = require('underscore');
 
 /**
  * Create `new Connection` with given options
@@ -12,10 +13,14 @@ var util = require('util');
  * @api public
  */
 var Connection = function (options) {
-    options || (options = {});
-    this.host = options.host || config.host;
-    this.port = options.port || config.port;
-    this.database = options.database || config.database;
+    
+    this.connectionOptions = options || {};
+
+    this.connectionOptions.host = (options && options.host) ? options.host : config.host;
+    this.connectionOptions.port = (options && options.port) ? options.port : config.port;
+    this.connectionOptions.database = (options && options.database) ? options.database : config.database;
+
+    this.connectionString = constructConnectionString(this.connectionOptions);
 
     // connection readyState
     // 0 = disconnected
@@ -33,39 +38,119 @@ util.inherits(Connection, EventEmitter);
  *
  * 
  */
-Connection.prototype.connect = function (options) {
-    options || (options = {});
+Connection.prototype.connect = function () {
     this.readyState = 2;
 
-    if (global.process.env.npm_lifecycle_event == 'test') {
-        this.mongoClient = new MongoClient(new Server(options.host || this.host, options.port || this.port, { poolSize: 1 }));
-    } else {
-        this.mongoClient = new MongoClient(new Server(options.host || this.host, options.port || this.port));
-    }
+    //if (global.process.env.npm_lifecycle_event == 'test') {
+    //     this.mongoClient = new MongoClient(new Server(options.host || this.host, options.port || this.port, { poolSize: 1 }));
+    // } else {
+        this.mongoClient = new MongoClient();
+    //}
 
     var self = this;
-    this.mongoClient.open(function (err, mongoClient) {
+
+    this.mongoClient.connect(this.connectionString, function(err, db) {
+      
         if (err) {
             self.readyState = 0;
             return self.emit('error', err);
         }
 
-        var username = options.username || config.username;
-        var password = options.password || config.password;
-
         self.readyState = 1;
-        self.db = mongoClient.db(options.database || self.database);
+        self.db = db;
 
-        if (!username || !password) {
+        if (!self.connectionOptions.username || !self.connectionOptions.password) {
             return self.emit('connect', self.db);
         }
 
-        self.db.authenticate(username, password, function (err) {
+        self.db.authenticate(self.connectionOptions.username, self.connectionOptions.password, function (err) {
             if (err) return self.emit('error', err);
             self.emit('connect', self.db);
         });
+
     });
+    
 };
+
+
+function constructConnectionString(options) {
+
+    // mongodb://[username:password@]host1[:port1][,host2[:port2],...[,hostN[:portN]]][/[database][?options]]
+    // mongodb://myprimary.com:27017,mysecondary.com:27017/MyDatabase/?replicaset=MySet
+
+    var connectionOptions = {
+        database: options.database,
+        hosts: [],
+        options: {}
+    };
+
+    connectionOptions.hosts.push(options.host + ":" + options.port); 
+
+    connectionOptions.username = options.username || null;
+    connectionOptions.password = options.password || null;
+
+    if (options.replicaSet) {
+        _.each(options.replicaSet.hosts, function (host) {
+            connectionOptions.hosts.push(host.host + ":" + host.port);
+        });
+        connectionOptions.options.replicaSet = options.replicaSet.name;
+    }
+
+    return 'mongodb://' 
+        + credentials(connectionOptions)
+        + connectionOptions.hosts.map(function(host, index) {
+                return host;
+            }).join(',') 
+        + '/' 
+        + connectionOptions.database 
+        + encodeOptions(connectionOptions.options);
+
+    /*
+    options = {
+        "host": "localhost",
+        "port": 27017,
+        "username": "",
+        "password": "",
+        "database": "serama",
+        "replicaSet": {
+            "name": "test",
+            "hosts": [
+                {
+                    "host": "localhost",
+                    "port": 27020
+                }
+            ]
+        },
+        "secondary": {
+            "enabled": true,
+            "host": "127.0.0.1",
+            "port": 27018,
+            "username": "",
+            "password": ""
+        },
+        "testdb": {
+            "host": "127.0.0.1",
+            "port": 27017,
+            "username": "",
+            "password": ""  
+        }
+    }
+    */
+}
+
+function encodeOptions(options) {
+  if (!options || _.isEmpty(options)) return "";
+
+  return "?" + Object.keys(options).map(function(key) {
+      return encodeURIComponent(key) + "=" + encodeURIComponent(options[key] || "");
+    }).join('&');
+}
+
+function credentials(options) {
+    if (!options.username || !options.password) return "";
+
+    return options.username + ":" + options.password + "@";
+}
 
 /**
  * Creates instances and connects them automatically
@@ -76,7 +161,7 @@ Connection.prototype.connect = function (options) {
  */
 module.exports = function (options) {
     var conn = new Connection(options);
-    conn.connect(options);
+    conn.connect();
     return conn;
 };
 

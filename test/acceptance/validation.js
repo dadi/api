@@ -13,7 +13,7 @@ describe('validation', function () {
         }, function (err) {
             if (err) return done(err);
 
-            help.dropDatabase(function (err) {
+            help.dropDatabase('testdb', function (err) {
                 if (err) return done(err);
 
                 help.getBearerToken(function (err, token) {
@@ -52,6 +52,28 @@ describe('validation', function () {
                 .post('/vtest/testdb/test-validation-schema')
                 .set('Authorization', 'Bearer ' + bearerToken)
                 .send({fieldString: '1337'})
+                .expect(200, done);
+            });
+        });
+
+        describe('date', function () {
+            it('should not allow setting non-date', function (done) {
+                var client = request('http://' + config.server.host + ':' + config.server.port);
+
+                client
+                .post('/vtest/testdb/test-validation-schema')
+                .set('Authorization', 'Bearer ' + bearerToken)
+                .send({fieldDate: 1337})
+                .expect(400, done);
+            });
+
+            it('should allow setting date', function (done) {
+                var client = request('http://' + config.server.host + ':' + config.server.port);
+
+                client
+                .post('/vtest/testdb/test-validation-schema')
+                .set('Authorization', 'Bearer ' + bearerToken)
+                .send({fieldDate: "2013/12/08"})
                 .expect(200, done);
             });
         });

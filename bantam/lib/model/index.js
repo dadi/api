@@ -30,13 +30,13 @@ var Model = function (name, schema, conn, settings, database) {
         this.connection = conn;
     }
     else if (database) {
-        this.connection = connection({
-            database: database,
-            host: config[database] ? config[database].host : config.host,
-            port: config[database] ? config[database].port : config.port,
-            username: config[database] ? config[database].username : config.username,
-            password: config[database] ? config[database].password : config.password
-        });
+        this.connection = connection({ database: database });
+        //     database: database,
+        //     host: config[database] ? config[database].host : config.host,
+        //     port: config[database] ? config[database].port : config.port,
+        //     username: config[database] ? config[database].username : config.username,
+        //     password: config[database] ? config[database].password : config.password
+        // });
     }
     else {
         this.connection = connection();
@@ -45,8 +45,7 @@ var Model = function (name, schema, conn, settings, database) {
     // add default handler to ensure there's no uncaught errors
     var self = this;
     this.connection.on('error', function (err) {
-        console.log('Connection Error: Model name: ' + self.name);
-        console.error(err);
+        console.log('Connection error for collection "' + self.name + '" (' + err + '). Using connection string "' + self.connection.connectionString + '"');
     });
 
     _models[name] = this;

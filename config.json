@@ -8,7 +8,16 @@
         "replicaSet": {
             "name": "test",
             "hosts": [
-            ]
+                {
+                    "host": "localhost",
+                    "port": 27020
+                },
+                {
+                    "host": "localhost",
+                    "port": 27021
+                }
+            ],
+            "ssl": true
         },
         "secondary": {
             "enabled": true,

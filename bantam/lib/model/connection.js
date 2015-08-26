@@ -13,12 +13,13 @@ var _ = require('underscore');
  * @api public
  */
 var Connection = function (options) {
-    
-    this.connectionOptions = options || {};
+
+    this.connectionOptions = options || config;
 
     this.connectionOptions.host = (options && options.host) ? options.host : config.host;
     this.connectionOptions.port = (options && options.port) ? options.port : config.port;
     this.connectionOptions.database = (options && options.database) ? options.database : config.database;
+    this.connectionOptions.replicaSet = (options && options.replicaSet) ? options.replicaSet : config.replicaSet;
 
     this.connectionString = constructConnectionString(this.connectionOptions);
 
@@ -59,6 +60,8 @@ Connection.prototype.connect = function () {
         self.readyState = 1;
         self.db = db;
 
+        console.log("Connected to " + self.connectionString);
+
         if (!self.connectionOptions.username || !self.connectionOptions.password) {
             return self.emit('connect', self.db);
         }
@@ -94,6 +97,7 @@ function constructConnectionString(options) {
             connectionOptions.hosts.push(host.host + ":" + host.port);
         });
         connectionOptions.options.replicaSet = options.replicaSet.name;
+        connectionOptions.options['ssl'] = options.replicaSet.ssl;
     }
 
     return 'mongodb://' 
@@ -114,6 +118,7 @@ function constructConnectionString(options) {
         "database": "serama",
         "replicaSet": {
             "name": "test",
+            "ssl": true,
             "hosts": [
                 {
                     "host": "localhost",
@@ -161,6 +166,11 @@ function credentials(options) {
  */
 module.exports = function (options) {
     var conn = new Connection(options);
+    
+    conn.on('error', function (err) {
+        console.log('Connection Error: ' + err + '. Using connection string "' + conn.connectionString + '"');
+    });
+
     conn.connect();
     return conn;
 };

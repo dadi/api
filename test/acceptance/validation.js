@@ -302,9 +302,9 @@ describe('validation', function () {
                 if (err) return done(err);
 
                 res.body.should.be.json;
-                res.body.should.be.an.Array;
-                res.body[0].fieldDefault.should.exist;
-                res.body[0].fieldDefault.should.eql("FOO!");
+                res.body.results.should.be.an.Array;
+                res.body.results[0].fieldDefault.should.exist;
+                res.body.results[0].fieldDefault.should.eql("FOO!");
 
                 done();
             });
@@ -323,9 +323,9 @@ describe('validation', function () {
                 if (err) return done(err);
 
                 res.body.should.be.json;
-                res.body.should.be.an.Array;
-                res.body[0].fieldDefault.should.exist;
-                res.body[0].fieldDefault.should.eql("bean");
+                res.body.results.should.be.an.Array;
+                res.body.results[0].fieldDefault.should.exist;
+                res.body.results[0].fieldDefault.should.eql("bean");
 
                 done();
             });

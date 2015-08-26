@@ -93,7 +93,7 @@ Controller.prototype.post = function (req, res, next) {
         internals.lastModifiedAt = Date.now();
         internals.lastModifiedBy = req.client && req.client.clientId;
         return this.model.update({
-            _id: req.params.id
+            _id: req.params.id.toString()
         }, req.body, internals, sendBackJSON(200, res, next));
     }
 

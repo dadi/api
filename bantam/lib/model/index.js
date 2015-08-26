@@ -352,14 +352,14 @@ Model.prototype.update = function (query, update, internals, done) {
         return done(err);
     }
     
-    validation = this.validate.schema(update);
+    validation = this.validate.schema(update, true);
     if (!validation.success) {
         err = validationError();
         err.json = validation;
         return done(err);
     }
 
-    this.castToBSON(query);
+    //this.castToBSON(query);
 
     if (typeof internals === 'object' && internals != null) { // not null and not undefined
         _.extend(update, internals);
@@ -370,12 +370,15 @@ Model.prototype.update = function (query, update, internals, done) {
     var self = this;
     var _update = function (database) {
 
-        // get a reference to the documents 
-        // that will be updated
+        // get a reference to the documents that will be updated
         var updatedDocs = [];
+
         self.find(query, {}, function(err, docs) {
             if (err) return done(err);
+
             updatedDocs = docs['results'];
+
+            self.castToBSON(query);
 
             database.collection(self.name).update(query, setUpdate, function (err, numAffected) {
                 if (err) return done(err);

@@ -21,7 +21,9 @@ Validator.prototype.query = function (query) {
     return response;
 };
 
-Validator.prototype.schema = function (obj) {
+Validator.prototype.schema = function (obj, update) {
+
+    update = update || false;
 
     // `obj` must be a "hash type object", i.e. { ... }
     if (typeof obj !== 'object' || util.isArray(obj) || obj === null) return false;
@@ -43,15 +45,17 @@ Validator.prototype.schema = function (obj) {
         }
     });
 
-    // check that all required fields are present
-    Object.keys(schema)
-    .filter(function (key) { return schema[key].required; })
-    .forEach(function (key) {
-        if (!obj[key]) {
-            response.success = false;
-            response.errors.push({field: key, message: 'can\'t be blank'})
-        }
-    });
+    if (update === false) {
+        // check that all required fields are present
+        Object.keys(schema)
+        .filter(function (key) { return schema[key].required; })
+        .forEach(function (key) {
+            if (!obj[key]) {
+                response.success = false;
+                response.errors.push({field: key, message: 'can\'t be blank'})
+            }
+        });
+    }
 
     // check all `obj` fields
     _parseDocument(obj, schema, response);

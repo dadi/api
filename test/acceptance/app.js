@@ -211,7 +211,7 @@ describe('Application', function () {
                 .end(function (err, res) {
                     if (err) return done(err);
 
-                    var doc = res.body[0];
+                    var doc = res.body.results[0];
                     should.exist(doc);
                     doc.field1.should.equal('doc to update');
 
@@ -256,7 +256,7 @@ describe('Application', function () {
                 .end(function (err, res) {
                     if (err) return done(err);
 
-                    var doc = res.body[0];
+                    var doc = res.body.results[0];
                     should.exist(doc);
                     doc.field1.should.equal('doc to update');
 

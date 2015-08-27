@@ -62,7 +62,7 @@ Connection.prototype.connect = function () {
         self.readyState = 1;
         self.db = db;
 
-        console.log("Connected to " + self.connectionString);
+//        console.log("Connected to " + self.connectionString);
 
         if (!self.connectionOptions.username || !self.connectionOptions.password) {
             return self.emit('connect', self.db);

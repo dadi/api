@@ -294,6 +294,21 @@ describe('Application', function () {
         });
 
         describe('GET', function () {
+            
+            var cleanup = function (done) {
+                // try to cleanup these tests directory tree
+                // don't catch errors here, since the paths may not exist
+                try {
+                    fs.unlinkSync(__dirname + '/workspace/collections/v1/testdb/collection.test-schema.json');
+                } catch (e) {}
+
+                try {
+                    fs.rmdirSync(__dirname + '/workspace/collections/v1/testdb');
+                } catch (e) {}
+
+                done();
+            };
+
             before(function (done) {
 
                 help.dropDatabase('testdb', function (err) {
@@ -349,7 +364,7 @@ describe('Application', function () {
                 .end(function (err, res) {
                     if (err) return done(err);
 
-                    done();
+                    cleanup(done);
                 });
             })
 
@@ -371,6 +386,56 @@ describe('Application', function () {
                         res.body['results'].should.be.Array;
                         res.body['results'].length.should.be.above(0)
                         done();
+                    });
+                });
+            });
+
+            it('should get documents from correct API version', function (done) {
+
+                var jsSchemaString = fs.readFileSync(__dirname + '/../new-schema.json', {encoding: 'utf8'});
+
+                help.createDoc(bearerToken, function (err, doc) {
+                    if (err) return done(err);
+
+                    doc.apiVersion.should.equal('vtest');
+
+                    // create new API endpoint
+                    var client = request(connectionString);
+
+                    client
+                    .post('/v1/testdb/test-schema/config')
+                    .send(jsSchemaString)
+                    .set('content-type', 'text/plain')
+                    .set('Authorization', 'Bearer ' + bearerToken)
+                    .expect(200)
+                    .expect('content-type', 'application/json')
+                    .end(function (err, res) {
+                        if (err) return done(err);
+
+                        // Wait for a few seconds then make request to test that the new endpoint is working
+                        setTimeout(function () {
+
+                            var testdoc = { newField: "test string" };
+                            help.createDocWithSpecificVersion(bearerToken, 'v1', testdoc, function (err, doc) {
+                                if (err) return done(err);
+
+                                setTimeout(function () {
+                                    client
+                                    .get('/v1/testdb/test-schema')
+                                    .set('Authorization', 'Bearer ' + bearerToken)
+                                    .expect(200)
+                                    .expect('content-type', 'application/json')
+                                    .end(function (err, res) {
+                                        if (err) return done(err);
+
+                                        res.body['results'].should.exist;
+                                        res.body['results'].should.be.Array;
+                                        res.body['results'][0].apiVersion.should.equal('v1');
+                                        done();
+                                    });
+                                }, 300);
+                            });
+                        }, 300);
                     });
                 });
             });

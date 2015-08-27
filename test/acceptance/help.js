@@ -36,6 +36,20 @@ module.exports.createDocWithParams = function (token, doc, done) {
     });
 };
 
+// create a document with random string via the api
+module.exports.createDocWithSpecificVersion = function (token, apiVersion, doc, done) {
+    request('http://' + config.server.host + ':' + config.server.port)
+    .post('/' + apiVersion + '/testdb/test-schema')
+    .set('Authorization', 'Bearer ' + token)
+    .send(doc)
+    .expect(200)
+    .end(function (err, res) {
+        if (err) return done(err);
+        res.body.results.length.should.equal(1);
+        done(null, res.body.results[0]);
+    });
+};
+
 // helper function to cleanup the dbs
 module.exports.dropDatabase = function (database, done) {
     var database = connection({database:database});

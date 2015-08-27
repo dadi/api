@@ -29,8 +29,13 @@ var Controller = function (model) {
 };
 
 Controller.prototype.get = function (req, res, next) {
-    var options = url.parse(req.url, true).query;
+    
+    var path = url.parse(req.url, true);
+    var options = path.query;
     var query = parseQuery(options.filter);
+        
+    var urlParts = _.compact(path.pathname.split('/'));
+    var apiVersion = urlParts.shift();
 
     var settings = this.model.settings || {};
 
@@ -64,6 +69,9 @@ Controller.prototype.get = function (req, res, next) {
     if (req.params && req.params.id) {
         _.extend(query, { _id : req.params.id });
     }
+
+    // add the apiVersion filter
+    _.extend(query, { apiVersion : apiVersion });
 
     // white list user specified options
     var queryOptions = {

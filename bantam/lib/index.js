@@ -491,7 +491,8 @@ Server.prototype.addComponent = function (options) {
 
         // set schema
         if (method === 'post' && options.filepath) {
-	    var schemaString = typeof req.body === 'object' ? JSON.stringify(req.body, null, 4) : req.body;
+	        var schemaString = typeof req.body === 'object' ? JSON.stringify(req.body, null, 4) : req.body;
+
             return fs.writeFile(options.filepath, schemaString, function (err) {
                 help.sendBackJSON(200, res, next)(err, {result: 'success'});
             });

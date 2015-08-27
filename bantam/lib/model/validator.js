@@ -55,7 +55,7 @@ Validator.prototype.schema = function (obj, update) {
             response.errors.push({field: key, message: 'must be specified'})
         }
         // if it's a required field and is blank or null, error
-        else if (obj.hasOwnProperty(key) && !obj[key]) {
+        else if (obj.hasOwnProperty(key) && (typeof obj[key] === 'undefined')) {
             response.success = false;
             response.errors.push({field: key, message: 'can\'t be blank'})
         }

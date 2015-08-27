@@ -1,7 +1,7 @@
 var url = require('url');
+var _ = require('underscore');
 var config = require(__dirname + '/../../../config');
 var tokens = require(__dirname + '/tokens');
-var _ = require('underscore');
 
 function mustAuthenticate(endpoints, path) {
     
@@ -26,18 +26,21 @@ function isAuthorized(endpoints, req, client) {
 
     var path = url.parse(req.url, true);
 
+    var urlParts = _.compact(path.pathname.split('/'));
+    var version = urlParts.shift();
+
     var endpointKey = _.find(_.keys(endpoints), function (k){ return k.indexOf(path.pathname) > -1; });
     
     // check if this is a master config request first
-    if (path.pathname.indexOf('serama/config') > -1 && client.permissions) {
-        if (client.permissions.collections && client.permissions.collections.indexOf(path.pathname) < 0) {
-            return false;
-        }
+    // if (path.pathname.indexOf('serama/config') > -1 && client.permissions) {
+    //     if (client.permissions.collections && client.permissions.collections.indexOf(path.pathname) < 0) {
+    //         return false;
+    //     }
 
-        if (client.permissions.endpoints && client.permissions.endpoints.indexOf(path.pathname) < 0) {
-            return false;
-        }
-    }
+    //     if (client.permissions.endpoints && client.permissions.endpoints.indexOf(path.pathname) < 0) {
+    //         return false;
+    //     }
+    // }
 
     // check if user accessType allows access to collection config
     if (path.pathname.indexOf('config') > -1 && req.method === 'POST') {
@@ -49,23 +52,21 @@ function isAuthorized(endpoints, req, client) {
       }  
     } 
 
-    if (!endpointKey) return true;
+    if (!endpointKey || !client.permissions) return true;
 
-    if (!client.permissions) return true;
+    var authorized = true;
 
-    if (endpoints[endpointKey].model) {
-        if (!client.permissions.collections || client.permissions.collections.indexOf(endpoints[endpointKey].model.name) > -1) {
-            return true;
-        }
+    if (endpoints[endpointKey].model && client.permissions.collections) {
+        authorized = _.findWhere(client.permissions.collections, { apiVersion: version, path: endpoints[endpointKey].model.name });
     }
-    else if (endpoints[endpointKey].get) {
-        if (!client.permissions.endpoints || client.permissions.endpoints.indexOf(endpointKey) > -1) {
-            return true;
-        }
+    else if (endpoints[endpointKey].get && client.permissions.endpoints) {
+        authorized = _.findWhere(client.permissions.endpoints, { apiVersion: version, path: urlParts.pop() });
     }
     else {
-        return false;
+        authorized = false;
     }
+
+    return authorized;
 }
 
 // This attaches middleware to the passed in app instance

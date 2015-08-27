@@ -48,11 +48,7 @@ util.inherits(Connection, EventEmitter);
 Connection.prototype.connect = function () {
     this.readyState = 2;
 
-    //if (global.process.env.npm_lifecycle_event == 'test') {
-    //     this.mongoClient = new MongoClient(new Server(options.host || this.host, options.port || this.port, { poolSize: 1 }));
-    // } else {
-        this.mongoClient = new MongoClient();
-    //}
+    this.mongoClient = new MongoClient();
 
     var self = this;
 
@@ -66,7 +62,7 @@ Connection.prototype.connect = function () {
         self.readyState = 1;
         self.db = db;
 
-        //console.log("Connected to " + self.connectionString);
+        console.log("Connected to " + self.connectionString);
 
         if (!self.connectionOptions.username || !self.connectionOptions.password) {
             return self.emit('connect', self.db);
@@ -104,6 +100,11 @@ function constructConnectionString(options) {
         });
         connectionOptions.options.replicaSet = options.replicaSet.name;
 	if (options.replicaSet.ssl) connectionOptions.options['ssl'] = options.replicaSet.ssl;
+    }
+
+    // test specific connection pool size
+    if (global.process.env.npm_lifecycle_event == 'test') {
+        connectionOptions.options['maxPoolSize'] = 1;
     }
 
     return 'mongodb://' 

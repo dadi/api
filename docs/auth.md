@@ -36,14 +36,16 @@ The removal of expired tokens within MongoDB is handled via a ttl index - [expir
 
 The client record can be extended with a `permissions` object containing an array of collections and/or endpoints to which that client has access. Access to any collections/endpoints not in the permissions list will be denied.
 
+Client records may also be restricted to an API version.
+
 ```
 {
   clientId: 'clientX',
   secret: 'secret',
   accessType: 'user',
   permissions: { 
-    collections: [ "test-collection" ],
-    endpoints: [ "test-endpoint" ]
+    collections: [ { apiVersion: "1.0", path: "test-collection" } ],
+    endpoints: [ { apiVersion: "1.0", path: "test-endpoint" } ]
   }
 }
 ```

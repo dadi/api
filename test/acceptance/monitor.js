@@ -88,7 +88,12 @@ describe('File system watching', function () {
                     .send({field1: 31337})
                     .expect(200)
                     .expect('content-type', 'application/json')
-                    .end(done);
+                    .end(function (err, res) {
+                        if (err) return done(err);
+
+                        res.body.message.should.equal('version 2');
+                        done();
+                    });
                 }, 100);
             });
 

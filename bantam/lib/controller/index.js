@@ -33,9 +33,7 @@ Controller.prototype.get = function (req, res, next) {
     var path = url.parse(req.url, true);
     var options = path.query;
     var query = parseQuery(options.filter);
-        
-    var urlParts = _.compact(path.pathname.split('/'));
-    var apiVersion = urlParts.shift();
+    var apiVersion = req.url.split('/')[1]
 
     var settings = this.model.settings || {};
 

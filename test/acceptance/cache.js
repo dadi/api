@@ -18,7 +18,7 @@ describe('Cache', function (done) {
 
     after(function (done) {
         help.removeTestClients(function() {
-            help.clearCache();
+            // help.clearCache();
             app.stop(done);
         });
     });
@@ -329,8 +329,9 @@ describe('Cache', function (done) {
                         .end(function (err, getRes2) {
                             if (err) return done(err);
 
-                            // WAIT, then UPDATE again
                             setTimeout(function () {
+
+                                // UPDATE again
                                 client
                                 .post('/vtest/testdb/test-schema/' + id)
                                 .set('Authorization', 'Bearer ' + bearerToken)
@@ -338,8 +339,6 @@ describe('Cache', function (done) {
                                 .expect(200)
                                 .end(function (err, postRes2) {
                                     if (err) return done(err);
-
-                                    //console.log(postRes2.body);
 
                                     // WAIT, then GET again
                                     setTimeout(function () {
@@ -351,20 +350,15 @@ describe('Cache', function (done) {
                                         .end(function (err, getRes3) {
                                             if (err) return done(err);
 
-                                            // console.log(getRes1.body);
-                                            // console.log(getRes2.body);
-                                            // console.log(getRes3.body);
+                                            var result = _.findWhere(getRes3.body.results, { "_id": id });
                                             
-                                            //var result = _.findWhere(getRes3.body.results, { "_id": id });
-                                            
-                                            // console.log(result);
-                                            // result.field1.should.eql('foo bar baz!');
+                                            result.field1.should.eql('foo bar baz!');
 
                                             done();
                                         });
                                     }, 300);
                                 });
-                            }, 300);
+                            }, 1000);
                         });
                     });
                 });

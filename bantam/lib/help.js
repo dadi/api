@@ -143,9 +143,9 @@ module.exports.validateCollectionSchema = function(obj) {
  * 
  * Remove each file in the specified cache folder.
  */
-module.exports.clearCache = function (req, callback) {
+module.exports.clearCache = function (pathname, callback) {
 
-    var modelDir = crypto.createHash('sha1').update(url.parse(req.url).pathname).digest('hex');
+    var modelDir = crypto.createHash('sha1').update(pathname).digest('hex');
     var cachePath = path.join(config.caching.directory, modelDir);
 
     var i = 0;
@@ -155,26 +155,23 @@ module.exports.clearCache = function (req, callback) {
         return callback(null);
     }
     else {
-        fs.readdir(cachePath, function (err, files) {
-            if (err) return callback(err);
+        var files = fs.readdirSync(cachePath);
 
-            files.forEach(function (filename) {
-                var file = path.join(cachePath, filename);
-                
-                // write empty string to file, as we
-                // can't effectively remove it whilst 
-                // the node process is running
-                fs.writeFile(file, '', function (err) {
-                    if (err) return callback(err);
+        files.forEach(function (filename) {
+            var file = path.join(cachePath, filename);
 
-                    i++;
+            // write empty string to file, as we
+            // can't effectively remove it whilst 
+            // the node process is running
+            fs.writeFileSync(file, '');
 
-                    // finished, all files processed
-                    if (i == files.length) {
-                        return callback(null);
-                    }
-                });
-            });
+            i++;
+
+            // finished, all files processed
+            if (i == files.length) {
+                return callback(null);
+            }
+
         });
     }
 }

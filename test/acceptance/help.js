@@ -77,7 +77,7 @@ module.exports.removeTestClients = function (done) {
 module.exports.clearCache = function () {
 
     var deleteFolderRecursive = function(path) {
-      if( fs.existsSync(path) ) {
+      if( fs.existsSync(path) && fs.lstatSync(path).isDirectory() ) {
         fs.readdirSync(path).forEach(function(file,index){
           var curPath = path + "/" + file;
           if(fs.lstatSync(curPath).isDirectory()) { // recurse

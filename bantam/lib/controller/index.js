@@ -88,10 +88,15 @@ Controller.prototype.post = function (req, res, next) {
         apiVersion: req.url.split('/')[1]
     };
 
+    var pathname = url.parse(req.url).pathname;
+    if (req.params.id) {
+        pathname = pathname.replace('/' + req.params.id, '');
+    }
+
     var self = this;
 
     // flush cache for POST and DELETE requests
-    help.clearCache(req, function (err) {
+    help.clearCache(pathname, function (err) {
         if (err) console.log(err);
 
         // if id is present in the url, then this is an update

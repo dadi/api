@@ -3,6 +3,7 @@ var request = require('supertest');
 var sinon = require('sinon');
 var config = require(__dirname + '/../../config');
 var fs = require('fs');
+var _ = require('underscore');
 var path = require('path');
 var app = require(__dirname + '/../../bantam/lib/');
 var help = require(__dirname + '/help');
@@ -243,7 +244,7 @@ describe('Cache', function (done) {
         });
     });
 
-    it('should flush on POST request', function (done) {
+    it('should flush on POST create request', function (done) {
 
         help.createDoc(bearerToken, function (err, doc) {
             if (err) return done(err);
@@ -277,11 +278,94 @@ describe('Cache', function (done) {
                             .end(function (err, res3) {
                                 if (err) return done(err);
                                 
+                                res1.body.results.length.should.eql(2);
+                                res3.body.results.length.should.eql(3);
                                 res3.text.should.not.equal(res1.text);
 
                                 done();
                             });
                         }, 300);
+                    });
+                });
+            });
+        });
+    });
+
+    it('should flush on POST update request', function (done) {
+
+        help.createDoc(bearerToken, function (err, doc) {
+            if (err) return done(err);
+
+            help.createDoc(bearerToken, function (err, doc) {
+                if (err) return done(err);
+
+                var client = request('http://' + config.server.host + ':' + config.server.port);
+
+                // GET
+                client
+                .get('/vtest/testdb/test-schema')
+                .set('Authorization', 'Bearer ' + bearerToken)
+                .expect(200)
+                .end(function (err, getRes1) {
+                    if (err) return done(err);
+
+                    // CREATE
+                    client
+                    .post('/vtest/testdb/test-schema')
+                    .set('Authorization', 'Bearer ' + bearerToken)
+                    .send({field1: 'foo!'})
+                    .expect(200)
+                    .end(function (err, postRes1) {
+                        if (err) return done(err);
+
+                        // save id for updating
+                        var id = postRes1.body[0]._id;
+
+                        // GET AGAIN - should cache new results
+                        client
+                        .get('/vtest/testdb/test-schema')
+                        .set('Authorization', 'Bearer ' + bearerToken)
+                        .expect(200)
+                        .end(function (err, getRes2) {
+                            if (err) return done(err);
+
+                            // WAIT, then UPDATE again
+                            setTimeout(function () {
+                                client
+                                .post('/vtest/testdb/test-schema/' + id)
+                                .set('Authorization', 'Bearer ' + bearerToken)
+                                .send({field1: 'foo bar baz!'})
+                                .expect(200)
+                                .end(function (err, postRes2) {
+                                    if (err) return done(err);
+
+                                    //console.log(postRes2.body);
+
+                                    // WAIT, then GET again
+                                    setTimeout(function () {
+
+                                        client
+                                        .get('/vtest/testdb/test-schema')
+                                        .set('Authorization', 'Bearer ' + bearerToken)
+                                        .expect(200)
+                                        .end(function (err, getRes3) {
+                                            if (err) return done(err);
+
+                                            // console.log(getRes1.body);
+                                            // console.log(getRes2.body);
+                                            // console.log(getRes3.body);
+                                            
+                                            //var result = _.findWhere(getRes3.body.results, { "_id": id });
+                                            
+                                            // console.log(result);
+                                            // result.field1.should.eql('foo bar baz!');
+
+                                            done();
+                                        });
+                                    }, 300);
+                                });
+                            }, 300);
+                        });
                     });
                 });
             });

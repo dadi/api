@@ -17,8 +17,6 @@ var url = require('url');
 var config = require(__dirname + '/../../../config');
 var help = require(__dirname + '/../help');
 var _ = require('underscore');
-var crypto = require('crypto');
-var path = require('path');
 
 // helpers
 var sendBackJSON = help.sendBackJSON;
@@ -90,25 +88,26 @@ Controller.prototype.post = function (req, res, next) {
         apiVersion: req.url.split('/')[1]
     };
 
-    // if id is present in the url, then this is an update
-    if (req.params.id) {
-        internals.lastModifiedAt = Date.now();
-        internals.lastModifiedBy = req.client && req.client.clientId;
-        return this.model.update({
-            _id: req.params.id
-        }, req.body, internals, sendBackJSON(200, res, next));
-    }
-
-    // if no id is present, then this is a create
-    internals.createdAt = Date.now();
-    internals.createdBy = req.client && req.client.clientId;
+    var self = this;
 
     // flush cache for POST and DELETE requests
-    var modelDir = crypto.createHash('sha1').update(url.parse(req.url).pathname).digest('hex');
-    var cacheDir = path.join(config.caching.directory, modelDir);
+    help.clearCache(req, function (err) {
+        if (err) console.log(err);
+
+        // if id is present in the url, then this is an update
+        if (req.params.id) {
+            internals.lastModifiedAt = Date.now();
+            internals.lastModifiedBy = req.client && req.client.clientId;
+
+            return self.model.update({
+                _id: req.params.id
+            }, req.body, internals, sendBackJSON(200, res, next));
+        }
+
+        // if no id is present, then this is a create
+        internals.createdAt = Date.now();
+        internals.createdBy = req.client && req.client.clientId;        
     
-    var self = this;
-    help.clearCache(cacheDir, function (err) {
         self.model.create(req.body, internals, sendBackJSON(200, res, next));
     });
 };

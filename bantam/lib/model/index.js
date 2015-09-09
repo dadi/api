@@ -143,11 +143,11 @@ Model.prototype.create = function (obj, internals, done) {
             if (self.history) {
                 self.history.create(obj, self, function(err, res) {
                     if (err) return done(err);
-                    done(null, doc);
+                    return done(null, doc);
                 });
             }
             else {
-                done(null, doc);
+                return done(null, doc);
             }
         });
     };
@@ -353,8 +353,6 @@ Model.prototype.update = function (query, update, internals, done) {
         return done(err);
     }
 
-    this.castToBSON(query);
-
     if (typeof internals === 'object' && internals != null) { // not null and not undefined
         _.extend(update, internals);
     }
@@ -367,9 +365,13 @@ Model.prototype.update = function (query, update, internals, done) {
         // get a reference to the documents 
         // that will be updated
         var updatedDocs = [];
+
         self.find(query, {}, function(err, docs) {
             if (err) return done(err);
+            
             updatedDocs = docs['results'];
+
+            self.castToBSON(query);
 
             database.collection(self.name).update(query, setUpdate, function (err, numAffected) {
                 if (err) return done(err);

@@ -88,20 +88,33 @@ Controller.prototype.post = function (req, res, next) {
         apiVersion: req.url.split('/')[1]
     };
 
-    // if id is present in the url, then this is an update
+    var pathname = url.parse(req.url).pathname;
     if (req.params.id) {
-        internals.lastModifiedAt = Date.now();
-        internals.lastModifiedBy = req.client && req.client.clientId;
-        return this.model.update({
-            _id: req.params.id
-        }, req.body, internals, sendBackJSON(200, res, next));
+        pathname = pathname.replace('/' + req.params.id, '');
     }
 
-    // if no id is present, then this is a create
-    internals.createdAt = Date.now();
-    internals.createdBy = req.client && req.client.clientId;
+    var self = this;
 
-    this.model.create(req.body, internals, sendBackJSON(200, res, next));
+    // flush cache for POST and DELETE requests
+    help.clearCache(pathname, function (err) {
+        if (err) console.log(err);
+
+        // if id is present in the url, then this is an update
+        if (req.params.id) {
+            internals.lastModifiedAt = Date.now();
+            internals.lastModifiedBy = req.client && req.client.clientId;
+
+            return self.model.update({
+                _id: req.params.id
+            }, req.body, internals, sendBackJSON(200, res, next));
+        }
+
+        // if no id is present, then this is a create
+        internals.createdAt = Date.now();
+        internals.createdBy = req.client && req.client.clientId;        
+    
+        self.model.create(req.body, internals, sendBackJSON(200, res, next));
+    });
 };
 
 Controller.prototype.delete = function (req, res, next) {

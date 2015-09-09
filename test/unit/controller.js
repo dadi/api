@@ -30,7 +30,7 @@ describe('Controller', function (done) {
 
     describe('instance', function () {
         describe('`get` method', function () {
-            it('should be accessable', function (done) {
+            it('should be accessible', function (done) {
                 var mod = model('testModel', help.getModelSchema());
                 controller(mod).get.should.be.Function;
                 done();
@@ -68,7 +68,7 @@ describe('Controller', function (done) {
         });
 
         describe('`post` method', function () {
-            it('should be accessable', function (done) {
+            it('should be accessible', function (done) {
                 var mod = model('testModel', help.getModelSchema());
                 controller(mod).post.should.be.Function;
                 done();
@@ -130,7 +130,7 @@ describe('Controller', function (done) {
         });
 
         describe('`delete` method', function () {
-            it('should be accessable', function (done) {
+            it('should be accessible', function (done) {
                 var mod = model('testModel', help.getModelSchema());
                 controller(mod).delete.should.be.Function;
                 done();

@@ -14,5 +14,5 @@ module.exports.get = function (req, res, next) {
 };
 
 module.exports.config = function () {
-  return { "route": "/endpoints/new-endpoint-routing/:id([a-fA-F0-9]{24})?" }
+  return { "route": "/endpoints/v1/new-endpoint-routing/:id([a-fA-F0-9]{24})?" }
 }

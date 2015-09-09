@@ -77,6 +77,7 @@ Each field is defined in the following way:
             "validationRule": "",
             "required": false,
             "message": "",
+            "default": "0"
             "display": { 
                 "index": true,
                 "edit": true
@@ -94,6 +95,7 @@ placement | Determines where to display the field in the backend interface (plan
 validationRule | Regex validation rule. Field is be validated against this | | ```[A-Z]*```
 required | Defines if field is required. Field is be validated against this | ```false``` | ```true```
 message | The message to return if field validation fails. | ```"is invalid"``` | ```"must contain uppercase letters only"```
+default | (optional) The value to use as a default if no value is supplied for this field | | "0"
 display | Determines in which view states the field should be visible within the backend interface (planned functionality) | | ```{ "index": true, "edit": false } ```
 
 #### Default response
@@ -134,6 +136,10 @@ If a record fails validation an errors collection should be returned with the re
         "error": {
           "field": "start_date",
           "message": "is invalid" 
+        },
+        "error": {
+          "field": "extra_field",
+          "message": "doesn't exist in the collection schema"
         }
       }
     }
@@ -144,7 +150,7 @@ If a record fails validation an errors collection should be returned with the re
 
 ### Overview
 
-An endpoint must be named such that the filename is endpoint.{endpoint name}.js, and the corresponding url will be /endpoints/{endpoint name}. The javascript file should export functions with all lowercase names that correspond to the HTTP method that the function is meant to handle.
+An endpoint must be named such that the filename is endpoint.{endpoint name}.js and exist in a `version` folder within the application's endpoints path (typically `workspace/endpoints`). The corresponding URL will be /endpoints/{version}/{endpoint name}. The javascript file should export functions with all lowercase names that correspond to the HTTP method that the function is meant to handle.
 
 Each function will recieve three arguments -
 
@@ -164,20 +170,20 @@ The following example returns a config block with a route that specifies an opti
 
 ```
 module.exports.config = function () {
-  return { "route": "/endpoints/example/:id([a-fA-F0-9]{24})?" }
+  return { "route": "/endpoints/v1/example/:id([a-fA-F0-9]{24})?" }
 }
 ```
 
 This route will now respond to requests such as 
 
 ```
-http://api.example.com/endpoints/example/55bb8f688d76f74b1303a137
+http://api.example.com/endpoints/v1/example/55bb8f688d76f74b1303a137
 ```
 
 Without this custom route, the same could be achieved by requesting the default route with a querystring parameter.
 
 ```
-http://api.example.com/endpoints/example?id=55bb8f688d76f74b1303a137
+http://api.example.com/endpoints/v1/example?id=55bb8f688d76f74b1303a137
 ```
 
 ### Authentication
@@ -221,7 +227,7 @@ GET http://api.example.com/:apiVersion/:database/:existingCollection/config
 
 ### Example Usage
 
-See `test/acceptance/workspace/endpoints/endpoint.test-endpoint.js` for a "Hello World" example.
+See `test/acceptance/workspace/endpoints/v1/endpoint.test-endpoint.js` for a "Hello World" example.
 
 ## Example API requests
 
@@ -241,7 +247,7 @@ _You may want to look at a handy QA testing tool called [Postman](http://www.get
 
 This will return a "Hello World" example -
 
-    GET /endpoints/test-endpoint HTTP/1.1
+    GET /endpoints/v1/test-endpoint HTTP/1.1
     Host: localhost:3000
     content-type: application/json
     Authorization: Bearer 171c8c12-6e9b-47a8-be29-0524070b0c65

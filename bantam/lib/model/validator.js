@@ -32,6 +32,16 @@ Validator.prototype.schema = function (obj) {
 
     var schema = this.model.schema;
 
+    // check for default fields, assign them if the obj didn't 
+    // provide a value    
+    Object.keys(schema)
+    .filter(function (key) { return schema[key].default; })
+    .forEach(function (key) {
+        if (!obj[key]) {
+            obj[key] = schema[key].default;
+        }
+    });
+
     // check that all required fields are present
     Object.keys(schema)
     .filter(function (key) { return schema[key].required; })
@@ -49,15 +59,20 @@ Validator.prototype.schema = function (obj) {
 
 function _parseDocument(obj, schema, response) {
 
-
     for (var key in obj) {
-        if (typeof obj[key] === 'object' && obj[key] !== null && !util.isArray(obj[key])) {
-            _parseDocument(obj[key], schema, response);
+        // handle objects first
+        if (typeof obj[key] === 'object') {
+            if (schema[key] && schema[key].type === 'Object') {
+                // do nothing
+            }
+            else if (obj[key] !== null && !util.isArray(obj[key])) {
+                _parseDocument(obj[key], schema, response);
+            }
         }
         else {
             if (!schema[key]) {
                 response.success = false;
-                response.errors.push({field: key, message: 'is invalid'});
+                response.errors.push({field: key, message: 'doesn\'t exist in the collection schema'});
                 return;
             }
 

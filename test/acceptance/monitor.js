@@ -9,7 +9,7 @@ var originalSchemaPath = __dirname + '/workspace/monitor-collection/collection.m
 var testSchemaPath = __dirname + '/workspace/collections/vtest/testdb/collection.monitor-test-schema.json';
 
 var originalEndpointPath = __dirname + '/workspace/monitor-collection/endpoint.monitor-test-endpoint.js';
-var testEndpointPath = __dirname + '/workspace/endpoints/endpoint.monitor-test-endpoint.js';
+var testEndpointPath = __dirname + '/workspace/endpoints/v1/endpoint.monitor-test-endpoint.js';
 
 var bearerToken; // used through out tests
 
@@ -102,7 +102,7 @@ describe('File system watching', function () {
             var client = request('http://' + config.server.host + ':' + config.server.port);
 
             client
-            .get('/endpoints/monitor-test-endpoint?cache=false')
+            .get('/endpoints/v1/monitor-test-endpoint?cache=false')
             .set('Authorization', 'Bearer ' + bearerToken)
             .expect(200)
             //.expect('content-type', 'application/json')
@@ -120,7 +120,7 @@ describe('File system watching', function () {
 
                 setTimeout(function () {
                     client
-                    .get('/endpoints/monitor-test-endpoint?cache=false')
+                    .get('/endpoints/v1/monitor-test-endpoint?cache=false')
                     .set('Authorization', 'Bearer ' + bearerToken)
                     .expect(200)
                     .expect('content-type', 'application/json')
@@ -139,7 +139,7 @@ describe('File system watching', function () {
     describe('adding new files', function () {
 
         var newSchemaPath = __dirname + '/workspace/collections/vtest2/testdb/collection.new-test-schema.json';
-        var newEndpointPath = __dirname + '/workspace/endpoints/endpoint.new-test-endpoint.js';
+        var newEndpointPath = __dirname + '/workspace/endpoints/v1/endpoint.new-test-endpoint.js';
 
         before(function (done) {
             // tests are going to try to create these directories and they shouldn't exist before hand
@@ -196,7 +196,7 @@ describe('File system watching', function () {
                 var client = request('http://' + config.server.host + ':' + config.server.port);
 
                 client
-                .get('/endpoints/new-test-endpoint')
+                .get('/endpoints/v1/new-test-endpoint')
                 .set('Authorization', 'Bearer ' + bearerToken)
                 .expect(200)
                 .expect('content-type', 'application/json')
@@ -217,7 +217,7 @@ describe('File system watching', function () {
             var client = request('http://' + config.server.host + ':' + config.server.port);
 
             client
-            .get('/endpoints/monitor-test-endpoint?cache=false')
+            .get('/endpoints/v1/monitor-test-endpoint?cache=false')
             .set('Authorization', 'Bearer ' + bearerToken)
             .expect(404)
             .end(done);

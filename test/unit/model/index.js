@@ -1,6 +1,7 @@
 var should = require('should');
 var sinon = require('sinon');
 var model = require(__dirname + '/../../../bantam/lib/model');
+var seramaHelp = require(__dirname + '/../../../bantam/lib/help');
 var Validator = require(__dirname + '/../../../bantam/lib/model/validator');
 var connection = require(__dirname + '/../../../bantam/lib/model/connection');
 var _ = require('underscore');
@@ -111,6 +112,15 @@ describe('Model', function () {
             done();
         });
 
+        it('should accept collection displayName setting', function (done) {
+            var mod = model('testModelName', help.getModelSchema(), null, { displayName: "TEST MODEL" });
+
+            should.exist(mod.settings);
+            mod.settings.displayName.should.equal("TEST MODEL");
+
+            done();
+        });
+
         it('should attach `type` definition to model', function (done) {
             var val = 'test type';
 
@@ -200,6 +210,48 @@ describe('Model', function () {
                 should.exist(err);
                 done();
             });
+        });
+
+        it('should have a function for making case insensitive queries', function (done) {
+            model('testModelName', help.getModelSchema()).makeCaseInsensitive.should.be.Function;
+            done();
+        });
+
+        it('should convert a normal field query to a case insensitive query', function (done) {
+            var mod = model('testModelName', help.getModelSchema());
+
+            var query = { "test" : "example" };
+            var expected = { "test" : new RegExp(["^", "example", "$"].join(""), "i") };
+            
+            var result = mod.makeCaseInsensitive(query);
+            
+            result.should.eql(expected);
+            
+            done();
+        });
+
+        it('should convert a regex query to a case insensitive query', function (done) {
+            var mod = model('testModelName', help.getModelSchema());
+
+            var query = { "test" : { "$regex" : "example"} };
+            var expected = { "test" : { "$regex" : new RegExp("example", "i") } };
+            
+            var result = mod.makeCaseInsensitive(query);
+            
+            result.should.eql(expected);            
+            done();
+        });
+
+        it('should escape characters in a regex query', function (done) {
+            var mod = model('testModelName', help.getModelSchema());
+            
+            var query = { "test" : "BigEyes)" };
+            var expected = { "test" : new RegExp(["^", seramaHelp.regExpEscape("BigEyes)"), "$"].join(""), "i") };
+            
+            var result = mod.makeCaseInsensitive(query);
+
+            result.should.eql(expected);
+            done();
         });
     });
 

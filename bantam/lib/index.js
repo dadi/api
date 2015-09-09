@@ -1,5 +1,6 @@
 var fs = require('fs');
 var path = require('path');
+var url = require('url');
 var bodyParser = require('body-parser');
 var _ = require('underscore');
 var controller = require(__dirname + '/controller');
@@ -33,9 +34,9 @@ Server.prototype.start = function (options, done) {
 
     // add necessary middlewares in order below here...
 
-    app.use(bodyParser.json());
-    app.use(bodyParser.urlencoded({ extended: false }));
-    app.use(bodyParser.text());
+    app.use(bodyParser.json({ limit: '50mb' }));
+    app.use(bodyParser.urlencoded({ extended: false, limit: '50mb' }));
+    app.use(bodyParser.text({ limit: '50mb' }));
 
     // configure authentication middleware
     auth(self);
@@ -114,7 +115,8 @@ Server.prototype.loadApi = function (options) {
         self.updateVersions(collectionPath);
     });
 
-    this.updateEndpoints(endpointPath);
+    //this.updateEndpoints(endpointPath);
+    this.updateVersions(endpointPath);
 
     this.addMonitor(endpointPath, function (endpointFile) {
         var filepath = path.join(endpointPath, endpointFile);
@@ -157,6 +159,13 @@ Server.prototype.loadConfigApi = function () {
 
     // listen for requests to add to the API
     this.app.use('/:version/:database/:collectionName/config', function (req, res, next) {
+        
+        // collection and endpoint paths now have the same structure
+        // i.e. /version/database/collection and /endpoints/version/endpoint
+        // so test here for `endpoints` in the request url, processing the next
+        // handler if required.
+        if (url.parse(req.url).pathname.indexOf('endpoints') > 0) return next();
+
         var method = req.method && req.method.toLowerCase();
         if (method !== 'post') return next();
 
@@ -167,7 +176,8 @@ Server.prototype.loadConfigApi = function () {
             return next(err);
         }
 
-        var validation = help.validateCollectionSchema(JSON.parse(schemaString));
+        var schema = JSON.parse(schemaString);
+        var validation = help.validateCollectionSchema(schema);
 
         if (!validation.success) {
             var err = new Error('Collection schema validation failed');
@@ -178,7 +188,11 @@ Server.prototype.loadConfigApi = function () {
 
         var params = req.params;
 
-        var route = ['', params.version, params.database, params.collectionName, idParam].join('/');
+        // use params.collectionName as default, override if the schema supplies a 'model' property
+        var name = params.collectionName;
+        if (schema.hasOwnProperty("model")) name = schema.model;
+
+        var route = ['', params.version, params.database, name, idParam].join('/');
 
         // create schema
         if (!self.components[route]) {
@@ -188,7 +202,7 @@ Server.prototype.loadConfigApi = function () {
                 self.collectionPath,
                 params.version,
                 params.database,
-                'collection.' + params.collectionName + '.json'
+                'collection.' + name + '.json'
             );
 
             try {
@@ -199,7 +213,7 @@ Server.prototype.loadConfigApi = function () {
                 res.setHeader('content-type', 'application/json');
                 res.end(JSON.stringify({
                     result: 'success',
-                    message: params.collectionName + ' collection created'
+                    message: name + ' collection created'
                 }));
 
             }
@@ -211,22 +225,27 @@ Server.prototype.loadConfigApi = function () {
         next();
     });
 
-    this.app.use('/endpoints/:endpointName/config', function (req, res, next) {
+    this.app.use('/endpoints/:version/:endpointName/config', function (req, res, next) {
+
         var method = req.method && req.method.toLowerCase();
         if (method !== 'post') return next();
 
+        var version = req.params.version;
         var name = req.params.endpointName;
-        if (!self.components['/endpoints/' + name]) {
-            var filepath = path.join(self.endpointPath, 'endpoint.' + name + '.js');
+
+        if (!self.components['/endpoints/' + version + '/' + name]) {
+            var filepath = path.join(self.endpointPath, version, 'endpoint.' + name + '.js');
 
             return fs.writeFile(filepath, req.body, function (err) {
                 if (err) return next(err);
+
+                var message = 'Endpoint "' + version + ':' + name + '" created';
 
                 res.statusCode = 200;
                 res.setHeader('content-type', 'application/json');
                 res.end(JSON.stringify({
                     result: 'success',
-                    message: req.params.endpointName + ' endpoint created'
+                    message: message
                 }));
             });
         }
@@ -245,12 +264,23 @@ Server.prototype.updateVersions = function (versionsPath) {
         if (version.indexOf('.') === 0) return;
 
         var dirname = path.join(versionsPath, version);
-        self.updateDatabases(dirname);
+        
+        if (dirname.indexOf("collections") > 0) {
 
-        self.addMonitor(dirname, function (databaseName) {
-            if (databaseName) return self.updateCollections(path.join(dirname, databaseName));
             self.updateDatabases(dirname);
-        });
+
+            self.addMonitor(dirname, function (databaseName) {
+                if (databaseName) return self.updateCollections(path.join(dirname, databaseName));
+                self.updateDatabases(dirname);
+            });
+        }
+        else {
+            self.updateEndpoints(dirname);
+
+            self.addMonitor(dirname, function (endpoint) {
+                self.updateEndpoints(dirname);
+            });
+        }
     });
 };
 
@@ -294,27 +324,32 @@ Server.prototype.updateCollections = function (collectionsPath) {
         var database = dirs[dirs.length - 2];
 
         // collection should be json file containing schema
+    
+        // get the schema
+        var schema = require(cpath);
         var name = collection.slice(collection.indexOf('.') + 1, collection.indexOf('.json'));
+
+        // override the default name using the supplied property
+        if (schema.hasOwnProperty("model")) name = schema.model;
 
         self.addCollectionResource({
             route: ['', version, database, name, idParam].join('/'),
             filepath: cpath,
-            name: name
+            name: name,
+            schema: schema
         });
     });
 };
 
 Server.prototype.addCollectionResource = function (options) {
 
-    // get the schema
-    var schema = require(options.filepath);
-    var fields = help.getFieldsFromSchema(schema);
+    var fields = help.getFieldsFromSchema(options.schema);
 
     // With each schema we create a model.
     // With each model we create a controller, that acts as a component of the REST api.
     // We then add the component to the api by adding a route to the app and mapping
     // `req.method` to component methods
-    var mod = model(options.name, JSON.parse(fields), null, schema.settings);
+    var mod = model(options.name, JSON.parse(fields), null, options.schema.settings);
     var control = controller(mod);
 
     this.addComponent({
@@ -354,7 +389,13 @@ Server.prototype.updateEndpoints = function (endpointsPath) {
     var endpoints = fs.readdirSync(endpointsPath);
 
     endpoints.forEach(function (endpoint) {
+        // parse the url out of the directory structure
+        var cpath = path.join(endpointsPath, endpoint);
+        var dirs = cpath.split('/');
+        var version = dirs[dirs.length - 2];
+
         self.addEndpointResource({
+            version: version,
             endpoint: endpoint,
             filepath: path.join(endpointsPath, endpoint)
         });
@@ -370,15 +411,20 @@ Server.prototype.addEndpointResource = function (options) {
     var name = endpoint.slice(endpoint.indexOf('.') + 1, endpoint.indexOf('.js'));
     var filepath = options.filepath;
 
-    // keep reference to component so hot loading component can be
-    // done by changing reference value
-    var opts = {
-        route: '/endpoints/' + name,
-        component: require(filepath),
-        filepath: filepath
-    };
+    try {
+        // keep reference to component so hot loading component can be
+        // done by changing reference value
+        var opts = {
+            route: '/endpoints/' + options.version + '/' + name,
+            component: require(filepath),
+            filepath: filepath
+        };
 
-    self.addComponent(opts);
+        self.addComponent(opts);
+    }
+    catch (e) {
+        console.log(e);
+    }
 
     // if this endpoint's file is changed hot update the api
     self.addMonitor(filepath, function (filename) {
@@ -450,6 +496,7 @@ Server.prototype.addComponent = function (options) {
     });
 
     this.app.use(options.route, function (req, res, next) {
+
         // map request method to controller method
         var method = req.method && req.method.toLowerCase();
         if (method && options.component[method]) return options.component[method](req, res, next);

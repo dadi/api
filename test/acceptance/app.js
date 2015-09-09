@@ -51,6 +51,65 @@ describe('Application', function () {
         });
     });
 
+    describe('collection initialisation', function () {
+        
+        var newSchemaPath = __dirname + '/workspace/collections/vtest/testdb/collection.new-test-schema.json';
+        
+        before(function (done) {
+
+            // Add a schema file to the collection path
+            var newSchema = JSON.parse(JSON.stringify(require(__dirname + '/workspace/schemas/collection.new-test-schema.json')));
+            fs.writeFileSync(newSchemaPath, JSON.stringify(newSchema));
+
+            app.start({
+                collectionPath: __dirname + '/workspace/collections'
+            }, done);
+        });
+
+        after(function (done) {
+
+            if (fs.existsSync(newSchemaPath)) fs.unlinkSync(newSchemaPath);
+
+            app.stop(done);
+        });
+
+        describe('on app start', function () {
+            before(function (done) {
+                help.dropDatabase(function (err) {
+                    if (err) return done(err);
+
+                    help.getBearerToken(function (err, token) {
+                        if (err) return done(err);
+
+                        bearerToken = token;
+
+                        done();
+                    });
+                });
+            });
+
+            it('should initialise model using collection schema filename as model name', function (done) {
+
+                var loadedModels = _.compact(_.pluck(app.components, 'model'));
+                var model = _.where(loadedModels, { name: "test-schema" });
+                
+                model.length.should.equal(1);
+
+                done();
+            });
+
+            it('should initialise model using property from schema file as model name', function (done) {
+
+                var loadedModels = _.compact(_.pluck(app.components, 'model'));
+                var model = _.where(loadedModels, { name: "modelNameFromSchema" });
+                
+                model.length.should.equal(1);
+                
+                done();
+            });
+        })
+    })
+
     describe('collections api', function () {
         before(function (done) {
             app.start({
@@ -312,6 +371,150 @@ describe('Application', function () {
                         res.body['results'].should.exist;
                         res.body['results'].should.be.Array;
                         res.body['results'].length.should.be.above(0)
+                        done();
+                    });
+                });
+            });
+
+            it('should allow case insensitive query', function (done) {
+               
+                var doc = { field1: "Test", field2: null };
+                
+                help.createDocWithParams(bearerToken, doc, function (err) {
+                
+                   if (err) return done(err);
+                    
+                    var client = request(connectionString);
+                    var query = {
+                        field1: "test"
+                    };
+
+                    query = encodeURIComponent(JSON.stringify(query));
+
+                    client
+                    .get('/vtest/testdb/test-schema?cache=false&filter=' + query)
+                    .set('Authorization', 'Bearer ' + bearerToken)
+                    .expect(200)
+                    .expect('content-type', 'application/json')
+                    .end(function (err, res) {
+                        if (err) return done(err);
+
+                        res.body['results'].should.exist;
+                        res.body['results'].should.be.Array;
+                        res.body['results'].length.should.equal(1);
+                        res.body['results'][0].field1.should.equal("Test");
+                        done();
+                    });
+                });
+            });
+
+            it('should allow case insensitive regex query', function (done) {
+               
+                var doc = { field1: "Test", field2: null };
+                
+                help.createDocWithParams(bearerToken, doc, function (err) {
+                
+                   if (err) return done(err);
+                    
+                    var client = request(connectionString);
+                    var query = {
+                        field1: { "$regex" : "tes" }
+                    };
+
+                    query = encodeURIComponent(JSON.stringify(query));
+
+                    client
+                    .get('/vtest/testdb/test-schema?cache=false&filter=' + query)
+                    .set('Authorization', 'Bearer ' + bearerToken)
+                    .expect(200)
+                    .expect('content-type', 'application/json')
+                    .end(function (err, res) {
+                        if (err) return done(err);
+
+                        var found = false;
+
+                        res.body['results'].should.exist;
+                        res.body['results'].should.be.Array;
+                        
+                        _.each(res.body['results'], function (value, key) {
+                            if (value.field1 === "Test") found = true;
+                        });
+
+                        found.should.be.true;
+
+                        done();
+                    });
+                });
+            });
+
+            it('should allow null values in query when converting to case insensitive', function (done) {
+               
+                var doc = { field1: "Test", field2: null };
+                
+                help.createDocWithParams(bearerToken, doc, function (err) {
+                
+                   if (err) return done(err);
+                    
+                    var client = request(connectionString);
+                    var query = {
+                        field2: null
+                    };
+
+                    query = encodeURIComponent(JSON.stringify(query));
+
+                    client
+                    .get('/vtest/testdb/test-schema?cache=false&filter=' + query)
+                    .set('Authorization', 'Bearer ' + bearerToken)
+                    .expect(200)
+                    .expect('content-type', 'application/json')
+                    .end(function (err, res) {
+                        if (err) return done(err);
+
+                        var found = false;
+
+                        res.body['results'].should.exist;
+                        res.body['results'].should.be.Array;
+                        
+                        _.each(res.body['results'], function (value, key) {
+                            if (value.field1 === "Test") found = true;
+                        });
+
+                        found.should.be.true;
+
+                        done();
+                    });
+                });
+            });
+
+            it('should return specified fields only when supplying `fields` param', function (done) {
+               
+               var doc = { field1: "Test", field2: null };
+                
+                help.createDocWithParams(bearerToken, doc, function (err) {
+                    if (err) return done(err);
+
+                    var client = request(connectionString);
+
+                    var fields = {
+                        "field1" : 1, "_id": 0
+                    };
+
+                    query = encodeURIComponent(JSON.stringify(fields));
+                    client
+                    .get('/vtest/testdb/test-schema?cache=false&fields=' + query)
+                    .set('Authorization', 'Bearer ' + bearerToken)
+                    .expect(200)
+                    .expect('content-type', 'application/json')
+                    .end(function (err, res) {
+                        if (err) return done(err);
+
+                        res.body['results'].should.exist;
+                        res.body['results'].should.be.Array;
+
+                        var obj = _.sample(res.body['results']);
+                        Object.keys(obj).length.should.equal(1);
+                        Object.keys(obj)[0].should.equal("field1");
+
                         done();
                     });
                 });
@@ -984,14 +1187,33 @@ describe('Application', function () {
         var jsSchemaString = fs.readFileSync(__dirname + '/../new-schema.json', {encoding: 'utf8'});
 
         var cleanup = function (done) {
+            // try to cleanup these tests directory tree
+            // don't catch errors here, since the paths may not exist
             try {
-                // try to cleanup these tests directory tree
                 fs.unlinkSync(__dirname + '/workspace/collections/vapicreate/testdb/collection.api-create.json');
+            } catch (e) {
+            }
+
+            try {
+                fs.unlinkSync(__dirname + '/workspace/collections/vapicreate/testdb/collection.api-create-model-name.json');
+            } catch (e) {
+            }
+
+            try {
+                fs.unlinkSync(__dirname + '/workspace/collections/vapicreate/testdb/collection.modelNameFromSchema.json');
+            } catch (e) {
+            }
+
+            try {
                 fs.rmdirSync(__dirname + '/workspace/collections/vapicreate/testdb');
+            } catch (e) {
+            }
+
+            try {
                 fs.rmdirSync(__dirname + '/workspace/collections/vapicreate');
             } catch (e) {
-                // don't catch the error, since the above paths may not exist
             }
+
             done();
         };
 
@@ -1108,6 +1330,57 @@ describe('Application', function () {
                 });
             });
 
+            it('should use collection schema filename as model name', function (done) {
+
+                var client = request(connectionString);
+
+                client
+                .post('/vapicreate/testdb/api-create-model-name/config')
+                .send(jsSchemaString)
+                .set('content-type', 'text/plain')
+                .set('Authorization', 'Bearer ' + bearerToken)
+                .expect(200)
+                .expect('content-type', 'application/json')
+                .end(function (err, res) {
+                    if (err) return done(err);
+
+                    
+                    var body = JSON.stringify(res.body);
+                    var index = body.indexOf('api-create-model-name collection created');
+                    index.should.be.above(0);
+
+                    done();
+                });
+            });
+
+            it('should use property from schema file as model name', function (done) {
+                
+                var client = request(connectionString);
+
+                var schema = JSON.parse(jsSchemaString);
+                schema["model"] = "modelNameFromSchema";
+                jsSchemaString = JSON.stringify(schema);
+
+                client
+                .post('/vapicreate/testdb/api-create-model-name/config')
+                .send(jsSchemaString)
+                .set('content-type', 'text/plain')
+                .set('Authorization', 'Bearer ' + bearerToken)
+                .expect(200)
+                .expect('content-type', 'application/json')
+                .end(function (err, res) {
+                    if (err) return done(err);
+
+                    
+                    var body = JSON.stringify(res.body);
+
+                    var index = body.indexOf('modelNameFromSchema collection created');
+                    index.should.be.above(0);
+
+                    done();
+                });
+            });
+
             it('should allow updating a new collection endpoint', function (done) {
                 var client = request(connectionString);
 
@@ -1137,6 +1410,7 @@ describe('Application', function () {
                     .expect(200)
                     .expect('content-type', 'application/json')
                     .end(function (err, res) {
+
                         if (err) return done(err);
 
                         // Wait, then test that the schema was updated
@@ -1149,7 +1423,10 @@ describe('Application', function () {
                             .set('Authorization', 'Bearer ' + bearerToken)
                             .expect(200)
                             .expect('content-type', 'application/json')
-                            .end(done);
+                            .end(function (err, res) {
+                                //
+                                done();
+                            });
                         }, 300);
                     });
                 });
@@ -1214,10 +1491,10 @@ describe('Application', function () {
             var client = request(connectionString);
 
             client
-            .get('/endpoints/test-endpoint')
+            .get('/endpoints/v1/test-endpoint')
             .set('Authorization', 'Bearer ' + bearerToken)
             .expect(200)
-            //.expect('content-type', 'application/json')
+            .expect('content-type', 'application/json')
             .end(function (err, res) {
                 if (err) return done(err);
                 res.body.message.should.equal('Hello World');
@@ -1230,7 +1507,7 @@ describe('Application', function () {
             var client = request(connectionString);
 
             client
-            .get('/endpoints/new-endpoint-routing/55bb8f0a8d76f74b1303a135')
+            .get('/endpoints/v1/new-endpoint-routing/55bb8f0a8d76f74b1303a135')
             .set('Authorization', 'Bearer ' + bearerToken)
             .expect(200)
             .expect('content-type', 'application/json')
@@ -1254,7 +1531,7 @@ describe('Application', function () {
             try {
 
                 // try to cleanup these tests directory tree
-                fs.unlinkSync(__dirname + '/workspace/endpoints/endpoint.new-endpoint.js');
+                fs.unlinkSync(__dirname + '/workspace/endpoints/v1/endpoint.new-endpoint.js');
             } catch (err) {
                 //console.log(err);
             }
@@ -1285,7 +1562,7 @@ describe('Application', function () {
 
                 // make sure the endpoint is not already there
                 client
-                .get('/endpoints/new-endpoint?cache=false')
+                .get('/endpoints/v1/new-endpoint?cache=false')
                 .set('Authorization', 'Bearer ' + bearerToken)
                 .expect(404)
                 .end(function (err) {
@@ -1293,7 +1570,7 @@ describe('Application', function () {
 
                     // create endpoint
                     client
-                    .post('/endpoints/new-endpoint/config')
+                    .post('/endpoints/v1/new-endpoint/config')
                     .send(jsSchemaString)
                     .set('content-type', 'text/plain')
                     .set('Authorization', 'Bearer ' + bearerToken)
@@ -1301,20 +1578,22 @@ describe('Application', function () {
                     .end(function (err, res) {
                         if (err) return done(err);
 
+                        res.body.message.should.equal('Endpoint "v1:new-endpoint" created');
+
                         // wait, then test that endpoint was created
                         setTimeout(function () {
                             client
-                            .get('/endpoints/new-endpoint?cache=false')
+                            .get('/endpoints/v1/new-endpoint?cache=false')
                             .set('Authorization', 'Bearer ' + bearerToken)
                             .expect(200)
-                            .expect('content-type', 'application/json')
+                            //.expect('content-type', 'application/json')
                             .end(function (err, res) {
                                 if (err) return done(err);
 
                                 res.body.message.should.equal('endpoint created through the API');
                                 done();
                             });
-                        }, 1000);
+                        }, 1500);
                     });
                 });
             });
@@ -1324,7 +1603,7 @@ describe('Application', function () {
 
                 // make sure the endpoint exists from last test
                 client
-                .get('/endpoints/new-endpoint?cache=false')
+                .get('/endpoints/v1/new-endpoint?cache=false')
                 .set('Authorization', 'Bearer ' + bearerToken)
                 .expect(200)
                 .end(function (err) {
@@ -1337,7 +1616,7 @@ describe('Application', function () {
 
                     // update endpoint
                     client
-                    .post('/endpoints/new-endpoint/config')
+                    .post('/endpoints/v1/new-endpoint/config')
                     .send(jsSchemaString)
                     .set('content-type', 'text/plain')
                     .set('Authorization', 'Bearer ' + bearerToken)
@@ -1348,7 +1627,7 @@ describe('Application', function () {
                         // wait, then test that endpoint was created
                         setTimeout(function () {
                             client
-                            .get('/endpoints/new-endpoint?cache=false')
+                            .get('/endpoints/v1/new-endpoint?cache=false')
                             .set('Authorization', 'Bearer ' + bearerToken)
                             .expect(200)
                             .expect('content-type', 'application/json')
@@ -1367,7 +1646,7 @@ describe('Application', function () {
         describe('GET', function () {
             it('should NOT return the Javascript file backing the endpoint', function (done) {
                 request(connectionString)
-                .get('/endpoints/test-endpoint/config?cache=false')
+                .get('/endpoints/v1/test-endpoint/config?cache=false')
                 .set('Authorization', 'Bearer ' + bearerToken)
                 .expect(404)
                 .end(done);
@@ -1377,7 +1656,7 @@ describe('Application', function () {
         describe('DELETE', function () {
             it('should NOT remove the custom endpoint', function (done) {
                 request(connectionString)
-                .delete('/endpoints/test-endpoint/config')
+                .delete('/endpoints/v1/test-endpoint/config')
                 .set('Authorization', 'Bearer ' + bearerToken)
                 .expect(404)
                 .end(done);

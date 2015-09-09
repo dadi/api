@@ -49,6 +49,10 @@ module.exports.parseQuery = function (queryStr) {
     return ret;
 }
 
+module.exports.regExpEscape = function(str) {
+     return str.replace(/([.?*+^$[\]\\(){}|-])/g, "\\$1");
+};
+
 function getKeys(obj, keyName, result) {
     for (var key in obj) {
         if (obj.hasOwnProperty(key)) {

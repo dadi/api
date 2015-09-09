@@ -1,7 +1,7 @@
 var url = require('url');
 var ObjectID = require('mongodb').ObjectID;
-var app = require(__dirname + '/../../bantam/lib');
-var model = require(__dirname + '/../../bantam/lib/model');
+var app = require(__dirname + '/../../../bantam/lib');
+var model = require(__dirname + '/../../../bantam/lib/model');
 
 module.exports.get = function (req, res, next) {
 

@@ -8,7 +8,7 @@ POST, GET, and DELETE methods that can be accessed by the request router
 This will only be used for *http://{url}/{version number}/{database name}/{collection name}*
 type of endpoints
 
-*http://{url}/endpoints/{endpoint name}* type endpoints should create a custom controller that
+*http://{url}/endpoints/{version number}/{endpoint name}* type endpoints should create a custom controller that
 implements methods corresponding to the HTTP methods it needs to support
 
 
@@ -73,6 +73,10 @@ Controller.prototype.get = function (req, res, next) {
         skip: skip,
         page: parseInt(options.page)
     };
+
+    if (options.fields && help.isJSON(options.fields)) {
+        queryOptions.fields = JSON.parse(options.fields);
+    }
 
     if (sort && !_.isEmpty(sort)) queryOptions.sort = sort;
 

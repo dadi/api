@@ -1,5 +1,6 @@
 var connection = require(__dirname + '/connection');
 var config = require(__dirname + '/../../../config').database;
+var help = require(__dirname + '/../help');
 var Validator = require(__dirname + '/validator');
 var History = require(__dirname + '/history');
 var ObjectID = require('mongodb').ObjectID;
@@ -18,6 +19,11 @@ var Model = function (name, schema, conn, settings) {
 
     // attach default settings
     this.settings = settings || {};
+
+    // attach display name if supplied
+    if (this.settings.hasOwnProperty("displayName")) {
+        this.displayName = this.settings.displayName;
+    }
 
     // create connection for this model
     if (conn) {
@@ -152,6 +158,62 @@ Model.prototype.create = function (obj, internals, done) {
     this.connection.once('connect', _done);
 };
 
+Model.prototype.makeCaseInsensitive = function (obj) {
+    var newObj = _.clone(obj);
+    var self = this;
+    _.each(Object.keys(obj), function(key) {
+        if (typeof obj[key] === 'string') {
+            if (ObjectID.isValid(obj[key])) {
+                newObj[key] = obj[key];
+            }
+            else if (key[0] === '$' && key === '$regex') {
+                newObj[key] = new RegExp(obj[key], "i");
+            }
+            else if (key[0] === '$' && key !== '$regex') {
+                newObj[key] = obj[key];
+            }
+            else {
+                newObj[key] = new RegExp(["^", help.regExpEscape(obj[key]), "$"].join(""), "i");
+            }
+        }
+        else if (typeof obj[key] === 'object' && obj[key] !== null) {
+            if (key[0] === '$' && key !== '$regex') {
+                newObj[key] = obj[key];
+            }
+            else {
+                newObj[key] = self.makeCaseInsensitive(obj[key]);
+            }
+        }
+        else {
+            return obj;
+        }
+    });
+    return newObj;
+}
+
+var convertApparentObjectIds = function (query) {
+    _.each(Object.keys(query), function(key) {
+        if (key === '$in') {
+            if (typeof query[key] === 'object' && _.isArray(query[key])) {
+                var arr = query[key];
+                _.each(arr, function (value, key) {
+                    if (typeof value === 'string' && ObjectID.isValid(value)) {
+                        arr[key] = new ObjectID.createFromHexString(value);
+                    }
+                });
+                query[key] = arr;
+            }
+        }
+        else if (typeof query[key] === 'object' && query[key] !== null) {
+            query[key] = convertApparentObjectIds(query[key]);
+        }
+        else {
+            // nothing
+        }
+    });
+    return query;
+}
+
 /**
  * Lookup documents in the database
  *
@@ -168,14 +230,8 @@ Model.prototype.find = function (query, options, done) {
 
     var self = this;
 
-    // make the query case-insensitive   
-    _.each(Object.keys(query), function(key) {
-        if (typeof query[key] === 'string') {
-            if (!ObjectID.isValid(query[key])) {
-                query[key] = new RegExp(["^", query[key], "$"].join(""), "i");
-            }
-        }
-    });
+    query = this.makeCaseInsensitive(query);
+    query = convertApparentObjectIds(query);
 
     var validation = this.validate.query(query);
     if (!validation.success) {

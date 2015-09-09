@@ -18,7 +18,7 @@ describe('Cache', function (done) {
 
     after(function (done) {
         help.removeTestClients(function() {
-            // help.clearCache();
+            help.clearCache();
             app.stop(done);
         });
     });

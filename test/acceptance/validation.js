@@ -1,3 +1,4 @@
+var fs = require('fs');
 var should = require('should');
 var request = require('supertest');
 var config = require(__dirname + '/../../config');
@@ -98,6 +99,40 @@ describe('validation', function () {
                 .send({fieldBool: true})
                 .expect(200, done);
             });
+
+            it('should allow setting a required boolean to `false`', function (done) {
+
+                var client = request('http://' + config.server.host + ':' + config.server.port);
+                var filepath = __dirname + '/workspace/validation/collections/vtest/testdb/collection.test-validation-schema.json';
+                
+                // add a new field to the schema
+                var originaljsSchemaString = fs.readFileSync(filepath, {encoding: 'utf8'});
+                var schema = JSON.parse(originaljsSchemaString);
+
+                // add a new field to the existing schema
+                schema.fields.fieldBoolRequired = { type: "Boolean", required: true };
+                
+                var jsSchemaString = JSON.stringify(schema, null, 4);
+                
+                fs.writeFileSync(filepath, jsSchemaString);
+                        
+                setTimeout(function () {
+                    client
+                    .post('/vtest/testdb/test-validation-schema')
+                    .set('Authorization', 'Bearer ' + bearerToken)
+                    .send({fieldBoolRequired: false})
+                    .expect(200)
+                    .end(function(err, res) {
+
+                        // replace the old schema
+                        setTimeout(function () {
+                            fs.writeFileSync(filepath, originaljsSchemaString);
+                            done();
+                        }, 100);
+                    });
+                }, 100);
+            });
+
         });
 
         describe('mixed', function () {

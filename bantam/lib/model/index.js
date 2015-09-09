@@ -136,6 +136,18 @@ Model.prototype.create = function (obj, internals, done) {
     }
 
     var self = this;
+
+    // ObjectIDs
+    if (obj instanceof Array) {
+        // convert ids in each doc
+        obj.forEach(function (doc) {
+            doc = self.convertObjectIdsForSave(self.schema, doc);
+        });
+    }
+    else {
+        obj = self.convertObjectIdsForSave(self.schema, obj);
+    }
+
     var _done = function (database) {
         database.collection(self.name).insert(obj, function(err, doc) {
             if (err) return done(err);
@@ -212,6 +224,27 @@ var convertApparentObjectIds = function (query) {
         }
     });
     return query;
+}
+
+Model.prototype.convertObjectIdsForSave = function (schema, obj) {
+    Object.keys(schema)
+    .filter(function (key) { return schema[key].type === 'ObjectID'; })
+    .forEach(function (key) {
+        if (typeof obj[key] === 'object' && _.isArray(obj[key])) {
+            var arr = obj[key];
+            _.each(arr, function (value, key) {
+                if (typeof value === 'string' && ObjectID.isValid(value)) {
+                    arr[key] = new ObjectID.createFromHexString(value);
+                }
+            });
+            obj[key] = arr;
+        }
+        else if (typeof obj[key] === 'string') {
+            obj[key] = new ObjectID.createFromHexString(obj[key]);
+        }
+    });
+
+    return obj;
 }
 
 /**
@@ -346,7 +379,7 @@ Model.prototype.update = function (query, update, internals, done) {
         return done(err);
     }
     
-    validation = this.validate.schema(update);
+    validation = this.validate.schema(update, true);
     if (!validation.success) {
         err = validationError();
         err.json = validation;
@@ -354,6 +387,9 @@ Model.prototype.update = function (query, update, internals, done) {
     }
 
     this.castToBSON(query);
+
+    // ObjectIDs
+    update = this.convertObjectIdsForSave(this.schema, update);
 
     if (typeof internals === 'object' && internals != null) { // not null and not undefined
         _.extend(update, internals);

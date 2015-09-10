@@ -88,7 +88,7 @@ Each field is defined in the following way:
  Parameter       | Description        |  Default                                  | Example
 :----------------|:-------------------|:------------------------------------------|:-------
 field_name | The name of the field | | ```"title"```
-type | The type of the field. Possible values `String`, `Number`, `Boolean`, `Mixed`, `Object`  | | ```"String"```
+type | The type of the field. Possible values `String`, `Number`, `Boolean`, `Mixed`, `Object`, `ObjectID`  | | ```"String"```
 label | The label for the field | | ```"Title"```
 comments | The description of the field | | ```"The article title"```
 limit | Length limit for the field | unlimited | ```"20"```

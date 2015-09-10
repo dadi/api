@@ -6,9 +6,9 @@ Endpoints in Serama can be either be mapped directly to collections in MongoDB o
 
 ## Collections
 
-### Collections specification
+### Collection specification
 
-Collections are defined within `/workspace/collections` as JSON files named inline with the collection MongoDB and stored witin a verison and database directory -
+Collections are defined within `/workspace/collections` as JSON files named inline with the MongoDB collection and stored within a verison and database directory -
 
 `{version}/{database}/{collection.NAME.json}`
 
@@ -56,6 +56,7 @@ Collection schemas take the following format -
 	        "fieldLimiters": null,
 	        "allowExtension": false,
 	        "count": 40,
+          "sort": "field1",
 	        "sortOrder": 1
 	    }
 	}
@@ -69,7 +70,7 @@ Fields that can be passed into a record are defined in the collection schema in 
 Each field is defined in the following way:
 
         "field_name": {
-            "type": "Text input",
+            "type": "String",
             "label": "Title",
             "comments": "The title of the entry",
             "limit": "",
@@ -87,7 +88,7 @@ Each field is defined in the following way:
  Parameter       | Description        |  Default                                  | Example
 :----------------|:-------------------|:------------------------------------------|:-------
 field_name | The name of the field | | ```"title"```
-type | The type of the field. Possible values TBC | | ```"Text"```
+type | The type of the field. Possible values `String`, `Number`, `Boolean`, `Mixed`, `Object`  | | ```"String"```
 label | The label for the field | | ```"Title"```
 comments | The description of the field | | ```"The article title"```
 limit | Length limit for the field | unlimited | ```"20"```
@@ -144,13 +145,13 @@ If a record fails validation an errors collection should be returned with the re
       }
     }
 
-**Note:** The default message for a field that fails validation rules is "is invalid". If a `required` field has been left blank the message should change to "can't be blank". 
+**Note:** The default message for a field that fails validation rules is "is invalid". If a `required` field has been left blank the message returned is "can't be blank". A custom message can be specified using the `message` property of th field concerned.
 
 ## Custom endpoints
 
 ### Overview
 
-An endpoint must be named such that the filename is endpoint.{endpoint name}.js and exist in a `version` folder within the application's endpoints path (typically `workspace/endpoints`). The corresponding URL will be /{version}/{endpoint name}. The javascript file should export functions with all lowercase names that correspond to the HTTP method that the function is meant to handle.
+An endpoint must follow the naming convention `endpoint.{endpoint name}.js` and exist in a `version` folder within the application's endpoints path (typically `workspace/endpoints`). The corresponding URL will be /{version}/{endpoint name}. The Javascript file should export functions with all lowercase names that correspond to the HTTP method that the function is meant to handle.
 
 Each function will recieve three arguments -
 
@@ -164,9 +165,9 @@ There is an example custom endpoint included in the `workspace` directory.
 
 #### Custom Endpoint Routing
 
-It is possible to override the default endpoint route by including a `config` function in the endpoint file. The function should return a `config` option with a `route` property. The value of this property will be used for the endpoint's route.
+It is possible to override the default endpoint route by including a `config` function in the endpoint file. The function should return a `config` object with a `route` property. The value of this property will be used for the endpoint's route.
 
-The following example returns a config block with a route that specifies an optional request parameter, `id`.
+The following example returns a config object with a route that specifies an optional request parameter, `id`.
 
 ```
 module.exports.config = function () {
@@ -235,19 +236,46 @@ _You may want to look at a handy QA testing tool called [Postman](http://www.get
 
 ### Collections POST request
 
+```
     POST /vtest/testdb/test-schema HTTP/1.1
     Host: localhost:3000
     content-type: application/json
     Authorization: Bearer 171c8c12-6e9b-47a8-be29-0524070b0c65
 
-    { "field_1": "hi world!", "field_2": 123293582345 }
+    { "field1": "hi world!", "field2": 123293582345 }
+```
+
+### Collections POST response
+
+```
+    {
+      "results": [
+        {
+          "field1": "hi world!",
+          "field2": 123293582345,
+          "apiVersion": "vtest",
+          "createdAt": 1441089951507,
+          "createdBy": "testClient",
+          "_id": "55e5499f83f997b7d1e63e93"
+        }
+      ]
+    }
+```
 
 
 ### Endpoint GET request
 
 This will return a "Hello World" example -
 
+```
     GET /v1/test-endpoint HTTP/1.1
     Host: localhost:3000
     content-type: application/json
     Authorization: Bearer 171c8c12-6e9b-47a8-be29-0524070b0c65
+```
+
+### Endpoint GET response
+
+```
+{ message: 'Hello World' }
+```

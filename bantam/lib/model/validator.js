@@ -3,7 +3,8 @@
 //   ensure that all objects are JSON
 //   ensure that field validation passes for inserts and updates
 
-var moment = require('moment');
+var ObjectID = require('mongodb').ObjectID;
+var _ = require('underscore');
 var util = require('util');
 
 var Validator = function (model) {
@@ -55,7 +56,7 @@ Validator.prototype.schema = function (obj, update) {
             response.errors.push({field: key, message: 'must be specified'})
         }
         // if it's a required field and is blank or null, error
-        else if (obj.hasOwnProperty(key) && (typeof obj[key] === 'undefined')) {
+        else if (obj.hasOwnProperty(key) && (typeof obj[key] === 'undefined' || obj[key] === '')) {
             response.success = false;
             response.errors.push({field: key, message: 'can\'t be blank'})
         }
@@ -76,6 +77,14 @@ function _parseDocument(obj, schema, response) {
             }
             else if (obj[key] !== null && !util.isArray(obj[key])) {
                 _parseDocument(obj[key], schema, response);
+            }
+            else if (obj[key] !== null && schema[key].type === 'ObjectID' && util.isArray(obj[key])) {
+                var err = _validate(obj[key], schema[key]);
+
+                if (err) {
+                    response.success = false;
+                    response.errors.push({field: key, message: err})
+                }
             }
         }
         else {
@@ -106,30 +115,34 @@ function _validate(field, schema) {
     // check validation regex
     if (schema.validationRule && !(new RegExp(schema.validationRule)).test(field)) return schema.message || 'is invalid';
 
-    // if (schema.type === 'Date') {
-
-    //     var validDateFormats = ["YYYY-MM-DD","YYYY/MM/DD"];
-    //     var m = moment(field, validDateFormats, true);
-
-    //     if (!m.isValid()) {
-    //         return schema.message || 'is not a valid date';
-    //     }
-    // }
-    // else {
-
-        // allow 'Mixed' fields through
-        if(schema.type !== 'Mixed') {
-            // check constructor of field against primitive types and check the type of field == the specified type
-            // using constructor.name as array === object in typeof comparisons
-            try {
-                if(~primitives.indexOf(field.constructor.name) && schema.type !== field.constructor.name) return schema.message || 'is wrong type';
-            }
-            catch(e) {
-                return schema.message || 'is wrong type';
-            }
+    if (schema.type === 'ObjectID') {
+        if (typeof field === 'object' && _.isArray(field)) {
+            for (var i = field.length - 1; i >= 0; i--) {
+                var val = field[i];
+                if (typeof val !== 'string' || !ObjectID.isValid(val)) {
+                    return val + ' is not a valid ObjectID';
+                }
+            };
         }
+        else if (typeof field === 'string') {
+            if (!ObjectID.isValid(field)) return 'is not a valid ObjectID';
+        }
+        else {
+            return 'is wrong type';
+        }
+    }
 
-    //}
+    // allow 'Mixed' fields through
+    if(schema.type !== 'Mixed' && schema.type !== 'ObjectID') {
+        // check constructor of field against primitive types and check the type of field == the specified type
+        // using constructor.name as array === object in typeof comparisons
+        try {
+            if(~primitives.indexOf(field.constructor.name) && schema.type !== field.constructor.name) return schema.message || 'is wrong type';
+        }
+        catch(e) {
+            return schema.message || 'is wrong type';
+        }
+    }
 
     // validation passes
     return;

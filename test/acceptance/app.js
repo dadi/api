@@ -126,13 +126,63 @@ describe('Application', function () {
                 help.dropDatabase('testdb', function (err) {
                     if (err) return done(err);
 
-                    help.getBearerToken(function (err, token) {
+                    help.getBearerTokenWithAccessType("admin", function (err, token) {
                         if (err) return done(err);
 
                         bearerToken = token;
 
-                        done();
+                        // add a new field to the schema
+                        var jsSchemaString = fs.readFileSync(__dirname + '/../new-schema.json', {encoding: 'utf8'});
+                        jsSchemaString = jsSchemaString.replace('newField', 'field1');
+                        var schema = JSON.parse(jsSchemaString);
+                        
+                        schema.fields.field2 = _.extend({}, schema.fields.newField, {
+                            type: 'Number',
+                            required: false
+                        });
+
+                        schema.fields.field3 = _.extend({}, schema.fields.newField, {
+                            type: 'ObjectID',
+                            required: false
+                        });
+
+                        var client = request(connectionString);
+
+                        client
+                        .post('/vtest/testdb/test-schema/config')
+                        .send(JSON.stringify(schema, null, 4))
+                        .set('content-type', 'text/plain')
+                        .set('Authorization', 'Bearer ' + bearerToken)
+                        .expect(200)
+                        .expect('content-type', 'application/json')
+                        .end(function (err, res) {
+                            if (err) return done(err);
+
+                            done();
+                        });
                     });
+                });
+            });
+
+            after(function (done) {
+                // reset the schema
+                var jsSchemaString = fs.readFileSync(__dirname + '/../new-schema.json', {encoding: 'utf8'});
+                jsSchemaString = jsSchemaString.replace('newField', 'field1');
+                var schema = JSON.parse(jsSchemaString);
+
+                var client = request(connectionString);
+
+                client
+                .post('/vtest/testdb/test-schema/config')
+                .send(JSON.stringify(schema, null, 4))
+                .set('content-type', 'text/plain')
+                .set('Authorization', 'Bearer ' + bearerToken)
+                .expect(200)
+                .expect('content-type', 'application/json')
+                .end(function (err, res) {
+                    if (err) return done(err);
+
+                    done();
                 });
             });
 
@@ -156,7 +206,33 @@ describe('Application', function () {
             });
 
             it('should create new documents when body is urlencoded', function (done) {
+                
                 var body = "field1=foo!";
+                var client = request(connectionString);
+                
+                client
+                .post('/vtest/testdb/test-schema')
+                .set('Authorization', 'Bearer ' + bearerToken)
+                .send(body)
+                .expect(200)
+                .end(function (err, res) {
+                    if (err) return done(err);
+
+                   
+                    should.exist(res.body.results);
+
+                    res.body.results.should.be.Array;
+                    res.body.results.length.should.equal(1);
+                    should.exist(res.body.results[0]._id);
+                    should.exist(res.body.results[0].field1);
+                    res.body.results[0].field1.should.equal('foo!');
+                    done();
+                });
+            });
+
+            it('should create new documents with ObjectIDs from single value', function (done) {
+
+                var body = { field1: 'foo!', field2: 1278, field3: '55cb1658341a0a804d4dadcc' };
                 var client = request(connectionString);
                 client
                 .post('/vtest/testdb/test-schema')
@@ -171,11 +247,36 @@ describe('Application', function () {
                     res.body.results.should.be.Array;
                     res.body.results.length.should.equal(1);
                     should.exist(res.body.results[0]._id);
-                    should.exist(res.body.results[0].field1);
-                    res.body.results[0].field1.should.equal('foo!');
+                    should.exist(res.body.results[0].field3);
+                    //(typeof res.body.results[0].field3).should.equal('object');
+
                     done();
                 });
             });
+
+            it('should create new documents with ObjectIDs from array', function (done) {
+
+                var body = { field1: 'foo!', field2: 1278, field3: ['55cb1658341a0a804d4dadcc', '55cb1658341a0a804d4dadff'] };
+                var client = request(connectionString);
+                client
+                .post('/vtest/testdb/test-schema')
+                .set('Authorization', 'Bearer ' + bearerToken)
+                .send(body)
+                .expect(200)
+                .end(function (err, res) {
+                    if (err) return done(err);
+
+                    should.exist(res.body.results);
+
+                    res.body.results.should.be.Array;
+                    res.body.results.length.should.equal(1);
+                    should.exist(res.body.results[0]._id);
+                    should.exist(res.body.results[0].field3);
+                    //(typeof res.body.results[0].field3).should.equal('object');
+
+                    done();
+                });
+            });            
 
             it('should add internal fields to new documents', function (done) {
                 var client = request(connectionString);
@@ -323,8 +424,14 @@ describe('Application', function () {
                         var jsSchemaString = fs.readFileSync(__dirname + '/../new-schema.json', {encoding: 'utf8'});
                         jsSchemaString = jsSchemaString.replace('newField', 'field1');
                         var schema = JSON.parse(jsSchemaString);
+                        
                         schema.fields.field2 = _.extend({}, schema.fields.newField, {
                             type: 'Number',
+                            required: false
+                        });
+
+                        schema.fields.field3 = _.extend({}, schema.fields.newField, {
+                            type: 'ObjectID',
                             required: false
                         });
 

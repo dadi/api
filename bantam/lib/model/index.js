@@ -135,7 +135,20 @@ Model.prototype.create = function (obj, internals, done) {
         _.extend(obj, internals);
     }
 
+
     var self = this;
+
+    // ObjectIDs
+    if (obj instanceof Array) {
+        // convert ids in each doc
+        obj.forEach(function (doc) {
+            doc = self.convertObjectIdsForSave(self.schema, doc);
+        });
+    }
+    else {
+        obj = self.convertObjectIdsForSave(self.schema, obj);
+    }
+
     var _done = function (database) {
         database.collection(self.name).insert(obj, function(err, doc) {
             if (err) return done(err);
@@ -193,6 +206,7 @@ Model.prototype.makeCaseInsensitive = function (obj) {
             return obj;
         }
     });
+
     return newObj;
 }
 
@@ -219,6 +233,27 @@ var convertApparentObjectIds = function (query) {
     return query;
 }
 
+Model.prototype.convertObjectIdsForSave = function (schema, obj) {
+    Object.keys(schema)
+    .filter(function (key) { return schema[key].type === 'ObjectID'; })
+    .forEach(function (key) {
+        if (typeof obj[key] === 'object' && _.isArray(obj[key])) {
+            var arr = obj[key];
+            _.each(arr, function (value, key) {
+                if (typeof value === 'string' && ObjectID.isValid(value)) {
+                    arr[key] = new ObjectID.createFromHexString(value);
+                }
+            });
+            obj[key] = arr;
+        }
+        else if (typeof obj[key] === 'string') {
+            obj[key] = new ObjectID.createFromHexString(obj[key]);
+        }
+    });
+
+    return obj;
+}
+
 /**
  * Lookup documents in the database
  *
@@ -235,8 +270,12 @@ Model.prototype.find = function (query, options, done) {
 
     var self = this;
 
+    var apiVersion = query.apiVersion;
+    delete query.apiVersion;
+
     query = this.makeCaseInsensitive(query);
     query = convertApparentObjectIds(query);
+    query.apiVersion = apiVersion;
 
     var validation = this.validate.query(query);
     if (!validation.success) {
@@ -357,8 +396,9 @@ Model.prototype.update = function (query, update, internals, done) {
         err.json = validation;
         return done(err);
     }
-
-    //this.castToBSON(query);
+    
+    // ObjectIDs
+    update = this.convertObjectIdsForSave(this.schema, update);
 
     if (typeof internals === 'object' && internals != null) { // not null and not undefined
         _.extend(update, internals);

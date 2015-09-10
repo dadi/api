@@ -33,7 +33,7 @@ Controller.prototype.get = function (req, res, next) {
     var path = url.parse(req.url, true);
     var options = path.query;
     var query = parseQuery(options.filter);
-    var apiVersion = req.url.split('/')[1]
+    var apiVersion = path.pathname.split('/')[1];
 
     var settings = this.model.settings || {};
 
@@ -99,7 +99,7 @@ Controller.prototype.post = function (req, res, next) {
         internals.lastModifiedAt = Date.now();
         internals.lastModifiedBy = req.client && req.client.clientId;
         return this.model.update({
-            _id: req.params.id.toString()
+            _id: req.params.id.toString(), apiVersion: internals.apiVersion
         }, req.body, internals, sendBackJSON(200, res, next));
     }
 

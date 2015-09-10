@@ -140,6 +140,7 @@ describe('Controller', function (done) {
                 var mod = model('testModel');
                 var stub = sinon.stub(mod, 'delete');
                 var req = {
+		    url: '/vtest/testdb/testModel',
                     params: { id: 'test123' }
                 };
 

@@ -76,9 +76,24 @@ module.exports.removeTestClients = function (done) {
 
 module.exports.clearCache = function () {
 
-    // all sync stuff
-    fs.readdirSync(config.caching.directory).forEach(function (filename) {
-        fs.unlinkSync(path.join(config.caching.directory, filename));
+    var deleteFolderRecursive = function(path) {
+      if( fs.existsSync(path) && fs.lstatSync(path).isDirectory() ) {
+        fs.readdirSync(path).forEach(function(file,index){
+          var curPath = path + "/" + file;
+          if(fs.lstatSync(curPath).isDirectory()) { // recurse
+            deleteFolderRecursive(curPath);
+          } else { // delete file
+            fs.unlinkSync(curPath);
+          }
+        });
+        fs.rmdirSync(path);
+      }
+    };
+    
+    // for each directory in the cache folder, remove all files then
+    // delete the folder
+    fs.readdirSync(config.caching.directory).forEach(function (dirname) {
+        deleteFolderRecursive(path.join(config.caching.directory, dirname));
     });
 }
 

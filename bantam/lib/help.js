@@ -1,6 +1,9 @@
 var fs = require('fs');
 var path = require('path');
 var util = require('util');
+var url = require('url');
+var crypto = require('crypto');
+var config = require(__dirname + '/../../config');
 
 var self = this;
 
@@ -134,6 +137,43 @@ module.exports.validateCollectionSchema = function(obj) {
     }); 
     
     return response;
+}
+
+/**
+ * 
+ * Remove each file in the specified cache folder.
+ */
+module.exports.clearCache = function (pathname, callback) {
+
+    var modelDir = crypto.createHash('sha1').update(pathname).digest('hex');
+    var cachePath = path.join(config.caching.directory, modelDir);
+
+    var i = 0;
+    var exists = fs.existsSync(cachePath);
+    
+    if (!exists) {
+        return callback(null);
+    }
+    else {
+        var files = fs.readdirSync(cachePath);
+
+        files.forEach(function (filename) {
+            var file = path.join(cachePath, filename);
+
+            // write empty string to file, as we
+            // can't effectively remove it whilst 
+            // the node process is running
+            fs.writeFileSync(file, '');
+
+            i++;
+
+            // finished, all files processed
+            if (i == files.length) {
+                return callback(null);
+            }
+
+        });
+    }
 }
 
 /**

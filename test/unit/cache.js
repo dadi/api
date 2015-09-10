@@ -21,6 +21,7 @@ describe('Cache', function (done) {
     });
 
     after(function (done) {
+        acceptanceTestHelper.clearCache();
         app.stop(done);
     });
 

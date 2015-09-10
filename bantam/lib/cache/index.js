@@ -5,6 +5,7 @@ var fs = require('fs');
 var path = require('path');
 var url = require('url');
 var crypto = require('crypto');
+var mkdirp = require('mkdirp');
 var _ = require('underscore');
 
 var cacheEncoding = 'utf8';
@@ -34,6 +35,13 @@ module.exports = function (server) {
 
         if (!cachingEnabled(server.components, req.url)) return next();
 
+        // we build the filename with a hashed hex string so we can be unique
+        // and avoid using file system reserved characters in the name
+        var filename = crypto.createHash('sha1').update(req.url).digest('hex');
+        var modelDir = crypto.createHash('sha1').update(url.parse(req.url).pathname).digest('hex');
+        var cacheDir = path.join(dir, modelDir);
+        var cachepath = path.join(cacheDir, filename + '.' + config.caching.extension);
+
         // only cache GET requests
         if (!(req.method && req.method.toLowerCase() === 'get')) return next();
 
@@ -42,18 +50,14 @@ module.exports = function (server) {
         var noCache = query.cache && query.cache.toString().toLowerCase() === 'false';
         if (noCache) return next();
 
-        // we build the filename with a hashed hex string so we can be unique
-        // and avoid using file system reserved characters in the name
-        var filename = crypto.createHash('sha1').update(req.url).digest('hex');
-        var cachepath = path.join(dir, filename + '.' + config.caching.extension);
-
         fs.stat(cachepath, function (err, stats) {
-            if (err) {
-                if (err.code === 'ENOENT') {
-                    return cacheResponse();
-                }
-                return next(err);
-            }
+
+            // if (err) {
+            //     if (err.code === 'ENOENT') {
+            //         return cacheResponse();
+            //     }
+            //     return next(err);
+            // }
 
             // check if ttl has elapsed
             var ttl = options.ttl || config.caching.ttl;
@@ -65,6 +69,10 @@ module.exports = function (server) {
 
                 // there are only two possible types javascript or json
                 var dataType = query.callback ? 'text/javascript' : 'application/json';
+
+                if (resBody === "") {
+                    return cacheResponse();
+                }
 
                 res.statusCode = 200;
                 res.setHeader('content-type', dataType);
@@ -102,9 +110,14 @@ module.exports = function (server) {
                 if (res.statusCode !== 200) return;
 
                 // TODO: do we need to grab a lock here?
-                fs.writeFile(cachepath, data, {encoding: cacheEncoding}, function (err) {
+                mkdirp(cacheDir, {}, function (err, made) {
                     if (err) logger.prod(err.toString());
-                });
+
+                    fs.writeFile(cachepath, data, {encoding: cacheEncoding}, function (err) {
+                        if (err) logger.prod(err.toString());
+                    });
+                })
+
             };
             return next();
         }

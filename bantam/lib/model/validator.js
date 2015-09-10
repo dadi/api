@@ -132,7 +132,7 @@ function _validate(field, schema) {
         }
     }
 
-    // allow 'Mixed' fields through
+    // allow 'Mixed' & 'ObjectID' fields through
     if(schema.type !== 'Mixed' && schema.type !== 'ObjectID') {
         // check constructor of field against primitive types and check the type of field == the specified type
         // using constructor.name as array === object in typeof comparisons

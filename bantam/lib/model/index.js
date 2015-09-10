@@ -160,12 +160,12 @@ Model.prototype.create = function (obj, internals, done) {
             if (self.history) {
                 self.history.create(obj, self, function(err, res) {
                     if (err) return done(err);
-                    
-                    done(null, results);
+
+                    return done(null, results);
                 });
             }
             else {
-                done(null, results);
+                return done(null, results);
             }
         });
     };
@@ -396,7 +396,7 @@ Model.prototype.update = function (query, update, internals, done) {
         err.json = validation;
         return done(err);
     }
-    
+
     // ObjectIDs
     update = this.convertObjectIdsForSave(this.schema, update);
 

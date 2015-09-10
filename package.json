@@ -3,7 +3,6 @@
   "version": "0.1.10-beta",
   "dependencies": {
     "body-parser": "~1.6.5",
-    "bson-objectid": "^1.1.1",
     "mkdirp": "^0.5.1",
     "moment": "~2.8.1",
     "mongodb": "~1.4.8",

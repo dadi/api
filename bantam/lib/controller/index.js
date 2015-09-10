@@ -94,41 +94,70 @@ Controller.prototype.post = function (req, res, next) {
         apiVersion: req.url.split('/')[1]
     };
 
-    // if id is present in the url, then this is an update
-    if (req.params.id) {
-        internals.lastModifiedAt = Date.now();
-        internals.lastModifiedBy = req.client && req.client.clientId;
-        return this.model.update({
-            _id: req.params.id.toString(), apiVersion: internals.apiVersion
-        }, req.body, internals, sendBackJSON(200, res, next));
-    }
+    var self = this;
 
-    // if no id is present, then this is a create
-    internals.createdAt = Date.now();
-    internals.createdBy = req.client && req.client.clientId;
+    var pathname = url.parse(req.url).pathname;
 
-    this.model.create(req.body, internals, sendBackJSON(200, res, next));
+    // remove id param if it's an update, so 
+    // we still get a valid handle on the model name
+    // for clearing the cache
+    pathname = pathname.replace('/' + req.params.id, '');
+
+    // flush cache for POST requests
+    help.clearCache(pathname, function (err) {
+        if (err) return next(err);
+
+        // if id is present in the url, then this is an update
+        if (req.params.id) {
+        
+            internals.lastModifiedAt = Date.now();
+            internals.lastModifiedBy = req.client && req.client.clientId;
+
+            return self.model.update({
+                _id: req.params.id, apiVersion: internals.apiVersion
+            }, req.body, internals, sendBackJSON(200, res, next));
+        }
+
+        // if no id is present, then this is a create
+        internals.createdAt = Date.now();
+        internals.createdBy = req.client && req.client.clientId;
+    
+        self.model.create(req.body, internals, sendBackJSON(200, res, next));
+    });
 };
 
 Controller.prototype.delete = function (req, res, next) {
     var id = req.params.id;
     if (!id) return next();
 
-    this.model.delete({_id: id}, function (err, results) {
+    var self = this;
+
+    var pathname = url.parse(req.url).pathname;
+
+    // remove id param so we still get a valid handle 
+    // on the model name for clearing the cache
+    pathname = pathname.replace('/' + req.params.id, '');
+
+    // flush cache for DELETE requests
+    help.clearCache(pathname, function (err) {
         if (err) return next(err);
 
-        if (config.feedback) {
+        self.model.delete({_id: id}, function (err, results) {
+            if (err) return next(err);
 
-            // send 200 with json message
-            return help.sendBackJSON(200, res, next)(null, {
-                status: 'success',
-                message: 'Document deleted successfully'
-            });
-        }
+            if (config.feedback) {
 
-        // send no-content success 
-        res.statusCode = 204;
-        res.end();
+                // send 200 with json message
+                return help.sendBackJSON(200, res, next)(null, {
+                    status: 'success',
+                    message: 'Document deleted successfully'
+                });
+            }
+
+            // send no-content success 
+            res.statusCode = 204;
+            res.end();
+        });
     });
 };
 

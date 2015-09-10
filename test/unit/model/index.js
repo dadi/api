@@ -188,6 +188,57 @@ describe('Model', function () {
         });
     });
 
+    describe('`convertObjectIdsForSave` method', function () {
+        it('should be added to model', function (done) {
+            model('testModelName', help.getModelSchema()).convertObjectIdsForSave.should.be.Function;
+            done();
+        });
+
+        it('should accept schema and object and replace ObjectIDs in array', function (done) {
+
+            var fields = help.getModelSchema();            
+            var schema = {};
+            schema.fields = fields;
+            
+            schema.fields.field2 = _.extend({}, schema.fields.fieldName, {
+                type: 'ObjectID',
+                required: false
+            });
+
+            var mod = model('testModelName', schema);
+
+            var obj = {fieldName: "Hello", field2: ['55cb1658341a0a804d4dadcc'] };
+
+            obj = mod.convertObjectIdsForSave(schema.fields, obj);
+
+            (typeof obj.field2[0] === 'object').should.be.true;
+
+            done();
+        });
+
+        it('should accept schema and object and replace ObjectIDs as single value', function (done) {
+
+            var fields = help.getModelSchema();            
+            var schema = {};
+            schema.fields = fields;
+            
+            schema.fields.field2 = _.extend({}, schema.fields.fieldName, {
+                type: 'ObjectID',
+                required: false
+            });
+
+            var mod = model('testModelName', schema);
+
+            var obj = {fieldName: "Hello", field2: '55cb1658341a0a804d4dadcc' };
+
+            obj = mod.convertObjectIdsForSave(schema.fields, obj);
+
+            (typeof obj.field2 === 'object').should.be.true;
+
+            done();
+        });
+    });
+
     describe('`find` method', function () {
         it('should be added to model', function (done) {
             model('testModelName', help.getModelSchema()).find.should.be.Function;

@@ -50,6 +50,102 @@ describe('Model validator', function () {
                 done();
             });
 
+            it('should inform of bad type for ObjectID that is not string', function (done) {
+                var validator = new Validator({
+                    schema: {
+                        field1: {
+                            type: 'ObjectID',
+                            required: false
+                        }
+                    }
+                });
+                var val = validator.schema({field1: 123});
+                val.success.should.be.false;
+                val.errors.length.should.equal(1);
+                val.errors[0].field.should.equal('field1');
+                val.errors[0].message.should.equal('is wrong type');
+
+                done();
+            });
+
+            it('should inform of invalid ObjectID', function (done) {
+                var validator = new Validator({
+                    schema: {
+                        field1: {
+                            type: 'ObjectID',
+                            required: false
+                        }
+                    }
+                });
+                var val = validator.schema({field1: '123'});
+                val.success.should.be.false;
+                val.errors.length.should.equal(1);
+                val.errors[0].field.should.equal('field1');
+                val.errors[0].message.should.equal('is not a valid ObjectID');
+
+                done();
+            });
+
+            it('should allow valid ObjectID', function (done) {
+                var validator = new Validator({
+                    schema: {
+                        field1: {
+                            type: 'ObjectID',
+                            required: false
+                        }
+                    }
+                });
+                var val = validator.schema({field1: '55cb1658341a0a804d4dadcc'});
+                val.success.should.be.true;
+
+                done();
+            });
+
+            it('should allow array of valid ObjectIDs', function (done) {
+                var validator = new Validator({
+                    schema: {
+                        field1: {
+                            type: 'ObjectID',
+                            required: false
+                        }
+                    }
+                });
+                var val = validator.schema({field1: ['55cb1658341a0a804d4dadcc'] });
+                val.success.should.be.true;
+
+                done();
+            });
+
+            it('should not allow array with invalid string ObjectIDs', function (done) {
+                var validator = new Validator({
+                    schema: {
+                        field1: {
+                            type: 'ObjectID',
+                            required: false
+                        }
+                    }
+                });
+                var val = validator.schema({field1: ['55cb1658341a0a804d4dadcc', '55cb1658341a0a8'] });
+                val.success.should.be.false;
+
+                done();
+            });
+
+            it('should not allow array with invalid ObjectIDs', function (done) {
+                var validator = new Validator({
+                    schema: {
+                        field1: {
+                            type: 'ObjectID',
+                            required: false
+                        }
+                    }
+                });
+                var val = validator.schema({field1: [12345, 566788999] });
+                val.success.should.be.false;
+
+                done();
+            });
+
             it('should inform of missing field', function (done) {
                 var validator = new Validator({
                     schema: {
@@ -67,7 +163,71 @@ describe('Model validator', function () {
                 val.success.should.be.false;
                 val.errors.length.should.equal(1);
                 val.errors[0].field.should.equal('field1');
+                val.errors[0].message.should.equal('must be specified');
+
+                done();
+            });
+
+            it('should inform of blank field', function (done) {
+                var validator = new Validator({
+                    schema: {
+                        field1: {
+                            type: 'String',
+                            required: true
+                        },
+                        field2: {
+                            type: 'Number',
+                            required: false
+                        }
+                    }
+                });
+                var val = validator.schema({field1: '', field2: 123});
+                val.success.should.be.false;
+                val.errors.length.should.equal(1);
+                val.errors[0].field.should.equal('field1');
                 val.errors[0].message.should.equal('can\'t be blank');
+
+                done();
+            });
+
+            it('should inform of blank field on update', function (done) {
+                var validator = new Validator({
+                    schema: {
+                        field1: {
+                            type: 'String',
+                            required: true
+                        },
+                        field2: {
+                            type: 'Number',
+                            required: false
+                        }
+                    }
+                });
+                var val = validator.schema({field1: '', field2: 123}, true); // update == true
+                val.success.should.be.false;
+                val.errors.length.should.equal(1);
+                val.errors[0].field.should.equal('field1');
+                val.errors[0].message.should.equal('can\'t be blank');
+
+                done();
+            });
+
+            it('should allow missing field on update', function (done) {
+                var validator = new Validator({
+                    schema: {
+                        field1: {
+                            type: 'String',
+                            required: true
+                        },
+                        field2: {
+                            type: 'Number',
+                            required: false
+                        }
+                    }
+                });
+                
+                var val = validator.schema({field2: 123}, true); // update == true
+                val.success.should.be.true;
 
                 done();
             });

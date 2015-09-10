@@ -3,6 +3,9 @@
 //   ensure that all objects are JSON
 //   ensure that field validation passes for inserts and updates
 
+var ObjectID = require('mongodb').ObjectID;
+var _ = require('underscore');
+
 var util = require('util');
 
 var Validator = function (model) {
@@ -20,7 +23,9 @@ Validator.prototype.query = function (query) {
     return response;
 };
 
-Validator.prototype.schema = function (obj) {
+Validator.prototype.schema = function (obj, update) {
+
+    update = update || false;
 
     // `obj` must be a "hash type object", i.e. { ... }
     if (typeof obj !== 'object' || util.isArray(obj) || obj === null) return false;
@@ -46,7 +51,13 @@ Validator.prototype.schema = function (obj) {
     Object.keys(schema)
     .filter(function (key) { return schema[key].required; })
     .forEach(function (key) {
-        if (!obj[key]) {
+        // if it's an insert and a required field isn't found, error
+        if (!obj.hasOwnProperty(key) && !update) {
+            response.success = false;
+            response.errors.push({field: key, message: 'must be specified'})
+        }
+        // if it's a required field and is blank or null, error
+        else if (obj.hasOwnProperty(key) && (typeof obj[key] === 'undefined' || obj[key] === '')) {
             response.success = false;
             response.errors.push({field: key, message: 'can\'t be blank'})
         }
@@ -68,6 +79,14 @@ function _parseDocument(obj, schema, response) {
             else if (obj[key] !== null && !util.isArray(obj[key])) {
                 _parseDocument(obj[key], schema, response);
             }
+            else if (obj[key] !== null && schema[key].type === 'ObjectID' && util.isArray(obj[key])) {
+                var err = _validate(obj[key], schema[key]);
+
+                if (err) {
+                    response.success = false;
+                    response.errors.push({field: key, message: err})
+                }
+            }
         }
         else {
             if (!schema[key]) {
@@ -77,6 +96,7 @@ function _parseDocument(obj, schema, response) {
             }
 
             var err = _validate(obj[key], schema[key]);
+
             if (err) {
                 response.success = false;
                 response.errors.push({field: key, message: err})
@@ -97,8 +117,25 @@ function _validate(field, schema) {
     // check validation regex
     if (schema.validationRule && !(new RegExp(schema.validationRule)).test(field)) return schema.message || 'is invalid';
 
+    if (schema.type === 'ObjectID') {
+        if (typeof field === 'object' && _.isArray(field)) {
+            for (var i = field.length - 1; i >= 0; i--) {
+                var val = field[i];
+                if (typeof val !== 'string' || !ObjectID.isValid(val)) {
+                    return val + ' is not a valid ObjectID';
+                }
+            };
+        }
+        else if (typeof field === 'string') {
+            if (!ObjectID.isValid(field)) return 'is not a valid ObjectID';
+        }
+        else {
+            return 'is wrong type';
+        }
+    }
+
     // allow 'Mixed' fields through
-    if(schema.type !== 'Mixed') {
+    if(schema.type !== 'Mixed' && schema.type !== 'ObjectID') {
         // check constructor of field against primitive types and check the type of field == the specified type
         // using constructor.name as array === object in typeof comparisons
         try {

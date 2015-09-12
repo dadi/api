@@ -6,7 +6,7 @@ var tokenStore = require(__dirname + '/../../bantam/lib/auth/tokenStore');
 var connection = require(__dirname + '/../../bantam/lib/model/connection');
 var acceptanceTestHelper = require(__dirname + '/../acceptance/help');
 
-var clientCollectionName = config.auth.database.clientCollection;
+var clientCollectionName = config.auth.clientCollection;
 
 describe('Tokens', function () {
     before(function (done) {

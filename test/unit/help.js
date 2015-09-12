@@ -90,7 +90,7 @@ module.exports.addUserToDb = function (userObj, dbObj, done) {
         if (err) return done(err);
 
         // Add a user to the database        
-	db.addUser(userObj.username, userObj.password, { roles: [{ role: "readWrite" }] }, function (err) {
+        db.addUser(userObj.username, userObj.password, { roles: [{ role: "readWrite", db: dbObj.databaseName }] }, function (err) {
 
             // notice no error handling!
             // This is because we want this to be an idempotent func that ensures

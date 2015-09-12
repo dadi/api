@@ -17,15 +17,20 @@ var Connection = function (options) {
     options = options || {};
 
     if (options.database && config[options.database]) {
-        options = _.extend(options, config[options.database]);
+        options = _.extend({}, config[options.database], options);
+    } else {
+        options = _.extend({}, config, options);
     }
 
-    this.connectionOptions = _.isEmpty(options) ? config : options;
+    this.connectionOptions = options;
 
-    this.connectionOptions.host = (options && options.host) ? options.host : config.host;
-    this.connectionOptions.port = (options && options.port) ? options.port : config.port;
-    this.connectionOptions.database = (options && options.database) ? options.database : config.database;
-    this.connectionOptions.replicaSet = (options && options.replicaSet) ? options.replicaSet : config.replicaSet;
+    // required config fields
+    if (!(this.connectionOptions.hosts && this.connectionOptions.hosts.length)) {
+console.log(this.connectionOptions)
+console.log(config)
+        throw new Error('`hosts` Array is required for Connection');
+    }
+    if (!this.connectionOptions.database) throw new Error('`database` String is required for Connection');
 
     this.connectionString = constructConnectionString(this.connectionOptions);
 
@@ -53,7 +58,7 @@ Connection.prototype.connect = function () {
     var self = this;
 
     this.mongoClient.connect(this.connectionString, function(err, db) {
-      
+
         if (err) {
             self.readyState = 0;
             return self.emit('error', err);
@@ -81,34 +86,29 @@ function constructConnectionString(options) {
     // mongodb://[username:password@]host1[:port1][,host2[:port2],...[,hostN[:portN]]][/[database][?options]]
     // mongodb://myprimary.com:27017,mysecondary.com:27017/MyDatabase/?replicaset=MySet
 
-    var connectionOptions = {
-        database: options.database,
-        hosts: [],
+    connectionOptions = _.extend({
         options: {}
-    };
+    }, options);
 
-    connectionOptions.hosts.push(options.host + ":" + options.port); 
-
-    connectionOptions.username = options.username || null;
-    connectionOptions.password = options.password || null;
 
     if (options.replicaSet) {
-        _.each(options.replicaSet.hosts, function (host) {
-            connectionOptions.hosts.push(host.host + ":" + host.port);
-        });
-        connectionOptions.options.replicaSet = options.replicaSet.name;
-	if (options.replicaSet.ssl) connectionOptions.options['ssl'] = options.replicaSet.ssl;
+        connectionOptions.options.replicaSet = options.replicaSet;
     }
+
+    if (options.ssl) connectionOptions.options['ssl'] = options.ssl;
+
+    if (options.maxPoolSize) connectionOptions.options['maxPoolSize'] = options.maxPoolSize;
 
     // test specific connection pool size
     if (global.process.env.npm_lifecycle_event == 'test') {
+        // TODO: configure tests to pass this option in, instead of looking at env  - JW
         connectionOptions.options['maxPoolSize'] = 1;
     }
 
     return 'mongodb://' 
         + credentials(connectionOptions)
         + connectionOptions.hosts.map(function(host, index) {
-                return host;
+                return host.host + ':' + (host.port || 27017);
             }).join(',') 
         + '/' 
         + connectionOptions.database 
@@ -116,31 +116,41 @@ function constructConnectionString(options) {
 
     /*
     options = {
-        "host": "localhost",
-        "port": 27017,
+        "hosts": [
+            {
+                "host": "localhost",
+                "port": 27020
+            },
+            {
+                "host": "localhost",
+                "port": 27021
+            }
+        ],
         "username": "",
         "password": "",
         "database": "serama",
-        "replicaSet": {
-            "name": "test",
-            "ssl": true,
-            "hosts": [
-                {
-                    "host": "localhost",
-                    "port": 27020
-                }
-            ]
-        },
+        "ssl": false,
+        "replicaSet": "test",
         "secondary": {
             "enabled": true,
-            "host": "127.0.0.1",
-            "port": 27018,
+            "hosts": [
+                {
+                    "host": "127.0.0.1",
+                    "port": 27018
+                }
+            ],
             "username": "",
-            "password": ""
+            "password": "",
+            "replicaSet": false,
+            "ssl": false
         },
         "testdb": {
-            "host": "127.0.0.1",
-            "port": 27017,
+            "hosts": [
+                {
+                    "host": "127.0.0.1",
+                    "port": 27017
+                }
+            ],
             "username": "",
             "password": ""  
         }
@@ -149,10 +159,10 @@ function constructConnectionString(options) {
 }
 
 function encodeOptions(options) {
-  if (!options || _.isEmpty(options)) return "";
+    if (!options || _.isEmpty(options)) return "";
 
-  return "?" + Object.keys(options).map(function(key) {
-	return encodeURIComponent(key) + "=" + encodeURIComponent(options[key] || "");
+    return "?" + Object.keys(options).map(function(key) {
+        return encodeURIComponent(key) + "=" + encodeURIComponent(options[key] || "");
     }).join('&');
 }
 
@@ -171,7 +181,7 @@ function credentials(options) {
  */
 module.exports = function (options) {
     var conn = new Connection(options);
-    
+
     conn.on('error', function (err) {
         console.log('Connection Error: ' + err + '. Using connection string "' + conn.connectionString + '"');
     });

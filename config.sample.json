@@ -1,34 +1,40 @@
 {
     "database": {
-        "host": "localhost",
-        "port": 27017,
+        "hosts": [
+            {
+                "host": "localhost",
+                "port": 27020
+            },
+            {
+                "host": "localhost",
+                "port": 27021
+            }
+        ],
         "username": "",
         "password": "",
         "database": "serama",
-        "replicaSet": {
-            "name": "test",
-            "hosts": [
-                {
-                    "host": "localhost",
-                    "port": 27020
-                },
-                {
-                    "host": "localhost",
-                    "port": 27021
-                }
-            ],
-            "ssl": true
-        },
+        "ssl": false,
+        "replicaSet": "test",
         "secondary": {
             "enabled": true,
-            "host": "127.0.0.1",
-            "port": 27018,
+            "hosts": [
+                {
+                    "host": "127.0.0.1",
+                    "port": 27018
+                }
+            ],
             "username": "",
-            "password": ""
+            "password": "",
+            "replicaSet": false,
+            "ssl": false
         },
         "testdb": {
-            "host": "127.0.0.1",
-            "port": 27017,
+            "hosts": [
+                {
+                    "host": "127.0.0.1",
+                    "port": 27017
+                }
+            ],
             "username": "",
             "password": ""  
         }
@@ -50,14 +56,18 @@
         "tokenUrl": "/token",
         "tokenTtl": 2592000,
         "database": {
-            "host":"localhost",
-            "port":27017,
-            "username":"",
-            "password":"",
-            "database":"serama",
-            "clientCollection": "clientStore",
-            "tokenCollection": "tokenStore"
-        }
+            "hosts": [
+                {
+                    "host": "localhost",
+                    "port": 27017,
+                }
+            ],
+            "username": "",
+            "password": "",
+            "database": "serama"
+        },
+        "clientCollection": "clientStore",
+        "tokenCollection": "tokenStore"
     },
     "caching": {
         "enabled": true,

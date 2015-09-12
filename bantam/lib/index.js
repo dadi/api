@@ -358,7 +358,6 @@ Server.prototype.addCollectionResource = function (options) {
     // With each model we create a controller, that acts as a component of the REST api.
     // We then add the component to the api by adding a route to the app and mapping
     // `req.method` to component methods
-
     var mod = model(options.name, JSON.parse(fields), null, options.schema.settings, options.database);
     var control = controller(mod);
 
@@ -376,8 +375,8 @@ Server.prototype.addCollectionResource = function (options) {
         // invalidate schema file cache then reload
         delete require.cache[options.filepath];
         try {
-	    var schemaObj = require(options.filepath);
-    	    var fields = help.getFieldsFromSchema(schemaObj);
+            var schemaObj = require(options.filepath);
+            var fields = help.getFieldsFromSchema(schemaObj);
             // This leverages the fact that Javscript's Object keys are references
             self.components[options.route].model.schema = JSON.parse(fields);
             self.components[options.route].model.settings = schemaObj.settings;

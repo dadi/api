@@ -12,8 +12,10 @@ describe('Model', function () {
 
         var conn = mod.connection;
         conn.connectionOptions.database.should.equal('secondary');
-        conn.connectionOptions.host.should.equal('127.0.0.1');
-        conn.connectionOptions.port.should.equal(27018);
+        conn.connectionOptions.hosts.should.be.Array;
+        conn.connectionOptions.hosts.length.should.equal(1);
+        conn.connectionOptions.hosts[0].host.should.equal('127.0.0.1');
+        conn.connectionOptions.hosts[0].port.should.equal(27018);
 
         done();
     });

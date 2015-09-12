@@ -39,12 +39,12 @@ describe('Model', function () {
             done();
         });
 
-        it('should accept database connection as third agrument', function (done) {
+        it('should accept database connection as third argument', function (done) {
             var conn = connection();
             var mod = model('testModelName', help.getModelSchema(), conn)
             should.exist(mod.connection);
-            mod.connection.connectionOptions.host.should.equal('localhost');
-            mod.connection.connectionOptions.port.should.equal(27017);
+            mod.connection.connectionOptions.hosts[0].host.should.equal('localhost');
+            mod.connection.connectionOptions.hosts[0].port.should.equal(27020);
             mod.connection.connectionOptions.database.should.equal('serama');
 
             done();

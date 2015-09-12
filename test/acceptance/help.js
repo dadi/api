@@ -6,7 +6,7 @@ var config = require(__dirname + '/../../config');
 var request = require('supertest');
 var _ = require('underscore');
 
-var clientCollectionName = config.auth.database.clientCollection;
+var clientCollectionName = config.auth.clientCollection;
 
 // create a document with random string via the api
 module.exports.createDoc = function (token, done) {

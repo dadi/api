@@ -45,7 +45,16 @@ describe('Model connection', function () {
         }, function (err) {
             if (err) return done(err);
 
-            var conn = connection({username: 'seramatest', password: 'test123'});
+            var conn = connection({
+                username: 'seramatest',
+                password: 'test123',
+                hosts: [{
+                    database: 'serama',
+                    host: 'localhost',
+                    port: 27017
+                }],
+                replicaSet: false
+            });
 
             conn.on('connect', function (db) {
                 db.should.be.an.instanceOf(Db);
@@ -67,27 +76,24 @@ describe('Model connection', function () {
             if (err) return done(err);
 
             var options = {
-                "host": "localhost",
-                "port": 27017,
                 "username": "seramatest",
                 "password": "test123",
                 "database": "serama",
-                "replicaSet": {
-                    "name": "test",
-                    "hosts": [
-                        {
-                            "host": "localhost",
-                            "port": 27020
-                        }
-                    ]
-                }
+                "replicaSet": "test",
+                "maxPoolSize": 1,
+                "hosts": [
+                    {
+                        "host": "localhost",
+                        "port": 27016
+                    }
+                ]
             };
 
             var conn = connection(options);
 
             conn.on('error', function (err) {
                 conn.readyState.should.equal(0);
-                conn.connectionString.should.eql("mongodb://seramatest:test123@localhost:27017,localhost:27020/serama?replicaSet=test");
+                conn.connectionString.should.eql("mongodb://seramatest:test123@localhost:27016/serama?replicaSet=test&maxPoolSize=1");
                 done();
             })
 

@@ -256,7 +256,7 @@ describe('Model', function () {
             model('testModelName', help.getModelSchema()).find(query, done);
         });
 
-        it('should pass error to callback when query uses `$` operators', function (done) {
+        it('should pass error to callback when query uses `$where` operator', function (done) {
             model('testModelName').find({$where: 'this.fieldName === "foo"'}, function (err) {
                 should.exist(err);
                 done();
@@ -575,7 +575,7 @@ describe('Model', function () {
             });
         });
 
-        it('should pass error to callback when query uses `$` operators', function (done) {
+        it('should pass error to callback when query uses `$where` operator', function (done) {
             model('testModelName').update({$where: 'this.fieldName === "foo"'}, {fieldName: 'bar'}, function (err) {
                 should.exist(err);
                 done();
@@ -616,7 +616,7 @@ describe('Model', function () {
             });
         });
 
-        it('should pass error to callback when query uses `$` operators', function (done) {
+        it('should pass error to callback when query uses `$where` operators', function (done) {
             model('testModelName').delete({$where: 'this.fieldName === "foo"'}, function (err) {
                 should.exist(err);
                 done();

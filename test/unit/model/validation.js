@@ -14,11 +14,11 @@ describe('Model validator', function () {
             var validator = new Validator();
             var val = validator.query({$where: 'throw new Error("Insertion Attack!")'});
             
-            //val.success.should.be.false;
-            // val.errors.length.should.equal(1);
-            // val.errors[0].message.should.equal('Bad query');
+            val.success.should.be.false;
+            val.errors.length.should.equal(1);
+            val.errors[0].message.should.equal('Bad query');
 
-            // val = validator.query({});
+            val = validator.query({});
             val.success.should.be.true;
 
             done();

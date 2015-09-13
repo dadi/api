@@ -13,7 +13,7 @@ var Validator = function (model) {
 
 Validator.prototype.query = function (query) {
     var valid = Object.keys(query).every(function (key) {
-        return true;//key[0] !== '$';
+        return key !== '$where';
     });
     var response = valid
         ? {success: true}

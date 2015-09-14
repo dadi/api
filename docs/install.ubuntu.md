@@ -39,7 +39,7 @@ Install GCC to provide the latest build of the c++ bson extension (not required,
 Install Git and pull down the latest stable build of Serama -
 
 1. `sudo apt-get install git`
-2. `sudo git clone https://github.com/dadiplus/serama.git`
+2. `sudo git clone https://github.com/bantam-framework/serama.git`
 3. `cd serama/`
 
 Install Serama -

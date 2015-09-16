@@ -14,7 +14,7 @@ var Validator = function (model) {
 
 Validator.prototype.query = function (query) {
     var valid = Object.keys(query).every(function (key) {
-        return true;//key[0] !== '$';
+        return key !== '$where';
     });
     var response = valid
         ? {success: true}
@@ -76,6 +76,9 @@ function _parseDocument(obj, schema, response) {
             if (schema[key] && schema[key].type === 'Object') {
                 // do nothing
             }
+            else if (schema[key] && schema[key].type === 'Reference') {
+                // bah!
+            }
             else if (obj[key] !== null && !util.isArray(obj[key])) {
                 _parseDocument(obj[key], schema, response);
             }
@@ -134,8 +137,8 @@ function _validate(field, schema) {
         }
     }
 
-    // allow 'Mixed' fields through
-    if(schema.type !== 'Mixed' && schema.type !== 'ObjectID') {
+    // allow Mixed/ObjectID/Reference fields through
+    if (_.contains(['Mixed', 'ObjectID', 'Reference'], schema.type) == false) {
         // check constructor of field against primitive types and check the type of field == the specified type
         // using constructor.name as array === object in typeof comparisons
         try {

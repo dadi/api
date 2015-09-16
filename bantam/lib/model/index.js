@@ -3,6 +3,7 @@ var config = require(__dirname + '/../../../config').database;
 var help = require(__dirname + '/../help');
 var Validator = require(__dirname + '/validator');
 var History = require(__dirname + '/history');
+var Composer = require(__dirname + '/../composer').Composer;
 var ObjectID = require('mongodb').ObjectID;
 var _ = require('underscore');
 
@@ -53,6 +54,8 @@ var Model = function (name, schema, conn, settings) {
 
     // setup validation context
     this.validate = new Validator(this);
+
+    this.composer = new Composer(this);
 
     // setup history context unless requested not to
     this.storeRevisions = (this.settings.storeRevisions != false);
@@ -297,6 +300,9 @@ Model.prototype.find = function (query, options, done) {
 
                     var resultArray = cursor.toArray(function (err, result) {
                         if (err) return done(err);
+
+                        //console.log(result);
+                        self.composer.compose(result);
 
                         results.results = result;
                         results.metadata = getMetadata(options, count);

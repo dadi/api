@@ -14,11 +14,11 @@ describe('Model validator', function () {
             var validator = new Validator();
             var val = validator.query({$where: 'throw new Error("Insertion Attack!")'});
             
-            //val.success.should.be.false;
-            // val.errors.length.should.equal(1);
-            // val.errors[0].message.should.equal('Bad query');
+            val.success.should.be.false;
+            val.errors.length.should.equal(1);
+            val.errors[0].message.should.equal('Bad query');
 
-            // val = validator.query({});
+            val = validator.query({});
             val.success.should.be.true;
 
             done();
@@ -143,6 +143,22 @@ describe('Model validator', function () {
                 });
                 var val = validator.schema({field1: [12345, 566788999] });
                 val.success.should.be.false;
+
+                done();
+            });
+
+            it('should allow Reference types', function (done) {
+                var validator = new Validator({
+                    schema: {
+                        field1: {
+                            type: 'Reference',
+                            required: false
+                        }
+                    }
+                });
+                
+                var val = validator.schema({field1: '55cb1658341a0a804d4dadcc'});
+                val.success.should.be.true;
 
                 done();
             });

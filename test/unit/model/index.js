@@ -256,7 +256,7 @@ describe('Model', function () {
             model('testModelName', help.getModelSchema()).find(query, done);
         });
 
-        it('should pass error to callback when query uses `$` operators', function (done) {
+        it('should pass error to callback when query uses `$where` operator', function (done) {
             model('testModelName').find({$where: 'this.fieldName === "foo"'}, function (err) {
                 should.exist(err);
                 done();
@@ -574,7 +574,7 @@ describe('Model', function () {
             });
         });
 
-        it('should pass error to callback when query uses `$` operators', function (done) {
+        it('should pass error to callback when query uses `$where` operator', function (done) {
             model('testModelName').update({$where: 'this.fieldName === "foo"'}, {fieldName: 'bar'}, function (err) {
                 should.exist(err);
                 done();
@@ -614,12 +614,129 @@ describe('Model', function () {
             });
         });
 
-        it('should pass error to callback when query uses `$` operators', function (done) {
+        it('should pass error to callback when query uses `$where` operator', function (done) {
             model('testModelName').delete({$where: 'this.fieldName === "foo"'}, function (err) {
                 should.exist(err);
                 done();
             });
         });
+    });
+
+    describe('composer', function () {
+        it('should be attached to Model', function (done) {
+            var mod = model('testModelName', help.getModelSchema());
+            mod.composer.should.be.Object;
+            mod.composer.compose.should.be.Function;
+            done();
+        });
+
+        describe('compose', function () {
+            it('should add `composed` property to obj', function (done) {
+                var mod = model('testModelName');
+                var obj = { "fieldName": "foo" };
+                mod.composer.compose(obj);
+                obj.composed.should.exist;
+                obj.composed.should.equal('bar');
+                done();
+            });
+
+            it('should do stuff', function (done) {
+                var schema = help.getModelSchema();
+                var newField = {
+                    "author": {
+                      "type": "Reference",
+                      "settings": {
+                        "database": "library2", // leave out to default to the same
+                        "collection": "authors", // leave out to default to the same
+                        "fields": ["firstName", "lastName"]
+                      }
+                    }
+                };
+
+                _.extend(schema, newField);
+                var mod = model('testModelName', schema);
+                var obj = { "fieldName": "foo", "author": 45 };
+                mod.composer.compose(obj);
+                done();
+            });
+
+            it.only('should populate the reference field', function (done) {
+                var conn = connection();
+                
+                var schema = help.getModelSchema();
+                var newField = {
+                    "anotherDoc": {
+                      "type": "Reference",
+                      "settings": {
+                        // "database": "library2", // leave out to default to the same
+                        // "collection": "authors", // leave out to default to the same
+                        //"fields": ["firstName", "lastName"]
+                      }
+                    }
+                };
+
+                _.extend(schema, newField);
+                var mod = model('testModelName', schema);
+
+                // create some docs
+                for (var i = 0; i < 10; i++) {
+                    mod.create({fieldName: 'foo_'+i}, function (err, result) {
+                        if (err) return done(err);
+                    });
+                };
+
+                // find a doc
+                mod.find({ fieldName: 'foo_3' } , {}, function (err, result) {
+                    
+                    var anotherDoc = result.results[0];
+
+                    // add the id to another doc
+                    mod.update({ fieldName: 'foo_1' }, { anotherDoc: anotherDoc._id }, function (err, result) {
+                        
+                        // doc1 should now have anotherDoc == doc3 
+                        mod.find({fieldName: 'foo_1'}, {}, function (err, result) {
+
+                            var doc = result.results[0];
+                            // should.exist(doc.anotherDoc.fieldName);
+                            // doc.anotherDoc.fieldName.should.equal('foo_3');
+
+                            done();
+                        });
+                    });
+                    
+                });
+
+                // mod.create({fieldName: 'foo'}, function (err, result) {
+                //     if (err) return done(err);
+
+                //     console.log(result);
+
+                //     done();
+
+                    // mod.find({fieldName: 'foo'}, function (err, doc) {
+                    //     if (err) return done(err);
+
+                    //     var doc_id = doc['results'][0]._id;
+                    //     var revision_id = doc['results'][0].history[0]; // expected history object
+
+                    //     model('testModelName', help.getModelSchema()).revisions(doc_id, function (err, result) {
+                    //         if (err) return done(err);
+
+                    //         result.should.be.Array;
+
+                    //         if (result[0]) {
+                    //             result[0]._id.toString().should.equal(revision_id.toString());
+                    //         }
+
+                    //     });
+
+                    //     done();
+                    // });
+                //});
+
+            });
+        });
+
     });
 
     describe('validator', function () {

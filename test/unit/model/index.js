@@ -40,7 +40,18 @@ describe('Model', function () {
         });
 
         it('should accept database connection as third argument', function (done) {
-            var conn = connection();
+            var conn = connection({
+                "username": "",
+                "password": "",
+                "database": "serama",
+                "replicaSet": false,
+                "hosts": [
+                    {
+                        "host": "localhost",
+                        "port": 27020
+                    }
+                ]
+            });
             var mod = model('testModelName', help.getModelSchema(), conn)
             should.exist(mod.connection);
             mod.connection.connectionOptions.hosts[0].host.should.equal('localhost');

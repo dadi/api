@@ -25,11 +25,26 @@ describe('Model connection', function () {
     });
 
     it('should connect to database', function (done) {
-        var conn = connection();
+
+        var options = {
+            "username": "",
+            "password": "",
+            "database": "serama",
+            "replicaSet": false,
+            "hosts": [
+                {
+                    "host": "localhost",
+                    "port": 27017
+                }
+            ]
+        };
+
+        var conn = connection(options);
 
         conn.on('connect', function (db) {
             db.should.be.an.instanceOf(Db);
             conn.readyState.should.equal(1);
+            conn.connectionString.should.eql("mongodb://localhost:27017/serama");
             done();
         });
     });

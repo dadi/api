@@ -26,10 +26,9 @@ var Connection = function (options) {
 
     // required config fields
     if (!(this.connectionOptions.hosts && this.connectionOptions.hosts.length)) {
-console.log(this.connectionOptions)
-console.log(config)
         throw new Error('`hosts` Array is required for Connection');
     }
+    
     if (!this.connectionOptions.database) throw new Error('`database` String is required for Connection');
 
     this.connectionString = constructConnectionString(this.connectionOptions);

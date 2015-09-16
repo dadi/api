@@ -1783,7 +1783,7 @@ describe('Application', function () {
                 .get('/v1/new-endpoint?cache=false')
                 .set('Authorization', 'Bearer ' + bearerToken)
                 .expect(200)
-                .end(function (err) {
+                .end(function (err, res) {
                     if (err) return done(err);
 
                     // get an updated version of the file
@@ -1814,7 +1814,7 @@ describe('Application', function () {
                                 res.body.message.should.equal('endpoint updated through the API');
                                 done();
                             });
-                        }, 1000);
+                        }, 500);
                     });
                 });
             });

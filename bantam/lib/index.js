@@ -230,7 +230,11 @@ Server.prototype.loadConfigApi = function () {
     this.app.use('/:version/:endpointName/config', function (req, res, next) {
 
         var method = req.method && req.method.toLowerCase();
-        if (method !== 'post') return next();
+        if (method !== 'post') {
+            var err = new Error();
+            err.statusCode = 404;
+            return next(err);
+        }
 
         var version = req.params.version;
         var name = req.params.endpointName;
@@ -435,7 +439,7 @@ Server.prototype.addEndpointResource = function (options) {
         // keep reference to component so hot loading component can be
         // done by changing reference value
         var opts = {
-            route: '/' + options.version + '/' + name,
+            route: '/' + options.version + '/' + name + '/(.*)?',
             component: require(filepath),
             filepath: filepath
         };
@@ -496,9 +500,12 @@ Server.prototype.addComponent = function (options) {
         if (method === 'post' && options.filepath) {
 	        var schemaString = typeof req.body === 'object' ? JSON.stringify(req.body, null, 4) : req.body;
 
-            return fs.writeFile(options.filepath, schemaString, function (err) {
-                help.sendBackJSON(200, res, next)(err, {result: 'success'});
-            });
+            // only allow posting collection endpoints - see /:version/:endpointName/config for endpoint POST handler
+            if (options.filepath.slice(-5) === '.json') {
+                return fs.writeFile(options.filepath, schemaString, function (err) {
+                    help.sendBackJSON(200, res, next)(err, {result: 'success'});
+                });
+            }
         }
 
         // delete schema

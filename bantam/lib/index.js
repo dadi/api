@@ -5,6 +5,7 @@ var bodyParser = require('body-parser');
 var _ = require('underscore');
 var controller = require(__dirname + '/controller');
 var model = require(__dirname + '/model');
+var search = require(__dirname + '/search');
 var api = require(__dirname + '/api');
 var auth = require(__dirname + '/auth');
 var cache = require(__dirname + '/cache');
@@ -62,6 +63,9 @@ Server.prototype.start = function (options, done) {
 
     // caching layer
     cache(self);
+
+    // search layer
+    search(self);
 
     // start listening
     var server = this.server = app.listen(config.server.port, config.server.host);

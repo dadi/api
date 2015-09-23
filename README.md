@@ -74,13 +74,22 @@ This will create a new API client in the database and collection specified by Se
 
 #### Running the server in the background 
 
-Pro tip: to run Serama in the background, install [Forever](https://github.com/nodejitsu/forever)
+Pro tip: to run Serama in the background, install [Forever](https://github.com/nodejitsu/forever) and [Forever-service](https://github.com/zapty/forever-service)
 
 `[sudo] npm install forever -g`
 
-You can then start Serama using the following command:
+`[sudo] npm install -g forever-service`
 
-`[sudo] forever start bantam/main.js`
+Install Serama as a service and ensure it loads on boot:
+
+`[sudo] forever-service install -s bantam/main.js serama --start`
+
+You can then interact with Serama as a service using the following command:
+
+- Start: `[sudo] start serama`
+- Stop: `[sudo] stop serama`
+- Status: `[sudo] status serama`
+- Restart `[sudo] restart serama`
 
 ### Additional reading
 

@@ -63,13 +63,22 @@ Start Serama:
 
 ### Forever
 
-To background Serama, install [Forever](https://github.com/nodejitsu/forever):
+To run Serama in the background, install [Forever](https://github.com/nodejitsu/forever) and [Forever-service](https://github.com/zapty/forever-service):
 
 `[sudo] npm install forever -g`
 
-You can then start Serama using:
+`[sudo] npm install -g forever-service`
 
-`[sudo] forever start bantam/main.js`
+Install Serama as a service and ensure it loads on boot:
+
+`[sudo] forever-service install -s bantam/main.js serama --start`
+
+You can then interact with Serama as a service using the following command:
+
+- Start: `[sudo] start serama`
+- Stop: `[sudo] stop serama`
+- Status: `[sudo] status serama`
+- Restart `[sudo] restart serama`
 
 ### Launch on server startup
 

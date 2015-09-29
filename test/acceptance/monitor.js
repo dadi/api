@@ -23,7 +23,7 @@ describe('File system watching', function () {
         }, function (err) {
             if (err) return done(err);
             
-            help.dropDatabase(function (err) {
+            help.dropDatabase('testdb', function (err) {
                 if (err) return done(err);
 
                 help.getBearerToken(function (err, token) {
@@ -62,38 +62,39 @@ describe('File system watching', function () {
     describe('changing files', function () {
 
         it('should update collections component when file changes', function (done) {
-
+	    this.timeout(4000);
             var client = request('http://' + config.server.host + ':' + config.server.port);
+            
+            client
+            .post('/vtest/testdb/monitor-test-schema')
+            .set('Authorization', 'Bearer ' + bearerToken)
+            .send({field1: 'string value'})
+            .expect(200)
+            .expect('content-type', 'application/json')
+            .end(function (err, res) {
+                if (err) return done(err);
 
-            setTimeout(function () {
-                
-                client
-                .post('/vtest/testdb/monitor-test-schema')
-                .set('Authorization', 'Bearer ' + bearerToken)
-                .send({field1: 'string value'})
-                .expect(200)
-                .expect('content-type', 'application/json')
-                .end(function (err, res) {
-                    if (err) return done(err);
+                // Change the schema file's content
+                var schemaPath = __dirname + '/workspace/collections/vtest/testdb/collection.monitor-test-schema.json'
+                // clone so that `require.cache` is unaffected
+                var schema = JSON.parse(JSON.stringify(require(schemaPath)));
+                schema.fields.field1.type = 'Number';
+                fs.writeFileSync(schemaPath, JSON.stringify(schema));
 
-                    // Change the schema file's content
-                    var schemaPath = __dirname + '/workspace/collections/vtest/testdb/collection.monitor-test-schema.json'
-                    // clone so that `require.cache` is unaffected
-                    var schema = JSON.parse(JSON.stringify(require(schemaPath)));
-                    schema.fields.field1.type = 'Number';
-                    fs.writeFileSync(schemaPath, JSON.stringify(schema));
+                setTimeout(function () {
+                    client
+                    .post('/vtest/testdb/monitor-test-schema')
+                    .set('Authorization', 'Bearer ' + bearerToken)
+                    .send({field1: 31337})
+                    .expect(200)
+                    .expect('content-type', 'application/json')
+                    .end(function (err, res) {
+                        if (err) return done(err);
 
-                    setTimeout(function () {
-                        client
-                        .post('/vtest/testdb/monitor-test-schema')
-                        .set('Authorization', 'Bearer ' + bearerToken)
-                        .send({field1: 31337})
-                        .expect(200)
-                        .expect('content-type', 'application/json')
-                        .end(done);
-                    }, 300);
-                });
-            }, 300);
+                        done();
+                    });
+                }, 100);
+            });
 
         });
 
@@ -102,7 +103,7 @@ describe('File system watching', function () {
             var client = request('http://' + config.server.host + ':' + config.server.port);
 
             client
-            .get('/endpoints/v1/monitor-test-endpoint?cache=false')
+            .get('/v1/monitor-test-endpoint?cache=false')
             .set('Authorization', 'Bearer ' + bearerToken)
             .expect(200)
             //.expect('content-type', 'application/json')
@@ -120,7 +121,7 @@ describe('File system watching', function () {
 
                 setTimeout(function () {
                     client
-                    .get('/endpoints/v1/monitor-test-endpoint?cache=false')
+                    .get('/v1/monitor-test-endpoint?cache=false')
                     .set('Authorization', 'Bearer ' + bearerToken)
                     .expect(200)
                     .expect('content-type', 'application/json')
@@ -196,7 +197,7 @@ describe('File system watching', function () {
                 var client = request('http://' + config.server.host + ':' + config.server.port);
 
                 client
-                .get('/endpoints/v1/new-test-endpoint')
+                .get('/v1/new-test-endpoint')
                 .set('Authorization', 'Bearer ' + bearerToken)
                 .expect(200)
                 .expect('content-type', 'application/json')
@@ -217,7 +218,7 @@ describe('File system watching', function () {
             var client = request('http://' + config.server.host + ':' + config.server.port);
 
             client
-            .get('/endpoints/v1/monitor-test-endpoint?cache=false')
+            .get('/v1/monitor-test-endpoint?cache=false')
             .set('Authorization', 'Bearer ' + bearerToken)
             .expect(404)
             .end(done);

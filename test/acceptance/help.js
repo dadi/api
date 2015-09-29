@@ -1,4 +1,4 @@
-var fs = require('fs');
+    var fs = require('fs');
 var path = require('path');
 var should = require('should');
 var connection = require(__dirname + '/../../bantam/lib/model/connection');
@@ -6,7 +6,7 @@ var config = require(__dirname + '/../../config');
 var request = require('supertest');
 var _ = require('underscore');
 
-var clientCollectionName = config.auth.database.clientCollection;
+var clientCollectionName = config.auth.clientCollection;
 
 // create a document with random string via the api
 module.exports.createDoc = function (token, done) {
@@ -17,8 +17,8 @@ module.exports.createDoc = function (token, done) {
     .expect(200)
     .end(function (err, res) {
         if (err) return done(err);
-        res.body.length.should.equal(1);
-        done(null, res.body[0]);
+        res.body.results.length.should.equal(1);
+        done(null, res.body.results[0]);
     });
 };
 
@@ -31,15 +31,29 @@ module.exports.createDocWithParams = function (token, doc, done) {
     .expect(200)
     .end(function (err, res) {
         if (err) return done(err);
-        res.body.length.should.equal(1);
-        done(null, res.body[0]);
+        res.body.results.length.should.equal(1);
+        done(null, res.body.results[0]);
     });
 };
 
-// helper function to cleanup the `serama` db
-module.exports.dropDatabase = function (done) {
-    connection().on('connect', function (db) {
+// create a document with random string via the api
+module.exports.createDocWithSpecificVersion = function (token, apiVersion, doc, done) {
+    request('http://' + config.server.host + ':' + config.server.port)
+    .post('/' + apiVersion + '/testdb/test-schema')
+    .set('Authorization', 'Bearer ' + token)
+    .send(doc)
+    .expect(200)
+    .end(function (err, res) {
+        if (err) return done(err);
+        res.body.results.length.should.equal(1);
+        done(null, res.body.results[0]);
+    });
+};
 
+// helper function to cleanup the dbs
+module.exports.dropDatabase = function (database, done) {
+    var database = connection({database:database});
+    database.on('connect', function (db) {
         db.dropDatabase(function (err) {
             if (err) return done(err);
             

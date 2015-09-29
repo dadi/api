@@ -39,13 +39,24 @@ describe('Model', function () {
             done();
         });
 
-        it('should accept database connection as third agrument', function (done) {
-            var conn = connection();
+        it('should accept database connection as third argument', function (done) {
+            var conn = connection({
+                "username": "",
+                "password": "",
+                "database": "serama",
+                "replicaSet": false,
+                "hosts": [
+                    {
+                        "host": "localhost",
+                        "port": 27020
+                    }
+                ]
+            });
             var mod = model('testModelName', help.getModelSchema(), conn)
             should.exist(mod.connection);
-            mod.connection.host.should.equal('localhost');
-            mod.connection.port.should.equal(27017);
-            mod.connection.database.should.equal('serama');
+            mod.connection.connectionOptions.hosts[0].host.should.equal('localhost');
+            mod.connection.connectionOptions.hosts[0].port.should.equal(27020);
+            mod.connection.connectionOptions.database.should.equal('serama');
 
             done();
         });
@@ -377,8 +388,11 @@ describe('Model', function () {
                 if (err) return done(err);
                 // Peform a query, with explain to show we hit the query
                 mod.find({"fieldName":"ABC"}, {explain:true}, function(err, explanation) {
+
+                    var indexBounds = seramaHelp.getFromObj(explanation.results[0], 'queryPlanner.winningPlan.inputStage.inputStage.indexBounds', null);
             
-                    explanation['results'][0].indexBounds.fieldName.should.not.be.null;
+                    should.exist(indexBounds);
+                    should.exist(indexBounds.fieldName);
 
                     done();
                 });
@@ -422,8 +436,13 @@ describe('Model', function () {
                 if (err) return done(err);
                 // Peform a query, with explain to show we hit the query
                 mod.find({"fieldName":"ABC", "field2":1}, {explain:true}, function(err, explanation) {
-                    explanation['results'][0].indexBounds.fieldName.should.exist;
-                    explanation['results'][0].indexBounds.field2.should.exist;
+                    
+                    var indexBounds = seramaHelp.getFromObj(explanation.results[0], 'queryPlanner.winningPlan.inputStage.inputStage.indexBounds', null);
+            
+                    should.exist(indexBounds);
+                    should.exist(indexBounds.fieldName);
+                    should.exist(indexBounds.field2);
+
                     done();
                 });
             });
@@ -493,17 +512,16 @@ describe('Model', function () {
         beforeEach(function (done) {
             help.cleanUpDB(function (err) {
                 if (err) return done(err);
-                var mod = model('testModelName', help.getModelSchema());
+                var mod = model('testModelName', help.getModelSchemaWithMultipleFields());
 
                 // create model to be updated by tests
                 mod.create({
-                    fieldName: 'foo'
+                    field1: 'foo', field2: 'bar'
                 }, function (err, result) {
                     if (err) return done(err);
 
-                    should.exist(result && result[0]);
-                    result[0].fieldName.should.equal('foo');
-                    
+		    should.exist(result && result.results);
+                    result.results[0].field1.should.equal('foo');                    
                     done();
                 });
             });
@@ -516,24 +534,25 @@ describe('Model', function () {
 
         it('should accept query, update object, and callback', function (done) {
             var mod = model('testModelName');
-            mod.update({fieldName: 'foo'}, {fieldName: 'bar'}, done);
+            mod.update({field1: 'foo'}, {field1: 'bar'}, done);
         });
 
         it('should update an existing document', function (done) {
             var mod = model('testModelName');
-            var updateDoc = {fieldName: 'bar'};
+            var updateDoc = {field1: 'bar'};
 
-            mod.update({fieldName: 'foo'}, updateDoc, function (err, result) {
+            mod.update({field1: 'foo'}, updateDoc, function (err, result) {
                 if (err) return done(err);
 
-                result.should.equal(updateDoc);
+                result.results.should.exist;
+                result.results[0].field1.should.equal('bar');
 
                 // make sure document was updated
-                mod.find({fieldName: 'bar'}, function (err, result) {
+                mod.find({field1: 'bar'}, function (err, result) {
                     if (err) return done(err);
 
                     should.exist(result['results'] && result['results'][0]);
-                    result['results'][0].fieldName.should.equal('bar');
+                    result['results'][0].field1.should.equal('bar');
                     done();
                 })
             });
@@ -541,20 +560,21 @@ describe('Model', function () {
 
         it('should create new history revision when updating an existing document and `storeRevisions` is true', function (done) {
             var conn = connection();
-            var mod = model('testModelName', help.getModelSchema(), conn, { storeRevisions : true })
-            var updateDoc = {fieldName: 'bar'};
+            var mod = model('testModelName', help.getModelSchemaWithMultipleFields(), conn, { storeRevisions : true })
+            var updateDoc = {field1: 'bar'};
 
-            mod.update({fieldName: 'foo'}, updateDoc, function (err, result) {
+            mod.update({field1: 'foo'}, updateDoc, function (err, result) {
                 if (err) return done(err);
 
-                result.should.equal(updateDoc);
+                result.results.should.exist
+                result.results[0].field1.should.equal('bar');
 
                 // make sure document was updated
-                mod.find({fieldName: 'bar'}, function (err, result) {
+                mod.find({field1: 'bar'}, function (err, result) {
                     if (err) return done(err);
 
                     should.exist(result['results'] && result['results'][0]);
-                    result['results'][0].fieldName.should.equal('bar');
+                    result['results'][0].field1.should.equal('bar');
 
                     should.exist(result['results'][0].history);
                     result['results'][0].history.length.should.equal(2); // two revisions, one from initial create and one from the update
@@ -598,12 +618,13 @@ describe('Model', function () {
             var mod = model('testModelName');
             mod.create({fieldName: 'foo'}, function (err, result) {
                 if (err) return done(err);
+		        result.results[0].fieldName.should.equal('foo');
 
-                result[0].fieldName.should.equal('foo');
                 mod.delete({fieldName: 'foo'}, function (err, numAffected) {
                     if (err) return done(err);
 
                     numAffected.should.equal(1);
+
                     mod.find({}, function (err, result) {
                         if (err) return done(err);
 
@@ -631,74 +652,119 @@ describe('Model', function () {
         });
 
         describe('compose', function () {
-            it('should add `composed` property to obj', function (done) {
-                var mod = model('testModelName');
-                var obj = { "fieldName": "foo" };
-                mod.composer.compose(obj);
-                obj.composed.should.exist;
-                obj.composed.should.equal('bar');
-                done();
-            });
 
-            it('should do stuff', function (done) {
-                var schema = help.getModelSchema();
-                var newField = {
-                    "author": {
-                      "type": "Reference",
-                      "settings": {
-                        "database": "library2", // leave out to default to the same
-                        "collection": "authors", // leave out to default to the same
-                        "fields": ["firstName", "lastName"]
-                      }
-                    }
-                };
+            // some defaults
 
-                _.extend(schema, newField);
-                var mod = model('testModelName', schema);
-                var obj = { "fieldName": "foo", "author": 45 };
-                mod.composer.compose(obj);
-                done();
-            });
+            var bookSchema = {
+                                "title": {
+                                  "type": "String",
+                                  "required": true
+                                },
+                                "author": {
+                                    "type": "Reference",
+                                    "settings": {
+                                      "collection": "person",
+                                      "fields": ["name", "spouse"]
+                                    }
+                                },
+                                "booksInSeries": {
+                                    "type": "Reference",
+                                    "settings": {
+                                      "collection": "book"
+                                    }
+                                }
+                              }
 
-            it.only('should populate the reference field', function (done) {
+            var personSchema = {
+                                "name": {
+                                  "type": "String",
+                                  "required": true
+                                },
+                                "occupation":   {
+                                  "type": "String",
+                                  "required": false
+                                },
+                                "nationality": {
+                                  "type": "String",
+                                  "required": false
+                                },
+                                "education": {
+                                  "type": "String",
+                                  "required": false
+                                },
+                                "spouse": {
+                                    "type": "Reference"
+                                }
+                              }
+
+            var schema = help.getModelSchema();
+            
+            var refField = {
+                "refField": {
+                  "type": "Reference",
+                  "settings": {
+                    // "database": "library2", // leave out to default to the same
+                    // "collection": "authors", // leave out to default to the same
+                    //"fields": ["firstName", "lastName"]
+                  }
+                }
+            };
+
+            var nameFields = {
+                "firstName": {
+                  "type": "String",
+                  "required": false
+                },
+                "lastName": {
+                  "type": "String",
+                  "required": false
+                }
+            };
+
+            _.extend(schema, refField);
+            _.extend(schema, nameFields);
+
+            var mod = model('testModelName', schema);
+            
+            beforeEach(function(done) {
+
+                help.cleanUpDB(function() {
+
+                    // create some docs
+                    for (var i = 0; i < 5; i++) {
+                        mod.create({fieldName: 'foo_'+i, firstName: 'Foo', lastName: i.toString()}, function (err, result) {
+                            if (err) return done(err);
+                        });
+                        if (i == 4) done();
+                    };
+                });
+            })
+
+            it('should populate a reference field containing an ObjectID', function (done) {
                 var conn = connection();
+                //var mod = model('testModelName', schema);
                 
-                var schema = help.getModelSchema();
-                var newField = {
-                    "anotherDoc": {
-                      "type": "Reference",
-                      "settings": {
-                        // "database": "library2", // leave out to default to the same
-                        // "collection": "authors", // leave out to default to the same
-                        //"fields": ["firstName", "lastName"]
-                      }
-                    }
-                };
-
-                _.extend(schema, newField);
-                var mod = model('testModelName', schema);
-
-                // create some docs
-                for (var i = 0; i < 10; i++) {
-                    mod.create({fieldName: 'foo_'+i}, function (err, result) {
-                        if (err) return done(err);
-                    });
-                };
-
                 // find a doc
                 mod.find({ fieldName: 'foo_3' } , {}, function (err, result) {
-                    
+
                     var anotherDoc = result.results[0];
 
                     // add the id to another doc
-                    mod.update({ fieldName: 'foo_1' }, { anotherDoc: anotherDoc._id }, function (err, result) {
-                        
-                        // doc1 should now have anotherDoc == doc3 
-                        mod.find({fieldName: 'foo_1'}, {}, function (err, result) {
+                    mod.update({ fieldName: 'foo_1' }, { refField: anotherDoc._id }, function (err, result) {
 
+                        // doc1 should now have anotherDoc == doc3 
+                        mod.find({fieldName: 'foo_1'}, { "compose": true }, function (err, result) {
+
+                            //console.log(JSON.stringify(result));
+                            
                             var doc = result.results[0];
-                            // should.exist(doc.anotherDoc.fieldName);
-                            // doc.anotherDoc.fieldName.should.equal('foo_3');
+                            should.exist(doc.refField.fieldName);
+                            doc.refField.fieldName.should.equal('foo_3');
+
+                            // composed property
+                            should.exist(doc.composed);
+                            should.exist(doc.composed.refField);
+                            doc.composed.refField.should.eql(doc.refField._id);
 
                             done();
                         });
@@ -706,33 +772,203 @@ describe('Model', function () {
                     
                 });
 
-                // mod.create({fieldName: 'foo'}, function (err, result) {
-                //     if (err) return done(err);
+            });
 
-                //     console.log(result);
+            it('should populate a reference field with specified fields only', function (done) {
+                var conn = connection();
 
-                //     done();
+                schema.refField.settings['fields'] = ['firstName', 'lastName'];
+                
+                // find a doc
+                mod.find({ fieldName: 'foo_3' } , {}, function (err, result) {
 
-                    // mod.find({fieldName: 'foo'}, function (err, doc) {
-                    //     if (err) return done(err);
+                    var anotherDoc = result.results[0];
 
-                    //     var doc_id = doc['results'][0]._id;
-                    //     var revision_id = doc['results'][0].history[0]; // expected history object
+                    // add the id to another doc
+                    mod.update({ fieldName: 'foo_1' }, { refField: anotherDoc._id }, function (err, result) {
 
-                    //     model('testModelName', help.getModelSchema()).revisions(doc_id, function (err, result) {
-                    //         if (err) return done(err);
+                        // doc1 should now have anotherDoc == doc3 
+                        mod.find({fieldName: 'foo_1'}, { "compose": true }, function (err, result) {
 
-                    //         result.should.be.Array;
+                            //console.log(JSON.stringify(result));
+                            
+                            var doc = result.results[0];
+                            should.not.exist(doc.refField.fieldName);
+                            should.exist(doc.refField.firstName);
+                            should.exist(doc.refField.lastName);
+                            doc.refField.firstName.should.equal('Foo');
+                            doc.refField.lastName.should.equal('3');
 
-                    //         if (result[0]) {
-                    //             result[0]._id.toString().should.equal(revision_id.toString());
-                    //         }
+                            // composed property
+                            should.exist(doc.composed);
+                            should.exist(doc.composed.refField);
+                            doc.composed.refField.should.eql(doc.refField._id);
 
-                    //     });
+                            done();
+                        });
+                    });
+                    
+                });
 
-                    //     done();
-                    // });
-                //});
+            });
+
+            it('should reference a document in the specified collection', function (done) {
+                
+                var conn = connection();
+
+                // create two models
+                var book = model('book', bookSchema, conn);
+                var person = model('person', personSchema, conn);
+
+                person.create({name: 'Neil Murray'}, function (err, result) {
+                    var id = result.results[0]._id;
+                    
+                    person.create({name: 'J K Rowling', spouse: id}, function (err, result) {
+                        var id = result.results[0]._id;
+                        
+                        book.create({title: 'Harry Potter 1', author: id}, function (err, result) {
+                            var bookid = result.results[0]._id;
+                            var books = [];
+                            books.push(bookid);
+
+                            book.create({title: 'Harry Potter 2', author: id, booksInSeries: books}, function (err, result) {
+
+                                // find a book
+                                book.find({ title: 'Harry Potter 2' } , { "compose": true }, function (err, result) {
+                                    
+                                    //console.log(JSON.stringify(result, null, 2));
+                                    
+                                    var doc = result.results[0];
+                                    should.exist(doc.author.name);
+                                    doc.author.name.should.equal('J K Rowling');
+
+                                    done();
+                                });
+
+                            });
+
+                        });
+                    });
+                });
+
+            });
+
+            it('should allow specifying to not resolve the references via the model settings', function (done) {
+                
+                var conn = connection();
+
+                // create two models
+                var book = model('book', bookSchema, conn, { "compose": false });
+                var person = model('person', personSchema, conn, { "compose": false });
+
+                person.create({name: 'Neil Murray'}, function (err, result) {
+                    var id = result.results[0]._id;
+                    
+                    person.create({name: 'J K Rowling', spouse: id}, function (err, result) {
+                        var id = result.results[0]._id;
+                        
+                        book.create({title: 'Harry Potter 1', author: id}, function (err, result) {
+                            var bookid = result.results[0]._id;
+                            var books = [];
+                            books.push(bookid);
+
+                            book.create({title: 'Harry Potter 2', author: id, booksInSeries: books}, function (err, result) {
+
+                                // find a book
+                                book.find({ title: 'Harry Potter 2' } , { "compose": true }, function (err, result) {
+                                    
+                                    //console.log(JSON.stringify(result, null, 2));
+                                    
+                                    var doc = result.results[0];
+                                    should.exist(doc.author.name);
+                                    should.not.exist(doc.author.spouse.name);
+
+                                    done();
+                                });
+
+                            });
+
+                        });
+                    });
+                });
+
+            });
+
+            it('should allow specifying to resolve the references via the model settings', function (done) {
+                
+                var conn = connection();
+
+                // create two models
+                var book = model('book', bookSchema, conn, { "compose": true });
+                var person = model('person', personSchema, conn, { "compose": true });
+
+                person.create({name: 'Neil Murray'}, function (err, result) {
+                    var id = result.results[0]._id;
+                    
+                    person.create({name: 'J K Rowling', spouse: id}, function (err, result) {
+                        var id = result.results[0]._id;
+                        
+                        book.create({title: 'Harry Potter 1', author: id}, function (err, result) {
+                            var bookid = result.results[0]._id;
+                            var books = [];
+                            books.push(bookid);
+
+                            book.create({title: 'Harry Potter 2', author: id, booksInSeries: books}, function (err, result) {
+
+                                // find a book
+                                book.find({ title: 'Harry Potter 2' } , { "compose": true }, function (err, result) {
+                                    
+                                    //console.log(JSON.stringify(result, null, 2));
+                                    
+                                    var doc = result.results[0];
+                                    should.exist(doc.author.name);
+                                    should.exist(doc.author.spouse.name);
+
+                                    done();
+                                });
+
+                            });
+
+                        });
+                    });
+                });
+
+            });
+
+            it('should populate a reference field containing an array of ObjectIDs', function (done) {
+                var conn = connection();
+                
+                // find a doc
+                mod.find( { fieldName: { '$regex' : 'foo' } } , {}, function (err, result) {
+
+                    // remove foo_1 from the results so we can add the remaining docs 
+                    // to it as a reference
+                    var foo1 = _.findWhere(result.results, { fieldName: 'foo_1' });
+                    result.results.splice(result.results.indexOf(foo1), 1);
+                    
+                    var anotherDoc = _.pluck(result.results, '_id');
+
+                    // add the id to another doc
+                    mod.update({ fieldName: 'foo_1' }, { refField: anotherDoc }, function (err, result) {
+
+                        // doc1 should now have anotherDoc == doc3 
+                        mod.find({fieldName: 'foo_1'}, { "compose": true }, function (err, result) {
+
+                            //console.log(JSON.stringify(result));
+                            
+                            var doc = result.results[0];
+                            doc.refField.length.should.eql(4);
+
+                            // composed property
+                            should.exist(doc.composed);
+                            should.exist(doc.composed.refField);
+                            doc.composed.refField.length.should.eql(4);
+
+                            done();
+                        });
+                    });
+                    
+                });
 
             });
         });

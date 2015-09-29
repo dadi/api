@@ -6,11 +6,12 @@ var History = require(__dirname + '/history');
 var Composer = require(__dirname + '/../composer').Composer;
 var ObjectID = require('mongodb').ObjectID;
 var _ = require('underscore');
+var util = require('util');
 
 // track all models that have been instantiated by this process
 var _models = {};
 
-var Model = function (name, schema, conn, settings) {
+var Model = function (name, schema, conn, settings, database) {
 
     // attach collection name
     this.name = name;
@@ -30,14 +31,14 @@ var Model = function (name, schema, conn, settings) {
     if (conn) {
         this.connection = conn;
     }
-    else if (config[name]) {
-        this.connection = connection({
-            database: name,
-            host: config[name].host,
-            port: config[name].port,
-            username: config[name].username,
-            password: config[name].password
-        });
+    else if (database) {
+        this.connection = connection({ database: database });
+        //     database: database,
+        //     host: config[database] ? config[database].host : config.host,
+        //     port: config[database] ? config[database].port : config.port,
+        //     username: config[database] ? config[database].username : config.username,
+        //     password: config[database] ? config[database].password : config.password
+        // });
     }
     else {
         this.connection = connection();
@@ -46,8 +47,7 @@ var Model = function (name, schema, conn, settings) {
     // add default handler to ensure there's no uncaught errors
     var self = this;
     this.connection.on('error', function (err) {
-        console.log('Connection Error: Model name: ' + self.name);
-        console.error(err);
+        console.log('Connection error for collection "' + self.name + '" (' + err + '). Using connection string "' + self.connection.connectionString + '"');
     });
 
     _models[name] = this;
@@ -67,6 +67,7 @@ var Model = function (name, schema, conn, settings) {
         this.revisionCollection = (this.settings.revisionCollection ? this.settings.revisionCollection : this.name + 'History');
     }
 
+    // add any configured indexes
     if (this.settings.hasOwnProperty('index') 
         && this.settings.index.hasOwnProperty('enabled') 
         && this.settings.index.enabled == true
@@ -95,7 +96,7 @@ Model.prototype.createIndex = function(done) {
     if (this.connection.db) return _done(this.connection.db);
 
     // if the db is not connected queue the index creation
-    this.connection.once('connect', _done);
+    this.connection.once('connect', _done); 
 }
 
 /**
@@ -138,6 +139,7 @@ Model.prototype.create = function (obj, internals, done) {
         _.extend(obj, internals);
     }
 
+
     var self = this;
 
     // ObjectIDs
@@ -155,14 +157,19 @@ Model.prototype.create = function (obj, internals, done) {
         database.collection(self.name).insert(obj, function(err, doc) {
             if (err) return done(err);
 
+            var results = {
+                results: doc
+            };
+
             if (self.history) {
                 self.history.create(obj, self, function(err, res) {
                     if (err) return done(err);
-                    return done(null, doc);
+
+                    return done(null, results);
                 });
             }
             else {
-                return done(null, doc);
+                return done(null, results);
             }
         });
     };
@@ -203,6 +210,7 @@ Model.prototype.makeCaseInsensitive = function (obj) {
             return obj;
         }
     });
+
     return newObj;
 }
 
@@ -266,8 +274,16 @@ Model.prototype.find = function (query, options, done) {
 
     var self = this;
 
+    var apiVersion = query.apiVersion;
+    delete query.apiVersion;
+
     query = this.makeCaseInsensitive(query);
     query = convertApparentObjectIds(query);
+    query.apiVersion = apiVersion;
+
+    var compose = false;
+    if (options.hasOwnProperty('compose')) compose = options.compose;
+    delete options.compose;
 
     var validation = this.validate.query(query);
     if (!validation.success) {
@@ -290,6 +306,7 @@ Model.prototype.find = function (query, options, done) {
         this.castToBSON(query);
 
         _done = function (database) {
+
             database.collection(self.name).find(query, options, function (err, cursor) {
                 if (err) return done(err);
 
@@ -301,13 +318,19 @@ Model.prototype.find = function (query, options, done) {
                     var resultArray = cursor.toArray(function (err, result) {
                         if (err) return done(err);
 
-                        //console.log(result);
-                        self.composer.compose(result);
-
-                        results.results = result;
-                        results.metadata = getMetadata(options, count);
-
-                        done(null, results);
+                        if (compose) {
+                            self.composer.setApiVersion(query.apiVersion);
+                            self.composer.compose(result, function(obj) {
+                                results.results = obj;
+                                results.metadata = getMetadata(options, count);
+                                done(null, results);
+                            });
+                        }
+                        else {
+                            results.results = result;
+                            results.metadata = getMetadata(options, count);
+                            done(null, results);
+                        }
                     });
                 });
 
@@ -328,6 +351,7 @@ Model.prototype.find = function (query, options, done) {
     this.connection.once('connect', function (database) {
         _done(database);
     });
+
 };
 
 Model.prototype.revisions = function (id, done) {
@@ -404,13 +428,12 @@ Model.prototype.update = function (query, update, internals, done) {
     var self = this;
     var _update = function (database) {
 
-        // get a reference to the documents 
-        // that will be updated
+        // get a reference to the documents that will be updated
         var updatedDocs = [];
 
         self.find(query, {}, function(err, docs) {
             if (err) return done(err);
-            
+
             updatedDocs = docs['results'];
 
             self.castToBSON(query);
@@ -426,16 +449,27 @@ Model.prototype.update = function (query, update, internals, done) {
                 // query and doc `_id` should be equal
                 query._id && (update._id = query._id);
 
+                var results = {};
+
                 // for each of the updated documents, create
                 // a history revision for it
                 if (self.history && updatedDocs.length > 0) {
                     self.history.createEach(updatedDocs, self, function(err, docs) {
                         if (err) return done(err);
-                        done(null, update);
+                        
+                        results.results = docs;
+
+                        done(null, results);
                     });
                 }
                 else {
-                    done(null, update);
+                    self.find({ _id: update._id.toString() }, {}, function(err, doc) {
+                        if (err) return done(err);
+
+                        results = doc;
+
+                        done(null, results);
+                    });
                 }
             });
         });
@@ -493,8 +527,8 @@ Model.prototype.castToBSON = function (obj) {
 }
 
 // exports
-module.exports = function (name, schema, conn, settings) {
-    if (schema) return new Model(name, schema, conn, settings);
+module.exports = function (name, schema, conn, settings, database) {
+    if (schema) return new Model(name, schema, conn, settings, database);
     return _models[name];
 };
 

@@ -1,13 +1,18 @@
 {
   "name": "serama",
-  "version": "0.1.9-beta",
+  "version": "0.1.10-beta",
   "dependencies": {
+    "async": "^1.4.2",
+    "ben": "0.0.0",
     "body-parser": "~1.6.5",
     "mkdirp": "^0.5.1",
     "moment": "~2.8.1",
     "mongodb": "~1.4.8",
     "node-uuid": "~1.4.1",
     "path-to-regexp": "~1.0.0",
+    "pkginfo": "latest",
+    "q": "^1.4.1",
+    "stack-trace": "latest",
     "underscore": "~1.6.0"
   },
   "devDependencies": {

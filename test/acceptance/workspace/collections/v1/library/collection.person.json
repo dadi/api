@@ -1,0 +1,35 @@
+{
+	"fields": {
+		"name": {
+		  "type": "String",
+		  "required": true
+		},
+		"occupation":	{
+		  "type": "String",
+		  "required": false
+		},
+		"nationality": {
+		  "type": "String",
+		  "required": false
+		},
+		"education": {
+		  "type": "String",
+		  "required": false
+		},
+  	"spouse": {
+	    "type": "Reference"
+  	}
+  },
+	"settings": {
+    "cache": false,
+    "authenticate": false,
+    "callback": null,
+    "defaultFilters": null,
+    "fieldLimiters": null,
+    "allowExtension": false,
+    "count": 40,
+    "sort": "name",
+    "sortOrder": 1,
+    "storeRevisions": false
+  }
+}

@@ -75,7 +75,7 @@ describe('Application', function () {
 
         describe('on app start', function () {
             before(function (done) {
-                help.dropDatabase(function (err) {
+                help.dropDatabase('testdb', function (err) {
                     if (err) return done(err);
 
                     help.getBearerToken(function (err, token) {
@@ -123,181 +123,7 @@ describe('Application', function () {
 
         describe('POST', function () {
             before(function (done) {
-                help.dropDatabase(function (err) {
-                    if (err) return done(err);
-
-                    help.getBearerToken(function (err, token) {
-                        if (err) return done(err);
-
-                        bearerToken = token;
-
-                        done();
-                    });
-                });
-            });
-
-            it('should create new documents', function (done) {
-                var client = request(connectionString);
-                client
-                .post('/vtest/testdb/test-schema')
-                .set('Authorization', 'Bearer ' + bearerToken)
-                .send({field1: 'foo!'})
-                .expect(200)
-                .end(function (err, res) {
-                    if (err) return done(err);
-
-                    should.exist(res.body);
-
-                    res.body.should.be.Array;
-                    res.body.length.should.equal(1);
-                    should.exist(res.body[0]._id);
-                    res.body[0].field1.should.equal('foo!');
-                    done();
-                });
-            });
-
-            it('should create new documents when body is urlencoded', function (done) {
-                var body = "field1=foo!";
-                var client = request(connectionString);
-                client
-                .post('/vtest/testdb/test-schema')
-                .set('Authorization', 'Bearer ' + bearerToken)
-                .send(body)
-                .expect(200)
-                .end(function (err, res) {
-                    if (err) return done(err);
-
-                    should.exist(res.body);
-
-                    res.body.should.be.Array;
-                    res.body.length.should.equal(1);
-                    should.exist(res.body[0]._id);
-                    should.exist(res.body[0].field1);
-                    res.body[0].field1.should.equal('foo!');
-                    done();
-                });
-            });
-
-            it('should add internal fields to new documents', function (done) {
-                var client = request(connectionString);
-                client
-                .post('/vtest/testdb/test-schema')
-                .set('Authorization', 'Bearer ' + bearerToken)
-                .send({field1: 'foo!'})
-                .expect(200)
-                .end(function (err, res) {
-                    if (err) return done(err);
-
-                    should.exist(res.body);
-
-                    res.body.should.be.Array;
-                    res.body.length.should.equal(1);
-                    res.body[0].createdBy.should.equal('test123');
-                    res.body[0].createdAt.should.be.Number;
-                    res.body[0].createdAt.should.not.be.above(Date.now());
-                    res.body[0].apiVersion.should.equal('vtest');
-                    done();
-                });
-            });
-
-            it('should update existing documents', function (done) {
-                var client = request(connectionString);
-
-                client
-                .post('/vtest/testdb/test-schema')
-                .set('Authorization', 'Bearer ' + bearerToken)
-                .send({field1: 'doc to update'})
-                .expect(200)
-                .end(function (err, res) {
-                    if (err) return done(err);
-
-                    var doc = res.body[0];
-                    should.exist(doc);
-                    doc.field1.should.equal('doc to update');
-
-                    client
-                    .post('/vtest/testdb/test-schema/' + doc._id)
-                    .set('Authorization', 'Bearer ' + bearerToken)
-                    .send({field1: 'updated doc'})
-                    .expect(200)
-                    .end(function (err, res) {
-                        if (err) return done(err);
-
-                        res.body._id.should.equal(doc._id);
-                        res.body.field1.should.equal('updated doc');
-
-                        client
-                        .get('/vtest/testdb/test-schema?filter={"_id": "' + doc._id + '"}')
-                        .set('Authorization', 'Bearer ' + bearerToken)
-                        .expect(200)
-                        .expect('content-type', 'application/json')
-                        .end(function (err, res) {
-                            if (err) return done(err);
-
-                            res.body['results'].should.exist;
-                            res.body['results'].should.be.Array;
-                            res.body['results'].length.should.equal(1);
-                            res.body['results'][0].field1.should.equal('updated doc');
-
-                            done();
-                        })
-                    });
-                });
-            });
-
-            it('should add internal fields to updated documents', function (done) {
-                var client = request(connectionString);
-
-                client
-                .post('/vtest/testdb/test-schema')
-                .set('Authorization', 'Bearer ' + bearerToken)
-                .send({field1: 'doc to update'})
-                .expect(200)
-                .end(function (err, res) {
-                    if (err) return done(err);
-
-                    var doc = res.body[0];
-                    should.exist(doc);
-                    doc.field1.should.equal('doc to update');
-
-                    client
-                    .post('/vtest/testdb/test-schema/' + doc._id)
-                    .set('Authorization', 'Bearer ' + bearerToken)
-                    .send({field1: 'updated doc'})
-                    .expect(200)
-                    .end(function (err, res) {
-                        if (err) return done(err);
-
-                        res.body._id.should.equal(doc._id);
-                        res.body.field1.should.equal('updated doc');
-
-                        client
-                        .get('/vtest/testdb/test-schema?filter={"_id": "' + doc._id + '"}')
-                        .set('Authorization', 'Bearer ' + bearerToken)
-                        .expect(200)
-                        .expect('content-type', 'application/json')
-                        .end(function (err, res) {
-                            if (err) return done(err);
-
-                            res.body['results'].should.exist;
-                            res.body['results'].should.be.Array;
-                            res.body['results'].length.should.equal(1);
-                            res.body['results'][0].lastModifiedBy.should.equal('test123');
-                            res.body['results'][0].lastModifiedAt.should.be.Number;
-                            res.body['results'][0].lastModifiedAt.should.not.be.above(Date.now());
-                            res.body['results'][0].apiVersion.should.equal('vtest');
-
-                            done();
-                        })
-                    });
-                });
-            });
-        });
-
-        describe('GET', function () {
-            before(function (done) {
-
-                help.dropDatabase(function (err) {
+                help.dropDatabase('testdb', function (err) {
                     if (err) return done(err);
 
                     help.getBearerTokenWithAccessType("admin", function (err, token) {
@@ -309,8 +135,14 @@ describe('Application', function () {
                         var jsSchemaString = fs.readFileSync(__dirname + '/../new-schema.json', {encoding: 'utf8'});
                         jsSchemaString = jsSchemaString.replace('newField', 'field1');
                         var schema = JSON.parse(jsSchemaString);
+                        
                         schema.fields.field2 = _.extend({}, schema.fields.newField, {
                             type: 'Number',
+                            required: false
+                        });
+
+                        schema.fields.field3 = _.extend({}, schema.fields.newField, {
+                            type: 'ObjectID',
                             required: false
                         });
 
@@ -352,6 +184,295 @@ describe('Application', function () {
 
                     done();
                 });
+            });
+
+            it('should create new documents', function (done) {
+                var client = request(connectionString);
+                client
+                .post('/vtest/testdb/test-schema')
+                .set('Authorization', 'Bearer ' + bearerToken)
+                .send({field1: 'foo!'})
+                .expect(200)
+                .end(function (err, res) {
+                    if (err) return done(err);
+
+                    should.exist(res.body.results);
+                    res.body.results.should.be.Array;
+                    res.body.results.length.should.equal(1);
+                    should.exist(res.body.results[0]._id);
+                    res.body.results[0].field1.should.equal('foo!');
+                    done();
+                });
+            });
+
+            it('should create new documents when body is urlencoded', function (done) {
+                
+                var body = "field1=foo!";
+                var client = request(connectionString);
+                
+                client
+                .post('/vtest/testdb/test-schema')
+                .set('Authorization', 'Bearer ' + bearerToken)
+                .send(body)
+                .expect(200)
+                .end(function (err, res) {
+                    if (err) return done(err);
+
+                   
+                    should.exist(res.body.results);
+
+                    res.body.results.should.be.Array;
+                    res.body.results.length.should.equal(1);
+                    should.exist(res.body.results[0]._id);
+                    should.exist(res.body.results[0].field1);
+                    res.body.results[0].field1.should.equal('foo!');
+                    done();
+                });
+            });
+
+            it('should create new documents with ObjectIDs from single value', function (done) {
+
+                var body = { field1: 'foo!', field2: 1278, field3: '55cb1658341a0a804d4dadcc' };
+                var client = request(connectionString);
+                client
+                .post('/vtest/testdb/test-schema')
+                .set('Authorization', 'Bearer ' + bearerToken)
+                .send(body)
+                .expect(200)
+                .end(function (err, res) {
+                    if (err) return done(err);
+
+                    should.exist(res.body.results);
+
+                    res.body.results.should.be.Array;
+                    res.body.results.length.should.equal(1);
+                    should.exist(res.body.results[0]._id);
+                    should.exist(res.body.results[0].field3);
+                    //(typeof res.body.results[0].field3).should.equal('object');
+
+                    done();
+                });
+            });
+
+            it('should create new documents with ObjectIDs from array', function (done) {
+
+                var body = { field1: 'foo!', field2: 1278, field3: ['55cb1658341a0a804d4dadcc', '55cb1658341a0a804d4dadff'] };
+                var client = request(connectionString);
+                client
+                .post('/vtest/testdb/test-schema')
+                .set('Authorization', 'Bearer ' + bearerToken)
+                .send(body)
+                .expect(200)
+                .end(function (err, res) {
+                    if (err) return done(err);
+
+                    should.exist(res.body.results);
+
+                    res.body.results.should.be.Array;
+                    res.body.results.length.should.equal(1);
+                    should.exist(res.body.results[0]._id);
+                    should.exist(res.body.results[0].field3);
+                    //(typeof res.body.results[0].field3).should.equal('object');
+
+                    done();
+                });
+            });            
+
+            it('should add internal fields to new documents', function (done) {
+                var client = request(connectionString);
+                client
+                .post('/vtest/testdb/test-schema')
+                .set('Authorization', 'Bearer ' + bearerToken)
+                .send({field1: 'foo!'})
+                .expect(200)
+                .end(function (err, res) {
+                    if (err) return done(err);
+
+                    should.exist(res.body.results);
+
+                    res.body.results.should.be.Array;
+                    res.body.results.length.should.equal(1);
+                    res.body.results[0].createdBy.should.equal('test123');
+                    res.body.results[0].createdAt.should.be.Number;
+                    res.body.results[0].createdAt.should.not.be.above(Date.now());
+                    res.body.results[0].apiVersion.should.equal('vtest');
+                    done();
+                });
+            });
+
+            it('should update existing documents', function (done) {
+                var client = request(connectionString);
+
+                client
+                .post('/vtest/testdb/test-schema')
+                .set('Authorization', 'Bearer ' + bearerToken)
+                .send({field1: 'doc to update'})
+                .expect(200)
+                .end(function (err, res) {
+                    if (err) return done(err);
+
+                    var doc = res.body.results[0];
+                    should.exist(doc);
+                    doc.field1.should.equal('doc to update');
+
+                    client
+                    .post('/vtest/testdb/test-schema/' + doc._id)
+                    .set('Authorization', 'Bearer ' + bearerToken)
+                    .send({field1: 'updated doc'})
+                    .expect(200)
+                    .end(function (err, res) {
+                        if (err) return done(err);
+
+                        res.body.results[0]._id.should.equal(doc._id);
+                        res.body.results[0].field1.should.equal('updated doc');
+
+                        client
+                        .get('/vtest/testdb/test-schema?filter={"_id": "' + doc._id + '"}')
+                        .set('Authorization', 'Bearer ' + bearerToken)
+                        .expect(200)
+                        .expect('content-type', 'application/json')
+                        .end(function (err, res) {
+                            if (err) return done(err);
+
+                            res.body['results'].should.exist;
+                            res.body['results'].should.be.Array;
+                            res.body['results'].length.should.equal(1);
+                            res.body['results'][0].field1.should.equal('updated doc');
+
+                            done();
+                        })
+                    });
+                });
+            });
+
+            it('should add internal fields to updated documents', function (done) {
+                var client = request(connectionString);
+
+                client
+                .post('/vtest/testdb/test-schema')
+                .set('Authorization', 'Bearer ' + bearerToken)
+                .send({field1: 'doc to update'})
+                .expect(200)
+                .end(function (err, res) {
+                    if (err) return done(err);
+
+                    var doc = res.body.results[0];
+                    should.exist(doc);
+                    doc.field1.should.equal('doc to update');
+
+                    client
+                    .post('/vtest/testdb/test-schema/' + doc._id)
+                    .set('Authorization', 'Bearer ' + bearerToken)
+                    .send({field1: 'updated doc'})
+                    .expect(200)
+                    .end(function (err, res) {
+                        if (err) return done(err);
+
+                        res.body.results[0]._id.should.equal(doc._id);
+                        res.body.results[0].field1.should.equal('updated doc');
+
+                        client
+                        .get('/vtest/testdb/test-schema?filter={"_id": "' + doc._id + '"}')
+                        .set('Authorization', 'Bearer ' + bearerToken)
+                        .expect(200)
+                        .expect('content-type', 'application/json')
+                        .end(function (err, res) {
+                            if (err) return done(err);
+
+                            res.body['results'].should.exist;
+                            res.body['results'].should.be.Array;
+                            res.body['results'].length.should.equal(1);
+                            res.body['results'][0].lastModifiedBy.should.equal('test123');
+                            res.body['results'][0].lastModifiedAt.should.be.Number;
+                            res.body['results'][0].lastModifiedAt.should.not.be.above(Date.now());
+                            res.body['results'][0].apiVersion.should.equal('vtest');
+
+                            done();
+                        })
+                    });
+                });
+            });
+        });
+
+        describe('GET', function () {
+            
+            var cleanup = function (done) {
+                // try to cleanup these tests directory tree
+                // don't catch errors here, since the paths may not exist
+                try {
+                    fs.unlinkSync(__dirname + '/workspace/collections/v1/testdb/collection.test-schema.json');
+                } catch (e) {}
+
+                try {
+                    fs.rmdirSync(__dirname + '/workspace/collections/v1/testdb');
+                } catch (e) {}
+
+                done();
+            };
+
+            before(function (done) {
+
+                help.dropDatabase('testdb', function (err) {
+                    if (err) return done(err);
+
+                    help.getBearerTokenWithAccessType("admin", function (err, token) {
+                        if (err) return done(err);
+
+                        bearerToken = token;
+
+                        // add a new field to the schema
+                        var jsSchemaString = fs.readFileSync(__dirname + '/../new-schema.json', {encoding: 'utf8'});
+                        jsSchemaString = jsSchemaString.replace('newField', 'field1');
+                        var schema = JSON.parse(jsSchemaString);
+                        
+                        schema.fields.field2 = _.extend({}, schema.fields.newField, {
+                            type: 'Number',
+                            required: false
+                        });
+
+                        schema.fields.field3 = _.extend({}, schema.fields.newField, {
+                            type: 'ObjectID',
+                            required: false
+                        });
+
+                        var client = request(connectionString);
+
+                        client
+                        .post('/vtest/testdb/test-schema/config')
+                        .send(JSON.stringify(schema, null, 4))
+                        .set('content-type', 'text/plain')
+                        .set('Authorization', 'Bearer ' + bearerToken)
+                        .expect(200)
+                        .expect('content-type', 'application/json')
+                        .end(function (err, res) {
+                            if (err) return done(err);
+
+                            done();
+                        });
+                    });
+                });
+            });
+
+            after(function (done) {
+                // reset the schema
+                var jsSchemaString = fs.readFileSync(__dirname + '/../new-schema.json', {encoding: 'utf8'});
+                jsSchemaString = jsSchemaString.replace('newField', 'field1');
+                var schema = JSON.parse(jsSchemaString);
+
+                var client = request(connectionString);
+
+                client
+                .post('/vtest/testdb/test-schema/config')
+                .send(JSON.stringify(schema, null, 4))
+                .set('content-type', 'text/plain')
+                .set('Authorization', 'Bearer ' + bearerToken)
+                .expect(200)
+                .expect('content-type', 'application/json')
+                .end(function (err, res) {
+                    if (err) return done(err);
+
+                    cleanup(done);
+                });
             })
 
             it('should get documents', function (done) {
@@ -372,6 +493,56 @@ describe('Application', function () {
                         res.body['results'].should.be.Array;
                         res.body['results'].length.should.be.above(0)
                         done();
+                    });
+                });
+            });
+
+            it('should get documents from correct API version', function (done) {
+
+                var jsSchemaString = fs.readFileSync(__dirname + '/../new-schema.json', {encoding: 'utf8'});
+
+                help.createDoc(bearerToken, function (err, doc) {
+                    if (err) return done(err);
+
+                    doc.apiVersion.should.equal('vtest');
+
+                    // create new API endpoint
+                    var client = request(connectionString);
+
+                    client
+                    .post('/v1/testdb/test-schema/config')
+                    .send(jsSchemaString)
+                    .set('content-type', 'text/plain')
+                    .set('Authorization', 'Bearer ' + bearerToken)
+                    .expect(200)
+                    .expect('content-type', 'application/json')
+                    .end(function (err, res) {
+                        if (err) return done(err);
+
+                        // Wait for a few seconds then make request to test that the new endpoint is working
+                        setTimeout(function () {
+
+                            var testdoc = { newField: "test string" };
+                            help.createDocWithSpecificVersion(bearerToken, 'v1', testdoc, function (err, doc) {
+                                if (err) return done(err);
+
+                                setTimeout(function () {
+                                    client
+                                    .get('/v1/testdb/test-schema')
+                                    .set('Authorization', 'Bearer ' + bearerToken)
+                                    .expect(200)
+                                    .expect('content-type', 'application/json')
+                                    .end(function (err, res) {
+                                        if (err) return done(err);
+
+                                        res.body['results'].should.exist;
+                                        res.body['results'].should.be.Array;
+                                        res.body['results'][0].apiVersion.should.equal('v1');
+                                        done();
+                                    });
+                                }, 300);
+                            });
+                        }, 300);
                     });
                 });
             });
@@ -1073,7 +1244,7 @@ describe('Application', function () {
 
         describe('DELETE', function () {
             before(function (done) {
-                help.dropDatabase(function (err) {
+                help.dropDatabase('testdb', function (err) {
                     if (err) return done(err);
 
                     help.getBearerToken(function (err, token) {
@@ -1097,7 +1268,7 @@ describe('Application', function () {
                 .end(function (err, res) {
                     if (err) return done(err);
 
-                    var doc = res.body[0];
+                    var doc = res.body.results[0];
                     should.exist(doc);
                     doc.field1.should.equal('doc to remove');
 
@@ -1161,7 +1332,7 @@ describe('Application', function () {
                 .end(function (err, res) {
                     if (err) return done(err);
 
-                    var doc = res.body[0];
+                    var doc = res.body.results[0];
                     should.exist(doc);
                     doc.field1.should.equal('doc to remove 2');
 
@@ -1491,7 +1662,7 @@ describe('Application', function () {
             var client = request(connectionString);
 
             client
-            .get('/endpoints/v1/test-endpoint')
+            .get('/v1/test-endpoint')
             .set('Authorization', 'Bearer ' + bearerToken)
             .expect(200)
             .expect('content-type', 'application/json')
@@ -1507,7 +1678,7 @@ describe('Application', function () {
             var client = request(connectionString);
 
             client
-            .get('/endpoints/v1/new-endpoint-routing/55bb8f0a8d76f74b1303a135')
+            .get('/v1/new-endpoint-routing/55bb8f0a8d76f74b1303a135')
             .set('Authorization', 'Bearer ' + bearerToken)
             .expect(200)
             .expect('content-type', 'application/json')
@@ -1528,12 +1699,18 @@ describe('Application', function () {
         var jsSchemaString = fs.readFileSync(__dirname + '/../new-endpoint.js', {encoding: 'utf8'});
 
         var cleanup = function (done) {
+            // try to cleanup these tests directory tree
             try {
-
-                // try to cleanup these tests directory tree
                 fs.unlinkSync(__dirname + '/workspace/endpoints/v1/endpoint.new-endpoint.js');
             } catch (err) {
-                //console.log(err);
+            }
+            try {
+                fs.unlinkSync(__dirname + '/workspace/endpoints/v2/endpoint.new-endpoint.js');
+            } catch (err) {
+            }
+            try {
+                fs.rmdirSync(__dirname + '/workspace/endpoints/v2');
+            } catch (err) {
             }
             done();
         };
@@ -1562,7 +1739,7 @@ describe('Application', function () {
 
                 // make sure the endpoint is not already there
                 client
-                .get('/endpoints/v1/new-endpoint?cache=false')
+                .get('/v1/new-endpoint?cache=false')
                 .set('Authorization', 'Bearer ' + bearerToken)
                 .expect(404)
                 .end(function (err) {
@@ -1570,7 +1747,7 @@ describe('Application', function () {
 
                     // create endpoint
                     client
-                    .post('/endpoints/v1/new-endpoint/config')
+                    .post('/v1/new-endpoint/config')
                     .send(jsSchemaString)
                     .set('content-type', 'text/plain')
                     .set('Authorization', 'Bearer ' + bearerToken)
@@ -1583,7 +1760,7 @@ describe('Application', function () {
                         // wait, then test that endpoint was created
                         setTimeout(function () {
                             client
-                            .get('/endpoints/v1/new-endpoint?cache=false')
+                            .get('/v1/new-endpoint?cache=false')
                             .set('Authorization', 'Bearer ' + bearerToken)
                             .expect(200)
                             //.expect('content-type', 'application/json')
@@ -1603,10 +1780,10 @@ describe('Application', function () {
 
                 // make sure the endpoint exists from last test
                 client
-                .get('/endpoints/v1/new-endpoint?cache=false')
+                .get('/v1/new-endpoint?cache=false')
                 .set('Authorization', 'Bearer ' + bearerToken)
                 .expect(200)
-                .end(function (err) {
+                .end(function (err, res) {
                     if (err) return done(err);
 
                     // get an updated version of the file
@@ -1616,7 +1793,7 @@ describe('Application', function () {
 
                     // update endpoint
                     client
-                    .post('/endpoints/v1/new-endpoint/config')
+                    .post('/v1/new-endpoint/config')
                     .send(jsSchemaString)
                     .set('content-type', 'text/plain')
                     .set('Authorization', 'Bearer ' + bearerToken)
@@ -1627,7 +1804,7 @@ describe('Application', function () {
                         // wait, then test that endpoint was created
                         setTimeout(function () {
                             client
-                            .get('/endpoints/v1/new-endpoint?cache=false')
+                            .get('/v1/new-endpoint?cache=false')
                             .set('Authorization', 'Bearer ' + bearerToken)
                             .expect(200)
                             .expect('content-type', 'application/json')
@@ -1637,7 +1814,48 @@ describe('Application', function () {
                                 res.body.message.should.equal('endpoint updated through the API');
                                 done();
                             });
-                        }, 1000);
+                        }, 500);
+                    });
+                });
+            });
+
+            it('should allow creating a new endpoint for a new version number', function (done) {
+                var client = request(connectionString);
+
+                // make sure the endpoint is not already there
+                client
+                .get('/v2/new-endpoint?cache=false')
+                .set('Authorization', 'Bearer ' + bearerToken)
+                .expect(404)
+                .end(function (err) {
+                    if (err) return done(err);
+
+                    // create endpoint
+                    client
+                    .post('/v2/new-endpoint/config')
+                    .send(jsSchemaString)
+                    .set('content-type', 'text/plain')
+                    .set('Authorization', 'Bearer ' + bearerToken)
+                    .expect(200)
+                    .end(function (err, res) {
+                        if (err) return done(err);
+
+                        res.body.message.should.equal('Endpoint "v2:new-endpoint" created');
+
+                        // wait, then test that endpoint was created
+                        setTimeout(function () {
+                            client
+                            .get('/v2/new-endpoint?cache=false')
+                            .set('Authorization', 'Bearer ' + bearerToken)
+                            .expect(200)
+                            .expect('content-type', 'application/json')
+                            .end(function (err, res) {
+                                if (err) return done(err);
+
+                                res.body.message.should.equal('endpoint updated through the API');
+                                done();
+                            });
+                        }, 1500);
                     });
                 });
             });
@@ -1646,7 +1864,7 @@ describe('Application', function () {
         describe('GET', function () {
             it('should NOT return the Javascript file backing the endpoint', function (done) {
                 request(connectionString)
-                .get('/endpoints/v1/test-endpoint/config?cache=false')
+                .get('/v1/test-endpoint/config?cache=false')
                 .set('Authorization', 'Bearer ' + bearerToken)
                 .expect(404)
                 .end(done);
@@ -1656,7 +1874,7 @@ describe('Application', function () {
         describe('DELETE', function () {
             it('should NOT remove the custom endpoint', function (done) {
                 request(connectionString)
-                .delete('/endpoints/v1/test-endpoint/config')
+                .delete('/v1/test-endpoint/config')
                 .set('Authorization', 'Bearer ' + bearerToken)
                 .expect(404)
                 .end(done);
@@ -1698,7 +1916,7 @@ describe('Application', function () {
                     should.exist(res.body.server);
                     should.exist(res.body.auth);
                     should.exist(res.body.caching);
-                    should.deepEqual(res.body, config);
+                    //should.deepEqual(res.body, config);
 
                     done();
                 });

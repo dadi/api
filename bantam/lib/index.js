@@ -1,7 +1,9 @@
+var pkginfo = require('pkginfo').read(__dirname);
 var fs = require('fs');
 var path = require('path');
 var url = require('url');
 var bodyParser = require('body-parser');
+var stackTrace = require('stack-trace');
 var _ = require('underscore');
 var controller = require(__dirname + '/controller');
 var model = require(__dirname + '/model');
@@ -71,7 +73,12 @@ Server.prototype.start = function (options, done) {
     var server = this.server = app.listen(config.server.port, config.server.host);
 
     server.on('listening', function (e) {
-      logger.prod('Started server on ' + config.server.host + ':' + config.server.port);
+      
+      var message = "\nStarted Serama (" + pkginfo.package.version + ") on " + config.server.host + ":" + config.server.port;
+      
+      console.log(message);
+      logger.prod(message);
+
     });
 
     server.on('error', function (e) {
@@ -414,7 +421,7 @@ Server.prototype.addEndpointResource = function (options) {
     var self = this;
     var name = endpoint.slice(endpoint.indexOf('.') + 1, endpoint.indexOf('.js'));
     var filepath = options.filepath;
-
+    
     try {
         // keep reference to component so hot loading component can be
         // done by changing reference value
@@ -501,9 +508,30 @@ Server.prototype.addComponent = function (options) {
 
     this.app.use(options.route, function (req, res, next) {
 
-        // map request method to controller method
-        var method = req.method && req.method.toLowerCase();
-        if (method && options.component[method]) return options.component[method](req, res, next);
+        try {
+            // map request method to controller method
+            var method = req.method && req.method.toLowerCase();
+            if (method && options.component[method]) return options.component[method](req, res, next);
+        }
+        catch (err) {
+            var trace = stackTrace.parse(err);
+
+            if (trace) {
+                var stack = 'Error "' + err + '"\n';
+                for (var i = 0; i < trace.length; i++) {
+                    stack += '  at ' + trace[i].methodName + ' (' + trace[i].fileName + ':' + trace[i].lineNumber + ':' + trace[i].columnNumber + ')\n';
+                };
+                var error = new Error();
+                error.statusCode = 500;
+                error.json = { 'error': stack };
+
+                console.log(stack);
+                return next(error);
+            }
+            else {
+                return next(err);
+            }
+        }
 
         next();
     });

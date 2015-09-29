@@ -94,7 +94,7 @@ This exposes the follwing methods -
 `VERB` can be any of the http methods, e.g. `app.get`, `app.post`, `app.head`
 
 * route must be a path string for use with [path-to-regexp](https://github.com/component/path-to-regexp)
-* handler is a function that recieves (req, res, next) just like the middleware declared with `.use`
+* handler is a function that receives (req, res, next) just like the middleware declared with `.use`
 
 _NOTE: you can add any number of handlers, and they will be called in the order they were added_
 

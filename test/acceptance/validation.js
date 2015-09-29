@@ -1,6 +1,7 @@
 var fs = require('fs');
 var should = require('should');
 var request = require('supertest');
+var _ = require('underscore');
 var config = require(__dirname + '/../../config');
 var help = require(__dirname + '/help');
 var app = require(__dirname + '/../../bantam/lib/');
@@ -14,7 +15,7 @@ describe('validation', function () {
         }, function (err) {
             if (err) return done(err);
 
-            help.dropDatabase(function (err) {
+            help.dropDatabase('testdb', function (err) {
                 if (err) return done(err);
 
                 help.getBearerToken(function (err, token) {
@@ -56,6 +57,28 @@ describe('validation', function () {
                 .expect(200, done);
             });
         });
+
+        // describe('date', function () {
+        //     it('should not allow setting non-date', function (done) {
+        //         var client = request('http://' + config.server.host + ':' + config.server.port);
+
+        //         client
+        //         .post('/vtest/testdb/test-validation-schema')
+        //         .set('Authorization', 'Bearer ' + bearerToken)
+        //         .send({fieldDate: 1337})
+        //         .expect(400, done);
+        //     });
+
+        //     it('should allow setting date', function (done) {
+        //         var client = request('http://' + config.server.host + ':' + config.server.port);
+
+        //         client
+        //         .post('/vtest/testdb/test-validation-schema')
+        //         .set('Authorization', 'Bearer ' + bearerToken)
+        //         .send({fieldDate: "2013/12/08"})
+        //         .expect(200, done);
+        //     });
+        // });
 
         describe('number', function () {
             it('should not allow setting non-number', function (done) {
@@ -132,7 +155,6 @@ describe('validation', function () {
                     });
                 }, 100);
             });
-
         });
 
         describe('mixed', function () {
@@ -315,9 +337,9 @@ describe('validation', function () {
                 if (err) return done(err);
 
                 res.body.should.be.json;
-                res.body.should.be.an.Array;
-                res.body[0].fieldDefault.should.exist;
-                res.body[0].fieldDefault.should.eql("FOO!");
+                res.body.results.should.be.an.Array;
+                res.body.results[0].fieldDefault.should.exist;
+                res.body.results[0].fieldDefault.should.eql("FOO!");
 
                 done();
             });
@@ -336,9 +358,9 @@ describe('validation', function () {
                 if (err) return done(err);
 
                 res.body.should.be.json;
-                res.body.should.be.an.Array;
-                res.body[0].fieldDefault.should.exist;
-                res.body[0].fieldDefault.should.eql("bean");
+                res.body.results.should.be.an.Array;
+                res.body.results[0].fieldDefault.should.exist;
+                res.body.results[0].fieldDefault.should.eql("bean");
 
                 done();
             });

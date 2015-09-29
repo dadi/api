@@ -15,6 +15,7 @@ module.exports.sendBackJSON = function (successCode, res, next) {
         res.statusCode = successCode;
 
         var resBody = JSON.stringify(results);
+        
         res.setHeader('content-type', 'application/json');
         res.setHeader('content-length', Buffer.byteLength(resBody));
         res.end(resBody);
@@ -195,3 +196,15 @@ module.exports.mkdirParent =  function(dirPath, mode, callback) {
         callback && callback(error);
     });
 };
+
+module.exports.getFromObj = function(obj, path, def) {
+    var i, len;
+
+    for(i = 0, path = path.split('.'), len = path.length; i < len; i++){
+        if(!obj || typeof obj !== 'object') return def;
+        obj = obj[path[i]];
+    }
+
+    if(obj === undefined) return def;
+    return obj;
+}

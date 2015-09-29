@@ -6,9 +6,9 @@ Endpoints in Serama can be either be mapped directly to collections in MongoDB o
 
 ## Collections
 
-### Collections specification
+### Collection specification
 
-Collections are defined within `/workspace/collections` as JSON files named inline with the collection MongoDB and stored witin a verison and database directory -
+Collections are defined within `/workspace/collections` as JSON files named inline with the MongoDB collection and stored within a verison and database directory -
 
 `{version}/{database}/{collection.NAME.json}`
 
@@ -56,6 +56,7 @@ Collection schemas take the following format -
 	        "fieldLimiters": null,
 	        "allowExtension": false,
 	        "count": 40,
+          "sort": "field1",
 	        "sortOrder": 1
 	    }
 	}
@@ -69,7 +70,7 @@ Fields that can be passed into a record are defined in the collection schema in 
 Each field is defined in the following way:
 
         "field_name": {
-            "type": "Text input",
+            "type": "String",
             "label": "Title",
             "comments": "The title of the entry",
             "limit": "",
@@ -87,7 +88,7 @@ Each field is defined in the following way:
  Parameter       | Description        |  Default                                  | Example
 :----------------|:-------------------|:------------------------------------------|:-------
 field_name | The name of the field | | ```"title"```
-type | The type of the field. Possible values TBC | | ```"Text"```
+type | The type of the field. Possible values `String`, `Number`, `Boolean`, `Mixed`, `Object`, `ObjectID`, `Reference`  | | ```"String"```
 label | The label for the field | | ```"Title"```
 comments | The description of the field | | ```"The article title"```
 limit | Length limit for the field | unlimited | ```"20"```
@@ -144,13 +145,168 @@ If a record fails validation an errors collection should be returned with the re
       }
     }
 
-**Note:** The default message for a field that fails validation rules is "is invalid". If a `required` field has been left blank the message should change to "can't be blank". 
+**Note:** The default message for a field that fails validation rules is "is invalid". If a `required` field has been left blank the message returned is "can't be blank". A custom message can be specified using the `message` property of th field concerned.
+
+#### Document "Composition" via Reference Fields
+
+To reduce data duplication through document embedding, Serama allows the use of reference fields/pointers to other documents. 
+
+Consider the following two collections, `book` and `person`. `Book` contains a Reference field `author` which is capable of loading documents from the `person` collection. By creating a `book` document and setting the `author` field to the _id value of a document from the `person` collection, Serama is able to resolve this reference and return the `author` document within a result set for a `book` query. 
+
+##### Composed 
+
+An additional `composed` property is added to the `book` document when it is returned, indicating which fields have been expanded. The property contains the original _id value used for the reference field lookup.  
+
+##### Enabling Composition
+
+Composition is disabled by default. 
+
+To return a document with resolved Reference fields at the top level, you may send a parameter either in the querystring of your request or provide it as an option to the model's `find()` method:
+
+```
+GET /1.0/library/book?filter={"_id":"560a5baf320039f7d6a78d3b"}&compose=true
+```
+
+```
+book.find({ title: "Harry Potter 2" }, { "compose": true }, function (err, result) {
+  // do something with result
+});
+```
+
+This setting will allow the first level of Reference fields to be resolved. To allow 
+Reference fields to resolve which are nested further within the document, add a `compose` property to the collection schema's settings block:
+
+
+```
+{
+  "fields": {
+  },
+  "settings": {
+    "compose": true
+  }
+}
+```
+
+collection.book.json
+
+```
+{
+  "fields": {
+    "title": {
+      "type": "String",
+      "required": true
+    },
+    "author": {
+      "type": "Reference",
+      "required": true,
+      "settings": {
+        "collection": "person"
+      }
+    },
+    "booksInSeries": {
+      "type": "Reference",
+      "required": false
+    }
+  },
+  "settings": {
+  }
+}
+```
+
+collection.person.json
+
+```
+{
+  "fields": {
+    "name": {
+      "type": "String",
+      "required": true
+    },
+    "occupation": {
+      "type": "String",
+      "required": false
+    },
+    "nationality": {
+      "type": "String",
+      "required": false
+    },
+    "education": {
+      "type": "String",
+      "required": false
+    },
+    "spouse": {
+      "type": "Reference"
+    }
+  },
+  "settings": {
+  }
+}
+
+ ```
+
+a `book` document
+
+```
+{
+  "_id": "560a44b33a4d7de29f168ce4",
+  "title": "Harry Potter 2",
+  "author": "560a44b33a4d7de29f168ce0",
+  "booksInSeries": ["560a44b33a4d7de29f168ce2"]
+}
+```
+
+The result of a query for the above `book` document
+
+```
+{
+  "_id": "560a44b33a4d7de29f168ce4",
+  "title": "Harry Potter 2",
+  "author": {
+    "_id": "560a44b33a4d7de29f168ce0",
+    "name": "J K Rowling",
+    "spouse": {
+      "_id": "560a44b33a4d7de29f168cd9",
+      "name": "Neil Murray"
+    },
+    "composed": {
+      "spouse": "560a44b33a4d7de29f168cd9"
+    }
+  },
+  "booksInSeries": [
+    {
+      "_id": "560a44b33a4d7de29f168ce2",
+      "title": "Harry Potter 1",
+      "author": {
+        "_id": "560a44b33a4d7de29f168ce0",
+        "name": "J K Rowling",
+        "spouse": {
+          "_id": "560a44b33a4d7de29f168cd9",
+          "name": "Neil Murray"
+        },
+        "composed": {
+          "spouse": "560a44b33a4d7de29f168cd9"
+        }
+      },
+      "composed": {
+        "author": "560a44b33a4d7de29f168ce0"
+      }
+    }
+  ],
+  "composed": {
+    "author": "560a44b33a4d7de29f168ce0",
+    "booksInSeries": [
+      "560a44b33a4d7de29f168ce2"
+    ]
+  }
+}
+```
+
 
 ## Custom endpoints
 
 ### Overview
 
-An endpoint must be named such that the filename is endpoint.{endpoint name}.js and exist in a `version` folder within the application's endpoints path (typically `workspace/endpoints`). The corresponding URL will be /endpoints/{version}/{endpoint name}. The javascript file should export functions with all lowercase names that correspond to the HTTP method that the function is meant to handle.
+An endpoint must follow the naming convention `endpoint.{endpoint name}.js` and exist in a `version` folder within the application's endpoints path (typically `workspace/endpoints`). The corresponding URL will be /{version}/{endpoint name}. The Javascript file should export functions with all lowercase names that correspond to the HTTP method that the function is meant to handle.
 
 Each function will recieve three arguments -
 
@@ -164,26 +320,26 @@ There is an example custom endpoint included in the `workspace` directory.
 
 #### Custom Endpoint Routing
 
-It is possible to override the default endpoint route by including a `config` function in the endpoint file. The function should return a `config` option with a `route` property. The value of this property will be used for the endpoint's route.
+It is possible to override the default endpoint route by including a `config` function in the endpoint file. The function should return a `config` object with a `route` property. The value of this property will be used for the endpoint's route.
 
-The following example returns a config block with a route that specifies an optional request parameter, `id`.
+The following example returns a config object with a route that specifies an optional request parameter, `id`.
 
 ```
 module.exports.config = function () {
-  return { "route": "/endpoints/v1/example/:id([a-fA-F0-9]{24})?" }
+  return { "route": "/v1/example/:id([a-fA-F0-9]{24})?" }
 }
 ```
 
 This route will now respond to requests such as 
 
 ```
-http://api.example.com/endpoints/v1/example/55bb8f688d76f74b1303a137
+http://api.example.com/v1/example/55bb8f688d76f74b1303a137
 ```
 
 Without this custom route, the same could be achieved by requesting the default route with a querystring parameter.
 
 ```
-http://api.example.com/endpoints/v1/example?id=55bb8f688d76f74b1303a137
+http://api.example.com/v1/example?id=55bb8f688d76f74b1303a137
 ```
 
 ### Authentication
@@ -235,19 +391,46 @@ _You may want to look at a handy QA testing tool called [Postman](http://www.get
 
 ### Collections POST request
 
+```
     POST /vtest/testdb/test-schema HTTP/1.1
     Host: localhost:3000
     content-type: application/json
     Authorization: Bearer 171c8c12-6e9b-47a8-be29-0524070b0c65
 
-    { "field_1": "hi world!", "field_2": 123293582345 }
+    { "field1": "hi world!", "field2": 123293582345 }
+```
+
+### Collections POST response
+
+```
+    {
+      "results": [
+        {
+          "field1": "hi world!",
+          "field2": 123293582345,
+          "apiVersion": "vtest",
+          "createdAt": 1441089951507,
+          "createdBy": "testClient",
+          "_id": "55e5499f83f997b7d1e63e93"
+        }
+      ]
+    }
+```
 
 
 ### Endpoint GET request
 
 This will return a "Hello World" example -
 
-    GET /endpoints/v1/test-endpoint HTTP/1.1
+```
+    GET /v1/test-endpoint HTTP/1.1
     Host: localhost:3000
     content-type: application/json
     Authorization: Bearer 171c8c12-6e9b-47a8-be29-0524070b0c65
+```
+
+### Endpoint GET response
+
+```
+{ message: 'Hello World' }
+```

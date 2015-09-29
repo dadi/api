@@ -1,6 +1,6 @@
 ![Serama](serama.png)
 
-![Build Status](http://img.shields.io/badge/Release-0.1.9_Beta-green.svg?style=flat-square)&nbsp;[![License](http://img.shields.io/:License-MIT-blue.svg?style=flat-square)](http://dadi.mit-license.org)
+![Build Status](http://img.shields.io/badge/Release-0.1.10_Beta-green.svg?style=flat-square)&nbsp;[![License](http://img.shields.io/:License-MIT-blue.svg?style=flat-square)](http://dadi.mit-license.org)
 
 ## Contents
 
@@ -119,7 +119,7 @@ Returns the record with the id of *{:id}* in the *{collection name}* collection 
 
 #### 3.
 
-**GET** *http://{url}/endpoints/{version number}/{endpoint name}*
+**GET** *http://{url}/{version number}/{endpoint name}*
 
 Returns a JSON object. Parameters and return are completely customisable. The output is generated using the file:
 
@@ -241,7 +241,7 @@ _You may want to look at a handy QA testing tool called [Postman](http://www.get
 
 This will return a "Hello World" example:
 
-    GET /endpoints/test-endpoint HTTP/1.1
+    GET /test-endpoint HTTP/1.1
     Host: localhost:3000
     content-type: application/json
     Authorization: Bearer 171c8c12-6e9b-47a8-be29-0524070b0c65

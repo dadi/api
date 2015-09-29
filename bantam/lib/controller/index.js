@@ -8,7 +8,7 @@ POST, GET, and DELETE methods that can be accessed by the request router
 This will only be used for *http://{url}/{version number}/{database name}/{collection name}*
 type of endpoints
 
-*http://{url}/endpoints/{version number}/{endpoint name}* type endpoints should create a custom controller that
+*http://{url}/{version number}/{endpoint name}* type endpoints should create a custom controller that
 implements methods corresponding to the HTTP methods it needs to support
 
 
@@ -29,8 +29,11 @@ var Controller = function (model) {
 };
 
 Controller.prototype.get = function (req, res, next) {
-    var options = url.parse(req.url, true).query;
+    
+    var path = url.parse(req.url, true);
+    var options = path.query;
     var query = parseQuery(options.filter);
+    var apiVersion = path.pathname.split('/')[1];
 
     var settings = this.model.settings || {};
 
@@ -65,6 +68,9 @@ Controller.prototype.get = function (req, res, next) {
         _.extend(query, { _id : req.params.id });
     }
 
+    // add the apiVersion filter
+    _.extend(query, { apiVersion : apiVersion });
+
     // white list user specified options
     var queryOptions = {
         limit: limit,
@@ -74,6 +80,10 @@ Controller.prototype.get = function (req, res, next) {
 
     if (options.fields && help.isJSON(options.fields)) {
         queryOptions.fields = JSON.parse(options.fields);
+    }
+
+    if (options.hasOwnProperty('compose')) {
+        queryOptions.compose = options.compose === 'true';
     }
 
     if (sort && !_.isEmpty(sort)) queryOptions.sort = sort;
@@ -88,30 +98,33 @@ Controller.prototype.post = function (req, res, next) {
         apiVersion: req.url.split('/')[1]
     };
 
-    var pathname = url.parse(req.url).pathname;
-    if (req.params.id) {
-        pathname = pathname.replace('/' + req.params.id, '');
-    }
-
     var self = this;
 
-    // flush cache for POST and DELETE requests
+    var pathname = url.parse(req.url).pathname;
+
+    // remove id param if it's an update, so 
+    // we still get a valid handle on the model name
+    // for clearing the cache
+    pathname = pathname.replace('/' + req.params.id, '');
+
+    // flush cache for POST requests
     help.clearCache(pathname, function (err) {
-        if (err) console.log(err);
+        if (err) return next(err);
 
         // if id is present in the url, then this is an update
         if (req.params.id) {
+        
             internals.lastModifiedAt = Date.now();
             internals.lastModifiedBy = req.client && req.client.clientId;
 
             return self.model.update({
-                _id: req.params.id
+                _id: req.params.id, apiVersion: internals.apiVersion
             }, req.body, internals, sendBackJSON(200, res, next));
         }
 
         // if no id is present, then this is a create
         internals.createdAt = Date.now();
-        internals.createdBy = req.client && req.client.clientId;        
+        internals.createdBy = req.client && req.client.clientId;
     
         self.model.create(req.body, internals, sendBackJSON(200, res, next));
     });
@@ -121,21 +134,34 @@ Controller.prototype.delete = function (req, res, next) {
     var id = req.params.id;
     if (!id) return next();
 
-    this.model.delete({_id: id}, function (err, results) {
+    var self = this;
+
+    var pathname = url.parse(req.url).pathname;
+
+    // remove id param so we still get a valid handle 
+    // on the model name for clearing the cache
+    pathname = pathname.replace('/' + req.params.id, '');
+
+    // flush cache for DELETE requests
+    help.clearCache(pathname, function (err) {
         if (err) return next(err);
 
-        if (config.feedback) {
+        self.model.delete({_id: id}, function (err, results) {
+            if (err) return next(err);
 
-            // send 200 with json message
-            return help.sendBackJSON(200, res, next)(null, {
-                status: 'success',
-                message: 'Document deleted successfully'
-            });
-        }
+            if (config.feedback) {
 
-        // send no-content success 
-        res.statusCode = 204;
-        res.end();
+                // send 200 with json message
+                return help.sendBackJSON(200, res, next)(null, {
+                    status: 'success',
+                    message: 'Document deleted successfully'
+                });
+            }
+
+            // send no-content success 
+            res.statusCode = 204;
+            res.end();
+        });
     });
 };
 

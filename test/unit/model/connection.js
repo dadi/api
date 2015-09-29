@@ -25,11 +25,26 @@ describe('Model connection', function () {
     });
 
     it('should connect to database', function (done) {
-        var conn = connection();
+
+        var options = {
+            "username": "",
+            "password": "",
+            "database": "serama",
+            "replicaSet": false,
+            "hosts": [
+                {
+                    "host": "localhost",
+                    "port": 27017
+                }
+            ]
+        };
+
+        var conn = connection(options);
 
         conn.on('connect', function (db) {
             db.should.be.an.instanceOf(Db);
             conn.readyState.should.equal(1);
+            conn.connectionString.should.eql("mongodb://localhost:27017/serama");
             done();
         });
     });
@@ -45,13 +60,58 @@ describe('Model connection', function () {
         }, function (err) {
             if (err) return done(err);
 
-            var conn = connection({username: 'seramatest', password: 'test123'});
+            var conn = connection({
+                username: 'seramatest',
+                password: 'test123',
+                hosts: [{
+                    database: 'serama',
+                    host: 'localhost',
+                    port: 27017
+                }],
+                replicaSet: false
+            });
 
             conn.on('connect', function (db) {
                 db.should.be.an.instanceOf(Db);
                 conn.readyState.should.equal(1);
                 done();
             });
+        });
+    });
+
+    it('should raise error when replicaSet servers can\'t be found', function (done) {
+        help.addUserToDb({
+            username: 'seramatest',
+            password: 'test123'
+        }, {
+            databaseName: 'serama',
+            host: 'localhost',
+            port: 27017
+        }, function (err) {
+            if (err) return done(err);
+
+            var options = {
+                "username": "seramatest",
+                "password": "test123",
+                "database": "serama",
+                "replicaSet": "test",
+                "maxPoolSize": 1,
+                "hosts": [
+                    {
+                        "host": "localhost",
+                        "port": 27016
+                    }
+                ]
+            };
+
+            var conn = connection(options);
+
+            conn.on('error', function (err) {
+                conn.readyState.should.equal(0);
+                conn.connectionString.should.eql("mongodb://seramatest:test123@localhost:27016/serama?replicaSet=test&maxPoolSize=1");
+                done();
+            })
+
         });
     });
 });

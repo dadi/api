@@ -5,7 +5,6 @@
 
 var ObjectID = require('mongodb').ObjectID;
 var _ = require('underscore');
-
 var util = require('util');
 
 var Validator = function (model) {
@@ -110,8 +109,7 @@ function _parseDocument(obj, schema, response) {
 
 function _validate(field, schema) {
 
-    // todo add date primitive
-    var primitives = ['String', 'Number', 'Boolean', 'Array'];
+    var primitives = ['String', 'Number', 'Boolean', 'Array', 'Date'];
 
     // check length
     var len = Number(schema.limit);
@@ -143,7 +141,8 @@ function _validate(field, schema) {
         // using constructor.name as array === object in typeof comparisons
         try {
             if(~primitives.indexOf(field.constructor.name) && schema.type !== field.constructor.name) return schema.message || 'is wrong type';
-        } catch(e) {
+        }
+        catch(e) {
             return schema.message || 'is wrong type';
         }
     }

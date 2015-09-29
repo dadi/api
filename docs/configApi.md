@@ -26,7 +26,7 @@ You may also get a copy of the schema by sending a GET request.
 
 ## Endpoints
 
-To create a new custom endpoint, send a POST request to `/endpoints/:version/:endpointName/config`.
+To create a new custom endpoint, send a POST request to `/:version/:endpointName/config`.
 
 This request should contain content-type `text/plain`, and must contain valid Javascript. If the endpoint already exists the request will replace the existing endpoint.
 

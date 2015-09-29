@@ -73,9 +73,6 @@ Composer.prototype.composeOne = function (doc, callback) {
       fields[field] = 1;
     })
 
-    // does the current schema key allow composition?
-    //var compose = help.getFromObj(schema, key + '.settings.compose', false);
-
     // load correct model
     var collection = help.getFromObj(schema, key + '.settings', null);
 

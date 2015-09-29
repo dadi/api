@@ -27,6 +27,11 @@ var Model = function (name, schema, conn, settings, database) {
         this.displayName = this.settings.displayName;
     }
 
+    // composable reference fields?
+    if (this.settings.hasOwnProperty("compose")) {
+        this.compose = this.settings.compose;
+    }
+
     // create connection for this model
     if (conn) {
         this.connection = conn;
@@ -281,9 +286,14 @@ Model.prototype.find = function (query, options, done) {
     query = convertApparentObjectIds(query);
     query.apiVersion = apiVersion;
 
-    var compose = false;
-    if (options.hasOwnProperty('compose')) compose = options.compose;
-    delete options.compose;
+    var compose = self.compose;
+
+    // override the model's settings with a 
+    // value from the options object?
+    if (options.hasOwnProperty('compose')) {
+        compose = options.compose;
+        delete options.compose;
+    }
 
     var validation = this.validate.query(query);
     if (!validation.success) {

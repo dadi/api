@@ -22,7 +22,8 @@
     "supertest": "~0.13.0"
   },
   "scripts": {
-    "test": "node_modules/.bin/mocha",
+    "pretest": "scripts/pretest.js",
+    "test": "node_modules/.bin/mocha --reporter xunit",
     "start": "node bantam/main"
   },
   "repository": {

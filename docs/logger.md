@@ -14,6 +14,20 @@ This module exposes three methods -
 
 Depending on the level specified in the config.json file, calls to these messages either log to the file system, or do nothing.
 
+## Configuration
+
+```
+	"logging": {
+		"enabled": true,
+		"level": "DEBUG",
+		"path": "./log",
+		"filename": "serama",
+		"extension": "log",
+		"dateFormat": "",
+		"messageFormat": "<%= label %> - <%= date %> - <%= message %>"
+	}
+```
+
 ## Levels
 
 * 'DEBUG' - most verbose, all logging is persisted

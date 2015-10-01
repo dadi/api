@@ -44,7 +44,7 @@
         "level": "DEBUG",
         "path": "./log",
         "filename": "serama",
-        "dateFormat": "YYYY-MM-DD",
+        "dateFormat": "",
         "extension": "log",
         "messageFormat": "<%= label %> - <%= date %> - <%= message %>"
     },

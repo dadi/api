@@ -23,7 +23,7 @@
   },
   "scripts": {
     "pretest": "scripts/pretest.js",
-    "test": "node_modules/.bin/mocha --reporter xunit",
+    "test": "node_modules/.bin/mocha",
     "start": "node bantam/main"
   },
   "repository": {

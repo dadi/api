@@ -63,6 +63,14 @@ Controller.prototype.get = function (req, res, next) {
         sort = sortOptions;
     }
 
+    // remove filter params that don't exist in
+    // the model schema
+    _.each(Object.keys(query), function (key) {
+        if (this.model.schema.hasOwnProperty(key) === false) {
+            delete query[key];
+        }
+    }, this);
+
     // if id is present in the url, add to the query
     if (req.params && req.params.id) {
         _.extend(query, { _id : req.params.id });

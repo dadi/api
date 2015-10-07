@@ -50,6 +50,22 @@ describe('Controller', function (done) {
                 done();
             });
 
+            it('should strip unknown params from the query', function (done) {
+                var mod = model('testModel', help.getModelSchema());
+                var stub = sinon.stub(mod, 'find');
+
+                var req = {
+                    url: '/foo/bar?filter={"fieldName":"test", "busted":56488}'
+                };
+
+                controller(mod).get(req);
+                stub.callCount.should.equal(1);
+                var findArgs = stub.returnsArg(0).args[0][0];
+                findArgs.hasOwnProperty('busted').should.be.false;
+                stub.restore();
+                done();
+            });
+
             it('should send response', function (done) {
                 var mod = model('testModel');
 

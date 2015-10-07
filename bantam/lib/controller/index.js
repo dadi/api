@@ -65,11 +65,13 @@ Controller.prototype.get = function (req, res, next) {
 
     // remove filter params that don't exist in
     // the model schema
-    _.each(Object.keys(query), function (key) {
-        if (this.model.schema.hasOwnProperty(key) === false) {
-            delete query[key];
-        }
-    }, this);
+    if (!_.isArray(query)) {
+        _.each(Object.keys(query), function (key) {
+            if (key !== '_id' && this.model.schema.hasOwnProperty(key) === false) {
+                delete query[key];
+            }
+        }, this);
+    }
 
     // if id is present in the url, add to the query
     if (req.params && req.params.id) {
@@ -95,6 +97,9 @@ Controller.prototype.get = function (req, res, next) {
     }
 
     if (sort && !_.isEmpty(sort)) queryOptions.sort = sort;
+
+    console.log(query);
+    console.log(queryOptions);
 
     this.model.find(query, queryOptions, done);
 };

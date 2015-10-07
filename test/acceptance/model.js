@@ -7,16 +7,6 @@ var config = require(__dirname + '/../../config');
 
 describe('Model', function () {
 
-  before(function (done) {
-    app.start({
-        collectionPath: __dirname + '/workspace/collections'
-    }, done);
-  });
-
-  after(function (done) {
-    app.stop(done);
-  });
-
   it('should connect to specified database', function (done) {
     var schema = require(__dirname + '/workspace/secondary-db/vtest/secondary/collection.secondary-schema.json');
     var mod = model('secondary-schema', help.getFieldsFromSchema(schema), null, schema.settings, 'secondary');

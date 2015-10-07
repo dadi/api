@@ -16,6 +16,7 @@
     "underscore": "~1.6.0"
   },
   "devDependencies": {
+    "istanbul": "^0.3.22",
     "mocha": "~1.21.3",
     "should": "~4.0.4",
     "sinon": "~1.10.3",
@@ -23,7 +24,7 @@
   },
   "scripts": {
     "pretest": "scripts/pretest.js",
-    "test": "node_modules/.bin/mocha",
+    "test": "./node_modules/.bin/istanbul test ./node_modules/.bin/_mocha test",
     "start": "node bantam/main"
   },
   "repository": {

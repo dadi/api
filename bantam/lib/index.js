@@ -5,6 +5,7 @@ var url = require('url');
 var bodyParser = require('body-parser');
 var stackTrace = require('stack-trace');
 var _ = require('underscore');
+var mkdirp = require('mkdirp');
 var controller = require(__dirname + '/controller');
 var model = require(__dirname + '/model');
 var search = require(__dirname + '/search');
@@ -130,17 +131,17 @@ Server.prototype.loadApi = function (options) {
     this.updateVersions(endpointPath);
 
     this.addMonitor(endpointPath, function (endpointFile) {
-        var filepath = path.join(endpointPath, endpointFile);
-
-        // need to ensure filepath exists since this could be a removal
-        if (endpointFile && fs.existsSync(filepath)) {
-            return self.addEndpointResource({
-                endpoint: endpointFile,
-                filepath: filepath
-            });
-        }
-        self.updateEndpoints(endpointPath);
+        self.updateVersions(endpointPath);
     });
+        // need to ensure filepath exists since this could be a removal
+    //     if (endpointFile && fs.existsSync(filepath)) {
+    //         return self.addEndpointResource({
+    //             endpoint: endpointFile,
+    //             filepath: filepath
+    //         });
+    //     }
+    //     self.updateEndpoints(endpointPath);
+    // });
 };
 
 Server.prototype.loadConfigApi = function () {
@@ -243,11 +244,14 @@ Server.prototype.loadConfigApi = function () {
 
         var version = req.params.version;
         var name = req.params.endpointName;
+            
+        var dir = path.join(self.endpointPath, version);
+        var filepath = path.join(dir, 'endpoint.' + name + '.js');
 
-        if (!self.components['/endpoints/' + version + '/' + name]) {
-            var filepath = path.join(self.endpointPath, version, 'endpoint.' + name + '.js');
+        mkdirp(dir, {}, function (err, made) {
 
             return fs.writeFile(filepath, req.body, function (err) {
+
                 if (err) return next(err);
 
                 var message = 'Endpoint "' + version + ':' + name + '" created';
@@ -259,9 +263,9 @@ Server.prototype.loadConfigApi = function () {
                     message: message
                 }));
             });
-        }
 
-        next();
+        });
+
     });
 };
 
@@ -347,7 +351,8 @@ Server.prototype.updateCollections = function (collectionsPath) {
             route: ['', version, database, name, idParam].join('/'),
             filepath: cpath,
             name: name,
-            schema: schema
+            schema: schema,
+            database: database
         });
     });
 };
@@ -360,7 +365,7 @@ Server.prototype.addCollectionResource = function (options) {
     // With each model we create a controller, that acts as a component of the REST api.
     // We then add the component to the api by adding a route to the app and mapping
     // `req.method` to component methods
-    var mod = model(options.name, JSON.parse(fields), null, options.schema.settings);
+    var mod = model(options.name, JSON.parse(fields), null, options.schema.settings, options.database);
     var control = controller(mod);
 
     this.addComponent({
@@ -400,6 +405,7 @@ Server.prototype.updateEndpoints = function (endpointsPath) {
     var endpoints = fs.readdirSync(endpointsPath);
 
     endpoints.forEach(function (endpoint) {
+
         // parse the url out of the directory structure
         var cpath = path.join(endpointsPath, endpoint);
         var dirs = cpath.split('/');
@@ -425,6 +431,7 @@ Server.prototype.addEndpointResource = function (options) {
     try {
         // keep reference to component so hot loading component can be
         // done by changing reference value
+
         var opts = {
             route: '/endpoints/' + options.version + '/' + name,
             component: require(filepath),
@@ -439,7 +446,9 @@ Server.prototype.addEndpointResource = function (options) {
 
     // if this endpoint's file is changed hot update the api
     self.addMonitor(filepath, function (filename) {
+        
         delete require.cache[filepath];
+        
         try {
             opts.component = require(filepath);
         } catch (e) {
@@ -485,8 +494,9 @@ Server.prototype.addComponent = function (options) {
 
         // set schema
         if (method === 'post' && options.filepath) {
-	    var schemaString = typeof req.body === 'object' ? JSON.stringify(req.body, null, 4) : req.body;
+            var schemaString = typeof req.body === 'object' ? JSON.stringify(req.body, null, 4) : req.body;
             return fs.writeFile(options.filepath, schemaString, function (err) {
+                console.log('send')
                 help.sendBackJSON(200, res, next)(err, {result: 'success'});
             });
         }

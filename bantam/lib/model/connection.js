@@ -31,7 +31,7 @@ var Connection = function (options) {
     
     if (!this.connectionOptions.database) throw new Error('`database` String is required for Connection');
 
-    this.connectionString = constructConnectionString(this.connectionOptions);
+    this.connectionString = constructConnectionString(this.connectionOptions);    
 
     // connection readyState
     // 0 = disconnected
@@ -178,7 +178,7 @@ function credentials(options) {
  * @returns {Object} new `Connection`
  * @api public
  */
-module.exports = function (options) {
+module.exports = function (options) { 
     var conn = new Connection(options);
 
     conn.on('error', function (err) {

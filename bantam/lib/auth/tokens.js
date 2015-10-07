@@ -14,6 +14,7 @@ module.exports.generate = function (req, res, next) {
             clientId: req.body.clientId,
             secret: req.body.secret
         }, function (err, client) {
+
             if (err) return next(err);
 
             if (client) {

@@ -1664,7 +1664,7 @@ describe('Application', function () {
             var client = request(connectionString);
 
             client
-            .get('/endpoints/v1/test-endpoint')
+            .get('/v1/test-endpoint')
             .set('Authorization', 'Bearer ' + bearerToken)
             .expect(200)
             .expect('content-type', 'application/json')
@@ -1747,7 +1747,7 @@ describe('Application', function () {
 
                 // make sure the endpoint is not already there
                 client
-                .get('/endpoints/v1/new-endpoint?cache=false')
+                .get('/v1/new-endpoint?cache=false')
                 .set('Authorization', 'Bearer ' + bearerToken)
                 .expect(404)
                 .end(function (err) {
@@ -1755,7 +1755,7 @@ describe('Application', function () {
 
                     // create endpoint
                     client
-                    .post('/endpoints/v1/new-endpoint/config')
+                    .post('/v1/new-endpoint/config')
                     .send(jsSchemaString)
                     .set('content-type', 'text/plain')
                     .set('Authorization', 'Bearer ' + bearerToken)
@@ -1768,7 +1768,7 @@ describe('Application', function () {
                         // wait, then test that endpoint was created
                         setTimeout(function () {
                             client
-                            .get('/endpoints/v1/new-endpoint?cache=false')
+                            .get('/v1/new-endpoint?cache=false')
                             .set('Authorization', 'Bearer ' + bearerToken)
                             .expect(200)
                             //.expect('content-type', 'application/json')
@@ -1788,7 +1788,7 @@ describe('Application', function () {
 
                 // make sure the endpoint exists from last test
                 client
-                .get('/endpoints/v1/new-endpoint?cache=false')
+                .get('/v1/new-endpoint?cache=false')
                 .set('Authorization', 'Bearer ' + bearerToken)
                 .expect(200)
                 .end(function (err, res) {
@@ -1801,7 +1801,7 @@ describe('Application', function () {
 
                     // update endpoint
                     client
-                    .post('/endpoints/v1/new-endpoint/config')
+                    .post('/v1/new-endpoint/config')
                     .send(jsSchemaString)
                     .set('content-type', 'text/plain')
                     .set('Authorization', 'Bearer ' + bearerToken)
@@ -1812,7 +1812,7 @@ describe('Application', function () {
                         // wait, then test that endpoint was created
                         setTimeout(function () {
                             client
-                            .get('/endpoints/v1/new-endpoint?cache=false')
+                            .get('/v1/new-endpoint?cache=false')
                             .set('Authorization', 'Bearer ' + bearerToken)
                             .expect(200)
                             .expect('content-type', 'application/json')
@@ -1832,7 +1832,7 @@ describe('Application', function () {
 
                 // make sure the endpoint is not already there
                 client
-                .get('/endpoints/v2/new-endpoint?cache=false')
+                .get('/v2/new-endpoint?cache=false')
                 .set('Authorization', 'Bearer ' + bearerToken)
                 .expect(404)
                 .end(function (err) {
@@ -1840,7 +1840,7 @@ describe('Application', function () {
 
                     // create endpoint
                     client
-                    .post('/endpoints/v2/new-endpoint/config')
+                    .post('/v2/new-endpoint/config')
                     .send(jsSchemaString)
                     .set('content-type', 'text/plain')
                     .set('Authorization', 'Bearer ' + bearerToken)
@@ -1853,7 +1853,7 @@ describe('Application', function () {
                         // wait, then test that endpoint was created
                         setTimeout(function () {
                             client
-                            .get('/endpoints/v2/new-endpoint?cache=false')
+                            .get('/v2/new-endpoint?cache=false')
                             .set('Authorization', 'Bearer ' + bearerToken)
                             .expect(200)
                             .expect('content-type', 'application/json')
@@ -1872,7 +1872,7 @@ describe('Application', function () {
         describe('GET', function () {
             it('should NOT return the Javascript file backing the endpoint', function (done) {
                 request(connectionString)
-                .get('/endpoints/v1/test-endpoint/config?cache=false')
+                .get('/v1/test-endpoint/config?cache=false')
                 .set('Authorization', 'Bearer ' + bearerToken)
                 .expect(404)
                 .end(done);
@@ -1882,7 +1882,7 @@ describe('Application', function () {
         describe('DELETE', function () {
             it('should NOT remove the custom endpoint', function (done) {
                 request(connectionString)
-                .delete('/endpoints/v1/test-endpoint/config')
+                .delete('/v1/test-endpoint/config')
                 .set('Authorization', 'Bearer ' + bearerToken)
                 .expect(404)
                 .end(done);

@@ -44,7 +44,7 @@ describe('Model connection', function () {
         conn.on('connect', function (db) {
             db.should.be.an.instanceOf(Db);
             conn.readyState.should.equal(1);
-            conn.connectionString.should.eql("mongodb://localhost:27017/serama");
+            conn.connectionString.should.eql("mongodb://localhost:27017/serama?maxPoolSize=1");
             done();
         });
     });

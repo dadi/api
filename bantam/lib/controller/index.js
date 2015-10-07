@@ -98,9 +98,6 @@ Controller.prototype.get = function (req, res, next) {
 
     if (sort && !_.isEmpty(sort)) queryOptions.sort = sort;
 
-    console.log(query);
-    console.log(queryOptions);
-
     this.model.find(query, queryOptions, done);
 };
 

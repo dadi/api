@@ -237,7 +237,7 @@ Server.prototype.loadConfigApi = function () {
         next();
     });
 
-    this.app.use('/endpoints/:version/:endpointName/config', function (req, res, next) {
+    this.app.use('/:version/:endpointName/config', function (req, res, next) {
 
         var method = req.method && req.method.toLowerCase();
         if (method !== 'post') return next();
@@ -433,7 +433,7 @@ Server.prototype.addEndpointResource = function (options) {
         // done by changing reference value
 
         var opts = {
-            route: '/endpoints/' + options.version + '/' + name,
+            route: '/' + options.version + '/' + name,
             component: require(filepath),
             filepath: filepath
         };

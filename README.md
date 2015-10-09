@@ -1,6 +1,6 @@
 ![Serama](serama.png)
 
-![Build Status](http://img.shields.io/badge/Release-0.1.10_Beta-green.svg?style=flat-square)&nbsp;[![License](http://img.shields.io/:License-MIT-blue.svg?style=flat-square)](http://dadi.mit-license.org)![Coverage](http://img.shields.io/badge/Coverage-86%-yellow.svg?style=flat-square)&nbsp;
+![Build Status](http://img.shields.io/badge/Release-0.1.10_Beta-green.svg?style=flat-square)&nbsp;[![License](http://img.shields.io/:License-MIT-blue.svg?style=flat-square)](http://dadi.mit-license.org)&nbsp;![Coverage](http://img.shields.io/badge/Coverage-86%-yellow.svg?style=flat-square)
 
 ## Contents
 

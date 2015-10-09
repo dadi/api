@@ -219,7 +219,6 @@ Server.prototype.loadConfigApi = function () {
             );
 
             try {
-
                 fs.writeFileSync(schemaPath, schemaString);
 
                 res.statusCode = 200;
@@ -234,8 +233,9 @@ Server.prototype.loadConfigApi = function () {
                 return next(err);
             }
         }
-
-        next();
+	else {
+            next();
+	}
     });
 
     this.app.use('/:version/:endpointName/config', function (req, res, next) {
@@ -496,7 +496,8 @@ Server.prototype.addComponent = function (options) {
         // set schema
         if (method === 'post' && options.filepath) {
             var schemaString = typeof req.body === 'object' ? JSON.stringify(req.body, null, 4) : req.body;
-            return fs.writeFile(options.filepath, schemaString, function (err) {
+
+ 	    return fs.writeFile(options.filepath, schemaString, function (err) {
                 help.sendBackJSON(200, res, next)(err, {result: 'success'});
             });
         }

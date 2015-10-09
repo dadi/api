@@ -389,8 +389,7 @@ describe('Model', function () {
                 // Peform a query, with explain to show we hit the query
                 mod.find({"fieldName":"ABC"}, {explain:true}, function(err, explanation) {
 
-                    var indexBounds = seramaHelp.getFromObj(explanation.results[0], 'queryPlanner.winningPlan.inputStage.inputStage.indexBounds', null);
-            
+                    var indexBounds = seramaHelp.getFromObj(explanation.results[0], 'indexBounds', null);
                     should.exist(indexBounds);
                     should.exist(indexBounds.fieldName);
 
@@ -437,7 +436,7 @@ describe('Model', function () {
                 // Peform a query, with explain to show we hit the query
                 mod.find({"fieldName":"ABC", "field2":1}, {explain:true}, function(err, explanation) {
                     
-                    var indexBounds = seramaHelp.getFromObj(explanation.results[0], 'queryPlanner.winningPlan.inputStage.inputStage.indexBounds', null);
+                    var indexBounds = seramaHelp.getFromObj(explanation.results[0], 'indexBounds', null);
             
                     should.exist(indexBounds);
                     should.exist(indexBounds.fieldName);

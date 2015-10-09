@@ -15,7 +15,7 @@ describe('Server', function () {
             res.end(body);
         });
 
-        var server = app.listen(config.server.port, config.server.host);
+        var server = app.listen(config.get('server.port'), config.get('server.host'));
 
         request(server)
         .get('/')
@@ -40,7 +40,7 @@ describe('Server', function () {
                 res.end();
             });
 
-            var server = app.listen(config.server.port, config.server.host);
+            var server = app.listen(config.get('server.port'), config.get('server.host'));
 
             request(server)
             .get('/')
@@ -57,7 +57,7 @@ describe('Server', function () {
                 next(new Error('error handle test'));
             });
 
-            var server = app.listen(config.server.port, config.server.host);
+            var server = app.listen(config.get('server.port'), config.get('server.host'));
 
             request(server)
             .get('/')
@@ -83,7 +83,7 @@ describe('Server', function () {
                 res.end(body);
             });
 
-            var server = app.listen(config.server.port, config.server.host);
+            var server = app.listen(config.get('server.port'), config.get('server.host'));
 
             request(server)
             .get('/')
@@ -111,7 +111,7 @@ describe('Server', function () {
                 res.end();
             });
 
-            var server = app.listen(config.server.port, config.server.host);
+            var server = app.listen(config.get('server.port'), config.get('server.host'));
 
             request(server)
             .get('/doesnotexist')
@@ -131,7 +131,7 @@ describe('Server', function () {
                 next(new Error('500 test'));
             });
 
-            var server = app.listen(config.server.port, config.server.host);
+            var server = app.listen(config.get('server.port'), config.get('server.host'));
 
             request(server)
             .get('/')
@@ -149,7 +149,7 @@ describe('Server', function () {
                 res.end();
             });
 
-            var server = app.listen(config.server.port, config.server.host);
+            var server = app.listen(config.get('server.port'), config.get('server.host'));
 
             request(server)
             .get('/model/' + id)

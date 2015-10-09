@@ -11,7 +11,7 @@ var app = require(__dirname + '/../../bantam/lib/');
 
 // variables scoped for use throughout tests
 var bearerToken;
-var connectionString = 'http://' + config.server.host + ':' + config.server.port;
+var connectionString = 'http://' + config.get('server.host') + ':' + config.get('server.port');
 
 describe('Application', function () {
 
@@ -1321,8 +1321,8 @@ describe('Application', function () {
             });
 
             it('should return a message if config.feedback is true', function (done) {
-                var originalFeedback = config.feedback;
-                config.feedback = true;
+                var originalFeedback = config.get('feedback');
+                config.set('feedback', true);
 
                 var client = request(connectionString);
 
@@ -1344,7 +1344,7 @@ describe('Application', function () {
                     .expect(200)
                     //.expect('content-type', 'application/json')
                     .end(function (err, res) {
-                        config.feedback = originalFeedback;
+                        config.set('feedback', originalFeedback);
                         if (err) return done(err);
 
                         res.body.status.should.equal('success');
@@ -1891,8 +1891,9 @@ describe('Application', function () {
     });
 
     describe('config api', function () {
-        var configPath = path.resolve(__dirname + '/../../config.json');
-        var originalConfig = fs.readFileSync(configPath);
+        var config = require(__dirname + '/../../config.js');
+        var configPath = path.resolve(config.configPath());
+        var originalConfig = fs.readFileSync(configPath).toString();
 
         before(function (done) {
             app.start({
@@ -1910,23 +1911,30 @@ describe('Application', function () {
 
         describe('GET', function () {
             it('should return the current config', function (done) {
-                request(connectionString)
-                .get('/serama/config')
-                .set('Authorization', 'Bearer ' + bearerToken)
-                .expect(200)
-                .expect('content-type', 'application/json')
-                .end(function (err, res) {
+                
+                help.getBearerTokenWithAccessType("admin", function (err, token) {
                     if (err) return done(err);
 
-                    res.body.should.be.Object;
-                    should.exist(res.body.database);
-                    should.exist(res.body.logging);
-                    should.exist(res.body.server);
-                    should.exist(res.body.auth);
-                    should.exist(res.body.caching);
-                    //should.deepEqual(res.body, config);
+                    bearerToken = token;
 
-                    done();
+                    request(connectionString)
+                    .get('/serama/config')
+                    .set('Authorization', 'Bearer ' + bearerToken)
+                    .expect(200)
+                    .expect('content-type', 'application/json')
+                    .end(function (err, res) {
+                        if (err) return done(err);
+
+                        res.body.should.be.Object;
+                        should.exist(res.body.database);
+                        should.exist(res.body.logging);
+                        should.exist(res.body.server);
+                        should.exist(res.body.auth);
+                        should.exist(res.body.caching);
+                        //should.deepEqual(res.body, config);
+
+                        done();
+                    });
                 });
             });
 
@@ -1971,9 +1979,9 @@ describe('Application', function () {
 
                         // reload the config file and see that it is updated
                         delete require.cache[configPath];
-                        var config = require(configPath);
+                        config.loadFile(configPath);
 
-                        config.auth.tokenTtl.should.equal(100);
+                        config.get('auth.tokenTtl').should.equal(100);
                         done();
                     });
                 });

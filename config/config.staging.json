@@ -1,0 +1,75 @@
+{
+    "database": {
+        "hosts": [
+            {
+                "host": "127.0.0.1",
+                "port": 27017
+            }
+        ],
+        "username": "",
+        "password": "",
+        "database": "serama",
+        "ssl": false,
+        "replicaSet": false,
+        "secondary": {
+            "enabled": false,
+            "hosts": [
+                {
+                    "host": "127.0.0.1",
+                    "port": 27018
+                }
+            ],
+            "username": "",
+            "password": "",
+            "replicaSet": false,
+            "ssl": false
+        },
+        "testdb": {
+            "hosts": [
+                {
+                    "host": "127.0.0.1",
+                    "port": 27017
+                }
+            ],
+            "username": "",
+            "password": ""  
+        }
+    },
+    "logging": {
+        "enabled": true,
+        "level": "DEBUG",
+        "path": "./log",
+        "filename": "serama",
+        "dateFormat": "",
+        "extension": "log",
+        "messageFormat": "<%= label %> - <%= date %> - <%= message %>"
+    },
+    "server": {
+        "host": "127.0.0.1",
+        "port": 3000
+    },
+    "auth": {
+        "tokenUrl": "/token",
+        "tokenTtl": 2592000,
+        "database": {
+            "hosts": [
+                {
+                    "host": "127.0.0.1",
+                    "port": 27017
+                }
+            ],
+            "username": "",
+            "password": "",
+            "database": "serama"
+        },
+        "clientCollection": "clientStore",
+        "tokenCollection": "tokenStore"
+    },
+    "caching": {
+        "enabled": true,
+        "ttl": 300,
+        "directory": "./cache/serama/",
+        "extension": "json"
+    },
+    "feedback": false
+}

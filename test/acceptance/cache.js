@@ -42,7 +42,7 @@ describe('Cache', function (done) {
     it('should save responses to the file system', function (done) {
         var spy = sinon.spy(fs, 'writeFile');
 
-        request('http://' + config.server.host + ':' + config.server.port)
+        request('http://' + config.get('server.host') + ':' + config.get('server.port'))
         .get('/vtest/testdb/test-schema')
         .set('Authorization', 'Bearer ' + bearerToken)
         .expect(200)
@@ -62,7 +62,7 @@ describe('Cache', function (done) {
     it('should use cache if available', function (done) {
         var spy = sinon.spy(fs, 'readFile');
 
-        var client = request('http://' + config.server.host + ':' + config.server.port);
+        var client = request('http://' + config.get('server.host') + ':' + config.get('server.port'));
 
         client
         .get('/vtest/testdb/test-schema')
@@ -108,7 +108,7 @@ describe('Cache', function (done) {
     it('should allow bypassing cache with query string flag', function (done) {
         var spy = sinon.spy(fs, 'readFile');
 
-        var client = request('http://' + config.server.host + ':' + config.server.port);
+        var client = request('http://' + config.get('server.host') + ':' + config.get('server.port'));
 
         client
         .get('/vtest/testdb/test-schema')
@@ -146,17 +146,18 @@ describe('Cache', function (done) {
     });
 
     it('should allow disabling through config', function (done) {
-        config.caching.enabled = false;
+        
+        config.set('caching.enabled', false);
 
         var _done = done;
         done = function (err) {
-            config.caching.enabled = true;
+            config.set('caching.enabled', true);
             _done(err);
         };
 
         var spy = sinon.spy(fs, 'readFile');
 
-        var client = request('http://' + config.server.host + ':' + config.server.port);
+        var client = request('http://' + config.get('server.host') + ':' + config.get('server.port'));
 
         client
         .get('/vtest/testdb/test-schema')
@@ -196,16 +197,16 @@ describe('Cache', function (done) {
     it('should invalidate based on TTL', function (done) {
         this.timeout(4000);
 
-        var oldTTL = config.caching.ttl;
-        config.caching.ttl = 1;
+        var oldTTL = config.get('caching.ttl');
+        config.set('caching.ttl', 1);
 
         var _done = done;
         done = function (err) {
-            config.caching.ttl = oldTTL;
+            config.set('caching.ttl', oldTTL);
             _done(err);
         };
 
-        var client = request('http://' + config.server.host + ':' + config.server.port);
+        var client = request('http://' + config.get('server.host') + ':' + config.get('server.port'));
 
         client
         .get('/vtest/testdb/test-schema')
@@ -252,7 +253,7 @@ describe('Cache', function (done) {
             help.createDoc(bearerToken, function (err, doc) {
                 if (err) return done(err);
 
-                var client = request('http://' + config.server.host + ':' + config.server.port);
+                var client = request('http://' + config.get('server.host') + ':' + config.get('server.port'));
 
                 client
                 .get('/vtest/testdb/test-schema')
@@ -300,7 +301,7 @@ describe('Cache', function (done) {
             help.createDoc(bearerToken, function (err, doc) {
                 if (err) return done(err);
 
-                var client = request('http://' + config.server.host + ':' + config.server.port);
+                var client = request('http://' + config.get('server.host') + ':' + config.get('server.port'));
 
                 // GET
                 client
@@ -375,7 +376,7 @@ describe('Cache', function (done) {
             help.createDoc(bearerToken, function (err, doc) {
                 if (err) return done(err);
 
-                var client = request('http://' + config.server.host + ':' + config.server.port);
+                var client = request('http://' + config.get('server.host') + ':' + config.get('server.port'));
 
                 // GET
                 client
@@ -442,7 +443,7 @@ describe('Cache', function (done) {
     });
 
     it('should preserve content-type', function (done) {
-        var client = request('http://' + config.server.host + ':' + config.server.port);
+        var client = request('http://' + config.get('server.host') + ':' + config.get('server.port'));
 
         client
         .get('/vtest/testdb/test-schema?callback=myCallback')

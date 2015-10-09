@@ -10,7 +10,7 @@ var originalSchemaPath = __dirname + '/../new-schema.json';
 var testSchemaPath = __dirname + '/workspace/collections/vtest/testdb/collection.test-schema.json';
 
 describe('Authentication', function () {
-    var tokenRoute = config.auth.tokenUrl;
+    var tokenRoute = config.get('auth.tokenUrl');
 
     before(function (done) {
 
@@ -46,7 +46,7 @@ describe('Authentication', function () {
     })
 
     it('should issue a bearer token', function (done) {
-        var client = request('http://' + config.server.host + ':' + config.server.port);
+        var client = request('http://' + config.get('server.host') + ':' + config.get('server.port'));
 
         client
         .post(tokenRoute)
@@ -61,7 +61,7 @@ describe('Authentication', function () {
     });
 
     it('should not issue token if creds are invalid', function (done) {
-        var client = request('http://' + config.server.host + ':' + config.server.port);
+        var client = request('http://' + config.get('server.host') + ':' + config.get('server.port'));
 
         client
         .post(tokenRoute)
@@ -76,7 +76,7 @@ describe('Authentication', function () {
     it('should allow requests containing token', function (done) {
         help.getBearerToken(function (err, token) {
 
-            var client = request('http://' + config.server.host + ':' + config.server.port);
+            var client = request('http://' + config.get('server.host') + ':' + config.get('server.port'));
 
             client
             .get('/vtest/testdb/test-schema')
@@ -89,7 +89,7 @@ describe('Authentication', function () {
     it('should not allow requests containing invalid token', function (done) {
         
         help.getBearerToken(function (err, token) {
-            var client = request('http://' + config.server.host + ':' + config.server.port);
+            var client = request('http://' + config.get('server.host') + ':' + config.get('server.port'));
 
             client
             .get('/vtest/testdb/test-schema')
@@ -101,17 +101,17 @@ describe('Authentication', function () {
     it('should not allow requests with expired tokens', function (done) {
         this.timeout(4000);
 
-        var oldTtl = Number(config.auth.tokenTtl);
-        config.auth.tokenTtl = 1;
+        var oldTtl = Number(config.get('auth.tokenTtl'));
+        config.set('auth.tokenTtl', 1);
 
         var _done = function (err) {
-            config.auth.tokenTtl = oldTtl;
+            config.set('auth.tokenTtl', oldTtl);
             done(err);
         };
 
         help.getBearerToken(function (err, token) {
 
-            var client = request('http://' + config.server.host + ':' + config.server.port);
+            var client = request('http://' + config.get('server.host') + ':' + config.get('server.port'));
 
             client
             .get('/vtest/testdb/test-schema')
@@ -133,7 +133,7 @@ describe('Authentication', function () {
 
         help.getBearerTokenWithAccessType("user", function (err, token) {
 
-            var client = request('http://' + config.server.host + ':' + config.server.port);
+            var client = request('http://' + config.get('server.host') + ':' + config.get('server.port'));
 
             var testSchema = fs.readFileSync(originalSchemaPath, {encoding: 'utf8'});
 
@@ -154,7 +154,7 @@ describe('Authentication', function () {
 
         help.getBearerTokenWithAccessType("user", function (err, token) {
 
-            var client = request('http://' + config.server.host + ':' + config.server.port);
+            var client = request('http://' + config.get('server.host') + ':' + config.get('server.port'));
 
             client
             .get('/vtest/testdb/test-schema/config')
@@ -172,7 +172,7 @@ describe('Authentication', function () {
 
         help.getBearerToken(function (err, token) {
 
-            var client = request('http://' + config.server.host + ':' + config.server.port);
+            var client = request('http://' + config.get('server.host') + ':' + config.get('server.port'));
 
             var testSchema = fs.readFileSync(originalSchemaPath, {encoding: 'utf8'});
 
@@ -193,7 +193,7 @@ describe('Authentication', function () {
 
         help.getBearerTokenWithAccessType("admin", function (err, token) {
 
-            var client = request('http://' + config.server.host + ':' + config.server.port);
+            var client = request('http://' + config.get('server.host') + ':' + config.get('server.port'));
 
             client
             .get('/vtest/testdb/test-schema/config')
@@ -210,7 +210,7 @@ describe('Authentication', function () {
     it('should allow unauthenticated request for collection specifying authenticate = false', function (done) {
 
         help.getBearerTokenWithAccessType("admin", function (err, token) {
-            var client = request('http://' + config.server.host + ':' + config.server.port);
+            var client = request('http://' + config.get('server.host') + ':' + config.get('server.port'));
 
             var jsSchemaString = fs.readFileSync(testSchemaPath, {encoding: 'utf8'});
             var schema = JSON.parse(jsSchemaString);
@@ -249,7 +249,7 @@ describe('Authentication', function () {
 
         help.getBearerTokenWithPermissions(permissions, function (err, token) {
                 
-            var client = request('http://' + config.server.host + ':' + config.server.port);
+            var client = request('http://' + config.get('server.host') + ':' + config.get('server.port'));
 
             // Wait, then test that we can make an unauthenticated request
             setTimeout(function () {
@@ -272,7 +272,7 @@ describe('Authentication', function () {
 
         help.getBearerTokenWithPermissions(permissions, function (err, token) {
 
-            var client = request('http://' + config.server.host + ':' + config.server.port);
+            var client = request('http://' + config.get('server.host') + ':' + config.get('server.port'));
 
             // Wait, then test that we can make an unauthenticated request
             setTimeout(function () {
@@ -295,7 +295,7 @@ describe('Authentication', function () {
 
         help.getBearerTokenWithPermissions(permissions, function (err, token) {
                 
-            var client = request('http://' + config.server.host + ':' + config.server.port);
+            var client = request('http://' + config.get('server.host') + ':' + config.get('server.port'));
 
             // Wait, then test that we can make an unauthenticated request
             setTimeout(function () {
@@ -318,7 +318,7 @@ describe('Authentication', function () {
 
         help.getBearerTokenWithPermissions(permissions, function (err, token) {
 
-            var client = request('http://' + config.server.host + ':' + config.server.port);
+            var client = request('http://' + config.get('server.host') + ':' + config.get('server.port'));
 
             // Wait, then test that we can make an unauthenticated request
             setTimeout(function () {
@@ -341,7 +341,7 @@ describe('Authentication', function () {
 
     //     help.getBearerTokenWithPermissions(permissions, function (err, token) {
 
-    //         var client = request('http://' + config.server.host + ':' + config.server.port);
+    //         var client = request('http://' + config.get('server.host') + ':' + config.get('server.port'));
 
     //         // Wait, then test that we can make an unauthenticated request
     //         setTimeout(function () {
@@ -362,7 +362,7 @@ describe('Authentication', function () {
 
         help.getBearerToken(function (err, token) {
                 
-            var client = request('http://' + config.server.host + ':' + config.server.port);
+            var client = request('http://' + config.get('server.host') + ':' + config.get('server.port'));
 
             // Wait, then test that we can make an unauthenticated request
             setTimeout(function () {
@@ -383,7 +383,7 @@ describe('Authentication', function () {
 
         help.getBearerToken(function (err, token) {
                 
-            var client = request('http://' + config.server.host + ':' + config.server.port);
+            var client = request('http://' + config.get('server.host') + ':' + config.get('server.port'));
 
             // Wait, then test that we can make an unauthenticated request
             setTimeout(function () {

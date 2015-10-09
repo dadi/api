@@ -4,7 +4,7 @@ var fs = require('fs');
 var should = require('should');
 
 var resetLog = function (done) {
-    var logpath = config.logging.path + '/' + config.logging.filename + '.' + config.logging.extension;
+    var logpath = config.get('logging').path + '/' + config.get('logging').filename + '.' + config.get('logging').extension;
     logpath.should.be.String;
 
     // empty the log for each test
@@ -20,7 +20,7 @@ describe('logger', function () {
             logger.prod('test1');
             logger.prod('test2');
             setTimeout(function () {
-                var logpath = config.logging.path + '/' + config.logging.filename + '.' + config.logging.extension;
+                var logpath = config.get('logging').path + '/' + config.get('logging').filename + '.' + config.get('logging').extension;
                 var logEntry = fs.readFileSync(logpath, {encoding: 'utf8'});
 
                 logEntry.split('\n').length.should.equal(3);
@@ -35,7 +35,7 @@ describe('logger', function () {
             logger.stage('test1');
             logger.stage('test2');
             setTimeout(function () {
-                var logpath = config.logging.path + '/' + config.logging.filename + '.' + config.logging.extension;
+                var logpath = config.get('logging').path + '/' + config.get('logging').filename + '.' + config.get('logging').extension;
                 var logEntry = fs.readFileSync(logpath, {encoding: 'utf8'});
 
                 logEntry.split('\n').length.should.equal(3);
@@ -50,7 +50,7 @@ describe('logger', function () {
             logger.debug('test1');
             logger.debug('test2');
             setTimeout(function () {
-                var logpath = config.logging.path + '/' + config.logging.filename + '.' + config.logging.extension;
+                var logpath = config.get('logging').path + '/' + config.get('logging').filename + '.' + config.get('logging').extension;
                 var logEntry = fs.readFileSync(logpath, {encoding: 'utf8'});
 
                 logEntry.split('\n').length.should.equal(3);

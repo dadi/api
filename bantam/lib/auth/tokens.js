@@ -1,10 +1,10 @@
 var uuid = require('node-uuid');
-var config = require(__dirname + '/../../../config');
+var config = require(__dirname + '/../../../config.js');
 var connection = require(__dirname + '/../model/connection');
 
 var tokenStore = require(__dirname + '/tokenStore')();
-var clientStore = connection(config.auth.database);
-var clientCollectionName = config.auth.clientCollection || 'clientStore';
+var clientStore = connection(config.get('auth.database'));
+var clientCollectionName = config.get('auth.clientCollection') || 'clientStore';
 
 module.exports.generate = function (req, res, next) {
 
@@ -32,7 +32,7 @@ module.exports.generate = function (req, res, next) {
                     var tok = {
                         accessToken: token,
                         tokenType: 'Bearer',
-                        expiresIn: config.auth.tokenTtl
+                        expiresIn: config.get('auth.tokenTtl')
                     };
 
                     var json = JSON.stringify(tok);

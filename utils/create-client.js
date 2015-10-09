@@ -2,8 +2,8 @@
 var connection = require(__dirname + '/../bantam/lib/model/connection');
 var config = require(__dirname + '/../config');
 
-var conn = connection(config.auth.database);
-var clientCollectionName = config.auth.clientCollection;
+var conn = connection(config.get('auth.database'));
+var clientCollectionName = config.get('auth.clientCollection');
 
 conn.on('connect', function (db) {
 

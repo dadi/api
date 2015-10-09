@@ -57,7 +57,7 @@ describe('Cache', function (done) {
             done();
         });
 
-        request('http://' + config.server.host + ':' + config.server.port)
+        request('http://' + config.get('server.host') + ':' + config.get('server.port'))
         .get('/vtest/testdb/test-schema')
         .set('Authorization', 'Bearer ' + bearerToken)
         .expect(200)

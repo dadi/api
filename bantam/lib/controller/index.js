@@ -159,7 +159,7 @@ Controller.prototype.delete = function (req, res, next) {
         self.model.delete({_id: id}, function (err, results) {
             if (err) return next(err);
 
-            if (config.feedback) {
+            if (config.get('feedback')) {
 
                 // send 200 with json message
                 return help.sendBackJSON(200, res, next)(null, {

@@ -6,11 +6,11 @@ var tokenStore = require(__dirname + '/../../bantam/lib/auth/tokenStore');
 var connection = require(__dirname + '/../../bantam/lib/model/connection');
 var acceptanceTestHelper = require(__dirname + '/../acceptance/help');
 
-var clientCollectionName = config.auth.clientCollection;
+var clientCollectionName = config.get('auth.clientCollection');
 
 describe('Tokens', function () {
     before(function (done) {
-        var conn = connection(config.auth.database);
+        var conn = connection(config.get('auth.database'));
 
         conn.on('connect', function (db) {
             db.dropDatabase(done);
@@ -38,7 +38,7 @@ describe('Tokens', function () {
 
     describe('validate', function () {
         before(function (done) {
-            var clientStore = connection(config.auth.database);
+            var clientStore = connection(config.get('auth.database'));
 
             clientStore.on('connect', function (db) {
                 db.collection(clientCollectionName).insert({

@@ -1,6 +1,6 @@
 var url = require('url');
 var _ = require('underscore');
-var config = require(__dirname + '/../../../config');
+var config = require(__dirname + '/../../../config.js');
 var tokens = require(__dirname + '/tokens');
 
 function mustAuthenticate(endpoints, path) {
@@ -71,7 +71,7 @@ function isAuthorized(endpoints, req, client) {
 
 // This attaches middleware to the passed in app instance
 module.exports = function (server) {
-    var tokenRoute = config.auth.tokenUrl || '/token';
+    var tokenRoute = config.get('auth.tokenUrl') || '/token';
 
     // Authorize
     server.app.use(function (req, res, next) {

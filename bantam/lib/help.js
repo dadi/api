@@ -147,7 +147,7 @@ module.exports.validateCollectionSchema = function(obj) {
 module.exports.clearCache = function (pathname, callback) {
 
     var modelDir = crypto.createHash('sha1').update(pathname).digest('hex');
-    var cachePath = path.join(config.caching.directory, modelDir);
+    var cachePath = path.join(config.get('caching.directory'), modelDir);
 
     var i = 0;
     var exists = fs.existsSync(cachePath);

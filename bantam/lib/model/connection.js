@@ -1,4 +1,4 @@
-var config = require(__dirname + '/../../../config').database;
+var config = require(__dirname + '/../../../config.js');
 var mongodb = require('mongodb');
 var MongoClient = mongodb.MongoClient;
 var Server = mongodb.Server;
@@ -16,10 +16,10 @@ var Connection = function (options) {
 
     options = options || {};
 
-    if (options.database && config[options.database]) {
-        options = _.extend({}, config[options.database], options);
+    if (options.database && config.get('database')[options.database]) {
+        options = _.extend({}, config.get('database')[options.database], options);
     } else {
-        options = _.extend({}, config, options);
+        options = _.extend({}, config.get('database'), options);
     }
 
     this.connectionOptions = options;
@@ -99,8 +99,7 @@ function constructConnectionString(options) {
     if (options.maxPoolSize) connectionOptions.options['maxPoolSize'] = options.maxPoolSize;
 
     // test specific connection pool size
-    if (global.process.env.npm_lifecycle_event == 'test') {
-        // TODO: configure tests to pass this option in, instead of looking at env  - JW
+    if (config.get('env') === 'test') {
         connectionOptions.options['maxPoolSize'] = 1;
     }
 

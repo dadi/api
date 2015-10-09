@@ -63,7 +63,7 @@ describe('File system watching', function () {
 
         it('should update collections component when file changes', function (done) {
 	    this.timeout(4000);
-            var client = request('http://' + config.server.host + ':' + config.server.port);
+            var client = request('http://' + config.get('server.host') + ':' + config.get('server.port'));
             
             client
             .post('/vtest/testdb/monitor-test-schema')
@@ -100,7 +100,7 @@ describe('File system watching', function () {
 
         it('should update endpoint component when file changes', function (done) {
 
-            var client = request('http://' + config.server.host + ':' + config.server.port);
+            var client = request('http://' + config.get('server.host') + ':' + config.get('server.port'));
 
             client
             .get('/v1/monitor-test-endpoint?cache=false')
@@ -173,7 +173,7 @@ describe('File system watching', function () {
 
             // allow time for app to respond
             setTimeout(function () {
-                var client = request('http://' + config.server.host + ':' + config.server.port);
+                var client = request('http://' + config.get('server.host') + ':' + config.get('server.port'));
 
                 client
                 .get('/vtest2/testdb/new-test-schema')
@@ -194,7 +194,7 @@ describe('File system watching', function () {
             fs.writeFileSync(newEndpointPath, lines.join('\n'));
 
             setTimeout(function () {
-                var client = request('http://' + config.server.host + ':' + config.server.port);
+                var client = request('http://' + config.get('server.host') + ':' + config.get('server.port'));
 
                 client
                 .get('/v1/new-test-endpoint')
@@ -215,7 +215,7 @@ describe('File system watching', function () {
         it('should remove endpoint from api when file is removed', function (done) {
             fs.unlinkSync(testEndpointPath);
 
-            var client = request('http://' + config.server.host + ':' + config.server.port);
+            var client = request('http://' + config.get('server.host') + ':' + config.get('server.port'));
 
             client
             .get('/v1/monitor-test-endpoint?cache=false')
@@ -227,7 +227,7 @@ describe('File system watching', function () {
         it('should remove collection from api when file is removed', function (done) {
             fs.unlinkSync(testSchemaPath);
 
-            var client = request('http://' + config.server.host + ':' + config.server.port);
+            var client = request('http://' + config.get('server.host') + ':' + config.get('server.port'));
 
             client
             .get('/vtest/testdb/monitor-test-schema')

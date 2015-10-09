@@ -38,7 +38,7 @@ describe('validation', function () {
     describe('field types', function () {
         describe('string', function () {
             it('should not allow setting non-string', function (done) {
-                var client = request('http://' + config.server.host + ':' + config.server.port);
+                var client = request('http://' + config.get('server.host') + ':' + config.get('server.port'));
 
                 client
                 .post('/vtest/testdb/test-validation-schema')
@@ -48,7 +48,7 @@ describe('validation', function () {
             });
 
             it('should allow setting string', function (done) {
-                var client = request('http://' + config.server.host + ':' + config.server.port);
+                var client = request('http://' + config.get('server.host') + ':' + config.get('server.port'));
 
                 client
                 .post('/vtest/testdb/test-validation-schema')
@@ -60,7 +60,7 @@ describe('validation', function () {
 
         // describe('date', function () {
         //     it('should not allow setting non-date', function (done) {
-        //         var client = request('http://' + config.server.host + ':' + config.server.port);
+        //         var client = request('http://' + config.get('server.host') + ':' + config.get('server.port'));
 
         //         client
         //         .post('/vtest/testdb/test-validation-schema')
@@ -70,7 +70,7 @@ describe('validation', function () {
         //     });
 
         //     it('should allow setting date', function (done) {
-        //         var client = request('http://' + config.server.host + ':' + config.server.port);
+        //         var client = request('http://' + config.get('server.host') + ':' + config.get('server.port'));
 
         //         client
         //         .post('/vtest/testdb/test-validation-schema')
@@ -82,7 +82,7 @@ describe('validation', function () {
 
         describe('number', function () {
             it('should not allow setting non-number', function (done) {
-                var client = request('http://' + config.server.host + ':' + config.server.port);
+                var client = request('http://' + config.get('server.host') + ':' + config.get('server.port'));
 
                 client
                 .post('/vtest/testdb/test-validation-schema')
@@ -92,7 +92,7 @@ describe('validation', function () {
             });
 
             it('should allow setting number', function (done) {
-                var client = request('http://' + config.server.host + ':' + config.server.port);
+                var client = request('http://' + config.get('server.host') + ':' + config.get('server.port'));
 
                 client
                 .post('/vtest/testdb/test-validation-schema')
@@ -104,7 +104,7 @@ describe('validation', function () {
 
         describe('boolean', function () {
             it('should not allow setting non-boolean', function (done) {
-                var client = request('http://' + config.server.host + ':' + config.server.port);
+                var client = request('http://' + config.get('server.host') + ':' + config.get('server.port'));
 
                 client
                 .post('/vtest/testdb/test-validation-schema')
@@ -114,7 +114,7 @@ describe('validation', function () {
             });
 
             it('should allow setting boolean', function (done) {
-                var client = request('http://' + config.server.host + ':' + config.server.port);
+                var client = request('http://' + config.get('server.host') + ':' + config.get('server.port'));
 
                 client
                 .post('/vtest/testdb/test-validation-schema')
@@ -125,7 +125,7 @@ describe('validation', function () {
 
             it('should allow setting a required boolean to `false`', function (done) {
 
-                var client = request('http://' + config.server.host + ':' + config.server.port);
+                var client = request('http://' + config.get('server.host') + ':' + config.get('server.port'));
                 var filepath = __dirname + '/workspace/validation/collections/vtest/testdb/collection.test-validation-schema.json';
                 
                 // add a new field to the schema
@@ -159,7 +159,7 @@ describe('validation', function () {
 
         describe('mixed', function () {
             it('should allow any type', function (done) {
-                var client = request('http://' + config.server.host + ':' + config.server.port);
+                var client = request('http://' + config.get('server.host') + ':' + config.get('server.port'));
 
                 client
                 .post('/vtest/testdb/test-validation-schema')
@@ -211,7 +211,7 @@ describe('validation', function () {
 
         describe('failure message', function () {
             it('should contain JSON body', function (done) {
-                var client = request('http://' + config.server.host + ':' + config.server.port);
+                var client = request('http://' + config.get('server.host') + ':' + config.get('server.port'));
 
                 client
                 .post('/vtest/testdb/test-validation-schema')
@@ -235,7 +235,7 @@ describe('validation', function () {
 
     describe('field validationRule', function () {
         it('should allow fields that pass regex', function (done) {
-            var client = request('http://' + config.server.host + ':' + config.server.port);
+            var client = request('http://' + config.get('server.host') + ':' + config.get('server.port'));
 
             client
             .post('/vtest/testdb/test-validation-schema')
@@ -245,7 +245,7 @@ describe('validation', function () {
         });
 
         it('should not allow fields that don\'t pass regex', function (done) {
-            var client = request('http://' + config.server.host + ':' + config.server.port);
+            var client = request('http://' + config.get('server.host') + ':' + config.get('server.port'));
 
             client
             .post('/vtest/testdb/test-validation-schema')
@@ -256,7 +256,7 @@ describe('validation', function () {
 
         describe('failure message', function () {
             it('should contain JSON body', function (done) {
-                var client = request('http://' + config.server.host + ':' + config.server.port);
+                var client = request('http://' + config.get('server.host') + ':' + config.get('server.port'));
 
                 client
                 .post('/vtest/testdb/test-validation-schema')
@@ -280,7 +280,7 @@ describe('validation', function () {
 
     describe('field length', function () {
         it('should allow field lengths less than or equal to `limit`', function (done) {
-            var client = request('http://' + config.server.host + ':' + config.server.port);
+            var client = request('http://' + config.get('server.host') + ':' + config.get('server.port'));
 
             client
             .post('/vtest/testdb/test-validation-schema')
@@ -290,7 +290,7 @@ describe('validation', function () {
         });
 
         it('should not allow field lengths greater than `limit`', function (done) {
-            var client = request('http://' + config.server.host + ':' + config.server.port);
+            var client = request('http://' + config.get('server.host') + ':' + config.get('server.port'));
 
             client
             .post('/vtest/testdb/test-validation-schema')
@@ -301,7 +301,7 @@ describe('validation', function () {
 
         describe('failure message', function () {
             it('should contain JSON body', function (done) {
-                var client = request('http://' + config.server.host + ':' + config.server.port);
+                var client = request('http://' + config.get('server.host') + ':' + config.get('server.port'));
 
                 client
                 .post('/vtest/testdb/test-validation-schema')
@@ -325,7 +325,7 @@ describe('validation', function () {
 
     describe('default value', function () {
         it('should be added to the request object if not supplied', function (done) {
-            var client = request('http://' + config.server.host + ':' + config.server.port);
+            var client = request('http://' + config.get('server.host') + ':' + config.get('server.port'));
 
             client
             .post('/vtest/testdb/test-validation-schema')
@@ -346,7 +346,7 @@ describe('validation', function () {
         });
 
         it('should not be added to the request object if it is already supplied', function (done) {
-            var client = request('http://' + config.server.host + ':' + config.server.port);
+            var client = request('http://' + config.get('server.host') + ':' + config.get('server.port'));
 
             client
             .post('/vtest/testdb/test-validation-schema')

@@ -1,4 +1,4 @@
-var config = require(__dirname + '/../../../config');
+var config = require(__dirname + '/../../../config.js');
 var help = require(__dirname + '/../help');
 var logger = require(__dirname + '/../../../bantam/lib/log');
 var fs = require('fs');
@@ -11,7 +11,7 @@ var _ = require('underscore');
 var cacheEncoding = 'utf8';
 var options = {};
 
-var dir = config.caching.directory;
+var dir = config.get('caching.directory');
 
 // create cache directory if it doesn't exist
 help.mkdirParent(path.resolve(dir), '777', function() {});
@@ -26,7 +26,7 @@ function cachingEnabled(endpoints, requestUrl) {
         options = endpoints[endpointKey].model.settings;
     }
 
-    return (config.caching.enabled && options.cache);
+    return (config.get('caching.enabled') && options.cache);
 }
 
 module.exports = function (server) {
@@ -40,7 +40,7 @@ module.exports = function (server) {
         var filename = crypto.createHash('sha1').update(req.url).digest('hex');
         var modelDir = crypto.createHash('sha1').update(url.parse(req.url).pathname).digest('hex');
         var cacheDir = path.join(dir, modelDir);
-        var cachepath = path.join(cacheDir, filename + '.' + config.caching.extension);
+        var cachepath = path.join(cacheDir, filename + '.' + config.get('caching.extension'));
 
         // only cache GET requests
         if (!(req.method && req.method.toLowerCase() === 'get')) return next();
@@ -60,7 +60,7 @@ module.exports = function (server) {
             // }
 
             // check if ttl has elapsed
-            var ttl = options.ttl || config.caching.ttl;
+            var ttl = options.ttl || config.get('caching.ttl');
             var lastMod = stats && stats.mtime && stats.mtime.valueOf();
             if (!(lastMod && (Date.now() - lastMod) / 1000 <= ttl)) return cacheResponse();
 

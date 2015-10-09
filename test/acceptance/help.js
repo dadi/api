@@ -1,4 +1,4 @@
-    var fs = require('fs');
+var fs = require('fs');
 var path = require('path');
 var should = require('should');
 var connection = require(__dirname + '/../../bantam/lib/model/connection');
@@ -6,11 +6,11 @@ var config = require(__dirname + '/../../config');
 var request = require('supertest');
 var _ = require('underscore');
 
-var clientCollectionName = config.auth.clientCollection;
+var clientCollectionName = config.get('auth.clientCollection');
 
 // create a document with random string via the api
 module.exports.createDoc = function (token, done) {
-    request('http://' + config.server.host + ':' + config.server.port)
+    request('http://' + config.get('server.host') + ':' + config.get('server.port'))
     .post('/vtest/testdb/test-schema')
     .set('Authorization', 'Bearer ' + token)
     .send({field1: ((Math.random() * 10) | 0).toString()})
@@ -24,7 +24,7 @@ module.exports.createDoc = function (token, done) {
 
 // create a document with supplied data
 module.exports.createDocWithParams = function (token, doc, done) {
-    request('http://' + config.server.host + ':' + config.server.port)
+    request('http://' + config.get('server.host') + ':' + config.get('server.port'))
     .post('/vtest/testdb/test-schema')
     .set('Authorization', 'Bearer ' + token)
     .send(doc)
@@ -38,7 +38,7 @@ module.exports.createDocWithParams = function (token, doc, done) {
 
 // create a document with random string via the api
 module.exports.createDocWithSpecificVersion = function (token, apiVersion, doc, done) {
-    request('http://' + config.server.host + ':' + config.server.port)
+    request('http://' + config.get('server.host') + ':' + config.get('server.port'))
     .post('/' + apiVersion + '/testdb/test-schema')
     .set('Authorization', 'Bearer ' + token)
     .send(doc)
@@ -70,7 +70,7 @@ module.exports.createClient = function (client, done) {
         }
     }
 
-    var clientStore = connection(config.auth.database);
+    var clientStore = connection(config.get('auth.database'));
 
     clientStore.on('connect', function (db) {
         db.collection(clientCollectionName).insert(client, done);
@@ -79,7 +79,7 @@ module.exports.createClient = function (client, done) {
 
 module.exports.removeTestClients = function (done) {
 
-    var clientStore = connection(config.auth.database);
+    var clientStore = connection(config.get('auth.database'));
 
     clientStore.on('connect', function (db) {
         var query = { "clientId": { $regex: /^test/ } };
@@ -105,8 +105,8 @@ module.exports.clearCache = function () {
     
     // for each directory in the cache folder, remove all files then
     // delete the folder
-    fs.readdirSync(config.caching.directory).forEach(function (dirname) {
-        deleteFolderRecursive(path.join(config.caching.directory, dirname));
+    fs.readdirSync(config.get('caching.directory')).forEach(function (dirname) {
+        deleteFolderRecursive(path.join(config.get('caching.directory'), dirname));
     });
 }
 
@@ -118,8 +118,8 @@ module.exports.getBearerToken = function (done) {
         module.exports.createClient(null, function (err) {
             if (err) return done(err);
 
-            request('http://' + config.server.host + ':' + config.server.port)
-            .post(config.auth.tokenUrl)
+            request('http://' + config.get('server.host') + ':' + config.get('server.port'))
+            .post(config.get('auth.tokenUrl'))
             .send({
                 clientId: 'test123',
                 secret: 'superSecret'
@@ -152,8 +152,8 @@ module.exports.getBearerTokenWithPermissions = function (permissions, done) {
         module.exports.createClient(clientWithPermissions, function (err) {
             if (err) return done(err);
 
-            request('http://' + config.server.host + ':' + config.server.port)
-            .post(config.auth.tokenUrl)
+            request('http://' + config.get('server.host') + ':' + config.get('server.port'))
+            .post(config.get('auth.tokenUrl'))
             .send(client)
             .expect(200)
             //.expect('content-type', 'application/json')
@@ -183,8 +183,8 @@ module.exports.getBearerTokenWithAccessType = function (accessType, done) {
         module.exports.createClient(client, function (err) {
             if (err) return done(err);
 
-            request('http://' + config.server.host + ':' + config.server.port)
-            .post(config.auth.tokenUrl)
+            request('http://' + config.get('server.host') + ':' + config.get('server.port'))
+            .post(config.get('auth.tokenUrl'))
             .send(client)
             .expect(200)
             //.expect('content-type', 'application/json')

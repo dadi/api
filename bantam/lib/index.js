@@ -16,8 +16,8 @@ var monitor = require(__dirname + '/monitor');
 var logger = require(__dirname + '/log');
 var help = require(__dirname + '/help');
 
-var configPath = path.resolve(__dirname + '/../../config.json');
-var config = require(configPath);
+var config = require(path.resolve(__dirname + '/../../config.js'));
+var configPath = path.resolve(config.configPath());
 
 // add an optional id component to the path, that is formatted to be matched by the `path-to-regexp` module
 var idParam = ':id([a-fA-F0-9]{24})?';
@@ -71,20 +71,21 @@ Server.prototype.start = function (options, done) {
     search(self);
 
     // start listening
-    var server = this.server = app.listen(config.server.port, config.server.host);
+    var server = this.server = app.listen(config.get('server.port'), config.get('server.host'));
 
     server.on('listening', function (e) {
-      
-      var message = "\nStarted Serama (" + pkginfo.package.version + ") on " + config.server.host + ":" + config.server.port;
-      
-      console.log(message);
-      logger.prod(message);
-
+      var env = config.get('env');
+      if (env !== 'test') {
+          var message = "\nStarted Serama (" + pkginfo.package.version + ", " + env + " mode) on " + config.get('server.host') + ":" + config.get('server.port');
+          
+          console.log(message);
+          logger.prod(message);
+        }
     });
 
     server.on('error', function (e) {
       if (e.code == 'EADDRINUSE') {
-        console.log('Error ' + e.code + ': Address ' + config.server.host + ':' + config.server.port + ' is already in use, is something else listening on port ' + config.server.port + '?\n\n');
+        console.log('Error ' + e.code + ': Address ' + config.get('server.host') + ':' + config.get('server.port') + ' is already in use, is something else listening on port ' + config.get('server.port') + '?\n\n');
         process.exit(0);
       }
     });
@@ -151,14 +152,14 @@ Server.prototype.loadConfigApi = function () {
     this.app.use('/serama/config', function (req, res, next) {
         var method = req.method && req.method.toLowerCase();
 
-        if (method === 'get') return help.sendBackJSON(200, res, next)(null, config);
+        if (method === 'get') return help.sendBackJSON(200, res, next)(null, config.getProperties());
 
         if (method === 'post') {
 
             // update the config file
-            var newConfig = _.extend({}, config, req.body);
+            var newConfig = _.extend({}, config.getProperties(), req.body);
 
-            return fs.writeFile(configPath, JSON.stringify(newConfig), function (err) {
+            return fs.writeFile(configPath, JSON.stringify(newConfig, null, 4), function (err) {
                 help.sendBackJSON(200, res, next)(err, {
                     result: 'success',
                     message: 'server restart required'
@@ -496,7 +497,6 @@ Server.prototype.addComponent = function (options) {
         if (method === 'post' && options.filepath) {
             var schemaString = typeof req.body === 'object' ? JSON.stringify(req.body, null, 4) : req.body;
             return fs.writeFile(options.filepath, schemaString, function (err) {
-                console.log('send')
                 help.sendBackJSON(200, res, next)(err, {result: 'success'});
             });
         }

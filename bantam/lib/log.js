@@ -1,4 +1,4 @@
-var config = require(__dirname + '/../../config').logging;
+var config = require(__dirname + '/../../config.js').get('logging');
 var help = require(__dirname + '/help');
 var path = require('path');
 var fs = require('fs');

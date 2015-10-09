@@ -7,7 +7,7 @@ var app = require(__dirname + '/../../bantam/lib/');
 
 // variables scoped for use throughout tests
 var bearerToken;
-var connectionString = 'http://' + config.server.host + ':' + config.server.port;
+var connectionString = 'http://' + config.get('server.host') + ':' + config.get('server.port');
 
 describe('middleware extension', function (done) {
     before(function (done) {

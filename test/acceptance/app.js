@@ -1544,7 +1544,6 @@ describe('Application', function () {
                 .end(function (err, res) {
                     if (err) return done(err);
 
-                    
                     var body = JSON.stringify(res.body);
 
                     var index = body.indexOf('modelNameFromSchema collection created');

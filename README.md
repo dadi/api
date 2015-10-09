@@ -46,11 +46,14 @@ To ensure your system has all the required dependencies, run the following comma
 `$ [sudo] npm install`
 
 
+
 ### Running tests
 
 Serama uses [Mocha](http://mochajs.org/) for unit and acceptance tests. Tests can be run using the following command. _**Note**: for tests to run you will need standalone `mongod` instances running at `localhost:27017` and `localhost:27018`_
 
 **Warning:** running `npm test` will erase data in the databases referenced in config.json. A pre-test script will run to obtain confirmation from you that this is what you intend to do. Should you run `mocha test` instead of using the npm command, this pre-test script will not run and you will receive no additional warnings regarding the referenced databases.
+
+`$ mocha test/acceptance/app.js --node_env=test`
 
 _**Please ensure you have attached Serama to development or test databases before continuing.**_
 

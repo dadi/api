@@ -8,5 +8,5 @@ log/serama.log
 config.json
 config/config.development.json
 config/config.test.json
-config/config.staging.json
+config/config.qa.json
 config/config.production.json

@@ -1,4 +1,11 @@
 {
+    "app": {
+        "name": "Bantam (Serama)"
+    },
+    "server": {
+        "host": "127.0.0.1",
+        "port": 3000
+    },
     "database": {
         "hosts": [
             {
@@ -43,10 +50,6 @@
         "dateFormat": "",
         "extension": "log",
         "messageFormat": "<%= label %> - <%= date %> - <%= message %>"
-    },
-    "server": {
-        "host": "127.0.0.1",
-        "port": 3000
     },
     "auth": {
         "tokenUrl": "/token",

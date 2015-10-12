@@ -2,6 +2,13 @@ var convict = require('convict');
 
 // Define a schema
 var conf = convict({
+  app: {
+    name: {
+      doc: "The applicaton name",
+      format: String,
+      default: "Bantam (Serama)"
+    }
+  },
 	server: {
     host: {
       doc: "Serama IP address",
@@ -166,7 +173,7 @@ var conf = convict({
   },
   env: {
     doc: "The applicaton environment.",
-    format: ["production", "development", "test", "staging"],
+    format: ["production", "development", "test", "qa"],
     default: "development",
     env: "NODE_ENV",
     arg: "node_env"

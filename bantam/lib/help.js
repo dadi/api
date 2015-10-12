@@ -15,6 +15,8 @@ module.exports.sendBackJSON = function (successCode, res, next) {
         res.statusCode = successCode;
 
         var resBody = JSON.stringify(results);
+
+        res.setHeader('Server', config.get('app.name'));
         
         res.setHeader('content-type', 'application/json');
         res.setHeader('content-length', Buffer.byteLength(resBody));
@@ -32,6 +34,9 @@ module.exports.sendBackJSONP = function (callbackName, res, next) {
 
         var resBody = JSON.stringify(results);
         resBody = callbackName + '(' + resBody + ');';
+
+        res.setHeader('Server', config.get('app.name'));
+        
         res.setHeader('content-type', 'text/javascript');
         res.setHeader('content-length', Buffer.byteLength(resBody));
         res.end(resBody);

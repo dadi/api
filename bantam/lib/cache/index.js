@@ -35,6 +35,8 @@ module.exports = function (server) {
 
         if (!cachingEnabled(server.components, req.url)) return next();
 
+        var query = url.parse(req.url, true).query;
+
         // we build the filename with a hashed hex string so we can be unique
         // and avoid using file system reserved characters in the name
         var filename = crypto.createHash('sha1').update(req.url).digest('hex');
@@ -45,19 +47,14 @@ module.exports = function (server) {
         // only cache GET requests
         if (!(req.method && req.method.toLowerCase() === 'get')) return next();
 
-        // allow query string param to bypass cache
-        var query = url.parse(req.url, true).query;
-        var noCache = query.cache && query.cache.toString().toLowerCase() === 'false';
-        if (noCache) return next();
-
         fs.stat(cachepath, function (err, stats) {
 
-            // if (err) {
-            //     if (err.code === 'ENOENT') {
-            //         return cacheResponse();
-            //     }
-            //     return next(err);
-            // }
+            if (err) {
+                if (err.code === 'ENOENT') {
+                    return cacheResponse();
+                }
+                return next(err);
+            }
 
             // check if ttl has elapsed
             var ttl = options.ttl || config.get('caching.ttl');
@@ -74,7 +71,20 @@ module.exports = function (server) {
                     return cacheResponse();
                 }
 
+                // allow query string param to bypass cache
+                var noCache = query.cache && query.cache.toString().toLowerCase() === 'false';
+
+                if (noCache) {
+                    res.setHeader('X-Cache', 'MISS');
+                    res.setHeader('X-Cache-Lookup', 'HIT');
+                    return next();
+                }
+
                 res.statusCode = 200;
+
+                res.setHeader('Server', config.get('app.name'));
+                res.setHeader('X-Cache', 'HIT');
+                res.setHeader('X-Cache-Lookup', 'HIT');
                 res.setHeader('content-type', dataType);
                 res.setHeader('content-length', Buffer.byteLength(resBody));
 
@@ -100,6 +110,9 @@ module.exports = function (server) {
             };
 
             res.end = function (chunk) {
+
+                res.setHeader('X-Cache', 'MISS');
+                res.setHeader('X-Cache-Lookup', 'MISS');
 
                 // respond before attempting to cache
                 _end.apply(res, arguments);

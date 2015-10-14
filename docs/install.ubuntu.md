@@ -71,7 +71,9 @@ To run Serama in the background, install [Forever](https://github.com/nodejitsu/
 
 Install Serama as a service and ensure it loads on boot:
 
-`[sudo] forever-service install -s bantam/main.js serama --start`
+`[sudo] forever-service install -s bantam/main.js -e NODE_ENV=production serama --start`
+
+_Note the environment variable - `NODE_ENV=production` - must be set to target the required config version._
 
 You can then interact with Serama as a service using the following command:
 

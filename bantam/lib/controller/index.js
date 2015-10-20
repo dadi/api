@@ -121,21 +121,34 @@ Controller.prototype.delete = function (req, res, next) {
     var id = req.params.id;
     if (!id) return next();
 
-    this.model.delete({_id: id}, function (err, results) {
+    var self = this;
+
+    var pathname = url.parse(req.url).pathname;
+
+    // remove id param so we still get a valid handle 
+    // on the model name for clearing the cache
+    pathname = pathname.replace('/' + req.params.id, '');
+
+    // flush cache for DELETE requests
+    help.clearCache(pathname, function (err) {
         if (err) return next(err);
 
-        if (config.feedback) {
+        self.model.delete({_id: id}, function (err, results) {
+            if (err) return next(err);
 
-            // send 200 with json message
-            return help.sendBackJSON(200, res, next)(null, {
-                status: 'success',
-                message: 'Document deleted successfully'
-            });
-        }
+            if (config.feedback) {
 
-        // send no-content success 
-        res.statusCode = 204;
-        res.end();
+                // send 200 with json message
+                return help.sendBackJSON(200, res, next)(null, {
+                    status: 'success',
+                    message: 'Document deleted successfully'
+                });
+            }
+
+            // send no-content success 
+            res.statusCode = 204;
+            res.end();
+        });
     });
 };
 

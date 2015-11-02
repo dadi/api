@@ -45,7 +45,7 @@ describe('Model', function () {
             should.exist(mod.connection);
             mod.connection.host.should.equal('localhost');
             mod.connection.port.should.equal(27017);
-            mod.connection.database.should.equal('serama');
+            mod.connection.database.should.equal('test');
 
             done();
         });
@@ -84,7 +84,7 @@ describe('Model', function () {
             var mod = model('testModelName', help.getModelSchema(), conn, { storeRevisions : true });
             should.exist(mod.revisionCollection);
             mod.revisionCollection.should.equal('testModelNameHistory');
-            
+
             done();
         });
 
@@ -93,7 +93,7 @@ describe('Model', function () {
             var mod = model('testModelName', help.getModelSchema(), conn, { storeRevisions : true, revisionCollection : 'modelHistory' });
             should.exist(mod.revisionCollection);
             mod.revisionCollection.should.equal('modelHistory');
-            
+
             done();
         });
 
@@ -196,10 +196,10 @@ describe('Model', function () {
 
         it('should accept schema and object and replace ObjectIDs in array', function (done) {
 
-            var fields = help.getModelSchema();            
+            var fields = help.getModelSchema();
             var schema = {};
             schema.fields = fields;
-            
+
             schema.fields.field2 = _.extend({}, schema.fields.fieldName, {
                 type: 'ObjectID',
                 required: false
@@ -218,10 +218,10 @@ describe('Model', function () {
 
         it('should accept schema and object and replace ObjectIDs as single value', function (done) {
 
-            var fields = help.getModelSchema();            
+            var fields = help.getModelSchema();
             var schema = {};
             schema.fields = fields;
-            
+
             schema.fields.field2 = _.extend({}, schema.fields.fieldName, {
                 type: 'ObjectID',
                 required: false
@@ -256,7 +256,7 @@ describe('Model', function () {
             model('testModelName', help.getModelSchema()).find(query, done);
         });
 
-        it('should pass error to callback when query uses `$` operators', function (done) {
+        it('should pass error to callback when query uses `$where` operator', function (done) {
             model('testModelName').find({$where: 'this.fieldName === "foo"'}, function (err) {
                 should.exist(err);
                 done();
@@ -273,11 +273,11 @@ describe('Model', function () {
 
             var query = { "test" : "example" };
             var expected = { "test" : new RegExp(["^", "example", "$"].join(""), "i") };
-            
+
             var result = mod.makeCaseInsensitive(query);
-            
+
             result.should.eql(expected);
-            
+
             done();
         });
 
@@ -286,19 +286,19 @@ describe('Model', function () {
 
             var query = { "test" : { "$regex" : "example"} };
             var expected = { "test" : { "$regex" : new RegExp("example", "i") } };
-            
+
             var result = mod.makeCaseInsensitive(query);
-            
-            result.should.eql(expected);            
+
+            result.should.eql(expected);
             done();
         });
 
         it('should escape characters in a regex query', function (done) {
             var mod = model('testModelName', help.getModelSchema());
-            
+
             var query = { "test" : "BigEyes)" };
             var expected = { "test" : new RegExp(["^", seramaHelp.regExpEscape("BigEyes)"), "$"].join(""), "i") };
-            
+
             var result = mod.makeCaseInsensitive(query);
 
             result.should.eql(expected);
@@ -307,7 +307,7 @@ describe('Model', function () {
     });
 
     describe('`revisions` method', function () {
-        
+
         it('should be added to model', function (done) {
             model('testModelName', help.getModelSchema()).revisions.should.be.Function;
             done();
@@ -316,7 +316,7 @@ describe('Model', function () {
         it('should accept id param and return history collection', function (done) {
             var conn = connection();
             var mod = model('testModelName', help.getModelSchema(), conn, { storeRevisions : true })
-            
+
             mod.create({fieldName: 'foo'}, function (err, result) {
                 if (err) return done(err);
 
@@ -345,7 +345,7 @@ describe('Model', function () {
     });
 
     describe('`createIndex` method', function () {
-        
+
         it('should be added to model', function (done) {
             model('testModelName', help.getModelSchema()).createIndex.should.be.Function;
             done();
@@ -355,30 +355,30 @@ describe('Model', function () {
             var conn = connection();
             var mod = model('testModelName',
                             help.getModelSchema(),
-                            conn, 
-                            { 
-                                index: 
-                                { 
-                                    enabled: true, 
-                                    keys: { 
-                                        fieldName: 1 
-                                    }, 
-                                    options: { 
-                                        unique: false, 
-                                        background: true, 
-                                        dropDups: false, 
+                            conn,
+                            {
+                                index:
+                                {
+                                    enabled: true,
+                                    keys: {
+                                        fieldName: 1
+                                    },
+                                    options: {
+                                        unique: false,
+                                        background: true,
+                                        dropDups: false,
                                         w: 1
-                                    } 
-                                } 
+                                    }
+                                }
                             }
                         );
-            
+
             mod.create({fieldName: "ABCDEF"}, function (err, result) {
                 if (err) return done(err);
-                // Peform a query, with explain to show we hit the query
+                // Peform a query, with explain to show we hit the index
                 mod.find({"fieldName":"ABC"}, {explain:true}, function(err, explanation) {
-            
-                    explanation['results'][0].indexBounds.fieldName.should.not.be.null;
+
+                    explanation['results'][0].queryPlanner.winningPlan.inputStage.indexBounds.fieldName.should.exist;
 
                     done();
                 });
@@ -386,46 +386,50 @@ describe('Model', function () {
         });
 
         it('should support compound indexes', function (done) {
-	    help.cleanUpDB();  
+	    help.cleanUpDB();
 	    var conn = connection();
             var fields = help.getModelSchema();
             var schema = {};
             schema.fields = fields;
-            
+
             schema.fields.field2 = _.extend({}, schema.fields.fieldName, {
                 type: 'Number',
                 required: false
             });
-            
+
             var mod = model('testModelName',
                             schema.fields,
-                            conn, 
-                            { 
-                                index: 
-                                { 
-                                    enabled: true, 
-                                    keys: { 
+                            conn,
+                            {
+                                index:
+                                {
+                                    enabled: true,
+                                    keys: {
                                         fieldName: 1,
-                                        field2: 1 
-                                    }, 
-                                    options: { 
-                                        unique: false, 
-                                        background: true, 
-                                        dropDups: false, 
+                                        field2: 1
+                                    },
+                                    options: {
+                                        unique: false,
+                                        background: true,
+                                        dropDups: false,
                                         w: 1
-                                    } 
-                                } 
+                                    }
+                                }
                             }
                         );
-            
+
             mod.create({fieldName: "ABCDEF", field2: 2}, function (err, result) {
                 if (err) return done(err);
-                // Peform a query, with explain to show we hit the query
-                mod.find({"fieldName":"ABC", "field2":1}, {explain:true}, function(err, explanation) {
-                    explanation['results'][0].indexBounds.fieldName.should.exist;
-                    explanation['results'][0].indexBounds.field2.should.exist;
-                    done();
-                });
+
+                setTimeout(function() {
+                  // Peform a query, with explain to show we hit the index
+                  mod.find({"fieldName":"ABC", "field2":1}, {explain:true}, function(err, explanation) {
+                      //console.log(explanation['results'][0]);
+                      explanation['results'][0].queryPlanner.winningPlan.inputStage.indexBounds.fieldName.should.exist;
+                      explanation['results'][0].queryPlanner.winningPlan.inputStage.indexBounds.field2.should.exist;
+                      done();
+                  });
+                }, 300);
             });
         });
     });
@@ -503,7 +507,7 @@ describe('Model', function () {
 
                     should.exist(result && result[0]);
                     result[0].fieldName.should.equal('foo');
-                    
+
                     done();
                 });
             });

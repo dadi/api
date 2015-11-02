@@ -39,7 +39,7 @@ describe('Model connection', function () {
             username: 'seramatest',
             password: 'test123'
         }, {
-            databaseName: 'serama',
+            databaseName: 'test',
             host: 'localhost',
             port: 27017
         }, function (err) {

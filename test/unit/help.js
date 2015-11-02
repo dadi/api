@@ -14,7 +14,7 @@ module.exports.getModelSchema = function () {
             "validationRule": "",
             "required": false,
             "message": "",
-            "display": { 
+            "display": {
                 "index": true,
                 "edit": true
             }
@@ -35,7 +35,10 @@ module.exports.testModelProperty = function (key, val) {
 
 module.exports.cleanUpDB = function (done) {
     connection().on('connect', function (db) {
-
+        if (db.databaseName !== 'test') {
+          var err = new Error('Database should be `test`, not `' + db.databaseName + '`.');
+          return done(err);
+        }
         // drop all data
         db.dropDatabase(function (err) {
             if (err) return done(err);
@@ -56,7 +59,7 @@ module.exports.addUserToDb = function (userObj, dbObj, done) {
     db.open(function (err, db) {
         if (err) return done(err);
 
-        // Add a user to the database        
+        // Add a user to the database
         db.addUser(userObj.username, userObj.password, function (err) {
 
             // notice no error handling!

@@ -39,10 +39,13 @@ module.exports.createDocWithParams = function (token, doc, done) {
 // helper function to cleanup the `serama` db
 module.exports.dropDatabase = function (done) {
     connection().on('connect', function (db) {
-
+        if (db.databaseName !== 'test') {
+          var err = new Error('Database should be `test`, not `' + db.databaseName + '`.');
+          return done(err);
+        }
         db.dropDatabase(function (err) {
             if (err) return done(err);
-            
+
             db.close(true, done);
         });
     });
@@ -89,7 +92,7 @@ module.exports.clearCache = function () {
         fs.rmdirSync(path);
       }
     };
-    
+
     // for each directory in the cache folder, remove all files then
     // delete the folder
     fs.readdirSync(config.caching.directory).forEach(function (dirname) {

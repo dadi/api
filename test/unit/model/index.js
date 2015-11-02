@@ -43,7 +43,7 @@ describe('Model', function () {
             var conn = connection({
                 "username": "",
                 "password": "",
-                "database": "serama",
+                "database": "test",
                 "replicaSet": false,
                 "hosts": [
                     {
@@ -56,7 +56,7 @@ describe('Model', function () {
             should.exist(mod.connection);
             mod.connection.connectionOptions.hosts[0].host.should.equal('localhost');
             mod.connection.connectionOptions.hosts[0].port.should.equal(27020);
-            mod.connection.connectionOptions.database.should.equal('serama');
+            mod.connection.connectionOptions.database.should.equal('test');
 
             done();
         });
@@ -95,7 +95,7 @@ describe('Model', function () {
             var mod = model('testModelName', help.getModelSchema(), conn, { storeRevisions : true });
             should.exist(mod.revisionCollection);
             mod.revisionCollection.should.equal('testModelNameHistory');
-            
+
             done();
         });
 
@@ -104,7 +104,7 @@ describe('Model', function () {
             var mod = model('testModelName', help.getModelSchema(), conn, { storeRevisions : true, revisionCollection : 'modelHistory' });
             should.exist(mod.revisionCollection);
             mod.revisionCollection.should.equal('modelHistory');
-            
+
             done();
         });
 
@@ -207,10 +207,10 @@ describe('Model', function () {
 
         it('should accept schema and object and replace ObjectIDs in array', function (done) {
 
-            var fields = help.getModelSchema();            
+            var fields = help.getModelSchema();
             var schema = {};
             schema.fields = fields;
-            
+
             schema.fields.field2 = _.extend({}, schema.fields.fieldName, {
                 type: 'ObjectID',
                 required: false
@@ -229,10 +229,10 @@ describe('Model', function () {
 
         it('should accept schema and object and replace ObjectIDs as single value', function (done) {
 
-            var fields = help.getModelSchema();            
+            var fields = help.getModelSchema();
             var schema = {};
             schema.fields = fields;
-            
+
             schema.fields.field2 = _.extend({}, schema.fields.fieldName, {
                 type: 'ObjectID',
                 required: false
@@ -284,11 +284,11 @@ describe('Model', function () {
 
             var query = { "test" : "example" };
             var expected = { "test" : new RegExp(["^", "example", "$"].join(""), "i") };
-            
+
             var result = mod.makeCaseInsensitive(query);
-            
+
             result.should.eql(expected);
-            
+
             done();
         });
 
@@ -297,19 +297,19 @@ describe('Model', function () {
 
             var query = { "test" : { "$regex" : "example"} };
             var expected = { "test" : { "$regex" : new RegExp("example", "i") } };
-            
+
             var result = mod.makeCaseInsensitive(query);
-            
-            result.should.eql(expected);            
+
+            result.should.eql(expected);
             done();
         });
 
         it('should escape characters in a regex query', function (done) {
             var mod = model('testModelName', help.getModelSchema());
-            
+
             var query = { "test" : "BigEyes)" };
             var expected = { "test" : new RegExp(["^", seramaHelp.regExpEscape("BigEyes)"), "$"].join(""), "i") };
-            
+
             var result = mod.makeCaseInsensitive(query);
 
             result.should.eql(expected);
@@ -318,7 +318,7 @@ describe('Model', function () {
     });
 
     describe('`revisions` method', function () {
-        
+
         it('should be added to model', function (done) {
             model('testModelName', help.getModelSchema()).revisions.should.be.Function;
             done();
@@ -327,7 +327,7 @@ describe('Model', function () {
         it('should accept id param and return history collection', function (done) {
             var conn = connection();
             var mod = model('testModelName', help.getModelSchema(), conn, { storeRevisions : true })
-            
+
             mod.create({fieldName: 'foo'}, function (err, result) {
                 if (err) return done(err);
 
@@ -356,7 +356,7 @@ describe('Model', function () {
     });
 
     describe('`createIndex` method', function () {
-        
+
         it('should be added to model', function (done) {
             model('testModelName', help.getModelSchema()).createIndex.should.be.Function;
             done();
@@ -366,24 +366,24 @@ describe('Model', function () {
             var conn = connection();
             var mod = model('testModelName',
                             help.getModelSchema(),
-                            conn, 
-                            { 
-                                index: 
-                                { 
-                                    enabled: true, 
-                                    keys: { 
-                                        fieldName: 1 
-                                    }, 
-                                    options: { 
-                                        unique: false, 
-                                        background: true, 
-                                        dropDups: false, 
+                            conn,
+                            {
+                                index:
+                                {
+                                    enabled: true,
+                                    keys: {
+                                        fieldName: 1
+                                    },
+                                    options: {
+                                        unique: false,
+                                        background: true,
+                                        dropDups: false,
                                         w: 1
-                                    } 
-                                } 
+                                    }
+                                }
                             }
                         );
-            
+
             mod.create({fieldName: "ABCDEF"}, function (err, result) {
                 if (err) return done(err);
                 // Peform a query, with explain to show we hit the query
@@ -399,45 +399,45 @@ describe('Model', function () {
         });
 
         it('should support compound indexes', function (done) {
-	    help.cleanUpDB();  
+	    help.cleanUpDB();
 	    var conn = connection();
             var fields = help.getModelSchema();
             var schema = {};
             schema.fields = fields;
-            
+
             schema.fields.field2 = _.extend({}, schema.fields.fieldName, {
                 type: 'Number',
                 required: false
             });
-            
+
             var mod = model('testModelName',
                             schema.fields,
-                            conn, 
-                            { 
-                                index: 
-                                { 
-                                    enabled: true, 
-                                    keys: { 
+                            conn,
+                            {
+                                index:
+                                {
+                                    enabled: true,
+                                    keys: {
                                         fieldName: 1,
-                                        field2: 1 
-                                    }, 
-                                    options: { 
-                                        unique: false, 
-                                        background: true, 
-                                        dropDups: false, 
+                                        field2: 1
+                                    },
+                                    options: {
+                                        unique: false,
+                                        background: true,
+                                        dropDups: false,
                                         w: 1
-                                    } 
-                                } 
+                                    }
+                                }
                             }
                         );
-            
+
             mod.create({fieldName: "ABCDEF", field2: 2}, function (err, result) {
                 if (err) return done(err);
                 // Peform a query, with explain to show we hit the query
                 mod.find({"fieldName":"ABC", "field2":1}, {explain:true}, function(err, explanation) {
-                    
+
                     var indexBounds = seramaHelp.getFromObj(explanation.results[0], 'indexBounds', null);
-            
+
                     should.exist(indexBounds);
                     should.exist(indexBounds.fieldName);
                     should.exist(indexBounds.field2);
@@ -520,7 +520,7 @@ describe('Model', function () {
                     if (err) return done(err);
 
 		    should.exist(result && result.results);
-                    result.results[0].field1.should.equal('foo');                    
+                    result.results[0].field1.should.equal('foo');
                     done();
                 });
             });
@@ -697,7 +697,7 @@ describe('Model', function () {
                               }
 
             var schema = help.getModelSchema();
-            
+
             var refField = {
                 "refField": {
                   "type": "Reference",
@@ -724,7 +724,7 @@ describe('Model', function () {
             _.extend(schema, nameFields);
 
             var mod = model('testModelName', schema);
-            
+
             beforeEach(function(done) {
 
                 help.cleanUpDB(function() {
@@ -742,7 +742,7 @@ describe('Model', function () {
             it('should populate a reference field containing an ObjectID', function (done) {
                 var conn = connection();
                 //var mod = model('testModelName', schema);
-                
+
                 // find a doc
                 mod.find({ fieldName: 'foo_3' } , {}, function (err, result) {
 
@@ -751,11 +751,11 @@ describe('Model', function () {
                     // add the id to another doc
                     mod.update({ fieldName: 'foo_1' }, { refField: anotherDoc._id }, function (err, result) {
 
-                        // doc1 should now have anotherDoc == doc3 
+                        // doc1 should now have anotherDoc == doc3
                         mod.find({fieldName: 'foo_1'}, { "compose": true }, function (err, result) {
 
                             //console.log(JSON.stringify(result));
-                            
+
                             var doc = result.results[0];
                             should.exist(doc.refField.fieldName);
                             doc.refField.fieldName.should.equal('foo_3');
@@ -768,7 +768,7 @@ describe('Model', function () {
                             done();
                         });
                     });
-                    
+
                 });
 
             });
@@ -777,7 +777,7 @@ describe('Model', function () {
                 var conn = connection();
 
                 schema.refField.settings['fields'] = ['firstName', 'lastName'];
-                
+
                 // find a doc
                 mod.find({ fieldName: 'foo_3' } , {}, function (err, result) {
 
@@ -786,11 +786,11 @@ describe('Model', function () {
                     // add the id to another doc
                     mod.update({ fieldName: 'foo_1' }, { refField: anotherDoc._id }, function (err, result) {
 
-                        // doc1 should now have anotherDoc == doc3 
+                        // doc1 should now have anotherDoc == doc3
                         mod.find({fieldName: 'foo_1'}, { "compose": true }, function (err, result) {
 
                             //console.log(JSON.stringify(result));
-                            
+
                             var doc = result.results[0];
                             should.not.exist(doc.refField.fieldName);
                             should.exist(doc.refField.firstName);
@@ -806,13 +806,13 @@ describe('Model', function () {
                             done();
                         });
                     });
-                    
+
                 });
 
             });
 
             it('should reference a document in the specified collection', function (done) {
-                
+
                 var conn = connection();
 
                 // create two models
@@ -821,10 +821,10 @@ describe('Model', function () {
 
                 person.create({name: 'Neil Murray'}, function (err, result) {
                     var id = result.results[0]._id;
-                    
+
                     person.create({name: 'J K Rowling', spouse: id}, function (err, result) {
                         var id = result.results[0]._id;
-                        
+
                         book.create({title: 'Harry Potter 1', author: id}, function (err, result) {
                             var bookid = result.results[0]._id;
                             var books = [];
@@ -834,9 +834,9 @@ describe('Model', function () {
 
                                 // find a book
                                 book.find({ title: 'Harry Potter 2' } , { "compose": true }, function (err, result) {
-                                    
+
                                     //console.log(JSON.stringify(result, null, 2));
-                                    
+
                                     var doc = result.results[0];
                                     should.exist(doc.author.name);
                                     doc.author.name.should.equal('J K Rowling');
@@ -853,7 +853,7 @@ describe('Model', function () {
             });
 
             it('should allow specifying to not resolve the references via the model settings', function (done) {
-                
+
                 var conn = connection();
 
                 // create two models
@@ -862,10 +862,10 @@ describe('Model', function () {
 
                 person.create({name: 'Neil Murray'}, function (err, result) {
                     var id = result.results[0]._id;
-                    
+
                     person.create({name: 'J K Rowling', spouse: id}, function (err, result) {
                         var id = result.results[0]._id;
-                        
+
                         book.create({title: 'Harry Potter 1', author: id}, function (err, result) {
                             var bookid = result.results[0]._id;
                             var books = [];
@@ -875,9 +875,9 @@ describe('Model', function () {
 
                                 // find a book
                                 book.find({ title: 'Harry Potter 2' } , { "compose": true }, function (err, result) {
-                                    
+
                                     //console.log(JSON.stringify(result, null, 2));
-                                    
+
                                     var doc = result.results[0];
                                     should.exist(doc.author.name);
                                     should.not.exist(doc.author.spouse.name);
@@ -894,7 +894,7 @@ describe('Model', function () {
             });
 
             it('should allow specifying to resolve the references via the model settings', function (done) {
-                
+
                 var conn = connection();
 
                 // create two models
@@ -903,10 +903,10 @@ describe('Model', function () {
 
                 person.create({name: 'Neil Murray'}, function (err, result) {
                     var id = result.results[0]._id;
-                    
+
                     person.create({name: 'J K Rowling', spouse: id}, function (err, result) {
                         var id = result.results[0]._id;
-                        
+
                         book.create({title: 'Harry Potter 1', author: id}, function (err, result) {
                             var bookid = result.results[0]._id;
                             var books = [];
@@ -916,9 +916,9 @@ describe('Model', function () {
 
                                 // find a book
                                 book.find({ title: 'Harry Potter 2' } , { "compose": true }, function (err, result) {
-                                    
+
                                     //console.log(JSON.stringify(result, null, 2));
-                                    
+
                                     var doc = result.results[0];
                                     should.exist(doc.author.name);
                                     should.exist(doc.author.spouse.name);
@@ -936,25 +936,25 @@ describe('Model', function () {
 
             it('should populate a reference field containing an array of ObjectIDs', function (done) {
                 var conn = connection();
-                
+
                 // find a doc
                 mod.find( { fieldName: { '$regex' : 'foo' } } , {}, function (err, result) {
 
-                    // remove foo_1 from the results so we can add the remaining docs 
+                    // remove foo_1 from the results so we can add the remaining docs
                     // to it as a reference
                     var foo1 = _.findWhere(result.results, { fieldName: 'foo_1' });
                     result.results.splice(result.results.indexOf(foo1), 1);
-                    
+
                     var anotherDoc = _.pluck(result.results, '_id');
 
                     // add the id to another doc
                     mod.update({ fieldName: 'foo_1' }, { refField: anotherDoc }, function (err, result) {
 
-                        // doc1 should now have anotherDoc == doc3 
+                        // doc1 should now have anotherDoc == doc3
                         mod.find({fieldName: 'foo_1'}, { "compose": true }, function (err, result) {
 
                             //console.log(JSON.stringify(result));
-                            
+
                             var doc = result.results[0];
                             doc.refField.length.should.eql(4);
 
@@ -966,7 +966,7 @@ describe('Model', function () {
                             done();
                         });
                     });
-                    
+
                 });
 
             });

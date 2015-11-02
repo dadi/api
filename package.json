@@ -18,6 +18,7 @@
     "underscore": "~1.6.0"
   },
   "devDependencies": {
+    "env-test": "^1.0.0",
     "istanbul": "^0.3.22",
     "istanbul-cobertura-badger": "^1.1.0",
     "mocha": "~1.21.3",
@@ -26,7 +27,6 @@
     "supertest": "~0.13.0"
   },
   "scripts": {
-    "pretest": "scripts/pretest.js --node_env=test",
     "test": "env NODE_ENV=test ./node_modules/.bin/istanbul cover --report cobertura --report text --report html --report lcov ./node_modules/.bin/_mocha test",
     "posttest": "./scripts/coverage.js",
     "start": "node bantam/main --node_env=development"

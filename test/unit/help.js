@@ -14,7 +14,7 @@ module.exports.getModelSchema = function () {
             "validationRule": "",
             "required": false,
             "message": "",
-            "display": { 
+            "display": {
                 "index": true,
                 "edit": true
             }
@@ -33,7 +33,7 @@ module.exports.getModelSchemaWithMultipleFields = function () {
             "validationRule": "",
             "required": false,
             "message": "",
-            "display": { 
+            "display": {
                 "index": true,
                 "edit": true
             }
@@ -47,7 +47,7 @@ module.exports.getModelSchemaWithMultipleFields = function () {
             "validationRule": "",
             "required": false,
             "message": "",
-            "display": { 
+            "display": {
                 "index": true,
                 "edit": true
             }
@@ -70,7 +70,7 @@ module.exports.cleanUpDB = function (done) {
     connection().on('connect', function (db) {
 
         // drop all data
-        db.dropDatabase('serama', function (err) {
+        db.dropDatabase('test', function (err) {
             if (err) return done(err);
 
             // force close this connection
@@ -89,7 +89,7 @@ module.exports.addUserToDb = function (userObj, dbObj, done) {
     db.open(function (err, db) {
         if (err) return done(err);
 
-        // Add a user to the database        
+        // Add a user to the database
         db.addUser(userObj.username, userObj.password, { roles: [{ role: "readWrite", db: dbObj.databaseName }] }, function (err) {
 
             // notice no error handling!

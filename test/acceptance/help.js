@@ -52,7 +52,7 @@ module.exports.createDocWithSpecificVersion = function (token, apiVersion, doc, 
 
 // helper function to cleanup the dbs
 module.exports.dropDatabase = function (database, done) {
-    var database = connection({'database':database});
+    var database = connection({'database':'test'});
     database.on('connect', function (db) {
         db.dropDatabase(function (err) {
             if (err) return done(err);
@@ -102,7 +102,7 @@ module.exports.clearCache = function () {
         fs.rmdirSync(path);
       }
     };
-    
+
     // for each directory in the cache folder, remove all files then
     // delete the folder
     fs.readdirSync(config.get('caching.directory')).forEach(function (dirname) {

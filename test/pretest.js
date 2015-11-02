@@ -1,6 +1,6 @@
 var path = require('path');
 var colors = require('colors');
-var config = require('./../config.json');
+var config = require('./../config');
 
 var database = config.database.database;
 var authDatabase = config.auth.database.database;

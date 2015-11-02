@@ -1,14 +1,24 @@
 {
     "database": {
-        "host": "localhost",
-        "port": 27017,
-        "username": "",
-        "password": "",
-        "database": "serama",
-        "secondary": {
+      "hosts": [
+        {
+          "host": "localhost",
+          "port": 27017
+        }
+      ],
+      "username": "",
+      "password": "",
+      "database": "test",
+      "ssl": false,
+      "replicaSet": false,
+      "secondary": {
             "enabled": true,
-            "host": "127.0.0.1",
-            "port": 27018,
+            "hosts": [
+              {
+                "host": "localhost",
+                "port": 27018
+              }
+            ],
             "username": "",
             "password": ""
         }
@@ -30,11 +40,15 @@
         "tokenUrl": "/token",
         "tokenTtl": 2592000,
         "database": {
-            "host":"localhost",
-            "port":27017,
+            "hosts": [
+                {
+                    "host": "localhost",
+                    "port": 27017
+                }
+            ],
             "username":"",
             "password":"",
-            "database":"serama",
+            "database":"test",
             "clientCollection": "clientStore",
             "tokenCollection": "tokenStore"
         }

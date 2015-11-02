@@ -52,9 +52,9 @@ describe('Application', function () {
     });
 
     describe('collection initialisation', function () {
-        
+
         var newSchemaPath = __dirname + '/workspace/collections/vtest/testdb/collection.new-test-schema.json';
-        
+
         before(function (done) {
 
             // Add a schema file to the collection path
@@ -92,7 +92,7 @@ describe('Application', function () {
 
                 var loadedModels = _.compact(_.pluck(app.components, 'model'));
                 var model = _.where(loadedModels, { name: "test-schema" });
-                
+
                 model.length.should.equal(1);
 
                 done();
@@ -102,9 +102,9 @@ describe('Application', function () {
 
                 var loadedModels = _.compact(_.pluck(app.components, 'model'));
                 var model = _.where(loadedModels, { name: "modelNameFromSchema" });
-                
+
                 model.length.should.equal(1);
-                
+
                 done();
             });
         })
@@ -377,13 +377,13 @@ describe('Application', function () {
             });
 
             it('should allow case insensitive query', function (done) {
-               
+
                 var doc = { field1: "Test", field2: null };
-                
+
                 help.createDocWithParams(bearerToken, doc, function (err) {
-                
+
                    if (err) return done(err);
-                    
+
                     var client = request(connectionString);
                     var query = {
                         field1: "test"
@@ -409,13 +409,13 @@ describe('Application', function () {
             });
 
             it('should allow case insensitive regex query', function (done) {
-               
+
                 var doc = { field1: "Test", field2: null };
-                
+
                 help.createDocWithParams(bearerToken, doc, function (err) {
-                
+
                    if (err) return done(err);
-                    
+
                     var client = request(connectionString);
                     var query = {
                         field1: { "$regex" : "tes" }
@@ -435,7 +435,7 @@ describe('Application', function () {
 
                         res.body['results'].should.exist;
                         res.body['results'].should.be.Array;
-                        
+
                         _.each(res.body['results'], function (value, key) {
                             if (value.field1 === "Test") found = true;
                         });
@@ -448,13 +448,13 @@ describe('Application', function () {
             });
 
             it('should allow null values in query when converting to case insensitive', function (done) {
-               
+
                 var doc = { field1: "Test", field2: null };
-                
+
                 help.createDocWithParams(bearerToken, doc, function (err) {
-                
+
                    if (err) return done(err);
-                    
+
                     var client = request(connectionString);
                     var query = {
                         field2: null
@@ -474,7 +474,7 @@ describe('Application', function () {
 
                         res.body['results'].should.exist;
                         res.body['results'].should.be.Array;
-                        
+
                         _.each(res.body['results'], function (value, key) {
                             if (value.field1 === "Test") found = true;
                         });
@@ -487,9 +487,9 @@ describe('Application', function () {
             });
 
             it('should return specified fields only when supplying `fields` param', function (done) {
-               
+
                var doc = { field1: "Test", field2: null };
-                
+
                 help.createDocWithParams(bearerToken, doc, function (err) {
                     if (err) return done(err);
 
@@ -650,7 +650,7 @@ describe('Application', function () {
                         var client = request(connectionString);
                         var docId = doc2._id
                         var query = {
-                            
+
                         };
 
                         query = encodeURIComponent(JSON.stringify(query));
@@ -698,7 +698,7 @@ describe('Application', function () {
             });
 
             it('should return grouped result set when using $group in an aggregation query', function (done) {
-               
+
                 // create a bunch of docs
                 var asyncControl = new EventEmitter();
                 var count = 0;
@@ -715,9 +715,9 @@ describe('Application', function () {
                 asyncControl.on('ready', function () {
 
                     // documents are loaded and test can start
-                    
+
                     var client = request(connectionString);
-                    
+
                     var query = [
                         {
                             $group : {
@@ -749,7 +749,7 @@ describe('Application', function () {
             });
 
             it('should return normal result set when only using $match in an aggregation query', function (done) {
-               
+
                 // create a bunch of docs
                 var asyncControl = new EventEmitter();
                 var count = 0;
@@ -766,9 +766,9 @@ describe('Application', function () {
                 asyncControl.on('ready', function () {
 
                     // documents are loaded and test can start
-                    
+
                     var client = request(connectionString);
-                    
+
                     var query = [
                         { $match : { "field2" : { "$gte" : 1 } } },
                         { $limit : 2 }
@@ -795,7 +795,7 @@ describe('Application', function () {
             });
 
             it('should return single document when querystring param count=1', function (done) {
-               
+
                 // create a bunch of docs
                 var ac = new EventEmitter();
                 var count = 0;
@@ -813,7 +813,7 @@ describe('Application', function () {
 
                     // documents are loaded and test can start
                     var client = request(connectionString);
-                    
+
                     var query = {};
                     query = encodeURIComponent(JSON.stringify(query));
 
@@ -824,7 +824,7 @@ describe('Application', function () {
                         .expect('content-type', 'application/json')
                         .end(function (err, res) {
                             if (err) return done(err);
-                            
+
                             res.body['results'].should.exist;
                             res.body['results'].should.be.Array;
                             res.body['results'].length.should.equal(1);
@@ -1286,7 +1286,7 @@ describe('Application', function () {
                 var schema = JSON.parse(jsSchemaString);
                 delete schema.settings;
                 var newString = JSON.stringify(schema);
-                
+
                 client
                 .post('/vapicreate/testdb/api-create/config')
                 .send(newString)
@@ -1344,7 +1344,7 @@ describe('Application', function () {
                 .end(function (err, res) {
                     if (err) return done(err);
 
-                    
+
                     var body = JSON.stringify(res.body);
                     var index = body.indexOf('api-create-model-name collection created');
                     index.should.be.above(0);
@@ -1354,7 +1354,7 @@ describe('Application', function () {
             });
 
             it('should use property from schema file as model name', function (done) {
-                
+
                 var client = request(connectionString);
 
                 var schema = JSON.parse(jsSchemaString);
@@ -1371,7 +1371,7 @@ describe('Application', function () {
                 .end(function (err, res) {
                     if (err) return done(err);
 
-                    
+
                     var body = JSON.stringify(res.body);
 
                     var index = body.indexOf('modelNameFromSchema collection created');
@@ -1503,7 +1503,7 @@ describe('Application', function () {
         });
 
         it('should allow custom routing via config() function', function (done) {
-            
+
             var client = request(connectionString);
 
             client

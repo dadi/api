@@ -277,7 +277,7 @@ describe('Cache', function (done) {
                             .expect(200)
                             .end(function (err, res3) {
                                 if (err) return done(err);
-                                
+
                                 res1.body.results.length.should.eql(2);
                                 res3.body.results.length.should.eql(3);
                                 res3.text.should.not.equal(res1.text);
@@ -351,7 +351,7 @@ describe('Cache', function (done) {
                                             if (err) return done(err);
 
                                             var result = _.findWhere(getRes3.body.results, { "_id": id });
-                                            
+
                                             result.field1.should.eql('foo bar baz!');
 
                                             done();
@@ -425,7 +425,7 @@ describe('Cache', function (done) {
                                             if (err) return done(err);
 
                                             var result = _.findWhere(getRes3.body.results, { "_id": id });
-                                            
+
                                             should.not.exist(result);
 
                                             done();

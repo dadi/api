@@ -14,7 +14,7 @@ var testEndpointPath = __dirname + '/workspace/endpoints/v1/endpoint.monitor-tes
 var bearerToken; // used through out tests
 
 describe('File system watching', function () {
-    
+
     before(function (done) {
         // start the app
         app.start({
@@ -22,7 +22,7 @@ describe('File system watching', function () {
             endpointPath: __dirname + '/workspace/endpoints'
         }, function (err) {
             if (err) return done(err);
-            
+
             help.dropDatabase(function (err) {
                 if (err) return done(err);
 
@@ -66,7 +66,7 @@ describe('File system watching', function () {
             var client = request('http://' + config.server.host + ':' + config.server.port);
 
             setTimeout(function () {
-                
+
                 client
                 .post('/vtest/testdb/monitor-test-schema')
                 .set('Authorization', 'Bearer ' + bearerToken)

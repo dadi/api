@@ -39,13 +39,24 @@ describe('Model', function () {
             done();
         });
 
-        it('should accept database connection as third agrument', function (done) {
-            var conn = connection();
+        it('should accept database connection as third argument', function (done) {
+            var conn = connection({
+                "username": "",
+                "password": "",
+                "database": "test",
+                "replicaSet": false,
+                "hosts": [
+                    {
+                        "host": "localhost",
+                        "port": 27020
+                    }
+                ]
+            });
             var mod = model('testModelName', help.getModelSchema(), conn)
             should.exist(mod.connection);
-            mod.connection.host.should.equal('localhost');
-            mod.connection.port.should.equal(27017);
-            mod.connection.database.should.equal('test');
+            mod.connection.connectionOptions.hosts[0].host.should.equal('localhost');
+            mod.connection.connectionOptions.hosts[0].port.should.equal(27020);
+            mod.connection.connectionOptions.database.should.equal('test');
 
             done();
         });

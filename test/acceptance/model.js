@@ -6,15 +6,19 @@ var help = require(__dirname + '/../../bantam/lib/help');
 var config = require(__dirname + '/../../config');
 
 describe('Model', function () {
-    it('should connect to database matching name', function (done) {
-        var schema = require(__dirname + '/workspace/secondary-db/vtest/secondary/collection.secondary-schema.json');
-        var mod = model('secondary', help.getFieldsFromSchema(schema));
 
-        var conn = mod.connection;
-        conn.database.should.equal('secondary');
-        conn.host.should.equal('127.0.0.1');
-        conn.port.should.equal(27018);
+  it('should connect to specified database', function (done) {
+    var schema = require(__dirname + '/workspace/secondary-db/vtest/secondary/collection.secondary-schema.json');
+    var mod = model('secondary-schema', help.getFieldsFromSchema(schema), null, schema.settings, 'secondary');
 
-        done();
-    });
+    var conn = mod.connection;
+    conn.connectionOptions.database.should.equal('secondary');
+    conn.connectionOptions.hosts.should.be.Array;
+    conn.connectionOptions.hosts.length.should.equal(1);
+    conn.connectionOptions.hosts[0].host.should.equal('localhost');
+    conn.connectionOptions.hosts[0].port.should.equal(27018);
+
+    done();
+  });
+
 });

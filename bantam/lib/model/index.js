@@ -9,7 +9,7 @@ var _ = require('underscore');
 // track all models that have been instantiated by this process
 var _models = {};
 
-var Model = function (name, schema, conn, settings) {
+var Model = function (name, schema, conn, settings, database) {
 
     // attach collection name
     this.name = name;
@@ -29,14 +29,14 @@ var Model = function (name, schema, conn, settings) {
     if (conn) {
         this.connection = conn;
     }
-    else if (config[name]) {
-        this.connection = connection({
-            database: name,
-            host: config[name].host,
-            port: config[name].port,
-            username: config[name].username,
-            password: config[name].password
-        });
+    else if (database) {
+        this.connection = connection({ database: database });
+        //     database: database,
+        //     host: config[database] ? config[database].host : config.host,
+        //     port: config[database] ? config[database].port : config.port,
+        //     username: config[database] ? config[database].username : config.username,
+        //     password: config[database] ? config[database].password : config.password
+        // });
     }
     else {
         this.connection = connection();
@@ -64,8 +64,8 @@ var Model = function (name, schema, conn, settings) {
         this.revisionCollection = (this.settings.revisionCollection ? this.settings.revisionCollection : this.name + 'History');
     }
 
-    if (this.settings.hasOwnProperty('index') 
-        && this.settings.index.hasOwnProperty('enabled') 
+    if (this.settings.hasOwnProperty('index')
+        && this.settings.index.hasOwnProperty('enabled')
         && this.settings.index.enabled == true
         && this.settings.index.hasOwnProperty('keys') ) {
         this.createIndex(function(err, indexName) {
@@ -378,7 +378,7 @@ Model.prototype.update = function (query, update, internals, done) {
         err.json = validation;
         return done(err);
     }
-    
+
     validation = this.validate.schema(update, true);
     if (!validation.success) {
         err = validationError();
@@ -398,13 +398,13 @@ Model.prototype.update = function (query, update, internals, done) {
     var self = this;
     var _update = function (database) {
 
-        // get a reference to the documents 
+        // get a reference to the documents
         // that will be updated
         var updatedDocs = [];
 
         self.find(query, {}, function(err, docs) {
             if (err) return done(err);
-            
+
             updatedDocs = docs['results'];
 
             self.castToBSON(query);
@@ -487,8 +487,8 @@ Model.prototype.castToBSON = function (obj) {
 }
 
 // exports
-module.exports = function (name, schema, conn, settings) {
-    if (schema) return new Model(name, schema, conn, settings);
+module.exports = function (name, schema, conn, settings, database) {
+    if (schema) return new Model(name, schema, conn, settings, database);
     return _models[name];
 };
 
@@ -501,7 +501,7 @@ function validationError(message) {
 }
 
 function getMetadata(options, count) {
-    var meta = _.extend({}, options);    
+    var meta = _.extend({}, options);
     delete meta.skip;
 
     meta.page = options.page || 1;

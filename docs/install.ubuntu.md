@@ -12,23 +12,21 @@ This guide assumes a single server holding both the database and the API.
 
 ### Node.js latest
 
-1. `sudo apt-get update`
-2. `sudo apt-get upgrade`
-3. `sudo apt-get install python-software-properties`
+1. `sudo apt-get -y update`
+2. `sudo apt-get -y upgrade`
+3. `sudo apt-get -y install python-software-properties`
 4. `sudo add-apt-repository ppa:chris-lea/node.js`
-5. `sudo apt-get update`
-6. `sudo apt-get install nodejs`
+5. `sudo apt-get -y update`
+6. `sudo apt-get -y install nodejs`
 
 ### MongoDB
 
-1. `sudo apt-get install mongodb`
+1. `sudo apt-get -y install mongodb`
 
 For Serama's tests to run you will need stand alone mongods running at localhost:27017 and localhost:27018. To do this you need to define a new mongod on 27108:
 
-1. `sudo mkdir data`
-2. `sudo mkdir data/db1`
-3. `sudo mkdir data/log1`
-4. `sudo mongod --dbpath ~/data/db1 --logpath ~/data/log1/log --port 27018 --fork`
+1. `sudo mkdir -p data/db1 data/log1`
+2. `sudo mongod --dbpath ~/data/db1 --logpath ~/data/log1/log --port 27018 --fork`
 
 ### Serama
 
@@ -46,7 +44,7 @@ Install Serama:
 
 *Note:* Serama's log and cache directories are created at startup using settings in the main configuration file `config.json`.
 
-
+`[sudo] cp config-sample.json config.json`
 `[sudo] npm install`
 
 Perform Serama's tests:
@@ -60,6 +58,15 @@ In order to get up and running you will also need to create a client document in
 Start Serama:
 
 `[sudo] npm start`
+
+We can test that our credentials are valid by trying:
+
+`curl -v -X POST -H "Cache-Control: no-cache" -H "content-type: application/json" -d "{ \"clientId\": \"testClient\", \"secret\": \"superSecret\"}" http://127.0.0.1:3000/token`
+
+You should receive a 200 response containing an access token similar to the following
+
+`{"accessToken":"ccb96c94-2ddf-446b-8482-436c9423ae54","tokenType":"Bearer","expiresIn":2592000}`
+
 
 ### Forever
 

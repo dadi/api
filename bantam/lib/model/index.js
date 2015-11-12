@@ -175,7 +175,7 @@ Model.prototype.makeCaseInsensitive = function (obj) {
     var self = this;
     _.each(Object.keys(obj), function(key) {
         if (typeof obj[key] === 'string') {
-            if (ObjectID.isValid(obj[key])) {
+            if (ObjectID.isValid(obj[key]) && obj[key].match(/^[a-fA-F0-9]{24}$/)) {
                 newObj[key] = obj[key];
             }
             else if (key[0] === '$' && key === '$regex') {
@@ -209,7 +209,7 @@ var convertApparentObjectIds = function (query) {
             if (typeof query[key] === 'object' && _.isArray(query[key])) {
                 var arr = query[key];
                 _.each(arr, function (value, key) {
-                    if (typeof value === 'string' && ObjectID.isValid(value)) {
+                    if (typeof value === 'string' && ObjectID.isValid(value) && value.match(/^[a-fA-F0-9]{24}$/)) {
                         arr[key] = new ObjectID.createFromHexString(value);
                     }
                 });
@@ -233,7 +233,7 @@ Model.prototype.convertObjectIdsForSave = function (schema, obj) {
         if (typeof obj[key] === 'object' && _.isArray(obj[key])) {
             var arr = obj[key];
             _.each(arr, function (value, key) {
-                if (typeof value === 'string' && ObjectID.isValid(value)) {
+                if (typeof value === 'string' && ObjectID.isValid(value) && value.match(/^[a-fA-F0-9]{24}$/)) {
                     arr[key] = new ObjectID.createFromHexString(value);
                 }
             });
@@ -481,7 +481,7 @@ Model.prototype.castToBSON = function (obj) {
 
     // TODO: Do we need to handle casting for all fields, or will `_id` be the only BSON specific type?
     //      this is starting to enter ODM land...
-    if (typeof obj._id === 'string' && ObjectID.isValid(obj._id)) {
+    if (typeof obj._id === 'string' && ObjectID.isValid(obj._id) && obj._id.match(/^[a-fA-F0-9]{24}$/)) {
         obj._id = new ObjectID.createFromHexString(obj._id);
     }
 }

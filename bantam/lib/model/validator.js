@@ -36,8 +36,8 @@ Validator.prototype.schema = function (obj, update) {
 
     var schema = this.model.schema;
 
-    // check for default fields, assign them if the obj didn't 
-    // provide a value    
+    // check for default fields, assign them if the obj didn't
+    // provide a value
     Object.keys(schema)
     .filter(function (key) { return schema[key].default; })
     .forEach(function (key) {

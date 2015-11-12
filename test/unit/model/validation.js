@@ -156,7 +156,7 @@ describe('Model validator', function () {
                         }
                     }
                 });
-                
+
                 var val = validator.schema({field1: '55cb1658341a0a804d4dadcc'});
                 val.success.should.be.true;
 
@@ -242,7 +242,7 @@ describe('Model validator', function () {
                         }
                     }
                 });
-                
+
                 var val = validator.schema({field2: 123}, true); // update == true
                 val.success.should.be.true;
 

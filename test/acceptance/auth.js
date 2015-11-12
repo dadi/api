@@ -14,8 +14,8 @@ describe('Authentication', function () {
 
     before(function (done) {
 
-        help.createClient(null, function() { 
-        
+        help.createClient(null, function() {
+
         app.start({
             collectionPath: __dirname + '/workspace/collections',
             endpointPath: __dirname + '/workspace/endpoints'
@@ -30,7 +30,7 @@ describe('Authentication', function () {
         });
     });
 
-    after(function (done) {        
+    after(function (done) {
         help.removeTestClients(function() {
             app.stop(done);
         });
@@ -87,7 +87,7 @@ describe('Authentication', function () {
     });
 
     it('should not allow requests containing invalid token', function (done) {
-        
+
         help.getBearerToken(function (err, token) {
             var client = request('http://' + config.get('server.host') + ':' + config.get('server.port'));
 
@@ -248,7 +248,7 @@ describe('Authentication', function () {
         var permissions = { permissions: { collections: [ { apiVersion: 'vtest', path: "test-schema" } ] } } 
 
         help.getBearerTokenWithPermissions(permissions, function (err, token) {
-                
+
             var client = request('http://' + config.get('server.host') + ':' + config.get('server.port'));
 
             // Wait, then test that we can make an unauthenticated request
@@ -268,7 +268,7 @@ describe('Authentication', function () {
 
     it('should not allow access to collection not specified in client permissions list', function (done) {
 
-        var permissions = { permissions: { collections: [ { apiVersion: 'vtest', path: "books" } ] } } 
+        var permissions = { permissions: { collections: [ { apiVersion: 'vtest', path: "books" } ] } }
 
         help.getBearerTokenWithPermissions(permissions, function (err, token) {
 
@@ -291,10 +291,10 @@ describe('Authentication', function () {
 
     it('should allow access to endpoint specified in client permissions list', function (done) {
 
-        var permissions = { permissions: { endpoints: [ { apiVersion: 'v1', path: "test-endpoint" } ] } } 
+        var permissions = { permissions: { endpoints: [ { apiVersion: 'v1', path: "test-endpoint" } ] } }
 
         help.getBearerTokenWithPermissions(permissions, function (err, token) {
-                
+
             var client = request('http://' + config.get('server.host') + ':' + config.get('server.port'));
 
             // Wait, then test that we can make an unauthenticated request
@@ -314,7 +314,7 @@ describe('Authentication', function () {
 
     it('should not allow access to endpoint not specified in client permissions list', function (done) {
 
-        var permissions = { permissions: { endpoints: [ { apiVersion: 'v1', path: "xxxx-endpoint" } ] } } 
+        var permissions = { permissions: { endpoints: [ { apiVersion: 'v1', path: "xxxx-endpoint" } ] } }
 
         help.getBearerTokenWithPermissions(permissions, function (err, token) {
 
@@ -337,7 +337,7 @@ describe('Authentication', function () {
 
     // it('should not allow access to serama config when client permissions specified', function (done) {
 
-    //     var permissions = { permissions: { collections: [ { apiVersion: "v1", path: "books" } ] } } 
+    //     var permissions = { permissions: { collections: [ { apiVersion: "v1", path: "books" } ] } }
 
     //     help.getBearerTokenWithPermissions(permissions, function (err, token) {
 
@@ -361,7 +361,7 @@ describe('Authentication', function () {
     it('should allow access to collection when no permissions specified', function (done) {
 
         help.getBearerToken(function (err, token) {
-                
+
             var client = request('http://' + config.get('server.host') + ':' + config.get('server.port'));
 
             // Wait, then test that we can make an unauthenticated request
@@ -382,7 +382,7 @@ describe('Authentication', function () {
     it('should allow access to endpoint when no permissions specified', function (done) {
 
         help.getBearerToken(function (err, token) {
-                
+
             var client = request('http://' + config.get('server.host') + ':' + config.get('server.port'));
 
             // Wait, then test that we can make an unauthenticated request

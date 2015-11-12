@@ -14,7 +14,7 @@ var testEndpointPath = __dirname + '/workspace/endpoints/v1/endpoint.monitor-tes
 var bearerToken; // used through out tests
 
 describe('File system watching', function () {
-    
+
     before(function (done) {
         // start the app
         app.start({
@@ -64,7 +64,7 @@ describe('File system watching', function () {
         it('should update collections component when file changes', function (done) {
 	    this.timeout(4000);
             var client = request('http://' + config.get('server.host') + ':' + config.get('server.port'));
-            
+
             client
             .post('/vtest/testdb/monitor-test-schema')
             .set('Authorization', 'Bearer ' + bearerToken)

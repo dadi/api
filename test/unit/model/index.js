@@ -386,7 +386,7 @@ describe('Model', function () {
 
             mod.create({fieldName: "ABCDEF"}, function (err, result) {
                 if (err) return done(err);
-                // Peform a query, with explain to show we hit the query
+                // Peform a query, with explain to show we hit the index
                 mod.find({"fieldName":"ABC"}, {explain:true}, function(err, explanation) {
 
                     var indexBounds = seramaHelp.getFromObj(explanation.results[0], 'indexBounds', null);
@@ -519,7 +519,7 @@ describe('Model', function () {
                 }, function (err, result) {
                     if (err) return done(err);
 
-		    should.exist(result && result.results);
+		                should.exist(result && result.results);
                     result.results[0].field1.should.equal('foo');
                     done();
                 });

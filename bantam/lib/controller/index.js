@@ -29,7 +29,7 @@ var Controller = function (model) {
 };
 
 Controller.prototype.get = function (req, res, next) {
-    
+
     var path = url.parse(req.url, true);
     var options = path.query;
     var query = parseQuery(options.filter);
@@ -46,7 +46,7 @@ Controller.prototype.get = function (req, res, next) {
     }
 
     var skip = limit * ((options.page || 1) - 1);
-    
+
     // determine if this is jsonp
     var done = options.callback
         ? sendBackJSONP(options.callback, res, next)
@@ -112,7 +112,7 @@ Controller.prototype.post = function (req, res, next) {
 
     var pathname = url.parse(req.url).pathname;
 
-    // remove id param if it's an update, so 
+    // remove id param if it's an update, so
     // we still get a valid handle on the model name
     // for clearing the cache
     pathname = pathname.replace('/' + req.params.id, '');
@@ -123,7 +123,7 @@ Controller.prototype.post = function (req, res, next) {
 
         // if id is present in the url, then this is an update
         if (req.params.id) {
-        
+
             internals.lastModifiedAt = Date.now();
             internals.lastModifiedBy = req.client && req.client.clientId;
 
@@ -135,7 +135,7 @@ Controller.prototype.post = function (req, res, next) {
         // if no id is present, then this is a create
         internals.createdAt = Date.now();
         internals.createdBy = req.client && req.client.clientId;
-    
+
         self.model.create(req.body, internals, sendBackJSON(200, res, next));
     });
 };
@@ -148,7 +148,7 @@ Controller.prototype.delete = function (req, res, next) {
 
     var pathname = url.parse(req.url).pathname;
 
-    // remove id param so we still get a valid handle 
+    // remove id param so we still get a valid handle
     // on the model name for clearing the cache
     pathname = pathname.replace('/' + req.params.id, '');
 
@@ -168,7 +168,7 @@ Controller.prototype.delete = function (req, res, next) {
                 });
             }
 
-            // send no-content success 
+            // send no-content success
             res.statusCode = 204;
             res.end();
         });

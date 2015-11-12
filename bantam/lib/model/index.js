@@ -73,8 +73,8 @@ var Model = function (name, schema, conn, settings, database) {
     }
 
     // add any configured indexes
-    if (this.settings.hasOwnProperty('index') 
-        && this.settings.index.hasOwnProperty('enabled') 
+    if (this.settings.hasOwnProperty('index')
+        && this.settings.index.hasOwnProperty('enabled')
         && this.settings.index.enabled == true
         && this.settings.index.hasOwnProperty('keys') ) {
         this.createIndex(function(err, indexName) {
@@ -101,7 +101,7 @@ Model.prototype.createIndex = function(done) {
     if (this.connection.db) return _done(this.connection.db);
 
     // if the db is not connected queue the index creation
-    this.connection.once('connect', _done); 
+    this.connection.once('connect', _done);
 }
 
 /**
@@ -190,7 +190,7 @@ Model.prototype.makeCaseInsensitive = function (obj) {
     var self = this;
     _.each(Object.keys(obj), function(key) {
         if (typeof obj[key] === 'string') {
-            if (ObjectID.isValid(obj[key])) {
+            if (ObjectID.isValid(obj[key]) && obj[key].match(/^[a-fA-F0-9]{24}$/)) {
                 newObj[key] = obj[key];
             }
             else if (key[0] === '$' && key === '$regex') {
@@ -225,7 +225,7 @@ var convertApparentObjectIds = function (query) {
             if (typeof query[key] === 'object' && _.isArray(query[key])) {
                 var arr = query[key];
                 _.each(arr, function (value, key) {
-                    if (typeof value === 'string' && ObjectID.isValid(value)) {
+                    if (typeof value === 'string' && ObjectID.isValid(value) && value.match(/^[a-fA-F0-9]{24}$/)) {
                         arr[key] = new ObjectID.createFromHexString(value);
                     }
                 });
@@ -249,7 +249,7 @@ Model.prototype.convertObjectIdsForSave = function (schema, obj) {
         if (typeof obj[key] === 'object' && _.isArray(obj[key])) {
             var arr = obj[key];
             _.each(arr, function (value, key) {
-                if (typeof value === 'string' && ObjectID.isValid(value)) {
+                if (typeof value === 'string' && ObjectID.isValid(value) && value.match(/^[a-fA-F0-9]{24}$/)) {
                     arr[key] = new ObjectID.createFromHexString(value);
                 }
             });
@@ -288,7 +288,7 @@ Model.prototype.find = function (query, options, done) {
 
     var compose = self.compose;
 
-    // override the model's settings with a 
+    // override the model's settings with a
     // value from the options object?
     if (options.hasOwnProperty('compose')) {
         compose = options.compose;
@@ -418,7 +418,7 @@ Model.prototype.update = function (query, update, internals, done) {
         err.json = validation;
         return done(err);
     }
-    
+
     validation = this.validate.schema(update, true);
     if (!validation.success) {
         err = validationError();
@@ -466,7 +466,7 @@ Model.prototype.update = function (query, update, internals, done) {
                 if (self.history && updatedDocs.length > 0) {
                     self.history.createEach(updatedDocs, self, function(err, docs) {
                         if (err) return done(err);
-                        
+
                         results.results = docs;
 
                         done(null, results);
@@ -531,7 +531,7 @@ Model.prototype.castToBSON = function (obj) {
 
     // TODO: Do we need to handle casting for all fields, or will `_id` be the only BSON specific type?
     //      this is starting to enter ODM land...
-    if (typeof obj._id === 'string' && ObjectID.isValid(obj._id)) {
+    if (typeof obj._id === 'string' && ObjectID.isValid(obj._id) && obj._id.match(/^[a-fA-F0-9]{24}$/)) {
         obj._id = new ObjectID.createFromHexString(obj._id);
     }
 }
@@ -551,7 +551,7 @@ function validationError(message) {
 }
 
 function getMetadata(options, count) {
-    var meta = _.extend({}, options);    
+    var meta = _.extend({}, options);
     delete meta.skip;
 
     meta.page = options.page || 1;

@@ -127,18 +127,18 @@ describe('validation', function () {
 
                 var client = request('http://' + config.get('server.host') + ':' + config.get('server.port'));
                 var filepath = __dirname + '/workspace/validation/collections/vtest/testdb/collection.test-validation-schema.json';
-                
+
                 // add a new field to the schema
                 var originaljsSchemaString = fs.readFileSync(filepath, {encoding: 'utf8'});
                 var schema = JSON.parse(originaljsSchemaString);
 
                 // add a new field to the existing schema
                 schema.fields.fieldBoolRequired = { type: "Boolean", required: true };
-                
+
                 var jsSchemaString = JSON.stringify(schema, null, 4);
-                
+
                 fs.writeFileSync(filepath, jsSchemaString);
-                        
+
                 setTimeout(function () {
                     client
                     .post('/vtest/testdb/test-validation-schema')
@@ -192,7 +192,7 @@ describe('validation', function () {
                             .expect(200)
                             .end(function (err, res) {
                                 if (err) return done(err);
-                                
+
                                 client
                                 .post('/vtest/testdb/test-validation-schema')
                                 .set('Authorization', 'Bearer ' + bearerToken)

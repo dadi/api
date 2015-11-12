@@ -68,7 +68,10 @@ module.exports.testModelProperty = function (key, val) {
 
 module.exports.cleanUpDB = function (done) {
     connection().on('connect', function (db) {
-
+        if (db.databaseName !== 'test') {
+          var err = new Error('Database should be `test`, not `' + db.databaseName + '`.');
+          return done(err);
+        }
         // drop all data
         db.dropDatabase('test', function (err) {
             if (err) return done(err);

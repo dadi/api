@@ -3,10 +3,12 @@
   "version": "0.1.10-beta",
   "dependencies": {
     "async": "^1.4.2",
-    "ben": "0.0.0",
     "body-parser": "~1.6.5",
     "colors": "^1.1.2",
     "convict": "^1.0.1",
+    "mkdirp": "^0.5.1",
+    "dustjs-linkedin": "^2.7.2",
+    "function-rate-limit": "^1.0.1",
     "mkdirp": "^0.5.1",
     "moment": "~2.8.1",
     "mongodb": "~1.4.8",
@@ -15,7 +17,8 @@
     "pkginfo": "latest",
     "q": "^1.4.1",
     "stack-trace": "latest",
-    "underscore": "~1.6.0"
+    "underscore": "~1.6.0",
+    "underscore.string": "^3.2.2"
   },
   "devDependencies": {
     "env-test": "^1.0.0",

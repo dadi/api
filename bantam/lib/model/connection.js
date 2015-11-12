@@ -28,10 +28,10 @@ var Connection = function (options) {
     if (!(this.connectionOptions.hosts && this.connectionOptions.hosts.length)) {
         throw new Error('`hosts` Array is required for Connection');
     }
-    
+
     if (!this.connectionOptions.database) throw new Error('`database` String is required for Connection');
 
-    this.connectionString = constructConnectionString(this.connectionOptions);    
+    this.connectionString = constructConnectionString(this.connectionOptions);
 
     // connection readyState
     // 0 = disconnected
@@ -47,7 +47,7 @@ util.inherits(Connection, EventEmitter);
 /**
  * Connects to the database as specified in the options, or the config
  *
- * 
+ *
  */
 Connection.prototype.connect = function () {
     this.readyState = 2;
@@ -76,7 +76,7 @@ Connection.prototype.connect = function () {
         });
 
     });
-    
+
 };
 
 
@@ -103,13 +103,13 @@ function constructConnectionString(options) {
         connectionOptions.options['maxPoolSize'] = 1;
     }
 
-    return 'mongodb://' 
+    return 'mongodb://'
         + credentials(connectionOptions)
         + connectionOptions.hosts.map(function(host, index) {
                 return host.host + ':' + (host.port || 27017);
-            }).join(',') 
-        + '/' 
-        + connectionOptions.database 
+            }).join(',')
+        + '/'
+        + connectionOptions.database
         + encodeOptions(connectionOptions.options);
 
     /*
@@ -150,7 +150,7 @@ function constructConnectionString(options) {
                 }
             ],
             "username": "",
-            "password": ""  
+            "password": ""
         }
     }
     */
@@ -177,7 +177,7 @@ function credentials(options) {
  * @returns {Object} new `Connection`
  * @api public
  */
-module.exports = function (options) { 
+module.exports = function (options) {
     var conn = new Connection(options);
 
     conn.on('error', function (err) {

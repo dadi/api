@@ -389,9 +389,7 @@ describe('Model', function () {
                 // Peform a query, with explain to show we hit the index
                 mod.find({"fieldName":"ABC"}, {explain:true}, function(err, explanation) {
 
-                    var indexBounds = seramaHelp.getFromObj(explanation.results[0], 'indexBounds', null);
-                    should.exist(indexBounds);
-                    should.exist(indexBounds.fieldName);
+                    explanation.results[0].queryPlanner.winningPlan.inputStage.inputStage.indexName.should.eql('fieldName_1')
 
                     done();
                 });
@@ -436,11 +434,7 @@ describe('Model', function () {
                 // Peform a query, with explain to show we hit the query
                 mod.find({"fieldName":"ABC", "field2":1}, {explain:true}, function(err, explanation) {
 
-                    var indexBounds = seramaHelp.getFromObj(explanation.results[0], 'indexBounds', null);
-
-                    should.exist(indexBounds);
-                    should.exist(indexBounds.fieldName);
-                    should.exist(indexBounds.field2);
+                    explanation.results[0].queryPlanner.winningPlan.inputStage.inputStage.indexName.should.eql('fieldName_1_field2_1')
 
                     done();
                 });

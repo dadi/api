@@ -52,13 +52,15 @@ module.exports.createDocWithSpecificVersion = function (token, apiVersion, doc, 
 
 // helper function to cleanup the dbs
 module.exports.dropDatabase = function (database, done) {
-    var database = connection({'database':'test'});
-    database.on('connect', function (db) {
-        db.dropDatabase(function (err) {
-            if (err) return done(err);
-            db.close(true, done);
-        });
-    });
+    if (database.indexOf('test') > -1) {
+      var database = connection({'database':database||'test'});
+      database.on('connect', function (db) {
+          db.dropDatabase(function (err) {
+              if (err) return done(err);
+              db.close(true, done);
+          });
+      });
+    }
 };
 
 module.exports.createClient = function (client, done) {

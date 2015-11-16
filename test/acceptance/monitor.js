@@ -22,7 +22,7 @@ describe('File system watching', function () {
             endpointPath: __dirname + '/workspace/endpoints'
         }, function (err) {
             if (err) return done(err);
-            
+
             help.dropDatabase('testdb', function (err) {
                 if (err) return done(err);
 
@@ -41,28 +41,41 @@ describe('File system watching', function () {
 
     after(function (done) {
 
-        if (fs.existsSync(testSchemaPath)) fs.unlinkSync(testSchemaPath);
-        if (fs.existsSync(testEndpointPath)) fs.unlinkSync(testEndpointPath);
+      try {
+        fs.unlinkSync(testSchemaPath);
+        fs.unlinkSync(testEndpointPath);
+      }
+      catch (err) {
 
-        help.removeTestClients(function() {
-            app.stop(done);
-        });
+      }
+
+      help.removeTestClients(function() {
+          app.stop(done);
+      });
     });
 
     beforeEach(function (done) {
         var testSchema = fs.readFileSync(originalSchemaPath);
-        fs.writeFileSync(testSchemaPath, testSchema);
-
         var testEndpoint = fs.readFileSync(originalEndpointPath);
-        fs.writeFileSync(testEndpointPath, testEndpoint);
 
-        done();
+        fs.writeFile(testSchemaPath, testSchema, function (err, result) {
+            if (err) return done(err);
+
+            fs.writeFile(testEndpointPath, testEndpoint, function (err, result) {
+                if (err) return done(err);
+
+                setTimeout(function() {
+                  done();
+                }, 500)
+            });
+        });
+
     })
 
     describe('changing files', function () {
 
         it('should update collections component when file changes', function (done) {
-	    this.timeout(4000);
+	          this.timeout(4000);
             var client = request('http://' + config.get('server.host') + ':' + config.get('server.port'));
 
             client

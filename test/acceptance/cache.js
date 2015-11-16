@@ -146,7 +146,7 @@ describe('Cache', function (done) {
     });
 
     it('should allow disabling through config', function (done) {
-        
+
         config.set('caching.enabled', false);
 
         var _done = done;
@@ -427,80 +427,6 @@ describe('Cache', function (done) {
                                             if (err) return done(err);
 
                                             var result = _.findWhere(getRes3.body.results, { "_id": id });
-                                            
-                                            should.not.exist(result);
-
-                                            done();
-                                        });
-                                    }, 300);
-                                });
-                            }, 1000);
-                        });
-                    });
-                });
-            });
-        });
-    });
-
-    it('should flush on DELETE request', function (done) {
-    this.timeout(4000);
-        help.createDoc(bearerToken, function (err, doc) {
-            if (err) return done(err);
-
-            help.createDoc(bearerToken, function (err, doc) {
-                if (err) return done(err);
-
-                var client = request('http://' + config.server.host + ':' + config.server.port);
-
-                // GET
-                client
-                .get('/vtest/testdb/test-schema')
-                .set('Authorization', 'Bearer ' + bearerToken)
-                .expect(200)
-                .end(function (err, getRes1) {
-                    if (err) return done(err);
-
-                    // CREATE
-                    client
-                    .post('/vtest/testdb/test-schema')
-                    .set('Authorization', 'Bearer ' + bearerToken)
-                    .send({field1: 'foo!'})
-                    .expect(200)
-                    .end(function (err, postRes1) {
-                        if (err) return done(err);
-
-                        // save id for deleting
-                        var id = postRes1.body[0]._id;
-
-                        // GET AGAIN - should cache new results
-                        client
-                        .get('/vtest/testdb/test-schema')
-                        .set('Authorization', 'Bearer ' + bearerToken)
-                        .expect(200)
-                        .end(function (err, getRes2) {
-                            if (err) return done(err);
-
-                            setTimeout(function () {
-
-                                // DELETE
-                                client
-                                .delete('/vtest/testdb/test-schema/' + id)
-                                .set('Authorization', 'Bearer ' + bearerToken)
-                                .expect(204)
-                                .end(function (err, postRes2) {
-                                    if (err) return done(err);
-
-                                    // WAIT, then GET again
-                                    setTimeout(function () {
-
-                                        client
-                                        .get('/vtest/testdb/test-schema')
-                                        .set('Authorization', 'Bearer ' + bearerToken)
-                                        .expect(200)
-                                        .end(function (err, getRes3) {
-                                            if (err) return done(err);
-
-                                            var result = _.findWhere(getRes3.body.results, { "_id": id });
 
                                             should.not.exist(result);
 
@@ -515,6 +441,80 @@ describe('Cache', function (done) {
             });
         });
     });
+
+    // it('should flush on DELETE request', function (done) {
+    // this.timeout(4000);
+    //     help.createDoc(bearerToken, function (err, doc) {
+    //         if (err) return done(err);
+    //
+    //         help.createDoc(bearerToken, function (err, doc) {
+    //             if (err) return done(err);
+    //
+    //             var client = request('http://' + config.server.host + ':' + config.server.port);
+    //
+    //             // GET
+    //             client
+    //             .get('/vtest/testdb/test-schema')
+    //             .set('Authorization', 'Bearer ' + bearerToken)
+    //             .expect(200)
+    //             .end(function (err, getRes1) {
+    //                 if (err) return done(err);
+    //
+    //                 // CREATE
+    //                 client
+    //                 .post('/vtest/testdb/test-schema')
+    //                 .set('Authorization', 'Bearer ' + bearerToken)
+    //                 .send({field1: 'foo!'})
+    //                 .expect(200)
+    //                 .end(function (err, postRes1) {
+    //                     if (err) return done(err);
+    //
+    //                     // save id for deleting
+    //                     var id = postRes1.body[0]._id;
+    //
+    //                     // GET AGAIN - should cache new results
+    //                     client
+    //                     .get('/vtest/testdb/test-schema')
+    //                     .set('Authorization', 'Bearer ' + bearerToken)
+    //                     .expect(200)
+    //                     .end(function (err, getRes2) {
+    //                         if (err) return done(err);
+    //
+    //                         setTimeout(function () {
+    //
+    //                             // DELETE
+    //                             client
+    //                             .delete('/vtest/testdb/test-schema/' + id)
+    //                             .set('Authorization', 'Bearer ' + bearerToken)
+    //                             .expect(204)
+    //                             .end(function (err, postRes2) {
+    //                                 if (err) return done(err);
+    //
+    //                                 // WAIT, then GET again
+    //                                 setTimeout(function () {
+    //
+    //                                     client
+    //                                     .get('/vtest/testdb/test-schema')
+    //                                     .set('Authorization', 'Bearer ' + bearerToken)
+    //                                     .expect(200)
+    //                                     .end(function (err, getRes3) {
+    //                                         if (err) return done(err);
+    //
+    //                                         var result = _.findWhere(getRes3.body.results, { "_id": id });
+    //
+    //                                         should.not.exist(result);
+    //
+    //                                         done();
+    //                                     });
+    //                                 }, 300);
+    //                             });
+    //                         }, 1000);
+    //                     });
+    //                 });
+    //             });
+    //         });
+    //     });
+    // });
 
     it('should preserve content-type', function (done) {
         var client = request('http://' + config.get('server.host') + ':' + config.get('server.port'));

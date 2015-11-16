@@ -3,6 +3,7 @@ var path = require('path');
 var util = require('util');
 var url = require('url');
 var crypto = require('crypto');
+var _ = require('underscore');
 var config = require(__dirname + '/../../config');
 
 var self = this;

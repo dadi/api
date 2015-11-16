@@ -16,7 +16,7 @@ describe('middleware extension', function (done) {
             collectionPath: __dirname + '/workspace/collections'
         }, function (err) {
             if (err) return done(err);
-            help.dropDatabase('serama', function (err) {
+            help.dropDatabase('test', function (err) {
                 if (err) return done(err);
 
                 help.getBearerToken(function (err, token) {

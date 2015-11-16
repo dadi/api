@@ -6,7 +6,7 @@ var conf = convict({
     name: {
       doc: "The applicaton name",
       format: String,
-      default: "Bantam (Serama)"
+      default: "Serama Repo Default"
     }
   },
 	server: {
@@ -19,6 +19,11 @@ var conf = convict({
       doc: "port to bind",
       format: 'port',
       default: 8080
+    },
+    name: {
+      doc: "Server name",
+      format: String,
+      default: "Bantam (Serama)"
     }
   },
   database: {

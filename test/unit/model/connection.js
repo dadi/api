@@ -29,7 +29,7 @@ describe('Model connection', function () {
         var options = {
             "username": "",
             "password": "",
-            "database": "serama_test",
+            "database": "test",
             "replicaSet": false,
             "hosts": [
                 {
@@ -44,7 +44,7 @@ describe('Model connection', function () {
         conn.on('connect', function (db) {
             db.should.be.an.instanceOf(Db);
             conn.readyState.should.equal(1);
-            conn.connectionString.should.eql("mongodb://127.0.0.1:27017/serama_test?maxPoolSize=1");
+            conn.connectionString.should.eql("mongodb://127.0.0.1:27017/test?maxPoolSize=1");
             done();
         });
     });
@@ -54,7 +54,7 @@ describe('Model connection', function () {
             username: 'seramatest',
             password: 'test123'
         }, {
-            databaseName: 'serama_test',
+            databaseName: 'test',
             host: '127.0.0.1',
             port: 27017
         }, function (err) {
@@ -64,7 +64,7 @@ describe('Model connection', function () {
                 username: 'seramatest',
                 password: 'test123',
                 hosts: [{
-                    database: 'serama_test',
+                    database: 'test',
                     host: '127.0.0.1',
                     port: 27017
                 }],
@@ -93,7 +93,7 @@ describe('Model connection', function () {
             var options = {
                 "username": "seramatest",
                 "password": "test123",
-                "database": "serama_test",
+                "database": "test",
                 "replicaSet": "test",
                 "maxPoolSize": 1,
                 "hosts": [
@@ -108,7 +108,7 @@ describe('Model connection', function () {
 
             conn.on('error', function (err) {
                 conn.readyState.should.equal(0);
-                conn.connectionString.should.eql("mongodb://seramatest:test123@127.0.0.1:27016/serama_test?replicaSet=test&maxPoolSize=1");
+                conn.connectionString.should.eql("mongodb://seramatest:test123@127.0.0.1:27016/test?replicaSet=test&maxPoolSize=1");
                 done();
             })
 

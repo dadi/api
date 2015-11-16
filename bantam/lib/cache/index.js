@@ -19,7 +19,7 @@ help.mkdirParent(path.resolve(dir), '777', function() {});
 function cachingEnabled(endpoints, requestUrl) {
 
     var endpointKey = _.find(_.keys(endpoints), function (k){ return k.indexOf(url.parse(requestUrl).pathname) > -1; });
-    
+
     if (!endpointKey) return false;
 
     if (endpoints[endpointKey].model && endpoints[endpointKey].model.settings) {
@@ -82,7 +82,7 @@ module.exports = function (server) {
 
                 res.statusCode = 200;
 
-                res.setHeader('Server', config.get('app.name'));
+                res.setHeader('Server', config.get('server.name'));
                 res.setHeader('X-Cache', 'HIT');
                 res.setHeader('X-Cache-Lookup', 'HIT');
                 res.setHeader('content-type', dataType);

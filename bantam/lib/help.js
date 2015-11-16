@@ -16,8 +16,8 @@ module.exports.sendBackJSON = function (successCode, res, next) {
 
         var resBody = JSON.stringify(results);
 
-        res.setHeader('Server', config.get('app.name'));
-        
+        res.setHeader('Server', config.get('server.name'));
+
         res.setHeader('content-type', 'application/json');
         res.setHeader('content-length', Buffer.byteLength(resBody));
         res.end(resBody);
@@ -35,8 +35,8 @@ module.exports.sendBackJSONP = function (callbackName, res, next) {
         var resBody = JSON.stringify(results);
         resBody = callbackName + '(' + resBody + ');';
 
-        res.setHeader('Server', config.get('app.name'));
-        
+        res.setHeader('Server', config.get('server.name'));
+
         res.setHeader('content-type', 'text/javascript');
         res.setHeader('content-length', Buffer.byteLength(resBody));
         res.end(resBody);
@@ -87,7 +87,7 @@ module.exports.isJSON = function(jsonString) {
 
         // Handle non-exception-throwing cases:
         // Neither JSON.parse(false) or JSON.parse(1234) throw errors, hence the type-checking,
-        // but... JSON.parse(null) returns 'null', and typeof null === "object", 
+        // but... JSON.parse(null) returns 'null', and typeof null === "object",
         // so we must check for that, too.
         if (o && typeof o === "object" && o !== null) {
             return o;
@@ -107,7 +107,7 @@ module.exports.validateCollectionSchema = function(obj) {
         success: true,
         errors: []
     };
-            
+
     var fields = [];
     var settings = [];
 
@@ -140,13 +140,13 @@ module.exports.validateCollectionSchema = function(obj) {
             response.success = false;
             response.errors.push({setting: key, message: 'must be provided'});
         }
-    }); 
-    
+    });
+
     return response;
 }
 
 /**
- * 
+ *
  * Remove each file in the specified cache folder.
  */
 module.exports.clearCache = function (pathname, callback) {
@@ -156,7 +156,7 @@ module.exports.clearCache = function (pathname, callback) {
 
     var i = 0;
     var exists = fs.existsSync(cachePath);
-    
+
     if (!exists) {
         return callback(null);
     }
@@ -167,7 +167,7 @@ module.exports.clearCache = function (pathname, callback) {
             var file = path.join(cachePath, filename);
 
             // write empty string to file, as we
-            // can't effectively remove it whilst 
+            // can't effectively remove it whilst
             // the node process is running
             fs.writeFileSync(file, '');
 

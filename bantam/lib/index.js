@@ -1,4 +1,6 @@
-var pkginfo = require('pkginfo').read(__dirname);
+
+var version = require('../../package.json').version;
+
 var fs = require('fs');
 var path = require('path');
 var url = require('url');
@@ -76,8 +78,8 @@ Server.prototype.start = function (options, done) {
     server.on('listening', function (e) {
       var env = config.get('env');
       if (env !== 'test') {
-          var message = "\nStarted Serama (" + pkginfo.package.version + ", " + env + " mode) on " + config.get('server.host') + ":" + config.get('server.port');
-          
+          var message = "\nStarted Serama '" + config.get('app.name') + "' (" + version + ", " + env + " mode) on " + config.get('server.host') + ":" + config.get('server.port');
+
           console.log(message);
           logger.prod(message);
         }
@@ -172,7 +174,7 @@ Server.prototype.loadConfigApi = function () {
 
     // listen for requests to add to the API
     this.app.use('/:version/:database/:collectionName/config', function (req, res, next) {
-        
+
         // collection and endpoint paths now have the same structure
         // i.e. /version/database/collection and /endpoints/version/endpoint
         // so test here for `endpoints` in the request url, processing the next
@@ -245,7 +247,7 @@ Server.prototype.loadConfigApi = function () {
 
         var version = req.params.version;
         var name = req.params.endpointName;
-            
+
         var dir = path.join(self.endpointPath, version);
         var filepath = path.join(dir, 'endpoint.' + name + '.js');
 
@@ -280,7 +282,7 @@ Server.prototype.updateVersions = function (versionsPath) {
         if (version.indexOf('.') === 0) return;
 
         var dirname = path.join(versionsPath, version);
-        
+
         if (dirname.indexOf("collections") > 0) {
 
             self.updateDatabases(dirname);
@@ -329,7 +331,7 @@ Server.prototype.updateCollections = function (collectionsPath) {
 
     var self = this;
     var collections = fs.readdirSync(collectionsPath);
-    
+
     collections.forEach(function (collection) {
         if (collection.indexOf('.') === 0) return;
 
@@ -340,7 +342,7 @@ Server.prototype.updateCollections = function (collectionsPath) {
         var database = dirs[dirs.length - 2];
 
         // collection should be json file containing schema
-    
+
         // get the schema
         var schema = require(cpath);
         var name = collection.slice(collection.indexOf('.') + 1, collection.indexOf('.json'));
@@ -428,7 +430,7 @@ Server.prototype.addEndpointResource = function (options) {
     var self = this;
     var name = endpoint.slice(endpoint.indexOf('.') + 1, endpoint.indexOf('.js'));
     var filepath = options.filepath;
-    
+
     try {
         // keep reference to component so hot loading component can be
         // done by changing reference value
@@ -447,9 +449,9 @@ Server.prototype.addEndpointResource = function (options) {
 
     // if this endpoint's file is changed hot update the api
     self.addMonitor(filepath, function (filename) {
-        
+
         delete require.cache[filepath];
-        
+
         try {
             opts.component = require(filepath);
         } catch (e) {

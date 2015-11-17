@@ -13,6 +13,7 @@ Field validation can be defined in a schema collection file.
 
 ## Example Usage
 
+```js
 {
     "fields": {
         "fieldString": {
@@ -80,3 +81,4 @@ Field validation can be defined in a schema collection file.
         "sortOrder": 1
     }
 }
+```

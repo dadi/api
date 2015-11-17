@@ -5,8 +5,9 @@
 
 var ObjectID = require('mongodb').ObjectID;
 var _ = require('underscore');
-
 var util = require('util');
+
+var logger = require(__dirname + '/../log');
 
 var Validator = function (model) {
     this.model = model;
@@ -80,7 +81,7 @@ function _parseDocument(obj, schema, response) {
                 _parseDocument(obj[key], schema, response);
             }
             else if (obj[key] !== null && schema[key].type === 'ObjectID' && util.isArray(obj[key])) {
-                var err = _validate(obj[key], schema[key]);
+                var err = _validate(obj[key], schema[key], key);
 
                 if (err) {
                     response.success = false;
@@ -95,7 +96,7 @@ function _parseDocument(obj, schema, response) {
                 return;
             }
 
-            var err = _validate(obj[key], schema[key]);
+            var err = _validate(obj[key], schema[key], key);
 
             if (err) {
                 response.success = false;
@@ -105,7 +106,16 @@ function _parseDocument(obj, schema, response) {
     }
 }
 
-function _validate(field, schema) {
+function _validate(field, schema, key) {
+
+    if (schema.hasOwnProperty('validation')) {
+      var validationObj = schema.validation;
+
+      if (validationObj.hasOwnProperty('regex') && validationObj.regex.hasOwnProperty('pattern') && !(new RegExp(validationObj.regex.pattern).test(field))) return schema.message || 'should match the pattern ' + validationObj.regex.pattern;
+
+      if (validationObj.hasOwnProperty('minLength') && field.toString().length < Number(validationObj.minLength)) return schema.message || 'is too short';
+      if (validationObj.hasOwnProperty('maxLength') && field.toString().length > Number(validationObj.maxLength)) return schema.message || 'is too long';
+    }
 
     // todo add date primitive
     var primitives = ['String', 'Number', 'Boolean', 'Array'];
@@ -115,7 +125,17 @@ function _validate(field, schema) {
     if (len && field.length > len) return schema.message || 'is too long';
 
     // check validation regex
-    if (schema.validationRule && !(new RegExp(schema.validationRule)).test(field)) return schema.message || 'is invalid';
+    if (schema.validationRule) {
+      var newSchema = {}
+      newSchema[key] = _.clone(schema);
+      newSchema[key].validation = { regex: { pattern: schema.validationRule }};
+      delete newSchema[key].validationRule;
+      var message = 'The use of the `validationRule` property in field declarations is deprecated and will be removed in Serama v0.2.0\n\nPlease use the following instead:\n\n';
+      message += JSON.stringify(newSchema,null,4);
+      console.log(message);
+      logger.debug(message);
+      if (!new RegExp(schema.validationRule).test(field)) return schema.message || 'is invalid';
+    }
 
     if (schema.type === 'ObjectID') {
         if (typeof field === 'object' && _.isArray(field)) {

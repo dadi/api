@@ -25,7 +25,7 @@ Store.prototype.get = function(token, done) {
 Store.prototype.expire = function(done) {
     var self = this;
     var _done = function (database) {
-        database.collection(storeCollectionName).ensureIndex({'created': 1}, {expireAfterSeconds: config.auth.tokenTtl}, done);
+        database.collection(storeCollectionName).ensureIndex({ 'created': 1 }, { expireAfterSeconds: config.auth.tokenTtl + 300 }, done);
     };
 
     if (this.connection.db) return _done(this.connection.db);
@@ -39,7 +39,8 @@ Store.prototype.set = function(token, value, done) {
     var _done = function (database) {
         database.collection(storeCollectionName).insert({
             token: token,
-            tokenExpire: Date.now() + (config.auth.tokenTtl) * 1000,
+            tokenExpire: Date.now() + (config.auth.tokenTtl * 1000),
+            created: new Date(),
             value: value
         }, done);
     };

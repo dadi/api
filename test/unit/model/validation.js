@@ -328,6 +328,227 @@ describe('Model validator', function () {
 
                 done();
             });
+
+            describe('minLength', function () {
+
+              it('should return false if string field is to short', function (done) {
+                  var validator = new Validator({
+                      schema: {
+                          field1: {
+                              type: 'String',
+                              required: false,
+                              validation: {
+                                minLength: 4
+                              }
+                          }
+                      }
+                  });
+
+                  val = validator.schema({field1: '123'});
+                  val.success.should.be.false;
+                  val.errors.length.should.equal(1);
+                  val.errors[0].field.should.equal('field1');
+                  val.errors[0].message.should.equal('is too short');
+
+                  done();
+              });
+
+              it('should return false if number field is to short', function (done) {
+
+                  // make sure limit works for number and string that can be coerced to number
+                  var validator = new Validator({
+                      schema: {
+                          field1: {
+                              type: 'Number',
+                              required: false,
+                              validation: {
+                                minLength: 4
+                              }
+                          }
+                      }
+                  });
+
+                  val = validator.schema({field1: 123});
+                  val.success.should.be.false;
+                  val.errors.length.should.equal(1);
+                  val.errors[0].field.should.equal('field1');
+                  val.errors[0].message.should.equal('is too short');
+
+                  done();
+              });
+
+              it('should return true if string field is specified length', function (done) {
+
+                  var validator = new Validator({
+                      schema: {
+                          field1: {
+                              type: 'String',
+                              required: false,
+                              validation: {
+                                minLength: 4
+                              }
+                          }
+                      }
+                  });
+
+                  val = validator.schema({field1: '1239'});
+                  val.success.should.be.true;
+
+                  done();
+              });
+
+            });
+
+            describe('maxLength', function () {
+
+              it('should return false if field is to long', function (done) {
+
+                  // make sure limit works for number and string that can be coerced to number
+                  var validator = new Validator({
+                      schema: {
+                          field1: {
+                              type: 'String',
+                              required: false,
+                              validation: {
+                                maxLength: 4
+                              }
+                          }
+                      }
+                  });
+
+                  val = validator.schema({field1: '123456789'});
+                  val.success.should.be.false;
+                  val.errors.length.should.equal(1);
+                  val.errors[0].field.should.equal('field1');
+                  val.errors[0].message.should.equal('is too long');
+
+                  done();
+              });
+
+              it('should return false if number field is to long', function (done) {
+
+                  // make sure limit works for number and string that can be coerced to number
+                  var validator = new Validator({
+                      schema: {
+                          field1: {
+                              type: 'Number',
+                              required: false,
+                              validation: {
+                                maxLength: 4
+                              }
+                          }
+                      }
+                  });
+
+                  val = validator.schema({field1: 123456778});
+                  val.success.should.be.false;
+                  val.errors.length.should.equal(1);
+                  val.errors[0].field.should.equal('field1');
+                  val.errors[0].message.should.equal('is too long');
+
+                  done();
+              });
+
+              it('should return true if string field is specified length', function (done) {
+
+                  var validator = new Validator({
+                      schema: {
+                          field1: {
+                              type: 'String',
+                              required: false,
+                              validation: {
+                                maxLength: 4
+                              }
+                          }
+                      }
+                  });
+
+                  val = validator.schema({field1: '1239'});
+                  val.success.should.be.true;
+
+                  done();
+              });
+
+            });
+
+            describe('regex', function () {
+              it('should return false if string field does not match the pattern', function (done) {
+
+                  var validator = new Validator({
+                      schema: {
+                          field1: {
+                              type: 'String',
+                              required: false,
+                              validation: {
+                                regex: {
+                                  pattern: /^abc/
+                                }
+                              }
+                          }
+                      }
+                  });
+
+                  val = validator.schema({field1: '123'});
+                  val.success.should.be.false;
+                  val.errors.length.should.equal(1);
+                  val.errors[0].field.should.equal('field1');
+                  val.errors[0].message.should.equal('should match the pattern /^abc/');
+
+                  done();
+              });
+
+              it('should return true if string field matches the pattern', function (done) {
+
+                  var validator = new Validator({
+                      schema: {
+                          field1: {
+                              type: 'String',
+                              required: false,
+                              validation: {
+                                regex: {
+                                  pattern: /^abc/
+                                }
+                              }
+                          }
+                      }
+                  });
+
+                  val = validator.schema({field1: 'abcdef'});
+                  val.success.should.be.true;
+
+                  done();
+              });
+
+            });
+
+            describe('regex + length', function () {
+              it('should return false if string field matches the pattern but is wrong length', function (done) {
+
+                  var validator = new Validator({
+                      schema: {
+                          field1: {
+                              type: 'String',
+                              required: false,
+                              validation: {
+                                regex: {
+                                  pattern: /^abc/
+                                },
+                                minLength: 6
+                              }
+                          }
+                      }
+                  });
+
+                  val = validator.schema({field1: 'abc'});
+
+                  val.success.should.be.false;
+                  val.errors.length.should.equal(1);
+                  val.errors[0].field.should.equal('field1');
+                  val.errors[0].message.should.equal('is too short');
+
+                  done();
+              });
+            });
         });
     });
 });

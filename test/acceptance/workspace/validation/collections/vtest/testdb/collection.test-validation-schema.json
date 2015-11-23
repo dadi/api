@@ -18,12 +18,11 @@
             "type": "String",
             "label": "Title",
             "comments": "The title of the entry",
-            "limit": "",
             "placement": "Main content",
             "validationRule": "",
             "required": false,
             "message": "",
-            "display": { 
+            "display": {
                 "index": true,
                 "edit": true
             }
@@ -32,12 +31,11 @@
             "type": "Number",
             "label": "Title",
             "comments": "The title of the entry",
-            "limit": "",
             "placement": "Main content",
             "validationRule": "",
             "required": false,
             "message": "",
-            "display": { 
+            "display": {
                 "index": true,
                 "edit": true
             }
@@ -46,12 +44,11 @@
             "type": "Boolean",
             "label": "Title",
             "comments": "The title of the entry",
-            "limit": "",
             "placement": "Main content",
             "validationRule": "",
             "required": false,
             "message": "",
-            "display": { 
+            "display": {
                 "index": true,
                 "edit": true
             }
@@ -60,12 +57,11 @@
             "type": "Object",
             "label": "Title",
             "comments": "The title of the entry",
-            "limit": "",
             "placement": "Main content",
             "validationRule": "",
             "required": false,
             "message": "",
-            "display": { 
+            "display": {
                 "index": true,
                 "edit": true
             }
@@ -74,13 +70,12 @@
             "type": "String",
             "label": "Title",
             "comments": "The title of the entry",
-            "limit": "",
             "placement": "Main content",
             "validationRule": "",
             "required": false,
             "default": "FOO!",
             "message": "",
-            "display": { 
+            "display": {
                 "index": true,
                 "edit": true
             }
@@ -89,12 +84,11 @@
             "type": "Mixed",
             "label": "Title",
             "comments": "The title of the entry",
-            "limit": "",
             "placement": "Main content",
             "validationRule": "",
             "required": false,
             "message": "",
-            "display": { 
+            "display": {
                 "index": true,
                 "edit": true
             }
@@ -103,12 +97,11 @@
             "type": "Mixed",
             "label": "Foo",
             "comments": "A sub field",
-            "limit": "",
             "placement": "Main content",
             "validationRule": "",
             "required": false,
             "message": "",
-            "display": { 
+            "display": {
                 "index": true,
                 "edit": true
             }
@@ -117,12 +110,28 @@
             "type": "Mixed",
             "label": "Title",
             "comments": "The title of the entry",
-            "limit": "",
             "placement": "Main content",
             "validationRule": "^q+$",
             "required": false,
             "message": "",
-            "display": { 
+            "display": {
+                "index": true,
+                "edit": true
+            }
+        },
+        "fieldValidationRegex": {
+            "type": "Mixed",
+            "label": "Title",
+            "comments": "The title of the entry",
+            "placement": "Main content",
+            "validation": {
+                "regex": {
+                  "pattern": "^q+$"
+                }
+            },
+            "required": false,
+            "message": "",
+            "display": {
                 "index": true,
                 "edit": true
             }
@@ -131,12 +140,29 @@
             "type": "Mixed",
             "label": "Title",
             "comments": "The title of the entry",
-            "limit": "7",
             "placement": "Main content",
+            "validation": {
+              "maxLength": 4
+            },
             "validationRule": "",
             "required": false,
             "message": "",
-            "display": { 
+            "display": {
+                "index": true,
+                "edit": true
+            }
+        },
+        "fieldMinLength": {
+            "type": "Mixed",
+            "label": "Title",
+            "comments": "The title of the entry",
+            "placement": "Main content",
+            "validation": {
+              "minLength": 4
+            },
+            "required": false,
+            "message": "",
+            "display": {
                 "index": true,
                 "edit": true
             }

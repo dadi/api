@@ -278,19 +278,108 @@ describe('validation', function () {
         });
     });
 
-    describe('field length', function () {
-        it('should allow field lengths less than or equal to `limit`', function (done) {
-            var client = request('http://' + config.get('server.host') + ':' + config.get('server.port'));
+    describe('field validation regex', function () {
+        it('should allow fields that pass regex', function (done) {
+            var client = request('http://' + config.server.host + ':' + config.server.port);
 
             client
             .post('/vtest/testdb/test-validation-schema')
             .set('Authorization', 'Bearer ' + bearerToken)
-            .send({fieldLimit: '1234567'})
+            .send({fieldValidationRegex: 'qqqqq'})
             .expect(200, done);
         });
 
-        it('should not allow field lengths greater than `limit`', function (done) {
-            var client = request('http://' + config.get('server.host') + ':' + config.get('server.port'));
+        it('should not allow fields that don\'t pass regex', function (done) {
+            var client = request('http://' + config.server.host + ':' + config.server.port);
+
+            client
+            .post('/vtest/testdb/test-validation-schema')
+            .set('Authorization', 'Bearer ' + bearerToken)
+            .send({fieldValidationRegex: 'qqpqq'})
+            .expect(400, done);
+        });
+
+        describe('failure message', function () {
+            it('should contain JSON body', function (done) {
+                var client = request('http://' + config.server.host + ':' + config.server.port);
+
+                client
+                .post('/vtest/testdb/test-validation-schema')
+                .set('Authorization', 'Bearer ' + bearerToken)
+                .send({fieldValidationRegex: 'qqpqq'})
+                .expect(400)
+                .expect('content-type', 'application/json')
+                .end(function (err, res) {
+                    if (err) return done(err);
+
+                    res.body.should.be.json;
+                    res.body.success.should.be.false;
+                    res.body.errors[0].field.should.equal('fieldValidationRegex');
+                    res.body.errors[0].message.should.equal('should match the pattern ^q+$');
+
+                    done();
+                });
+            });
+        });
+    });
+
+    describe('field length', function () {
+
+      it('should allow field lengths greater than or equal to `minLength`', function (done) {
+          var client = request('http://' + config.server.host + ':' + config.server.port);
+
+          client
+          .post('/vtest/testdb/test-validation-schema')
+          .set('Authorization', 'Bearer ' + bearerToken)
+          .send({fieldMinLength: '1234'})
+          .expect(200, done);
+      });
+
+      it('should not allow field lengths less than `minLength`', function (done) {
+          var client = request('http://' + config.server.host + ':' + config.server.port);
+
+          client
+          .post('/vtest/testdb/test-validation-schema')
+          .set('Authorization', 'Bearer ' + bearerToken)
+          .send({fieldMinLength: '123'})
+          .expect(400, done);
+      });
+
+      describe('minLength failure message', function () {
+          it('should contain JSON body', function (done) {
+              var client = request('http://' + config.server.host + ':' + config.server.port);
+
+              client
+              .post('/vtest/testdb/test-validation-schema')
+              .set('Authorization', 'Bearer ' + bearerToken)
+              .send({fieldMinLength: '123'})
+              .expect(400)
+              .expect('content-type', 'application/json')
+              .end(function (err, res) {
+                  if (err) return done(err);
+
+                  res.body.should.be.json;
+                  res.body.success.should.be.false;
+                  res.body.errors[0].field.should.equal('fieldMinLength');
+                  res.body.errors[0].message.should.equal('is too short');
+
+                  done();
+              });
+          });
+      });
+
+        it('should allow field lengths less than or equal to `maxLength`', function (done) {
+            var client = request('http://' + config.server.host + ':' + config.server.port);
+
+            client
+            .post('/vtest/testdb/test-validation-schema')
+            .set('Authorization', 'Bearer ' + bearerToken)
+            .send({fieldLimit: '1234'})
+            .expect(200, done);
+        });
+
+        it('should not allow field lengths greater than `maxLength`', function (done) {
+            var client = request('http://' + config.server.host + ':' + config.server.port);
 
             client
             .post('/vtest/testdb/test-validation-schema')
@@ -299,7 +388,7 @@ describe('validation', function () {
             .expect(400, done);
         });
 
-        describe('failure message', function () {
+        describe('maxLength failure message', function () {
             it('should contain JSON body', function (done) {
                 var client = request('http://' + config.get('server.host') + ':' + config.get('server.port'));
 

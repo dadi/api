@@ -368,7 +368,10 @@ Server.prototype.addCollectionResource = function (options) {
     // With each model we create a controller, that acts as a component of the REST api.
     // We then add the component to the api by adding a route to the app and mapping
     // `req.method` to component methods
-    var mod = model(options.name, JSON.parse(fields), null, options.schema.settings, options.database);
+
+    var enableCollectionDatabases = config.get('database.enableCollectionDatabases');
+    var database = enableCollectionDatabases ? options.database : null;
+    var mod = model(options.name, JSON.parse(fields), null, options.schema.settings, database);
     var control = controller(mod);
 
     this.addComponent({

@@ -4,14 +4,14 @@ var config = require(__dirname + '/../../../config.js');
 var tokens = require(__dirname + '/tokens');
 
 function mustAuthenticate(endpoints, path) {
-    
+
     path = url.parse(path, true);
-    
+
     // all /config requests must be authenticated
     if (path.pathname.indexOf('config') > -1) return true;
 
     var endpointKey = _.find(_.keys(endpoints), function (k){ return k.indexOf(path.pathname) > -1; });
-    
+
     if (!endpointKey) return true;
 
     if (endpoints[endpointKey].model && endpoints[endpointKey].model.settings) {
@@ -30,7 +30,7 @@ function isAuthorized(endpoints, req, client) {
     var version = urlParts.shift();
 
     var endpointKey = _.find(_.keys(endpoints), function (k){ return k.indexOf(path.pathname) > -1; });
-    
+
     // check if this is a master config request first
     // if (path.pathname.indexOf('serama/config') > -1 && client.permissions) {
     //     if (client.permissions.collections && client.permissions.collections.indexOf(path.pathname) < 0) {
@@ -49,21 +49,25 @@ function isAuthorized(endpoints, req, client) {
       }
       else {
         return false;
-      }  
-    } 
+      }
+    }
 
     if (!endpointKey || !client.permissions) return true;
 
     var authorized = true;
 
     if (endpoints[endpointKey].model && client.permissions.collections) {
-        authorized = _.findWhere(client.permissions.collections, { apiVersion: version, path: endpoints[endpointKey].model.name });
+        authorized = _.findWhere(client.permissions.collections, { path: endpoints[endpointKey].model.name });
     }
     else if (endpoints[endpointKey].get && client.permissions.endpoints) {
-        authorized = _.findWhere(client.permissions.endpoints, { apiVersion: version, path: urlParts.pop() });
+        authorized = _.findWhere(client.permissions.endpoints, { path: urlParts.pop() });
     }
     else {
         authorized = false;
+    }
+
+    if (authorized && authorized.apiVersion) {
+      authorized = (authorized.apiVersion === version);
     }
 
     return authorized;

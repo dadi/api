@@ -61,6 +61,11 @@ var conf = convict({
         doc: "",
         format: Boolean,
         default: false
+      },
+      enableCollectionDatabases: {
+        doc: "",
+        format: Boolean,
+        default: false
       }
   },
   auth: {
@@ -72,7 +77,7 @@ var conf = convict({
     tokenTtl: {
       doc: "",
       format: Number,
-      default: 2592000
+      default: 1800
     },
     clientCollection: {
       doc: "",

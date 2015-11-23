@@ -27,7 +27,7 @@ Collection schemas take the following format -
 	            "validationRule": "",
 	            "required": false,
 	            "message": "",
-	            "display": { 
+	            "display": {
 	                "index": true,
 	                "edit": true
 	            }
@@ -41,7 +41,7 @@ Collection schemas take the following format -
 	            "validationRule": "",
 	            "required": false,
 	            "message": "",
-	            "display": { 
+	            "display": {
 	                "index": true,
 	                "edit": true
 	            }
@@ -79,7 +79,7 @@ Each field is defined in the following way:
             "required": false,
             "message": "",
             "default": "0"
-            "display": { 
+            "display": {
                 "index": true,
                 "edit": true
             }
@@ -123,20 +123,20 @@ Record validation is implemented at field level based on the rules defined in th
 
 If a record fails validation an errors collection should be returned with the reasons for validation failure. For example -
 
-    { 
+    {
       "success": false,
       "errors": {
         "error": {
           "field": "title",
-          "message": "must contain uppercase letters only" 
+          "message": "must contain uppercase letters only"
         },
         "error": {
           "field": "description",
-          "message": "can't be blank" 
+          "message": "can't be blank"
         },
         "error": {
           "field": "start_date",
-          "message": "is invalid" 
+          "message": "is invalid"
         },
         "error": {
           "field": "extra_field",
@@ -149,17 +149,17 @@ If a record fails validation an errors collection should be returned with the re
 
 #### Document "Composition" via Reference Fields
 
-To reduce data duplication through document embedding, Serama allows the use of reference fields/pointers to other documents. 
+To reduce data duplication through document embedding, Serama allows the use of reference fields/pointers to other documents.
 
-Consider the following two collections, `book` and `person`. `Book` contains a Reference field `author` which is capable of loading documents from the `person` collection. By creating a `book` document and setting the `author` field to the _id value of a document from the `person` collection, Serama is able to resolve this reference and return the `author` document within a result set for a `book` query. 
+Consider the following two collections, `book` and `person`. `Book` contains a Reference field `author` which is capable of loading documents from the `person` collection. By creating a `book` document and setting the `author` field to the _id value of a document from the `person` collection, Serama is able to resolve this reference and return the `author` document within a result set for a `book` query.
 
-##### Composed 
+##### Composed
 
 An additional `composed` property is added to the `book` document when it is returned, indicating which fields have been expanded. The property contains the original _id value used for the reference field lookup.  
 
 ##### Enabling Composition
 
-Composition is disabled by default. 
+Composition is disabled by default.
 
 To return a document with resolved Reference fields at the top level, you may send a parameter either in the querystring of your request or provide it as an option to the model's `find()` method:
 
@@ -173,9 +173,8 @@ book.find({ title: "Harry Potter 2" }, { "compose": true }, function (err, resul
 });
 ```
 
-This setting will allow the first level of Reference fields to be resolved. To allow 
+This setting will allow the first level of Reference fields to be resolved. To allow
 Reference fields to resolve which are nested further within the document, add a `compose` property to the collection schema's settings block:
-
 
 ```
 {
@@ -187,7 +186,7 @@ Reference fields to resolve which are nested further within the document, add a 
 }
 ```
 
-collection.book.json
+##### Collection schema: collection.book.json
 
 ```
 {
@@ -213,7 +212,7 @@ collection.book.json
 }
 ```
 
-collection.person.json
+##### Collection schema: collection.person.json
 
 ```
 {
@@ -244,7 +243,7 @@ collection.person.json
 
  ```
 
-a `book` document
+##### a `book` document
 
 ```
 {
@@ -255,7 +254,7 @@ a `book` document
 }
 ```
 
-The result of a query for the above `book` document
+##### Query result: The result of a query for the above `book` document
 
 ```
 {
@@ -330,7 +329,7 @@ module.exports.config = function () {
 }
 ```
 
-This route will now respond to requests such as 
+This route will now respond to requests such as
 
 ```
 http://api.example.com/v1/example/55bb8f688d76f74b1303a137
@@ -347,7 +346,7 @@ http://api.example.com/v1/example?id=55bb8f688d76f74b1303a137
 Serama's authentication can be bypassed for your custom endpoint by adding the following to your endpoint file:
 
 ```
-module.exports.model = {} 
+module.exports.model = {}
 module.exports.model.settings = { authenticate : false }
 ```
 

@@ -5,6 +5,20 @@ var storeCollectionName = config.get('auth.tokenCollection');
 
 var Store = function () {
     this.connection = connection(config.get('auth.database'));
+
+    var _done = function (database) {
+      database.collection(storeCollectionName).ensureIndex(
+        { 'token': 1,'tokenExpire': 1 },
+        { },
+        function (err, indexName) {
+          if (err) console.log(err);
+          console.log('Using authentication layer index "' + storeCollectionName  + '.' + indexName + "'");
+        }
+      );
+    }
+
+    if (this.connection.db) return _done(this.connection.db);
+    this.connection.once('connect', _done);
 };
 
 Store.prototype.get = function(token, done) {
@@ -25,7 +39,8 @@ Store.prototype.get = function(token, done) {
 Store.prototype.expire = function(done) {
     var self = this;
     var _done = function (database) {
-        database.collection(storeCollectionName).ensureIndex({'created': 1}, {expireAfterSeconds: config.get('auth.tokenTtl')}, done);
+        // set the TTL index to remove the token documents after the tokenExpire value
+        database.collection(storeCollectionName).ensureIndex({ 'created': 1 }, { expireAfterSeconds: config.get('auth.tokenTtl') }, done);
     };
 
     if (this.connection.db) return _done(this.connection.db);
@@ -39,7 +54,8 @@ Store.prototype.set = function(token, value, done) {
     var _done = function (database) {
         database.collection(storeCollectionName).insert({
             token: token,
-            tokenExpire: Date.now() + (config.get('auth.tokenTtl')) * 1000,
+            tokenExpire: Date.now() + (config.get('auth.tokenTtl') * 1000),
+            created: new Date(),
             value: value
         }, done);
     };

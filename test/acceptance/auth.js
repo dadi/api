@@ -243,9 +243,9 @@ describe('Authentication', function () {
         });
     });
 
-    it('should allow access to collection specified in client permissions list', function (done) {
+    it('should allow access to collection specified in client permissions list without apiVersion restriction', function (done) {
 
-        var permissions = { permissions: { collections: [ { apiVersion: 'vtest', path: "test-schema" } ] } } 
+        var permissions = { permissions: { collections: [ { path: "test-schema" } ] } }
 
         help.getBearerTokenWithPermissions(permissions, function (err, token) {
 
@@ -257,6 +257,52 @@ describe('Authentication', function () {
                 .get('/vtest/testdb/test-schema?cache=false')
                 .set('Authorization', 'Bearer ' + token)
                 .expect(200)
+                //.expect('content-type', 'application/json')
+                .end(function(err,res) {
+                    if (err) return done(err);
+                    done();
+                });
+            }, 300);
+        });
+    });
+
+    it('should allow access to collection specified in client permissions list with apiVersion restriction', function (done) {
+
+        var permissions = { permissions: { collections: [ { apiVersion: 'vtest', path: "test-schema" } ] } }
+
+        help.getBearerTokenWithPermissions(permissions, function (err, token) {
+
+            var client = request('http://' + config.get('server.host') + ':' + config.get('server.port'));
+
+            // Wait, then test that we can make an unauthenticated request
+            setTimeout(function () {
+                client
+                .get('/vtest/testdb/test-schema?cache=false')
+                .set('Authorization', 'Bearer ' + token)
+                .expect(200)
+                //.expect('content-type', 'application/json')
+                .end(function(err,res) {
+                    if (err) return done(err);
+                    done();
+                });
+            }, 300);
+        });
+    });
+
+    it('should not allow access to collection specified in client permissions list with apiVersion restriction', function (done) {
+
+        var permissions = { permissions: { collections: [ { apiVersion: '1.0', path: "test-schema" } ] } }
+
+        help.getBearerTokenWithPermissions(permissions, function (err, token) {
+
+            var client = request('http://' + config.get('server.host') + ':' + config.get('server.port'));
+
+            // Wait, then test that we can make an unauthenticated request
+            setTimeout(function () {
+                client
+                .get('/vtest/testdb/test-schema?cache=false')
+                .set('Authorization', 'Bearer ' + token)
+                .expect(401)
                 //.expect('content-type', 'application/json')
                 .end(function(err,res) {
                     if (err) return done(err);
@@ -289,7 +335,30 @@ describe('Authentication', function () {
         });
     });
 
-    it('should allow access to endpoint specified in client permissions list', function (done) {
+    it('should allow access to endpoint specified in client permissions list without apiVersion restriction', function (done) {
+
+        var permissions = { permissions: { endpoints: [ { path: "test-endpoint" } ] } }
+
+        help.getBearerTokenWithPermissions(permissions, function (err, token) {
+
+            var client = request('http://' + config.get('server.host') + ':' + config.get('server.port'));
+
+            // Wait, then test that we can make an unauthenticated request
+            setTimeout(function () {
+                client
+                .get('/v1/test-endpoint')
+                .set('Authorization', 'Bearer ' + token)
+                .expect(200)
+                //.expect('content-type', 'application/json')
+                .end(function(err,res) {
+                    if (err) return done(err);
+                    done();
+                });
+            }, 300);
+        });
+    });
+
+    it('should allow access to endpoint specified in client permissions list with apiVersion restriction', function (done) {
 
         var permissions = { permissions: { endpoints: [ { apiVersion: 'v1', path: "test-endpoint" } ] } }
 
@@ -315,6 +384,29 @@ describe('Authentication', function () {
     it('should not allow access to endpoint not specified in client permissions list', function (done) {
 
         var permissions = { permissions: { endpoints: [ { apiVersion: 'v1', path: "xxxx-endpoint" } ] } }
+
+        help.getBearerTokenWithPermissions(permissions, function (err, token) {
+
+            var client = request('http://' + config.get('server.host') + ':' + config.get('server.port'));
+
+            // Wait, then test that we can make an unauthenticated request
+            setTimeout(function () {
+                client
+                .get('/v1/test-endpoint')
+                .set('Authorization', 'Bearer ' + token)
+                .expect(401)
+                //.expect('content-type', 'application/json')
+                .end(function(err,res) {
+                    if (err) return done(err);
+                    done();
+                });
+            }, 300);
+        });
+    });
+
+    it('should not allow access to endpoint specified in client permissions list with apiVersion restriction', function (done) {
+
+        var permissions = { permissions: { endpoints: [ { apiVersion: 'v2', path: "test-endpoint" } ] } }
 
         help.getBearerTokenWithPermissions(permissions, function (err, token) {
 

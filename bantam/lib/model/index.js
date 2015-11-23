@@ -38,12 +38,6 @@ var Model = function (name, schema, conn, settings, database) {
     }
     else if (database) {
         this.connection = connection({ database: database });
-        //     database: database,
-        //     host: config[database] ? config[database].host : config.host,
-        //     port: config[database] ? config[database].port : config.port,
-        //     username: config[database] ? config[database].username : config.username,
-        //     password: config[database] ? config[database].password : config.password
-        // });
     }
     else {
         this.connection = connection();
@@ -284,7 +278,7 @@ Model.prototype.find = function (query, options, done) {
 
     query = this.makeCaseInsensitive(query);
     query = convertApparentObjectIds(query);
-    query.apiVersion = apiVersion;
+    if (typeof apiVersion !== 'undefined') query.apiVersion = apiVersion;
 
     var compose = self.compose;
 
@@ -536,14 +530,6 @@ Model.prototype.castToBSON = function (obj) {
     }
 }
 
-// exports
-module.exports = function (name, schema, conn, settings, database) {
-    if (schema) return new Model(name, schema, conn, settings, database);
-    return _models[name];
-};
-
-module.exports.Model = Model;
-
 function validationError(message) {
     var err = new Error(message || 'Model Validation Failed');
     err.statusCode = 400
@@ -569,3 +555,11 @@ function getMetadata(options, count) {
 
     return meta;
 }
+
+// exports
+module.exports = function (name, schema, conn, settings, database) {
+    if (schema) return new Model(name, schema, conn, settings, database);
+    return _models[name];
+};
+
+module.exports.Model = Model;

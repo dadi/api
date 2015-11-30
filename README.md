@@ -1,6 +1,6 @@
 ![Serama](serama.png)
 
-![Build Status](http://img.shields.io/badge/Release-0.1.10_Beta-green.svg?style=flat-square)&nbsp;[![License](http://img.shields.io/:License-MIT-blue.svg?style=flat-square)](http://dadi.mit-license.org)&nbsp;![Coverage](http://img.shields.io/badge/Coverage-18%-red.svg?style=flat-square)
+![Build Status](http://img.shields.io/badge/Release-0.1.10_Beta-green.svg?style=flat-square)&nbsp;[![License](http://img.shields.io/:License-MIT-blue.svg?style=flat-square)](http://dadi.mit-license.org)&nbsp;![Coverage](http://img.shields.io/badge/Coverage-90%-brightgreen.svg?style=flat-square)
 
 ## Contents
 
@@ -51,13 +51,14 @@ To ensure your system has all the required dependencies, run the following comma
 
 Serama uses [Mocha](http://mochajs.org/) for unit and acceptance tests. Tests can be run using the following command. _**Note**: for tests to run you will need standalone `mongod` instances running at `localhost:27017` and `localhost:27018`_
 
-**Warning:** running `npm test` will erase data in the databases referenced in config.json. A pre-test script will run to obtain confirmation from you that this is what you intend to do. Should you run `mocha test` instead of using the npm command, this pre-test script will not run and you will receive no additional warnings regarding the referenced databases.
+**Warning:** Running `npm test` or using `mocha` to test an individual module will cause a pre-test script to run which will check that your configuration has specified a `test` database. If a `test` database is not configured the tests will not run. Ensure you have a configuration file for the test environment at `config/config.test.json`.
 
-`$ mocha test/acceptance/app.js --node_env=test`
+_**Please ensure you have configured Serama to use a test database before continuing.**_
 
-_**Please ensure you have attached Serama to development or test databases before continuing.**_
-
-`$ [sudo] npm test`
+```
+$ [sudo] npm test
+$ [sudo] mocha test/acceptance/app.js
+```
 
 ### Starting the server
 
@@ -76,10 +77,10 @@ An API client is simply a document in the database representing a consumer of yo
 This will create a new API client in the database and collection specified by Serama's `config.json` file.
 
 ```
-{ "clientId": "testClient", "secret": "superSecret" } 
+{ "clientId": "testClient", "secret": "superSecret" }
 ```
 
-#### Running the server in the background 
+#### Running the server in the background
 
 Pro tip: to run Serama in the background, install [Forever](https://github.com/nodejitsu/forever) and [Forever-service](https://github.com/zapty/forever-service)
 
@@ -122,7 +123,7 @@ You can read more about this and about the collection schema [here](https://gith
 
 **GET** *http(s)://{url}/{version number}/{database name}/{collection name}/{:id}*
 
-Returns the record with the id of *{:id}* in the *{collection name}* collection and *{database name}* database. 
+Returns the record with the id of *{:id}* in the *{collection name}* collection and *{database name}* database.
 
 #### 3.
 
@@ -198,7 +199,7 @@ The following additional fields are saved alongside with every record:
 
 **POST** *http://{url}/{version number}/{database name}/{collection name}/{:id}*
 
-Updates an existing record with the id of *{:id}* in the *{collection name}* collection and *{database name}* database. 
+Updates an existing record with the id of *{:id}* in the *{collection name}* collection and *{database name}* database.
 
 If the record passes validation it will be updated.
 

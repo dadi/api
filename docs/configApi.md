@@ -16,7 +16,7 @@ The url should be structured as follows -
 
 _WARNING: If this version, database, and collection already exists, the request will overwrite the current schema_
 
-The request body should either contain an `application/json` or a `text/plain` content-type that describes that schema. The schema must be valid and complete, i.e. on updates the client must send the entire schema.
+The request body should either contain an `application/json` or a `text/plain` content-type that describes that schema. It is not necessary to send the entire schema when making `UPDATE` requests - only the fields that have changed are necessary.
 
 Validation is performed against schema updates to ensure that the minimum viable structure is present and correct.
 

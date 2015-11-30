@@ -63,8 +63,8 @@ describe('Model connection', function () {
             var conn = connection({
                 username: 'seramatest',
                 password: 'test123',
+                database: 'test',
                 hosts: [{
-                    database: 'test',
                     host: '127.0.0.1',
                     port: 27017
                 }],
@@ -76,6 +76,51 @@ describe('Model connection', function () {
                 conn.readyState.should.equal(1);
                 done();
             });
+        });
+    });
+
+    it('should construct a valid replica set connection string', function (done) {
+        help.addUserToDb({
+            username: 'seramatest',
+            password: 'test123'
+        }, {
+            databaseName: 'serama',
+            host: 'localhost',
+            port: 27017
+        }, function (err) {
+            if (err) return done(err);
+
+            var options = {
+                "username": "seramatest",
+                "password": "test123",
+                "database": "test",
+                "replicaSet": "repl-01",
+                "maxPoolSize": 1,
+                "hosts": [
+                    {
+                        "host": "127.0.0.1",
+                        "port": 27016
+                    },
+                    {
+                        "host": "127.0.0.1",
+                        "port": 27017
+                    },
+                    {
+                        "host": "127.0.0.1",
+                        "port": 27018
+                    }
+                ]
+            };
+
+            var conn = connection(options);
+
+            conn.on('error', function (err) {
+                conn.readyState.should.equal(0);
+                conn.connectionString.should.eql("mongodb://seramatest:test123@127.0.0.1:27016,127.0.0.1:27017,127.0.0.1:27018/test?replicaSet=repl-01&maxPoolSize=1");
+                err.toString().should.eql("Error: Could not locate any valid servers in initial seed list");
+                done();
+            })
+
         });
     });
 
@@ -107,6 +152,7 @@ describe('Model connection', function () {
             var conn = connection(options);
 
             conn.on('error', function (err) {
+                err.toString().should.eql("Error: failed to connect to [127.0.0.1:27016]");
                 conn.readyState.should.equal(0);
                 conn.connectionString.should.eql("mongodb://seramatest:test123@127.0.0.1:27016/test?replicaSet=test&maxPoolSize=1");
                 done();

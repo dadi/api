@@ -1,3 +1,4 @@
+var sinon = require('sinon');
 var should = require('should');
 var request = require('supertest');
 var config = require(__dirname + '/../../config');
@@ -32,11 +33,63 @@ describe('Token Store', function () {
         })
     });
 
-    it('should have a connection', function (done) {
-        var store = tokenStore();
+    it('should use specified database when creating a connection', function (done) {
 
-        should.exist(store.connection);
-        done();
+      var dbConfig = {
+            "hosts": [
+                {
+                    "host": "127.0.0.1",
+                    "port": 27017
+                }
+            ],
+            "username": "",
+            "password": "",
+            "database": "test",
+            "ssl": false,
+            "replicaSet": false,
+            "enableCollectionDatabases": false,
+            "secondary": {
+                "hosts": [
+                    {
+                        "host": "127.0.0.1",
+                        "port": 27017
+                    }
+                ],
+                "username": "",
+                "password": "",
+                "replicaSet": false,
+                "ssl": false
+            }
+      }
+
+      var auth = {
+          "tokenUrl": "/token",
+          "tokenTtl": 1800,
+          "database": {
+              "hosts": [
+                  {
+                      "host": "127.0.0.1",
+                      "port": 27017
+                  }
+              ],
+              "username": "",
+              "password": "",
+              "database": "separate_auth_db"
+          },
+          "clientCollection": "clientStore",
+          "tokenCollection": "tokenStore"
+      }
+
+      var oldConfig = config.get('auth');
+      config.set('auth', auth);
+
+      var store = tokenStore();
+
+      should.exist(store.connection);
+      store.connection.connectionOptions.database.should.equal('separate_auth_db');
+      
+      config.set('auth', oldConfig);
+      done();
     });
 
     describe('get method', function () {

@@ -6,85 +6,96 @@
 
 This module handles connecting to database(s). The main config **must** have a `database` property.  Within this the default connection is specified via top level fields. For example, inside the main config you might see -
 
-    "database": {
-        "host":"localhost",
-        "port":"27017",
-        "username":"",
-        "password":"",
-        "database":"serama",
-        "secondary": {
-            "enabled": true,
-            "host": "127.0.0.1",
-            "port": 27018,
-            "username": "",
-            "password": ""
-        }
-    },
-
-This would mean that the default MongoDB connection was `mongodb://localhost:27017/serama`.
-
-There is also a second database available at `mongodb://127.0.0.1:27018/secondary`
-
-
-## Connection
-
-when specifying a database in the URL, Serama will now use that database
-e.g. /1.0/testdb/collectionName will use the `testdb` database
-
-Unless database credentials are found for the named database in the global config, the connection will be made using the global `serama` database credentials.
-
 ```
     "database": {
-        "host": "localhost",
-        "port": 27017,
-        "username": "",
-        "password": "",
-        "database": "serama",
-
-        // named database
-        "testdb": {
-            "host": "127.0.0.1",
-            "port": 27017,
-            "username": "xxx",
-            "password": "yyy"
+      "hosts": [
+        {
+          "host": "localhost",
+          "port": 27017
         }
+      ],
+      "username":"",
+      "password":"",
+      "database":"serama"
     }
 ```
 
-### Replica Set support
+This configuration would result in a MongoDB connection string `mongodb://localhost:27017/serama`.
+
+## Multiple Collection Databases
+
+Serama can store data in multiple databases, using the second part of a collection route as the database name. To enable collection databases, modify your configuration file so that `enableCollectionDatabases` is true.
 
 ```
     "database": {
-        "host": "localhost",
-        "port": 27017,
-        "username": "",
-        "password": "",
-        "database": "serama",
-        "replicaSet": {
-            "name": "test",
-            "ssl": true,
-            "hosts": [
-                {
-                    "host": "localhost",
-                    "port": 27020
-                },
-                {
-                    "host": "localhost",
-                    "port": 27021
-                }
-            ]
+      "hosts": [
+        {
+          "host": "localhost",
+          "port": 27017
         }
+      ],
+      "username":"",
+      "password":"",
+      "database":"serama",
+      "enableCollectionDatabases": true
     }
 ```
 
-## Example Usage
+With collection databases enabled Serama will use the database specified in a collection route. For example `http://www.example.com/1.0/library/books` will use the `library` database to store the `books` document collection.
 
-    var connection = require('./bantam/lib/model/connection');
-    var conn1 = connection(); // connect to default db
-    var conn2 = connection({
-        database: "dbname",
-        port: 37017,
-        host: "212.123.1.23",
-        username: "foo",
-        password: "bar"
-    }); // specify custom connection settings
+Unless a hosts array and database credentials are found for the named database, the connection will be made using settings from the primary database configuration.
+
+```
+    "database": {
+      "hosts": [
+        {
+          "host": "localhost",
+          "port": 27017
+        }
+      ],
+      "database": "serama",
+      "username": "serama_user",
+      "password": "43fgb78n@1",
+      "enableCollectionDatabases": true,
+
+      // named collection database
+      "library": {
+        "hosts": [
+          {
+            "host": "localhost",
+            "port": 27017
+          }
+        ],
+        "username": "library_user",
+        "password": "dfh4637xd90!"
+      }
+    }
+```
+
+### MongoDB Replica Sets
+
+Serama supports connections to MongoDB replica sets. To connect to a replica set specify each host in the `hosts` array and set the `replicaSet` property to the name of your replica set. Serama will handle determining which of the configured hosts is the primary database.
+
+```
+    "database": {
+      "hosts": [
+        {
+          "host": "localhost",
+          "port": 27017
+        },
+        {
+          "host": "localhost",
+          "port": 27020
+        },
+        {
+          "host": "localhost",
+          "port": 27021
+        }
+      ],
+      "username": "",
+      "password": "",
+      "database": "serama",
+      "ssl": false,
+      "replicaSet": "repl-abcdef"
+    }
+```

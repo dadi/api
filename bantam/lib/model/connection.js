@@ -16,10 +16,21 @@ var Connection = function (options) {
 
     options = options || {};
 
-    if (options.database && config.get('database')[options.database]) {
-        options = _.extend({}, config.get('database')[options.database], options);
-    } else {
-        options = _.extend({}, config.get('database'), options);
+    var dbConfig = config.get('database');
+
+    if (options.database && dbConfig[options.database]) {
+      if (dbConfig.enableCollectionDatabases) {
+          // use specified database config
+          options = _.extend(dbConfig, dbConfig[options.database], options);
+      }
+      else {
+          // use primary database config
+          options = _.extend({}, dbConfig);
+      }
+    }
+    else {
+      // use primary database config
+      options = _.extend({}, dbConfig, options);
     }
 
     this.connectionOptions = options;
@@ -130,7 +141,6 @@ function constructConnectionString(options) {
         "ssl": false,
         "replicaSet": "test",
         "secondary": {
-            "enabled": true,
             "hosts": [
                 {
                     "host": "127.0.0.1",

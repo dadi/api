@@ -4,6 +4,7 @@ var config = require(__dirname + '/../../../config.js');
 var storeCollectionName = config.get('auth.tokenCollection');
 
 var Store = function () {
+
     this.connection = connection(config.get('auth.database'));
 
     var _done = function (database) {
@@ -51,6 +52,7 @@ Store.prototype.expire = function(done) {
 
 Store.prototype.set = function(token, value, done) {
     var self = this;
+
     var _done = function (database) {
         database.collection(storeCollectionName).insert({
             token: token,

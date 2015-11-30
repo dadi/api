@@ -1,6 +1,6 @@
 ![Serama](../serama.png)
 
-# Extention API
+# Extension API
 
 ## Overview
 
@@ -22,7 +22,7 @@ Serama includes an API to extend the framework's functionality. It enables devel
     // attach middleware to be called on all requests
     app.api.use(function (req, res, next) {
 
-        // parse cookies out of the 
+        // parse cookies out of the
         var userId = parseCookie(req);
         userLookup(userId, function (err, user) {
             if (err) return next(err);
@@ -56,8 +56,8 @@ Serama includes an API to extend the framework's functionality. It enables devel
 
     // attach a route handler for GET requests to the path that start with
     // `/foo` followed by any other value.
-    // Note: the first argument string is parsed using the `path-to-regexp` 
-    // node.js module.  This is the same way connect and express parse route 
+    // Note: the first argument string is parsed using the `path-to-regexp`
+    // node.js module.  This is the same way connect and express parse route
     // strings.
     // see [https://github.com/component/path-to-regexp](https://github.com/component/path-to-regexp) for info
     app.get('/foo/:id', function (req, res, next) {

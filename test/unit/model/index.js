@@ -389,7 +389,8 @@ describe('Model', function () {
                 // Peform a query, with explain to show we hit the index
                 mod.find({"fieldName":"ABC"}, {explain:true}, function(err, explanation) {
 
-                    explanation.results[0].queryPlanner.winningPlan.inputStage.inputStage.indexName.should.eql('fieldName_1')
+                    var explanationString = JSON.stringify(explanation.results[0]);
+                    explanationString.indexOf('fieldName_1').should.be.above(-1);
 
                     done();
                 });
@@ -434,7 +435,8 @@ describe('Model', function () {
                 // Peform a query, with explain to show we hit the query
                 mod.find({"fieldName":"ABC", "field2":1}, {explain:true}, function(err, explanation) {
 
-                    explanation.results[0].queryPlanner.winningPlan.inputStage.inputStage.indexName.should.eql('fieldName_1_field2_1')
+                    var explanationString = JSON.stringify(explanation.results[0]);
+                    explanationString.indexOf('fieldName_1_field2_1').should.be.above(-1);
 
                     done();
                 });

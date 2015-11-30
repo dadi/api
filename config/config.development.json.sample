@@ -18,8 +18,8 @@
         "database": "serama",
         "ssl": false,
         "replicaSet": false,
+        "enableCollectionDatabases": false,
         "secondary": {
-            "enabled": false,
             "hosts": [
                 {
                     "host": "127.0.0.1",

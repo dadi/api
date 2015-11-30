@@ -280,7 +280,7 @@ describe('validation', function () {
 
     describe('field validation regex', function () {
         it('should allow fields that pass regex', function (done) {
-            var client = request('http://' + config.server.host + ':' + config.server.port);
+            var client = request('http://' + config.get('server.host') + ':' + config.get('server.port'));
 
             client
             .post('/vtest/testdb/test-validation-schema')
@@ -290,7 +290,7 @@ describe('validation', function () {
         });
 
         it('should not allow fields that don\'t pass regex', function (done) {
-            var client = request('http://' + config.server.host + ':' + config.server.port);
+            var client = request('http://' + config.get('server.host') + ':' + config.get('server.port'));
 
             client
             .post('/vtest/testdb/test-validation-schema')
@@ -301,7 +301,7 @@ describe('validation', function () {
 
         describe('failure message', function () {
             it('should contain JSON body', function (done) {
-                var client = request('http://' + config.server.host + ':' + config.server.port);
+                var client = request('http://' + config.get('server.host') + ':' + config.get('server.port'));
 
                 client
                 .post('/vtest/testdb/test-validation-schema')
@@ -326,7 +326,7 @@ describe('validation', function () {
     describe('field length', function () {
 
       it('should allow field lengths greater than or equal to `minLength`', function (done) {
-          var client = request('http://' + config.server.host + ':' + config.server.port);
+          var client = request('http://' + config.get('server.host') + ':' + config.get('server.port'));
 
           client
           .post('/vtest/testdb/test-validation-schema')
@@ -336,7 +336,7 @@ describe('validation', function () {
       });
 
       it('should not allow field lengths less than `minLength`', function (done) {
-          var client = request('http://' + config.server.host + ':' + config.server.port);
+          var client = request('http://' + config.get('server.host') + ':' + config.get('server.port'));
 
           client
           .post('/vtest/testdb/test-validation-schema')
@@ -347,7 +347,7 @@ describe('validation', function () {
 
       describe('minLength failure message', function () {
           it('should contain JSON body', function (done) {
-              var client = request('http://' + config.server.host + ':' + config.server.port);
+              var client = request('http://' + config.get('server.host') + ':' + config.get('server.port'));
 
               client
               .post('/vtest/testdb/test-validation-schema')
@@ -369,7 +369,7 @@ describe('validation', function () {
       });
 
         it('should allow field lengths less than or equal to `maxLength`', function (done) {
-            var client = request('http://' + config.server.host + ':' + config.server.port);
+            var client = request('http://' + config.get('server.host') + ':' + config.get('server.port'));
 
             client
             .post('/vtest/testdb/test-validation-schema')
@@ -379,7 +379,7 @@ describe('validation', function () {
         });
 
         it('should not allow field lengths greater than `maxLength`', function (done) {
-            var client = request('http://' + config.server.host + ':' + config.server.port);
+            var client = request('http://' + config.get('server.host') + ':' + config.get('server.port'));
 
             client
             .post('/vtest/testdb/test-validation-schema')

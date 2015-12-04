@@ -6,6 +6,7 @@ var Validator = require(__dirname + '/../../../bantam/lib/model/validator');
 var connection = require(__dirname + '/../../../bantam/lib/model/connection');
 var _ = require('underscore');
 var help = require(__dirname + '/../help');
+var config = require(__dirname + '/../../../config');
 
 describe('Model', function () {
     it('should export a function', function (done) {
@@ -40,6 +41,7 @@ describe('Model', function () {
         });
 
         it('should accept database connection as third argument', function (done) {
+            config.set('database.enableCollectionDatabases', true);
             var conn = connection({
                 "username": "",
                 "password": "",
@@ -57,6 +59,8 @@ describe('Model', function () {
             mod.connection.connectionOptions.hosts[0].host.should.equal('localhost');
             mod.connection.connectionOptions.hosts[0].port.should.equal(27020);
             mod.connection.connectionOptions.database.should.equal('test');
+
+            config.set('database.enableCollectionDatabases', false);
 
             done();
         });
@@ -168,9 +172,9 @@ describe('Model', function () {
         });
 
         it('should attach `validationRule` definition to model', function (done) {
-            var val = 'test validationRule';
+            var val = '{ regex: { pattern: { /w+/ } } }';
 
-            help.testModelProperty('validationRule', val);
+            help.testModelProperty('validation', val);
             done();
         });
 
@@ -1030,9 +1034,9 @@ describe('Model', function () {
 
             it('should check `validationRule` if available', function (done) {
                 var schema = help.getModelSchema();
-                _.extend(schema.fieldName, {validationRule: '\\w+'});
+                _.extend(schema.fieldName, {validation: { regex: { pattern: /[a-z]+/} } });
                 var mod = model('validationRuleTest', schema);
-                mod.validate.schema({fieldName: '@#$%'}).success.should.be.false;
+                mod.validate.schema({fieldName: '0123'}).success.should.be.false;
                 mod.validate.schema({fieldName: 'qwerty'}).success.should.be.true;
                 done();
             });

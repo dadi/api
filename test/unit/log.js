@@ -89,8 +89,10 @@ describe('bantam logger', function () {
 
                 var logpath = config.get('logging').path + '/' + config.get('logging').filename + '.' + config.get('logging').extension;
                 logpath.should.be.String;
-
-                var logEntry = fs.readFileSync(logpath, {encoding: 'utf8'}).should.match(/log to fs/);
+                console.log(logpath)
+                var logEntry = fs.readFileSync(logpath, {encoding: 'utf8'});
+                console.log(logEntry)
+                logEntry.should.match(/log to fs/);
                 done();
             });
         });

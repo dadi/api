@@ -12,7 +12,6 @@
       "ssl": false,
       "replicaSet": false,
       "secondary": {
-            "enabled": true,
             "hosts": [
               {
                 "host": "localhost",

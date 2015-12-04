@@ -4,6 +4,8 @@ var help = require(__dirname + '/../help');
 var EventEmitter = require('events').EventEmitter;
 var Db = require('mongodb').Db;
 
+var config = require(__dirname + '/../../../config');
+
 describe('Model connection', function () {
     describe('constructor', function () {
         it('should be exposed', function (done) {
@@ -112,15 +114,17 @@ describe('Model connection', function () {
                 ]
             };
 
-            var conn = connection(options);
+            var dbConfig = config.get('database');
 
-            conn.on('error', function (err) {
-                conn.readyState.should.equal(0);
-                conn.connectionString.should.eql("mongodb://seramatest:test123@127.0.0.1:27016,127.0.0.1:27017,127.0.0.1:27018/test?replicaSet=repl-01&maxPoolSize=1");
-                err.toString().should.eql("Error: Could not locate any valid servers in initial seed list");
-                done();
-            })
+            // update config
+            config.set('database', options);
 
+            var conn = connection();
+            conn.connectionString.should.eql("mongodb://seramatest:test123@127.0.0.1:27016,127.0.0.1:27017,127.0.0.1:27018/test?replicaSet=repl-01&maxPoolSize=1");
+
+            // restore config
+            config.set('database', dbConfig);
+            done();
         });
     });
 
@@ -149,12 +153,19 @@ describe('Model connection', function () {
                 ]
             };
 
+            var dbConfig = config.get('database');
+
+            // update config
+            config.set('database', options);
+
             var conn = connection(options);
 
             conn.on('error', function (err) {
-                err.toString().should.eql("Error: failed to connect to [127.0.0.1:27016]");
-                conn.readyState.should.equal(0);
                 conn.connectionString.should.eql("mongodb://seramatest:test123@127.0.0.1:27016/test?replicaSet=test&maxPoolSize=1");
+                err.toString().should.eql("Error: failed to connect to [127.0.0.1:27016]");
+
+                // restore config
+                config.set('database', dbConfig);
                 done();
             })
 

@@ -10,7 +10,7 @@
             "validationRule": "",
             "required": true,
             "message": "",
-            "display": { 
+            "display": {
                 "index": true,
                 "edit": true
             }
@@ -18,14 +18,14 @@
         "authorId": {
             "type": "String",
             "label": "author",
-            "example": "b8b285ae-53d1-47a5-9e69-ec042cfff580",
+            "example": "b8b285ae-53d1-47a5-9e69-ec04",
             "comments": "This is the _id of the book's author",
             "limit": "",
             "placement": "Main content",
             "validationRule": "^[0-9a-fA-F]{24}$",
             "required": true,
             "message": "",
-            "display": { 
+            "display": {
                 "index": true,
                 "edit": true
             }
@@ -42,11 +42,11 @@
         "sortOrder": 1,
         "storeRevisions": true,
         "revisionCollection": "booksHistory",
-        "index": { 
-            "enabled": true, 
-            "keys": { 
+        "index": {
+            "enabled": true,
+            "keys": {
                 "authorId": 1
-            } 
+            }
         },
         "description": "Allows for a [Markdown](http://daringfireball.net/projects/markdown/syntax) **formatted** description to explain the purpose of this **model**."
     }

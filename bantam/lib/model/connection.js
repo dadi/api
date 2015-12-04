@@ -18,19 +18,24 @@ var Connection = function (options) {
 
     var dbConfig = config.get('database');
 
-    if (options.database && dbConfig[options.database]) {
-      if (dbConfig.enableCollectionDatabases) {
-          // use specified database config
-          options = _.extend(dbConfig, dbConfig[options.database], options);
-      }
-      else {
-          // use primary database config
-          options = _.extend({}, dbConfig);
-      }
+    if (options.auth) {
+      // extend primary database config with the auth
+      // database options
+      options = _.extend({}, dbConfig, options);
     }
     else {
-      // use primary database config
-      options = _.extend({}, dbConfig, options);
+      if (options.database && dbConfig.enableCollectionDatabases) {
+        if (dbConfig[options.database]) {
+          options = _.extend(dbConfig, dbConfig[options.database], options);
+        }
+        else {
+          options = _.extend(dbConfig, options);
+        }
+      }
+      else {
+        // use primary database config
+        options = _.extend({}, dbConfig);
+      }
     }
 
     this.connectionOptions = options;

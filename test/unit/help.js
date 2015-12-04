@@ -11,7 +11,7 @@ module.exports.getModelSchema = function () {
             "comments": "The title of the entry",
             "limit": "",
             "placement": "Main content",
-            "validationRule": "",
+            "validation": "",
             "required": false,
             "message": "",
             "display": {
@@ -30,7 +30,7 @@ module.exports.getModelSchemaWithMultipleFields = function () {
             "comments": "The title of the entry",
             "limit": "",
             "placement": "Main content",
-            "validationRule": "",
+            "validation": "",
             "required": false,
             "message": "",
             "display": {
@@ -44,7 +44,7 @@ module.exports.getModelSchemaWithMultipleFields = function () {
             "comments": "The title of the entry",
             "limit": "",
             "placement": "Main content",
-            "validationRule": "",
+            "validation": "",
             "required": false,
             "message": "",
             "display": {

@@ -10,7 +10,7 @@
 * Startup process now checks for existence of an index on the configured `tokenStore` collection: `{ 'token': 1,'tokenExpire': 1 }`
 * TTL index on the `tokenStore` collection is set to remove documents immediately after the `tokenExpire` value
 * Pass the API version from the querystring to the `find()` query
-* Collection-level databases now fully enabled. A collection as `/1.0/reviews/articles` will use a `reviews` database. This mode is disabled by default and can be enabled via config with the database section:
+* Collection-level databases are now fully enabled. A collection as `/1.0/reviews/articles` will use a `reviews` database. This mode is disabled by default and can be enabled within the database configuration section via the "enableCollectionDatabases" property:
 
 ```
     "database": {
@@ -27,7 +27,7 @@
         "replicaSet": false,
         "enableCollectionDatabases": true
     }
-``` 
+```
 
 
 ##### Collection Schema & Validation
@@ -47,7 +47,7 @@
   clientId: 'clientX',
   secret: 'secret',
   accessType: 'user',
-  permissions: { 
+  permissions: {
     collections: [ { apiVersion: "1.0", path: "test-collection" } ],
     endpoints: [ { apiVersion: "1.0", path: "test-endpoint" } ]
   }

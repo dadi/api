@@ -44,7 +44,7 @@
     },
     "auth": {
         "tokenUrl": "/token",
-        "tokenTtl": 2592000,
+        "tokenTtl": 1800,
         "clientCollection": "clientStore",
         "tokenCollection": "tokenStore",
         "database": {

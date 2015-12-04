@@ -16,7 +16,9 @@ This module handles connecting to database(s). The main config **must** have a `
       ],
       "username":"",
       "password":"",
-      "database":"serama"
+      "database":"serama",
+      "ssl": false,
+      "replicaSet": false
     }
 ```
 
@@ -37,6 +39,8 @@ Serama can store data in multiple databases, using the second part of a collecti
       "username":"",
       "password":"",
       "database":"serama",
+      "ssl": false,
+      "replicaSet": false,
       "enableCollectionDatabases": true
     }
 ```
@@ -56,6 +60,8 @@ Unless a hosts array and database credentials are found for the named database, 
       "database": "serama",
       "username": "serama_user",
       "password": "43fgb78n@1",
+      "ssl": false,
+      "replicaSet": false,
       "enableCollectionDatabases": true,
 
       // named collection database
@@ -92,10 +98,16 @@ Serama supports connections to MongoDB replica sets. To connect to a replica set
           "port": 27021
         }
       ],
-      "username": "",
-      "password": "",
+      "username": "serama_user",
+      "password": "secretSquirrel",
       "database": "serama",
       "ssl": false,
       "replicaSet": "repl-abcdef"
     }
+```
+
+The above configuration will construct the following connection string:
+
+```
+mongodb://serama_user:secretSquirrel@localhost:27017,localhost:27020,localhost:27021/serama?replicaSet=repl-abcdef
 ```

@@ -5,7 +5,9 @@ var storeCollectionName = config.get('auth.tokenCollection');
 
 var Store = function () {
 
-    this.connection = connection(config.get('auth.database'));
+    var dbOptions = config.get('auth.database');
+    dbOptions.auth = true;
+    this.connection = connection(dbOptions);
 
     var _done = function (database) {
       database.collection(storeCollectionName).ensureIndex(

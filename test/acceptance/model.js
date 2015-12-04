@@ -114,6 +114,38 @@ describe('Model', function () {
           "database": "test",
           "ssl": false,
           "replicaSet": false,
+          "enableCollectionDatabases": true
+    }
+
+    var configStub = sinon.stub(config, 'get');
+    configStub.withArgs('database').returns(dbConfig);
+
+    var schema = require(__dirname + '/workspace/secondary-db/vtest/secondary/collection.secondary-schema.json');
+
+    var mod = model('secondary-schema', help.getFieldsFromSchema(schema), null, schema.settings, 'secondary');
+    var conn = mod.connection;
+
+    conn.connectionString.should.equal('mongodb://seramatest:serama123@127.0.0.1:27017/secondary');
+
+    configStub.restore();
+
+    done();
+  });
+
+  it('should use primary database host and credentials if none supplied for secondary database', function (done) {
+
+    var dbConfig = {
+          "hosts": [
+              {
+                  "host": "127.0.0.1",
+                  "port": 27017
+              }
+          ],
+          "username": "seramatest",
+          "password": "serama123",
+          "database": "test",
+          "ssl": false,
+          "replicaSet": false,
           "enableCollectionDatabases": true,
           "secondary": {
 

@@ -53,7 +53,7 @@
     },
     "auth": {
         "tokenUrl": "/token",
-        "tokenTtl": 2592000,
+        "tokenTtl": 1800,
         "database": {
             "hosts": [
                 {

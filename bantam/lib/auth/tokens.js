@@ -3,7 +3,9 @@ var config = require(__dirname + '/../../../config.js');
 var connection = require(__dirname + '/../model/connection');
 
 var tokenStore = require(__dirname + '/tokenStore')();
-var clientStore = connection(config.get('auth.database'));
+var dbOptions = config.get('auth.database');
+dbOptions.auth = true;
+var clientStore = connection(dbOptions);
 var clientCollectionName = config.get('auth.clientCollection') || 'clientStore';
 
 module.exports.generate = function (req, res, next) {

@@ -1,9 +1,9 @@
 var sinon = require('sinon');
 var should = require('should');
 var request = require('supertest');
-var connection = require(__dirname + '/../../bantam/lib/model/connection');
-var model = require(__dirname + '/../../bantam/lib/model');
-var help = require(__dirname + '/../../bantam/lib/help');
+var connection = require(__dirname + '/../../dadi/lib/model/connection');
+var model = require(__dirname + '/../../dadi/lib/model');
+var help = require(__dirname + '/../../dadi/lib/help');
 var config = require(__dirname + '/../../config');
 
 describe('Model', function () {

@@ -62,14 +62,14 @@
     "caching": {
         "enabled": true,
         "ttl": 300,
-        "directory": "./cache/serama/",
+        "directory": "./cache/api/",
         "extension": "json"
     },
     "logging": {
         "enabled": true,
         "level": "DEBUG",
         "path": "./log",
-        "filename": "serama",
+        "filename": "dadi-api",
         "dateFormat": "",
         "extension": "log",
         "messageFormat": "<%= label %> - <%= date %> - <%= message %>"

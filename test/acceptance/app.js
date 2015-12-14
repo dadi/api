@@ -4,10 +4,10 @@ var path = require('path');
 var request = require('supertest');
 var _ = require('underscore');
 var EventEmitter = require('events').EventEmitter;
-var connection = require(__dirname + '/../../bantam/lib/model/connection');
+var connection = require(__dirname + '/../../dadi/lib/model/connection');
 var config = require(__dirname + '/../../config');
 var help = require(__dirname + '/help');
-var app = require(__dirname + '/../../bantam/lib/');
+var app = require(__dirname + '/../../dadi/lib/');
 
 // variables scoped for use throughout tests
 var bearerToken;
@@ -1917,7 +1917,7 @@ describe('Application', function () {
                     bearerToken = token;
 
                     request(connectionString)
-                    .get('/serama/config')
+                    .get('/api/config')
                     .set('Authorization', 'Bearer ' + bearerToken)
                     .expect(200)
                     .expect('content-type', 'application/json')
@@ -1939,7 +1939,7 @@ describe('Application', function () {
 
             it('should only allow authenticated users access', function (done) {
                 request(connectionString)
-                .get('/serama/config')
+                .get('/api/config')
                 .set('Authorization', 'Bearer e91e69b4-6563-43bd-a793-cb2af4ba62f4') // invalid token
                 .expect(401)
                 .end(function (err, res) {
@@ -1954,7 +1954,7 @@ describe('Application', function () {
                 var client = request(connectionString);
 
                 client
-                .get('/serama/config')
+                .get('/api/config')
                 .set('Authorization', 'Bearer ' + bearerToken)
                 .expect(200)
                 .expect('content-type', 'application/json')
@@ -1965,7 +1965,7 @@ describe('Application', function () {
                     res.body.auth.tokenTtl = 100;
 
                     client
-                    .post('/serama/config')
+                    .post('/api/config')
                     .set('Authorization', 'Bearer ' + bearerToken)
                     .set('content-type', 'application/json')
                     .send(res.body)

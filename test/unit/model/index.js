@@ -1,9 +1,9 @@
 var should = require('should');
 var sinon = require('sinon');
-var model = require(__dirname + '/../../../bantam/lib/model');
-var seramaHelp = require(__dirname + '/../../../bantam/lib/help');
-var Validator = require(__dirname + '/../../../bantam/lib/model/validator');
-var connection = require(__dirname + '/../../../bantam/lib/model/connection');
+var model = require(__dirname + '/../../../dadi/lib/model');
+var apiHelp = require(__dirname + '/../../../dadi/lib/help');
+var Validator = require(__dirname + '/../../../dadi/lib/model/validator');
+var connection = require(__dirname + '/../../../dadi/lib/model/connection');
 var _ = require('underscore');
 var help = require(__dirname + '/../help');
 var config = require(__dirname + '/../../../config');
@@ -312,7 +312,7 @@ describe('Model', function () {
             var mod = model('testModelName', help.getModelSchema());
 
             var query = { "test" : "BigEyes)" };
-            var expected = { "test" : new RegExp(["^", seramaHelp.regExpEscape("BigEyes)"), "$"].join(""), "i") };
+            var expected = { "test" : new RegExp(["^", apiHelp.regExpEscape("BigEyes)"), "$"].join(""), "i") };
 
             var result = mod.makeCaseInsensitive(query);
 

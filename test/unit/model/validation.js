@@ -1,5 +1,5 @@
 var should = require('should');
-var Validator = require(__dirname + '/../../../bantam/lib/model/validator');
+var Validator = require(__dirname + '/../../../dadi/lib/model/validator');
 var help = require(__dirname + '/../help');
 
 describe('Model validator', function () {

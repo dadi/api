@@ -21,7 +21,7 @@ Depending on the level specified in the config.json file, calls to these message
 		"enabled": true,
 		"level": "DEBUG",
 		"path": "./log",
-		"filename": "serama",
+		"filename": "dadi-api",
 		"extension": "log",
 		"dateFormat": "",
 		"messageFormat": "<%= label %> - <%= date %> - <%= message %>"
@@ -36,7 +36,7 @@ Depending on the level specified in the config.json file, calls to these message
 
 ## Example Usage
 
-`var logger = require('./bantam/lib/log');`
+`var logger = require('./dadi/lib/log');`
 
 `logger.debug('debug message');`
 

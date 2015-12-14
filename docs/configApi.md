@@ -4,7 +4,7 @@
 
 ## Overview
 
-Serama exposes its own API to allow for the creation new collection endpoints as well as custom endpoints. This allows authorised users to, for example, create a new collection endpoint by sending a POST request to `/version/database/collection/config`.
+DADI API exposes its own API to allow for the creation new collection endpoints as well as custom endpoints. This allows authorised users to, for example, create a new collection endpoint by sending a POST request to `/version/database/collection/config`.
 
 ## Collections
 
@@ -40,4 +40,4 @@ This should contain content-type `application/json`. This may contain only a par
 
 To see what the current config is, you can send a GET request.
 
-_Note: for updated config to take affect, the Serama instance will need to be restarted_
+_Note: for updated config to take affect, the API instance will need to be restarted_

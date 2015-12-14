@@ -1,4 +1,4 @@
-var app = require(__dirname + '/../../../bantam/lib');
+var app = require(__dirname + '/../../../dadi/lib');
 
 var _ = require('underscore');
 

@@ -2,7 +2,7 @@ var should = require('should');
 var request = require('supertest');
 var config = require(__dirname + '/../../config');
 var fs = require('fs');
-var app = require(__dirname + '/../../bantam/lib/');
+var app = require(__dirname + '/../../dadi/lib/');
 var help = require(__dirname + '/help');
 
 var originalSchemaPath = __dirname + '/workspace/monitor-collection/collection.monitor-test-schema.json';

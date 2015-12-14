@@ -1,8 +1,8 @@
 var should = require('should');
 var http = require('http');
-var api = require(__dirname + '/../../bantam/lib/api');
-var controller = require(__dirname + '/../../bantam/lib/controller');
-var model = require(__dirname + '/../../bantam/lib/model');
+var api = require(__dirname + '/../../dadi/lib/api');
+var controller = require(__dirname + '/../../dadi/lib/controller');
+var model = require(__dirname + '/../../dadi/lib/model');
 var help = require(__dirname + '/help');
 var config = require(__dirname + '/../../config');
 

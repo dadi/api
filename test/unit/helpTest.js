@@ -1,6 +1,6 @@
 var should = require('should');
 var sinon = require('sinon');
-var help = require(__dirname + '/../../bantam/lib/help');
+var help = require(__dirname + '/../../dadi/lib/help');
 
 describe('Help', function (done) {
     describe('validateCollectionSchema', function() {

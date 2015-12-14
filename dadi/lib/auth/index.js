@@ -32,7 +32,7 @@ function isAuthorized(endpoints, req, client) {
     var endpointKey = _.find(_.keys(endpoints), function (k){ return k.indexOf(path.pathname) > -1; });
 
     // check if this is a master config request first
-    // if (path.pathname.indexOf('serama/config') > -1 && client.permissions) {
+    // if (path.pathname.indexOf('api/config') > -1 && client.permissions) {
     //     if (client.permissions.collections && client.permissions.collections.indexOf(path.pathname) < 0) {
     //         return false;
     //     }

@@ -1,7 +1,7 @@
 var fs = require('fs');
 var path = require('path');
 var should = require('should');
-var connection = require(__dirname + '/../../bantam/lib/model/connection');
+var connection = require(__dirname + '/../../dadi/lib/model/connection');
 var config = require(__dirname + '/../../config');
 var request = require('supertest');
 var _ = require('underscore');

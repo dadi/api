@@ -1,6 +1,6 @@
 var should = require('should');
 var sinon = require('sinon');
-var server = require(__dirname + '/../../bantam/lib');
+var server = require(__dirname + '/../../dadi/lib');
 var fs = require('fs');
 
 describe('Server', function () {

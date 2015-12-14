@@ -1,5 +1,5 @@
 var should = require('should');
-var connection = require(__dirname + '/../../../bantam/lib/model/connection');
+var connection = require(__dirname + '/../../../dadi/lib/model/connection');
 var help = require(__dirname + '/../help');
 var EventEmitter = require('events').EventEmitter;
 var Db = require('mongodb').Db;

@@ -6,12 +6,12 @@ var conf = convict({
     name: {
       doc: "The applicaton name",
       format: String,
-      default: "Serama Repo Default"
+      default: "DADI API Repo Default"
     }
   },
 	server: {
     host: {
-      doc: "Serama IP address",
+      doc: "API IP address",
       format: 'ipaddress',
       default: '0.0.0.0'
     },
@@ -23,7 +23,7 @@ var conf = convict({
     name: {
       doc: "Server name",
       format: String,
-      default: "Bantam (Serama)"
+      default: "DADI (API)"
     }
   },
   database: {
@@ -131,7 +131,7 @@ var conf = convict({
     directory: {
       doc: "",
       format: String,
-      default: "./cache/serama/"
+      default: "./cache/api/"
     },
     extension: {
       doc: "",

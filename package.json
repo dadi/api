@@ -1,11 +1,11 @@
 {
-  "name": "serama",
+  "name": "dadi-api",
   "version": "0.1.10-beta",
   "dependencies": {
     "async": "^1.4.2",
     "body-parser": "~1.6.5",
     "colors": "^1.1.2",
-    "convict": "^1.0.1",
+    "convict": "1.0.1",
     "mkdirp": "^0.5.1",
     "function-rate-limit": "^1.0.1",
     "mkdirp": "^0.5.1",
@@ -30,7 +30,7 @@
   "scripts": {
     "test": "env NODE_ENV=test ./node_modules/.bin/istanbul cover -x **/workspace/** --report cobertura --report text --report html --report lcov ./node_modules/.bin/_mocha test",
     "posttest": "./scripts/coverage.js",
-    "start": "node bantam/main --node_env=development"
+    "start": "node main.js --node_env=development"
   },
   "repository": {
     "type": "git",

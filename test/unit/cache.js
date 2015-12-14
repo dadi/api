@@ -4,11 +4,9 @@ var fs = require('fs');
 var path = require('path');
 var sinon = require('sinon');
 var config = require(__dirname + '/../../config');
-var cache = require(__dirname + '/../../bantam/lib/cache');
-var app = require(__dirname + '/../../bantam/lib/');
+var cache = require(__dirname + '/../../dadi/lib/cache');
+var app = require(__dirname + '/../../dadi/lib/');
 var acceptanceTestHelper = require(__dirname + '/../acceptance/help');
-
-var main = require(__dirname + '/../../bantam/lib');
 
 var bearerToken;
 

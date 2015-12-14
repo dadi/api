@@ -4,11 +4,11 @@
 
 ## Overview
 
-Serama includes an API to extend the framework's functionality. It enables developers to add routes and middleware to Serama's server.
+DADI API allows developers to extend the framework's functionality by adding routes and middleware.
 
 ## Example Usage
 
-    var app = require('serama/lib/'); // path to serama
+    var app = require('dadi/lib/'); // path to DADI API
 
     app.start({
 
@@ -70,7 +70,7 @@ Serama includes an API to extend the framework's functionality. It enables devel
 
 ## Methods
 
-Serama's underlying server api is available at `app.api`
+The underlying server api is available at `app.api`
 
 This exposes the follwing methods -
 
@@ -86,7 +86,7 @@ This exposes the follwing methods -
 ### app.api.unuse(route or function)
 
 * The first argument to `unuse` is either a String or Function
-	* If it is a Function Serama will remove the Function from the middleware if it exists
+	* If it is a Function it will be removed the Function from the middleware if it exists
 	* If the first argument is a string, it will remove that route from the middleware
 
 ### app.VERB(route, handler, [any number of additional handlers])
@@ -100,7 +100,7 @@ _NOTE: you can add any number of handlers, and they will be called in the order 
 
 ## Notes
 
-On top of routes for collections and endpoints, some middleware is added by Serama for use internally, these include -
+On top of routes for collections and endpoints, some middleware is added by DADI API for use internally, these include -
 
 * [body-parser](https://github.com/expressjs/body-parser).  The `json` and `text` middlewares are used
 * A request logger middleware is added

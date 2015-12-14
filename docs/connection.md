@@ -26,7 +26,7 @@ This configuration would result in a MongoDB connection string `mongodb://localh
 
 ## Multiple Collection Databases
 
-Serama can store data in multiple databases, using the second part of a collection route as the database name. To enable collection databases, modify your configuration file so that `enableCollectionDatabases` is true.
+DADI API can store data in multiple databases, using the second part of a collection route as the database name. To enable collection databases, modify your configuration file so that `enableCollectionDatabases` is true.
 
 ```
     "database": {
@@ -45,7 +45,7 @@ Serama can store data in multiple databases, using the second part of a collecti
     }
 ```
 
-With collection databases enabled Serama will use the database specified in a collection route. For example `http://www.example.com/1.0/library/books` will use the `library` database to store the `books` document collection.
+With collection databases enabled DADI API will use the database specified in a collection route. For example `http://www.example.com/1.0/library/books` will use the `library` database to store the `books` document collection.
 
 Unless a hosts array and database credentials are found for the named database, the connection will be made using settings from the primary database configuration.
 
@@ -80,7 +80,7 @@ Unless a hosts array and database credentials are found for the named database, 
 
 ### MongoDB Replica Sets
 
-Serama supports connections to MongoDB replica sets. To connect to a replica set specify each host in the `hosts` array and set the `replicaSet` property to the name of your replica set. Serama will handle determining which of the configured hosts is the primary database.
+DADI API supports connections to MongoDB replica sets. To connect to a replica set specify each host in the `hosts` array and set the `replicaSet` property to the name of your replica set. The application will handle determining which of the configured hosts is the primary database.
 
 ```
     "database": {

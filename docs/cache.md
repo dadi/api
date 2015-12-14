@@ -12,11 +12,11 @@ Benchmarks undertaken with ApacheBenchmark (ab) can be seen below.
 
 ## Config
 
-inside config.json *ex:* 
+inside config.json *ex:*
     "caching": {
         "enabled": false,
         "ttl": 300,
-        "directory": "./cache/serama/",
+        "directory": "./cache/api/",
         "extension": "json"
     }
 

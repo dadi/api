@@ -1,6 +1,6 @@
 var should = require('should');
 var request = require('supertest');
-var api = require(__dirname + '/../../bantam/lib/api');
+var api = require(__dirname + '/../../dadi/lib/api');
 var config = require(__dirname + '/../../config');
 
 describe('Server', function () {

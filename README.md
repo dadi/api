@@ -16,15 +16,15 @@
 
 ## Overview
 
-Serama is built on Node.JS and MongoDB. It is a high performance RESTful API layer designed in support of [API-first development and the principle of COPE](https://github.com/bantam-framework/serama/blob/master/docs/apiFirst.md).
+DADI API is built on Node.JS and MongoDB. It is a high performance RESTful API layer designed in support of [API-first development and the principle of COPE](https://github.com/bantam-framework/serama/blob/master/docs/apiFirst.md).
 
-You can consider Serama as the data layer within a platform (including the data model). It is designed to be plugged into a templating layer, a mobile application or to be used with any other data consumer.
+You can consider it as the data layer within a platform (including the data model). It is designed to be plugged into a templating layer, a mobile application or to be used with any other data consumer.
 
-Calls to a Serama API can contain your business/domain logic (the part of a platform that encodes the real-world business rules that determine how data is created, displayed, stored and changed). It has full support for searching, filtering, limiting, sorting, offsetting, input validation and data aggregation (through support for MongoDB's aggregation pipeline).
+Calls to a DADI API can contain your business/domain logic (the part of a platform that encodes the real-world business rules that determine how data is created, displayed, stored and changed). It has full support for searching, filtering, limiting, sorting, offsetting, input validation and data aggregation (through support for MongoDB's aggregation pipeline).
 
 It has built in support for oAuth2, includes full collection-level ACL, can connect to multiple databases out of the box, provides native document versioning at collection level, supports static endpoints, includes automatic indexing, has a caching layer and can be run in a clustered configuration.
 
-Serama provides a starting point that's further advanced than a framework. It allows you to get a complete data layer up and running in minutes.
+DADI API provides a starting point that's further advanced than a framework. It allows you to get a complete data layer up and running in minutes.
 
 It is part of Bantam, a suite of components covering the full development stack, built for performance and scale.
 
@@ -49,7 +49,7 @@ To ensure your system has all the required dependencies, run the following comma
 
 ### Running tests
 
-Serama uses [Mocha](http://mochajs.org/) for unit and acceptance tests. Tests can be run using the following command. _**Note**: for tests to run you will need standalone `mongod` instances running at `localhost:27017` and `localhost:27018`_
+[Mocha](http://mochajs.org/) is used for unit and acceptance tests. Tests can be run using the following command. _**Note**: for tests to run you will need standalone `mongod` instances running at `localhost:27017` and `localhost:27018`_
 
 **Warning:** Running `npm test` or using `mocha` to test an individual module will cause a pre-test script to run which will check that your configuration has specified a `test` database. If a `test` database is not configured the tests will not run. Ensure you have a configuration file for the test environment at `config/config.test.json`.
 
@@ -62,11 +62,11 @@ $ [sudo] mocha test/acceptance/app.js
 
 ### Starting the server
 
-To start Serama, issue the following command. This will start the server using the configuration settings found in the `config.json` file.
+To start the API server, issue the following command. This will start the server using the configuration settings found in the `config.json` file.
 
 `$ [sudo] npm start`
 
-Before you really start using Serama you will need to create an API client, enabling you to send authenticated requests to the API. This is described in the next section.
+Before you really start using the API you will need to create an API client, enabling you to send authenticated requests to the API. This is described in the next section.
 
 ##### Creating an API client
 
@@ -74,7 +74,7 @@ An API client is simply a document in the database representing a consumer of yo
 
 `$ node utils/create-client.js`
 
-This will create a new API client in the database and collection specified by Serama's `config.json` file.
+This will create a new API client in the database and collection specified by the `config.json` file.
 
 ```
 { "clientId": "testClient", "secret": "superSecret" }
@@ -82,15 +82,15 @@ This will create a new API client in the database and collection specified by Se
 
 #### Running the server in the background
 
-Pro tip: to run Serama in the background, install [Forever](https://github.com/nodejitsu/forever) and [Forever-service](https://github.com/zapty/forever-service)
+Pro tip: to run the server in the background, install [Forever](https://github.com/nodejitsu/forever) and [Forever-service](https://github.com/zapty/forever-service)
 
 `[sudo] npm install forever -g`
 
 `[sudo] npm install -g forever-service`
 
-Install Serama as a service and ensure it loads on boot:
+Install the API as a service and ensure it loads on boot:
 
-`[sudo] forever-service install -s bantam/main.js serama --start`
+`[sudo] forever-service install -s main.js serama --start`
 
 You can then interact with Serama as a service using the following command:
 
@@ -105,7 +105,7 @@ You can see a complete installation guide for Serama under Ubuntu [here](https:/
 
 ## Rest API specification
 
-Serama accepts GET, POST, PUT, PATCH and DELETE requests.
+DADI API accepts GET, POST, PUT, PATCH and DELETE requests.
 
 ### Examples
 
@@ -163,7 +163,7 @@ See [Authorisation](https://github.com/bantam-framework/serama/blob/master/docs/
 
 #### 6.
 
-**GET** *http://{url}/serama/config*
+**GET** *http://{url}/api/config*
 
 Returns a JSON object of the main config file:
 
@@ -173,7 +173,7 @@ You can read more about this [here](https://github.com/bantam-framework/serama/b
 
 #### 7.
 
-**POST** *http://{url}/serama/config*
+**POST** *http://{url}/api/config*
 
 Updates the main config file:
 
@@ -284,7 +284,7 @@ Feel free to contact the Bantam core development team on team@bant.am with quest
 
 ## Development
 
-Serama was conceived, developed and is maintained by the engineering team at DADI+ ([https://dadi.co](https://dadi.co)).
+DADI API was conceived, developed and is maintained by the engineering team at DADI+ ([https://dadi.co](https://dadi.co)).
 
 Core contributors:
 

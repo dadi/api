@@ -5,7 +5,7 @@ var config = require(__dirname + '/../../config');
 var fs = require('fs');
 var _ = require('underscore');
 var path = require('path');
-var app = require(__dirname + '/../../bantam/lib/');
+var app = require(__dirname + '/../../dadi/lib/');
 var help = require(__dirname + '/help');
 
 var bearerToken;

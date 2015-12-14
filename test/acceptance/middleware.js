@@ -2,8 +2,8 @@ var should = require('should');
 var request = require('supertest');
 var config = require(__dirname + '/../../config');
 var help = require(__dirname + '/help');
-var appHelp = require(__dirname + '/../../bantam/lib/help');
-var app = require(__dirname + '/../../bantam/lib/');
+var appHelp = require(__dirname + '/../../dadi/lib/help');
+var app = require(__dirname + '/../../dadi/lib/');
 
 // variables scoped for use throughout tests
 var bearerToken;

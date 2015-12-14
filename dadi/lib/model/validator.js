@@ -132,7 +132,7 @@ function _validate(field, schema, key) {
       newSchema[key] = _.clone(schema);
       newSchema[key].validation = { regex: { pattern: schema.validationRule }};
       delete newSchema[key].validationRule;
-      var message = 'The use of the `validationRule` property in field declarations is deprecated and will be removed in Serama v0.2.0\n\nPlease use the following instead:\n\n';
+      var message = 'The use of the `validationRule` property in field declarations is deprecated and will be removed in v0.2.0\n\nPlease use the following instead:\n\n';
       message += JSON.stringify(newSchema,null,4);
       console.log(message);
       logger.debug(message);

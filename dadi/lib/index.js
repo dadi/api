@@ -78,7 +78,7 @@ Server.prototype.start = function (options, done) {
     server.on('listening', function (e) {
       var env = config.get('env');
       if (env !== 'test') {
-          var message = "\nStarted Serama '" + config.get('app.name') + "' (" + version + ", " + env + " mode) on " + config.get('server.host') + ":" + config.get('server.port');
+          var message = "\nStarted DADI API '" + config.get('app.name') + "' (" + version + ", " + env + " mode) on " + config.get('server.host') + ":" + config.get('server.port');
 
           console.log(message);
           logger.prod(message);
@@ -151,7 +151,7 @@ Server.prototype.loadConfigApi = function () {
     var self = this;
 
     // allow getting main config from API
-    this.app.use('/serama/config', function (req, res, next) {
+    this.app.use('/api/config', function (req, res, next) {
         var method = req.method && req.method.toLowerCase();
 
         if (method === 'get') return help.sendBackJSON(200, res, next)(null, config.getProperties());

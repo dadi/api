@@ -2,8 +2,8 @@ var should = require('should');
 var request = require('supertest');
 var config = require(__dirname + '/../../config');
 var help = require(__dirname + '/help');
-var app = require(__dirname + '/../../bantam/lib/');
-var tokens = require(__dirname + '/../../bantam/lib/auth/tokens');
+var app = require(__dirname + '/../../dadi/lib/');
+var tokens = require(__dirname + '/../../dadi/lib/auth/tokens');
 var fs = require('fs');
 
 var originalSchemaPath = __dirname + '/../new-schema.json';

@@ -26,7 +26,7 @@
         "enabled": true,
         "level": "DEBUG",
         "path": "./log",
-        "filename": "serama",
+        "filename": "api",
         "dateFormat": "YYYY-MM-DD",
         "extension": "log",
         "messageFormat": "<%= label %> - <%= date %> - <%= message %>"
@@ -55,7 +55,7 @@
     "caching": {
         "enabled": true,
         "ttl": 300,
-        "directory": "./cache/serama/",
+        "directory": "./cache/api/",
         "extension": "json"
     },
     "feedback": false

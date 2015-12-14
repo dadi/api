@@ -1,6 +1,6 @@
 var _ = require('underscore');
-var model = require(__dirname + '/../../bantam/lib/model');
-var connection = require(__dirname + '/../../bantam/lib/model/connection');
+var model = require(__dirname + '/../../dadi/lib/model');
+var connection = require(__dirname + '/../../dadi/lib/model/connection');
 
 // return valid model definition object
 module.exports.getModelSchema = function () {

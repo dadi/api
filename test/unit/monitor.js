@@ -1,5 +1,5 @@
 var should = require('should');
-var monitor = require(__dirname + '/../../bantam/lib/monitor');
+var monitor = require(__dirname + '/../../dadi/lib/monitor');
 var help = require(__dirname + '/help');
 var config = require(__dirname + '/../../config');
 var EventEmitter = require('events').EventEmitter;

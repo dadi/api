@@ -4,7 +4,7 @@ var request = require('supertest');
 var _ = require('underscore');
 var config = require(__dirname + '/../../config');
 var help = require(__dirname + '/help');
-var app = require(__dirname + '/../../bantam/lib/');
+var app = require(__dirname + '/../../dadi/lib/');
 
 var bearerToken; // scoped for all tests
 

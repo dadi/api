@@ -8,7 +8,7 @@ This document provides a simple step by step guide to installation on Ubuntu [14
 
 This guide assumes a single server holding both the database and the API.
 
-## Installing Serama
+## Installing DADI API
 
 ### Node.js latest
 
@@ -23,31 +23,31 @@ This guide assumes a single server holding both the database and the API.
 
 1. `sudo apt-get -y install mongodb`
 
-For Serama's tests to run you will need stand alone mongods running at localhost:27017 and localhost:27018. To do this you need to define a new mongod on 27108:
+For the tests to run you will need stand alone `mongod`s running at localhost:27017 and localhost:27018. To do this you need to define a new mongod on 27108:
 
 1. `sudo mkdir -p data/db1 data/log1`
 2. `sudo mongod --dbpath ~/data/db1 --logpath ~/data/log1/log --port 27018 --fork`
 
-### Serama
+### DADI API
 
 Install GCC to provide the latest build of the c++ bson extension (not required, but improves performance):
 
 `sudo apt-get install gcc make build-essential`
 
-Install Git and pull down the latest stable build of Serama:
+Install Git and pull down the latest stable build of DADI API:
 
 1. `sudo apt-get install git`
 2. `sudo git clone https://github.com/bantam-framework/serama.git`
 3. `cd serama/`
 
-Install Serama:
+Install DADI API:
 
-*Note:* Serama's log and cache directories are created at startup using settings in the main configuration file `config.json`.
+*Note:* The application log and cache directories are created at startup using settings in the main configuration file `config.json`.
 
 `[sudo] cp config-sample.json config.json`
 `[sudo] npm install`
 
-Perform Serama's tests:
+Perform tests:
 
 `[sudo] npm test`
 
@@ -55,7 +55,7 @@ In order to get up and running you will also need to create a client document in
 
 `node utils/create-client.js`
 
-Start Serama:
+Start the API:
 
 `[sudo] npm start`
 
@@ -70,19 +70,19 @@ You should receive a 200 response containing an access token similar to the foll
 
 ### Forever
 
-To run Serama in the background, install [Forever](https://github.com/nodejitsu/forever) and [Forever-service](https://github.com/zapty/forever-service):
+To run the API server in the background, install [Forever](https://github.com/nodejitsu/forever) and [Forever-service](https://github.com/zapty/forever-service):
 
 `[sudo] npm install forever -g`
 
 `[sudo] npm install -g forever-service`
 
-Install Serama as a service and ensure it loads on boot:
+Install as a service and ensure it loads on boot:
 
-`[sudo] forever-service install -s bantam/main.js -e NODE_ENV=production serama --start`
+`[sudo] forever-service install -s main.js -e NODE_ENV=production serama --start`
 
 _Note the environment variable - `NODE_ENV=production` - must be set to target the required config version._
 
-You can then interact with Serama as a service using the following command:
+You can then interact with the service using the following command:
 
 - Start: `[sudo] start serama`
 - Stop: `[sudo] stop serama`

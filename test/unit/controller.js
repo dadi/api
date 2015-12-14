@@ -1,7 +1,7 @@
 var should = require('should');
 var sinon = require('sinon');
-var controller = require(__dirname + '/../../bantam/lib/controller');
-var model = require(__dirname + '/../../bantam/lib/model');
+var controller = require(__dirname + '/../../dadi/lib/controller');
+var model = require(__dirname + '/../../dadi/lib/model');
 var help = require(__dirname + '/help');
 
 describe('Controller', function (done) {

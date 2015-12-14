@@ -1,9 +1,9 @@
 var should = require('should');
 var request = require('supertest');
 var config = require(__dirname + '/../../config');
-var tokens = require(__dirname + '/../../bantam/lib/auth/tokens');
-var tokenStore = require(__dirname + '/../../bantam/lib/auth/tokenStore');
-var connection = require(__dirname + '/../../bantam/lib/model/connection');
+var tokens = require(__dirname + '/../../dadi/lib/auth/tokens');
+var tokenStore = require(__dirname + '/../../dadi/lib/auth/tokenStore');
+var connection = require(__dirname + '/../../dadi/lib/model/connection');
 var acceptanceTestHelper = require(__dirname + '/../acceptance/help');
 
 var clientCollectionName = config.get('auth.clientCollection');

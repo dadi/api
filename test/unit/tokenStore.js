@@ -2,8 +2,8 @@ var sinon = require('sinon');
 var should = require('should');
 var request = require('supertest');
 var config = require(__dirname + '/../../config');
-var tokens = require(__dirname + '/../../bantam/lib/auth/tokens');
-var tokenStore = require(__dirname + '/../../bantam/lib/auth/tokenStore');
+var tokens = require(__dirname + '/../../dadi/lib/auth/tokens');
+var tokenStore = require(__dirname + '/../../dadi/lib/auth/tokenStore');
 
 describe('Token Store', function () {
     it('should export function that returns an instance', function (done) {

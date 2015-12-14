@@ -1,7 +1,7 @@
 var should = require('should');
-var model = require(__dirname + '/../../../bantam/lib/model');
-var History = require(__dirname + '/../../../bantam/lib/model/history');
-var connection = require(__dirname + '/../../../bantam/lib/model/connection');
+var model = require(__dirname + '/../../../dadi/lib/model');
+var History = require(__dirname + '/../../../dadi/lib/model/history');
+var connection = require(__dirname + '/../../../dadi/lib/model/connection');
 var _ = require('underscore');
 var help = require(__dirname + '/../help');
 

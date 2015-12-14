@@ -1,5 +1,5 @@
 var config = require(__dirname + '/../../config');
-var logger = require(__dirname + '/../../bantam/lib/log');
+var logger = require(__dirname + '/../../dadi/lib/log');
 var fs = require('fs');
 var should = require('should');
 

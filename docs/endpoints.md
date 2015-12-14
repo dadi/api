@@ -2,7 +2,7 @@
 
 # Endpoints
 
-Endpoints in Serama can be either be mapped directly to collections in MongoDB or custom based on a wider requirements set.
+Endpoints in DADI API can be either be mapped directly to collections in MongoDB or custom based on a wider requirements set.
 
 ## Collections
 
@@ -12,7 +12,7 @@ Collections are defined within `/workspace/collections` as JSON files named inli
 
 `{version}/{database}/{collection.NAME.json}`
 
-Serama handles the creation and modification of collections in MongoDB directly. All that is required in order to setup a new collection and collection endpoint is the creation of the collection schema file.
+DADI API handles the creation and modification of collections in MongoDB directly. All that is required in order to setup a new collection and collection endpoint is the creation of the collection schema file.
 
 Collection schemas take the following format -
 
@@ -149,9 +149,9 @@ If a record fails validation an errors collection should be returned with the re
 
 #### Document "Composition" via Reference Fields
 
-To reduce data duplication through document embedding, Serama allows the use of reference fields/pointers to other documents.
+To reduce data duplication through document embedding, DADI API allows the use of reference fields/pointers to other documents.
 
-Consider the following two collections, `book` and `person`. `Book` contains a Reference field `author` which is capable of loading documents from the `person` collection. By creating a `book` document and setting the `author` field to the _id value of a document from the `person` collection, Serama is able to resolve this reference and return the `author` document within a result set for a `book` query.
+Consider the following two collections, `book` and `person`. `Book` contains a Reference field `author` which is capable of loading documents from the `person` collection. By creating a `book` document and setting the `author` field to the _id value of a document from the `person` collection, the application is able to resolve this reference and return the `author` document within a result set for a `book` query.
 
 ##### Composed
 
@@ -343,7 +343,7 @@ http://api.example.com/v1/example?id=55bb8f688d76f74b1303a137
 
 ### Authentication
 
-Serama's authentication can be bypassed for your custom endpoint by adding the following to your endpoint file:
+Authentication can be bypassed for your custom endpoint by adding the following to your endpoint file:
 
 ```
 module.exports.model = {}

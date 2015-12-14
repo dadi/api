@@ -1,6 +1,6 @@
 var config = require(__dirname + '/../../../config.js');
 var help = require(__dirname + '/../help');
-var logger = require(__dirname + '/../../../bantam/lib/log');
+var logger = require(__dirname + '/../../../dadi/lib/log');
 var fs = require('fs');
 var path = require('path');
 var url = require('url');

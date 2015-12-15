@@ -94,6 +94,8 @@ Server.prototype.start = function (options, done) {
 
     this.loadApi(options);
 
+    this.loadCollectionRoute();
+
     this.readyState = 1;
 
     // this is all sync, so callback isn't really necessary.
@@ -271,6 +273,48 @@ Server.prototype.loadConfigApi = function () {
 
     });
 };
+
+// route to retrieve list of collections
+Server.prototype.loadCollectionRoute = function() {
+
+  var self = this;
+
+  this.app.use('/api/collections', function (req, res, next) {
+
+    var method = req.method && req.method.toLowerCase();
+
+    if (method !== 'get') return help.sendBackJSON(400, res, next)(null, {"error":"Invalid method"});
+
+    var data = {};
+    var collections = [];
+
+    _.each(self.components, function (value, key) {
+      if (value.hasOwnProperty("model")) {
+
+        var model = value.model;
+        var name = model.name;
+        var slug = model.name;
+        var parts = _.compact(key.split('/'));
+
+        if (model.hasOwnProperty("settings") && model.settings.hasOwnProperty("displayName")) {
+            name = model.settings.displayName;
+        }
+
+        collections.push({
+          version: parts[0],
+          database: parts[1],
+          name: name,
+          slug: slug,
+          path: "/" + [parts[0], parts[1], slug].join("/")
+        });
+      }
+    });
+
+    data.collections = _.sortBy(collections, 'path');
+
+    return help.sendBackJSON(200, res, next)(null, data);
+  });
+}
 
 Server.prototype.updateVersions = function (versionsPath) {
     var self = this;

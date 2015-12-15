@@ -166,5 +166,27 @@ describe('Controller', function (done) {
                 done();
             });
         });
+
+        describe('`stats` method', function () {
+          it('should be accessible', function (done) {
+            var mod = model('testModel', help.getModelSchema());
+            controller(mod).stats.should.be.Function;
+            done();
+          });
+
+          it('should call the Model\'s stats method', function (done) {
+            var mod = model('testModel', help.getModelSchema());
+            var stub = sinon.stub(mod, 'stats');
+
+            var req = {
+              url: '/foo/bar'
+            };
+
+            controller(mod).stats(req);
+            stub.callCount.should.equal(1);
+            stub.restore();
+            done();
+          });
+        });
     });
 });

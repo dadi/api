@@ -175,6 +175,15 @@ Controller.prototype.delete = function (req, res, next) {
     });
 };
 
+Controller.prototype.stats = function (req, res, next) {
+    var self = this;
+    var pathname = url.parse(req.url).pathname;
+    this.model.stats({}, function (err, stats) {
+      if (err) return next(err);
+      return help.sendBackJSON(200, res, next)(null, stats);
+    });
+};
+
 module.exports = function (model) {
     return new Controller(model);
 };

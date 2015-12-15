@@ -529,6 +529,18 @@ Server.prototype.addComponent = function (options) {
 
     this.components[options.route] = options.component;
 
+    this.app.use(options.route +'/stats', function (req, res, next) {
+      var method = req.method && req.method.toLowerCase();
+
+      // call controller stats method
+      if (method === 'get') {
+         return options.component['stats'](req, res, next);
+      }
+      else {
+        next();
+      }
+    });
+
     this.app.use(options.route +'/config', function (req, res, next) {
         var method = req.method && req.method.toLowerCase();
 

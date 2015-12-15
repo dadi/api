@@ -389,6 +389,44 @@ Model.prototype.revisions = function (id, done) {
 };
 
 /**
+ * Get collection statistics
+ *
+ * @param {Object} options
+ * @return An object representing the database collection stats
+ * @api public
+ */
+Model.prototype.stats = function (options, done) {
+
+    options = options || {};
+    var self = this;
+
+    var _done = function (database) {
+      database.collection(self.name).stats(options, function (err, stats) {
+        if (err) return done(err);
+
+        var result = {};
+
+        result.count = stats.count;
+        result.size = stats.size;
+        result.averageObjectSize = stats.avgObjSize;
+        result.storageSize = stats.storageSize;
+        result.indexes = stats.nindexes;
+        result.totalIndexSize = stats.totalIndexSize;
+        result.indexSizes = stats.indexSizes;
+
+        done(null, result);
+      });
+    };
+
+    if (this.connection.db) return _done(this.connection.db);
+
+    // if the db is not connected queue the find
+    this.connection.once('connect', function (database) {
+      _done(database);
+    });
+};
+
+/**
  * Log string to file system
  *
  * @param {Object} query

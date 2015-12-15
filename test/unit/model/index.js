@@ -254,6 +254,24 @@ describe('Model', function () {
         });
     });
 
+    describe('`stats` method', function () {
+      it('should be added to model', function (done) {
+        model('testModelName', help.getModelSchema()).stats.should.be.Function;
+        done();
+      });
+
+      it('should accept an options object and callback', function (done) {
+        model('testModelName', help.getModelSchema()).stats({}, done);
+      });
+
+      it('should return an object', function (done) {
+        model('testModelName', help.getModelSchema()).stats({}, function(err, stats) {
+          stats.should.exist;
+          done();
+        });
+      });
+    });
+
     describe('`find` method', function () {
         it('should be added to model', function (done) {
             model('testModelName', help.getModelSchema()).find.should.be.Function;

@@ -300,6 +300,70 @@ Reference fields to resolve which are nested further within the document, add a 
 }
 ```
 
+## Collection list
+
+A document containing information about the available collections can be retrieved by making a GET request to the API's `/api/collections` endpoint.
+
+An example request:
+
+    GET /api/collections HTTP/1.1
+    Host: localhost:3000
+    content-type: application/json
+    Cache-Control: no-cache
+
+
+An example response:
+
+		{
+		    "collections": [
+		        {
+		            "version": "1.0",
+		            "database": "library",
+		            "name": "books",
+		            "slug": "books",
+		            "path": "/1.0/library/books"
+		        },
+		        {
+		            "version": "1.0",
+		            "database": "library",
+		            "name": "user",
+		            "slug": "user",
+		            "path": "/1.0/library/user"
+		        },
+		        {
+		            "version": "1.0",
+		            "database": "library",
+		            "name": "author",
+		            "slug": "author",
+		            "path": "/1.0/library/author"
+		        }
+		    ]
+		}
+
+## Collection statistics
+
+Collection statistics from MongoDB can be retrieved by making a GET request to a collection's `/stats` endpoint.
+
+An example request:
+
+    GET /1.0/library/books/stats HTTP/1.1
+    Host: localhost:3000
+    content-type: application/json
+    Cache-Control: no-cache
+
+
+An example response:
+
+		{
+			count: 2,
+			size: 480,
+			averageObjectSize: 240,
+			storageSize: 8192,
+			indexes: 1,
+			totalIndexSize: 8176,
+			indexSizes: { _id_: 8176 }
+		}
+
 
 ## Custom endpoints
 

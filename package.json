@@ -1,6 +1,6 @@
 {
   "name": "dadi-api",
-  "version": "0.1.10-beta",
+  "version": "0.2.0",
   "dependencies": {
     "async": "^1.4.2",
     "body-parser": "~1.6.5",
@@ -34,6 +34,12 @@
   },
   "repository": {
     "type": "git",
-    "url": "git://github.com/bantam-framework/serama.git"
-  }
+    "url": "git://github.com/dadi/api.git"
+  },
+  "bugs": {
+    "url": "https://github.com/dadi/api/issues"
+  },
+  "homepage": "https://github.com/dadi/api",
+  "author": "DADI <team@dadi.tech>",
+  "license": "MIT"
 }

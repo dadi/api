@@ -539,7 +539,7 @@ Server.prototype.addComponent = function (options) {
       else {
         next();
       }
-    });
+    })
 
     this.app.use(options.route +'/config', function (req, res, next) {
         var method = req.method && req.method.toLowerCase();

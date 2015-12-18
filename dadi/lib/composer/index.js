@@ -37,7 +37,7 @@ Composer.prototype.composeOne = function (doc, callback) {
   var self = this;
   var schema = self.model.schema;
 
-  var composable = Object.keys(schema).filter(function (key) { 
+  var composable = Object.keys(schema).filter(function (key) {
                       return schema[key].type === 'Reference' && typeof doc[key] !== 'undefined';
                    });
 
@@ -46,13 +46,15 @@ Composer.prototype.composeOne = function (doc, callback) {
   var keyIdx = 0;
 
   _.each(composable, function (key) {
-    
+
     var Model = require(__dirname + '/../model/index.js');
     var mod;
 
     var query = {};
-    var value = doc[key];
     var returnArray = false;
+    var value = doc[key];
+
+    if (!value) return callback(null);
 
     if (value.constructor.name === 'Array') {
       query = { "_id": { "$in": _.map(value, function (val) { return val + '' } ) } };
@@ -83,19 +85,20 @@ Composer.prototype.composeOne = function (doc, callback) {
       mod = Model(self.model.name);
     }
 
-    // does the collection allow us to compose references beyond the first one
-    // (i.e. the one that got us here) ?
-    var compose = help.getFromObj(mod.settings, 'compose', false);
-
-    if (mod) {
+    if (!mod) {
+      callback(null);
+    }
+    else {
+      // does the collection allow us to compose references beyond the first one
+      // (i.e. the one that got us here) ?
+      var compose = help.getFromObj(mod.settings, 'compose', false);
 
       mod.find(query, { "compose": compose, "fields": fields }, function (err, result) {
-
         if (result) {
           if (result.results.length === 1 && returnArray === false) {
             doc[key] = result.results[0];
           }
-          else { 
+          else {
             doc[key] = result.results;
           }
         }
@@ -110,7 +113,7 @@ Composer.prototype.composeOne = function (doc, callback) {
         }
       });
     }
-
+    
   });
 }
 

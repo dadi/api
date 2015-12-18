@@ -49,13 +49,16 @@ describe('Cache', function (done) {
         .end(function (err, res) {
             if (err) return done(err);
 
-            spy.called.should.be.true;
-            var args = spy.getCall(0).args;
+            setTimeout(function() {
+              spy.called.should.be.true;
+              var args = spy.getCall(0).args;
 
-            args[1].should.equal(res.text);
+              args[1].should.equal(res.text);
 
-            spy.restore();
-            done();
+              spy.restore();
+              done();
+
+            }, 1000);
         });
     });
 

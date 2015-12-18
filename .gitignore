@@ -3,6 +3,7 @@ node_modules/
 npm-debug.log
 cache/api/*
 log/*.log
+coverage/
 
 # Config
 config.json

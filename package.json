@@ -1,6 +1,6 @@
 {
   "name": "dadi-api",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "dependencies": {
     "async": "^1.4.2",
     "body-parser": "~1.6.5",

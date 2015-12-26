@@ -26,7 +26,7 @@ It has built in support for oAuth2, includes full collection-level ACL, can conn
 
 DADI API provides a starting point that's further advanced than a framework. It allows you to get a complete data layer up and running in minutes.
 
-It is part of Bantam, a suite of components covering the full development stack, built for performance and scale.
+It is part of DADI, a suite of components covering the full development stack, built for performance and scale.
 
 ## Requirements
 

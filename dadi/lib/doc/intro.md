@@ -4,7 +4,43 @@ Obtain a token by sending a POST request to the `/token` endpoint and passing yo
 
 #### Example Request using curl
 ```
-curl -X POST -H "Content-Type: application/json" -H "Cache-Control: no-cache" -d "{ \'clientId\': \'testClient\', \'secret\': \'superSecret\' }" "http://api.empireonline.tech/token"
+curl -X POST -H "Content-Type: application/json" --data "clientId=testClient&secret=superSecret" "http://api.example.com/token"
+```
+
+#### Example request using Node.JS
+```js
+var http = require("http");
+
+var options = {
+  "hostname": "api.example.com",
+  "port": 80,
+  "method": "POST",
+  "path": "/token",
+  "headers": {
+    "content-type": "application/json"
+  }
+};
+
+var credentials = JSON.stringify({
+  clientId: "testClient",
+  secret: "superSecret"
+});
+
+var req = http.request(options, function (res) {
+  var chunks = [];
+
+  res.on("data", function (chunk) {
+    chunks.push(chunk);
+  });
+
+  res.on("end", function () {
+    var body = Buffer.concat(chunks);
+    console.log(body.toString());
+  });
+});
+
+req.write(credentials);
+req.end();
 ```
 
 #### Response
@@ -18,15 +54,20 @@ curl -X POST -H "Content-Type: application/json" -H "Cache-Control: no-cache" -d
 
 Once you have the token, each request to the API should include a header containing the token:
 
+#### Example Request using curl
+```
+curl -X GET -H "Content-Type: application/json" -H "Authorization: Bearer 4172bbf1-0890-41c7-b0db-477095a288b6" "http://api.example.com/api/collections"
+```
+
 #### Example request using Node.JS
-```js"
+```js
 var http = require("http");
 
 var options = {
+  "hostname": "api.example.com",
+  "port": 80,
   "method": "GET",
-  "hostname": "api.empireoneline.tech",
-  "port": null,
-  "path": "/v1/api_empire_com/articles",
+  "path": "/api/collections",
   "headers": {
     "authorization": "Bearer 4172bbf1-0890-41c7-b0db-477095a288b6",
     "content-type": "application/json"
@@ -51,5 +92,3 @@ req.end();
 
 ## Error States
 The common [HTTP Response Status Codes](https://github.com/for-GET/know-your-http-well/blob/master/status-codes.md) are used.
-
-var description = "This is the content API for [Empire](http://www.empireonline.com), a RESTful, composable interface in JSON built on DADI API.";

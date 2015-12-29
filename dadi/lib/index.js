@@ -12,6 +12,7 @@ var url = require('url');
 var _ = require('underscore');
 
 var controller = require(__dirname + '/controller');
+var doc = require(__dirname + '/doc');
 var model = require(__dirname + '/model');
 var search = require(__dirname + '/search');
 var api = require(__dirname + '/api');
@@ -117,6 +118,8 @@ Server.prototype.start = function (done) {
     this.loadApi(options);
 
     this.loadCollectionRoute();
+
+    this.loadDocumentationRoute();
 
     this.readyState = 1;
 
@@ -362,6 +365,30 @@ Server.prototype.loadCollectionRoute = function() {
     data.collections = _.sortBy(collections, 'path');
 
     return help.sendBackJSON(200, res, next)(null, data);
+  });
+}
+
+// route to show API documentation
+Server.prototype.loadDocumentationRoute = function() {
+
+  var self = this;
+
+  this.app.use('/api/docs', function (req, res, next) {
+
+    var method = req.method && req.method.toLowerCase();
+
+    if (method !== 'get') return help.sendBackJSON(400, res, next)(null, {"error":"Invalid method"});
+
+    var options = {
+      "host":"http://api.empireonline.tech",
+      "title":"Empire Content API",
+      "description": "description",
+      "markdown": false
+    };
+
+    doc(self.app, options, function(data) {
+      return help.sendBackHTML(200, res, next)(null, data);
+    });
   });
 }
 

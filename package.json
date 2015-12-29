@@ -8,11 +8,13 @@
     "start": "node main.js --node_env=development"
   },
   "dependencies": {
+    "aglio": "^1.17.1",
     "async": "^1.4.2",
     "body-parser": "~1.6.5",
     "colors": "^1.1.2",
     "convict": "1.0.1",
     "function-rate-limit": "^1.0.1",
+    "inflection": "^1.5.3",
     "mkdirp": "^0.5.1",
     "moment": "~2.8.1",
     "mongodb": "~1.4.8",

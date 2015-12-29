@@ -375,19 +375,16 @@ Server.prototype.loadDocumentationRoute = function() {
 
   this.app.use('/api/docs', function (req, res, next) {
 
+    if (!config.has('documentation.enabled') || config.get('documentation.enabled') === false) return next();
+
     var method = req.method && req.method.toLowerCase();
 
     if (method !== 'get') return help.sendBackJSON(400, res, next)(null, {"error":"Invalid method"});
 
-    var options = {
-      "host":"http://api.empireonline.tech",
-      "title":"Empire Content API",
-      "description": "description",
-      "markdown": false
-    };
-
-    doc(self.app, options, function(data) {
-      return help.sendBackHTML(200, res, next)(null, data);
+    doc(self, function(data) {
+      res.statusCode = 200;
+      data = data.replace('<a href="https://github.com/danielgtaylor/aglio" class="aglio">aglio</a>', '<a href="https://github.com/dadi/api" class="aglio">DADI API</a>');
+      res.end(data);
     });
   });
 }

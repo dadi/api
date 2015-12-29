@@ -189,6 +189,28 @@ var conf = convict({
     format: Boolean,
     default: false
   },
+  documentation: {
+    enabled: {
+      doc: "If true, API documentation is available at /api/docs",
+      format: Boolean,
+      default: true
+    },
+    title: {
+      doc: "The title to display for the API documentation",
+      format: String,
+      default: "API Documentation"
+    },
+    description: {
+      doc: "A markdown formatted description of the API documentation",
+      format: String,
+      default: "This is the content API for [Example](http://www.example.com), a RESTful, composable interface in JSON built on DADI API."
+    },
+    markdown: {
+      doc: "If true, documentation is rendered a raw Markdown",
+      format: Boolean,
+      default: false
+    }
+  },
   env: {
     doc: "The applicaton environment.",
     format: ["production", "development", "test", "qa"],

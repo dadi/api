@@ -29,3 +29,8 @@ The `use` method does different things depending on what is passed to it -
 
         // pass req to controller, etc...
     });
+
+
+var app = require('dadi-api');
+var config = require('dadi-api').Config;
+var model = require('dadi-api').Model;

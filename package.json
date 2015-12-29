@@ -1,12 +1,17 @@
 {
   "name": "dadi-api",
-  "version": "0.2.1",
+  "version": "0.2.4",
+  "main": "main.js",
+  "scripts": {
+    "test": "env NODE_ENV=test ./node_modules/.bin/istanbul cover -x **/workspace/** --report cobertura --report text --report html --report lcov ./node_modules/.bin/_mocha test",
+    "posttest": "./scripts/coverage.js",
+    "start": "node main.js --node_env=development"
+  },
   "dependencies": {
     "async": "^1.4.2",
     "body-parser": "~1.6.5",
     "colors": "^1.1.2",
     "convict": "1.0.1",
-    "mkdirp": "^0.5.1",
     "function-rate-limit": "^1.0.1",
     "mkdirp": "^0.5.1",
     "moment": "~2.8.1",
@@ -26,11 +31,6 @@
     "should": "~4.0.4",
     "sinon": "~1.10.3",
     "supertest": "~0.13.0"
-  },
-  "scripts": {
-    "test": "env NODE_ENV=test ./node_modules/.bin/istanbul cover -x **/workspace/** --report cobertura --report text --report html --report lcov ./node_modules/.bin/_mocha test",
-    "posttest": "./scripts/coverage.js",
-    "start": "node main.js --node_env=development"
   },
   "repository": {
     "type": "git",

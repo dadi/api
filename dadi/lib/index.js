@@ -1,13 +1,16 @@
 
 var version = require('../../package.json').version;
+var nodeVersion = Number(process.version.match(/^v(\d+\.\d+)/)[1]);
 
-var fs = require('fs');
-var path = require('path');
-var url = require('url');
 var bodyParser = require('body-parser');
-var stackTrace = require('stack-trace');
-var _ = require('underscore');
+var colors = require('colors');
+var fs = require('fs');
 var mkdirp = require('mkdirp');
+var path = require('path');
+var stackTrace = require('stack-trace');
+var url = require('url');
+var _ = require('underscore');
+
 var controller = require(__dirname + '/controller');
 var model = require(__dirname + '/model');
 var search = require(__dirname + '/search');
@@ -29,11 +32,19 @@ var Server = function () {
     this.monitors = {};
 };
 
-Server.prototype.start = function (options, done) {
+Server.prototype.start = function (done) {
     var self = this;
-
     this.readyState = 2;
-    options || (options = {});
+
+    var defaultPaths = {
+      collections: __dirname + '/../../workspace/collections',
+      endpoints: __dirname + '/../../workspace/endpoints'
+    };
+
+    var options = {};
+    this.loadPaths(config.get('paths') || defaultPaths, function(paths) {
+      options = paths;
+    });
 
     // create app
     var app = this.app = api();
@@ -47,7 +58,7 @@ Server.prototype.start = function (options, done) {
     // configure authentication middleware
     auth(self);
 
-    // example request logging middleware
+    // request logging middleware
     app.use(function (req, res, next) {
         var start = Date.now();
         var _end = res.end;
@@ -78,9 +89,20 @@ Server.prototype.start = function (options, done) {
     server.on('listening', function (e) {
       var env = config.get('env');
       if (env !== 'test') {
-          var message = "\nStarted DADI API '" + config.get('app.name') + "' (" + version + ", " + env + " mode) on " + config.get('server.host') + ":" + config.get('server.port');
+          var message = "Started DADI API '" + config.get('app.name') + "' (" + version + ", Node.JS v" + nodeVersion + ", " + env + " mode) on " + config.get('server.host') + ":" + config.get('server.port');
+          var startText = '';
+          startText += '----------------------------\n';
+          startText += 'DADI API\n'.green;
+          startText += 'Started \'DADI API\'\n';
+          startText += '----------------------------\n';
+          startText += 'Server:      '.green + config.get('server.host') + ':' + config.get('server.port') + '\n';
+          startText += 'Version:     '.green + version + '\n';
+          startText += 'Node.JS:     '.green + nodeVersion + '\n';
+          startText += 'Environment: '.green + env + '\n';
+          startText += '----------------------------\n';
+          console.log(startText);
 
-          console.log(message);
+          //console.log(message);
           logger.prod(message);
         }
     });
@@ -117,8 +139,35 @@ Server.prototype.stop = function (done) {
     });
 };
 
+Server.prototype.loadPaths = function(paths, done) {
+
+  var self = this;
+  var options = {};
+
+  options.collectionPath = path.resolve(paths.collections || __dirname + '/../../workspace/collections');
+  options.endpointPath = path.resolve(paths.endpoints || __dirname + '/../../workspace/endpoints');
+
+  var idx = 0;
+
+  _.each(options, function(path, key) {
+    try {
+      var stats = fs.statSync(path);
+    }
+    catch (err) {
+      if (err.code === 'ENOENT') {
+        self.ensureDirectories(options, function() {
+          //
+        });
+      }
+    }
+
+    idx++;
+
+    if (idx === Object.keys(options).length) return done(options);
+  });
+}
+
 Server.prototype.loadApi = function (options) {
-    options || (options = {});
 
     var self = this;
     var collectionPath = this.collectionPath = options.collectionPath || __dirname + '/../../workspace/collections';
@@ -642,6 +691,42 @@ Server.prototype.createDirectoryStructure = function (dpath) {
         try {
             fs.mkdirSync(npath);
         } catch (err) {}
+    });
+};
+
+/**
+ *  Create workspace directories if they don't already exist
+ *
+ *  @param {Object} options Object containing workspace paths
+ *  @return
+ *  @api public
+ */
+Server.prototype.ensureDirectories = function (options, done) {
+    var self = this;
+
+    // create workspace directories if they don't exist
+    // permissions default to 0755
+    var _0755 = parseInt('0755', 8);
+
+    var idx = 0;
+    _.each(options, function(dir) {
+
+      mkdirp(dir, _0755, function (err, made) {
+
+        if (err) {
+          logger.debug(err);
+          console.log(err);
+        }
+
+        if (made) {
+          logger.debug('Created directory ' + made);
+          console.log('Created directory ' + made);
+        }
+
+        idx++;
+
+        if (idx === Object.keys(options).length) return done();
+      });
     });
 };
 

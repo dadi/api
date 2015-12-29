@@ -117,6 +117,14 @@ var conf = convict({
       },
     }
   },
+  paths: {
+    doc: "",
+    format: Object,
+    default: {
+      collections: __dirname + '/workspace/collections',
+      endpoints: __dirname + '/workspace/endpoints'
+    }
+  },
   caching: {
     enabled: {
       doc: "Determines if caching is enabled",

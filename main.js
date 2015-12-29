@@ -1,9 +1,7 @@
 var app = require(__dirname + '/index.js');
 
-app.start({
-  collectionPath: __dirname + '/workspace/collections',
-  endpointPath: __dirname + '/workspace/endpoints'
-});
+app.start(function() {});
 
-// export the config module
-module.exports.Config = require('./config');
+module.exports = app;
+module.exports.Config = require(__dirname + '/config');
+module.exports.Model  = require(__dirname + '/dadi/lib/model/');

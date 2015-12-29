@@ -2,34 +2,36 @@ var aglio = require('aglio');
 var fs = require('fs');
 var _ = require('underscore');
 
+var config = require(__dirname + '/../../../config.js');
 var Blueprint = require(__dirname + '/blueprint');
 
 var defaultOptions = {
   "template": "default-multi"
 };
 
-module.exports = function(app, options, callback) {
+module.exports = function(app, callback) {
 
-  if (typeof options === 'function') {
-      callback = options;
+  var options = {};
+
+  if (config.has('documentation')) {
+    options = config.get('documentation');
   }
 
-  if (typeof options === 'object' && options !== null) { // not null and not undefined
-      _.extend(defaultOptions, options);
-  }
+  _.extend(options, defaultOptions);
 
   var introText = fs.readFileSync(__dirname + '/intro.md');
 
   var doc = "";
   doc += "FORMAT: 1A\n";
 
-  if (defaultOptions.host) doc += "HOST: " + defaultOptions.host + "\n\n";
-  if (defaultOptions.title) doc += "# " + defaultOptions.title + "\n";
-  if (defaultOptions.description) doc += defaultOptions.description + "\n\n";
+  doc += "HOST: " + config.get('server.host') + "\n\n";
+  if (options.title) doc += "# " + options.title + "\n";
+  if (options.description) doc += options.description + "\n\n";
 
   doc += introText + "\n\n";
 
   _.each(app.components, function(route, path, list) {
+
     if (route.model && route.model.name) {
 
       //console.log(route.model.settings)

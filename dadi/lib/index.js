@@ -371,8 +371,18 @@ Server.prototype.loadDocumentationRoute = function() {
 
     doc(self, function(data) {
       res.statusCode = 200;
-      data = data.replace('<a href="https://github.com/danielgtaylor/aglio" class="aglio">aglio</a>', '<a href="https://github.com/dadi/api" class="aglio">DADI API</a>');
-      res.end(data);
+
+      if (config.get('documentation.markdown')) {
+
+      }
+      else {
+        data = data.replace('<a href="https://github.com/danielgtaylor/aglio" class="aglio">aglio</a>', '<a href="https://github.com/dadi/api" class="aglio">DADI API</a>');
+        res.setHeader('Content-Type', 'text/html');
+      }
+
+      var resBody = data;
+      res.setHeader('Content-Length', Buffer.byteLength(resBody));
+      res.end(resBody);
     });
   });
 }

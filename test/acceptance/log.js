@@ -124,5 +124,28 @@ describe('logger', function () {
         });
       });
     });
+
+    it('should determine the client IP address correctly', function (done) {
+      help.createDoc(bearerToken, function (err, doc) {
+        if (err) return done(err);
+
+        var client = request(connectionString);
+
+        client
+        .get('/vtest/testdb/test-schema')
+        .set('Authorization', 'Bearer ' + bearerToken)
+        .set('x-forwarded-for', '52.101.34.175')
+        .expect(200)
+        .expect('content-type', 'application/json')
+        .end(function (err, res) {
+          if (err) return done(err);
+
+          var logEntry = fs.readFileSync(logpath, {encoding: 'utf8'});
+          logEntry.indexOf('52.101.34.175').should.be.above(0);
+
+          done();
+        });
+      });
+    });
   });
 });

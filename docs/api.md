@@ -31,6 +31,62 @@ The `use` method does different things depending on what is passed to it -
     });
 
 
-var app = require('dadi-api');
-var config = require('dadi-api').Config;
-var model = require('dadi-api').Model;
+    "paths": {
+      "collections": "test/acceptance/workspace/collections",
+      "endpoints": "test/acceptance/workspace/endpoints"
+    },
+
+    "logging": {
+      "enabled": true,
+      "path": "./log",
+      "filename": "dadi-api",
+      "extension": "log"
+    },
+
+    var app = require('dadi-api');
+    var config = require('dadi-api').Config;
+    var model = require('dadi-api').Model;
+    var log = require('dadi-api').Log;
+
+    this.log = log.get().child({module: 'your module name'});
+    this.log.info('your log message');
+
+    http://api.example.com/api/collections
+
+    ```
+    {
+      "collections": [
+        {
+          "version": "1.0",
+          "database": "library",
+          "name": "authors",
+          "slug": "authors",
+          "path": "/1.0/library/authors"
+        },
+        {
+          "version": "1.0",
+          "database": "library",
+          "name": "books",
+          "slug": "books",
+          "path": "/1.0/library/books"
+        }
+      ]
+    }
+    ```
+
+    http://api.example.com/1.0/library/books/stats
+
+    ```
+    {
+      "count": 34042,
+      "size": 3599267936,
+      "averageObjectSize": 105730,
+      "storageSize": 3921256448,
+      "indexes": 2,
+      "totalIndexSize": 2714432,
+      "indexSizes": {
+        "_id_": 1111936,
+        "title_1": 1602496
+      }
+    }
+    ```

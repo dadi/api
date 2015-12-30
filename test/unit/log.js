@@ -114,6 +114,46 @@ describe('logger', function () {
           done();
         });
 
+        it('should use bunyan log.debug when log.debug is called', function (done) {
+          var message = 'Hello';
+          var logger = log.get();
+          var method = sinon.spy(logger, 'debug');
+          log.debug(message);
+          logger.debug.restore();
+          method.called.should.eql(true);
+          done();
+        });
+
+        it('should use bunyan log.info when log.info is called', function (done) {
+          var message = 'Hello';
+          var logger = log.get();
+          var method = sinon.spy(logger, 'info');
+          log.info(message);
+          logger.info.restore();
+          method.called.should.eql(true);
+          done();
+        });
+
+        it('should use bunyan log.error when log.error is called', function (done) {
+          var message = 'Hello';
+          var logger = log.get();
+          var method = sinon.spy(logger, 'error');
+          log.error(message);
+          logger.error.restore();
+          method.called.should.eql(true);
+          done();
+        });
+
+        it('should use bunyan log.trace when log.trace is called', function (done) {
+          var message = 'Hello';
+          var logger = log.get();
+          var method = sinon.spy(logger, 'trace');
+          log.trace(message);
+          logger.trace.restore();
+          method.called.should.eql(true);
+          done();
+        });
+
         it('should log string arg to filesystem', function (done) {
             var logMessage = 'log to fs';
             _log.info(logMessage);

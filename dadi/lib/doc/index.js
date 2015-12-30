@@ -82,7 +82,7 @@ module.exports = function(app, callback) {
         callback(JSON.stringify(err));
       }
       else {
-        if (warnings) console.log(warnings);
+        //if (warnings) console.log(warnings);
 
         callback(html);
       }

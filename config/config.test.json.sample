@@ -43,13 +43,10 @@
         }
     },
     "logging": {
-        "enabled": true,
-        "level": "DEBUG",
-        "path": "./log",
-        "filename": "dadi-api",
-        "dateFormat": "",
-        "extension": "log",
-        "messageFormat": "<%= label %> - <%= date %> - <%= message %>"
+      "enabled": true,
+      "path": "./log",
+      "filename": "dadi-api",
+      "extension": "log"
     },
     "auth": {
         "tokenUrl": "/token",
@@ -73,6 +70,10 @@
         "ttl": 300,
         "directory": "./cache/api/",
         "extension": "json"
+    },
+    "paths": {
+      "collections": "test/acceptance/workspace/collections",
+      "endpoints": "test/acceptance/workspace/endpoints"
     },
     "feedback": false
 }

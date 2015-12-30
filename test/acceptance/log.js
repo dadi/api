@@ -1,62 +1,128 @@
-var config = require(__dirname + '/../../config');
-var logger = require(__dirname + '/../../dadi/lib/log');
 var fs = require('fs');
 var should = require('should');
+var request = require('supertest');
+
+var config = require(__dirname + '/../../config');
+var logger = require(__dirname + '/../../dadi/lib/log');
+var help = require(__dirname + '/help');
+var app = require(__dirname + '/../../dadi/lib/');
+
+var bearerToken;
+var connectionString = 'http://' + config.get('server.host') + ':' + config.get('server.port');
+var logpath = config.get('logging').path + '/' + config.get('logging').filename + '.access.' + config.get('logging').extension;
 
 var resetLog = function (done) {
-    var logpath = config.get('logging').path + '/' + config.get('logging').filename + '.' + config.get('logging').extension;
-    logpath.should.be.String;
-
     // empty the log for each test
-    fs.writeFileSync(logpath, new Buffer(''))
+    fs.writeFileSync(logpath, new Buffer(''));
     done();
 };
 
 describe('logger', function () {
+
+  describe('request', function () {
+
     beforeEach(resetLog);
 
-    describe('.prod', function () {
-        it('should log each message on new line', function (done) {
-            logger.prod('test1');
-            logger.prod('test2');
-            setTimeout(function () {
-                var logpath = config.get('logging').path + '/' + config.get('logging').filename + '.' + config.get('logging').extension;
-                var logEntry = fs.readFileSync(logpath, {encoding: 'utf8'});
+    var cleanup = function (done) {
+        // try to cleanup these tests directory tree
+        // don't catch errors here, since the paths may not exist
 
-                logEntry.split('\n').length.should.equal(3);
-                logEntry.split('\n')[2].length.should.equal(0);
-                done();
-            }, 300);
+        var dirs = config.get('paths');
+        try {
+            fs.unlinkSync(dirs.collections + '/v1/testdb/collection.test-schema.json');
+        } catch (e) {}
+
+        try {
+            fs.rmdirSync(dirs.collections + '/v1/testdb');
+        } catch (e) {}
+
+        done();
+    };
+
+    before(function (done) {
+
+        help.dropDatabase('testdb', function (err) {
+            if (err) return done(err);
+
+            app.start(function() {
+
+              help.getBearerTokenWithAccessType("admin", function (err, token) {
+                  if (err) return done(err);
+
+                  bearerToken = token;
+
+                  // add a new field to the schema
+                  var jsSchemaString = fs.readFileSync(__dirname + '/../new-schema.json', {encoding: 'utf8'});
+                  jsSchemaString = jsSchemaString.replace('newField', 'field1');
+                  var schema = JSON.parse(jsSchemaString);
+
+                  var client = request(connectionString);
+
+                  client
+                  .post('/vtest/testdb/test-schema/config')
+                  .send(JSON.stringify(schema, null, 4))
+                  .set('content-type', 'text/plain')
+                  .set('Authorization', 'Bearer ' + bearerToken)
+                  .expect(200)
+                  .expect('content-type', 'application/json')
+                  .end(function (err, res) {
+                      if (err) return done(err);
+
+                      done();
+                  });
+              });
+            });
         });
     });
 
-    describe('.stage', function () {
-        it('should log each message on new line', function (done) {
-            logger.stage('test1');
-            logger.stage('test2');
-            setTimeout(function () {
-                var logpath = config.get('logging').path + '/' + config.get('logging').filename + '.' + config.get('logging').extension;
-                var logEntry = fs.readFileSync(logpath, {encoding: 'utf8'});
+    after(function (done) {
+        // reset the schema
+        var jsSchemaString = fs.readFileSync(__dirname + '/../new-schema.json', {encoding: 'utf8'});
+        jsSchemaString = jsSchemaString.replace('newField', 'field1');
+        var schema = JSON.parse(jsSchemaString);
 
-                logEntry.split('\n').length.should.equal(3);
-                logEntry.split('\n')[2].length.should.equal(0);
-                done();
-            }, 300);
+        var client = request(connectionString);
+
+        client
+        .post('/vtest/testdb/test-schema/config')
+        .send(JSON.stringify(schema, null, 4))
+        .set('content-type', 'text/plain')
+        .set('Authorization', 'Bearer ' + bearerToken)
+        .expect(200)
+        .expect('content-type', 'application/json')
+        .end(function (err, res) {
+            if (err) return done(err);
+
+            cleanup(function() {
+              app.stop(done);
+            });
         });
     });
 
-    describe('.debug', function () {
-        it('should log each message on new line', function (done) {
-            logger.debug('test1');
-            logger.debug('test2');
-            setTimeout(function () {
-                var logpath = config.get('logging').path + '/' + config.get('logging').filename + '.' + config.get('logging').extension;
-                var logEntry = fs.readFileSync(logpath, {encoding: 'utf8'});
+    it('should log to the access log when collection endpoint is requested', function (done) {
+      help.createDoc(bearerToken, function (err, doc) {
+        if (err) return done(err);
 
-                logEntry.split('\n').length.should.equal(3);
-                logEntry.split('\n')[2].length.should.equal(0);
-                done();
-            }, 300);
+        var client = request(connectionString);
+
+        client
+        .get('/vtest/testdb/test-schema')
+        .set('Authorization', 'Bearer ' + bearerToken)
+        .expect(200)
+        .expect('content-type', 'application/json')
+        .end(function (err, res) {
+          if (err) return done(err);
+
+          res.body['results'].should.exist;
+          res.body['results'].should.be.Array;
+          res.body['results'].length.should.be.above(0)
+
+          var logEntry = fs.readFileSync(logpath, {encoding: 'utf8'});
+          logEntry.indexOf('/vtest/testdb/test-schema').should.be.above(0);
+
+          done();
         });
+      });
     });
+  });
 });

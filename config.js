@@ -149,39 +149,46 @@ var conf = convict({
   },
   logging: {
   	enabled: {
-      doc: "Determines if logging is enabled",
+      doc: "If true, logging is enabled using the following settings.",
       format: Boolean,
       default: true
     },
-    level: {
-      doc: "",
-      format: String,
-      default: "DEBUG"
-    },
     path: {
-      doc: "",
+      doc: "The absolute or relative path to the directory for log files.",
       format: String,
       default: "./log"
     },
     filename: {
-      doc: "",
+      doc: "The name to use for the log file, without extension.",
       format: String,
-      default: "rosecomb"
-    },
-    dateFormat: {
-      doc: "",
-      format: String,
-      default: ""
+      default: "api"
     },
     extension: {
-      doc: "",
+      doc: "The extension to use for the log file.",
       format: String,
       default: "log"
     },
-    messageFormat: {
-      doc: "",
-      format: String,
-      default: "<%= label %> - <%= date %> - <%= message %>"
+    accessLog: {
+      enabled: {
+        doc: "If true, HTTP access logging is enabled. The log file name is similar to the setting used for normal logging, with the addition of 'access'. For example `api.access.log`.",
+        format: Boolean,
+        default: true
+      },
+      fileRotationPeriod: {
+        doc: "The period at which to rotate the access log file. This is a string of the format '$number$scope' where '$scope' is one of 'ms' (milliseconds), 'h' (hours), 'd' (days), 'w' (weeks), 'm' (months), 'y' (years). The following names can be used 'hourly' (= '1h'), 'daily (= '1d'), 'weekly' ('1w'), 'monthly' ('1m'), 'yearly' ('1y').",
+        format: String,
+        default: "1d"  // daily rotation
+      },
+      fileRetentionCount: {
+        doc: "The number of rotated log files to keep.",
+        format: Number,
+        default: 7    // keep 7 back copies
+      },
+      kinesisStream: {
+        doc: "An AWS Kinesis stream to write to log records to.",
+        format: String,
+        default: ""
+      }
     }
   },
   feedback: {

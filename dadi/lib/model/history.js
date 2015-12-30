@@ -3,29 +3,32 @@ var util = require('util');
 var _ = require('underscore');
 var ObjectID = require('mongodb').ObjectID;
 
-var logger = require('../log');
+var log = require('../log');
 
 var History = function (model) {
     this.model = model;
+
+    this.log = log.get().child({module: 'history'});
+    this.log.info('Model history logging started.');
 };
 
 History.prototype.create = function (obj, model, done) {
 
-    // create copy of original  
+    // create copy of original
     var revisionObj = _.clone(obj);
     revisionObj._id = new ObjectID();
-    
+
     var _done = function (database) {
         database.collection(model.revisionCollection).insert(revisionObj, function(err, doc) {
-            
+
             if (err) return err;
 
             database.collection(model.name).findAndModify (
-                    
-                { _id : obj._id }, 
+
+                { _id : obj._id },
                 [ ['_id', 'asc']],
-                { $push : { "history" : revisionObj._id } }, 
-                { new : true }, 
+                { $push : { "history" : revisionObj._id } },
+                { new : true },
                 function(err, doc) {
                     if (err) return done(err, null);
                     return done(null, doc);
@@ -55,7 +58,7 @@ History.prototype.createEach = function (objs, model, done) {
             if (index === array.length - 1) {
                 done(null, updatedDocs);
             }
-        }); 
+        });
     });
 }
 

@@ -1,15 +1,17 @@
 var http = require('http');
 var url = require('url');
 var pathToRegexp = require('path-to-regexp');
-var logger = require(__dirname + '/../log');
+var log = require(__dirname + '/../log');
 
 var Api = function () {
     this.paths = {};
     this.all = [];
     this.errors = [];
 
+    this.log = log.get().child({module: 'api'});
+
     // always add default error handler in case the application doesn't define one
-    this.errors.push(defaultError());
+    this.errors.push(defaultError(this));
 
     // permanently bind context to listener
     this.listener = this.listener.bind(this);
@@ -146,9 +148,9 @@ module.exports = function () {
 module.exports.Api = Api;
 
 // Default error handler, in case application doesn't define error handling
-function defaultError() {
+function defaultError(api) {
     return function (err, req, res) {
-        logger.prod(err);
+        api.log.error(err);
         res.statusCode = err.statusCode || 500;
         if (err.json) {
             var resBody = JSON.stringify(err.json);

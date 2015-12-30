@@ -7,10 +7,11 @@ var ObjectID = require('mongodb').ObjectID;
 var _ = require('underscore');
 var util = require('util');
 
-var logger = require(__dirname + '/../log');
+var log = require(__dirname + '/../log').get().child({module: 'validator'});
+log.info('Model validator logging started.');
 
 var Validator = function (model) {
-    this.model = model;
+  this.model = model;
 };
 
 Validator.prototype.query = function (query) {
@@ -135,7 +136,7 @@ function _validate(field, schema, key) {
       var message = 'The use of the `validationRule` property in field declarations is deprecated and will be removed in v0.2.0\n\nPlease use the following instead:\n\n';
       message += JSON.stringify(newSchema,null,4);
       console.log(message);
-      logger.debug(message);
+      log.debug(message);
       if (!new RegExp(schema.validationRule).test(field)) return schema.message || 'is invalid';
     }
 

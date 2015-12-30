@@ -1,6 +1,6 @@
 var config = require(__dirname + '/../../../config.js');
 var help = require(__dirname + '/../help');
-var logger = require(__dirname + '/../../../dadi/lib/log');
+var log = require(__dirname + '/../../../dadi/lib/log');
 var fs = require('fs');
 var path = require('path');
 var url = require('url');
@@ -124,10 +124,10 @@ module.exports = function (server) {
 
                 // TODO: do we need to grab a lock here?
                 mkdirp(cacheDir, {}, function (err, made) {
-                    if (err) logger.prod(err.toString());
+                    if (err) console.log(err.toString());
 
                     fs.writeFile(cachepath, data, {encoding: cacheEncoding}, function (err) {
-                        if (err) logger.prod(err.toString());
+                        if (err) console.log(err.toString());
                     });
                 })
 

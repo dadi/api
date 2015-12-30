@@ -20,9 +20,7 @@ describe('Application', function () {
     });
 
     it('should start from specific directory', function (done) {
-        app.start({
-            collectionPath: __dirname + '/workspace/collections'
-        }, function (err) {
+        app.start(function (err) {
             if (err) return done(err);
 
             // give it a moment for http.Server to finish starting
@@ -33,9 +31,7 @@ describe('Application', function () {
     });
 
     it('should start a server', function (done) {
-        app.start({
-            collectionPath: __dirname + '/workspace/collections'
-        }, function (err) {
+        app.start(function (err) {
             if (err) return done(err);
 
             setTimeout(function () {
@@ -55,17 +51,16 @@ describe('Application', function () {
 
     describe('collection initialisation', function () {
 
-        var newSchemaPath = __dirname + '/workspace/collections/vtest/testdb/collection.new-test-schema.json';
+        var dirs = config.get('paths');
+        var newSchemaPath = dirs.collections + '/vtest/testdb/collection.new-test-schema.json';
 
         before(function (done) {
 
             // Add a schema file to the collection path
-            var newSchema = JSON.parse(JSON.stringify(require(__dirname + '/workspace/schemas/collection.new-test-schema.json')));
+            var newSchema = JSON.parse(JSON.stringify(require(path.resolve(dirs.collections + '/../schemas/collection.new-test-schema.json'))));
             fs.writeFileSync(newSchemaPath, JSON.stringify(newSchema));
 
-            app.start({
-                collectionPath: __dirname + '/workspace/collections'
-            }, done);
+            app.start(done);
         });
 
         after(function (done) {
@@ -114,9 +109,7 @@ describe('Application', function () {
 
     describe('collections api', function () {
         before(function (done) {
-            app.start({
-                collectionPath: __dirname + '/workspace/collections'
-            }, done);
+            app.start(done);
         });
 
         after(function (done) {
@@ -401,12 +394,14 @@ describe('Application', function () {
             var cleanup = function (done) {
                 // try to cleanup these tests directory tree
                 // don't catch errors here, since the paths may not exist
+
+                var dirs = config.get('paths');
                 try {
-                    fs.unlinkSync(__dirname + '/workspace/collections/v1/testdb/collection.test-schema.json');
+                    fs.unlinkSync(dirs.collections + '/v1/testdb/collection.test-schema.json');
                 } catch (e) {}
 
                 try {
-                    fs.rmdirSync(__dirname + '/workspace/collections/v1/testdb');
+                    fs.rmdirSync(dirs.collections + '/v1/testdb');
                 } catch (e) {}
 
                 done();
@@ -1359,12 +1354,15 @@ describe('Application', function () {
           var cleanup = function (done) {
             // try to cleanup these tests directory tree
             // don't catch errors here, since the paths may not exist
+
+            var dirs = config.get('paths');
+
             try {
-                fs.unlinkSync(__dirname + '/workspace/collections/v1/testdb/collection.test-schema.json');
+                fs.unlinkSync(dirs.collections + '/v1/testdb/collection.test-schema.json');
             } catch (e) {}
 
             try {
-              fs.rmdirSync(__dirname + '/workspace/collections/v1/testdb');
+              fs.rmdirSync(dirs.collections + '/v1/testdb');
             } catch (e) {}
 
             done();
@@ -1494,28 +1492,31 @@ describe('Application', function () {
         var cleanup = function (done) {
             // try to cleanup these tests directory tree
             // don't catch errors here, since the paths may not exist
+
+            var dirs = config.get('paths');
+
             try {
-                fs.unlinkSync(__dirname + '/workspace/collections/vapicreate/testdb/collection.api-create.json');
+                fs.unlinkSync(dirs.collections + '/vapicreate/testdb/collection.api-create.json');
             } catch (e) {
             }
 
             try {
-                fs.unlinkSync(__dirname + '/workspace/collections/vapicreate/testdb/collection.api-create-model-name.json');
+                fs.unlinkSync(dirs.collections + '/vapicreate/testdb/collection.api-create-model-name.json');
             } catch (e) {
             }
 
             try {
-                fs.unlinkSync(__dirname + '/workspace/collections/vapicreate/testdb/collection.modelNameFromSchema.json');
+                fs.unlinkSync(dirs.collections + '/vapicreate/testdb/collection.modelNameFromSchema.json');
             } catch (e) {
             }
 
             try {
-                fs.rmdirSync(__dirname + '/workspace/collections/vapicreate/testdb');
+                fs.rmdirSync(dirs.collections + '/vapicreate/testdb');
             } catch (e) {
             }
 
             try {
-                fs.rmdirSync(__dirname + '/workspace/collections/vapicreate');
+                fs.rmdirSync(dirs.collections + '/vapicreate');
             } catch (e) {
             }
 
@@ -1526,9 +1527,7 @@ describe('Application', function () {
             cleanup(function (err) {
                 if (err) return done(err);
 
-                app.start({
-                    collectionPath: __dirname + '/workspace/collections'
-                }, done);
+                app.start(done);
             });
         });
 
@@ -1782,9 +1781,7 @@ describe('Application', function () {
     describe('endpoint api', function () {
 
         before(function (done) {
-            app.start({
-                endpointPath: __dirname + '/workspace/endpoints'
-            }, done);
+            app.start(done);
         });
 
         after(function (done) {
@@ -1832,17 +1829,20 @@ describe('Application', function () {
         var jsSchemaString = fs.readFileSync(__dirname + '/../new-endpoint.js', {encoding: 'utf8'});
 
         var cleanup = function (done) {
+
+            var dirs = config.get('paths');
+
             // try to cleanup these tests directory tree
             try {
-                fs.unlinkSync(__dirname + '/workspace/endpoints/v1/endpoint.new-endpoint.js');
+                fs.unlinkSync(dirs.endpoints + '/v1/endpoint.new-endpoint.js');
             } catch (err) {
             }
             try {
-                fs.unlinkSync(__dirname + '/workspace/endpoints/v2/endpoint.new-endpoint.js');
+                fs.unlinkSync(dirs.endpoints + '/v2/endpoint.new-endpoint.js');
             } catch (err) {
             }
             try {
-                fs.rmdirSync(__dirname + '/workspace/endpoints/v2');
+                fs.rmdirSync(dirs.endpoints + '/v2');
             } catch (err) {
             }
             done();
@@ -1850,9 +1850,7 @@ describe('Application', function () {
 
         before(function (done) {
 
-            app.start({
-                endpointPath: __dirname + '/workspace/endpoints'
-            }, function () {
+            app.start(function () {
 
                 help.getBearerTokenWithAccessType("admin", function (err, token) {
                     if (err) return done(err);
@@ -2027,10 +2025,7 @@ describe('Application', function () {
         var originalConfig = fs.readFileSync(configPath).toString();
 
         before(function (done) {
-            app.start({
-                endpointPath: __dirname + '/workspace/endpoints',
-                collectionPath: __dirname + '/workspace/collections'
-            }, done);
+            app.start(done);
         });
 
         after(function (done) {

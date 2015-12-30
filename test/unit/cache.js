@@ -13,9 +13,7 @@ var bearerToken;
 describe('Cache', function (done) {
 
     before(function (done) {
-        app.start({
-            collectionPath: __dirname + '/../acceptance/workspace/collections'
-        }, done);
+        app.start(done);
     });
 
     after(function (done) {

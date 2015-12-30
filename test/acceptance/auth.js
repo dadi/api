@@ -16,10 +16,7 @@ describe('Authentication', function () {
 
         help.createClient(null, function() {
 
-        app.start({
-            collectionPath: __dirname + '/workspace/collections',
-            endpointPath: __dirname + '/workspace/endpoints'
-        }, function (err) {
+        app.start(function (err) {
             if (err) return done(err);
 
             // give it a moment for http.Server to finish starting

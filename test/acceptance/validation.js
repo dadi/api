@@ -1,4 +1,5 @@
 var fs = require('fs');
+var path = require('path');
 var should = require('should');
 var request = require('supertest');
 var _ = require('underscore');
@@ -7,12 +8,16 @@ var help = require(__dirname + '/help');
 var app = require(__dirname + '/../../dadi/lib/');
 
 var bearerToken; // scoped for all tests
+var dirs = config.get('paths');
+var newSchemaPath = path.resolve(dirs.collections + '/vtest/testdb/collection.test-validation-schema.json');
 
 describe('validation', function () {
     before(function (done) {
-        app.start({
-            collectionPath: __dirname + '/workspace/validation/collections'
-        }, function (err) {
+
+        var newSchema = JSON.parse(JSON.stringify(require(path.resolve(dirs.collections + '/../validation/collections/vtest/testdb/collection.test-validation-schema.json'))));
+        fs.writeFileSync(newSchemaPath, JSON.stringify(newSchema));
+
+        app.start(function (err) {
             if (err) return done(err);
 
             help.dropDatabase('testdb', function (err) {
@@ -30,6 +35,14 @@ describe('validation', function () {
     });
 
     after(function (done) {
+
+        try {
+          fs.unlinkSync(newSchemaPath);
+        }
+        catch (err) {
+          console.log(err)
+        }
+
         help.removeTestClients(function() {
             app.stop(done);
         });
@@ -126,7 +139,8 @@ describe('validation', function () {
             it('should allow setting a required boolean to `false`', function (done) {
 
                 var client = request('http://' + config.get('server.host') + ':' + config.get('server.port'));
-                var filepath = __dirname + '/workspace/validation/collections/vtest/testdb/collection.test-validation-schema.json';
+                var dirs = config.get('paths');
+                var filepath = path.resolve(dirs.collections + '/../validation/collections/vtest/testdb/collection.test-validation-schema.json');
 
                 // add a new field to the schema
                 var originaljsSchemaString = fs.readFileSync(filepath, {encoding: 'utf8'});

@@ -17,10 +17,7 @@ describe('File system watching', function () {
 
     before(function (done) {
         // start the app
-        app.start({
-            collectionPath: __dirname + '/workspace/collections',
-            endpointPath: __dirname + '/workspace/endpoints'
-        }, function (err) {
+        app.start(function (err) {
             if (err) return done(err);
 
             help.dropDatabase('testdb', function (err) {

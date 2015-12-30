@@ -11,10 +11,7 @@ var connectionString = 'http://' + config.get('server.host') + ':' + config.get(
 
 describe('middleware extension', function (done) {
     before(function (done) {
-        app.start({
-            endpointPath: __dirname + '/workspace/endpoints',
-            collectionPath: __dirname + '/workspace/collections'
-        }, function (err) {
+        app.start(function (err) {
             if (err) return done(err);
             help.dropDatabase('test', function (err) {
                 if (err) return done(err);

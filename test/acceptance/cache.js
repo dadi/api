@@ -1,19 +1,18 @@
+var fs = require('fs');
+var path = require('path');
 var should = require('should');
 var request = require('supertest');
 var sinon = require('sinon');
-var config = require(__dirname + '/../../config');
-var fs = require('fs');
 var _ = require('underscore');
-var path = require('path');
+
+var config = require(__dirname + '/../../config');
 var app = require(__dirname + '/../../dadi/lib/');
 var help = require(__dirname + '/help');
 
 var bearerToken;
 describe('Cache', function (done) {
     before(function (done) {
-        app.start({
-            collectionPath: __dirname + '/workspace/collections'
-        }, done);
+        app.start(done);
     });
 
     after(function (done) {
@@ -40,6 +39,7 @@ describe('Cache', function (done) {
     });
 
     it('should save responses to the file system', function (done) {
+
         var spy = sinon.spy(fs, 'writeFile');
 
         request('http://' + config.get('server.host') + ':' + config.get('server.port'))

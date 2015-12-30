@@ -19,7 +19,7 @@ var api = require(__dirname + '/api');
 var auth = require(__dirname + '/auth');
 var cache = require(__dirname + '/cache');
 var monitor = require(__dirname + '/monitor');
-var logger = require(__dirname + '/log');
+var log = require(__dirname + '/log');
 var help = require(__dirname + '/help');
 
 var config = require(path.resolve(__dirname + '/../../config.js'));
@@ -29,8 +29,11 @@ var configPath = path.resolve(config.configPath());
 var idParam = ':id([a-fA-F0-9]{24})?';
 
 var Server = function () {
-    this.components = {};
-    this.monitors = {};
+  this.components = {};
+  this.monitors = {};
+
+  this.log = log.get().child({module: 'server'});
+  this.log.info('Server logging started.');
 };
 
 Server.prototype.start = function (done) {
@@ -60,21 +63,7 @@ Server.prototype.start = function (done) {
     auth(self);
 
     // request logging middleware
-    app.use(function (req, res, next) {
-        var start = Date.now();
-        var _end = res.end;
-        res.end = function () {
-            var duration = Date.now() - start;
-
-            // log the request method and url, and the duration
-            logger.prod(req.method
-                + ' ' + req.url
-                + ' ' + res.statusCode
-                + ' ' + duration + 'ms');
-            _end.apply(res, arguments);
-        };
-        next();
-    });
+    app.use(log.requestLogger);
 
     this.loadConfigApi();
 
@@ -103,8 +92,7 @@ Server.prototype.start = function (done) {
           startText += '----------------------------\n';
           console.log(startText);
 
-          //console.log(message);
-          logger.prod(message);
+          self.log.info(message);
         }
     });
 
@@ -425,7 +413,7 @@ Server.prototype.updateDatabases = function (databasesPath) {
     try {
         databases = fs.readdirSync(databasesPath);
     } catch (e) {
-        logger.prod(databasesPath + ' does not exist');
+        self.log.warn(databasesPath + ' does not exist');
         return;
     }
 
@@ -520,7 +508,7 @@ Server.prototype.addCollectionResource = function (options) {
         }
     });
 
-    logger.prod('Initial ' + options.name + ' Schema loaded');
+    self.log.info('Collection loaded: ' + options.name);
 };
 
 Server.prototype.updateEndpoints = function (endpointsPath) {
@@ -584,7 +572,7 @@ Server.prototype.addEndpointResource = function (options) {
         }
     });
 
-    logger.prod('Endpoint ' + name + ' loaded');
+    self.log.info('Endpoint loaded: ' + name);
 }
 
 Server.prototype.addComponent = function (options) {
@@ -738,12 +726,12 @@ Server.prototype.ensureDirectories = function (options, done) {
       mkdirp(dir, _0755, function (err, made) {
 
         if (err) {
-          logger.debug(err);
+          self.log.debug(err);
           console.log(err);
         }
 
         if (made) {
-          logger.debug('Created directory ' + made);
+          self.log.debug('Created directory ' + made);
           console.log('Created directory ' + made);
         }
 

@@ -414,6 +414,50 @@ module.exports.model = {}
 module.exports.model.settings = { authenticate : false }
 ```
 
+## List All Collections
+
+http://api.example.com/api/collections
+
+```
+{
+	"collections": [
+		{
+			"version": "1.0",
+			"database": "library",
+			"name": "authors",
+			"slug": "authors",
+			"path": "/1.0/library/authors"
+		},
+		{
+			"version": "1.0",
+			"database": "library",
+			"name": "books",
+			"slug": "books",
+			"path": "/1.0/library/books"
+		}
+	]
+}
+```
+
+## View Collection Statistics
+
+http://api.example.com/1.0/library/books/stats
+
+```
+{
+	"count": 34042,
+	"size": 3599267936,
+	"averageObjectSize": 105730,
+	"storageSize": 3921256448,
+	"indexes": 2,
+	"totalIndexSize": 2714432,
+	"indexSizes": {
+		"_id_": 1111936,
+		"title_1": 1602496
+	}
+}
+```
+
 ## Collection Configuration Requests
 
 ### Creating a new collection

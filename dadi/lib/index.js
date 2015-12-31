@@ -76,32 +76,8 @@ Server.prototype.start = function (done) {
     // start listening
     var server = this.server = app.listen(config.get('server.port'), config.get('server.host'));
 
-    server.on('listening', function (e) {
-      var env = config.get('env');
-      if (env !== 'test') {
-          var message = "Started DADI API '" + config.get('app.name') + "' (" + version + ", Node.JS v" + nodeVersion + ", " + env + " mode) on " + config.get('server.host') + ":" + config.get('server.port');
-          var startText = '';
-          startText += '----------------------------\n';
-          startText += 'DADI API\n'.green;
-          startText += 'Started \'DADI API\'\n';
-          startText += '----------------------------\n';
-          startText += 'Server:      '.green + config.get('server.host') + ':' + config.get('server.port') + '\n';
-          startText += 'Version:     '.green + version + '\n';
-          startText += 'Node.JS:     '.green + nodeVersion + '\n';
-          startText += 'Environment: '.green + env + '\n';
-          startText += '----------------------------\n';
-          console.log(startText);
-
-          self.log.info(message);
-        }
-    });
-
-    server.on('error', function (e) {
-      if (e.code == 'EADDRINUSE') {
-        console.log('Error ' + e.code + ': Address ' + config.get('server.host') + ':' + config.get('server.port') + ' is already in use, is something else listening on port ' + config.get('server.port') + '?\n\n');
-        process.exit(0);
-      }
-    });
+    server.on('listening', onListening);
+    server.on('error', onError);
 
     this.loadApi(options);
 
@@ -804,4 +780,31 @@ function buildVerbMethod(verb) {
         // if no route is provided, call this for all requests
         this.app.use(handler);
     };
+}
+
+function onListening(e) {
+  var env = config.get('env');
+
+  if (env !== 'test') {
+    var message = "Started DADI API '" + config.get('app.name') + "' (" + version + ", Node.JS v" + nodeVersion + ", " + env + " mode) on " + config.get('server.host') + ":" + config.get('server.port');
+    var startText = '';
+    startText += '  ----------------------------\n';
+    startText += '  ' + config.get('app.name').green + '\n';
+    startText += '  Started \'DADI API\'\n';
+    startText += '  ----------------------------\n';
+    startText += '  Server:      '.green + config.get('server.host') + ':' + config.get('server.port') + '\n';
+    startText += '  Version:     '.green + version + '\n';
+    startText += '  Node.JS:     '.green + nodeVersion + '\n';
+    startText += '  Environment: '.green + env + '\n';
+    startText += '  ----------------------------\n';
+
+    console.log(startText);
+  }
+}
+
+function onError(err) {
+  if (err.code == 'EADDRINUSE') {
+    console.log('Error ' + err.code + ': Address ' + config.get('server.host') + ':' + config.get('server.port') + ' is already in use, is something else listening on port ' + config.get('server.port') + '?\n\n');
+    process.exit(0);
+  }
 }

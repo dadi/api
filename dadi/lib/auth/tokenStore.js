@@ -15,7 +15,7 @@ var Store = function () {
         { },
         function (err, indexName) {
           if (err) console.log(err);
-          console.log('Using authentication layer index "' + storeCollectionName  + '.' + indexName + "'");
+          //console.log('Using authentication layer index "' + storeCollectionName  + '.' + indexName + "'");
         }
       );
     }

@@ -36,7 +36,7 @@ var log = bunyan.createLogger({
 
 // add console logger
 if (config.get('env') === 'development') {
-  log.addStream({ level: 'debug', stream: process.stdout });
+  //log.addStream({ level: 'debug', stream: process.stdout });
 }
 
 if (options.accessLog.enabled) {

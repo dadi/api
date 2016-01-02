@@ -799,6 +799,8 @@ function onListening(e) {
     startText += '  ----------------------------\n';
 
     console.log(startText);
+
+    console.log('  Copyright %s 2015 DADI+ Limited (https://dadi.tech)'.white, String.fromCharCode(169));
   }
 }
 

@@ -1,79 +1,79 @@
 {
-    "app": {
-        "name": "Repo Default"
-    },
-    "server": {
+  "app": {
+    "name": "Repo Default"
+  },
+  "server": {
+    "host": "127.0.0.1",
+    "port": 8000
+  },
+  "database": {
+    "hosts": [
+      {
         "host": "127.0.0.1",
-        "port": 8000
-    },
-    "database": {
-        "hosts": [
-            {
-                "host": "127.0.0.1",
-                "port": 27017
-            }
-        ],
-        "username": "",
-        "password": "",
-        "database": "test",
-        "ssl": false,
-        "replicaSet": false,
-        "enableCollectionDatabases": false,
-        "secondary": {
-            "hosts": [
-                {
-                    "host": "127.0.0.1",
-                    "port": 27018
-                }
-            ],
-            "username": "",
-            "password": "",
-            "replicaSet": false,
-            "ssl": false
-        },
-        "testdb": {
-            "hosts": [
-                {
-                    "host": "127.0.0.1",
-                    "port": 27017
-                }
-            ],
-            "username": "",
-            "password": ""
+        "port": 27017
+      }
+    ],
+    "username": "",
+    "password": "",
+    "database": "test",
+    "ssl": false,
+    "replicaSet": false,
+    "enableCollectionDatabases": false,
+    "secondary": {
+      "hosts": [
+        {
+          "host": "127.0.0.1",
+          "port": 27018
         }
+      ],
+      "username": "",
+      "password": "",
+      "replicaSet": false,
+      "ssl": false
     },
-    "logging": {
-      "enabled": true,
-      "path": "./log",
-      "filename": "dadi-api",
-      "extension": "log"
+    "testdb": {
+      "hosts": [
+        {
+          "host": "127.0.0.1",
+          "port": 27017
+        }
+      ],
+      "username": "",
+      "password": ""
+    }
+  },
+  "auth": {
+    "tokenUrl": "/token",
+    "tokenTtl": 1800,
+    "database": {
+      "hosts": [
+        {
+          "host": "127.0.0.1",
+          "port": 27017
+        }
+      ],
+      "username": "",
+      "password": "",
+      "database": "test"
     },
-    "auth": {
-        "tokenUrl": "/token",
-        "tokenTtl": 1800,
-        "database": {
-            "hosts": [
-                {
-                    "host": "127.0.0.1",
-                    "port": 27017
-                }
-            ],
-            "username": "",
-            "password": "",
-            "database": "test"
-        },
-        "clientCollection": "clientStore",
-        "tokenCollection": "tokenStore"
-    },
-    "caching": {
-        "enabled": true,
-        "ttl": 300,
-        "directory": "./cache/api/",
-        "extension": "json"
-    },
-    "paths": {
-      "collections": "test/acceptance/workspace/collections",
-      "endpoints": "test/acceptance/workspace/endpoints"
-    },
-    "feedback": false
+    "clientCollection": "clientStore",
+    "tokenCollection": "tokenStore"
+  },
+  "caching": {
+    "enabled": true,
+    "ttl": 300,
+    "directory": "./cache/api/",
+    "extension": "json"
+  },
+  "paths": {
+    "collections": "test/acceptance/workspace/collections",
+    "endpoints": "test/acceptance/workspace/endpoints"
+  },
+  "logging": {
+    "enabled": true,
+    "path": "./log",
+    "filename": "dadi-api",
+    "extension": "log"
+  },
+  "feedback": false
 }

@@ -110,7 +110,7 @@ module.exports = function (server) {
                 if (!isAuthorized(server.components, req, client)) {
                     var err = new Error('ClientId not authorized to access requested collection.');
                     err.statusCode = 401;
-                    next(err);
+                    return next(err);
                 }
                 else {
                     // Token is valid attach client to request

@@ -57,9 +57,9 @@ Controller.prototype.prepareQueryOptions = function(options) {
   }
 
   // skip - passed or calculated from (page# x count)
-  var skip = limit * ((options.page || 1) - 1);
+  var skip = limit * (parseInt((options.page || 1)) - 1);
   if (options.skip) {
-    skip += options.skip;
+    skip += parseInt(options.skip);
   }
 
   queryOptions.limit = limit;

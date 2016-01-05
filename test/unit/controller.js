@@ -66,12 +66,55 @@ describe('Controller', function (done) {
                 done();
             });
 
+            it('should pass model\'s default filters to the find query', function (done) {
+                var mod = model('testModel', null, help.getModelSchemaWithMultipleFields(), help.getModelSettings());
+                var stub = sinon.stub(mod, 'find');
+
+                var req = {
+                    url: '/foo/bar'
+                };
+
+                // update defaultFilters
+                mod.settings.defaultFilters = { "field1": "xxx" };
+
+                controller(mod).get(req);
+                stub.callCount.should.equal(1);
+                var findArgs = stub.returnsArg(0).args[0][0];
+                findArgs.hasOwnProperty('field1').should.be.true;
+                stub.restore();
+                done();
+            });
+
+            it('should pass model\'s default fields to the find query', function (done) {
+                var mod = model('testModel', null, help.getModelSchemaWithMultipleFields(), help.getModelSettings());
+                var stub = sinon.stub(mod, 'find');
+
+                var req = {
+                    url: '/foo/bar'
+                };
+
+                // update defaultFilters
+                mod.settings.fieldLimiters = { "field1": 1 };
+
+                controller(mod).get(req);
+
+                stub.callCount.should.equal(1);
+                var findArgs = stub.returnsArg(0).args[0][1];
+
+                findArgs.hasOwnProperty('fields').should.be.true;
+                findArgs.fields.hasOwnProperty('field1').should.be.true;
+                stub.restore();
+
+                done();
+            });
+
             it('should send response', function (done) {
                 var mod = model('testModel');
 
                 var req = {
                     url: '/foo/bar'
                 };
+
                 var res = {
                     end: function (chunk) {
                         done();

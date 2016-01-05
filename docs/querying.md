@@ -11,7 +11,7 @@ page             | integer     | Page number                                   |
 sort             | string      | Field to sort on                          | _id                  |
 sortOrder       | string      | Sort direction                                | asc                  | desc
 filter           | json        | MongoDB query object or Aggregation Pipeline array                            |                      | { fieldName: {"$in": ["a", "b"]}object}
-fields           | json        | Specify the fields to return in the dataset. Use `1` to include and `0` to exclude a field  |          | {"field1":1,"field2":1,"_id":0}
+fields           | json        | Specify the fields to return in the dataset.  |          | Include fields: {"field1":1,"field2":1} Exclude fields: {field2":0}
 
 callback         | string      | Callback function to wrap the return result set in.  |               | thisIsMyCallback
 
@@ -30,15 +30,21 @@ Enables paging within the collection. Specifying a value for `page` along with `
 
 Specifies the field to be used when sorting the collection. The default field is the collection's `_id` field.
 
-
 ### sortOrder
 
 Overrides the collection's `sortOrder` setting. Permitted values are `asc` for an ascending sort order and `desc` for a descending sort order.
 
+### fields
+
+Specifies the fields to return. Extends the collection's `fieldLimiters` setting.
+
+```
+fields={"name":1,"email":1}
+```
 
 ### filter
 
-Overrides the collection's `defaultFilters` setting. There are two ways to use the `filter` parameter: passing a JSON query object for performing a standard query, and passing an array containing MongoDB Aggregation Pipeline stages.
+Extends the collection's `defaultFilters` setting. There are two ways to use the `filter` parameter: passing a JSON query object for performing a standard query, and passing an array containing MongoDB Aggregation Pipeline stages.
 
 ##### JSON Query Object
 
@@ -46,7 +52,7 @@ Overrides the collection's `defaultFilters` setting. There are two ways to use t
   { fieldName: {"$in": ["a", "b"]} }
 ```
 
-##### Aggregation Pipeline array 
+##### Aggregation Pipeline array
 
 ###### Examples with the following document set:
 
@@ -107,11 +113,11 @@ Overrides the collection's `defaultFilters` setting. There are two ways to use t
 
 ```
   [
-    { 
+    {
       $match : { make: "Ford" }
     },
-    { 
-      $group: 
+    {
+      $group:
       {
         _id: "$make",
         onRoadCostAverage: { $avg : "$onRoadCost" }
@@ -136,11 +142,11 @@ See the MongoDB reference documentation for information about the [Aggregation P
 
 ```
 var query = [
-    { 
+    {
       $match : { make: "Ford" }
     },
-    { 
-      $group: 
+    {
+      $group:
       {
         _id: "$make",
         onRoadCostAverage: { $avg : "$onRoadCost" }

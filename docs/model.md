@@ -31,6 +31,48 @@ Model(name, fields, [connection], settings) -
 * `revisionCollection` "testSchemaHistory"
 * `index`
 
+### defaultFilters
+
+Specifies a default query for the collection.
+
+```
+defaultFilters: { "publishState": "published" }
+```
+
+ A `filter` parameter passed in a query will extend the default filters. For example the following request would extend the default filters and the database query would reflect both the defaults and the filters passed in the querystring:
+
+```
+ http://api.example.com/1.0/magazine/articles?filter={"magazineTitle":"Vogue"}
+
+ { "publishState": "published", "magazineTitle": "Vogue" }
+ ```
+
+### fieldLimiters
+
+Specifies a default list of fields for inclusion/exclusion. Fields can be included or excluded, but not both. For example to include only `name` and `email`:
+
+```
+fieldLimiters: {"name":1, "email": 1}
+```
+
+The `_id` field is returned by default. To exclude the `_id` field:
+
+```
+fieldLimiters: {"name":1, "email": 1, "_id": 0}
+```
+
+The `_id` field is the only field which can be excluded in a list of included fields. For example, the following field list results in a Mongo error:
+
+```
+fieldLimiters: {"name":1, "email": 0}
+```
+
+To exclude fields, list only the fields for exclusion:
+
+```
+fieldLimiters: {"name":0, "email": 0}
+```
+
 ## Database Indexes
 
 Indexes provide high performance read operations for frequently used queries and are fundamental in ensuring performance under load and at scale.

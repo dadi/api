@@ -22,6 +22,23 @@ module.exports.getModelSchema = function () {
     };
 };
 
+module.exports.getModelSettings = function() {
+  return {
+    cache: true,
+    cacheTTL: 300,
+    authenticate: true,
+    callback: null,
+    defaultFilters: null,
+    fieldLimiters: null,
+    allowExtension: false,
+    count: 40,
+    sort: "fieldName",
+    sortOrder: 1,
+    storeRevisions: true,
+    revisionCollection: "testSchemaHistory"
+  }
+};
+
 module.exports.getModelSchemaWithMultipleFields = function () {
     return {
         "field1": {

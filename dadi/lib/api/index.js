@@ -150,15 +150,22 @@ module.exports.Api = Api;
 // Default error handler, in case application doesn't define error handling
 function defaultError(api) {
     return function (err, req, res) {
-        api.log.error(err);
-        res.statusCode = err.statusCode || 500;
-        if (err.json) {
-            var resBody = JSON.stringify(err.json);
-            res.setHeader('content-type', 'application/json');
-            res.setHeader('content-length', resBody.length);
-            return res.end(resBody);
-        }
-        res.end();
+
+      var resBody;
+
+      api.log.error(err);
+
+      if (err.json) {
+        resBody = JSON.stringify(err.json);
+      }
+      else {
+        resBody = JSON.stringify(err);
+      }
+
+      res.statusCode = err.statusCode || 500;
+      res.setHeader('content-type', 'application/json');
+      res.setHeader('content-length', Buffer.byteLength(resBody));
+      return res.end(resBody);
     }
 }
 

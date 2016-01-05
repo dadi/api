@@ -1,5 +1,11 @@
 # Change Log
 
+1.2.0 / 2016-01-XX
+
+* Collection setting `defaultFilters` now used when performing a GET request, in addition to filters passed in the querystring
+* Collection setting `fieldLimiters` now used when performing a GET request, in addition to fields passed in the querystring
+* `skip` can be passed in the querystring to explicitly set an offset. The `skip` value is normally calculated using the `count` and `page` values, so if `count = 10` and `page = 2` then `skip` becomes `10` (i.e. `(page-1)*count`). If `skip` is specified in the querystring, this value is added to the calculated value to avoid overlapping records on subsequent pages.
+
 0.1.10 / 2015-11-18
 ===================
 

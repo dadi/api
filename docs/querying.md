@@ -8,6 +8,7 @@ When querying a collection it is possible to override the default settings speci
 :----------------|:------------|:----------------------------------------------|:---------------------|:--------------
 count            | integer     | Maximum number of results to be returned   | 50                   | 10
 page             | integer     | Page number                                   | 1                    | 2
+skip             | integer     | The number of records to skip              | 0   | 3
 sort             | string      | Field to sort on                          | _id                  |
 sortOrder       | string      | Sort direction                                | asc                  | desc
 filter           | json        | MongoDB query object or Aggregation Pipeline array                            |                      | { fieldName: {"$in": ["a", "b"]}object}
@@ -25,6 +26,10 @@ Overrides the collection's `count` setting, specifying the maximum number of doc
 ### page
 
 Enables paging within the collection. Specifying a value for `page` along with `count` (or relying on the collection's default `count` setting) will utilise MongoDB's `skip()` method to skip the first (*page * count*) documents in the collection.
+
+### skip
+
+The `skip` value is normally calculated using the `count` and `page` values, so if `count = 10` and `page = 2` then `skip` becomes `10` (i.e. `(page-1)*count`). If `skip` is specified in the querystring, this value is added to the calculated value to avoid overlapping records on subsequent pages.
 
 ### sort
 

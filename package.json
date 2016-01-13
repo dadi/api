@@ -21,6 +21,7 @@
     "mongodb": "~1.4.8",
     "node-uuid": "~1.4.1",
     "path-to-regexp": "~1.0.0",
+    "protagonist": "1.2.5",
     "q": "^1.4.1",
     "stack-trace": "latest",
     "underscore": "~1.6.0",

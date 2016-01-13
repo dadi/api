@@ -5,6 +5,8 @@ var _ = require('underscore');
 _.templateSettings = {
   interpolate: /\{\{(.+?)\}\}/g
 };
+var endpointMethodTemplate = "### {{ shortDescription }} [{{ method }}]\n";
+    endpointMethodTemplate += "{{ description }}\n\n";
 
 var singleResourceMethodTemplate = "### {{ action }} a single {{ modelName }} [{{ method }}]\n";
     singleResourceMethodTemplate += "{{ actionResponse }} a single {{ modelName }} matching the specified ID, or returns HTTP 404 if no matching {{ pluralizedName }} were found.\n\n";
@@ -47,32 +49,56 @@ templates["singleResourceMethod"] = _.template(singleResourceMethodTemplate);
 templates["modelListGroup"]       = _.template(modelListGroupTemplate);
 templates["modelGroup"]           = _.template(modelGroupTemplate);
 templates["fourohfour"]           = _.template(fourohfourTemplate);
+templates["endpointMethod"]       = _.template(endpointMethodTemplate);
 
+var Blueprint = function(model, path, route) {
 
-var Blueprint = function (model, path) {
-
-  //this.model = Model(model.name);
-  this.model = model;
   this.path = path;
 
-  if (this.model.settings.hasOwnProperty("displayName")) {
-    this.modelName = this.model.settings.displayName;
-  }
-  else {
-    // set the model name, singularizing it if the collection was provided as pluralized
-    this.modelName = inflection.inflect(this.model.name.charAt(0).toUpperCase() + this.model.name.substring(1), 1);
-  }
+  if (model) {
+    //this.model = Model(model.name);
+    this.model = model;
 
-  this.pluralizedName = inflection.inflect(this.modelName, 2);
+    if (this.model.settings.hasOwnProperty("displayName")) {
+      this.modelName = this.model.settings.displayName;
+    }
+    else {
+      // set the model name, singularizing it if the collection was provided as pluralized
+      this.modelName = inflection.inflect(this.model.name.charAt(0).toUpperCase() + this.model.name.substring(1), 1);
+    }
+
+    this.pluralizedName = inflection.inflect(this.modelName, 2);
+  }
+  else if (route) {
+    this.route = route;
+    this.routeConfig = this.route.config ? this.route.config() : {};
+    this.modelName = this.path;
+
+    // if (this.route.config) {
+    //   var config = this.route.config();
+    //   if (config.route) {
+    //     this.path = config.route;
+    //   }
+    // }
+  }
 }
 
 Blueprint.prototype.name = function() {
+  if (this.route && this.routeConfig) {
+    if (this.routeConfig.displayName) {
+      return this.routeConfig.displayName;
+    }
+  }
   return this.modelName;
 }
 
 Blueprint.prototype.description = function() {
-
-  if (this.model.settings.description) {
+  if (this.route && this.routeConfig) {
+    if (this.routeConfig.description) {
+        return this.routeConfig.description + "\n\n";
+    }
+  }
+  else if (this.model && this.model.settings.description) {
     return this.model.settings.description + "\n\n";
   }
   else {
@@ -84,6 +110,8 @@ Blueprint.prototype.modelSpec = function(asArray) {
     var blueprint = "";
     var numRepeats = asArray ? 2 : 1;
     var apiVersion = this.path.split('/')[1];
+
+    if (!this.model) return "";
 
     if (this.model.schema) {
         if (asArray) blueprint += ">>>>>>>>[\n";
@@ -113,24 +141,35 @@ Blueprint.prototype.modelSpec = function(asArray) {
 }
 
 Blueprint.prototype.groupName = function() {
-  if (!this.modelName) return "";
-
   var md = "";
-  md += templates["modelGroup"]({modelName: this.modelName, description: this.description(), path: replaceIdParam(this.path)});
+  md += templates["modelGroup"]({modelName: this.name(), description: this.description(), path: replaceIdParam(this.path)});
   md += this.modelResource();
   return md;
 }
 
-Blueprint.prototype.getMethod = function() {
+Blueprint.prototype.endpointMethod = function() {
     var md = "";
-    md += templates["singleResourceMethod"]({modelName: this.modelName, pluralizedName: this.pluralizedName, action: 'Retrieve', actionResponse: 'Returns', method: 'GET'});
-
+    md += templates["endpointMethod"]({modelName: this.name(), pluralizedName: this.pluralizedName, shortDescription: this.routeConfig.shortDescription, description: this.routeConfig.description, method: 'GET'});
+console.log(md)
     md += "+ Parameters\n";
-    md += ">" + "+ id (string) ... the ID of the " + this.modelName + " to retrieve\n\n";
+    md += ">" + "+ id (string) ... the ID of the " + this.name() + " to retrieve\n\n";
 
     md += "+ Response 200\n";
     md += "\n";
-    md += ">" + "[" + this.modelName + "][]\n\n";
+    md += ">" + "[" + this.name() + "][]\n\n";
+    return md;
+}
+
+Blueprint.prototype.getMethod = function() {
+    var md = "";
+    md += templates["singleResourceMethod"]({modelName: this.name(), pluralizedName: this.pluralizedName, action: 'Retrieve', actionResponse: 'Returns', method: 'GET'});
+
+    md += "+ Parameters\n";
+    md += ">" + "+ id (string) ... the ID of the " + this.name() + " to retrieve\n\n";
+
+    md += "+ Response 200\n";
+    md += "\n";
+    md += ">" + "[" + this.name() + "][]\n\n";
     return md;
 }
 
@@ -300,8 +339,9 @@ function renderRequestFields(model) {
 }
 
 // exports
-module.exports = function (model, path) {
-    if (model) return new Blueprint(model, path);
+module.exports = function (model, path, route) {
+  if (model) return new Blueprint(model, path, null);
+  if (route) return new Blueprint(null, path, route);
 };
 
 module.exports.Blueprint = Blueprint;

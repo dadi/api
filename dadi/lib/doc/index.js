@@ -31,16 +31,22 @@ module.exports = function(app, callback) {
   doc += introText + "\n\n";
 
   _.each(app.components, function(route, path, list) {
-
-    if (route.model && route.model.name) {
+    if (!route.model) {
+      var blueprint = new Blueprint(null, path, route);
+      // Main Model Heading
+      doc += blueprint.groupName();
+      doc += blueprint.endpointMethod();
+    }
+    else if (route.model && route.model.name) {
 
       //console.log(route.model.settings)
-      if (route.model.settings.hasOwnProperty('internal') && route.model.settings.internal === true) {
+      if (route.model.settings.hasOwnProperty('private') && route.model.settings.private === true) {
 
       }
       else {
 
         var blueprint = new Blueprint(route.model, path);
+        //console.log(blueprint)
 
         // Main Model Heading
         doc += blueprint.groupName();
@@ -64,15 +70,19 @@ module.exports = function(app, callback) {
 
         // POST 'create'
         doc += blueprint.createMethod();
-
-        // perform indentation
-        doc = doc.replace(/>/g, "    ");
       }
     }
   });
 
+  // perform indentation
+  doc = doc.replace(/>/g, "    ");
+
   if (options && options.markdown) {
+
+    // var protagonist = require('protagonist');
+    // var result = protagonist.parseSync(doc);
     callback(doc);
+
   }
   else {
     // output the rendered html blueprint

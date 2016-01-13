@@ -15,59 +15,58 @@ var Validator = function (model) {
 };
 
 Validator.prototype.query = function (query) {
-    var valid = Object.keys(query).every(function (key) {
-        return key !== '$where';
-    });
-    var response = valid
-        ? {success: true}
-        : {success: false, errors: [{message: 'Bad query'}]};
+  var valid = Object.keys(query).every(function (key) {
+    return key !== '$where';
+  });
 
-    return response;
+  var response = valid ? { success: true } : { success: false, errors: [{message: 'Bad query'}] };
+
+  return response;
 };
 
 Validator.prototype.schema = function (obj, update) {
 
-    update = update || false;
+  update = update || false;
 
-    // `obj` must be a "hash type object", i.e. { ... }
-    if (typeof obj !== 'object' || util.isArray(obj) || obj === null) return false;
+  // `obj` must be a "hash type object", i.e. { ... }
+  if (typeof obj !== 'object' || util.isArray(obj) || obj === null) return false;
 
-    var response = {
-        success: true,
-        errors: []
-    };
+  var response = {
+    success: true,
+    errors: []
+  };
 
-    var schema = this.model.schema;
+  var schema = this.model.schema;
 
-    // check for default fields, assign them if the obj didn't
-    // provide a value
-    Object.keys(schema)
-    .filter(function (key) { return schema[key].default; })
-    .forEach(function (key) {
-        if (!obj[key]) {
-            obj[key] = schema[key].default;
-        }
-    });
+  // check for default fields, assign them if the obj didn't
+  // provide a value
+  Object.keys(schema)
+  .filter(function (key) { return schema[key].default; })
+  .forEach(function (key) {
+    if (!obj[key]) {
+      obj[key] = schema[key].default;
+    }
+  });
 
-    // check that all required fields are present
-    Object.keys(schema)
-    .filter(function (key) { return schema[key].required; })
-    .forEach(function (key) {
-        // if it's an insert and a required field isn't found, error
-        if (!obj.hasOwnProperty(key) && !update) {
-            response.success = false;
-            response.errors.push({field: key, message: 'must be specified'})
-        }
-        // if it's a required field and is blank or null, error
-        else if (obj.hasOwnProperty(key) && (typeof obj[key] === 'undefined' || obj[key] === '')) {
-            response.success = false;
-            response.errors.push({field: key, message: 'can\'t be blank'})
-        }
-    });
+  // check that all required fields are present
+  Object.keys(schema)
+  .filter(function (key) { return schema[key].required; })
+  .forEach(function (key) {
+    // if it's an insert and a required field isn't found, error
+    if (!obj.hasOwnProperty(key) && !update) {
+      response.success = false;
+      response.errors.push({field: key, message: 'must be specified'});
+    }
+    // if it's a required field and is blank or null, error
+    else if (obj.hasOwnProperty(key) && (typeof obj[key] === 'undefined' || obj[key] === '')) {
+      response.success = false;
+      response.errors.push({field: key, message: 'can\'t be blank'});
+    }
+  });
 
-    // check all `obj` fields
-    _parseDocument(obj, schema, response);
-    return response;
+  // check all `obj` fields
+  _parseDocument(obj, schema, response);
+  return response;
 };
 
 function _parseDocument(obj, schema, response) {
@@ -89,7 +88,7 @@ function _parseDocument(obj, schema, response) {
 
                 if (err) {
                     response.success = false;
-                    response.errors.push({field: key, message: err})
+                    response.errors.push({field: key, message: err});
                 }
             }
         }
@@ -104,7 +103,7 @@ function _parseDocument(obj, schema, response) {
 
             if (err) {
                 response.success = false;
-                response.errors.push({field: key, message: err})
+                response.errors.push({field: key, message: err});
             }
         }
     }
@@ -129,7 +128,7 @@ function _validate(field, schema, key) {
 
     // check validation regex
     if (schema.validationRule) {
-      var newSchema = {}
+      var newSchema = {};
       newSchema[key] = _.clone(schema);
       newSchema[key].validation = { regex: { pattern: schema.validationRule }};
       delete newSchema[key].validationRule;
@@ -147,7 +146,7 @@ function _validate(field, schema, key) {
                 if (typeof val !== 'string' || !ObjectID.isValid(val)) {
                     return val + ' is not a valid ObjectID';
                 }
-            };
+            }
         }
         else if (typeof field === 'string') {
             if (!ObjectID.isValid(field)) return 'is not a valid ObjectID';
@@ -158,7 +157,7 @@ function _validate(field, schema, key) {
     }
 
     // allow Mixed/ObjectID/Reference fields through
-    if (_.contains(['Mixed', 'ObjectID', 'Reference'], schema.type) == false) {
+    if (_.contains(['Mixed', 'ObjectID', 'Reference'], schema.type) === false) {
         // check constructor of field against primitive types and check the type of field == the specified type
         // using constructor.name as array === object in typeof comparisons
         try {

@@ -229,8 +229,12 @@ var convertApparentObjectIds = function (query) {
         else if (typeof query[key] === 'object' && query[key] !== null) {
             query[key] = convertApparentObjectIds(query[key]);
         }
+        else if (typeof query[key] === 'string' && ObjectID.isValid(query[key]) && query[key].match(/^[a-fA-F0-9]{24}$/)) {
+            query[key] = new ObjectID.createFromHexString(query[key]);
+        }
         else {
             // nothing
+            console.log(typeof query[key]);
         }
     });
     return query;

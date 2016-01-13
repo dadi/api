@@ -1,4 +1,4 @@
-![Serama](serama.png)
+![Serama](http://cdn.dadi.tech/logo/dadi.png)
 
 ![Build Status](http://img.shields.io/badge/Release-1.1.3-green.svg?style=flat-square)&nbsp;[![License](http://img.shields.io/:License-MIT-blue.svg?style=flat-square)](http://dadi.mit-license.org)&nbsp;![Coverage](https://img.shields.io/badge/Coverage-88%-yellow.svg?style=flat-square)
 

@@ -9,7 +9,7 @@
             "validationRule": "",
             "required": false,
             "message": "",
-            "display": { 
+            "display": {
                 "index": true,
                 "edit": true
             }
@@ -23,7 +23,7 @@
             "validationRule": "",
             "required": false,
             "message": "",
-            "display": { 
+            "display": {
                 "index": true,
                 "edit": true
             }
@@ -38,15 +38,16 @@
         "fieldLimiters": null,
         "allowExtension": false,
         "count": 40,
+        "sort": "field1",
         "sortOrder": 1,
         "storeRevisions": true,
         "revisionCollection": "testSchemaHistory",
-        "index": { 
-            "enabled": true, 
-            "keys": { 
+        "index": {
+            "enabled": true,
+            "keys": {
                 "field1": 1,
                 "field2": -1
-            } 
+            }
         }
     }
 }

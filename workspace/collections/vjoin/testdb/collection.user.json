@@ -9,7 +9,7 @@
             "validationRule": "",
             "required": false,
             "message": "",
-            "display": { 
+            "display": {
                 "index": true,
                 "edit": true
             }
@@ -23,14 +23,15 @@
         "fieldLimiters": null,
         "allowExtension": false,
         "count": 40,
+        "sort": "name",
         "sortOrder": 1,
         "storeRevisions": true,
         "revisionCollection": "userHistory",
-        "index": { 
-            "enabled": true, 
-            "keys": { 
+        "index": {
+            "enabled": true,
+            "keys": {
                 "name": 1
-            } 
+            }
         },
         "description": "Represents members who have registered with the system."
     }

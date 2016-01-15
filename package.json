@@ -8,7 +8,7 @@
     "start": "node server.js --node_env=development"
   },
   "dependencies": {
-    "aglio": "^1.17.1",
+    "aglio": "2.2.x",
     "async": "^1.4.2",
     "body-parser": "~1.6.5",
     "bunyan": "^1.5.1",

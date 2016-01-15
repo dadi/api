@@ -48,7 +48,7 @@ req.end();
 {
   "accessToken": "4172bbf1-0890-41c7-b0db-477095a288b6",
   "tokenType": "Bearer",
-  "expiresIn": 2592000
+  "expiresIn": 1800
 }
 ```
 
@@ -91,4 +91,4 @@ req.end();
 ```
 
 ## Error States
-The common [HTTP Response Status Codes](https://github.com/for-GET/know-your-http-well/blob/master/status-codes.md) are used.
+The common [HTTP Response Status Codes](https://httpstatuses.com/) are used.

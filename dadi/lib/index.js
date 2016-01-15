@@ -113,6 +113,7 @@ Server.prototype.loadPaths = function(paths, done) {
 
   options.collectionPath = path.resolve(paths.collections || __dirname + '/../../workspace/collections');
   options.endpointPath = path.resolve(paths.endpoints || __dirname + '/../../workspace/endpoints');
+  options.docPath = path.resolve(paths.docs || __dirname + '/../../workspace/docs');
 
   var idx = 0;
 
@@ -449,6 +450,15 @@ Server.prototype.updateCollections = function (collectionsPath) {
             database: database
         });
     });
+
+    // update the API documentation
+    // doc(self, function(data) {
+    //    var docFile = config.get('paths').docs + '/apiblueprint.md';
+    //    fs.writeFile(docFile, data, function(err) {
+    //     //  console.log(err)
+    //    });
+    // });
+
 };
 
 Server.prototype.addCollectionResource = function (options) {
@@ -669,7 +679,6 @@ Server.prototype.addMonitor = function (filepath, callback) {
 
     var m = monitor(filepath);
     m.on('change', callback);
-
     this.monitors[filepath] = m;
 };
 

@@ -1831,16 +1831,23 @@ describe('Application', function () {
             // try to cleanup these tests directory tree
             try {
                 fs.unlinkSync(dirs.endpoints + '/v1/endpoint.new-endpoint.js');
-            } catch (err) {
             }
+            catch (err) {}
+
+            try {
+                fs.unlinkSync(dirs.endpoints + '/v1/endpoint.new-endpoint-with-docs.js');
+            }
+            catch (err) {}
+
             try {
                 fs.unlinkSync(dirs.endpoints + '/v2/endpoint.new-endpoint.js');
-            } catch (err) {
             }
+            catch (err) {}
+
             try {
                 fs.rmdirSync(dirs.endpoints + '/v2');
-            } catch (err) {
             }
+            catch (err) {}
             done();
         };
 

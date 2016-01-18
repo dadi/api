@@ -12,7 +12,6 @@ var url = require('url');
 var _ = require('underscore');
 
 var controller = require(__dirname + '/controller');
-var doc = require(__dirname + '/doc');
 var model = require(__dirname + '/model');
 var search = require(__dirname + '/search');
 var api = require(__dirname + '/api');

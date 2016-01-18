@@ -4,6 +4,7 @@ var nodeVersion = Number(process.version.match(/^v(\d+\.\d+)/)[1]);
 
 var bodyParser = require('body-parser');
 var colors = require('colors');
+var parsecomments = require('parse-comments');
 var fs = require('fs');
 var mkdirp = require('mkdirp');
 var path = require('path');
@@ -30,6 +31,7 @@ var idParam = ':id([a-fA-F0-9]{24})?';
 var Server = function () {
   this.components = {};
   this.monitors = {};
+  this.docs = {};
 
   this.log = log.get().child({module: 'server'});
   this.log.info('Server logging started.');
@@ -110,7 +112,6 @@ Server.prototype.loadPaths = function(paths, done) {
 
   options.collectionPath = path.resolve(paths.collections || __dirname + '/../../workspace/collections');
   options.endpointPath = path.resolve(paths.endpoints || __dirname + '/../../workspace/endpoints');
-  options.docPath = path.resolve(paths.docs || __dirname + '/../../workspace/docs');
 
   var idx = 0;
 
@@ -485,7 +486,7 @@ Server.prototype.updateEndpoints = function (endpointsPath) {
 };
 
 Server.prototype.addEndpointResource = function (options) {
-    var endpoint = options.endpoint
+    var endpoint = options.endpoint;
     if (endpoint.indexOf('.') === 0) return;
 
     var self = this;
@@ -496,9 +497,12 @@ Server.prototype.addEndpointResource = function (options) {
         // keep reference to component so hot loading component can be
         // done by changing reference value
 
+        var content = fs.readFileSync(filepath).toString();
+
         var opts = {
             route: '/' + options.version + '/' + name,
             component: require(filepath),
+            docs: parsecomments(content),
             filepath: filepath
         };
 
@@ -510,19 +514,18 @@ Server.prototype.addEndpointResource = function (options) {
 
     // if this endpoint's file is changed hot update the api
     self.addMonitor(filepath, function (filename) {
+      delete require.cache[filepath];
 
-        delete require.cache[filepath];
-
-        try {
-            opts.component = require(filepath);
-        } catch (e) {
-
-            // if file was removed "un-use" this component
-            if (e && e.code === 'ENOENT') {
-                self.removeMonitor(filepath);
-                self.removeComponent(opts.route);
-            }
+      try {
+          opts.component = require(filepath);
+      }
+      catch (e) {
+        // if file was removed "un-use" this component
+        if (e && e.code === 'ENOENT') {
+          self.removeMonitor(filepath);
+          self.removeComponent(opts.route);
         }
+      }
     });
 
     self.log.info('Endpoint loaded: ' + name);
@@ -542,6 +545,9 @@ Server.prototype.addComponent = function (options) {
     if (this.components[options.route]) return;
 
     this.components[options.route] = options.component;
+
+    // add documentation by path
+    this.docs[options.route] = options.docs;
 
     this.app.use(options.route +'/stats', function (req, res, next) {
       var method = req.method && req.method.toLowerCase();
@@ -572,7 +578,7 @@ Server.prototype.addComponent = function (options) {
         if (method === 'post' && options.filepath) {
             var schemaString = typeof req.body === 'object' ? JSON.stringify(req.body, null, 4) : req.body;
 
- 	    return fs.writeFile(options.filepath, schemaString, function (err) {
+ 	          return fs.writeFile(options.filepath, schemaString, function (err) {
                 help.sendBackJSON(200, res, next)(err, {result: 'success'});
             });
         }
@@ -626,6 +632,9 @@ Server.prototype.addComponent = function (options) {
 Server.prototype.removeComponent = function (route) {
     this.app.unuse(route);
     delete this.components[route];
+
+    // remove documentation by path
+    delete this.docs[route];
 };
 
 Server.prototype.addMonitor = function (filepath, callback) {

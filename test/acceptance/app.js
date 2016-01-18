@@ -1804,7 +1804,6 @@ describe('Application', function () {
         });
 
         it('should allow custom routing via config() function', function (done) {
-
             var client = request(connectionString);
 
             client
@@ -1814,12 +1813,9 @@ describe('Application', function () {
             .expect('content-type', 'application/json')
             .end(function (err, res) {
                 if (err) return done(err);
-
                 res.body.message.should.equal('Endpoint with custom route provided through config() function...ID passed = 55bb8f0a8d76f74b1303a135');
-
                 done();
             });
-
         });
     });
 
@@ -1908,6 +1904,55 @@ describe('Application', function () {
                                 done();
                             });
                         }, 1500);
+                    });
+                });
+            });
+
+            it('should pass inline documentation to the stack', function (done) {
+                var client = request(connectionString);
+
+                // make sure the endpoint exists from last test
+                client
+                .get('/v1/new-endpoint?cache=false')
+                .set('Authorization', 'Bearer ' + bearerToken)
+                .expect(200)
+                .end(function (err, res) {
+                    if (err) return done(err);
+
+                    // get an updated version of the file
+                    var documentation = "";
+                    documentation += "/**\n";
+                    documentation += " * Adds two numbers together.\n";
+                    documentation += " * @param {int} num1 The first number.\n";
+                    documentation += " * @param {int} num2 The second number.\n";
+                    documentation += " * @returns {int} The sum of the two numbers.\n";
+                    documentation += " */\n";
+
+                    var endpointWithDocs = documentation + jsSchemaString;
+
+                    // create endpoint
+                    client
+                    .post('/v1/new-endpoint-with-docs/config')
+                    .send(endpointWithDocs)
+                    .set('content-type', 'text/plain')
+                    .set('Authorization', 'Bearer ' + bearerToken)
+                    .expect(200)
+                    .end(function (err, res) {
+                        if (err) return done(err);
+
+                        setTimeout(function () {
+
+                          var docs = app.docs['/v1/new-endpoint-with-docs'];
+                          docs.should.exist;
+                          docs.should.be.Array;
+
+                          docs[0].description.should.eql('Adds two numbers together.');
+                          //console.log(docs)
+
+                          done();
+
+                        }, 500);
+
                     });
                 });
             });

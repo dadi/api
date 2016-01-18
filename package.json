@@ -8,23 +8,20 @@
     "start": "node server.js --node_env=development"
   },
   "dependencies": {
-    "aglio": "2.2.x",
     "async": "^1.4.2",
     "body-parser": "~1.6.5",
     "bunyan": "^1.5.1",
     "colors": "^1.1.2",
     "convict": "1.0.1",
     "function-rate-limit": "^1.0.1",
-    "inflection": "^1.5.3",
     "mkdirp": "^0.5.1",
     "moment": "~2.8.1",
     "mongodb": "~1.4.8",
     "node-uuid": "~1.4.1",
     "path-to-regexp": "~1.0.0",
-    "protagonist": "1.2.5",
     "q": "^1.4.1",
     "stack-trace": "latest",
-    "underscore": "~1.6.0",
+    "underscore": "~1.8.0",
     "underscore.string": "^3.2.2"
   },
   "devDependencies": {

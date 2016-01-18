@@ -1,0 +1,39 @@
+{
+  "fields": {
+    "name": {
+      "type": "String",
+      "label": "name",
+      "comments": "This is the human name",
+      "example": "John Doe",
+      "limit": "",
+      "placement": "Main content",
+      "validationRule": "",
+      "required": false,
+      "message": "can't be empty",
+      "display": {
+        "index": true,
+        "edit": true
+      }
+    }
+  },
+  "settings": {
+    "cache": false,
+    "authenticate": true,
+    "callback": null,
+    "defaultFilters": null,
+    "fieldLimiters": null,
+    "allowExtension": false,
+    "count": 40,
+    "sort": "name",
+    "sortOrder": 1,
+    "storeRevisions": true,
+    "revisionCollection": "userHistory",
+    "index": {
+      "enabled": true,
+      "keys": {
+        "name": 1
+      }
+    },
+    "description": "Represents members who have registered with the system."
+  }
+}

@@ -12,7 +12,7 @@
             "message": "",
             "display": {
                 "index": true,
-                "edit": true
+                "edit": false
             }
         },
         "authorId": {

@@ -1,5 +1,7 @@
 ### Change Log
 ---
+##### v1.2.2 (2016-01-18)
+* Requests for paths containing `docs` skip authentication
 
 ##### v1.2.1 (2016-01-13)
 

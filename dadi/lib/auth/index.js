@@ -11,7 +11,7 @@ function mustAuthenticate(endpoints, path) {
     if (path.pathname.indexOf('config') > -1) return true;
 
     // docs requests don't need to be authenticated
-    if (path.pathname.indexOf('/api/docs') > -1) return false;
+    if (path.pathname.indexOf('docs') > 0) return false;
 
     var endpointKey = _.find(_.keys(endpoints), function (k){ return k.indexOf(path.pathname) > -1; });
 

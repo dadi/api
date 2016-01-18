@@ -1,6 +1,6 @@
 {
   "name": "dadi-api",
-  "version": "1.2.1",
+  "version": "1.2.2",
   "main": "main.js",
   "scripts": {
     "test": "env NODE_ENV=test ./node_modules/.bin/istanbul cover -x **/workspace/** --report cobertura --report text --report html --report lcov ./node_modules/.bin/_mocha test",
@@ -8,14 +8,12 @@
     "start": "node server.js --node_env=development"
   },
   "dependencies": {
-    "aglio": "^1.17.1",
     "async": "^1.4.2",
     "body-parser": "~1.6.5",
     "bunyan": "^1.5.1",
     "colors": "^1.1.2",
     "convict": "1.0.1",
     "function-rate-limit": "^1.0.1",
-    "inflection": "^1.5.3",
     "mkdirp": "^0.5.1",
     "moment": "~2.8.1",
     "mongodb": "~1.4.8",
@@ -23,7 +21,7 @@
     "path-to-regexp": "~1.0.0",
     "q": "^1.4.1",
     "stack-trace": "latest",
-    "underscore": "~1.6.0",
+    "underscore": "~1.8.0",
     "underscore.string": "^3.2.2"
   },
   "devDependencies": {
@@ -44,5 +42,5 @@
   },
   "homepage": "https://github.com/dadi/api",
   "author": "DADI <team@dadi.tech>",
-  "license": "MIT"
+  "license" : "SEE LICENSE IN GPL.md"
 }

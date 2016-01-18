@@ -12,7 +12,6 @@ var url = require('url');
 var _ = require('underscore');
 
 var controller = require(__dirname + '/controller');
-var doc = require(__dirname + '/doc');
 var model = require(__dirname + '/model');
 var search = require(__dirname + '/search');
 var api = require(__dirname + '/api');
@@ -83,8 +82,6 @@ Server.prototype.start = function (done) {
 
     this.loadCollectionRoute();
 
-    this.loadDocumentationRoute();
-
     this.readyState = 1;
 
     // this is all sync, so callback isn't really necessary.
@@ -113,6 +110,7 @@ Server.prototype.loadPaths = function(paths, done) {
 
   options.collectionPath = path.resolve(paths.collections || __dirname + '/../../workspace/collections');
   options.endpointPath = path.resolve(paths.endpoints || __dirname + '/../../workspace/endpoints');
+  options.docPath = path.resolve(paths.docs || __dirname + '/../../workspace/docs');
 
   var idx = 0;
 
@@ -332,37 +330,6 @@ Server.prototype.loadCollectionRoute = function() {
   });
 }
 
-// route to show API documentation
-Server.prototype.loadDocumentationRoute = function() {
-
-  var self = this;
-
-  this.app.use('/api/docs', function (req, res, next) {
-
-    if (!config.has('documentation.enabled') || config.get('documentation.enabled') === false) return next();
-
-    var method = req.method && req.method.toLowerCase();
-
-    if (method !== 'get') return help.sendBackJSON(400, res, next)(null, {"error":"Invalid method"});
-
-    doc(self, function(data) {
-      res.statusCode = 200;
-
-      if (config.get('documentation.markdown')) {
-
-      }
-      else {
-        data = data.replace('<a href="https://github.com/danielgtaylor/aglio" class="aglio">aglio</a>', '<a href="https://github.com/dadi/api" class="aglio">DADI API</a>');
-        res.setHeader('Content-Type', 'text/html');
-      }
-
-      var resBody = data;
-      res.setHeader('Content-Length', Buffer.byteLength(resBody));
-      res.end(resBody);
-    });
-  });
-}
-
 Server.prototype.updateVersions = function (versionsPath) {
     var self = this;
 
@@ -417,38 +384,38 @@ Server.prototype.updateDatabases = function (databasesPath) {
 
 Server.prototype.updateCollections = function (collectionsPath) {
 
-    if (!fs.existsSync(collectionsPath)) return;
-    if (!fs.lstatSync(collectionsPath).isDirectory()) return;
+  if (!fs.existsSync(collectionsPath)) return;
+  if (!fs.lstatSync(collectionsPath).isDirectory()) return;
 
-    var self = this;
-    var collections = fs.readdirSync(collectionsPath);
+  var self = this;
+  var collections = fs.readdirSync(collectionsPath);
 
-    collections.forEach(function (collection) {
-        if (collection.indexOf('.') === 0) return;
+  collections.forEach(function (collection) {
+    if (collection.indexOf('.') === 0) return;
 
-        // parse the url out of the directory structure
-        var cpath = path.join(collectionsPath, collection);
-        var dirs = cpath.split('/');
-        var version = dirs[dirs.length - 3];
-        var database = dirs[dirs.length - 2];
+    // parse the url out of the directory structure
+    var cpath = path.join(collectionsPath, collection);
+    var dirs = cpath.split('/');
+    var version = dirs[dirs.length - 3];
+    var database = dirs[dirs.length - 2];
 
-        // collection should be json file containing schema
+    // collection should be json file containing schema
 
-        // get the schema
-        var schema = require(cpath);
-        var name = collection.slice(collection.indexOf('.') + 1, collection.indexOf('.json'));
+    // get the schema
+    var schema = require(cpath);
+    var name = collection.slice(collection.indexOf('.') + 1, collection.indexOf('.json'));
 
-        // override the default name using the supplied property
-        if (schema.hasOwnProperty("model")) name = schema.model;
+    // override the default name using the supplied property
+    if (schema.hasOwnProperty("model")) name = schema.model;
 
-        self.addCollectionResource({
-            route: ['', version, database, name, idParam].join('/'),
-            filepath: cpath,
-            name: name,
-            schema: schema,
-            database: database
-        });
+    self.addCollectionResource({
+      route: ['', version, database, name, idParam].join('/'),
+      filepath: cpath,
+      name: name,
+      schema: schema,
+      database: database
     });
+  });
 };
 
 Server.prototype.addCollectionResource = function (options) {
@@ -669,7 +636,6 @@ Server.prototype.addMonitor = function (filepath, callback) {
 
     var m = monitor(filepath);
     m.on('change', callback);
-
     this.monitors[filepath] = m;
 };
 

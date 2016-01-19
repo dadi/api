@@ -196,7 +196,7 @@ var conf = convict({
     format: Boolean,
     default: false
   },
-  documentation: {
+  apidoc: {
     title: {
       doc: "The title to display for the API documentation",
       format: String,
@@ -205,7 +205,7 @@ var conf = convict({
     description: {
       doc: "A markdown formatted description of the API documentation",
       format: String,
-      default: "This is the Content API for a RESTful, composable interface in JSON built on DADI API."
+      default: "This is the Content API for a RESTful API in JSON built on DADI API."
     },
     markdown: {
       doc: "If true, documentation is rendered as raw Markdown",

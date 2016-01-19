@@ -36,7 +36,6 @@
         "callback": null,
         "defaultFilters": null,
         "fieldLimiters": null,
-        "allowExtension": false,
         "count": 40,
         "sort": "field1",
         "sortOrder": 1,

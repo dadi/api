@@ -134,7 +134,7 @@ module.exports.validateCollectionSchema = function(obj) {
     }
 
     // check that all required settings are present
-    var requiredSettings = ["cache","authenticate","callback","defaultFilters","fieldLimiters","allowExtension","count","sortOrder"];
+    var requiredSettings = ["cache","authenticate","callback","defaultFilters","fieldLimiters","count","sortOrder"];
 
     requiredSettings.forEach(function (key) {
         if (!obj.settings.hasOwnProperty(key)) {

@@ -6,7 +6,7 @@ describe('Help', function (done) {
     describe('validateCollectionSchema', function() {
         it('should inform of missing sections', function (done) {
             var schema = {
-                    
+
                 }
 ;
             var val = help.validateCollectionSchema(schema);
@@ -17,7 +17,7 @@ describe('Help', function (done) {
 
             done();
         });
-        
+
         it('should inform of missing settings', function (done) {
             var schema = {
                    fields:{
@@ -30,15 +30,15 @@ describe('Help', function (done) {
                             "validationRule": "",
                             "required": false,
                             "message": "",
-                            "display": { 
+                            "display": {
                                 "index": true,
                                 "edit": true
                             }
                         }
                    },
-                   settings:{cache:true} 
+                   settings:{cache:true}
             };
-                
+
             var val = help.validateCollectionSchema(schema);
             val.success.should.be.false;
             val.errors[0].setting.should.equal('authenticate');
@@ -46,11 +46,11 @@ describe('Help', function (done) {
 
             done();
         });
-        
+
         it('should inform that minimum number of fields not supplied', function (done) {
             var schema = {
                    fields:{},
-                   settings:{cache:true,authenticate:true,callback:null,defaultFilters:null,fieldLimiters:null,allowExtension:true,count:10,sortOrder:1}
+                   settings:{cache:true,authenticate:true,callback:null,defaultFilters:null,fieldLimiters:null,count:10,sortOrder:1}
                 }
 ;
             var val = help.validateCollectionSchema(schema);
@@ -74,7 +74,7 @@ describe('Help', function (done) {
                         "validationRule": "",
                         "required": false,
                         "message": "",
-                        "display": { 
+                        "display": {
                             "index": true,
                             "edit": true
                         }
@@ -88,8 +88,8 @@ describe('Help', function (done) {
                     }
                 }
             },
-            "settings":{cache:true,authenticate:true,callback:null,defaultFilters:null,fieldLimiters:null,allowExtension:true,count:10,sortOrder:1}
-            }; 
+            "settings":{cache:true,authenticate:true,callback:null,defaultFilters:null,fieldLimiters:null,count:10,sortOrder:1}
+            };
 
             var val = help.validateCollectionSchema(schema);
             val.success.should.be.true;
@@ -97,7 +97,7 @@ describe('Help', function (done) {
             done();
         });
     });
-    
+
     describe('parseQuery', function () {
         it('should export method', function (done) {
             help.parseQuery.should.be.Function;
@@ -116,7 +116,7 @@ describe('Help', function (done) {
                     break;
                 }
             }
-        
+
             v.should.equal(4);
 
             done();
@@ -134,7 +134,7 @@ describe('Help', function (done) {
                     break;
                 }
             }
-        
+
             k.should.equal("");
             v.should.equal("");
 
@@ -153,7 +153,7 @@ describe('Help', function (done) {
                     break;
                 }
             }
-        
+
             v.should.equal("My 007 Movie");
 
             done();
@@ -171,7 +171,7 @@ describe('Help', function (done) {
         //             break;
         //         }
         //     }
-        
+
         //     v.should.equal(4);
 
         //     done();

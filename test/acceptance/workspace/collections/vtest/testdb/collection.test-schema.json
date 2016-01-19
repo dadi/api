@@ -22,7 +22,6 @@
         "callback": null,
         "defaultFilters": null,
         "fieldLimiters": null,
-        "allowExtension": false,
         "count": 40,
         "sortOrder": 1,
         "storeRevisions": true,

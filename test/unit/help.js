@@ -30,7 +30,6 @@ module.exports.getModelSettings = function() {
     callback: null,
     defaultFilters: null,
     fieldLimiters: null,
-    allowExtension: false,
     count: 40,
     sort: "fieldName",
     sortOrder: 1,

@@ -20,7 +20,6 @@
     "callback": null,
     "defaultFilters": null,
     "fieldLimiters": null,
-    "allowExtension": false,
     "count": 40,
     "sort": "title",
     "sortOrder": 1,

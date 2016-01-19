@@ -9,7 +9,7 @@
             "validationRule": "",
             "required": false,
             "message": "",
-            "display": { 
+            "display": {
                 "index": true,
                 "edit": true
             }
@@ -22,7 +22,6 @@
         "callback": null,
         "defaultFilters": null,
         "fieldLimiters": null,
-        "allowExtension": false,
         "count": 40,
         "sortOrder": 1
     }

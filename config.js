@@ -252,6 +252,11 @@ var conf = convict({
       doc: "If true, documentation is rendered as raw Markdown",
       format: Boolean,
       default: false
+    },
+    path: {
+      doc: "The location in which to save an API blueprint file in Markdown format",
+      format: String,
+      default: "/docs"
     }
   },
   query: {

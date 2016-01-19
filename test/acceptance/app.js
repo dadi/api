@@ -1926,13 +1926,20 @@ describe('Application', function () {
                 .end(function (err, res) {
                     if (err) return done(err);
 
-                    // get an updated version of the file
                     var documentation = "";
                     documentation += "/**\n";
                     documentation += " * Adds two numbers together.\n";
-                    documentation += " * @param {int} num1 The first number.\n";
-                    documentation += " * @param {int} num2 The second number.\n";
+                    documentation += " * \n";
+                    documentation += " * **Example usage**\n";
+                    documentation += " * \n";
+                    documentation += " * ```js\n";
+                    documentation += " * var result = add(1, 2);\n";
+                    documentation += " * ```\n";
+                    documentation += " * \n";
+                    documentation += " * @param {int} `num1` The first number.\n";
+                    documentation += " * @param {int} `num2` The second number.\n";
                     documentation += " * @returns {int} The sum of the two numbers.\n";
+                    documentation += " * @api public\n";
                     documentation += " */\n";
 
                     var endpointWithDocs = documentation + jsSchemaString;
@@ -1953,8 +1960,9 @@ describe('Application', function () {
                           docs.should.exist;
                           docs.should.be.Array;
 
-                          docs[0].description.should.eql('Adds two numbers together.');
-                          //console.log(docs)
+                          //console.log(docs[0])
+
+                          docs[0].lead.should.eql('Adds two numbers together.');
 
                           done();
 

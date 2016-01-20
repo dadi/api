@@ -1,18 +1,20 @@
+var crypto = require('crypto');
+var fs = require('fs');
+var mkdirp = require('mkdirp');
+var path = require('path');
+var url = require('url');
+var _ = require('underscore');
+
 var config = require(__dirname + '/../../../config.js');
 var help = require(__dirname + '/../help');
 var log = require(__dirname + '/../../../dadi/lib/log');
-var fs = require('fs');
-var path = require('path');
-var url = require('url');
-var crypto = require('crypto');
-var mkdirp = require('mkdirp');
-var _ = require('underscore');
 
 var cacheEncoding = 'utf8';
 var options = {};
 
 var Cache = function(server) {
   this.server = server;
+  this.enabled = config.get('caching.directory.enabled') || config.get('caching.redis.enabled');
 }
 
 var instance;
@@ -32,10 +34,10 @@ Cache.prototype.init = function() {
   });
 }
 
-var dir = config.get('caching.directory');
+//var dir = config.get('caching.directory');
 
 // create cache directory if it doesn't exist
-help.mkdirParent(path.resolve(dir), '777', function() {});
+//help.mkdirParent(path.resolve(dir), '777', function() {});
 
 function cachingEnabled(endpoints, requestUrl) {
 

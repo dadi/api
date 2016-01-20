@@ -39,17 +39,39 @@ Cache.prototype.init = function() {
 // create cache directory if it doesn't exist
 //help.mkdirParent(path.resolve(dir), '777', function() {});
 
+Cache.prototype.cachingEnabled = function(req) {
+
+  var options = {};
+  var endpoints = this.server.components;
+  var requestUrl = url.parse(req.url, true).pathname;
+
+  var query = url.parse(req.url, true).query;
+  if (query.hasOwnProperty('cache') && query.cache === 'false') {
+    return false;
+  }
+
+  var endpointKey = _.find(_.keys(endpoints), function (k){ return k.indexOf(url.parse(requestUrl).pathname) > -1; });
+
+  if (!endpointKey) return false;
+
+  if (endpoints[endpointKey].model && endpoints[endpointKey].model.settings) {
+      options = endpoints[endpointKey].model.settings;
+  }
+
+  return (this.enabled && (options.cache || false));
+};
+
 function cachingEnabled(endpoints, requestUrl) {
 
-    var endpointKey = _.find(_.keys(endpoints), function (k){ return k.indexOf(url.parse(requestUrl).pathname) > -1; });
-
-    if (!endpointKey) return false;
-
-    if (endpoints[endpointKey].model && endpoints[endpointKey].model.settings) {
-        options = endpoints[endpointKey].model.settings;
-    }
-
-    return (config.get('caching.enabled') && options.cache);
+    // var endpointKey = _.find(_.keys(endpoints), function (k){ return k.indexOf(url.parse(requestUrl).pathname) > -1; });
+    //
+    // if (!endpointKey) return false;
+    //
+    // if (endpoints[endpointKey].model && endpoints[endpointKey].model.settings) {
+    //     options = endpoints[endpointKey].model.settings;
+    // }
+    //
+    // return (config.get('caching.enabled') && options.cache);
 }
 
 // module.exports = function (server) {

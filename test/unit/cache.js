@@ -116,6 +116,129 @@ describe('Cache', function (done) {
     done();
   });
 
+  describe('cachingEnabled', function(done) {
+    it('should not cache if the url key can\'t be found in the loaded keys', function (done) {
+
+      var server = sinon.mock(Server);
+      server.object.app = api();
+
+      server.object.components['/1.0/library/books'] = {
+        get: function() {
+        },
+        model: {
+          name: 'books',
+          settings: {
+            cache: true
+          }
+        }
+      };
+
+      var req = {
+        url: '/1.0/library/authors'
+      };
+
+      cache(server.object).cachingEnabled(req).should.eql(false);
+
+      done();
+    });
+
+    it('should cache if the url key can be found in the loaded keys and it allows caching', function (done) {
+
+      var server = sinon.mock(Server);
+      server.object.app = api();
+
+      server.object.components['/1.0/library/books'] = {
+        get: function() {
+        },
+        model: {
+          name: 'books',
+          settings: {
+            cache: true
+          }
+        }
+      };
+
+      var req = {
+        url: '/1.0/library/books'
+      };
+
+      cache(server.object).cachingEnabled(req).should.eql(true);
+
+      done();
+    });
+
+    it('should not cache if the url key can be found in the loaded keys but it does not specify options', function (done) {
+
+      var server = sinon.mock(Server);
+      server.object.app = api();
+
+      server.object.components['/1.0/library/books'] = {
+        get: function() {
+        },
+        model: {
+          name: 'books'
+        }
+      };
+
+      var req = {
+        url: '/1.0/library/books'
+      };
+
+      cache(server.object).cachingEnabled(req).should.eql(false);
+
+      done();
+    });
+
+    it('should not cache if the url key can be found in the loaded keys but ?cache=false exists in the query', function (done) {
+
+      var server = sinon.mock(Server);
+      server.object.app = api();
+
+      server.object.components['/1.0/library/books'] = {
+        get: function() {
+        },
+        model: {
+          name: 'books',
+          settings: {
+            cache: true
+          }
+        }
+      };
+
+      var req = {
+        url: '/1.0/library/books?cache=false'
+      };
+
+      cache(server.object).cachingEnabled(req).should.eql(false);
+
+      done();
+    });
+
+    it('should cache if the url key can be found in the loaded keys and ?cache=true exists in the query', function (done) {
+
+      var server = sinon.mock(Server);
+      server.object.app = api();
+
+      server.object.components['/1.0/library/books'] = {
+        get: function() {
+        },
+        model: {
+          name: 'books',
+          settings: {
+            cache: true
+          }
+        }
+      };
+
+      var req = {
+        url: '/1.0/library/books?cache=true'
+      };
+
+      cache(server.object).cachingEnabled(req).should.eql(true);
+
+      done();
+    });
+  })
 
     // it('should call file system stat', function (done) {
     //

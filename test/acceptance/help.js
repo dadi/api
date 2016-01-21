@@ -107,8 +107,8 @@ module.exports.clearCache = function () {
 
     // for each directory in the cache folder, remove all files then
     // delete the folder
-    fs.readdirSync(config.get('caching.directory')).forEach(function (dirname) {
-        deleteFolderRecursive(path.join(config.get('caching.directory'), dirname));
+    fs.readdirSync(config.get('caching.directory.path')).forEach(function (dirname) {
+        deleteFolderRecursive(path.join(config.get('caching.directory.path'), dirname));
     });
 }
 

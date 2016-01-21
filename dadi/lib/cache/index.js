@@ -131,52 +131,110 @@ Cache.prototype.init = function() {
         }
       });
     }
+    else {
+      readStream = fs.createReadStream(cachepath, {encoding: this.encoding});
 
-    fs.stat(cachepath, function (err, stats) {
+      readStream.on('error', function (err) {
+          res.setHeader('X-Cache', 'MISS');
+          res.setHeader('X-Cache-Lookup', 'MISS');
 
-      if (err) {
-          if (err.code === 'ENOENT') {
+          if (!noCache) {
               return cacheResponse();
           }
-          return next(err);
-      }
+      });
+
+      var data = '';
+      readStream.on('data', function(chunk) {
+        if (chunk) data += chunk;
+      });
+
+      readStream.on('end', function () {
+        if (noCache) {
+          res.setHeader('X-Cache', 'MISS');
+          res.setHeader('X-Cache-Lookup', 'HIT');
+          return next();
+        }
 
         // check if ttl has elapsed
-        var ttl = options.ttl || config.get('caching.ttl');
-        var lastMod = stats && stats.mtime && stats.mtime.valueOf();
-        if (!(lastMod && (Date.now() - lastMod) / 1000 <= ttl)) return cacheResponse();
-
-        fs.readFile(cachepath, {encoding: cacheEncoding}, function (err, resBody) {
-            if (err) return next(err);
-
-            // there are only two possible types javascript or json
-            var dataType = query.callback ? 'text/javascript' : 'application/json';
-
-            if (resBody === "") {
-                return cacheResponse();
-            }
-
-            // allow query string param to bypass cache
-            var noCache = query.cache && query.cache.toString().toLowerCase() === 'false';
-
-            if (noCache) {
-                res.setHeader('X-Cache', 'MISS');
-                res.setHeader('X-Cache-Lookup', 'HIT');
-                return next();
-            }
-
-            res.statusCode = 200;
-
-            res.setHeader('Server', config.get('server.name'));
-            res.setHeader('X-Cache', 'HIT');
+        try {
+          var stats = fs.statSync(cachepath);
+          var ttl = self.options.ttl || config.get('caching.ttl');
+          var lastMod = stats && stats.mtime && stats.mtime.valueOf();
+          if (!(lastMod && (Date.now() - lastMod) / 1000 <= ttl)) {
+            console.log('lastMod');
+            res.setHeader('X-Cache', 'MISS');
             res.setHeader('X-Cache-Lookup', 'HIT');
-            res.setHeader('content-type', dataType);
-            res.setHeader('content-length', Buffer.byteLength(resBody));
+            return cacheResponse();
+          }
+        }
+        catch (err) {
 
-            // notice resBody is already a string
-            res.end(resBody);
+        }
+
+        self.log.info('Serving ' + req.url + ' from cache file (' + cachepath + ')');
+
+        fs.stat(cachepath, function (err, stat) {
+          res.statusCode = 200;
+          res.setHeader('Server', config.get('server.name'));
+          res.setHeader('Content-Type', contentType);
+          res.setHeader('Content-Length', stat.size);
+          res.setHeader('X-Cache', 'HIT');
+          res.setHeader('X-Cache-Lookup', 'HIT');
+
+          var stream = new Readable();
+          stream.push(data);
+          stream.push(null);
+
+          stream.pipe(res);
         });
-    });
+      });
+    }
+
+    // fs.stat(cachepath, function (err, stats) {
+    //
+    //   if (err) {
+    //       if (err.code === 'ENOENT') {
+    //           return cacheResponse();
+    //       }
+    //       return next(err);
+    //   }
+    //
+    //     // check if ttl has elapsed
+    //     var ttl = options.ttl || config.get('caching.ttl');
+    //     var lastMod = stats && stats.mtime && stats.mtime.valueOf();
+    //     if (!(lastMod && (Date.now() - lastMod) / 1000 <= ttl)) return cacheResponse();
+    //
+    //     fs.readFile(cachepath, {encoding: cacheEncoding}, function (err, resBody) {
+    //         if (err) return next(err);
+    //
+    //         // there are only two possible types javascript or json
+    //         var dataType = query.callback ? 'text/javascript' : 'application/json';
+    //
+    //         if (resBody === "") {
+    //             return cacheResponse();
+    //         }
+    //
+    //         // allow query string param to bypass cache
+    //         var noCache = query.cache && query.cache.toString().toLowerCase() === 'false';
+    //
+    //         if (noCache) {
+    //             res.setHeader('X-Cache', 'MISS');
+    //             res.setHeader('X-Cache-Lookup', 'HIT');
+    //             return next();
+    //         }
+    //
+    //         res.statusCode = 200;
+    //
+    //         res.setHeader('Server', config.get('server.name'));
+    //         res.setHeader('X-Cache', 'HIT');
+    //         res.setHeader('X-Cache-Lookup', 'HIT');
+    //         res.setHeader('content-type', dataType);
+    //         res.setHeader('content-length', Buffer.byteLength(resBody));
+    //
+    //         // notice resBody is already a string
+    //         res.end(resBody);
+    //     });
+    // });
 
     function cacheResponse() {
 

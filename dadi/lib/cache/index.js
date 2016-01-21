@@ -53,10 +53,10 @@ Cache.prototype.cachingEnabled = function(req) {
   var endpoints = this.server.components;
   var requestUrl = url.parse(req.url, true).pathname;
 
-  // var query = url.parse(req.url, true).query;
-  // if (query.hasOwnProperty('cache') && query.cache === 'false') {
-  //   return false;
-  // }
+  var query = url.parse(req.url, true).query;
+  if (query.hasOwnProperty('cache') && query.cache === 'false') {
+    return false;
+  }
 
   var endpointKey = _.find(_.keys(endpoints), function (k){ return k.indexOf(url.parse(requestUrl).pathname) > -1; });
 

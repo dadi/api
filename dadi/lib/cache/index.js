@@ -31,8 +31,11 @@ Cache.prototype.init = function() {
   var self = this;
 
   this.server.app.use(function (req, res, next) {
+    var enabled = self.cachingEnabled(req);
+    if (!enabled) return next();
 
-    if (!cachingEnabled(server.components, req.url)) return next();
+    // only cache GET requests
+    if (req.method && req.method.toLowerCase() !== 'get') return next();
 
     var query = url.parse(req.url, true).query;
 
@@ -42,9 +45,6 @@ Cache.prototype.init = function() {
     var modelDir = crypto.createHash('sha1').update(url.parse(req.url).pathname).digest('hex');
     var cacheDir = path.join(dir, modelDir);
     var cachepath = path.join(cacheDir, filename + '.' + config.get('caching.extension'));
-
-    // only cache GET requests
-    if (!(req.method && req.method.toLowerCase() === 'get')) return next();
 
     fs.stat(cachepath, function (err, stats) {
 

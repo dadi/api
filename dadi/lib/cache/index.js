@@ -92,10 +92,14 @@ Cache.prototype.init = function() {
     var query = url.parse(req.url, true).query;
 
     // we build the filename with a hashed hex string so we can be unique
-    // and avoid using file system reserved characters in the name
-    var filename = crypto.createHash('sha1').update(req.url).digest('hex');
+    // and avoid using file system reserved characters in the name.
     var modelDir = crypto.createHash('sha1').update(url.parse(req.url).pathname).digest('hex');
+    var filename = crypto.createHash('sha1').update(req.url).digest('hex');
     var cachepath = path.join(self.dir, modelDir, filename + '.' + this.extension);
+
+    // Prepend the model's name/folder hierarchy to the filename so it can be used
+    // later to flush the cache for this model
+    var cacheKey = modelDir + '_' + filename;
 
     // allow query string param to bypass cache
     var noCache = query.cache && query.cache.toString().toLowerCase() === 'false';
@@ -106,7 +110,7 @@ Cache.prototype.init = function() {
     var readStream;
 
     if (self.redisClient) {
-      self.redisClient.exists(filename, function (err, exists) {
+      self.redisClient.exists(cacheKey, function (err, exists) {
         if (exists > 0) {
           res.setHeader('X-Cache-Lookup', 'HIT');
 
@@ -121,7 +125,7 @@ Cache.prototype.init = function() {
           res.setHeader('Server', config.get('server.name'));
           res.setHeader('Content-Type', contentType);
 
-          readStream = redisRStream(self.redisClient, filename);
+          readStream = redisRStream(self.redisClient, cacheKey);
           readStream.pipe(res);
         }
         else {

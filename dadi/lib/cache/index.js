@@ -2,6 +2,10 @@ var crypto = require('crypto');
 var fs = require('fs');
 var mkdirp = require('mkdirp');
 var path = require('path');
+var redis = require('redis');
+var redisRStream = require('redis-rstream');
+var redisWStream = require('redis-wstream');
+var Readable = require('stream').Readable;
 var url = require('url');
 var _ = require('underscore');
 
@@ -9,22 +13,64 @@ var config = require(__dirname + '/../../../config.js');
 var help = require(__dirname + '/../help');
 var log = require(__dirname + '/../../../dadi/lib/log');
 
-var cacheEncoding = 'utf8';
-var options = {};
-
 var Cache = function(server) {
   this.server = server;
   this.enabled = config.get('caching.directory.enabled') || config.get('caching.redis.enabled');
+  this.dir = config.get('caching.directory.path');
+  this.extension = config.get('caching.directory.extension');
+
+  this.encoding = 'utf8';
+  this.options = {};
+
+  var self = this;
+
+  // create cache directory or initialise Redis
+  if (config.get('caching.directory.enabled')) {
+    mkdirp(self.dir, {}, function (err, made) {
+      if (err) self.log.error(err);
+      if (made) self.log.info('Created cache directory ' + made);
+    });
+  }
+  else if (config.get('caching.redis.enabled')) {
+    self.redisClient = self.initialiseRedisClient();
+
+    self.redisClient.on("error", function (err) {
+      self.log.error(err);
+    });
+  }
 }
 
 var instance;
 module.exports = function(server) {
-  //console.log(server);
-  //console.log(instance);
   if (!instance) {
     instance = new Cache(server);
   }
   return instance;
+};
+
+Cache.prototype.cachingEnabled = function(req) {
+  var options = {};
+  var endpoints = this.server.components;
+  var requestUrl = url.parse(req.url, true).pathname;
+
+  var query = url.parse(req.url, true).query;
+  if (query.hasOwnProperty('cache') && query.cache === 'false') {
+    return false;
+  }
+
+  var endpointKey = _.find(_.keys(endpoints), function (k){ return k.indexOf(url.parse(requestUrl).pathname) > -1; });
+
+  if (!endpointKey) return false;
+
+  if (endpoints[endpointKey].model && endpoints[endpointKey].model.settings) {
+    options = endpoints[endpointKey].model.settings;
+  }
+
+  return (this.enabled && (options.cache || false));
+};
+
+Cache.prototype.initialiseRedisClient = function() {
+  return redis.createClient(config.get('caching.redis.port'), config.get('caching.redis.host'), {detect_buffers: true, max_attempts: 3});
 };
 
 Cache.prototype.init = function() {
@@ -43,8 +89,7 @@ Cache.prototype.init = function() {
     // and avoid using file system reserved characters in the name
     var filename = crypto.createHash('sha1').update(req.url).digest('hex');
     var modelDir = crypto.createHash('sha1').update(url.parse(req.url).pathname).digest('hex');
-    var cacheDir = path.join(dir, modelDir);
-    var cachepath = path.join(cacheDir, filename + '.' + config.get('caching.extension'));
+    var cachepath = path.join(self.dir, modelDir, filename + '.' + this.extension);
 
     fs.stat(cachepath, function (err, stats) {
 
@@ -135,34 +180,3 @@ Cache.prototype.init = function() {
     }
   });
 }
-
-//var dir = config.get('caching.directory');
-
-// create cache directory if it doesn't exist
-//help.mkdirParent(path.resolve(dir), '777', function() {});
-
-Cache.prototype.cachingEnabled = function(req) {
-  var options = {};
-  var endpoints = this.server.components;
-  var requestUrl = url.parse(req.url, true).pathname;
-
-  var query = url.parse(req.url, true).query;
-  if (query.hasOwnProperty('cache') && query.cache === 'false') {
-    return false;
-  }
-
-  var endpointKey = _.find(_.keys(endpoints), function (k){ return k.indexOf(url.parse(requestUrl).pathname) > -1; });
-
-  if (!endpointKey) return false;
-
-  if (endpoints[endpointKey].model && endpoints[endpointKey].model.settings) {
-    options = endpoints[endpointKey].model.settings;
-  }
-
-  return (this.enabled && (options.cache || false));
-};
-
-// module.exports = function (server) {
-//
-
-// };

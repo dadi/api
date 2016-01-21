@@ -240,46 +240,52 @@ Cache.prototype.init = function() {
     //     });
     // });
 
+    /*
+    * cacheResponse
+    *
+    * file is expired or does not exist, wrap res.end and res.write to save to cache
+    */
     function cacheResponse() {
+      var _end = res.end;
+      var _write = res.write;
 
-        // file is expired or does not exist, wrap res.end and res.write to save to cache
-        var _end = res.end;
-        var _write = res.write;
+      var data = '';
 
-        var data = '';
+      res.write = function (chunk) {
+        _write.apply(res, arguments);
+      };
 
-        res.write = function (chunk) {
+      res.end = function (chunk) {
+        // respond before attempting to cache
+        _end.apply(res, arguments);
 
-            // with this line, we get cache files with duplicate content
-            //if (chunk) data += chunk;
+        if (chunk) data += chunk;
 
-            _write.apply(res, arguments);
-        };
+        // if response is not 200 don't cache
+        if (res.statusCode !== 200) return;
 
-        res.end = function (chunk) {
+        var stream = new Readable();
+        stream.push(data);
+        stream.push(null);
 
-            res.setHeader('X-Cache', 'MISS');
-            res.setHeader('X-Cache-Lookup', 'MISS');
+        if (self.redisClient) {
+          self.redisClient.on("error", function (err) {
+            self.log.error(err);
+          });
 
-            // respond before attempting to cache
-            _end.apply(res, arguments);
-
-            if (chunk) data += chunk;
-
-            // if response is not 200 don't cache
-            if (res.statusCode !== 200) return;
-
-            // TODO: do we need to grab a lock here?
-            mkdirp(cacheDir, {}, function (err, made) {
-                if (err) console.log(err.toString());
-
-                fs.writeFile(cachepath, data, {encoding: cacheEncoding}, function (err) {
-                    if (err) console.log(err.toString());
-                });
-            })
-
-        };
-        return next();
+          // save to redis
+          stream.pipe(redisWStream(self.redisClient, filename)).on('finish', function () {
+            if (config.get('caching.ttl')) {
+              self.redisClient.expire(filename, config.get('caching.ttl'));
+            }
+          });
+        }
+        else {
+          var cacheFile = fs.createWriteStream(cachepath, { flags: 'w', defaultEncoding: this.encoding });
+          stream.pipe(cacheFile);
+        }
+      };
+      return next();
     }
   });
 }

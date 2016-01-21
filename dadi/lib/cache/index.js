@@ -53,10 +53,10 @@ Cache.prototype.cachingEnabled = function(req) {
   var endpoints = this.server.components;
   var requestUrl = url.parse(req.url, true).pathname;
 
-  var query = url.parse(req.url, true).query;
-  if (query.hasOwnProperty('cache') && query.cache === 'false') {
-    return false;
-  }
+  // var query = url.parse(req.url, true).query;
+  // if (query.hasOwnProperty('cache') && query.cache === 'false') {
+  //   return false;
+  // }
 
   var endpointKey = _.find(_.keys(endpoints), function (k){ return k.indexOf(url.parse(requestUrl).pathname) > -1; });
 
@@ -68,6 +68,12 @@ Cache.prototype.cachingEnabled = function(req) {
 
   return (this.enabled && (options.cache || false));
 };
+
+Cache.prototype.getEndpointContentType = function(req) {
+  // there are only two possible types javascript or json
+  var query = url.parse(req.url, true).query;
+  return query.callback ? 'text/javascript' : 'application/json';
+}
 
 Cache.prototype.initialiseRedisClient = function() {
   return redis.createClient(config.get('caching.redis.port'), config.get('caching.redis.host'), {detect_buffers: true, max_attempts: 3});
@@ -90,6 +96,41 @@ Cache.prototype.init = function() {
     var filename = crypto.createHash('sha1').update(req.url).digest('hex');
     var modelDir = crypto.createHash('sha1').update(url.parse(req.url).pathname).digest('hex');
     var cachepath = path.join(self.dir, modelDir, filename + '.' + this.extension);
+
+    // allow query string param to bypass cache
+    var noCache = query.cache && query.cache.toString().toLowerCase() === 'false';
+
+    // get contentType that current endpoint requires
+    var contentType = self.getEndpointContentType(req);
+
+    var readStream;
+
+    if (self.redisClient) {
+      self.redisClient.exists(filename, function (err, exists) {
+        if (exists > 0) {
+          res.setHeader('X-Cache-Lookup', 'HIT');
+
+          if (noCache) {
+              //console.log('noCache');
+              res.setHeader('X-Cache', 'MISS');
+              return next();
+          }
+
+          res.statusCode = 200;
+          res.setHeader('X-Cache', 'HIT');
+          res.setHeader('Server', config.get('server.name'));
+          res.setHeader('Content-Type', contentType);
+
+          readStream = redisRStream(self.redisClient, filename);
+          readStream.pipe(res);
+        }
+        else {
+          res.setHeader('X-Cache', 'MISS');
+          res.setHeader('X-Cache-Lookup', 'MISS');
+          return cacheResponse();
+        }
+      });
+    }
 
     fs.stat(cachepath, function (err, stats) {
 

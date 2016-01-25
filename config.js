@@ -139,6 +139,28 @@ var conf = convict({
         format: String,
         default: "json"
       }
+    },
+    redis: {
+      enabled: {
+        doc: "If enabled, cache files will be saved to the specified Redis server",
+        format: Boolean,
+        default: false
+      },
+      host: {
+        doc: "The Redis server host",
+        format: String,
+        default: "127.0.0.1"
+      },
+      port: {
+        doc: "The port for the Redis server",
+        format: 'port',
+        default: 6379
+      },
+      password: {
+        doc: "",
+        format: String,
+        default: ""
+      }
     }
   },
   logging: {

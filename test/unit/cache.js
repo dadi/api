@@ -5,15 +5,17 @@ var fs = require('fs');
 var path = require('path');
 var sinon = require('sinon');
 var util = require('util');
+var proxyquire =  require('proxyquire');
 
-var config = require(__dirname + '/../../config');
-var cache = require(__dirname + '/../../dadi/lib/cache');
+var config;
+var cache;
 var app = require(__dirname + '/../../dadi/lib/');
 var api = require(__dirname + '/../../dadi/lib/api');
 var Server = require(__dirname + '/../../dadi/lib');
 var acceptanceTestHelper = require(__dirname + '/../acceptance/help');
 
 var bearerToken;
+var testConfigString;
 
 describe('Cache', function (done) {
 
@@ -26,13 +28,23 @@ describe('Cache', function (done) {
   //   app.stop(done);
   // });
 
-    // beforeEach(function (done) {
-    //     acceptanceTestHelper.getBearerToken(function (err, token) {
-    //         if (err) return done(err);
-    //         bearerToken = token;
-    //         done();
-    //     });
-    // });
+  beforeEach(function (done) {
+
+    delete require.cache[__dirname + '/../../dadi/lib/cache'];
+    cache = require(__dirname + '/../../dadi/lib/cache');
+
+    delete require.cache[__dirname + '/../../config'];
+    config = require(__dirname + '/../../config');
+
+    testConfigString = fs.readFileSync(config.configPath());
+
+    done();
+  });
+
+  afterEach(function(done) {
+    fs.writeFileSync(config.configPath(), testConfigString);
+    done();
+  });
 
   it('should export middleware', function (done) {
     cache.should.be.Function;
@@ -44,24 +56,25 @@ describe('Cache', function (done) {
   describe('Config', function(done) {
     it('should return default config settings for directory');//, function (done) {
 
-    //   var testConfigString = fs.readFileSync(config.configPath());
-    //   var dir = path.dirname(config.configPath());
-    //   var testConfig = JSON.parse(testConfigString);
-    //   testConfig.caching = {};
-    //
-    //   var newConfig = fs.writeFileSync(dir + '/newTestConfig.json', JSON.stringify(testConfig, null, 2));
-    //
-    //   var schema = config.getSchema();
-    //   var conf = convict(schema);
-    //   conf.loadFile(dir + '/newTestConfig.json');
-    //
-    //   console.log(conf.get('caching'))
-    //
-    //   conf.get('caching.directory.enabled').should.eql(true);
-    //   conf.get('caching.directory.path').should.eql('./cache/api');
-    //   conf.get('caching.directory.extension').should.eql('json');
-    //
-    //   done();
+      // var newTestConfig = JSON.parse(testConfigString);
+      // delete newTestConfig.caching;
+      // fs.writeFileSync(config.configPath(), JSON.stringify(newTestConfig, null, 2));
+      //
+      // delete require.cache[__dirname + '/../../config'];
+      // config = require(__dirname + '/../../config');
+      //
+      // config.loadFile(config.configPath());
+      //
+      // fs.readFile(config.configPath(),{},function(err, body) {
+      //   console.log(body.toString())
+      //   console.log(newTestConfig)
+      //   console.log(config.get('caching'))
+      //
+      // })
+      // conf.get('caching.directory.path').should.eql('./cache/api');
+      // conf.get('caching.directory.extension').should.eql('json');
+
+      // done();
     // });
   })
 
@@ -78,21 +91,21 @@ describe('Cache', function (done) {
     done();
   });
 
-  it('should cache if the app\'s config settings allow', function (done) {
+  it('should cache if the app\'s directory config settings allow', function (done) {
 
     var server = sinon.mock(Server);
     server.object.app = api();
 
-    var originalCacheSettings = config.get('caching');
+    var newTestConfig = JSON.parse(testConfigString);
+    newTestConfig.caching.directory.enabled = true;
+    newTestConfig.caching.redis.enabled = false;
+    fs.writeFileSync(config.configPath(), JSON.stringify(newTestConfig, null, 2));
 
-    var configStub = sinon.stub(config, 'get');
-    configStub.withArgs('caching.directory.enabled').returns(true);
-    configStub.withArgs('caching.directory.path').returns(originalCacheSettings.directory.path);
-    configStub.withArgs('caching.directory.extension').returns(originalCacheSettings.directory.extension);
+    config.loadFile(config.configPath());
+
+    cache = proxyquire('../../dadi/lib/cache', {'config': config});
 
     cache(server.object).enabled.should.eql(true);
-
-    configStub.restore();
 
     done();
   });
@@ -102,16 +115,35 @@ describe('Cache', function (done) {
     var server = sinon.mock(Server);
     server.object.app = api();
 
-    var originalCacheSettings = config.get('caching');
+    var newTestConfig = JSON.parse(testConfigString);
+    newTestConfig.caching.directory.enabled = false;
+    newTestConfig.caching.redis.enabled = false;
+    fs.writeFileSync(config.configPath(), JSON.stringify(newTestConfig, null, 2));
 
-    var configStub = sinon.stub(config, 'get');
-    configStub.withArgs('caching.directory.enabled').returns(Boolean('false'));
-    configStub.withArgs('caching.directory.path').returns(originalCacheSettings.directory.path);
-    configStub.withArgs('caching.directory.extension').returns(originalCacheSettings.directory.extension);
+    config.loadFile(config.configPath());
+
+    cache = proxyquire('../../dadi/lib/cache', {'config': config});
+
+    cache(server.object).enabled.should.eql(false);
+
+    done();
+  });
+
+  it('should cache if the app\'s redis config settings allow', function (done) {
+
+    var server = sinon.mock(Server);
+    server.object.app = api();
+
+    var newTestConfig = JSON.parse(testConfigString);
+    newTestConfig.caching.directory.enabled = false;
+    newTestConfig.caching.redis.enabled = true;
+    fs.writeFileSync(config.configPath(), JSON.stringify(newTestConfig, null, 2));
+
+    config.loadFile(config.configPath());
+
+    cache = proxyquire('../../dadi/lib/cache', {'config': config});
 
     cache(server.object).enabled.should.eql(true);
-
-    configStub.restore();
 
     done();
   });
@@ -189,30 +221,30 @@ describe('Cache', function (done) {
       done();
     });
 
-    it('should not cache if the url key can be found in the loaded keys but ?cache=false exists in the query', function (done) {
-
-      var server = sinon.mock(Server);
-      server.object.app = api();
-
-      server.object.components['/1.0/library/books'] = {
-        get: function() {
-        },
-        model: {
-          name: 'books',
-          settings: {
-            cache: true
-          }
-        }
-      };
-
-      var req = {
-        url: '/1.0/library/books?cache=false'
-      };
-
-      cache(server.object).cachingEnabled(req).should.eql(false);
-
-      done();
-    });
+    // it('should not cache if the url key can be found in the loaded keys but ?cache=false exists in the query', function (done) {
+    //
+    //   var server = sinon.mock(Server);
+    //   server.object.app = api();
+    //
+    //   server.object.components['/1.0/library/books'] = {
+    //     get: function() {
+    //     },
+    //     model: {
+    //       name: 'books',
+    //       settings: {
+    //         cache: true
+    //       }
+    //     }
+    //   };
+    //
+    //   var req = {
+    //     url: '/1.0/library/books?cache=false'
+    //   };
+    //
+    //   cache(server.object).cachingEnabled(req).should.eql(false);
+    //
+    //   done();
+    // });
 
     it('should cache if the url key can be found in the loaded keys and ?cache=true exists in the query', function (done) {
 

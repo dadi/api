@@ -29,6 +29,7 @@
   },
   "devDependencies": {
     "env-test": "^1.0.0",
+    "fakeredis": "1.0.2",
     "istanbul": "^0.3.22",
     "istanbul-cobertura-badger": "^1.1.0",
     "mocha": "~1.21.3",
@@ -45,5 +46,5 @@
   },
   "homepage": "https://github.com/dadi/api",
   "author": "DADI <team@dadi.tech>",
-  "license" : "SEE LICENSE IN GPL.md"
+  "license": "SEE LICENSE IN GPL.md"
 }

@@ -9,11 +9,14 @@ var Readable = require('stream').Readable;
 var url = require('url');
 var _ = require('underscore');
 
-var config = require(__dirname + '/../../../config.js');
+var config = require(__dirname + '/../../../config');
 var help = require(__dirname + '/../help');
 var log = require(__dirname + '/../../../dadi/lib/log');
 
 var Cache = function(server) {
+  this.log = log.get().child({module: 'cache'});
+  this.log.info('Cache logging started.');
+
   this.server = server;
   this.enabled = config.get('caching.directory.enabled') || config.get('caching.redis.enabled');
   this.dir = config.get('caching.directory.path');
@@ -21,6 +24,10 @@ var Cache = function(server) {
 
   this.encoding = 'utf8';
   this.options = {};
+
+  console.log(config.get('caching'))
+
+  this.redisClient = null;
 
   var self = this;
 
@@ -36,6 +43,7 @@ var Cache = function(server) {
 
     self.redisClient.on("error", function (err) {
       self.log.error(err);
+      throw err;
     });
   }
 }
@@ -53,10 +61,10 @@ Cache.prototype.cachingEnabled = function(req) {
   var endpoints = this.server.components;
   var requestUrl = url.parse(req.url, true).pathname;
 
-  var query = url.parse(req.url, true).query;
-  if (query.hasOwnProperty('cache') && query.cache === 'false') {
-    return false;
-  }
+  // var query = url.parse(req.url, true).query;
+  // if (query.hasOwnProperty('cache') && query.cache === 'false') {
+  //   return false;
+  // }
 
   var endpointKey = _.find(_.keys(endpoints), function (k){ return k.indexOf(url.parse(requestUrl).pathname) > -1; });
 
@@ -91,18 +99,19 @@ Cache.prototype.init = function() {
 
     var query = url.parse(req.url, true).query;
 
+    // allow query string param to bypass cache
+    var noCache = query.cache && query.cache.toString().toLowerCase() === 'false';
+    delete query.cache;
+
     // we build the filename with a hashed hex string so we can be unique
     // and avoid using file system reserved characters in the name.
     var modelDir = crypto.createHash('sha1').update(url.parse(req.url).pathname).digest('hex');
-    var filename = crypto.createHash('sha1').update(req.url).digest('hex');
-    var cachepath = path.join(self.dir, modelDir, filename + '.' + this.extension);
+    var filename = crypto.createHash('sha1').update(url.parse(req.url).pathname + JSON.stringify(query)).digest('hex');
+    var cachepath = path.join(self.dir, modelDir, filename + '.' + self.extension);
 
     // Prepend the model's name/folder hierarchy to the filename so it can be used
     // later to flush the cache for this model
     var cacheKey = modelDir + '_' + filename;
-
-    // allow query string param to bypass cache
-    var noCache = query.cache && query.cache.toString().toLowerCase() === 'false';
 
     // get contentType that current endpoint requires
     var contentType = self.getEndpointContentType(req);
@@ -115,9 +124,8 @@ Cache.prototype.init = function() {
           res.setHeader('X-Cache-Lookup', 'HIT');
 
           if (noCache) {
-              //console.log('noCache');
-              res.setHeader('X-Cache', 'MISS');
-              return next();
+            res.setHeader('X-Cache', 'MISS');
+            return next();
           }
 
           res.statusCode = 200;
@@ -136,15 +144,15 @@ Cache.prototype.init = function() {
       });
     }
     else {
-      readStream = fs.createReadStream(cachepath, {encoding: this.encoding});
+      readStream = fs.createReadStream(cachepath, {encoding: self.encoding});
 
       readStream.on('error', function (err) {
-          res.setHeader('X-Cache', 'MISS');
-          res.setHeader('X-Cache-Lookup', 'MISS');
+        res.setHeader('X-Cache', 'MISS');
+        res.setHeader('X-Cache-Lookup', 'MISS');
 
-          if (!noCache) {
-              return cacheResponse();
-          }
+        if (!noCache) {
+          return cacheResponse();
+        }
       });
 
       var data = '';
@@ -153,6 +161,13 @@ Cache.prototype.init = function() {
       });
 
       readStream.on('end', function () {
+
+        if (data === "") {
+          res.setHeader('X-Cache', 'MISS');
+          res.setHeader('X-Cache-Lookup', 'MISS');
+          return cacheResponse();
+        }
+
         if (noCache) {
           res.setHeader('X-Cache', 'MISS');
           res.setHeader('X-Cache-Lookup', 'HIT');
@@ -274,18 +289,26 @@ Cache.prototype.init = function() {
           });
 
           // save to redis
-          stream.pipe(redisWStream(self.redisClient, filename)).on('finish', function () {
+          stream.pipe(redisWStream(self.redisClient, cacheKey)).on('finish', function () {
             if (config.get('caching.ttl')) {
-              self.redisClient.expire(filename, config.get('caching.ttl'));
+              self.redisClient.expire(cacheKey, config.get('caching.ttl'));
             }
           });
         }
         else {
-          var cacheFile = fs.createWriteStream(cachepath, { flags: 'w', defaultEncoding: this.encoding });
-          stream.pipe(cacheFile);
+          mkdirp(path.dirname(cachepath), {}, function (err, made) {
+            if (err) self.log.error(err);
+            var cacheFile = fs.createWriteStream(cachepath, { flags: 'w', defaultEncoding: self.encoding });
+            stream.pipe(cacheFile);
+          });
         }
       };
       return next();
     }
   });
 }
+
+// reset method for unit tests
+module.exports.reset = function() {
+  instance = null;
+};

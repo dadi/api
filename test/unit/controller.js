@@ -2,9 +2,16 @@ var should = require('should');
 var sinon = require('sinon');
 var controller = require(__dirname + '/../../dadi/lib/controller');
 var model = require(__dirname + '/../../dadi/lib/model');
+var cache = require(__dirname + '/../../dadi/lib/cache');
 var help = require(__dirname + '/help');
 
 describe('Controller', function (done) {
+
+  before(function(done) {
+    cache.reset();
+    done();
+  });
+
     it('should export constructor', function (done) {
         controller.Controller.should.be.Function;
         done();
@@ -141,8 +148,9 @@ describe('Controller', function (done) {
                     body: { field1: 'foo' },
                     url: '/vtest/testdb/testcoll'
                 });
-                stub.callCount.should.equal(1);
+                var count = stub.callCount;
                 stub.restore();
+                count.should.equal(1);
                 done();
             });
 
@@ -155,14 +163,15 @@ describe('Controller', function (done) {
                     body: { field1: 'foo' },
                     url: '/vtest/testdb/testcoll'
                 });
-                stub.callCount.should.equal(1);
+                var count = stub.callCount;
                 var args = stub.getCall(0).args;
+                stub.restore();
+                count.should.equal(1);
                 args[0].field1.should.equal('foo');
                 args[1].apiVersion.should.equal('vtest');
                 args[1].createdAt.should.be.Number;
                 args[1].createdBy.should.equal('clientTestId');
 
-                stub.restore();
                 done();
             });
 

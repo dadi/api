@@ -151,6 +151,9 @@ Cache.prototype.init = function() {
         if (!noCache) {
           return cacheResponse();
         }
+        else {
+          return next();
+        }
       });
 
       var data = '';

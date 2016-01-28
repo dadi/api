@@ -1,6 +1,6 @@
 # DADI API
 
-![Build Status](http://img.shields.io/badge/Release-1.2.2-green.svg?style=flat-square)&nbsp;![Coverage](https://img.shields.io/badge/Coverage-88%-yellow.svg?style=flat-square)
+![Build Status](http://img.shields.io/badge/Release-1.2.2-green.svg?style=flat-square)&nbsp;![Coverage](https://img.shields.io/badge/Coverage-89%-yellow.svg?style=flat-square)
 
 ## Overview
 

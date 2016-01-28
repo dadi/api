@@ -23,6 +23,26 @@ var bearerToken;
 
 describe('Cache', function (done) {
 
+  after(function(done) {
+    testConfigString = fs.readFileSync(config.configPath());
+
+    var newTestConfig = JSON.parse(testConfigString);
+    newTestConfig.caching.directory.enabled = true;
+    newTestConfig.caching.redis.enabled = false;
+    fs.writeFileSync(config.configPath(), JSON.stringify(newTestConfig, null, 2));
+    done();
+  });
+
+  beforeEach(function(done) {
+    try {
+      app.stop(function(){});
+      done();
+    }
+    catch (err) {
+      done();
+    }
+  });
+
   it('should use cache if available', function (done) {
     var spy = sinon.spy(fs, 'createReadStream');
 
@@ -141,53 +161,77 @@ describe('Cache', function (done) {
     });
   });
 
-  it.skip('should allow disabling through config', function (done) {
+  it('should allow disabling through config', function (done) {
 
-    config.set('caching.directory.enabled', false);
-    config.set('caching.redis.enabled', false);
+    testConfigString = fs.readFileSync(config.configPath());
 
-    var _done = done;
-    done = function (err) {
-      config.set('caching.directory.enabled', true);
-      config.set('caching.redis.enabled', false);
-      _done(err);
-    };
+    var newTestConfig = JSON.parse(testConfigString);
+    newTestConfig.caching.directory.enabled = false;
+    newTestConfig.caching.redis.enabled = false;
 
-    //var spy = sinon.spy(fs, 'readFile');
+    fs.writeFileSync(config.configPath(), JSON.stringify(newTestConfig, null, 2));
 
-    var client = request('http://' + config.get('server.host') + ':' + config.get('server.port'));
+    cache.reset();
 
-    client
-    .get('/vtest/testdb/test-schema')
-    .set('Authorization', 'Bearer ' + bearerToken)
-    .expect(200)
-    .end(function (err, res1) {
-      if (err) return done(err);
+    delete require.cache[__dirname + '/../../config'];
+    delete require.cache[__dirname + '/../../dadi/lib/'];
+    config = require(__dirname + '/../../config');
+    config.loadFile(config.configPath());
 
-      res1.body['results'].length.should.equal(0);
+    var spy = sinon.spy(fs, 'createWriteStream');
 
-      client
-      .post('/vtest/testdb/test-schema')
-      .set('Authorization', 'Bearer ' + bearerToken)
-      .send({field1: 'foo!'})
-      .expect(200)
-      .end(function (err, res) {
+    app.start(function() {
+      help.dropDatabase('test', function (err) {
         if (err) return done(err);
+      help.getBearerToken(function (err, token) {
+         if (err) return done(err);
+         bearerToken = token;
+         help.clearCache();
+
+        var client = request('http://' + config.get('server.host') + ':' + config.get('server.port'));
 
         client
         .get('/vtest/testdb/test-schema')
         .set('Authorization', 'Bearer ' + bearerToken)
         .expect(200)
-        .end(function (err, res2) {
+        .end(function (err, res1) {
           if (err) return done(err);
 
+          res1.body['results'].length.should.equal(0);
 
-          res2.body['results'].length.should.equal(1);
+          client
+          .post('/vtest/testdb/test-schema')
+          .set('Authorization', 'Bearer ' + bearerToken)
+          .send({field1: 'foo!'})
+          .expect(200)
+          .end(function (err, res) {
+            if (err) return done(err);
 
-          // spy.called.should.be.false;
-          // spy.restore();
+            client
+            .get('/vtest/testdb/test-schema')
+            .set('Authorization', 'Bearer ' + bearerToken)
+            .expect(200)
+            .end(function (err, res2) {
+              if (err) return done(err);
 
-          done();
+
+              res2.body['results'].length.should.equal(1);
+
+              var called = spy.called;
+              spy.restore();
+              called.should.be.false;
+
+              fs.writeFileSync(config.configPath(), testConfigString);
+              cache.reset();
+              delete require.cache[__dirname + '/../../config'];
+              config = require(__dirname + '/../../config');
+              config.loadFile(config.configPath());
+
+              app.stop(function(){});
+              done();
+            });
+          });
+        });
         });
       });
     });
@@ -218,29 +262,29 @@ describe('Cache', function (done) {
       });
     });
 
-    it('should save responses to the file system');//, function (done) {
+    it('should save responses to the file system', function (done) {
 
-    //   var spy = sinon.spy(fs, 'writeFile');
-    //
-    //   request('http://' + config.get('server.host') + ':' + config.get('server.port'))
-    //   .get('/vtest/testdb/test-schema')
-    //   .set('Authorization', 'Bearer ' + bearerToken)
-    //   .expect(200)
-    //   .end(function (err, res) {
-    //     if (err) return done(err);
-    //
-    //     setTimeout(function() {
-    //       spy.called.should.be.true;
-    //       var args = spy.getCall(0).args;
-    //
-    //       args[1].should.equal(res.text);
-    //
-    //       spy.restore();
-    //       done();
-    //
-    //     }, 1000);
-    //   });
-    // });
+      var spy = sinon.spy(fs, 'createWriteStream');
+
+      request('http://' + config.get('server.host') + ':' + config.get('server.port'))
+      .get('/vtest/testdb/test-schema')
+      .set('Authorization', 'Bearer ' + bearerToken)
+      .expect(200)
+      .end(function (err, res) {
+        if (err) return done(err);
+
+        setTimeout(function() {
+          spy.called.should.be.true;
+          var args = spy.getCall(0).args;
+
+          args[0].indexOf('cache/api').should.be.above(-1);
+
+          spy.restore();
+          done();
+
+        }, 1000);
+      });
+    });
 
     it('should invalidate based on TTL', function (done) {
       this.timeout(4000);
@@ -294,7 +338,7 @@ describe('Cache', function (done) {
     });
 
     it('should flush on POST create request', function (done) {
-  	this.timeout(4000);
+  	  this.timeout(4000);
       help.createDoc(bearerToken, function (err, doc) {
         if (err) return done(err);
 
@@ -341,7 +385,7 @@ describe('Cache', function (done) {
     });
 
     it('should flush on POST update request', function (done) {
-  	this.timeout(4000);
+  	   this.timeout(4000);
 
       help.createDoc(bearerToken, function (err, doc) {
         if (err) return done(err);
@@ -417,7 +461,7 @@ describe('Cache', function (done) {
     });
 
     it('should flush on DELETE request', function (done) {
-  	this.timeout(4000);
+  	  this.timeout(4000);
       help.createDoc(bearerToken, function (err, doc) {
         if (err) return done(err);
 
@@ -752,6 +796,8 @@ describe('Cache', function (done) {
                     .end(function (err, res2) {
                       if (err) return done(err);
 
+                      redis.createClient.restore();
+
                       res2.headers['x-cache'].should.eql('MISS');
                       res2.headers['x-cache-lookup'].should.eql('MISS');
 
@@ -772,9 +818,345 @@ describe('Cache', function (done) {
       }
     });
 
-    it('should flush on POST create request');
-    it('should flush on POST update request');
-    it('should flush on DELETE request');
-    it('should preserve content-type');
+    it('should flush on POST create request', function(done) {
+      this.timeout(4000);
+
+      delete require.cache[__dirname + '/../../config.js'];
+      delete require.cache[__dirname + '/../../dadi/lib/'];
+      cache.reset();
+
+      config.loadFile(config.configPath());
+
+      var redisClient = fakeredis.createClient(config.get('caching.redis.port'), config.get('caching.redis.host'), {detect_buffers: true, max_attempts: 3});
+      sinon.stub(redis, 'createClient', function () { return redisClient; });
+
+      try {
+        app.start(function() {
+          help.dropDatabase('test', function (err) {
+            if (err) return done(err);
+
+            help.getBearerToken(function (err, token) {
+               if (err) return done(err);
+               bearerToken = token;
+
+              help.createDoc(bearerToken, function (err, doc) {
+                if (err) return done(err);
+
+                help.createDoc(bearerToken, function (err, doc) {
+                  if (err) return done(err);
+
+                  var client = request('http://' + config.get('server.host') + ':' + config.get('server.port'));
+
+                  client
+                  .get('/vtest/testdb/test-schema')
+                  .set('Authorization', 'Bearer ' + bearerToken)
+                  .expect(200)
+                  .end(function (err, res1) {
+                    if (err) return done(err);
+
+                    client
+                    .post('/vtest/testdb/test-schema')
+                    .set('Authorization', 'Bearer ' + bearerToken)
+                    .send({field1: 'foo!'})
+                    .expect(200)
+                    .end(function (err, res2) {
+                      if (err) return done(err);
+
+                      setTimeout(function () {
+
+                        client
+                        .get('/vtest/testdb/test-schema')
+                        .set('Authorization', 'Bearer ' + bearerToken)
+                        .expect(200)
+                        .end(function (err, res3) {
+                          if (err) return done(err);
+
+                          redis.createClient.restore();
+
+                          res1.body.results.length.should.eql(2);
+                          res3.body.results.length.should.eql(3);
+                          res3.text.should.not.equal(res1.text);
+
+                          app.stop(function(){});
+                          done();
+                        });
+                      }, 600);
+                    });
+                  });
+                });
+              });
+            });
+          });
+        });
+      }
+      catch (err) {
+        console.log(err);
+        done();
+      }
+    });
+
+    it('should flush on POST update request', function(done) {
+      this.timeout(4000);
+
+      delete require.cache[__dirname + '/../../config.js'];
+      delete require.cache[__dirname + '/../../dadi/lib/'];
+      cache.reset();
+
+      config.loadFile(config.configPath());
+
+      var redisClient = fakeredis.createClient(config.get('caching.redis.port'), config.get('caching.redis.host'), {detect_buffers: true, max_attempts: 3});
+      sinon.stub(redis, 'createClient', function () { return redisClient; });
+
+      try {
+        app.start(function() {
+          help.dropDatabase('test', function (err) {
+            if (err) return done(err);
+
+            help.getBearerToken(function (err, token) {
+               if (err) return done(err);
+               bearerToken = token;
+
+               help.createDoc(bearerToken, function (err, doc) {
+                 if (err) return done(err);
+
+                 help.createDoc(bearerToken, function (err, doc) {
+                   if (err) return done(err);
+
+                   var client = request('http://' + config.get('server.host') + ':' + config.get('server.port'));
+
+                   // GET
+                   client
+                   .get('/vtest/testdb/test-schema')
+                   .set('Authorization', 'Bearer ' + bearerToken)
+                   .expect(200)
+                   .end(function (err, getRes1) {
+                     if (err) return done(err);
+
+                     // CREATE
+                     client
+                     .post('/vtest/testdb/test-schema')
+                     .set('Authorization', 'Bearer ' + bearerToken)
+                     .send({field1: 'foo!'})
+                     .expect(200)
+                     .end(function (err, postRes1) {
+                       if (err) return done(err);
+
+                       // save id for updating
+                       var id = postRes1.body.results[0]._id;
+
+                       // GET AGAIN - should cache new results
+                       client
+                       .get('/vtest/testdb/test-schema')
+                       .set('Authorization', 'Bearer ' + bearerToken)
+                       .expect(200)
+                       .end(function (err, getRes2) {
+                         if (err) return done(err);
+
+                         setTimeout(function () {
+
+                           // UPDATE again
+                           client
+                           .post('/vtest/testdb/test-schema/' + id)
+                           .set('Authorization', 'Bearer ' + bearerToken)
+                           .send({field1: 'foo bar baz!'})
+                           .expect(200)
+                           .end(function (err, postRes2) {
+                             if (err) return done(err);
+
+                             // WAIT, then GET again
+                             setTimeout(function () {
+
+                               client
+                               .get('/vtest/testdb/test-schema')
+                               .set('Authorization', 'Bearer ' + bearerToken)
+                               .expect(200)
+                               .end(function (err, getRes3) {
+                                 if (err) return done(err);
+
+                                 redis.createClient.restore();
+
+                                // console.log(getRes2.body)
+                                //  console.log(getRes3.body)
+                                 var result = _.findWhere(getRes3.body.results, { "_id": id });
+
+                                 result.field1.should.eql('foo bar baz!');
+
+                                 app.stop(function(){});
+                                 done();
+                               });
+                             }, 200);
+                           });
+                         }, 300);
+                       });
+                     });
+                   });
+                 });
+               });
+            });
+          });
+        });
+      }
+      catch (err) {
+        console.log(err);
+        done();
+      }
+    });
+
+    it('should flush on DELETE request', function(done) {
+      this.timeout(4000);
+
+      delete require.cache[__dirname + '/../../config.js'];
+      delete require.cache[__dirname + '/../../dadi/lib/'];
+      cache.reset();
+
+      config.loadFile(config.configPath());
+
+      var redisClient = fakeredis.createClient(config.get('caching.redis.port'), config.get('caching.redis.host'), {detect_buffers: true, max_attempts: 3});
+      sinon.stub(redis, 'createClient', function () { return redisClient; });
+
+      try {
+        app.start(function() {
+          help.dropDatabase('test', function (err) {
+            if (err) return done(err);
+
+            help.getBearerToken(function (err, token) {
+               if (err) return done(err);
+               bearerToken = token;
+
+                help.createDoc(bearerToken, function (err, doc) {
+                  if (err) return done(err);
+
+                  help.createDoc(bearerToken, function (err, doc) {
+                    if (err) return done(err);
+
+                    var client = request('http://' + config.get('server.host') + ':' + config.get('server.port'));
+
+                    // GET
+                    client
+                    .get('/vtest/testdb/test-schema')
+                    .set('Authorization', 'Bearer ' + bearerToken)
+                    .expect(200)
+                    .end(function (err, getRes1) {
+                      if (err) return done(err);
+
+                      // CREATE
+                      client
+                      .post('/vtest/testdb/test-schema')
+                      .set('Authorization', 'Bearer ' + bearerToken)
+                      .send({field1: 'foo!'})
+                      .expect(200)
+                      .end(function (err, postRes1) {
+                        if (err) return done(err);
+
+                        // save id for deleting
+                        var id = postRes1.body.results[0]._id;
+
+                        // GET AGAIN - should cache new results
+                        client
+                        .get('/vtest/testdb/test-schema')
+                        .set('Authorization', 'Bearer ' + bearerToken)
+                        .expect(200)
+                        .end(function (err, getRes2) {
+                          if (err) return done(err);
+
+                          setTimeout(function () {
+
+                            // DELETE
+                            client
+                            .delete('/vtest/testdb/test-schema/' + id)
+                            .set('Authorization', 'Bearer ' + bearerToken)
+                            .expect(204)
+                            .end(function (err, postRes2) {
+                              if (err) return done(err);
+
+                              // WAIT, then GET again
+                              setTimeout(function () {
+
+                                client
+                                .get('/vtest/testdb/test-schema')
+                                .set('Authorization', 'Bearer ' + bearerToken)
+                                .expect(200)
+                                .end(function (err, getRes3) {
+                                  if (err) return done(err);
+
+                                  var result = _.findWhere(getRes3.body.results, { "_id": id });
+
+                                  redis.createClient.restore();
+
+                                  should.not.exist(result);
+
+                                  app.stop(function(){});
+                                  done();
+                                });
+                              }, 300);
+                            });
+                          }, 700);
+                        });
+                      });
+                    });
+                  });
+                });
+            });
+          });
+        });
+      }
+      catch (err) {
+        console.log(err);
+        done();
+      }
+    });
+
+    it('should preserve content-type', function(done) {
+
+      delete require.cache[__dirname + '/../../config.js'];
+      delete require.cache[__dirname + '/../../dadi/lib/'];
+      cache.reset();
+
+      config.loadFile(config.configPath());
+
+      var redisClient = fakeredis.createClient(config.get('caching.redis.port'), config.get('caching.redis.host'), {detect_buffers: true, max_attempts: 3});
+      sinon.stub(redis, 'createClient', function () { return redisClient; });
+
+      try {
+        app.start(function() {
+
+        var client = request('http://' + config.get('server.host') + ':' + config.get('server.port'));
+
+        client
+        .get('/vtest/testdb/test-schema?callback=myCallback')
+        .set('Authorization', 'Bearer ' + bearerToken)
+        .expect(200)
+        .expect('content-type', 'text/javascript')
+        .end(function (err, res1) {
+          if (err) return done(err);
+
+          client
+          .post('/vtest/testdb/test-schema')
+          .set('Authorization', 'Bearer ' + bearerToken)
+          .send({field1: 'foo!'})
+          .expect(200)
+          .end(function (err, res) {
+            if (err) return done(err);
+
+            client
+            .get('/vtest/testdb/test-schema?callback=myCallback')
+            .set('Authorization', 'Bearer ' + bearerToken)
+            .expect(200)
+            .expect('content-type', 'text/javascript')
+            .end(function (err, res2) {
+              if (err) return done(err);
+
+              res2.text.should.not.equal(res1.text);
+              app.stop(function(){});
+              done();
+            });
+          });
+        });
+      });
+    }
+    catch(err) {
+
+    }
+  });
   });
 });

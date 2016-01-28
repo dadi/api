@@ -154,45 +154,43 @@ module.exports.validateCollectionSchema = function(obj) {
  */
 module.exports.clearCache = function (pathname, callback) {
 
-    var modelDir = crypto.createHash('sha1').update(pathname).digest('hex');
-    var cachePath = path.join(config.get('caching.directory.path'), modelDir);
+  var modelDir = crypto.createHash('sha1').update(pathname).digest('hex');
+  var cachePath = path.join(config.get('caching.directory.path'), modelDir);
 
-    // delete using Redis client
-    if (cache.client()) {
-      setTimeout(function() {
-        cache.delete(modelDir, function(err) {
-          return callback(null);
-        });
-      }, 200);
+  // delete using Redis client
+  if (cache.client()) {
+    setTimeout(function() {
+      cache.delete(modelDir, function(err) {
+        return callback(null);
+      });
+    }, 200);
+  }
+  else {
+    var i = 0;
+    var exists = fs.existsSync(cachePath);
+
+    if (!exists) {
+      return callback(null);
     }
     else {
+      var files = fs.readdirSync(cachePath);
 
-      var i = 0;
-      var exists = fs.existsSync(cachePath);
+      files.forEach(function (filename) {
+        var file = path.join(cachePath, filename);
 
-      if (!exists) {
+        // write empty string to file, as we
+        // can't effectively remove it whilst
+        // the node process is running
+        fs.writeFileSync(file, '');
+
+        i++;
+
+        // finished, all files processed
+        if (i == files.length) {
           return callback(null);
-      }
-      else {
-          var files = fs.readdirSync(cachePath);
-
-          files.forEach(function (filename) {
-              var file = path.join(cachePath, filename);
-
-              // write empty string to file, as we
-              // can't effectively remove it whilst
-              // the node process is running
-              fs.writeFileSync(file, '');
-
-              i++;
-
-              // finished, all files processed
-              if (i == files.length) {
-                  return callback(null);
-              }
-
-          });
-      }
+        }
+      });
+    }
   }
 }
 

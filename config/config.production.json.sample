@@ -60,10 +60,17 @@
     "tokenCollection": "tokenStore"
   },
   "caching": {
-    "enabled": true,
     "ttl": 300,
-    "directory": "./cache/api/",
-    "extension": "json"
+    "directory": {
+      "enabled": true,
+      "path": "./cache/api",
+      "extension": "json"
+    },
+    "redis": {
+      "enabled": false,
+      "host": "127.0.0.1",
+      "port": 6379
+    }
   },
   "paths": {
     "collections": "workspace/collections",

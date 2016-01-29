@@ -43,7 +43,7 @@ Validator.prototype.schema = function (obj, update) {
   Object.keys(schema)
   .filter(function (key) { return schema[key].default; })
   .forEach(function (key) {
-    if (!obj[key]) {
+    if (!obj.hasOwnProperty(key)) {
       obj[key] = schema[key].default;
     }
   });

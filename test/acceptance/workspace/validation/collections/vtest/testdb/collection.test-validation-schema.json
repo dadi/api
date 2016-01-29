@@ -80,6 +80,20 @@
                 "edit": true
             }
         },
+        "fieldDefaultBoolean": {
+            "type": "Boolean",
+            "label": "Title",
+            "comments": "The title of the entry",
+            "placement": "Main content",
+            "validationRule": "",
+            "required": true,
+            "default": true,
+            "message": "",
+            "display": {
+                "index": true,
+                "edit": true
+            }
+        },
         "fieldMixed": {
             "type": "Mixed",
             "label": "Title",

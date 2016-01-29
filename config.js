@@ -114,37 +114,53 @@ var conf = convict({
         doc: "",
         format: String,
         default: "serama"
-      },
-    }
-  },
-  paths: {
-    doc: "",
-    format: Object,
-    default: {
-      collections: __dirname + '/workspace/collections',
-      endpoints: __dirname + '/workspace/endpoints'
+      }
     }
   },
   caching: {
-    enabled: {
-      doc: "Determines if caching is enabled",
-      format: Boolean,
-      default: true
-    },
     ttl: {
       doc: "",
       format: Number,
       default: 300
     },
     directory: {
-      doc: "",
-      format: String,
-      default: "./cache/api/"
+      enabled: {
+        doc: "If enabled, cache files will be saved to the filesystem",
+        format: Boolean,
+        default: true
+      },
+      path: {
+        doc: "The relative path to the cache directory",
+        format: String,
+        default: "./cache/web"
+      },
+      extension: {
+        doc: "The extension to use for cache files",
+        format: String,
+        default: "json"
+      }
     },
-    extension: {
-      doc: "",
-      format: String,
-      default: "json"
+    redis: {
+      enabled: {
+        doc: "If enabled, cache files will be saved to the specified Redis server",
+        format: Boolean,
+        default: false
+      },
+      host: {
+        doc: "The Redis server host",
+        format: String,
+        default: "127.0.0.1"
+      },
+      port: {
+        doc: "The port for the Redis server",
+        format: 'port',
+        default: 6379
+      },
+      password: {
+        doc: "",
+        format: String,
+        default: ""
+      }
     }
   },
   logging: {
@@ -189,6 +205,14 @@ var conf = convict({
         format: String,
         default: ""
       }
+    }
+  },
+  paths: {
+    doc: "",
+    format: Object,
+    default: {
+      collections: __dirname + '/workspace/collections',
+      endpoints: __dirname + '/workspace/endpoints'
     }
   },
   feedback: {

@@ -21,7 +21,7 @@ var monitor = require(__dirname + '/monitor');
 var log = require(__dirname + '/log');
 var help = require(__dirname + '/help');
 
-var config = require(path.resolve(__dirname + '/../../config.js'));
+var config = require(__dirname + '/../../config');
 var configPath = path.resolve(config.configPath());
 
 // add an optional id component to the path, that is formatted to be matched by the `path-to-regexp` module
@@ -67,7 +67,7 @@ Server.prototype.start = function (done) {
     this.loadConfigApi();
 
     // caching layer
-    cache(self);
+    cache(self).init();
 
     // search layer
     search(self);

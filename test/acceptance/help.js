@@ -80,35 +80,36 @@ module.exports.createClient = function (client, done) {
 };
 
 module.exports.removeTestClients = function (done) {
+  var dbOptions = config.get('auth.database');
+  dbOptions.auth = true;
+  var clientStore = connection(dbOptions);
 
-    var clientStore = connection(config.get('auth.database'));
-
-    clientStore.on('connect', function (db) {
-        var query = { "clientId": { $regex: /^test/ } };
-        db.collection(clientCollectionName).remove(query, done);
-    });
+  clientStore.on('connect', function (db) {
+    var query = { "clientId": { $regex: /^test/ } };
+    db.collection(clientCollectionName).remove(query, done);
+  });
 };
 
 module.exports.clearCache = function () {
 
-    var deleteFolderRecursive = function(path) {
-      if( fs.existsSync(path) && fs.lstatSync(path).isDirectory() ) {
-        fs.readdirSync(path).forEach(function(file,index){
-          var curPath = path + "/" + file;
+    var deleteFolderRecursive = function(filepath) {
+      if( fs.existsSync(filepath) && fs.lstatSync(filepath).isDirectory() ) {
+        fs.readdirSync(filepath).forEach(function(file,index){
+          var curPath = filepath + "/" + file;
           if(fs.lstatSync(curPath).isDirectory()) { // recurse
             deleteFolderRecursive(curPath);
           } else { // delete file
-            fs.unlinkSync(curPath);
+            fs.unlinkSync(path.resolve(curPath));
           }
         });
-        fs.rmdirSync(path);
+        fs.rmdirSync(filepath);
       }
     };
 
     // for each directory in the cache folder, remove all files then
     // delete the folder
-    fs.readdirSync(config.get('caching.directory')).forEach(function (dirname) {
-        deleteFolderRecursive(path.join(config.get('caching.directory'), dirname));
+    fs.readdirSync(config.get('caching.directory.path')).forEach(function (dirname) {
+        deleteFolderRecursive(path.join(config.get('caching.directory.path'), dirname));
     });
 }
 

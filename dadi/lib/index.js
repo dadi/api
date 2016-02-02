@@ -119,7 +119,6 @@ Server.prototype.loadPaths = function(paths, done) {
 
   options.collectionPath = path.resolve(paths.collections || __dirname + '/../../workspace/collections');
   options.endpointPath = path.resolve(paths.endpoints || __dirname + '/../../workspace/endpoints');
-  options.docPath = path.resolve(paths.docs || __dirname + '/../../workspace/docs');
 
   var idx = 0;
 

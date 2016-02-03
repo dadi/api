@@ -272,32 +272,4 @@ describe('Cache', function (done) {
     });
   })
 
-    // it('should call file system stat', function (done) {
-    //
-    //     var stub = sinon.stub(fs, 'stat', function (path, done) {
-    //         stub.called.should.be.true;
-    //
-    //         var args = stub.getCall(0).args;
-    //         var pathName = args[0];
-    //
-    //         // pathName should be hex string json file
-    //         pathName.should.match(/[a-g1-9]+\.json$/);
-    //         args[1].should.be.Function;
-    //
-    //         stub.restore();
-    //
-    //         done();
-    //     });
-    //
-    //     request('http://' + config.get('server.host') + ':' + config.get('server.port'))
-    //     .get('/vtest/testdb/test-schema')
-    //     .set('Authorization', 'Bearer ' + bearerToken)
-    //     .expect(200)
-    //     .end(function (err, res) {
-    //         if (err) return done(err);
-    //
-    //         done();
-    //     });
-    //
-    // });
 });

@@ -4,6 +4,7 @@ npm-debug.log
 cache/api/*
 log/*.log
 coverage/
+dump.rdb
 
 # Config
 config.json

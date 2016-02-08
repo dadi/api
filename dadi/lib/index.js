@@ -58,6 +58,15 @@ Server.prototype.start = function (done) {
     app.use(bodyParser.urlencoded({ extended: false, limit: '50mb' }));
     app.use(bodyParser.text({ limit: '50mb' }));
 
+    // update configuration based on domain
+    var domainConfigLoaded;
+    app.use(function(req, res, next) {
+      if (domainConfigLoaded) return next();
+      config.updateConfigDataForDomain(req.headers.host);
+      domainConfigLoaded = true;
+      return next();
+    });
+
     // configure authentication middleware
     auth(self);
 

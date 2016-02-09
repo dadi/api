@@ -2024,11 +2024,11 @@ describe('Application', function () {
         var configPath = path.resolve(config.configPath());
         var originalConfig = fs.readFileSync(configPath).toString();
 
-        before(function (done) {
+        beforeEach(function (done) {
             app.start(done);
         });
 
-        after(function (done) {
+        afterEach(function (done) {
 
             // restore the config file to its original state
             fs.writeFileSync(configPath, originalConfig);
@@ -2061,6 +2061,59 @@ describe('Application', function () {
 
                         done();
                     });
+                });
+            });
+
+            it('should load a domain-specific config', function (done) {
+
+                var testConfigPath = './config/config.test.json';
+                var domainConfigPath;
+
+                function loadConfig(server) {
+                  domainConfigPath = './config/' + server.host + ':' + server.port + '.json';
+
+                  try {
+                    var testConfig = JSON.parse(fs.readFileSync(testConfigPath, { encoding: 'utf-8'}));
+                    testConfig.app.name = 'Domain Loaded Config';
+                    fs.writeFileSync(domainConfigPath, JSON.stringify(testConfig, null, 2));
+                  }
+                  catch (err) {
+                    console.log(err);
+                  }
+                }
+
+                loadConfig(config.get('server'));
+
+                help.getBearerTokenWithAccessType("admin", function (err, token) {
+                    if (err) return done(err);
+
+                    bearerToken = token;
+
+                    delete require.cache[__dirname + '/../../config'];
+
+                    setTimeout(function() {
+                      request(connectionString)
+                      .get('/api/config')
+                      .set('Authorization', 'Bearer ' + bearerToken)
+                      .expect(200)
+                      .expect('content-type', 'application/json')
+                      .end(function (err, res) {
+                          if (err) return done(err);
+
+                          try {
+                            fs.unlinkSync(domainConfigPath);
+                          }
+                          catch (err) {
+                            console.log(err);
+                          }
+
+                          res.body.should.be.Object;
+                          should.exist(res.body.app);
+                          res.body.app.name.should.eql('Domain Loaded Config');
+
+                          done();
+                      });
+                    }, 200);
                 });
             });
 

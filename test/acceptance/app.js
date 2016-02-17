@@ -1219,6 +1219,78 @@ describe('Application', function () {
                     });
                 });
 
+                it('should return 400 if invalid skip option is provided', function (done) {
+                    var client = request(connectionString);
+
+                    client
+                    .get('/vtest/testdb/test-schema?skip=-1')
+                    .set('Authorization', 'Bearer ' + bearerToken)
+                    .expect(400)
+                    .expect('content-type', 'application/json')
+                    .end(function (err, res) {
+                        if (err) return done(err);
+
+                        res.body['errors'].should.exist;
+                        res.body['errors'][0].title.should.eql("Invalid Skip Parameter Provided");
+
+                        done();
+                    });
+                });
+
+                it('should return 400 if skip option is alphabetical', function (done) {
+                    var client = request(connectionString);
+
+                    client
+                    .get('/vtest/testdb/test-schema?skip=a')
+                    .set('Authorization', 'Bearer ' + bearerToken)
+                    .expect(400)
+                    .expect('content-type', 'application/json')
+                    .end(function (err, res) {
+                        if (err) return done(err);
+
+                        res.body['errors'].should.exist;
+                        res.body['errors'][0].title.should.eql("Invalid Skip Parameter Provided");
+
+                        done();
+                    });
+                });
+
+                it('should return 400 if invalid page option is provided', function (done) {
+                    var client = request(connectionString);
+
+                    client
+                    .get('/vtest/testdb/test-schema?page=-1')
+                    .set('Authorization', 'Bearer ' + bearerToken)
+                    .expect(400)
+                    .expect('content-type', 'application/json')
+                    .end(function (err, res) {
+                        if (err) return done(err);
+
+                        res.body['errors'].should.exist;
+                        res.body['errors'][0].title.should.eql("Invalid Page Parameter Provided");
+
+                        done();
+                    });
+                });
+
+                it('should return multiple errors if invalid page and skip options are provided', function (done) {
+                    var client = request(connectionString);
+
+                    client
+                    .get('/vtest/testdb/test-schema?page=-1&skip=-8')
+                    .set('Authorization', 'Bearer ' + bearerToken)
+                    .expect(400)
+                    .expect('content-type', 'application/json')
+                    .end(function (err, res) {
+                        if (err) return done(err);
+
+                        res.body['errors'].should.exist;
+                        res.body['errors'].length.should.eql(2);
+
+                        done();
+                    });
+                });
+
                 it('should return javascript if `callback` is provided', function (done) {
                     var client = request(connectionString);
                     var callbackName = 'testCallback';

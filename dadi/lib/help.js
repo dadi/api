@@ -20,11 +20,16 @@ module.exports.sendBackJSON = function (successCode, res, next) {
 
     var resBody = JSON.stringify(results);
 
-    // log response if it's already been sent
-    if (res.finished) {
-      log.info({res: res}, 'Response already sent. Attempting to send results: ' + resBody);
-      return;
-    }
+        res.setHeader('Server', config.get('server.name'));
+
+        if (config.get('cors') === true) {
+            res.setHeader('Access-Control-Allow-Origin', '*');
+            res.setHeader('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+        }
+
+        res.setHeader('content-type', 'application/json');
+        res.setHeader('content-length', Buffer.byteLength(resBody));
+        res.end(resBody);
 
     res.setHeader('Server', config.get('server.name'));
 

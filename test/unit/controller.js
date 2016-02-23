@@ -73,6 +73,60 @@ describe('Controller', function (done) {
                 done();
             });
 
+            it('should not call find() if invalid skip option is provided', function (done) {
+                var mod = model('testModel', help.getModelSchema());
+                var stub = sinon.stub(mod, 'find');
+
+                var req = {
+                    url: '/foo/bar?filter={"fieldName":"test"}&skip=-1'
+                };
+
+                var res = {
+                  setHeader: function setHeader(string, string) {
+                  },
+                  end: function end(body) {
+                    this.body = body;
+                  }
+                }
+
+                res.body = '';
+                res.statusCode = 200;
+
+                controller(mod).get(req, res, {});
+                stub.restore();
+                stub.callCount.should.equal(0);
+
+                res.statusCode.should.eql(400);
+                done();
+            });
+
+            it('should not call find() if invalid page option is provided', function (done) {
+                var mod = model('testModel', help.getModelSchema());
+                var stub = sinon.stub(mod, 'find');
+
+                var req = {
+                    url: '/foo/bar?filter={"fieldName":"test"}&page=-1'
+                };
+
+                var res = {
+                  setHeader: function setHeader(string, string) {
+                  },
+                  end: function end(body) {
+                    this.body = body;
+                  }
+                }
+
+                res.body = '';
+                res.statusCode = 200;
+
+                controller(mod).get(req, res, {});
+
+                stub.restore();
+                stub.callCount.should.equal(0);
+                res.statusCode.should.eql(400);
+                done();
+            });
+
             it('should pass model\'s default filters to the find query', function (done) {
                 var mod = model('testModel', null, help.getModelSchemaWithMultipleFields(), help.getModelSettings());
                 var stub = sinon.stub(mod, 'find');

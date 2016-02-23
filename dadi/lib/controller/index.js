@@ -23,6 +23,15 @@ var sendBackJSON = help.sendBackJSON;
 var sendBackJSONP = help.sendBackJSONP;
 var parseQuery = help.parseQuery;
 
+function ApiError(status, code, message, title) {
+  var err = new Error();
+  err.status = status;
+  err.code = code;
+  err.title = title || 'API Error';
+  err.details = message;
+  return err;
+}
+
 var Controller = function (model) {
     if (!model) throw new Error('Model instance required');
     this.model = model;
@@ -39,13 +48,44 @@ Controller.prototype.get = function (req, res, next) {
     var query = this.prepareQuery(req);
     var queryOptions = this.prepareQueryOptions(options);
 
+    if (queryOptions.errors.length !== 0) {
+      done = sendBackJSON(400, res, next);
+      return done(null, queryOptions);
+    }
+    else {
+      queryOptions = queryOptions.queryOptions;
+    }
+
     this.model.find(query, queryOptions, done);
 }
 
 Controller.prototype.prepareQueryOptions = function(options) {
 
+  var response = { errors: [] };
   var queryOptions = {};
   var settings = this.model.settings || {};
+
+  if (options.page) {
+    options.page = parseInt(options.page);
+    if (options.page === 0) options.page = 1;
+  }
+  else {
+    options.page = 1;
+  }
+
+  // ensure we have sane params
+  if (options.skip) {
+    if (!_.isFinite(options.skip)) {
+      response.errors.push(new ApiError("Bad Request", "Invalid Parameter", "The `skip` parameter must a number", "Invalid Skip Parameter Provided"));
+    }
+    else if (parseInt(options.skip) < 0) {
+      response.errors.push(new ApiError("Bad Request", "Invalid Parameter", "The `skip` parameter must be greater than or equal to zero", "Invalid Skip Parameter Provided"));
+    }
+  }
+
+  if (options.page && options.page <= 0) {
+    response.errors.push(new ApiError("Bad Request", "Invalid Parameter", "The `page` parameter must be greater than zero", "Invalid Page Parameter Provided"));
+  }
 
   // specified / default number of records to return
   var limit = options.count || settings.count;
@@ -57,7 +97,7 @@ Controller.prototype.prepareQueryOptions = function(options) {
   }
 
   // skip - passed or calculated from (page# x count)
-  var skip = limit * (parseInt((options.page || 1)) - 1);
+  var skip = limit * (options.page - 1);
   if (options.skip) {
     skip += parseInt(options.skip);
   }
@@ -95,7 +135,8 @@ Controller.prototype.prepareQueryOptions = function(options) {
 
   if (sort && !_.isEmpty(sort)) queryOptions.sort = sort;
 
-  return queryOptions;
+  response.queryOptions = queryOptions;
+  return response;
 }
 
 Controller.prototype.prepareQuery = function(req) {

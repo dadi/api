@@ -221,6 +221,18 @@ var conf = convict({
     format: Boolean,
     default: false
   },
+  health: {
+    timeLimit: {
+      doc: "Excepted time limit.",
+      format: Number,
+      default: 10
+    },
+    routes: {
+      doc: "",
+      format: Array,
+      default: ['/health']
+    }
+  },
   documentation: {
     title: {
       doc: "The title to display for the API documentation",

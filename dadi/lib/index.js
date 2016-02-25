@@ -88,7 +88,7 @@ Server.prototype.start = function (done) {
     var server = this.server = app.listen(config.get('server.port'), config.get('server.host'));
 
     server.on('listening', onListening);
-    //server.on('error', onError);
+    server.on('error', onError);
 
     this.loadApi(options);
 

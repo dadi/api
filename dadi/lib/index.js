@@ -85,7 +85,7 @@ Server.prototype.start = function (done) {
     var server = this.server = app.listen(config.get('server.port'), config.get('server.host'));
 
     server.on('listening', onListening);
-    server.on('error', onError);
+    //server.on('error', onError);
 
     this.loadApi(options);
 
@@ -606,7 +606,10 @@ Server.prototype.addComponent = function (options) {
         try {
             // map request method to controller method
             var method = req.method && req.method.toLowerCase();
+
             if (method && options.component[method]) return options.component[method](req, res, next);
+
+            if (method && (method === 'options')) return help.sendBackJSON(200, res, next)(null, null);
         }
         catch (err) {
             var trace = stackTrace.parse(err);

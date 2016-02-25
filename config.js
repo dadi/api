@@ -60,8 +60,8 @@ var conf = convict({
       },
       replicaSet: {
         doc: "",
-        format: Boolean,
-        default: false
+        format: String,
+        default: ""
       },
       enableCollectionDatabases: {
         doc: "",

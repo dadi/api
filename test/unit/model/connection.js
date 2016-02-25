@@ -32,7 +32,7 @@ describe('Model connection', function () {
             "username": "",
             "password": "",
             "database": "test",
-            "replicaSet": false,
+            "replicaSet": "",
             "hosts": [
                 {
                     "host": "127.0.0.1",
@@ -70,7 +70,7 @@ describe('Model connection', function () {
                     host: '127.0.0.1',
                     port: 27017
                 }],
-                replicaSet: false
+                replicaSet: ""
             });
 
             conn.on('connect', function (db) {

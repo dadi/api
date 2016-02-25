@@ -25,6 +25,7 @@ module.exports = function (server) {
     });
 
     server.app.use('/status', function(req, res, next) {
+        var authorization = req.headers.authorization;
         var method = req.method && req.method.toLowerCase();
         if(method === 'get') {
             var healthRoutes = config.get('health.routes');
@@ -35,7 +36,12 @@ module.exports = function (server) {
                 _.each(healthRoutes, function(route) {
                     var start = new Date();
                     routesCallbacks.push(function(cb) {
-                        request.get('http://' + config.get('server.host') + ':' + config.get('server.port') + route, function(err, response, body) {
+                        request({
+                            url: 'http://' + config.get('server.host') + ':' + config.get('server.port') + route, 
+                            headers: {
+                                'Authorization': authorization
+                            }
+                        }, function(err, response, body) {
                             var responseTime = (new Date() - start) / 1000;
                             var health = {
                                 route: route,

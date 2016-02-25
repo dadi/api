@@ -21,7 +21,7 @@ describe('Model', function () {
           "password": "",
           "database": "test",
           "ssl": false,
-          "replicaSet": false,
+          "replicaSet": "",
           "enableCollectionDatabases": true,
           "secondary": {
               "hosts": [
@@ -32,7 +32,7 @@ describe('Model', function () {
               ],
               "username": "",
               "password": "",
-              "replicaSet": false,
+              "replicaSet": "",
               "ssl": false
           }
     }
@@ -69,7 +69,7 @@ describe('Model', function () {
           "password": "",
           "database": "test",
           "ssl": false,
-          "replicaSet": false,
+          "replicaSet": "",
           "enableCollectionDatabases": false,
           "secondary": {
               "hosts": [
@@ -80,7 +80,7 @@ describe('Model', function () {
               ],
               "username": "",
               "password": "",
-              "replicaSet": false,
+              "replicaSet": "",
               "ssl": false
           }
     }
@@ -113,7 +113,7 @@ describe('Model', function () {
           "password": "serama123",
           "database": "test",
           "ssl": false,
-          "replicaSet": false,
+          "replicaSet": "",
           "enableCollectionDatabases": true
     }
 
@@ -145,7 +145,7 @@ describe('Model', function () {
           "password": "serama123",
           "database": "test",
           "ssl": false,
-          "replicaSet": false,
+          "replicaSet": "",
           "enableCollectionDatabases": true,
           "secondary": {
 
@@ -180,7 +180,7 @@ describe('Model', function () {
           "password": "",
           "database": "test",
           "ssl": false,
-          "replicaSet": false,
+          "replicaSet": "",
           "enableCollectionDatabases": true,
           "secondary": {
             "hosts": [

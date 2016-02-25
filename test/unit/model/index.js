@@ -46,7 +46,7 @@ describe('Model', function () {
                 "username": "",
                 "password": "",
                 "database": "test",
-                "replicaSet": false,
+                "replicaSet": "",
                 "hosts": [
                     {
                         "host": "localhost",

@@ -17,7 +17,7 @@
     "password": "",
     "database": "test",
     "ssl": false,
-    "replicaSet": false,
+    "replicaSet": "",
     "enableCollectionDatabases": false,
     "secondary": {
       "hosts": [
@@ -28,7 +28,7 @@
       ],
       "username": "",
       "password": "",
-      "replicaSet": false,
+      "replicaSet": "",
       "ssl": false
     },
     "testdb": {

@@ -48,14 +48,27 @@ describe('Health', function () {
         });
     });
 
-    it('should allow "/health" request without token', function (done) {
+    it('should allow "/health" request containing token', function (done) {
         help.getBearerToken(function (err, token) {
             var client = request('http://' + config.get('server.host') + ':' + config.get('server.port'));
 
             client
             .get('/health')
+            .set('Authorization', 'Bearer ' + token)
             .expect('content-type', 'application/json')
             .expect(200, done);
+        });
+    });
+
+    it('should not allow "/health" request containing invalid token', function (done) {
+        help.getBearerToken(function (err, token) {
+            var client = request('http://' + config.get('server.host') + ':' + config.get('server.port'));
+
+            client
+            .get('/health')
+            .set('Authorization', 'Bearer badtokenvalue')
+            .expect('content-type', 'application/json')
+            .expect(401, done);
         });
     });
 });

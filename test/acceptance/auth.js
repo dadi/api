@@ -585,4 +585,33 @@ describe('Authentication', function () {
         });
     });
 
+    it('should contain the correct CORS headers when cors = true', function (done) {
+        var oldCors = config.get('cors');
+        config.set('cors', true);
+
+        var _done = function (err) {
+            config.set('cors', oldCors);
+            done(err);
+        };
+
+        help.getBearerToken(function (err, token) {
+
+            var client = request('http://' + config.get('server.host') + ':' + config.get('server.port'));
+
+            client
+            .options('/vtest/testdb/test-schema')
+            .set('Origin', 'http://example.com')
+            .set('Access-Control-Request-Method', 'GET')
+            .set('Access-Control-Request-Headers', 'X-Requested-With')
+            .set('Authorization', 'Bearer ' + token)
+            .expect('content-type', 'application/json')
+            .expect('access-control-allow-origin', '*')
+            .expect(200)
+            .end(function(err,res) {
+                if (err) return _done(err);
+                _done();
+            });
+        });
+    });
+
 });

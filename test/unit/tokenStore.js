@@ -33,6 +33,16 @@ describe('Token Store', function () {
         })
     });
 
+    it('should return empty object when token isn\'t found', function (done) {
+        var store = tokenStore();
+
+        store.get('XXX', function (err, val) {
+            if (err) return done(err);
+            (val === null).should.eql(true);
+            done();
+        });
+    });
+
     it('should use specified database when creating a connection', function (done) {
 
       var dbConfig = {
@@ -46,7 +56,7 @@ describe('Token Store', function () {
             "password": "",
             "database": "test",
             "ssl": false,
-            "replicaSet": false,
+            "replicaSet": "",
             "enableCollectionDatabases": false,
             "secondary": {
                 "hosts": [
@@ -57,7 +67,7 @@ describe('Token Store', function () {
                 ],
                 "username": "",
                 "password": "",
-                "replicaSet": false,
+                "replicaSet": "",
                 "ssl": false
             }
       }
@@ -87,7 +97,7 @@ describe('Token Store', function () {
 
       should.exist(store.connection);
       store.connection.connectionOptions.database.should.equal('separate_auth_db');
-      
+
       config.set('auth', oldConfig);
       done();
     });

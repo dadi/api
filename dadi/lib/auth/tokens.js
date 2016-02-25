@@ -8,6 +8,24 @@ dbOptions.auth = true;
 var clientStore = connection(dbOptions);
 var clientCollectionName = config.get('auth.clientCollection') || 'clientStore';
 
+/**
+ * Generate a token and test that it doesn't already exist in the token store.
+ * If it does exist, keep generating tokens until we've got a unique one.
+ */
+function getToken(callback) {
+  (function checkToken() {
+    var token = uuid.v4();
+    tokenStore.get(token, function (err, val) {
+      if (val) {
+        checkToken();
+      }
+      else {
+        callback(token);
+      }
+    })
+  })()
+}
+
 module.exports.generate = function (req, res, next) {
 
     // Look up the creds in clientStore
@@ -21,8 +39,10 @@ module.exports.generate = function (req, res, next) {
 
             if (client) {
 
-                // Generate token
-                var token = uuid.v4();
+              // Generate token
+              var token;
+              getToken(function (returnedToken) {
+                token = returnedToken;
 
                 // Ensure we have a TTL for token documents
                 tokenStore.expire(function (err) {});
@@ -43,11 +63,13 @@ module.exports.generate = function (req, res, next) {
                     res.setHeader('Pragma', 'no-cache');
                     res.end(json);
                 });
+              });
             }
-
-            var err = new Error('Invalid Credentials');
-            err.statusCode = 401;
-            next(err);
+            else {
+              var err = new Error('Invalid Credentials');
+              err.statusCode = 401;
+              return next(err);
+            }
         });
     };
 

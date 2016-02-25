@@ -1,4 +1,3 @@
-// Create a client object, enabling access to the api
 var connection = require(__dirname + '/../dadi/lib/model/connection');
 var config = require(__dirname + '/../config').database;
 

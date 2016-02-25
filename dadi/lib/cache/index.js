@@ -2,6 +2,7 @@ var crypto = require('crypto');
 var fs = require('fs');
 var mkdirp = require('mkdirp');
 var path = require('path');
+var pathToRegexp = require('path-to-regexp');
 var redis = require('redis');
 var redisRStream = require('redis-rstream');
 var redisWStream = require('redis-wstream');
@@ -57,14 +58,9 @@ module.exports = function(server) {
 Cache.prototype.cachingEnabled = function(req) {
   var options = {};
   var endpoints = this.server.components;
-  var requestUrl = url.parse(req.url, true).pathname;
+  var requestPath = url.parse(req.url, true).pathname;
 
-  // var query = url.parse(req.url, true).query;
-  // if (query.hasOwnProperty('cache') && query.cache === 'false') {
-  //   return false;
-  // }
-
-  var endpointKey = _.find(_.keys(endpoints), function (k){ return k.indexOf(url.parse(requestUrl).pathname) > -1; });
+  var endpointKey = _.find(_.keys(endpoints), function (k) { return pathToRegexp(k).exec(requestPath); });
 
   if (!endpointKey) return false;
 

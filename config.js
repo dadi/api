@@ -213,7 +213,8 @@ var conf = convict({
     format: Object,
     default: {
       collections: __dirname + '/workspace/collections',
-      endpoints: __dirname + '/workspace/endpoints'
+      endpoints: __dirname + '/workspace/endpoints',
+      hooks: __dirname + '/workspace/hooks'
     }
   },
   feedback: {

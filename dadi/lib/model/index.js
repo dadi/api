@@ -1,10 +1,11 @@
 var connection = require(__dirname + '/connection');
-var config = require(__dirname + '/../../../config').database;
+var config = require(__dirname + '/../../../config');
 var help = require(__dirname + '/../help');
 var Validator = require(__dirname + '/validator');
 var History = require(__dirname + '/history');
 var Composer = require(__dirname + '/../composer').Composer;
 var ObjectID = require('mongodb').ObjectID;
+var Hook = require(__dirname + '/hook');
 var _ = require('underscore');
 var util = require('util');
 
@@ -108,6 +109,15 @@ Model.prototype.createIndex = function(done) {
  * @api public
  */
 Model.prototype.create = function (obj, internals, done) {
+
+    // apply any existing `create` hooks
+    if (typeof this.settings.hooks.create === 'object') {
+        obj = this.settings.hooks.create.reduce((function (previous, current, index) {
+            var hook = new Hook(this.settings.hooks.create[index], 0);
+
+            return hook.apply(previous);
+        }).bind(this), obj);
+    }
 
     // internals will not be validated, i.e. should not be user input
     if (typeof internals === 'function') {
@@ -431,7 +441,7 @@ Model.prototype.stats = function (options, done) {
 };
 
 /**
- * Log string to file system
+ * Update a document in the database
  *
  * @param {Object} query
  * @param {Object} update
@@ -482,6 +492,15 @@ Model.prototype.update = function (query, update, internals, done) {
 
             updatedDocs = docs['results'];
 
+            // apply any existing `update` hooks
+            if (typeof self.settings.hooks.update === 'object') {
+                update = self.settings.hooks.update.reduce(function (previous, current, index) {
+                    var hook = new Hook(self.settings.hooks.update[index], 1);
+
+                    return hook.apply(previous, updatedDocs);
+                }, update);
+            }
+
             self.castToBSON(query);
 
             database.collection(self.name).update(query, setUpdate, function (err, numAffected) {
@@ -528,7 +547,7 @@ Model.prototype.update = function (query, update, internals, done) {
 };
 
 /**
- * Log string to file system
+ * Delete a document from the database
  *
  * @param {Object} query
  * @param {Function} done
@@ -536,6 +555,15 @@ Model.prototype.update = function (query, update, internals, done) {
  * @api public
  */
 Model.prototype.delete = function (query, done) {
+    // apply any existing `delete` hooks
+    if (typeof this.settings.hooks.delete === 'object') {
+        query = this.settings.hooks.delete.reduce((function (previous, current, index) {
+            var hook = new Hook(this.settings.hooks.update[index], 2);
+
+            return hook.apply(previous);
+        }).bind(this), query);
+    }
+
     var validation = this.validate.query(query);
     if (!validation.success) {
         err = validationError('Bad Query');

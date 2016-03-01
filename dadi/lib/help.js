@@ -154,44 +154,64 @@ module.exports.validateCollectionSchema = function(obj) {
  */
 module.exports.clearCache = function (pathname, callback) {
 
-  var modelDir = crypto.createHash('sha1').update(pathname).digest('hex');
-  var cachePath = path.join(config.get('caching.directory.path'), modelDir);
+  	var modelDir = crypto.createHash('sha1').update(pathname).digest('hex');
+  	if(pathname == '*') modelDir = '';
+  	var cachePath = path.join(config.get('caching.directory.path'), modelDir);
 
-  // delete using Redis client
-  if (cache.client()) {
-    setTimeout(function() {
-      cache.delete(modelDir, function(err) {
-        return callback(null);
-      });
-    }, 200);
-  }
-  else {
-    var i = 0;
-    var exists = fs.existsSync(cachePath);
+  	var walkSync = function(dir, filelist) {
+		var fs = fs || require('fs'),
+	    files = fs.readdirSync(dir);
+	  	filelist = filelist || [];
+	  	files.forEach(function(file) {
+	    	if (fs.statSync(dir + file).isDirectory()) {
+	      		filelist = walkSync(dir + file + '/', filelist);
+	    	}
+	    	else {
+	      		filelist.push(dir + file);
+	    	}
+	  	});
+	  	return filelist;
+  	};
+  	// delete using Redis client
+  	if (cache.client()) {
+    	setTimeout(function() {
+      		cache.delete(modelDir, function(err) {
+        		return callback(null);
+      		});
+    	}, 200);
+  	}
+  	else {
+    	var i = 0;
+    	var exists = fs.existsSync(cachePath);
 
-    if (!exists) {
-      return callback(null);
-    }
-    else {
-      var files = fs.readdirSync(cachePath);
+    	if (!exists) {
+      		return callback(null);
+    	}
+    	else {
+    		var files = fs.readdirSync(cachePath);
+    		if(pathname == '*') {
+    			files = walkSync(cachePath + '/');
+    		} 
 
-      files.forEach(function (filename) {
-        var file = path.join(cachePath, filename);
+		    files.forEach(function (filename) {
+        		var file = path.join(cachePath, filename);
+        		if(pathname == '*') file = filename;
 
-        // write empty string to file, as we
-        // can't effectively remove it whilst
-        // the node process is running
-        fs.writeFileSync(file, '');
+		        // write empty string to file, as we
+		        // can't effectively remove it whilst
+		        // the node process is running
+		        fs.writeFileSync(file, '');
 
-        i++;
+		        i++;
 
-        // finished, all files processed
-        if (i == files.length) {
-          return callback(null);
-        }
-      });
-    }
-  }
+		        // finished, all files processed
+		        if (i == files.length) {
+		          	return callback(null);
+		        }
+      		});
+		
+    	}
+  	}
 }
 
 /**

@@ -160,6 +160,23 @@ Server.prototype.loadApi = function (options) {
     this.addMonitor(endpointPath, function (endpointFile) {
         self.updateVersions(endpointPath);
     });
+
+    this.app.use('/api/flush', function (req, res, next) {
+        var method = req.method && req.method.toLowerCase();
+        if (method !== 'post') return next();
+        
+        var pathname = req.body.path;
+
+        return help.clearCache(pathname, function (err) {
+            help.sendBackJSON(200, res, next)(err, {
+                result: 'success',
+                message: 'Succeed to clear'
+            });
+        });
+    
+
+        next();
+    });
         // need to ensure filepath exists since this could be a removal
     //     if (endpointFile && fs.existsSync(filepath)) {
     //         return self.addEndpointResource({

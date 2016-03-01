@@ -15,7 +15,7 @@
   	}
   },
 	"settings": {
-    "cache": false,
+    "cache": true,
     "authenticate": false,
     "callback": null,
     "defaultFilters": null,

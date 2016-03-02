@@ -69,6 +69,23 @@ describe('logger', function () {
           done();
         });
 
+        it('should not log when config level doesn\'t allow', function (done) {
+
+          config.set('logging.level', 'info');
+
+          var message = 'Hello';
+
+          var logger = log.get();
+          var method = sinon.spy(logger, 'debug');
+
+          log.debug(message);
+          logger.debug.restore();
+
+          method.called.should.eql(false);
+
+          done();
+        });
+
         it('should use bunyan log.warn when log.stage is called', function (done) {
 
           var message = 'Hello';
@@ -115,6 +132,7 @@ describe('logger', function () {
         });
 
         it('should use bunyan log.debug when log.debug is called', function (done) {
+          config.set('logging.level', 'debug');
           var message = 'Hello';
           var logger = log.get();
           var method = sinon.spy(logger, 'debug');
@@ -145,12 +163,14 @@ describe('logger', function () {
         });
 
         it('should use bunyan log.trace when log.trace is called', function (done) {
+          config.set('logging.level', 'trace');
           var message = 'Hello';
           var logger = log.get();
           var method = sinon.spy(logger, 'trace');
           log.trace(message);
           logger.trace.restore();
           method.called.should.eql(true);
+          config.set('logging.level', 'info');
           done();
         });
 

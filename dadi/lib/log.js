@@ -27,15 +27,29 @@ mkdirp(path.resolve(options.path), {}, function(err, made) {
 var log = bunyan.createLogger({
   name: 'dadi-api',
   serializers: bunyan.stdSerializers,
-  streams: [
-    { level: 'info', path: logPath },
-    { level: 'error', path: logPath }
-  ]
+  streams: getStreams()
 });
+
+function getStreams() {
+  if (options.fileRotationPeriod !== '') {
+    return [
+      { level: 'info', type: 'rotating-file', path: logPath, period: options.fileRotationPeriod, count: options.fileRetentionCount },
+      { level: 'warn', type: 'rotating-file', path: logPath, period: options.fileRotationPeriod, count: options.fileRetentionCount },
+      { level: 'error', type: 'rotating-file', path: logPath, period: options.fileRotationPeriod, count: options.fileRetentionCount }
+    ]
+  }
+  else {
+    return [
+      { level: 'info', path: logPath },
+      { level: 'warn', path: logPath },
+      { level: 'error', path: logPath }
+    ]
+  }
+}
 
 // add console logger
 if (config.get('env') === 'development') {
-  //log.addStream({ level: 'debug', stream: process.stdout });
+  log.addStream({ level: 'debug', stream: process.stdout });
 }
 
 if (options.accessLog.enabled) {

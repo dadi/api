@@ -230,7 +230,14 @@ var conf = convict({
     routes: {
       doc: "",
       format: Array,
-      default: ['/health']
+      default: []
+    }
+  },
+  status: {
+  	enabled: {
+      doc: "If true, status endpoint is enabled.",
+      format: Boolean,
+      default: false
     }
   },
   documentation: {

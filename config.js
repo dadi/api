@@ -170,6 +170,11 @@ var conf = convict({
       format: Boolean,
       default: true
     },
+    level: {
+      doc: "Sets the logging level.",
+      format: ['debug','info','warn','error','trace'],
+      default: 'info'
+    },
     path: {
       doc: "The absolute or relative path to the directory for log files.",
       format: String,

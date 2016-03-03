@@ -37,8 +37,11 @@ describe('Model', function () {
           }
     }
 
+    var loggingConfig = config.get('logging');
+
     var configStub = sinon.stub(config, 'get');
     configStub.withArgs('database').returns(dbConfig);
+    configStub.withArgs('logging').returns(loggingConfig);
 
     var schema = require(__dirname + '/workspace/secondary-db/vtest/secondary/collection.secondary-schema.json');
 
@@ -85,8 +88,11 @@ describe('Model', function () {
           }
     }
 
+    var loggingConfig = config.get('logging');
+
     var configStub = sinon.stub(config, 'get');
     configStub.withArgs('database').returns(dbConfig);
+    configStub.withArgs('logging').returns(loggingConfig);
 
     var schema = require(__dirname + '/workspace/secondary-db/vtest/secondary/collection.secondary-schema.json');
 
@@ -117,8 +123,11 @@ describe('Model', function () {
           "enableCollectionDatabases": true
     }
 
+    var loggingConfig = config.get('logging');
+
     var configStub = sinon.stub(config, 'get');
     configStub.withArgs('database').returns(dbConfig);
+    configStub.withArgs('logging').returns(loggingConfig);
 
     var schema = require(__dirname + '/workspace/secondary-db/vtest/secondary/collection.secondary-schema.json');
 
@@ -152,8 +161,11 @@ describe('Model', function () {
           }
     }
 
+    var loggingConfig = config.get('logging');
+
     var configStub = sinon.stub(config, 'get');
     configStub.withArgs('database').returns(dbConfig);
+    configStub.withArgs('logging').returns(loggingConfig);
 
     var schema = require(__dirname + '/workspace/secondary-db/vtest/secondary/collection.secondary-schema.json');
 
@@ -194,8 +206,11 @@ describe('Model', function () {
           }
     }
 
+    var loggingConfig = config.get('logging');
+
     var configStub = sinon.stub(config, 'get');
     configStub.withArgs('database').returns(dbConfig);
+    configStub.withArgs('logging').returns(loggingConfig);
 
     var schema = require(__dirname + '/workspace/secondary-db/vtest/secondary/collection.secondary-schema.json');
 

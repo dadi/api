@@ -7,8 +7,8 @@ var ObjectID = require('mongodb').ObjectID;
 var _ = require('underscore');
 var util = require('util');
 
-var log = require(__dirname + '/../log').get().child({module: 'validator'});
-log.info('Model validator logging started.');
+var log = require(__dirname + '/../log');
+log.info({module: 'validator'}, 'Model validator logging started.');
 
 var Validator = function (model) {
   this.model = model;

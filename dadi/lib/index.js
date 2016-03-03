@@ -31,8 +31,7 @@ var Server = function () {
   this.components = {};
   this.monitors = {};
 
-  this.log = log.get().child({module: 'server'});
-  this.log.info('Server logging started.');
+  log.info({module: 'server'}, 'Server logging started.');
 };
 
 Server.prototype.start = function (done) {
@@ -164,7 +163,7 @@ Server.prototype.loadApi = function (options) {
     this.app.use('/api/flush', function (req, res, next) {
         var method = req.method && req.method.toLowerCase();
         if (method !== 'post') return next();
-        
+
         var pathname = req.body.path;
 
         return help.clearCache(pathname, function (err) {
@@ -173,7 +172,7 @@ Server.prototype.loadApi = function (options) {
                 message: 'Succeed to clear'
             });
         });
-    
+
 
         next();
     });
@@ -391,7 +390,7 @@ Server.prototype.updateDatabases = function (databasesPath) {
     try {
         databases = fs.readdirSync(databasesPath);
     } catch (e) {
-        self.log.warn(databasesPath + ' does not exist');
+        log.warn({module: 'server'}, databasesPath + ' does not exist');
         return;
     }
 
@@ -486,7 +485,7 @@ Server.prototype.addCollectionResource = function (options) {
         }
     });
 
-    self.log.info('Collection loaded: ' + options.name);
+    log.info({module: 'server'}, 'Collection loaded: ' + options.name);
 };
 
 Server.prototype.updateEndpoints = function (endpointsPath) {
@@ -550,7 +549,7 @@ Server.prototype.addEndpointResource = function (options) {
         }
     });
 
-    self.log.info('Endpoint loaded: ' + name);
+    log.info({module: 'server'}, 'Endpoint loaded: ' + name);
 }
 
 Server.prototype.addComponent = function (options) {
@@ -703,12 +702,12 @@ Server.prototype.ensureDirectories = function (options, done) {
       mkdirp(dir, _0755, function (err, made) {
 
         if (err) {
-          self.log.debug(err);
+          log.debug({module: 'server'}, err);
           console.log(err);
         }
 
         if (made) {
-          self.log.debug('Created directory ' + made);
+          log.debug({module: 'server'}, 'Created directory ' + made);
           console.log('Created directory ' + made);
         }
 

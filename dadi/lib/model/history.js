@@ -8,8 +8,7 @@ var log = require('../log');
 var History = function (model) {
     this.model = model;
 
-    this.log = log.get().child({module: 'history'});
-    this.log.info('Model history logging started.');
+    log.info({module: 'history'}, 'Model history logging started.');
 };
 
 History.prototype.create = function (obj, model, done) {

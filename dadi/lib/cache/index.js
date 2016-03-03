@@ -15,8 +15,7 @@ var help = require(__dirname + '/../help');
 var log = require(__dirname + '/../../../dadi/lib/log');
 
 var Cache = function(server) {
-  this.log = log.get().child({module: 'cache'});
-  this.log.info('Cache logging started.');
+  log.info({module: 'cache'}, 'Cache logging started.');
 
   this.server = server;
   this.enabled = config.get('caching.directory.enabled') || config.get('caching.redis.enabled');
@@ -33,15 +32,15 @@ var Cache = function(server) {
   // create cache directory or initialise Redis
   if (config.get('caching.directory.enabled')) {
     mkdirp(self.dir, {}, function (err, made) {
-      if (err) self.log.error(err);
-      if (made) self.log.info('Created cache directory ' + made);
+      if (err) log.error({module: 'cache'}, err);
+      if (made) log.info({module: 'cache'}, 'Created cache directory ' + made);
     });
   }
   else if (config.get('caching.redis.enabled')) {
     self.redisClient = self.initialiseRedisClient();
 
     self.redisClient.on("error", function (err) {
-      self.log.error(err);
+      log.error({module: 'cache'}, err);
       throw err;
     });
   }
@@ -177,7 +176,6 @@ Cache.prototype.init = function() {
           var ttl = self.options.ttl || config.get('caching.ttl');
           var lastMod = stats && stats.mtime && stats.mtime.valueOf();
           if (!(lastMod && (Date.now() - lastMod) / 1000 <= ttl)) {
-            console.log('lastMod');
             res.setHeader('X-Cache', 'MISS');
             res.setHeader('X-Cache-Lookup', 'HIT');
             return cacheResponse();
@@ -187,7 +185,7 @@ Cache.prototype.init = function() {
 
         }
 
-        self.log.info('Serving ' + req.url + ' from cache file (' + cachepath + ')');
+        log.info({module: 'cache'}, 'Serving ' + req.url + ' from cache file (' + cachepath + ')');
 
         fs.stat(cachepath, function (err, stat) {
           res.statusCode = 200;
@@ -294,7 +292,7 @@ Cache.prototype.init = function() {
         }
         else {
           mkdirp(path.dirname(cachepath), {}, function (err, made) {
-            if (err) self.log.error(err);
+            if (err) log.error({module: 'cache'}, err);
             var cacheFile = fs.createWriteStream(cachepath, { flags: 'w', defaultEncoding: self.encoding });
             stream.pipe(cacheFile);
           });

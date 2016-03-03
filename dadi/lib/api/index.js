@@ -8,8 +8,6 @@ var Api = function () {
     this.all = [];
     this.errors = [];
 
-    this.log = log.get().child({module: 'api'});
-
     // always add default error handler in case the application doesn't define one
     this.errors.push(defaultError(this));
 
@@ -153,7 +151,7 @@ function defaultError(api) {
 
       var resBody;
 
-      api.log.error(err);
+      log.error({module: 'api'}, err);
 
       if (err.json) {
         resBody = JSON.stringify(err.json);

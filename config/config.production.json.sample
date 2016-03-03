@@ -78,6 +78,7 @@
   },
   "logging": {
     "enabled": true,
+    "level": "info",
     "path": "./log",
     "filename": "dadi-api",
     "extension": "log"

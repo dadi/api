@@ -2142,6 +2142,8 @@ describe('Application', function () {
                 var domainConfigPath;
 
                 function loadConfig(server) {
+
+                  console.log(server)
                   domainConfigPath = './config/' + server.host + ':' + server.port + '.json';
 
                   try {

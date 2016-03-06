@@ -1,6 +1,6 @@
 # DADI API
 
-![Build Status](http://img.shields.io/badge/Release-1.3.0-green.svg?style=flat-square)&nbsp;![Coverage](https://img.shields.io/badge/Coverage-89%-yellow.svg?style=flat-square)
+[![npm version](https://badge.fury.io/js/%40dadi%2Fapi.png)](https://badge.fury.io/js/%40dadi%2Fapi)&nbsp;![Coverage](https://img.shields.io/badge/Coverage-89%-yellow.svg?style=flat-square)
 
 ## Overview
 

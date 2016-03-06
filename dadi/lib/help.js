@@ -7,6 +7,7 @@ var _ = require('underscore');
 
 var cache = require(__dirname + '/cache');
 var config = require(__dirname + '/../../config');
+var log = require(__dirname + '/log');
 
 var self = this;
 
@@ -18,6 +19,12 @@ module.exports.sendBackJSON = function (successCode, res, next) {
     res.statusCode = successCode;
 
     var resBody = JSON.stringify(results);
+
+    // log response if it's already been sent
+    if (res.finished) {
+      log.info({res: res}, 'Response already sent. Attempting to send results: ' + resBody);
+      return;
+    }
 
     res.setHeader('Server', config.get('server.name'));
 
@@ -191,7 +198,7 @@ module.exports.clearCache = function (pathname, callback) {
   		var files = fs.readdirSync(cachePath);
   		if(pathname == '*') {
   			files = walkSync(cachePath + '/');
-  		} 
+  		}
 
 	    files.forEach(function (filename) {
     		var file = path.join(cachePath, filename);
@@ -209,7 +216,7 @@ module.exports.clearCache = function (pathname, callback) {
           return callback(null);
         }
   		});
-	
+
   	}
 	}
 }

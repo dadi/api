@@ -98,10 +98,9 @@ module.exports = function (server) {
             token = parts[1];
         }
 
-        if (!token) return fail();
+        if (!token) return fail("NoToken");
 
         tokens.validate(token, function (err, client) {
-
             if (err) return next(err);
 
             // If token is good continue, else `fail()`
@@ -110,6 +109,7 @@ module.exports = function (server) {
                 if (!isAuthorized(server.components, req, client)) {
                     var err = new Error('ClientId not authorized to access requested collection.');
                     err.statusCode = 401;
+                    res.setHeader('WWW-Authenticate', 'Bearer realm="' + url.parse(req.url, true).pathname + '"');
                     return next(err);
                 }
                 else {
@@ -119,13 +119,21 @@ module.exports = function (server) {
                 }
             }
 
-            fail();
+            fail("InvalidToken");
         });
 
-        function fail() {
-            var err = new Error('Unauthorized');
-            err.statusCode = 401;
-            next(err);
+        function fail(type) {
+          var err = new Error('Unauthorized');
+          err.statusCode = 401;
+
+          if (type === 'InvalidToken') {
+            res.setHeader('WWW-Authenticate', 'Bearer, error="invalid_token", error_description="Invalid or expired access token"');
+          }
+          else if (type === 'NoToken') {
+            res.setHeader('WWW-Authenticate', 'Bearer, error="no_token", error_description="No access token supplied"');
+          }
+
+          next(err);
         }
     });
 

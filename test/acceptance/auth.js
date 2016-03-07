@@ -67,7 +67,11 @@ describe('Authentication', function () {
             secret: 'badSecret',
             code: ' '
         })
-        .expect(401, done);
+        .expect(401, function(err, res) {
+          res.headers['www-authenticate'].should.exist;
+          res.headers['www-authenticate'].should.eql('Bearer, error="invalid_credentials", error_description="Invalid credentials supplied"');
+          done();
+        });
     });
 
     it('should allow requests containing token', function (done) {
@@ -91,7 +95,11 @@ describe('Authentication', function () {
             client
             .get('/vtest/testdb/test-schema')
             .set('Authorization', 'Bearer badtokenvalue')
-            .expect(401, done);
+            .expect(401, function(err, res) {
+              res.headers['www-authenticate'].should.exist;
+              res.headers['www-authenticate'].should.eql('Bearer, error="invalid_token", error_description="Invalid or expired access token"');
+              done();
+            });
         });
     });
 
@@ -120,7 +128,11 @@ describe('Authentication', function () {
                     client
                     .get('/vtest/testdb/test-schema')
                     .set('Authorization', 'Bearer ' + token)
-                    .expect(401, _done);
+                    .expect(401, function(err, res) {
+                      res.headers['www-authenticate'].should.exist;
+                      res.headers['www-authenticate'].should.eql('Bearer, error="invalid_token", error_description="Invalid or expired access token"');
+                      _done();
+                    })
                 }, 2000);
             });
         });
@@ -142,6 +154,8 @@ describe('Authentication', function () {
             //.expect('content-type', 'application/json')
             .end(function(err,res) {
                 if (err) return done(err);
+                res.headers['www-authenticate'].should.exist;
+                res.headers['www-authenticate'].should.eql('Bearer realm="/vtest/testdb/test-schema/config"');
                 done();
             });
         });
@@ -181,6 +195,8 @@ describe('Authentication', function () {
             //.expect('content-type', 'application/json')
             .end(function(err,res) {
                 if (err) return done(err);
+                res.headers['www-authenticate'].should.exist;
+                res.headers['www-authenticate'].should.eql('Bearer realm="/vtest/testdb/test-schema/config"');
                 done();
             });
         });
@@ -303,6 +319,8 @@ describe('Authentication', function () {
                 //.expect('content-type', 'application/json')
                 .end(function(err,res) {
                     if (err) return done(err);
+                    res.headers['www-authenticate'].should.exist;
+                    res.headers['www-authenticate'].should.eql('Bearer realm="/vtest/testdb/test-schema"');
                     done();
                 });
             }, 300);
@@ -326,6 +344,8 @@ describe('Authentication', function () {
                 //.expect('content-type', 'application/json')
                 .end(function(err,res) {
                     if (err) return done(err);
+                    res.headers['www-authenticate'].should.exist;
+                    res.headers['www-authenticate'].should.eql('Bearer realm="/vtest/testdb/test-schema"');
                     done();
                 });
             }, 300);
@@ -395,6 +415,8 @@ describe('Authentication', function () {
                 //.expect('content-type', 'application/json')
                 .end(function(err,res) {
                     if (err) return done(err);
+                    res.headers['www-authenticate'].should.exist;
+                    res.headers['www-authenticate'].should.eql('Bearer realm="/v1/test-endpoint"');
                     done();
                 });
             }, 300);
@@ -418,6 +440,8 @@ describe('Authentication', function () {
                 //.expect('content-type', 'application/json')
                 .end(function(err,res) {
                     if (err) return done(err);
+                    res.headers['www-authenticate'].should.exist;
+                    res.headers['www-authenticate'].should.eql('Bearer realm="/v1/test-endpoint"');
                     done();
                 });
             }, 300);

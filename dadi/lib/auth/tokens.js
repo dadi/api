@@ -68,6 +68,7 @@ module.exports.generate = function (req, res, next) {
             else {
               var err = new Error('Invalid Credentials');
               err.statusCode = 401;
+              res.setHeader('WWW-Authenticate', 'Bearer, error="invalid_credentials", error_description="Invalid credentials supplied"');
               return next(err);
             }
         });

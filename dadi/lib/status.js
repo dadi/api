@@ -27,7 +27,7 @@ function bytesToSize(input, precision) {
 };
 
 module.exports = function (server) {
-  server.app.use('/status', function(req, res, next) {
+  server.app.use('/api/status', function(req, res, next) {
     var authorization = req.headers.authorization;
     var method = req.method && req.method.toLowerCase();
 

@@ -38,7 +38,7 @@ describe('Status', function () {
       config.set('status.enabled', false);
 
       client
-      .get('/status')
+      .get('/api/status')
       .set('Authorization', 'Bearer ' + token)
       .expect(404, done);
     });
@@ -48,7 +48,7 @@ describe('Status', function () {
     help.getBearerToken(function (err, token) {
       var client = request('http://' + config.get('server.host') + ':' + config.get('server.port'));
       client
-      .get('/status')
+      .get('/api/status')
       .set('Authorization', 'Bearer ' + token)
       .expect(200, done);
     });
@@ -60,7 +60,7 @@ describe('Status', function () {
         var client = request('http://' + config.get('server.host') + ':' + config.get('server.port'));
 
         client
-        .get('/status')
+        .get('/api/status')
         .set('Authorization', 'Bearer ' + token)
         .expect('content-type', 'application/json')
         .expect(200, done);
@@ -72,7 +72,7 @@ describe('Status', function () {
         var client = request('http://' + config.get('server.host') + ':' + config.get('server.port'));
 
         client
-        .get('/status')
+        .get('/api/status')
         .set('Authorization', 'Bearer badtokenvalue')
         .expect(401, done);
       });
@@ -89,7 +89,7 @@ describe('Status', function () {
         var client = request('http://' + config.get('server.host') + ':' + config.get('server.port'));
 
         client
-        .get('/status')
+        .get('/api/status')
         .set('Authorization', 'Bearer ' + token)
         .expect('content-type', 'application/json')
         .expect(200, function(err, res) {
@@ -111,7 +111,7 @@ describe('Status', function () {
         var client = request('http://' + config.get('server.host') + ':' + config.get('server.port'));
 
         client
-        .get('/status')
+        .get('/api/status')
         .set('Authorization', 'Bearer ' + token)
         .expect('content-type', 'application/json')
         .expect(200, function(err, res) {
@@ -133,7 +133,7 @@ describe('Status', function () {
         var client = request('http://' + config.get('server.host') + ':' + config.get('server.port'));
 
         client
-        .get('/status')
+        .get('/api/status')
         .set('Authorization', 'Bearer ' + token)
         .expect('content-type', 'application/json')
         .expect(200, function(err, res) {

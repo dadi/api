@@ -256,6 +256,78 @@ describe('Authentication', function () {
         });
     });
 
+    it('should allow unauthenticated GET request for collection specifying read-only authentication settings', function (done) {
+
+        help.getBearerTokenWithAccessType("admin", function (err, token) {
+            var client = request('http://' + config.get('server.host') + ':' + config.get('server.port'));
+
+            var jsSchemaString = fs.readFileSync(testSchemaPath, {encoding: 'utf8'});
+            var schema = JSON.parse(jsSchemaString);
+
+            // update the schema
+            schema.settings.authenticate = ['POST', 'PUT', 'DELETE'];
+
+            client
+            .post('/vtest/testdb/test-schema/config')
+            .send(JSON.stringify(schema))
+            .set('content-type', 'text/plain')
+            .set('Authorization', 'Bearer ' + token)
+            .expect(200)
+            //.expect('content-type', 'application/json')
+            .end(function (err, res) {
+                if (err) return done(err);
+
+                // Wait, then test that we can make an unauthenticated request
+                setTimeout(function () {
+                    client
+                    .get('/vtest/testdb/test-schema')
+                    .expect(200)
+                    .expect('content-type', 'application/json')
+                    .end(function(err,res) {
+                        if (err) return done(err);
+                        done();
+                    });
+                }, 300);
+            });
+        });
+    });
+
+    it('should not allow unauthenticated POST request for collection specifying read-only authentication settings', function (done) {
+
+        help.getBearerTokenWithAccessType("admin", function (err, token) {
+            var client = request('http://' + config.get('server.host') + ':' + config.get('server.port'));
+
+            var jsSchemaString = fs.readFileSync(testSchemaPath, {encoding: 'utf8'});
+            var schema = JSON.parse(jsSchemaString);
+
+            // update the schema
+            schema.settings.authenticate = ['POST', 'PUT', 'DELETE'];
+
+            client
+            .post('/vtest/testdb/test-schema/config')
+            .send(JSON.stringify(schema))
+            .set('content-type', 'text/plain')
+            .set('Authorization', 'Bearer ' + token)
+            .expect(200)
+            //.expect('content-type', 'application/json')
+            .end(function (err, res) {
+                if (err) return done(err);
+
+                // Wait, then test that we can make an unauthenticated request
+                setTimeout(function () {
+                    client
+                    .post('/vtest/testdb/test-schema')
+                    .expect(401)
+                    .expect('content-type', 'application/json')
+                    .end(function(err,res) {
+                        if (err) return done(err);
+                        done();
+                    });
+                }, 300);
+            });
+        });
+    });
+
     it('should allow access to collection specified in client permissions list without apiVersion restriction', function (done) {
 
         var permissions = { permissions: { collections: [ { path: "test-schema" } ] } }
@@ -510,6 +582,35 @@ describe('Authentication', function () {
                     done();
                 });
             }, 300);
+        });
+    });
+
+    it('should contain the correct CORS headers when cors = true', function (done) {
+        var oldCors = config.get('cors');
+        config.set('cors', true);
+
+        var _done = function (err) {
+            config.set('cors', oldCors);
+            done(err);
+        };
+
+        help.getBearerToken(function (err, token) {
+
+            var client = request('http://' + config.get('server.host') + ':' + config.get('server.port'));
+
+            client
+            .options('/vtest/testdb/test-schema')
+            .set('Origin', 'http://example.com')
+            .set('Access-Control-Request-Method', 'GET')
+            .set('Access-Control-Request-Headers', 'X-Requested-With')
+            .set('Authorization', 'Bearer ' + token)
+            .expect('content-type', 'application/json')
+            .expect('access-control-allow-origin', '*')
+            .expect(200)
+            .end(function(err,res) {
+                if (err) return _done(err);
+                _done();
+            });
         });
     });
 

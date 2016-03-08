@@ -271,6 +271,11 @@ var conf = convict({
     default: "development",
     env: "NODE_ENV",
     arg: "node_env"
+  },
+  cors: {
+    doc: "If true, responses will include headers for cross-domain resource sharing",
+    format: Boolean,
+    default: false
   }
 });
 

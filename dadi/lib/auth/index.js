@@ -2,9 +2,9 @@ var url = require('url');
 var _ = require('underscore');
 var config = require(__dirname + '/../../../config.js');
 var tokens = require(__dirname + '/tokens');
+var pathToRegexp = require('path-to-regexp');
 
-function mustAuthenticate(endpoints, path) {
-
+function mustAuthenticate(endpoints, path, reqMethod) {
     path = url.parse(path, true);
 
     // all /config requests must be authenticated
@@ -13,12 +13,17 @@ function mustAuthenticate(endpoints, path) {
     // docs requests don't need to be authenticated
     if (path.pathname.indexOf('docs') > 0) return false;
 
-    var endpointKey = _.find(_.keys(endpoints), function (k){ return k.indexOf(path.pathname) > -1; });
+    var endpointKey = _.find(_.keys(endpoints), function (k){ return path.pathname.match(pathToRegexp(k)); });
 
     if (!endpointKey) return true;
 
     if (endpoints[endpointKey].model && endpoints[endpointKey].model.settings) {
-        return endpoints[endpointKey].model.settings.authenticate;
+        if (typeof endpoints[endpointKey].model.settings.authenticate === 'boolean') {
+            return endpoints[endpointKey].model.settings.authenticate;
+        }
+        else {
+            return endpoints[endpointKey].model.settings.authenticate.indexOf(reqMethod) > -1;
+        }
     }
     else {
         return true;
@@ -82,9 +87,8 @@ module.exports = function (server) {
 
     // Authorize
     server.app.use(function (req, res, next) {
-
         // Let requests for tokens through, along with endpoints configured to not use authentication
-        if (req.url === tokenRoute || !mustAuthenticate(server.components, req.url)) return next();
+        if (req.url === tokenRoute || !mustAuthenticate(server.components, req.url, req.method)) return next();
 
         // require an authorization header for every request
         if (!(req.headers && req.headers.authorization)) return fail();

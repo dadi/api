@@ -35,6 +35,7 @@
     "istanbul": "^0.3.22",
     "istanbul-cobertura-badger": "^1.1.0",
     "mocha": "~1.21.3",
+    "proxyquire": "^1.7.4",
     "should": "~4.0.4",
     "sinon": "~1.10.3",
     "supertest": "~0.13.0"

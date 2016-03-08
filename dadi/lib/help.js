@@ -16,26 +16,27 @@ module.exports.sendBackJSON = function (successCode, res, next) {
   return function (err, results) {
     if (err) return next(err);
 
-    res.statusCode = successCode;
-
     var resBody = JSON.stringify(results);
 
-        res.setHeader('Server', config.get('server.name'));
+    // log response if it's already been sent
+    if (res.finished) {
+      log.info({res: res}, 'Response already sent. Attempting to send results: ' + resBody);
+      return;
+    }
 
-        if (config.get('cors') === true) {
-            res.setHeader('Access-Control-Allow-Origin', '*');
-            res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-            res.setHeader('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
-        }
-
-        res.setHeader('content-type', 'application/json');
-        res.setHeader('content-length', Buffer.byteLength(resBody));
-        res.end(resBody);
+    if (config.get('cors') === true) {
+      res.setHeader('Access-Control-Allow-Origin', '*');
+      res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+      res.setHeader('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+    }
 
     res.setHeader('Server', config.get('server.name'));
 
     res.setHeader('content-type', 'application/json');
     res.setHeader('content-length', Buffer.byteLength(resBody));
+
+    res.statusCode = successCode;
+
     res.end(resBody);
   }
 }

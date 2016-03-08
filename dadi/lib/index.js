@@ -20,7 +20,7 @@ var cache = require(__dirname + '/cache');
 var monitor = require(__dirname + '/monitor');
 var log = require(__dirname + '/log');
 var help = require(__dirname + '/help');
-var health = require(__dirname + '/health');
+var status = require(__dirname + '/status');
 
 var config = require(__dirname + '/../../config');
 var configPath = path.resolve(config.configPath());
@@ -81,8 +81,8 @@ Server.prototype.start = function (done) {
     // search layer
     search(self);
 
-    //health layer
-    health(self);
+    // status endpoint
+    status(self);
 
     // start listening
     var server = this.server = app.listen(config.get('server.port'), config.get('server.host'));

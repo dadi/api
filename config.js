@@ -236,6 +236,18 @@ var conf = convict({
     format: Boolean,
     default: false
   },
+  status: {
+  	enabled: {
+      doc: "If true, status endpoint is enabled.",
+      format: Boolean,
+      default: false
+    },
+    routes: {
+      doc: "An array of routes to test. Each route object must contain properties `route` and `expectedResponseTime`.",
+      format: Array,
+      default: []
+    }
+  },
   documentation: {
     title: {
       doc: "The title to display for the API documentation",

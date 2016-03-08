@@ -228,11 +228,33 @@ describe('Controller', function (done) {
 
                 done();
             });
+          });
+
+          describe('`put` method', function () {
+            it('should be accessible', function (done) {
+                var mod = model('testModel', help.getModelSchema());
+                controller(mod).put.should.be.Function;
+                done();
+            });
+
+            it('should call the Model\'s update method', function (done) {
+                var mod = model('testModel');
+                var stub = sinon.stub(mod, 'update');
+                controller(mod).put({
+                    params: { id: '1234567890'},
+                    body: { field1: 'foo' },
+                    url: '/vtest/testdb/testcoll'
+                });
+                var count = stub.callCount;
+                stub.restore();
+                count.should.equal(1);
+                done();
+            });
 
             it('should add internally calculated fields during update', function (done) {
                 var mod = model('testModel');
                 var stub = sinon.stub(mod, 'update');
-                controller(mod).post({
+                controller(mod).put({
                     params: {id: '1234567890'},
                     client: {clientId: 'clientTestId'},
                     body: { field1: 'bar' },

@@ -384,7 +384,7 @@ describe('Cache', function (done) {
       });
     });
 
-    it('should flush on POST update request', function (done) {
+    it('should flush on PUT update request', function (done) {
   	   this.timeout(4000);
 
       help.createDoc(bearerToken, function (err, doc) {
@@ -427,7 +427,7 @@ describe('Cache', function (done) {
 
                   // UPDATE again
                   client
-                  .post('/vtest/testdb/test-schema/' + id)
+                  .put('/vtest/testdb/test-schema/' + id)
                   .set('Authorization', 'Bearer ' + bearerToken)
                   .send({field1: 'foo bar baz!'})
                   .expect(200)
@@ -895,7 +895,7 @@ describe('Cache', function (done) {
       }
     });
 
-    it('should flush on POST update request', function(done) {
+    it('should flush on PUT update request', function(done) {
       this.timeout(4000);
 
       delete require.cache[__dirname + '/../../config.js'];
@@ -956,7 +956,7 @@ describe('Cache', function (done) {
 
                            // UPDATE again
                            client
-                           .post('/vtest/testdb/test-schema/' + id)
+                           .put('/vtest/testdb/test-schema/' + id)
                            .set('Authorization', 'Bearer ' + bearerToken)
                            .send({field1: 'foo bar baz!'})
                            .expect(200)

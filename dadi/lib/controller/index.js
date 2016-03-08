@@ -210,6 +210,10 @@ Controller.prototype.post = function (req, res, next) {
     });
 }
 
+Controller.prototype.put = function (req, res, next) {
+  return this.post(req, res, next);
+}
+
 Controller.prototype.delete = function (req, res, next) {
     var id = req.params.id;
     if (!id) return next();

@@ -295,6 +295,73 @@ describe('Application', function () {
                 });
             });
 
+          });
+
+          describe('PUT', function () {
+            before(function (done) {
+                help.dropDatabase('testdb', function (err) {
+                    if (err) return done(err);
+
+                    help.getBearerTokenWithAccessType("admin", function (err, token) {
+                        if (err) return done(err);
+
+                        bearerToken = token;
+
+                        // add a new field to the schema
+                        var jsSchemaString = fs.readFileSync(__dirname + '/../new-schema.json', {encoding: 'utf8'});
+                        jsSchemaString = jsSchemaString.replace('newField', 'field1');
+                        var schema = JSON.parse(jsSchemaString);
+
+                        schema.fields.field2 = _.extend({}, schema.fields.newField, {
+                            type: 'Number',
+                            required: false
+                        });
+
+                        schema.fields.field3 = _.extend({}, schema.fields.newField, {
+                            type: 'ObjectID',
+                            required: false
+                        });
+
+                        var client = request(connectionString);
+
+                        client
+                        .post('/vtest/testdb/test-schema/config')
+                        .send(JSON.stringify(schema, null, 4))
+                        .set('content-type', 'text/plain')
+                        .set('Authorization', 'Bearer ' + bearerToken)
+                        .expect(200)
+                        .expect('content-type', 'application/json')
+                        .end(function (err, res) {
+                            if (err) return done(err);
+
+                            done();
+                        });
+                    });
+                });
+            });
+
+            after(function (done) {
+                // reset the schema
+                var jsSchemaString = fs.readFileSync(__dirname + '/../new-schema.json', {encoding: 'utf8'});
+                jsSchemaString = jsSchemaString.replace('newField', 'field1');
+                var schema = JSON.parse(jsSchemaString);
+
+                var client = request(connectionString);
+
+                client
+                .post('/vtest/testdb/test-schema/config')
+                .send(JSON.stringify(schema, null, 4))
+                .set('content-type', 'text/plain')
+                .set('Authorization', 'Bearer ' + bearerToken)
+                .expect(200)
+                .expect('content-type', 'application/json')
+                .end(function (err, res) {
+                    if (err) return done(err);
+
+                    done();
+                });
+            });
+
             it('should update existing documents', function (done) {
                 var client = request(connectionString);
 
@@ -311,7 +378,7 @@ describe('Application', function () {
                     doc.field1.should.equal('doc to update');
 
                     client
-                    .post('/vtest/testdb/test-schema/' + doc._id)
+                    .put('/vtest/testdb/test-schema/' + doc._id)
                     .set('Authorization', 'Bearer ' + bearerToken)
                     .send({field1: 'updated doc'})
                     .expect(200)
@@ -356,7 +423,7 @@ describe('Application', function () {
                     doc.field1.should.equal('doc to update');
 
                     client
-                    .post('/vtest/testdb/test-schema/' + doc._id)
+                    .put('/vtest/testdb/test-schema/' + doc._id)
                     .set('Authorization', 'Bearer ' + bearerToken)
                     .send({field1: 'updated doc'})
                     .expect(200)

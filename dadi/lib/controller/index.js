@@ -139,6 +139,26 @@ Controller.prototype.prepareQueryOptions = function(options) {
   return response;
 }
 
+Controller.prototype.keyValidForSchema = function(key) {
+  if (key !== '_id' && this.model.schema.hasOwnProperty(key) === false) {
+    // check for dot notation so we can determine the datatype of the first part of the key
+    if (key.indexOf('.') > 0) {
+      var keyParts = key.split('.')
+      if (this.model.schema.hasOwnProperty(keyParts[0])) {
+        if (this.model.schema[keyParts[0]].type === 'Mixed') {
+          return true;
+        }
+      }
+    }
+
+    // field/key doesn't exist in the schema
+    return false;
+  }
+
+  // key exists in the schema, or
+  return true;
+}
+
 Controller.prototype.prepareQuery = function(req) {
   var path = url.parse(req.url, true);
   var apiVersion = path.pathname.split('/')[1];
@@ -148,11 +168,11 @@ Controller.prototype.prepareQuery = function(req) {
   // remove filter params that don't exist in
   // the model schema
   if (!_.isArray(query)) {
-      _.each(Object.keys(query), function (key) {
-          if (key !== '_id' && this.model.schema.hasOwnProperty(key) === false) {
-              delete query[key];
-          }
-      }, this);
+    _.each(Object.keys(query), function (key) {
+      if (!this.keyValidForSchema(key)) {
+        delete query[key];
+      }
+    }, this);
   }
 
   // if id is present in the url, add to the query

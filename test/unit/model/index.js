@@ -1013,6 +1013,24 @@ describe('Model', function () {
                 mod.validate.query({fieldName: 'foo'}).success.should.be.true;
                 done();
             });
+
+            it('should allow querying with key values too', function (done) {
+                var schema = help.getModelSchema();
+                schema = _.extend(schema, {
+                                            fieldMixed:
+                                             {
+                                               type: 'Mixed',
+                                               label: 'Mixed Field',
+                                               required: false,
+                                               display: { index: true, edit: true }
+                                             }
+                                           }
+                )
+
+                var mod = model('schemaTest', schema);
+                mod.validate.query({'fieldMixed.innerProperty': 'foo'}).success.should.be.true;
+                done();
+            });
         });
 
         describe('schema', function () {

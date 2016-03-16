@@ -1,5 +1,6 @@
 var should = require('should');
 var sinon = require('sinon');
+var _ = require('underscore');
 var controller = require(__dirname + '/../../dadi/lib/controller');
 var model = require(__dirname + '/../../dadi/lib/model');
 var cache = require(__dirname + '/../../dadi/lib/cache');
@@ -69,6 +70,34 @@ describe('Controller', function (done) {
                 stub.callCount.should.equal(1);
                 var findArgs = stub.returnsArg(0).args[0][0];
                 findArgs.hasOwnProperty('busted').should.be.false;
+                stub.restore();
+                done();
+            });
+
+            it('should allow Mixed fields to be queried using `unknown` params', function (done) {
+                var schema = help.getModelSchema();
+                schema = _.extend(schema, {
+                                            fieldMixed:
+                                             {
+                                               type: 'Mixed',
+                                               label: 'Mixed Field',
+                                               required: false,
+                                               display: { index: true, edit: true }
+                                             }
+                                           }
+                )
+
+                var mod = model('schemaTest', schema);
+                var stub = sinon.stub(mod, 'find');
+
+                var req = {
+                    url: '/foo/bar?filter={"fieldMixed.innerProperty":"foo"}'
+                };
+
+                controller(mod).get(req);
+                stub.callCount.should.equal(1);
+                var findArgs = stub.returnsArg(0).args[0][0];
+                findArgs.hasOwnProperty('fieldMixed.innerProperty').should.be.true;
                 stub.restore();
                 done();
             });

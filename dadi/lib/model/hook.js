@@ -13,15 +13,15 @@ var config = require(__dirname + '/../../../config');
  * @api public
  */
 var Hook = function (data, type) {
-	if (typeof data === 'string') {
-		this.name = data;
-	} else {
-		this.name = data.hook;
-		this.options = data.options;
-	}
+  if (typeof data === 'string') {
+    this.name = data;
+  } else {
+    this.name = data.hook;
+    this.options = data.options;
+  }
 
-	this.hook = require(config.get('paths.hooks') + '/' + this.name);
-	this.type = type;
+  this.hook = this.load();
+  this.type = type;
 };
 
 /**
@@ -33,27 +33,33 @@ var Hook = function (data, type) {
  * @api public
  */
 Hook.prototype.apply = function () {
-	switch (this.type) {
-		case 0: // Create
-			return this.hook(arguments[0], this.type, {
-				options: this.options
-			});
+  switch (this.type) {
+    case 0: // Create
+      return this.hook(arguments[0], this.type, {
+        options: this.options
+      });
 
-		case 1: // Update
-			return this.hook(arguments[0], this.type, {
-				updatedDocs: arguments[1],
-				options: this.options
-			});
+    case 1: // Update
+      return this.hook(arguments[0], this.type, {
+        updatedDocs: arguments[1],
+        options: this.options
+      });
 
-		case 2: // Delete
-			return this.hook(arguments[0], this.type, {
-				options: this.options
-			});
-	}
+    case 2: // Delete
+      return this.hook(arguments[0], this.type, {
+        options: this.options
+      });
+  }
 
-	return false;
+  return false;
 };
+
+Hook.prototype.load = function () {
+  return require(config.get('paths.hooks') + '/' + this.name);
+}
 
 module.exports = function (data, type) {
-	return new Hook(data, type);
+  return new Hook(data, type);
 };
+
+module.exports.Hook = Hook;

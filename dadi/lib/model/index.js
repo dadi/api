@@ -234,7 +234,7 @@ var convertApparentObjectIds = function (query) {
         }
         else {
             // nothing
-            console.log(typeof query[key]);
+            //console.log(query[key]);
         }
     });
     return query;

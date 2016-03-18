@@ -561,7 +561,7 @@ Model.prototype.delete = function (query, done) {
     // apply any existing `delete` hooks
     if (typeof this.settings.hooks.delete === 'object') {
         query = this.settings.hooks.delete.reduce((function (previous, current, index) {
-            var hook = new Hook(this.settings.hooks.update[index], 2);
+            var hook = new Hook(this.settings.hooks.delete[index], 2);
 
             return hook.apply(previous);
         }).bind(this), query);

@@ -5,29 +5,29 @@ var tokens = require(__dirname + '/tokens');
 var pathToRegexp = require('path-to-regexp');
 
 function mustAuthenticate(endpoints, path, reqMethod) {
-    path = url.parse(path, true);
+  path = url.parse(path, true);
 
-    // all /config requests must be authenticated
-    if (path.pathname.indexOf('config') > -1) return true;
+  // all /config requests must be authenticated
+  if (path.pathname.indexOf('config') > -1) return true;
 
-    // docs requests don't need to be authenticated
-    if (path.pathname.indexOf('docs') > 0) return false;
+  // docs requests don't need to be authenticated
+  if (path.pathname.indexOf('docs') > 0) return false;
 
-    var endpointKey = _.find(_.keys(endpoints), function (k){ return path.pathname.match(pathToRegexp(k)); });
+  var endpointKey = _.find(_.keys(endpoints), function (k){ return path.pathname.match(pathToRegexp(k)); });
 
-    if (!endpointKey) return true;
+  if (!endpointKey) return true;
 
-    if (endpoints[endpointKey].model && endpoints[endpointKey].model.settings) {
-        if (typeof endpoints[endpointKey].model.settings.authenticate === 'boolean') {
-            return endpoints[endpointKey].model.settings.authenticate;
-        }
-        else {
-            return endpoints[endpointKey].model.settings.authenticate.indexOf(reqMethod) > -1;
-        }
+  if (endpoints[endpointKey].model && endpoints[endpointKey].model.settings && endpoints[endpointKey].model.settings.hasOwnProperty('authenticate')) {
+    if (typeof endpoints[endpointKey].model.settings.authenticate === 'boolean') {
+      return endpoints[endpointKey].model.settings.authenticate;
     }
     else {
-        return true;
+      return endpoints[endpointKey].model.settings.authenticate.indexOf(reqMethod) > -1;
     }
+  }
+  else {
+    return true;
+  }
 }
 
 function isAuthorized(endpoints, req, client) {

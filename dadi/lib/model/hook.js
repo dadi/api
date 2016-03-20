@@ -3,9 +3,12 @@ var config = require(__dirname + '/../../../config');
 /**
  * Creates a new hook. Allowed types:
  *
- * 0: Create
- * 1: Update
- * 2: Delete
+ * beforeCreate
+ * afterCreate
+ * beforeUpdate
+ * afterUpdate
+ * beforeDelete
+ * afterDelete
  *
  * @param Mixed Hook data
  * @param Number Hook type
@@ -34,18 +37,33 @@ var Hook = function (data, type) {
  */
 Hook.prototype.apply = function () {
   switch (this.type) {
-    case 0: // Create
+    case 'beforeCreate':
       return this.hook(arguments[0], this.type, {
         options: this.options
       });
 
-    case 1: // Update
+    case 'afterCreate':
+      return this.hook(arguments[0], this.type, {
+        options: this.options
+      });
+
+    case 'beforeUpdate':
       return this.hook(arguments[0], this.type, {
         updatedDocs: arguments[1],
         options: this.options
       });
 
-    case 2: // Delete
+    case 'afterUpdate':
+      return this.hook(arguments[0], this.type, {
+        options: this.options
+      });
+
+    case 'beforeDelete':
+      return this.hook(arguments[0], this.type, {
+        options: this.options
+      });
+
+    case 'afterDelete':
       return this.hook(arguments[0], this.type, {
         options: this.options
       });

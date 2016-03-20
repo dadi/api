@@ -110,10 +110,10 @@ Model.prototype.createIndex = function(done) {
  */
 Model.prototype.create = function (obj, internals, done) {
 
-    // apply any existing `create` hooks
-    if (typeof this.settings.hooks.create === 'object') {
-        obj = this.settings.hooks.create.reduce((function (previous, current, index) {
-            var hook = new Hook(this.settings.hooks.create[index], 0);
+    // apply any existing `beforeCreate` hooks
+    if (typeof this.settings.hooks.beforeCreate === 'object') {
+        obj = this.settings.hooks.beforeCreate.reduce((function (previous, current, index) {
+            var hook = new Hook(this.settings.hooks.beforeCreate[index], 'beforeCreate');
 
             return hook.apply(previous);
         }).bind(this), obj);
@@ -169,6 +169,15 @@ Model.prototype.create = function (obj, internals, done) {
             var results = {
                 results: doc
             };
+
+            // apply any existing `afterCreate` hooks
+            if (typeof self.settings.hooks.afterCreate === 'object') {
+                self.settings.hooks.afterCreate.forEach(function (hookConfig, index) {
+                    var hook = new Hook(self.settings.hooks.afterCreate[index], 'afterCreate');
+
+                    return hook.apply(doc);
+                });
+            }
 
             if (self.history) {
                 self.history.create(obj, self, function(err, res) {
@@ -495,10 +504,10 @@ Model.prototype.update = function (query, update, internals, done) {
 
             updatedDocs = docs['results'];
 
-            // apply any existing `update` hooks
-            if (typeof self.settings.hooks.update === 'object') {
-                update = self.settings.hooks.update.reduce(function (previous, current, index) {
-                    var hook = new Hook(self.settings.hooks.update[index], 1);
+            // apply any existing `beforeUpdate` hooks
+            if (typeof self.settings.hooks.beforeUpdate === 'object') {
+                update = self.settings.hooks.beforeUpdate.reduce(function (previous, current, index) {
+                    var hook = new Hook(self.settings.hooks.beforeUpdate[index], 'beforeUpdate');
 
                     return hook.apply(previous, updatedDocs);
                 }, update);
@@ -519,6 +528,16 @@ Model.prototype.update = function (query, update, internals, done) {
 
                 var results = {};
 
+                var triggerAfterUpdateHook = function (docs) {
+                    if (typeof self.settings.hooks.afterUpdate === 'object') {
+                        self.settings.hooks.afterUpdate.forEach(function (hookConfig, index) {
+                            var hook = new Hook(self.settings.hooks.afterUpdate[index], 'afterUpdate');
+
+                            return hook.apply(docs);
+                        });
+                    }
+                };
+
                 // for each of the updated documents, create
                 // a history revision for it
                 if (self.history && updatedDocs.length > 0) {
@@ -526,6 +545,9 @@ Model.prototype.update = function (query, update, internals, done) {
                         if (err) return done(err);
 
                         results.results = docs;
+
+                        // apply any existing `afterUpdate` hooks
+                        triggerAfterUpdateHook(docs);
 
                         done(null, results);
                     });
@@ -535,6 +557,9 @@ Model.prototype.update = function (query, update, internals, done) {
                         if (err) return done(err);
 
                         results = doc;
+
+                        // apply any existing `afterUpdate` hooks
+                        triggerAfterUpdateHook(doc);
 
                         done(null, results);
                     });
@@ -558,10 +583,10 @@ Model.prototype.update = function (query, update, internals, done) {
  * @api public
  */
 Model.prototype.delete = function (query, done) {
-    // apply any existing `delete` hooks
-    if (typeof this.settings.hooks.delete === 'object') {
-        query = this.settings.hooks.delete.reduce((function (previous, current, index) {
-            var hook = new Hook(this.settings.hooks.delete[index], 2);
+    // apply any existing `beforeDelete` hooks
+    if (typeof this.settings.hooks.beforeDelete === 'object') {
+        query = this.settings.hooks.beforeDelete.reduce((function (previous, current, index) {
+            var hook = new Hook(this.settings.hooks.beforeDelete[index], 'beforeDelete');
 
             return hook.apply(previous);
         }).bind(this), query);
@@ -578,7 +603,20 @@ Model.prototype.delete = function (query, done) {
 
     var self = this;
     var _done = function (database) {
-        database.collection(self.name).remove(query, done);
+        database.collection(self.name).remove(query, function (err, docs) {
+            if (!err && (docs > 0)) {
+                // apply any existing `afterDelete` hooks
+                if (typeof self.settings.hooks.afterDelete === 'object') {
+                    self.settings.hooks.afterDelete.forEach(function (hookConfig, index) {
+                        var hook = new Hook(self.settings.hooks.afterDelete[index], 'afterDelete');
+
+                        return hook.apply(query);
+                    });
+                }
+            }
+
+            done.apply(this, arguments);
+        });
     };
 
     if (this.connection.db) return _done(this.connection.db);

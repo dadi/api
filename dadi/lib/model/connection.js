@@ -6,6 +6,10 @@ var EventEmitter = require('events').EventEmitter;
 var util = require('util');
 var _ = require('underscore');
 
+// instantiate once
+var mongoClient = new MongoClient();
+var _connections = []
+
 /**
  * Create `new Connection` with given options
  *
@@ -13,6 +17,22 @@ var _ = require('underscore');
  * @api public
  */
 var Connection = function (options) {
+    this.connectionOptions = this.getConnectionOptions(options);
+    this.connectionString = constructConnectionString(this.connectionOptions);
+
+    // connection readyState
+    // 0 = disconnected
+    // 1 = connected
+    // 2 = connecting
+    // 3 = disconnecting
+    this.readyState = 0;
+};
+
+// inherits from EventEmitter
+util.inherits(Connection, EventEmitter);
+
+
+Connection.prototype.getConnectionOptions = function (options) {
 
     options = options || {};
 
@@ -38,27 +58,17 @@ var Connection = function (options) {
       }
     }
 
-    this.connectionOptions = options;
+    var connectionOptions = options;
 
     // required config fields
-    if (!(this.connectionOptions.hosts && this.connectionOptions.hosts.length)) {
+    if (!(connectionOptions.hosts && connectionOptions.hosts.length)) {
         throw new Error('`hosts` Array is required for Connection');
     }
 
-    if (!this.connectionOptions.database) throw new Error('`database` String is required for Connection');
+    if (!connectionOptions.database) throw new Error('`database` String is required for Connection');
 
-    this.connectionString = constructConnectionString(this.connectionOptions);
-
-    // connection readyState
-    // 0 = disconnected
-    // 1 = connected
-    // 2 = connecting
-    // 3 = disconnecting
-    this.readyState = 0;
-};
-
-// inherits from EventEmitter
-util.inherits(Connection, EventEmitter);
+    return connectionOptions;
+}
 
 /**
  * Connects to the database as specified in the options, or the config
@@ -68,11 +78,15 @@ util.inherits(Connection, EventEmitter);
 Connection.prototype.connect = function () {
     this.readyState = 2;
 
-    this.mongoClient = new MongoClient();
-
     var self = this;
 
-    this.mongoClient.connect(this.connectionString, function(err, db) {
+    if (self.db) {
+      self.readyState = 1;
+      self.emit('connect', self.db);
+      return;
+    }
+
+    mongoClient.connect(this.connectionString, function(err, db) {
 
         if (err) {
             self.readyState = 0;
@@ -81,6 +95,8 @@ Connection.prototype.connect = function () {
 
         self.readyState = 1;
         self.db = db;
+
+        _connections[self.connectionOptions.database] = self;
 
         if (!self.connectionOptions.username || !self.connectionOptions.password) {
             return self.emit('connect', self.db);
@@ -93,8 +109,7 @@ Connection.prototype.connect = function () {
 
     });
 
-};
-
+}
 
 function constructConnectionString(options) {
 
@@ -193,13 +208,33 @@ function credentials(options) {
  * @api public
  */
 module.exports = function (options) {
+
     var conn = new Connection(options);
 
-    conn.on('error', function (err) {
-        console.log('Connection Error: ' + err + '. Using connection string "' + conn.connectionString + '"');
+    // conn.on('error', function (err) {
+    //   console.log('Connection Error: ' + err + '. Using connection string "' + conn.connectionString + '"');
+    // });
+
+    conn.on('connect', function (db) {
+      //console.log('  Connected. ConnectionId: ' + db.serverConfig.connectionPool.connectionId + ', open connections: ' + db.serverConfig.connectionPool.openConnections.length);
+      console.log('  Connected. DB Tag: ' + db.tag)
     });
 
-    conn.connect();
+    if (_connections[conn.connectionOptions.database]) {
+      conn = _connections[conn.connectionOptions.database];
+
+      if (conn.readyState === 2) {
+        setTimeout(function() {
+          conn.connect();
+        }, 2000)
+      }
+
+    }
+    else {
+      _connections[conn.connectionOptions.database] = conn;
+      conn.connect();
+    }
+
     return conn;
 };
 

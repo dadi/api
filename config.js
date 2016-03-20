@@ -265,6 +265,13 @@ var conf = convict({
       default: false
     }
   },
+  query: {
+    useVersionFilter: {
+      doc: "If true, the API version parameter is extracted from the request URL and passed to the database query",
+      format: Boolean,
+      default: false
+    }
+  },
   env: {
     doc: "The applicaton environment.",
     format: ["production", "development", "test", "qa"],

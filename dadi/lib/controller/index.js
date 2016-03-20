@@ -181,7 +181,9 @@ Controller.prototype.prepareQuery = function(req) {
   }
 
   // add the apiVersion filter
-  _.extend(query, { apiVersion : apiVersion });
+  if (config.get('query.useVersionFilter')) {
+    _.extend(query, { apiVersion : apiVersion });
+  }
 
   // add the model's default filters, if set
   if (typeof this.model.settings.defaultFilters === 'object') {

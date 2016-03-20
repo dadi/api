@@ -5,6 +5,7 @@ var controller = require(__dirname + '/../../dadi/lib/controller');
 var model = require(__dirname + '/../../dadi/lib/model');
 var cache = require(__dirname + '/../../dadi/lib/cache');
 var help = require(__dirname + '/help');
+var config = require(__dirname + '/../../config');
 
 describe('Controller', function (done) {
 
@@ -155,6 +156,27 @@ describe('Controller', function (done) {
                 res.statusCode.should.eql(400);
                 done();
             });
+
+            it('should not pass apiVersion in query if not configured', function (done) {
+
+              config.set('query.useVersionFilter', false)
+
+              var mod = model('testModel', null, help.getModelSchemaWithMultipleFields(), help.getModelSettings());
+              var stub = sinon.stub(mod, 'find');
+
+              var req = {
+                  url: '/v1/bar'
+              };
+
+              controller(mod).get(req);
+              stub.restore();
+              config.set('query.useVersionFilter', true)
+
+              stub.callCount.should.equal(1);
+              var findArgs = stub.returnsArg(0).args[0][0];
+              findArgs.hasOwnProperty('apiVersion').should.be.false;
+              done();
+            })
 
             it('should pass model\'s default filters to the find query', function (done) {
                 var mod = model('testModel', null, help.getModelSchemaWithMultipleFields(), help.getModelSettings());

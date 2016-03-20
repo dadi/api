@@ -561,7 +561,7 @@ describe('Application', function () {
                 });
             });
 
-            it('should get documents from correct API version', function (done) {
+            it('should ignore apiVersion when getting documents if useVersionFilter is not set', function (done) {
 
                 var jsSchemaString = fs.readFileSync(__dirname + '/../new-schema.json', {encoding: 'utf8'});
 
@@ -598,6 +598,60 @@ describe('Application', function () {
                                     .expect('content-type', 'application/json')
                                     .end(function (err, res) {
                                         if (err) return done(err);
+
+                                        res.body['results'].should.exist;
+                                        res.body['results'].should.be.Array;
+                                        res.body['results'][0].apiVersion.should.equal('vtest');
+                                        done();
+                                    });
+                                }, 300);
+                            });
+                        }, 300);
+                    });
+                });
+            });
+
+            it('should get documents from correct API version when useVersionFilter is set', function (done) {
+
+              config.set('query.useVersionFilter', true)
+
+                var jsSchemaString = fs.readFileSync(__dirname + '/../new-schema.json', {encoding: 'utf8'});
+
+                help.createDoc(bearerToken, function (err, doc) {
+                    if (err) return done(err);
+
+                    doc.apiVersion.should.equal('vtest');
+
+                    // create new API endpoint
+                    var client = request(connectionString);
+
+                    client
+                    .post('/v1/testdb/test-schema/config')
+                    .send(jsSchemaString)
+                    .set('content-type', 'text/plain')
+                    .set('Authorization', 'Bearer ' + bearerToken)
+                    .expect(200)
+                    .expect('content-type', 'application/json')
+                    .end(function (err, res) {
+                        if (err) return done(err);
+
+                        // Wait for a few seconds then make request to test that the new endpoint is working
+                        setTimeout(function () {
+
+                            var testdoc = { newField: "test string" };
+                            help.createDocWithSpecificVersion(bearerToken, 'v1', testdoc, function (err, doc) {
+                                if (err) return done(err);
+
+                                setTimeout(function () {
+                                    client
+                                    .get('/v1/testdb/test-schema')
+                                    .set('Authorization', 'Bearer ' + bearerToken)
+                                    .expect(200)
+                                    .expect('content-type', 'application/json')
+                                    .end(function (err, res) {
+                                        if (err) return done(err);
+
+                                        config.set('query.useVersionFilter', false)
 
                                         res.body['results'].should.exist;
                                         res.body['results'].should.be.Array;
@@ -746,7 +800,7 @@ describe('Application', function () {
                         res.body['results'].should.exist;
                         res.body['results'].should.be.Array;
 
-                        var obj = _.sample(res.body['results']);
+                        var obj = _.sample(_.compact(_.map(res.body['results'], function(x) { if (x.hasOwnProperty('field1')) return x; } )));
                         Object.keys(obj).length.should.equal(1);
                         Object.keys(obj)[0].should.equal("field1");
 
@@ -1228,8 +1282,10 @@ describe('Application', function () {
 
                         var max = '';
                         res.body['results'].forEach(function (doc) {
-                            doc.field1.should.not.be.below(max);
-                            max = doc.field1;
+                            if (doc.field1) {
+                              doc.field1.should.not.be.below(max);
+                              max = doc.field1;
+                            }
                         });
 
                         done();

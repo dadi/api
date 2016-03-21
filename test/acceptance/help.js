@@ -54,12 +54,15 @@ module.exports.createDocWithSpecificVersion = function (token, apiVersion, doc, 
 module.exports.dropDatabase = function (database, done) {
     if (database.indexOf('test') > -1) {
       var database = connection({'database':database||'test'});
-      database.on('connect', function (db) {
-          db.dropDatabase(function (err) {
-              if (err) return done(err);
-              db.close(true, done);
-          });
-      });
+      setTimeout(function() {
+        database.db.dropDatabase(function (err) {
+            if (err) {
+              return done(err);
+            }
+            //db.close(true, done);
+            return done()
+        });
+      }, 500)
     }
 };
 
@@ -73,10 +76,9 @@ module.exports.createClient = function (client, done) {
     }
 
     var clientStore = connection(config.get('auth.database'));
-
-    clientStore.on('connect', function (db) {
-        db.collection(clientCollectionName).insert(client, done);
-    });
+    setTimeout(function() {
+      clientStore.db.collection(clientCollectionName).insert(client, done);
+    }, 500)
 };
 
 module.exports.removeTestClients = function (done) {
@@ -84,10 +86,8 @@ module.exports.removeTestClients = function (done) {
   dbOptions.auth = true;
   var clientStore = connection(dbOptions);
 
-  clientStore.on('connect', function (db) {
-    var query = { "clientId": { $regex: /^test/ } };
-    db.collection(clientCollectionName).remove(query, done);
-  });
+  var query = { "clientId": { $regex: /^test/ } };
+  clientStore.db.collection(clientCollectionName).remove(query, done);
 };
 
 module.exports.clearCache = function () {

@@ -14,9 +14,9 @@ describe('Tokens', function () {
     before(function (done) {
         var conn = connection(config.get('auth.database'));
 
-        conn.on('connect', function (db) {
-            db.dropDatabase(done);
-        });
+        setTimeout(function() {
+          conn.db.dropDatabase(done);
+        }, 500);
     });
 
     after(function (done) {
@@ -42,12 +42,12 @@ describe('Tokens', function () {
       before(function (done) {
         var clientStore = connection(config.get('auth.database'));
 
-        clientStore.on('connect', function (db) {
-          db.collection(clientCollectionName).insert({
+        setTimeout(function() {
+          clientStore.db.collection(clientCollectionName).insert({
             clientId: 'test123',
             secret: 'superSecret'
           }, done);
-        });
+        }, 500);
       });
 
       it('should check the generated token doesn\'t already exist before returning token', function (done) {
@@ -87,12 +87,12 @@ describe('Tokens', function () {
         before(function (done) {
             var clientStore = connection(config.get('auth.database'));
 
-            clientStore.on('connect', function (db) {
-                db.collection(clientCollectionName).insert({
+            setTimeout(function() {
+              clientStore.db.collection(clientCollectionName).insert({
                     clientId: 'test123',
                     secret: 'superSecret'
                 }, done);
-            });
+            }, 500);
         });
 
         it('should return object for valid token', function (done) {

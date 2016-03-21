@@ -9,6 +9,11 @@ var config = require(__dirname + '/../../../config');
 describe('Model connection', function () {
     this.timeout(5000)
 
+    beforeEach(function(done) {
+      connection.resetConnections();
+      done()
+    })
+
     describe('constructor', function () {
         it('should be exposed', function (done) {
             connection.Connection.should.be.Function;
@@ -45,13 +50,12 @@ describe('Model connection', function () {
 
         var conn = connection(options);
 
-        conn.on('connect', function (db) {
-          console.log('emit callback')
-          db.should.be.an.instanceOf(Db);
+        setTimeout(function() {
+          conn.db.should.be.an.instanceOf(Db);
           conn.readyState.should.equal(1);
           conn.connectionString.should.eql("mongodb://127.0.0.1:27017/test?maxPoolSize=1");
           done();
-        });
+        }, 500)
     });
 
     it('should connect once to database', function (done) {
@@ -72,26 +76,23 @@ describe('Model connection', function () {
         var dbTag;
 
         var conn1 = connection(options);
-        conn1.on('connect', function (db) {
-          dbTag = db.tag;
-          db.should.be.an.instanceOf(Db);
+        setTimeout(function() {
+          conn1.db.should.be.an.instanceOf(Db);
           conn1.readyState.should.equal(1);
           conn1.connectionString.should.eql("mongodb://127.0.0.1:27017/test?maxPoolSize=1");
-        });
+          dbTag = conn1.db.tag;
+        }, 500)
 
-        var conn2;
-
+        var conn2 = connection(options);
         setTimeout(function() {
-          conn2 = connection(options);
-          conn2.on('connect', function (db) {
-            db.should.be.an.instanceOf(Db);
-            conn2.readyState.should.equal(1);
-            conn2.connectionString.should.eql("mongodb://127.0.0.1:27017/test?maxPoolSize=1");
+          conn2.db.should.be.an.instanceOf(Db);
+          conn2.readyState.should.equal(1);
+          conn2.connectionString.should.eql("mongodb://127.0.0.1:27017/test?maxPoolSize=1");
+          conn2.db.tag.should.eql(dbTag);
 
-            db.tag.should.eql(dbTag)
-            done();
-          });
-        })
+          done()
+        }, 500)
+
     });
 
     it('should connect with credentials', function (done) {
@@ -116,11 +117,11 @@ describe('Model connection', function () {
                 replicaSet: ""
             });
 
-            conn.on('connect', function (db) {
-                db.should.be.an.instanceOf(Db);
-                conn.readyState.should.equal(1);
-                done();
-            });
+            setTimeout(function() {
+              conn.db.should.be.an.instanceOf(Db);
+              conn.readyState.should.equal(1);
+              done()
+            }, 500)
         });
     });
 

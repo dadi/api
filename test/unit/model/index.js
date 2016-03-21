@@ -9,6 +9,12 @@ var help = require(__dirname + '/../help');
 var config = require(__dirname + '/../../../config');
 
 describe('Model', function () {
+
+    beforeEach(function(done) {
+      connection.resetConnections()
+      done()
+    })
+
     it('should export a function', function (done) {
         model.should.be.Function;
         done();
@@ -41,7 +47,9 @@ describe('Model', function () {
         });
 
         it('should accept database connection as third argument', function (done) {
+
             config.set('database.enableCollectionDatabases', true);
+
             var conn = connection({
                 "username": "",
                 "password": "",
@@ -54,6 +62,7 @@ describe('Model', function () {
                     }
                 ]
             });
+
             var mod = model('testModelName', help.getModelSchema(), conn)
             should.exist(mod.connection);
             mod.connection.connectionOptions.hosts[0].host.should.equal('localhost');
@@ -420,8 +429,8 @@ describe('Model', function () {
         });
 
         it('should support compound indexes', function (done) {
-	    help.cleanUpDB();
-	    var conn = connection();
+      	    //help.cleanUpDB();
+      	    var conn = connection();
             var fields = help.getModelSchema();
             var schema = {};
             schema.fields = fields;

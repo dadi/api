@@ -211,14 +211,13 @@ module.exports = function (options) {
 
     var conn = new Connection(options);
 
-    // conn.on('error', function (err) {
-    //   console.log('Connection Error: ' + err + '. Using connection string "' + conn.connectionString + '"');
-    // });
-
-    conn.on('connect', function (db) {
-      //console.log('  Connected. ConnectionId: ' + db.serverConfig.connectionPool.connectionId + ', open connections: ' + db.serverConfig.connectionPool.openConnections.length);
-      console.log('  Connected. DB Tag: ' + db.tag)
+    conn.on('error', function (err) {
+      console.log('Connection Error: ' + err + '. Using connection string "' + conn.connectionString + '"');
     });
+
+    // conn.on('connect', function (db) {
+    //   console.log('  Connected. DB Tag: ' + db.tag)
+    // });
 
     if (_connections[conn.connectionOptions.database]) {
       conn = _connections[conn.connectionOptions.database];
@@ -228,7 +227,6 @@ module.exports = function (options) {
           conn.connect();
         }, 2000)
       }
-
     }
     else {
       _connections[conn.connectionOptions.database] = conn;
@@ -237,6 +235,11 @@ module.exports = function (options) {
 
     return conn;
 };
+
+// test helper
+module.exports.resetConnections = function () {
+  _connections = [];
+}
 
 // export constructor
 module.exports.Connection = Connection;

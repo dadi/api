@@ -8,6 +8,11 @@ var config = require(__dirname + '/../../config');
 
 describe('Model', function () {
 
+  beforeEach(function(done) {
+    connection.resetConnections()
+    done()
+  })
+
   it('should connect to the specified database', function (done) {
 
     var dbConfig = {
@@ -97,11 +102,11 @@ describe('Model', function () {
     var schema = require(__dirname + '/workspace/secondary-db/vtest/secondary/collection.secondary-schema.json');
 
     var mod = model('secondary-schema', help.getFieldsFromSchema(schema), null, schema.settings, 'secondary');
+    configStub.restore();
+
     var conn = mod.connection;
 
     conn.connectionOptions.database.should.equal('test');
-
-    configStub.restore();
 
     done();
   });
@@ -120,7 +125,17 @@ describe('Model', function () {
           "database": "test",
           "ssl": false,
           "replicaSet": "",
-          "enableCollectionDatabases": true
+          "enableCollectionDatabases": true,
+          "secondary": {
+            "hosts": [
+              {
+                "host": "127.0.0.1",
+                "port": 27017
+              }
+            ],
+            "replicaSet": false,
+            "ssl": false
+          }
     }
 
     var loggingConfig = config.get('logging');
@@ -132,11 +147,11 @@ describe('Model', function () {
     var schema = require(__dirname + '/workspace/secondary-db/vtest/secondary/collection.secondary-schema.json');
 
     var mod = model('secondary-schema', help.getFieldsFromSchema(schema), null, schema.settings, 'secondary');
-    var conn = mod.connection;
-
-    conn.connectionString.should.equal('mongodb://seramatest:serama123@127.0.0.1:27017/secondary');
 
     configStub.restore();
+
+    var conn = mod.connection;
+    conn.connectionString.should.equal('mongodb://seramatest:serama123@127.0.0.1:27017/secondary');
 
     done();
   });
@@ -170,11 +185,11 @@ describe('Model', function () {
     var schema = require(__dirname + '/workspace/secondary-db/vtest/secondary/collection.secondary-schema.json');
 
     var mod = model('secondary-schema', help.getFieldsFromSchema(schema), null, schema.settings, 'secondary');
+    configStub.restore();
+
     var conn = mod.connection;
 
     conn.connectionString.should.equal('mongodb://seramatest:serama123@127.0.0.1:27017/secondary');
-
-    configStub.restore();
 
     done();
   });
@@ -215,11 +230,10 @@ describe('Model', function () {
     var schema = require(__dirname + '/workspace/secondary-db/vtest/secondary/collection.secondary-schema.json');
 
     var mod = model('secondary-schema', help.getFieldsFromSchema(schema), null, schema.settings, 'secondary');
+    configStub.restore();
     var conn = mod.connection;
 
     conn.connectionString.should.equal('mongodb://test:123@127.0.0.1:27016/secondary');
-
-    configStub.restore();
 
     done();
   });

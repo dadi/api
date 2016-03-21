@@ -2,10 +2,20 @@ var sinon = require('sinon');
 var should = require('should');
 var request = require('supertest');
 var config = require(__dirname + '/../../config');
+var connection = require(__dirname + '/../../dadi/lib/model/connection');
 var tokens = require(__dirname + '/../../dadi/lib/auth/tokens');
 var tokenStore = require(__dirname + '/../../dadi/lib/auth/tokenStore');
 
 describe('Token Store', function () {
+
+    before(function (done) {
+        var conn = connection(config.get('auth.database'));
+
+        setTimeout(function() {
+          conn.db.dropDatabase(done);
+        }, 500);
+    });
+
     it('should export function that returns an instance', function (done) {
         var store = tokenStore();
         store.should.be.an.instanceOf(tokenStore.Store);

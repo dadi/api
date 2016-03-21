@@ -108,6 +108,7 @@ describe('Application', function () {
     })
 
     describe('collections api', function () {
+        this.timeout(4000)
         before(function (done) {
             app.start(done);
         });
@@ -2266,7 +2267,6 @@ describe('Application', function () {
 
                 function loadConfig(server) {
 
-                  console.log(server)
                   domainConfigPath = './config/' + server.host + ':' + server.port + '.json';
 
                   try {

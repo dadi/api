@@ -12,14 +12,14 @@ var conf = convict({
   },
 	server: {
     host: {
-      doc: "API IP address",
-      format: 'ipaddress',
-      default: '0.0.0.0'
+      doc: "Accept connections on the specified address. If the host is omitted, the server will accept connections on any IPv6 address (::) when IPv6 is available, or any IPv4 address (0.0.0.0) otherwise.",
+      format: '*',
+      default: null
     },
     port: {
-      doc: "port to bind",
-      format: 'port',
-      default: 8080
+      doc: "Accept connections on the specified port. A value of zero will assign a random port.",
+      format: Number,
+      default: 0
     },
     name: {
       doc: "Server name",

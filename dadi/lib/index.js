@@ -87,7 +87,7 @@ Server.prototype.start = function (done) {
     // start listening
     var server = this.server = app.listen(config.get('server.port'), config.get('server.host'));
 
-    server.on('listening', onListening);
+    server.on('listening', function() { onListening(this) });
     server.on('error', onError);
 
     this.loadApi(options);
@@ -779,17 +779,19 @@ function buildVerbMethod(verb) {
     };
 }
 
-function onListening(e) {
+function onListening(server) {
   var env = config.get('env');
 
+  var address = server.address()
+
   if (env !== 'test') {
-    var message = "Started DADI API '" + config.get('app.name') + "' (" + version + ", Node.JS v" + nodeVersion + ", " + env + " mode) on " + config.get('server.host') + ":" + config.get('server.port');
+    var message = "Started DADI API '" + config.get('app.name') + "' (" + version + ", Node.JS v" + nodeVersion + ", " + env + " mode) on " + address.address + ":" + address.port;
     var startText = '';
     startText += '  ----------------------------\n';
     startText += '  ' + config.get('app.name').green + '\n';
     startText += '  Started \'DADI API\'\n';
     startText += '  ----------------------------\n';
-    startText += '  Server:      '.green + config.get('server.host') + ':' + config.get('server.port') + '\n';
+    startText += '  Server:      '.green + address.address + ':' + address.port + '\n';
     startText += '  Version:     '.green + version + '\n';
     startText += '  Node.JS:     '.green + nodeVersion + '\n';
     startText += '  Environment: '.green + env + '\n';

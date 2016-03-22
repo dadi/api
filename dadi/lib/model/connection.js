@@ -17,7 +17,7 @@ var _connections = []
  * @api public
  */
 var Connection = function (options) {
-    this.connectionOptions = this.getConnectionOptions(options);
+    this.connectionOptions = getConnectionOptions(options);
     this.connectionString = constructConnectionString(this.connectionOptions);
 
     // connection readyState
@@ -30,45 +30,6 @@ var Connection = function (options) {
 
 // inherits from EventEmitter
 util.inherits(Connection, EventEmitter);
-
-
-Connection.prototype.getConnectionOptions = function (options) {
-
-    options = options || {};
-
-    var dbConfig = config.get('database');
-
-    if (options.auth) {
-      // extend primary database config with the auth
-      // database options
-      options = _.extend({}, dbConfig, options);
-    }
-    else {
-      if (options.database && dbConfig.enableCollectionDatabases) {
-        if (dbConfig[options.database]) {
-          options = _.extend(dbConfig, dbConfig[options.database], options);
-        }
-        else {
-          options = _.extend(dbConfig, options);
-        }
-      }
-      else {
-        // use primary database config
-        options = _.extend({}, dbConfig);
-      }
-    }
-
-    var connectionOptions = options;
-
-    // required config fields
-    if (!(connectionOptions.hosts && connectionOptions.hosts.length)) {
-        throw new Error('`hosts` Array is required for Connection');
-    }
-
-    if (!connectionOptions.database) throw new Error('`database` String is required for Connection');
-
-    return connectionOptions;
-}
 
 /**
  * Connects to the database as specified in the options, or the config
@@ -109,6 +70,44 @@ Connection.prototype.connect = function () {
 
     });
 
+}
+
+function getConnectionOptions(options) {
+
+    options = options || {};
+
+    var dbConfig = config.get('database');
+
+    if (options.auth) {
+      // extend primary database config with the auth
+      // database options
+      options = _.extend({}, dbConfig, options);
+    }
+    else {
+      if (options.database && dbConfig.enableCollectionDatabases) {
+        if (dbConfig[options.database]) {
+          options = _.extend(dbConfig, dbConfig[options.database], options);
+        }
+        else {
+          options = _.extend(dbConfig, options);
+        }
+      }
+      else {
+        // use primary database config
+        options = _.extend({}, dbConfig);
+      }
+    }
+
+    var connectionOptions = options;
+
+    // required config fields
+    if (!(connectionOptions.hosts && connectionOptions.hosts.length)) {
+        throw new Error('`hosts` Array is required for Connection');
+    }
+
+    if (!connectionOptions.database) throw new Error('`database` String is required for Connection');
+
+    return connectionOptions;
 }
 
 function constructConnectionString(options) {
@@ -208,19 +207,12 @@ function credentials(options) {
  * @api public
  */
 module.exports = function (options) {
+    var conn;
+    var connectionOptions = getConnectionOptions(options);
 
-    var conn = new Connection(options);
-
-    conn.on('error', function (err) {
-      console.log('Connection Error: ' + err + '. Using connection string "' + conn.connectionString + '"');
-    });
-
-    // conn.on('connect', function (db) {
-    //   console.log('  Connected. DB Tag: ' + db.tag)
-    // });
-
-    if (_connections[conn.connectionOptions.database]) {
-      conn = _connections[conn.connectionOptions.database];
+    // if a connection exists for the specified database, return it
+    if (_connections[connectionOptions.database]) {
+      conn = _connections[connectionOptions.database];
 
       if (conn.readyState === 2) {
         setTimeout(function() {
@@ -228,7 +220,14 @@ module.exports = function (options) {
         }, 2000)
       }
     }
+    // else create a new connection
     else {
+      conn = new Connection(options);
+
+      conn.on('error', function (err) {
+        console.log('Connection Error: ' + err + '. Using connection string "' + conn.connectionString + '"');
+      });
+
       _connections[conn.connectionOptions.database] = conn;
       conn.connect();
     }

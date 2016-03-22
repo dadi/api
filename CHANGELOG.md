@@ -1,4 +1,14 @@
 ### Change Log
+
+##### v1.3.0 (2016-02-26)
+
+Fix #13: Removed auto-creation of API docs path (should only happen if api-doc module is installed)
+Close #14: Load domain-specific configuration if matching file exists
+Close #16: Check that generated auth token doesn't already exist, generate new one if it does
+Close #18: Validate `skip` & `page` parameters before calling `model.find()`
+Close #19: Database `replicaSet` property should be a String, not a Boolean
+Cache: add Redis caching ability and extend config to allow switching between filesystem and Redis caches
+Cache: locate endpoint matching the request URL using path-to-regex so we can be certain of a match
 ---
 ##### v1.2.2 (2016-01-18)
 * Requests for paths containing `docs` skip authentication

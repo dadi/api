@@ -1,4 +1,3 @@
-
 var version = require('../../package.json').version;
 var nodeVersion = Number(process.version.match(/^v(\d+\.\d+)/)[1]);
 
@@ -24,6 +23,11 @@ var status = require(__dirname + '/status');
 
 var config = require(__dirname + '/../../config');
 var configPath = path.resolve(config.configPath());
+
+if (config.get('env') !== 'test') {
+  // add timestamps in front of log messages
+  require('console-stamp')(console, 'yyyy-mm-dd HH:MM:ss.l');
+}
 
 // add an optional id component to the path, that is formatted to be matched by the `path-to-regexp` module
 var idParam = ':id([a-fA-F0-9]{24})?';
@@ -786,7 +790,7 @@ function onListening(server) {
 
   if (env !== 'test') {
     var message = "Started DADI API '" + config.get('app.name') + "' (" + version + ", Node.JS v" + nodeVersion + ", " + env + " mode) on " + address.address + ":" + address.port;
-    var startText = '';
+    var startText = '\n\n';
     startText += '  ----------------------------\n';
     startText += '  ' + config.get('app.name').green + '\n';
     startText += '  Started \'DADI API\'\n';
@@ -797,9 +801,9 @@ function onListening(server) {
     startText += '  Environment: '.green + env + '\n';
     startText += '  ----------------------------\n';
 
-    console.log(startText);
+    startText += '\n\n  Copyright ' + String.fromCharCode(169) + ' 2015 DADI+ Limited (https://dadi.tech)'.white +'\n';
 
-    console.log('  Copyright %s 2015 DADI+ Limited (https://dadi.tech)'.white, String.fromCharCode(169));
+    console.log(startText)
   }
 }
 

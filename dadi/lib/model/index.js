@@ -116,7 +116,7 @@ Model.prototype.create = function (obj, internals, done) {
     }
 
     // apply any existing `beforeCreate` hooks
-    if (typeof this.settings.hooks.beforeCreate === 'object') {
+    if (this.settings.hasOwnProperty('hooks') && (typeof this.settings.hooks.beforeCreate === 'object')) {
         obj.forEach(function (doc) {
             doc = self.settings.hooks.beforeCreate.reduce(function (previous, current, index) {
                 var hook = new Hook(self.settings.hooks.beforeCreate[index], 'beforeCreate');
@@ -166,7 +166,7 @@ Model.prototype.create = function (obj, internals, done) {
             };
 
             // apply any existing `afterCreate` hooks
-            if (typeof self.settings.hooks.afterCreate === 'object') {
+            if (self.settings.hasOwnProperty('hooks') && (typeof self.settings.hooks.afterCreate === 'object')) {
                 obj.forEach(function (doc) {
                     self.settings.hooks.afterCreate.forEach(function (hookConfig, index) {
                         var hook = new Hook(self.settings.hooks.afterCreate[index], 'afterCreate');
@@ -502,7 +502,7 @@ Model.prototype.update = function (query, update, internals, done) {
             updatedDocs = docs['results'];
 
             // apply any existing `beforeUpdate` hooks
-            if (typeof self.settings.hooks.beforeUpdate === 'object') {
+            if (self.settings.hasOwnProperty('hooks') && (typeof self.settings.hooks.beforeUpdate === 'object')) {
                 update = self.settings.hooks.beforeUpdate.reduce(function (previous, current, index) {
                     var hook = new Hook(self.settings.hooks.beforeUpdate[index], 'beforeUpdate');
 
@@ -526,7 +526,7 @@ Model.prototype.update = function (query, update, internals, done) {
                 var results = {};
 
                 var triggerAfterUpdateHook = function (docs) {
-                    if (typeof self.settings.hooks.afterUpdate === 'object') {
+                    if (self.settings.hasOwnProperty('hooks') && (typeof self.settings.hooks.afterUpdate === 'object')) {
                         self.settings.hooks.afterUpdate.forEach(function (hookConfig, index) {
                             var hook = new Hook(self.settings.hooks.afterUpdate[index], 'afterUpdate');
 
@@ -581,7 +581,7 @@ Model.prototype.update = function (query, update, internals, done) {
  */
 Model.prototype.delete = function (query, done) {
     // apply any existing `beforeDelete` hooks
-    if (typeof this.settings.hooks.beforeDelete === 'object') {
+    if (this.settings.hasOwnProperty('hooks') && (typeof this.settings.hooks.beforeDelete === 'object')) {
         query = this.settings.hooks.beforeDelete.reduce((function (previous, current, index) {
             var hook = new Hook(this.settings.hooks.beforeDelete[index], 'beforeDelete');
 
@@ -603,7 +603,7 @@ Model.prototype.delete = function (query, done) {
         database.collection(self.name).remove(query, function (err, docs) {
             if (!err && (docs > 0)) {
                 // apply any existing `afterDelete` hooks
-                if (typeof self.settings.hooks.afterDelete === 'object') {
+                if (self.settings.hasOwnProperty('hooks') && (typeof self.settings.hooks.afterDelete === 'object')) {
                     self.settings.hooks.afterDelete.forEach(function (hookConfig, index) {
                         var hook = new Hook(self.settings.hooks.afterDelete[index], 'afterDelete');
 

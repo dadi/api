@@ -25,6 +25,18 @@ var conf = convict({
       doc: "Server name",
       format: String,
       default: "DADI (API)"
+    },
+    http2: {
+    	enabled: {
+        doc: "If enabled, server support http2",
+        format: Boolean,
+        default: true
+      },
+      key_path: {
+        doc: "Key File",
+        format: String,
+        default: "./config/example"
+      }
     }
   },
   database: {

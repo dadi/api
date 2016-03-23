@@ -28,7 +28,8 @@
     "request": "~2.67.0",
     "stack-trace": "latest",
     "underscore": "~1.8.0",
-    "underscore.string": "^3.2.2"
+    "underscore.string": "^3.2.2",
+    "spdy": "~3.2.3"
   },
   "devDependencies": {
     "env-test": "^1.0.0",

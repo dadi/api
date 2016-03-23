@@ -1,7 +1,13 @@
 var http = require('http');
 var url = require('url');
 var pathToRegexp = require('path-to-regexp');
+
+
+var fs = require('fs');
+var path = require('path');
+var spdy = require('spdy');
 var log = require(__dirname + '/../log');
+var config = require(__dirname + '/../../../config');
 
 var Api = function () {
     this.paths = {};
@@ -54,7 +60,7 @@ Api.prototype.unuse = function (path) {
 }
 
 /**
- *  convenience method that creates http server and attaches listener
+ *  convenience method that creates ttp/2 server and attaches listener
  *  @param {Number} port
  *  @param {String} host
  *  @param {Number} backlog
@@ -63,7 +69,14 @@ Api.prototype.unuse = function (path) {
  *  @api public
  */
 Api.prototype.listen = function (port, host, backlog, done) {
-    return http.createServer(this.listener).listen(port, host, backlog, done);
+    if(config.get('server.http2.enabled'))
+        return spdy.createServer({
+            key: fs.readFileSync(path.join(config.get('server.http2.key_path'), '/localhost.key')),
+            cert: fs.readFileSync(path.join(config.get('server.http2.key_path'), '/localhost.crt'))
+          }, this.listener).listen(port, host, backlog, done);
+    else {
+        return http.createServer(this.listener).listen(port, host, backlog, done);
+    }
 };
 
 /**

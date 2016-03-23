@@ -1999,6 +1999,23 @@ describe('Application', function () {
             });
         });
 
+        it('should require authentication by default', function (done) {
+            var client = request(connectionString);
+            client
+            .get('/v1/test-endpoint')
+            //.set('Authorization', 'Bearer ' + bearerToken)
+            .expect(401)
+            .end(done);
+        });
+
+        it('should allow unauthenticated requests if configured', function (done) {
+            var client = request(connectionString);
+            client
+            .get('/v1/test-endpoint-unauth')
+            .expect(200)
+            .end(done);
+        });
+
         it('should allow custom routing via config() function', function (done) {
 
             var client = request(connectionString);

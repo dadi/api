@@ -16,6 +16,7 @@ simpleSlugifyHook += "}\n"
 var simpleFunction = eval(simpleSlugifyHook);
 
 var optionsSlugifyHook = "function slugify(text) {\n"
+optionsSlugifyHook += "  if (!text)return '';\n";
 optionsSlugifyHook += "  return text.toString().toLowerCase().replace(/ /g, '-')\n";
 optionsSlugifyHook += "}\n"
 optionsSlugifyHook += "module.exports = function (obj, type, data) { \n"
@@ -24,14 +25,14 @@ optionsSlugifyHook += "  return obj;\n"
 optionsSlugifyHook += "}\n"
 var optionsFunction = eval(optionsSlugifyHook);
 
-var logHook = "function writeToLog(obj) {\n"
+var logHook = "function writeToLog(obj, filename) {\n"
 logHook += "  var fs = require('fs')\n"
 logHook += "  var path = require('path')\n"
-logHook += "  var file = path.resolve(path.join(__dirname, 'testDeleteHook.log'))\n"
-logHook += "  fs.writeFileSync(file, JSON.stringify(obj))\n"
+logHook += "  var file = path.resolve(path.join(__dirname, filename))\n"
+logHook += "  fs.appendFileSync(file, JSON.stringify(obj) + '\\n')\n"
 logHook += "}\n"
 logHook += "module.exports = function (obj, type, data) { \n"
-logHook += "  writeToLog(obj);\n"
+logHook += "  writeToLog(obj, data.options.filename);\n"
 logHook += "  return obj;\n"
 logHook += "}\n"
 var logFunction = eval(logHook);
@@ -83,7 +84,7 @@ describe('Hook', function () {
     it('should modify the passed argument', function(done) {
       sinon.stub(hook.Hook.prototype, 'load').returns(simpleFunction);
 
-      var h = new hook('test', 0);
+      var h = new hook('test', 'beforeCreate');
       var title = "Title Of The Article";
       var slug = h.apply(title);
 
@@ -104,7 +105,7 @@ describe('Hook', function () {
         }
       }
 
-      var h = new hook(data, 0);
+      var h = new hook(data, 'beforeCreate');
       var obj = {
         title: "Title Of The Article",
         slug: ''
@@ -118,10 +119,10 @@ describe('Hook', function () {
     })
   })
 
-  describe('`create` hook', function () {
+  describe('`beforeCreate` hook', function () {
     beforeEach(help.cleanUpDB);
 
-    it('should modify documents before create', function (done) {
+    it('should modify single documents before create', function (done) {
       var conn = connection();
       var schema = help.getModelSchema();
       schema.title = {
@@ -137,7 +138,7 @@ describe('Hook', function () {
       var settings = {
         storeRevisions : false,
         hooks: {
-          create: [{
+          beforeCreate: [{
             hook: "slug",
             options: {
               from: "title",
@@ -164,9 +165,178 @@ describe('Hook', function () {
         });
       });
     });
+
+    it('should modify an array of documents before create', function (done) {
+      var conn = connection();
+      var schema = help.getModelSchema();
+      schema.title = {
+          type: 'String',
+          required: false
+      }
+
+      schema.slug = {
+          type: 'String',
+          required: false
+      }
+
+      var settings = {
+        storeRevisions : false,
+        hooks: {
+          beforeCreate: [{
+            hook: "slug",
+            options: {
+              from: "title",
+              to: "slug"
+            }
+          }]
+        }
+      }
+
+      sinon.stub(hook.Hook.prototype, 'load').returns(optionsFunction);
+
+      var docs = [
+        {fieldName: 'foo', title: 'Article One', slug: ''},
+        {fieldName: 'foo', title: 'Article Two', slug: ''}
+      ]
+
+      var mod = model('testModelName', schema, conn, settings);
+
+      mod.create(docs, function (err, result) {
+        if (err) return done(err);
+
+        hook.Hook.prototype.load.restore();
+
+        // find the obj we just created
+        mod.find({fieldName: 'foo'}, function (err, doc) {
+          if (err) return done(err);
+          doc.results[0].slug.should.eql('article-one');
+          doc.results[1].slug.should.eql('article-two');
+          done();
+        });
+      });
+    });
   });
 
-  describe('`update` hook', function () {
+  describe('`afterCreate` hook', function () {
+    beforeEach(help.cleanUpDB);
+
+    it('should modify single documents after create', function (done) {
+      var conn = connection();
+      var schema = help.getModelSchema();
+      schema.title = {
+          type: 'String',
+          required: false
+      }
+
+      schema.slug = {
+          type: 'String',
+          required: false
+      }
+
+      var settings = {
+        storeRevisions : false,
+        hooks: {
+          afterCreate: [{
+            hook: "writeToLog",
+            options: {
+              filename: 'testAfterCreateHook.log'
+            }
+          }]
+        }
+      }
+
+      sinon.stub(hook.Hook.prototype, 'load').returns(logFunction);
+
+      var mod = model('testModelName', schema, conn, settings);
+
+      mod.create({fieldName: 'foo', title: 'Article One', slug: ''}, function (err, result) {
+        if (err) return done(err);
+
+        // find the obj we just created
+        mod.find({fieldName: 'foo'}, function (err, doc) {
+          if (err) return done(err);
+
+          hook.Hook.prototype.load.restore();
+
+          doc.results[0].slug.should.eql('');
+
+          var fs = require('fs')
+          var path = require('path')
+          var file = path.resolve(path.join(__dirname, 'testAfterCreateHook.log'))
+          fs.stat(file, function(err, stats) {
+            (err === null).should.eql(true)
+            fs.unlinkSync(file)
+            done();
+          })
+        });
+      });
+    });
+
+    it('should modify an array of documents after create', function (done) {
+      var conn = connection();
+      var schema = help.getModelSchema();
+      schema.title = {
+          type: 'String',
+          required: false
+      }
+
+      schema.slug = {
+          type: 'String',
+          required: false
+      }
+
+      var settings = {
+        storeRevisions : false,
+        hooks: {
+          afterCreate: [{
+            hook: "writeToLog",
+            options: {
+              filename: 'testAfterCreateHook.log'
+            }
+          }]
+        }
+      }
+
+      sinon.stub(hook.Hook.prototype, 'load').returns(logFunction);
+
+      var docs = [
+        {fieldName: 'foo', title: 'Article One', slug: ''},
+        {fieldName: 'foo', title: 'Article Two', slug: ''}
+      ]
+
+      var mod = model('testModelName', schema, conn, settings);
+
+      mod.create(docs, function (err, result) {
+        if (err) return done(err);
+
+        // find the objs we just created
+        mod.find({fieldName: 'foo'}, function (err, doc) {
+          if (err) return done(err);
+
+          hook.Hook.prototype.load.restore();
+
+          doc.results[0].slug.should.eql('');
+          doc.results[1].slug.should.eql('');
+
+          var fs = require('fs')
+          var path = require('path')
+          var file = path.resolve(path.join(__dirname, 'testAfterCreateHook.log'))
+          fs.stat(file, function(err, stats) {
+            (err === null).should.eql(true)
+            var logFileBody = fs.readFileSync(file);
+            //var obj = JSON.parse(logFileBody.toString())
+            //console.log(logFileBody.toString())
+            var obj = JSON.parse(logFileBody.toString().split('\n')[0])
+            obj._id.toString().should.eql(doc.results[0]._id.toString())
+            fs.unlinkSync(file)
+            done();
+          })
+        });
+      });
+    });
+  });
+
+  describe('`beforeUpdate` hook', function () {
     beforeEach(help.cleanUpDB);
 
     it('should modify documents before update', function (done) {
@@ -185,7 +355,7 @@ describe('Hook', function () {
       var settings = {
         storeRevisions : false,
         hooks: {
-          update: [{
+          beforeUpdate: [{
             hook: "slug",
             options: {
               from: "title",
@@ -223,7 +393,69 @@ describe('Hook', function () {
     });
   });
 
-  describe('`delete` hook', function () {
+  describe('`afterUpdate` hook', function () {
+    beforeEach(help.cleanUpDB);
+
+    it('should modify documents after create', function (done) {
+      var conn = connection();
+      var schema = help.getModelSchema();
+      schema.title = {
+          type: 'String',
+          required: false
+      }
+
+      schema.slug = {
+          type: 'String',
+          required: false
+      }
+
+      var settings = {
+        storeRevisions : false,
+        hooks: {
+          afterUpdate: [{
+            hook: "writeToLog",
+            options: {
+              filename: 'testAfterUpdateHook.log'
+            }
+          }]
+        }
+      }
+
+      sinon.stub(hook.Hook.prototype, 'load').returns(logFunction);
+
+      var mod = model('testModelName', schema, conn, settings);
+
+      mod.create({fieldName: 'foo', title: 'Article One', slug: ''}, function (err, result) {
+        if (err) return done(err);
+
+        var id = result.results[0]._id.toString();
+
+        // update the obj we just created
+        mod.update({ _id: id }, {title: 'Article Two'}, function (err, doc) {
+          if (err) return done(err);
+
+          hook.Hook.prototype.load.restore();
+
+          doc.results[0].slug.should.eql('');
+
+          var fs = require('fs')
+          var path = require('path')
+          var file = path.resolve(path.join(__dirname, 'testAfterUpdateHook.log'))
+          fs.stat(file, function(err, stats) {
+            (err === null).should.eql(true)
+            var logFileBody = fs.readFileSync(file);
+            var obj = JSON.parse(logFileBody.toString())
+            
+            obj.results[0]._id.toString().should.eql(doc.results[0]._id.toString())
+            fs.unlinkSync(file)
+            done();
+          })
+        });
+      });
+    });
+  });
+
+  describe('`beforeDelete` hook', function () {
     beforeEach(help.cleanUpDB);
 
     // this one writes to a log file before deleting the document
@@ -244,8 +476,11 @@ describe('Hook', function () {
       var settings = {
         storeRevisions : false,
         hooks: {
-          delete: [{
-            hook: "writeToLog"
+          beforeDelete: [{
+            hook: "writeToLog",
+            options: {
+              filename: 'testBeforeDeleteHook.log'
+            }
           }]
         }
       }
@@ -272,7 +507,7 @@ describe('Hook', function () {
 
               var fs = require('fs')
               var path = require('path')
-              var file = path.resolve(path.join(__dirname, 'testDeleteHook.log'))
+              var file = path.resolve(path.join(__dirname, 'testBeforeDeleteHook.log'))
               fs.stat(file, function(err, stats) {
                 (err === null).should.eql(true)
                 fs.unlinkSync(file)

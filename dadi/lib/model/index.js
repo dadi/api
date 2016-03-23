@@ -112,11 +112,22 @@ Model.prototype.create = function (obj, internals, done) {
 
     // apply any existing `beforeCreate` hooks
     if (typeof this.settings.hooks.beforeCreate === 'object') {
+      if (obj instanceof Array) {
+        obj.forEach(function (doc) {
+          doc = this.settings.hooks.beforeCreate.reduce((function (previous, current, index) {
+              var hook = new Hook(this.settings.hooks.beforeCreate[index], 'beforeCreate');
+
+              return hook.apply(previous);
+          }).bind(this), doc);
+        }, this)
+      }
+      else {
         obj = this.settings.hooks.beforeCreate.reduce((function (previous, current, index) {
             var hook = new Hook(this.settings.hooks.beforeCreate[index], 'beforeCreate');
 
             return hook.apply(previous);
         }).bind(this), obj);
+      }
     }
 
     // internals will not be validated, i.e. should not be user input
@@ -172,11 +183,22 @@ Model.prototype.create = function (obj, internals, done) {
 
             // apply any existing `afterCreate` hooks
             if (typeof self.settings.hooks.afterCreate === 'object') {
+              if (doc instanceof Array) {
+                doc.forEach(function (d) {
+                  self.settings.hooks.afterCreate.reduce((function (previous, current, index) {
+                      var hook = new Hook(self.settings.hooks.afterCreate[index], 'afterCreate');
+
+                      return hook.apply(previous);
+                  }).bind(self), d);
+                }, self)
+              }
+              else {
                 self.settings.hooks.afterCreate.forEach(function (hookConfig, index) {
                     var hook = new Hook(self.settings.hooks.afterCreate[index], 'afterCreate');
 
                     return hook.apply(doc);
                 });
+              }
             }
 
             if (self.history) {

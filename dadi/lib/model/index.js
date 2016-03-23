@@ -109,25 +109,21 @@ Model.prototype.createIndex = function(done) {
  * @api public
  */
 Model.prototype.create = function (obj, internals, done) {
+    var self = this;
+
+    if (!(obj instanceof Array)) {
+        obj = [obj];
+    }
 
     // apply any existing `beforeCreate` hooks
     if (typeof this.settings.hooks.beforeCreate === 'object') {
-      if (obj instanceof Array) {
         obj.forEach(function (doc) {
-          doc = this.settings.hooks.beforeCreate.reduce((function (previous, current, index) {
-              var hook = new Hook(this.settings.hooks.beforeCreate[index], 'beforeCreate');
+            doc = self.settings.hooks.beforeCreate.reduce(function (previous, current, index) {
+                var hook = new Hook(self.settings.hooks.beforeCreate[index], 'beforeCreate');
 
-              return hook.apply(previous);
-          }).bind(this), doc);
-        }, this)
-      }
-      else {
-        obj = this.settings.hooks.beforeCreate.reduce((function (previous, current, index) {
-            var hook = new Hook(this.settings.hooks.beforeCreate[index], 'beforeCreate');
-
-            return hook.apply(previous);
-        }).bind(this), obj);
-      }
+                return hook.apply(previous);
+            }, doc);
+        });
     }
 
     // internals will not be validated, i.e. should not be user input
@@ -135,19 +131,14 @@ Model.prototype.create = function (obj, internals, done) {
         done = internals;
     }
 
-    // handle both an Array of documents and a single document
+    // validate each doc
     var validation;
-    if (obj instanceof Array) {
-        var self = this;
-        // validate each doc
-        obj.forEach(function (doc) {
-            if (validation === undefined || validation.success) {
-                validation = self.validate.schema(doc);
-            }
-        });
-    } else {
-        validation = this.validate.schema(obj);
-    }
+    
+    obj.forEach(function (doc) {
+        if (validation === undefined || validation.success) {
+            validation = self.validate.schema(doc);
+        }
+    });
 
     if (!validation.success) {
         var err = validationError('Validation Failed');
@@ -156,22 +147,15 @@ Model.prototype.create = function (obj, internals, done) {
     }
 
     if (typeof internals === 'object' && internals != null) { // not null and not undefined
-        _.extend(obj, internals);
-    }
-
-
-    var self = this;
-
-    // ObjectIDs
-    if (obj instanceof Array) {
-        // convert ids in each doc
         obj.forEach(function (doc) {
-            doc = self.convertObjectIdsForSave(self.schema, doc);
+          doc = _.extend(doc, internals);
         });
     }
-    else {
-        obj = self.convertObjectIdsForSave(self.schema, obj);
-    }
+
+    // ObjectIDs
+    obj.forEach(function (doc) {
+        doc = self.convertObjectIdsForSave(self.schema, doc);
+    });
 
     var _done = function (database) {
         database.collection(self.name).insert(obj, function(err, doc) {
@@ -183,26 +167,17 @@ Model.prototype.create = function (obj, internals, done) {
 
             // apply any existing `afterCreate` hooks
             if (typeof self.settings.hooks.afterCreate === 'object') {
-              if (doc instanceof Array) {
-                doc.forEach(function (d) {
-                  self.settings.hooks.afterCreate.reduce((function (previous, current, index) {
-                      var hook = new Hook(self.settings.hooks.afterCreate[index], 'afterCreate');
+                obj.forEach(function (doc) {
+                    self.settings.hooks.afterCreate.forEach(function (hookConfig, index) {
+                        var hook = new Hook(self.settings.hooks.afterCreate[index], 'afterCreate');
 
-                      return hook.apply(previous);
-                  }).bind(self), d);
-                }, self)
-              }
-              else {
-                self.settings.hooks.afterCreate.forEach(function (hookConfig, index) {
-                    var hook = new Hook(self.settings.hooks.afterCreate[index], 'afterCreate');
-
-                    return hook.apply(doc);
+                        return hook.apply(doc);
+                    });
                 });
-              }
             }
 
             if (self.history) {
-                self.history.create(obj, self, function(err, res) {
+                self.history.createEach(obj, self, function (err, res) {
                     if (err) return done(err);
 
                     return done(null, results);

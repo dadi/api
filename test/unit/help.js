@@ -83,20 +83,26 @@ module.exports.testModelProperty = function (key, val) {
 };
 
 module.exports.cleanUpDB = function (done) {
-    connection().on('connect', function (db) {
-        if (db.databaseName !== 'test') {
-          var err = new Error('Database should be `test`, not `' + db.databaseName + '`.');
-          return done(err);
-        }
-        // drop all data
-        db.dropDatabase('test', function (err) {
-            if (err) return done(err);
+  var database = connection();
 
-            // force close this connection
-            db.close(true, done);
-        });
+  setTimeout(function() {
+    if (database.db.databaseName !== 'test') {
+      var err = new Error('Database should be `test`, not `' + db.databaseName + '`.');
+      return done(err);
+    }
+  }, 500)
+
+  // drop all data
+  setTimeout(function() {
+    database.db.dropDatabase('test', function (err) {
+        if (err) return done(err);
+
+        // force close this connection
+        //db.close(true, done);
+        done()
     });
-};
+  }, 500)
+}
 
 module.exports.addUserToDb = function (userObj, dbObj, done) {
     var Db = require('mongodb').Db;

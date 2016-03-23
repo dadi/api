@@ -24,7 +24,7 @@ describe('History', function () {
             var mod = model('testModelName', help.getModelSchema(), conn, { storeRevisions : true, revisionCollection : 'modelHistory' });
             should.exist(mod.revisionCollection);
             mod.revisionCollection.should.equal('modelHistory');
-            
+
             done();
         });
 
@@ -103,7 +103,7 @@ describe('History', function () {
                 });
 
             });
-            
+
         });
 
     });

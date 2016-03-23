@@ -45,9 +45,9 @@ var Model = function (name, schema, conn, settings, database) {
 
     // add default handler to ensure there's no uncaught errors
     var self = this;
-    this.connection.on('error', function (err) {
-        console.log('Connection error for collection "' + self.name + '" (' + err + '). Using connection string "' + self.connection.connectionString + '"');
-    });
+    // this.connection.on('error', function (err) {
+    //   console.log('Connection error for collection "' + self.name + '" (' + err + '). Using connection string "' + self.connection.connectionString + '"');
+    // });
 
     _models[name] = this;
 
@@ -173,10 +173,13 @@ Model.prototype.create = function (obj, internals, done) {
         });
     };
 
-    if (this.connection.db) return _done(this.connection.db);
-
-    // if the db is not connected queue the insert
-    this.connection.once('connect', _done);
+    if (this.connection.db) {
+      return _done(this.connection.db);
+    }
+    else {
+      // if the db is not connected queue the insert
+      this.connection.once('connect', _done);
+    }
 };
 
 Model.prototype.makeCaseInsensitive = function (obj) {

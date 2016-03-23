@@ -7,6 +7,13 @@ var Db = require('mongodb').Db;
 var config = require(__dirname + '/../../../config');
 
 describe('Model connection', function () {
+    this.timeout(5000)
+
+    beforeEach(function(done) {
+      connection.resetConnections();
+      done()
+    })
+
     describe('constructor', function () {
         it('should be exposed', function (done) {
             connection.Connection.should.be.Function;
@@ -43,12 +50,49 @@ describe('Model connection', function () {
 
         var conn = connection(options);
 
-        conn.on('connect', function (db) {
-            db.should.be.an.instanceOf(Db);
-            conn.readyState.should.equal(1);
-            conn.connectionString.should.eql("mongodb://127.0.0.1:27017/test?maxPoolSize=1");
-            done();
-        });
+        setTimeout(function() {
+          conn.db.should.be.an.instanceOf(Db);
+          conn.readyState.should.equal(1);
+          conn.connectionString.should.eql("mongodb://127.0.0.1:27017/test?maxPoolSize=1");
+          done();
+        }, 500)
+    });
+
+    it('should connect once to database', function (done) {
+
+        var options = {
+            "username": "",
+            "password": "",
+            "database": "test",
+            "replicaSet": "",
+            "hosts": [
+                {
+                    "host": "127.0.0.1",
+                    "port": 27017
+                }
+            ]
+        };
+
+        var dbTag;
+
+        var conn1 = connection(options);
+        setTimeout(function() {
+          conn1.db.should.be.an.instanceOf(Db);
+          conn1.readyState.should.equal(1);
+          conn1.connectionString.should.eql("mongodb://127.0.0.1:27017/test?maxPoolSize=1");
+          dbTag = conn1.db.tag;
+        }, 500)
+
+        var conn2 = connection(options);
+        setTimeout(function() {
+          conn2.db.should.be.an.instanceOf(Db);
+          conn2.readyState.should.equal(1);
+          conn2.connectionString.should.eql("mongodb://127.0.0.1:27017/test?maxPoolSize=1");
+          conn2.db.tag.should.eql(dbTag);
+
+          done()
+        }, 500)
+
     });
 
     it('should connect with credentials', function (done) {
@@ -73,11 +117,11 @@ describe('Model connection', function () {
                 replicaSet: ""
             });
 
-            conn.on('connect', function (db) {
-                db.should.be.an.instanceOf(Db);
-                conn.readyState.should.equal(1);
-                done();
-            });
+            setTimeout(function() {
+              conn.db.should.be.an.instanceOf(Db);
+              conn.readyState.should.equal(1);
+              done()
+            }, 500)
         });
     });
 

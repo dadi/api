@@ -93,16 +93,21 @@ module.exports.removeTestClients = function (done) {
 module.exports.clearCache = function () {
 
     var deleteFolderRecursive = function(filepath) {
-      if( fs.existsSync(filepath) && fs.lstatSync(filepath).isDirectory() ) {
-        fs.readdirSync(filepath).forEach(function(file,index){
-          var curPath = filepath + "/" + file;
-          if(fs.lstatSync(curPath).isDirectory()) { // recurse
-            deleteFolderRecursive(curPath);
-          } else { // delete file
-            fs.unlinkSync(path.resolve(curPath));
-          }
-        });
-        fs.rmdirSync(filepath);
+      try {
+        if( fs.existsSync(filepath) && fs.lstatSync(filepath).isDirectory() ) {
+          fs.readdirSync(filepath).forEach(function(file,index){
+            var curPath = filepath + "/" + file;
+            if(fs.lstatSync(curPath).isDirectory()) { // recurse
+              deleteFolderRecursive(curPath);
+            } else { // delete file
+              fs.unlinkSync(path.resolve(curPath));
+            }
+          });
+          fs.rmdirSync(filepath);
+        }
+      }
+      catch (err) {
+        console.log(err)
       }
     };
 

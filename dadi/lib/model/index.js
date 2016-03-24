@@ -1,10 +1,11 @@
 var connection = require(__dirname + '/connection');
-var config = require(__dirname + '/../../../config').database;
+var config = require(__dirname + '/../../../config');
 var help = require(__dirname + '/../help');
 var Validator = require(__dirname + '/validator');
 var History = require(__dirname + '/history');
 var Composer = require(__dirname + '/../composer').Composer;
 var ObjectID = require('mongodb').ObjectID;
+var Hook = require(__dirname + '/hook');
 var _ = require('underscore');
 var util = require('util');
 
@@ -108,25 +109,36 @@ Model.prototype.createIndex = function(done) {
  * @api public
  */
 Model.prototype.create = function (obj, internals, done) {
+    var self = this;
+
+    if (!(obj instanceof Array)) {
+        obj = [obj];
+    }
+
+    // apply any existing `beforeCreate` hooks
+    if (this.settings.hasOwnProperty('hooks') && (typeof this.settings.hooks.beforeCreate === 'object')) {
+        obj.forEach(function (doc) {
+            doc = self.settings.hooks.beforeCreate.reduce(function (previous, current, index) {
+                var hook = new Hook(self.settings.hooks.beforeCreate[index], 'beforeCreate');
+
+                return hook.apply(previous);
+            }, doc);
+        });
+    }
 
     // internals will not be validated, i.e. should not be user input
     if (typeof internals === 'function') {
         done = internals;
     }
 
-    // handle both an Array of documents and a single document
+    // validate each doc
     var validation;
-    if (obj instanceof Array) {
-        var self = this;
-        // validate each doc
-        obj.forEach(function (doc) {
-            if (validation === undefined || validation.success) {
-                validation = self.validate.schema(doc);
-            }
-        });
-    } else {
-        validation = this.validate.schema(obj);
-    }
+    
+    obj.forEach(function (doc) {
+        if (validation === undefined || validation.success) {
+            validation = self.validate.schema(doc);
+        }
+    });
 
     if (!validation.success) {
         var err = validationError('Validation Failed');
@@ -135,22 +147,15 @@ Model.prototype.create = function (obj, internals, done) {
     }
 
     if (typeof internals === 'object' && internals != null) { // not null and not undefined
-        _.extend(obj, internals);
-    }
-
-
-    var self = this;
-
-    // ObjectIDs
-    if (obj instanceof Array) {
-        // convert ids in each doc
         obj.forEach(function (doc) {
-            doc = self.convertObjectIdsForSave(self.schema, doc);
+          doc = _.extend(doc, internals);
         });
     }
-    else {
-        obj = self.convertObjectIdsForSave(self.schema, obj);
-    }
+
+    // ObjectIDs
+    obj.forEach(function (doc) {
+        doc = self.convertObjectIdsForSave(self.schema, doc);
+    });
 
     var _done = function (database) {
         database.collection(self.name).insert(obj, function(err, doc) {
@@ -160,8 +165,19 @@ Model.prototype.create = function (obj, internals, done) {
                 results: doc
             };
 
+            // apply any existing `afterCreate` hooks
+            if (self.settings.hasOwnProperty('hooks') && (typeof self.settings.hooks.afterCreate === 'object')) {
+                obj.forEach(function (doc) {
+                    self.settings.hooks.afterCreate.forEach(function (hookConfig, index) {
+                        var hook = new Hook(self.settings.hooks.afterCreate[index], 'afterCreate');
+
+                        return hook.apply(doc);
+                    });
+                });
+            }
+
             if (self.history) {
-                self.history.create(obj, self, function(err, res) {
+                self.history.createEach(obj, self, function (err, res) {
                     if (err) return done(err);
 
                     return done(null, results);
@@ -434,7 +450,7 @@ Model.prototype.stats = function (options, done) {
 };
 
 /**
- * Log string to file system
+ * Update a document in the database
  *
  * @param {Object} query
  * @param {Object} update
@@ -485,6 +501,15 @@ Model.prototype.update = function (query, update, internals, done) {
 
             updatedDocs = docs['results'];
 
+            // apply any existing `beforeUpdate` hooks
+            if (self.settings.hasOwnProperty('hooks') && (typeof self.settings.hooks.beforeUpdate === 'object')) {
+                update = self.settings.hooks.beforeUpdate.reduce(function (previous, current, index) {
+                    var hook = new Hook(self.settings.hooks.beforeUpdate[index], 'beforeUpdate');
+
+                    return hook.apply(previous, updatedDocs);
+                }, update);
+            }
+
             self.castToBSON(query);
 
             database.collection(self.name).update(query, setUpdate, function (err, numAffected) {
@@ -500,6 +525,16 @@ Model.prototype.update = function (query, update, internals, done) {
 
                 var results = {};
 
+                var triggerAfterUpdateHook = function (docs) {
+                    if (self.settings.hasOwnProperty('hooks') && (typeof self.settings.hooks.afterUpdate === 'object')) {
+                        self.settings.hooks.afterUpdate.forEach(function (hookConfig, index) {
+                            var hook = new Hook(self.settings.hooks.afterUpdate[index], 'afterUpdate');
+
+                            return hook.apply(docs);
+                        });
+                    }
+                };
+
                 // for each of the updated documents, create
                 // a history revision for it
                 if (self.history && updatedDocs.length > 0) {
@@ -507,6 +542,9 @@ Model.prototype.update = function (query, update, internals, done) {
                         if (err) return done(err);
 
                         results.results = docs;
+
+                        // apply any existing `afterUpdate` hooks
+                        triggerAfterUpdateHook(docs);
 
                         done(null, results);
                     });
@@ -516,6 +554,9 @@ Model.prototype.update = function (query, update, internals, done) {
                         if (err) return done(err);
 
                         results = doc;
+
+                        // apply any existing `afterUpdate` hooks
+                        triggerAfterUpdateHook(doc);
 
                         done(null, results);
                     });
@@ -531,7 +572,7 @@ Model.prototype.update = function (query, update, internals, done) {
 };
 
 /**
- * Log string to file system
+ * Delete a document from the database
  *
  * @param {Object} query
  * @param {Function} done
@@ -539,6 +580,15 @@ Model.prototype.update = function (query, update, internals, done) {
  * @api public
  */
 Model.prototype.delete = function (query, done) {
+    // apply any existing `beforeDelete` hooks
+    if (this.settings.hasOwnProperty('hooks') && (typeof this.settings.hooks.beforeDelete === 'object')) {
+        query = this.settings.hooks.beforeDelete.reduce((function (previous, current, index) {
+            var hook = new Hook(this.settings.hooks.beforeDelete[index], 'beforeDelete');
+
+            return hook.apply(previous);
+        }).bind(this), query);
+    }
+
     var validation = this.validate.query(query);
     if (!validation.success) {
         err = validationError('Bad Query');
@@ -550,7 +600,20 @@ Model.prototype.delete = function (query, done) {
 
     var self = this;
     var _done = function (database) {
-        database.collection(self.name).remove(query, done);
+        database.collection(self.name).remove(query, function (err, docs) {
+            if (!err && (docs > 0)) {
+                // apply any existing `afterDelete` hooks
+                if (self.settings.hasOwnProperty('hooks') && (typeof self.settings.hooks.afterDelete === 'object')) {
+                    self.settings.hooks.afterDelete.forEach(function (hookConfig, index) {
+                        var hook = new Hook(self.settings.hooks.afterDelete[index], 'afterDelete');
+
+                        return hook.apply(query);
+                    });
+                }
+            }
+
+            done.apply(this, arguments);
+        });
     };
 
     if (this.connection.db) return _done(this.connection.db);

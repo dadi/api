@@ -3,12 +3,8 @@ var util = require('util');
 var _ = require('underscore');
 var ObjectID = require('mongodb').ObjectID;
 
-var log = require('../log');
-
 var History = function (model) {
     this.model = model;
-
-    log.info({module: 'history'}, 'Model history logging started.');
 };
 
 History.prototype.create = function (obj, model, done) {

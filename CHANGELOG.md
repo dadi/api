@@ -1,5 +1,43 @@
 ### Change Log
 
+##### v1.4.0 (2016-03-24)
+
+###### Support for Hooks (beforeCreate, afterCreate, beforeUpdate, afterUpdate, beforeDelete, afterDelete).
+Provided by @eduardoboucas, many thanks for the hard work on this! Full documentation to be made available soon.
+
+###### Breaking change: Endpoint Authentication
+
+The default setting is now 'must authenticate'. This means if you have custom endpoints
+that are currently open and you want them to stay that way, add this block to the JS file:
+
+```
+module.exports.model = {
+  settings: {
+    authenticate: false
+  }
+}
+```
+
+###### Connection module
+
+Previously created connections for every loaded collection, resulting in a new connection pool
+for each collection. New behaviour is to create one connection per database - if you aren't
+using `enableCollectionDatabases` then this means you'll only be making one connection
+to the database.
+
+###### Other
+* Fix #39. Apply apiVersion filter to query only if it's configured using the `useVersionFilter` property (ed1c1d8)
+* Fix #38. Allow Mixed fields through to the data query, giving back the power to use dot notation in the query (49a0a07)
+* Add timestamps to console log statements (018f4f2)
+* Modify API host and port requirements. `null` for host will allow connections on
+  any IPv6 address (if available), otherwise any IPv4 address. If port is `0` a random port will be assigned (3d5e0e0)
+* Add response to OPTIONS requests, thanks @eduardoboucas (969d808)
+* Add authentication on a per-HTTP method basis, thanks @eduardoboucas (a00b72c)
+* Use HTTP PUT for updates (also backwards-compatible with POST) (865e7f6)
+* Add WWW-Authenticate header to when sending HTTP 401 responses (4708020)
+* Add config settings for log file rotation (4e7e81d)
+* Add logging level to limit log records (e282e62)
+
 ##### v1.3.0 (2016-02-26)
 
 Fix #13: Removed auto-creation of API docs path (should only happen if api-doc module is installed)

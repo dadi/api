@@ -5,7 +5,7 @@ var pathToRegexp = require('path-to-regexp');
 
 var fs = require('fs');
 var path = require('path');
-var spdy = require('spdy');
+var http2 = require('http2');
 var log = require(__dirname + '/../log');
 var config = require(__dirname + '/../../../config');
 
@@ -69,12 +69,14 @@ Api.prototype.unuse = function (path) {
  *  @api public
  */
 Api.prototype.listen = function (port, host, backlog, done) {
-    if(config.get('server.http2.enabled'))
-        return spdy.createServer({
+    if(config.get('server.http2.enabled')) {
+        var server = http2.createServer({
             key: fs.readFileSync(path.join(config.get('server.http2.key_path'), '/localhost.key')),
             cert: fs.readFileSync(path.join(config.get('server.http2.key_path'), '/localhost.crt'))
-          }, this.listener).listen(port, host, backlog, done);
-    else {
+          }, this.listener);
+        server.listen(port, host, backlog, done);
+        return server;
+    } else {
         return http.createServer(this.listener).listen(port, host, backlog, done);
     }
 };

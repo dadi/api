@@ -29,7 +29,6 @@
     "stack-trace": "latest",
     "underscore": "~1.8.0",
     "underscore.string": "^3.2.2",
-    "spdy": "~3.2.3"
     "http2": "~3.3.2"
   },
   "devDependencies": {

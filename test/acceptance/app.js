@@ -298,7 +298,7 @@ describe('Application', function () {
 
           });
 
-          describe('PUT', function () {
+          describe.only('PUT', function () {
             before(function (done) {
                 help.dropDatabase('testdb', function (err) {
                     if (err) return done(err);
@@ -335,7 +335,20 @@ describe('Application', function () {
                         .end(function (err, res) {
                             if (err) return done(err);
 
-                            done();
+                            // add another apiversion with the same collection
+                            client
+                            .post('/vjoin/testdb/test-schema/config')
+                            .send(JSON.stringify(schema, null, 4))
+                            .set('content-type', 'text/plain')
+                            .set('Authorization', 'Bearer ' + bearerToken)
+                            .expect(200)
+                            .expect('content-type', 'application/json')
+                            .end(function (err, res) {
+                                if (err) return done(err);
+
+                                done();
+                            });
+
                         });
                     });
                 });
@@ -359,11 +372,17 @@ describe('Application', function () {
                 .end(function (err, res) {
                     if (err) return done(err);
 
+                    var dirs = config.get('paths');
+
+                    try {
+                        fs.unlinkSync(dirs.collections + '/vjoin/testdb/collection.test-schema.json');
+                    } catch (e) {}
+
                     done();
                 });
             });
 
-            it('should update existing documents', function (done) {
+            it('should update existing documents when passing ID', function (done) {
                 var client = request(connectionString);
 
                 client
@@ -386,6 +405,57 @@ describe('Application', function () {
                     .end(function (err, res) {
                         if (err) return done(err);
 
+                        res.body.results[0]._id.should.equal(doc._id);
+                        res.body.results[0].field1.should.equal('updated doc');
+
+                        client
+                        .get('/vtest/testdb/test-schema?filter={"_id": "' + doc._id + '"}')
+                        .set('Authorization', 'Bearer ' + bearerToken)
+                        .expect(200)
+                        .expect('content-type', 'application/json')
+                        .end(function (err, res) {
+                            if (err) return done(err);
+
+                            res.body['results'].should.exist;
+                            res.body['results'].should.be.Array;
+                            res.body['results'].length.should.equal(1);
+                            res.body['results'][0].field1.should.equal('updated doc');
+
+                            done();
+                        })
+                    });
+                });
+            });
+
+            it('should update existing documents when passing a query', function (done) {
+                var client = request(connectionString);
+
+                client
+                .post('/vtest/testdb/test-schema')
+                .set('Authorization', 'Bearer ' + bearerToken)
+                .send({field1: 'doc to update'})
+                .expect(200)
+                .end(function (err, res) {
+                    if (err) return done(err);
+
+                    var doc = res.body.results[0];
+                    should.exist(doc);
+                    doc.field1.should.equal('doc to update');
+
+                    var body = {
+                      query: { _id: doc._id },
+                      update: {field1: 'updated doc'}
+                    }
+
+                    client
+                    .put('/vtest/testdb/test-schema/')
+                    .set('Authorization', 'Bearer ' + bearerToken)
+                    .send(body)
+                    .expect(200)
+                    .end(function (err, res) {
+                        if (err) return done(err);
+
+                        //console.log(res.body)
                         res.body.results[0]._id.should.equal(doc._id);
                         res.body.results[0].field1.should.equal('updated doc');
 
@@ -452,6 +522,67 @@ describe('Application', function () {
 
                             done();
                         })
+                    });
+                });
+            });
+
+            it('should use apiVersion to filter when selecting update documents if configured', function (done) {
+                var client = request(connectionString);
+
+                config.set('query.useVersionFilter', true)
+
+                client
+                .post('/vtest/testdb/test-schema')
+                .set('Authorization', 'Bearer ' + bearerToken)
+                .send({field1: 'doc'})
+                .expect(200)
+                .end(function (err, res) {
+                    if (err) return done(err);
+
+                    client
+                    .post('/vjoin/testdb/test-schema')
+                    .set('Authorization', 'Bearer ' + bearerToken)
+                    .send({field1: 'doc'})
+                    .expect(200)
+                    .end(function (err, res) {
+                        if (err) return done(err);
+
+                        var doc = res.body.results[0];
+                        should.exist(doc);
+                        doc.field1.should.equal('doc');
+
+                        var body = {
+                          query: { field1: 'doc' },
+                          update: {field1: 'updated doc'}
+                        }
+
+                        client
+                        .put('/vtest/testdb/test-schema/')
+                        .set('Authorization', 'Bearer ' + bearerToken)
+                        .send(body)
+                        .expect(200)
+                        .end(function (err, res) {
+                            if (err) return done(err);
+
+                            client
+                            .get('/vjoin/testdb/test-schema?filter={"field1": "doc"}')
+                            .set('Authorization', 'Bearer ' + bearerToken)
+                            .expect(200)
+                            .expect('content-type', 'application/json')
+                            .end(function (err, res) {
+                                if (err) return done(err);
+
+                                res.body['results'].should.exist;
+                                res.body['results'].should.be.Array;
+                                res.body['results'].length.should.equal(1);
+                                res.body['results'][0].field1.should.equal('doc');  // not "updated doc"
+                                res.body['results'][0].apiVersion.should.equal('vjoin');
+
+                                config.set('query.useVersionFilter', false)
+
+                                done();
+                            })
+                          })
                     });
                 });
             });

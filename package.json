@@ -3,6 +3,7 @@
   "version": "1.4.0",
   "main": "main.js",
   "scripts": {
+    "init": "validate-commit-msg",
     "test": "env NODE_ENV=test ./node_modules/.bin/istanbul cover -x **/workspace/** --report cobertura --report text --report html --report lcov ./node_modules/.bin/_mocha test",
     "posttest": "./scripts/coverage.js",
     "start": "node server.js --node_env=development"
@@ -28,7 +29,8 @@
     "request": "~2.67.0",
     "stack-trace": "latest",
     "underscore": "~1.8.0",
-    "underscore.string": "^3.2.2"
+    "underscore.string": "^3.2.2",
+    "validate-commit-message": "^3.0.1"
   },
   "devDependencies": {
     "env-test": "^1.0.0",

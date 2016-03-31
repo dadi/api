@@ -489,6 +489,9 @@ Model.prototype.update = function (query, update, internals, done) {
     }
 
     var setUpdate = {$set: update};
+    var updateOptions = {
+        multi: true
+    };
 
     var self = this;
     var _update = function (database) {
@@ -512,7 +515,7 @@ Model.prototype.update = function (query, update, internals, done) {
 
             self.castToBSON(query);
 
-            database.collection(self.name).update(query, setUpdate, function (err, numAffected) {
+            database.collection(self.name).update(query, setUpdate, updateOptions, function (err, numAffected) {
                 if (err) return done(err);
                 if (!numAffected) {
                     err = new Error('Not Found');

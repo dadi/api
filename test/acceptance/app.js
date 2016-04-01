@@ -298,7 +298,7 @@ describe('Application', function () {
 
           });
 
-          describe.only('PUT', function () {
+          describe('PUT', function () {
             before(function (done) {
                 help.dropDatabase('testdb', function (err) {
                     if (err) return done(err);
@@ -376,7 +376,13 @@ describe('Application', function () {
 
                     try {
                         fs.unlinkSync(dirs.collections + '/vjoin/testdb/collection.test-schema.json');
-                    } catch (e) {}
+                        fs.unlinkSync(dirs.collections + '/vjoin/testdb/collection.test-schema-no-history.json');
+                        fs.unlinkSync(dirs.collections + '/vtest/testdb/collection.test-schema-no-history.json');
+
+                        return done();
+                    } catch (e) {
+
+                    }
 
                     done();
                 });
@@ -427,7 +433,7 @@ describe('Application', function () {
                 });
             });
 
-            it('should update existing documents when passing a query', function (done) {
+            it('should update existing document by ID when passing a query', function (done) {
                 var client = request(connectionString);
 
                 client
@@ -473,6 +479,62 @@ describe('Application', function () {
                             res.body['results'][0].field1.should.equal('updated doc');
 
                             done();
+                        })
+                    });
+                });
+            });
+
+            it('should update all existing documents when passing a query with a filter', function (done) {
+                var client = request(connectionString);
+
+                // add three docs
+                client
+                .post('/vtest/testdb/test-schema')
+                .set('Authorization', 'Bearer ' + bearerToken)
+                .send({field1: 'draft'})
+                .expect(200)
+                .end(function (err, res) {
+                    if (err) return done(err);
+
+                    client
+                    .post('/vtest/testdb/test-schema')
+                    .set('Authorization', 'Bearer ' + bearerToken)
+                    .send({field1: 'draft'})
+                    .expect(200)
+                    .end(function (err, res) {
+                        if (err) return done(err);
+
+                        client
+                        .post('/vtest/testdb/test-schema')
+                        .set('Authorization', 'Bearer ' + bearerToken)
+                        .send({field1: 'draft'})
+                        .expect(200)
+                        .end(function (err, res) {
+                            if (err) return done(err);
+
+                            // update query
+                            var body = {
+                              query: { field1: 'draft' },
+                              update: {field1: 'published'}
+                            }
+
+                            client
+                            .put('/vtest/testdb/test-schema/')
+                            .set('Authorization', 'Bearer ' + bearerToken)
+                            .send(body)
+                            .expect(200)
+                            .end(function (err, res) {
+                                if (err) return done(err);
+
+                                res.body['results'].should.exist;
+                                res.body['results'].should.be.Array;
+                                res.body['results'].length.should.equal(3);
+                                res.body['results'][0].field1.should.equal('published');
+                                res.body['results'][1].field1.should.equal('published');
+                                res.body['results'][2].field1.should.equal('published');
+
+                                done();
+                            })
                         })
                     });
                 });
@@ -565,7 +627,7 @@ describe('Application', function () {
                             if (err) return done(err);
 
                             client
-                            .get('/vjoin/testdb/test-schema?filter={"field1": "doc"}')
+                            .get('/vjoin/testdb/test-schema?filter={"field1": { "$ne" : "" } }')
                             .set('Authorization', 'Bearer ' + bearerToken)
                             .expect(200)
                             .expect('content-type', 'application/json')
@@ -582,6 +644,108 @@ describe('Application', function () {
 
                                 done();
                             })
+                          })
+                    });
+                });
+            });
+
+            it('should update correct documents and return when history is off', function (done) {
+
+                help.getBearerTokenWithAccessType("admin", function (err, token) {
+                    if (err) return done(err);
+
+                    // modify schema settings
+                    var jsSchemaString = fs.readFileSync(__dirname + '/../new-schema.json', {encoding: 'utf8'});
+                    jsSchemaString = jsSchemaString.replace('newField', 'field1');
+                    var schema = JSON.parse(jsSchemaString);
+                    schema.settings.storeRevisions = false;
+
+                    config.set('query.useVersionFilter', true)
+
+                    var client = request(connectionString);
+
+                    client
+                    .post('/vtest/testdb/test-schema-no-history/config')
+                    .send(JSON.stringify(schema, null, 4))
+                    .set('content-type', 'text/plain')
+                    .set('Authorization', 'Bearer ' + token)
+                    .expect(200)
+                    .expect('content-type', 'application/json')
+                    .end(function (err, res) {
+                        if (err) return done(err);
+
+                        client
+                        .post('/vjoin/testdb/test-schema-no-history/config')
+                        .send(JSON.stringify(schema, null, 4))
+                        .set('content-type', 'text/plain')
+                        .set('Authorization', 'Bearer ' + token)
+                        .expect(200)
+                        .expect('content-type', 'application/json')
+                        .end(function (err, res) {
+                            if (err) return done(err);
+
+                            setTimeout(function() {
+                              client
+                              .post('/vtest/testdb/test-schema-no-history')
+                              .set('Authorization', 'Bearer ' + bearerToken)
+                              .send({field1: 'doc'})
+                              //.expect(200)
+                              .end(function (err, res) {
+                                if (err) return done(err);
+
+                                client
+                                .post('/vjoin/testdb/test-schema-no-history')
+                                .set('Authorization', 'Bearer ' + bearerToken)
+                                .send({field1: 'doc'})
+                                .expect(200)
+                                .end(function (err, res) {
+                                    if (err) return done(err);
+
+                                    var doc = res.body.results[0];
+                                    should.exist(doc);
+                                    doc.field1.should.equal('doc');
+
+                                    var body = {
+                                      query: { field1: 'doc' },
+                                      update: {field1: 'updated doc'}
+                                    }
+
+                                    client
+                                    .put('/vtest/testdb/test-schema-no-history/')
+                                    .set('Authorization', 'Bearer ' + bearerToken)
+                                    .send(body)
+                                    .expect(200)
+                                    .end(function (err, res) {
+                                        if (err) return done(err);
+
+                                        res.body['results'].should.exist;
+                                        res.body['results'].should.be.Array;
+                                        res.body['results'].length.should.equal(1);
+                                        res.body['results'][0].field1.should.equal('updated doc');  // not "updated doc"
+                                        res.body['results'][0].apiVersion.should.equal('vtest');
+
+                                        client
+                                        .get('/vjoin/testdb/test-schema-no-history?filter={"field1": { "$ne" : "" } }')
+                                        .set('Authorization', 'Bearer ' + bearerToken)
+                                        .expect(200)
+                                        .expect('content-type', 'application/json')
+                                        .end(function (err, res) {
+                                            if (err) return done(err);
+
+                                            res.body['results'].should.exist;
+                                            res.body['results'].should.be.Array;
+                                            res.body['results'].length.should.equal(1);
+                                            res.body['results'][0].field1.should.equal('doc');  // not "updated doc"
+                                            res.body['results'][0].apiVersion.should.equal('vjoin');
+
+                                            config.set('query.useVersionFilter', false)
+
+                                            done();
+                                          })
+                                      })
+                                  })
+                              })
+                            }, 1000)
                           })
                     });
                 });

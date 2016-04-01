@@ -499,7 +499,7 @@ Model.prototype.update = function (query, update, internals, done) {
         // get a reference to the documents that will be updated
         var updatedDocs = [];
 
-        self.find(query, {}, function(err, docs) {
+        self.find(_.clone(query), {}, function(err, docs) {
             if (err) return done(err);
 
             updatedDocs = docs['results'];
@@ -522,9 +522,6 @@ Model.prototype.update = function (query, update, internals, done) {
                     err.statusCode = 404;
                     return done(err);
                 }
-
-                // query and doc `_id` should be equal
-                query._id && (update._id = query._id);
 
                 var results = {};
 
@@ -553,7 +550,7 @@ Model.prototype.update = function (query, update, internals, done) {
                     });
                 }
                 else {
-                    self.find({ _id: update._id.toString() }, {}, function(err, doc) {
+                    self.find({ _id: { "$in": _.map(updatedDocs, function(doc) { return doc._id.toString() } ) } }, {}, function(err, doc) {
                         if (err) return done(err);
 
                         results = doc;

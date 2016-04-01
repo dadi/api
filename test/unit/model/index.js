@@ -49,7 +49,7 @@ describe('Model', function () {
         it('should accept database connection as third argument', function (done) {
 
             config.set('database.enableCollectionDatabases', true);
-
+            connection.resetConnections()
             var conn = connection({
                 "username": "",
                 "password": "",

@@ -222,11 +222,6 @@ Controller.prototype.post = function (req, res, next) {
             var query = {}
             var update = {}
 
-            // add the apiVersion filter
-            if (config.get('query.useVersionFilter')) {
-              query.apiVersion = internals.apiVersion
-            }
-
             if (req.params.id) {
               query._id = req.params.id;
               update = req.body;
@@ -234,6 +229,11 @@ Controller.prototype.post = function (req, res, next) {
             else {
               query = req.body.query;
               update = req.body.update;
+            }
+
+            // add the apiVersion filter
+            if (config.get('query.useVersionFilter')) {
+              query.apiVersion = internals.apiVersion
             }
 
             return self.model.update(query, update, internals, sendBackJSON(200, res, next));

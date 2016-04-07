@@ -247,7 +247,7 @@ describe('validation', function () {
         });
     });
 
-    describe('field validationRule', function () {
+    describe('field validation', function () {
         it('should allow fields that pass regex', function (done) {
             var client = request('http://' + config.get('server.host') + ':' + config.get('server.port'));
 
@@ -284,7 +284,7 @@ describe('validation', function () {
                     res.body.should.be.json;
                     res.body.success.should.be.false;
                     res.body.errors[0].field.should.equal('fieldRegex');
-                    res.body.errors[0].message.should.equal('is invalid');
+                    res.body.errors[0].message.should.equal('should match the pattern ^q+$');
 
                     done();
                 });
@@ -382,13 +382,23 @@ describe('validation', function () {
           });
       });
 
+      it('should allow fields to use `limit`', function (done) {
+          var client = request('http://' + config.get('server.host') + ':' + config.get('server.port'));
+
+          client
+          .post('/vtest/testdb/test-validation-schema')
+          .set('Authorization', 'Bearer ' + bearerToken)
+          .send({fieldLimit: '1234'})
+          .expect(200, done);
+      });
+
         it('should allow field lengths less than or equal to `maxLength`', function (done) {
             var client = request('http://' + config.get('server.host') + ':' + config.get('server.port'));
 
             client
             .post('/vtest/testdb/test-validation-schema')
             .set('Authorization', 'Bearer ' + bearerToken)
-            .send({fieldLimit: '1234'})
+            .send({fieldMaxLength: '1234'})
             .expect(200, done);
         });
 
@@ -398,7 +408,7 @@ describe('validation', function () {
             client
             .post('/vtest/testdb/test-validation-schema')
             .set('Authorization', 'Bearer ' + bearerToken)
-            .send({fieldLimit: '12345678'})
+            .send({fieldMaxLength: '12345678'})
             .expect(400, done);
         });
 
@@ -409,7 +419,7 @@ describe('validation', function () {
                 client
                 .post('/vtest/testdb/test-validation-schema')
                 .set('Authorization', 'Bearer ' + bearerToken)
-                .send({fieldLimit: '12345678'})
+                .send({fieldMaxLength: '12345678'})
                 .expect(400)
                 .expect('content-type', 'application/json')
                 .end(function (err, res) {
@@ -417,7 +427,7 @@ describe('validation', function () {
 
                     res.body.should.be.json;
                     res.body.success.should.be.false;
-                    res.body.errors[0].field.should.equal('fieldLimit');
+                    res.body.errors[0].field.should.equal('fieldMaxLength');
                     res.body.errors[0].message.should.equal('is too long');
 
                     done();

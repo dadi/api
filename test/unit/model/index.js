@@ -180,7 +180,7 @@ describe('Model', function () {
             done();
         });
 
-        it('should attach `validationRule` definition to model', function (done) {
+        it('should attach `validation` definition to model', function (done) {
             var val = '{ regex: { pattern: { /w+/ } } }';
 
             help.testModelProperty('validation', val);
@@ -1077,7 +1077,7 @@ describe('Model', function () {
                 done();
             });
 
-            it('should check `validationRule` if available', function (done) {
+            it('should check `validation` if available', function (done) {
                 var schema = help.getModelSchema();
                 _.extend(schema.fieldName, {validation: { regex: { pattern: /[a-z]+/} } });
                 var mod = model('validationRuleTest', schema);

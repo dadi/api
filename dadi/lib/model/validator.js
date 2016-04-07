@@ -123,8 +123,17 @@ function _validate(field, schema, key) {
     var primitives = ['String', 'Number', 'Boolean', 'Array', 'Date'];
 
     // check length
-    var len = Number(schema.limit);
-    if (len && field.length > len) return schema.message || 'is too long';
+    if (schema.limit) {
+      var newSchema = {};
+      newSchema[key] = _.clone(schema);
+      newSchema[key].validation = { maxLength: schema.limit };
+      delete newSchema[key].limit;
+      var message = 'The use of the `limit` property in field declarations is deprecated and will be removed in v1.5.0\n\nPlease use the following instead:\n\n';
+      message += JSON.stringify(newSchema, null, 2);
+      console.log(message);
+      log.warn(message);
+      if (field.toString().length > Number(newSchema[key].validation.maxLength)) return schema.message || 'is too long';
+    }
 
     // check validation regex
     if (schema.validationRule) {

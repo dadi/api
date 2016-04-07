@@ -4,9 +4,8 @@
             "type": "Date",
             "label": "Article date",
             "comments": "The date of the article",
-            "limit": "",
             "placement": "Main content",
-            "validationRule": "",
+            "validation": {},
             "required": false,
             "message": "",
             "display": {
@@ -19,7 +18,7 @@
             "label": "Title",
             "comments": "The title of the entry",
             "placement": "Main content",
-            "validationRule": "",
+            "validation": {},
             "required": false,
             "message": "",
             "display": {
@@ -32,7 +31,7 @@
             "label": "Title",
             "comments": "The title of the entry",
             "placement": "Main content",
-            "validationRule": "",
+            "validation": {},
             "required": false,
             "message": "",
             "display": {
@@ -45,7 +44,7 @@
             "label": "Title",
             "comments": "The title of the entry",
             "placement": "Main content",
-            "validationRule": "",
+            "validation": {},
             "required": false,
             "message": "",
             "display": {
@@ -58,7 +57,7 @@
             "label": "Title",
             "comments": "The title of the entry",
             "placement": "Main content",
-            "validationRule": "",
+            "validation": {},
             "required": false,
             "message": "",
             "display": {
@@ -71,7 +70,7 @@
             "label": "Title",
             "comments": "The title of the entry",
             "placement": "Main content",
-            "validationRule": "",
+            "validation": {},
             "required": false,
             "default": "FOO!",
             "message": "",
@@ -85,7 +84,7 @@
             "label": "Title",
             "comments": "The title of the entry",
             "placement": "Main content",
-            "validationRule": "",
+            "validation": {},
             "required": true,
             "default": true,
             "message": "",
@@ -99,7 +98,7 @@
             "label": "Title",
             "comments": "The title of the entry",
             "placement": "Main content",
-            "validationRule": "",
+            "validation": {},
             "required": false,
             "message": "",
             "display": {
@@ -112,7 +111,7 @@
             "label": "Foo",
             "comments": "A sub field",
             "placement": "Main content",
-            "validationRule": "",
+            "validation": {},
             "required": false,
             "message": "",
             "display": {
@@ -125,7 +124,11 @@
             "label": "Title",
             "comments": "The title of the entry",
             "placement": "Main content",
-            "validationRule": "^q+$",
+            "validation": {
+                "regex": {
+                  "pattern": "^q+$"
+                }
+            },
             "required": false,
             "message": "",
             "display": {
@@ -155,10 +158,22 @@
             "label": "Title",
             "comments": "The title of the entry",
             "placement": "Main content",
+            "limit": "4",
+            "required": false,
+            "message": "",
+            "display": {
+                "index": true,
+                "edit": true
+            }
+        },
+        "fieldMaxLength": {
+            "type": "Mixed",
+            "label": "Title",
+            "comments": "The title of the entry",
+            "placement": "Main content",
             "validation": {
               "maxLength": 4
             },
-            "validationRule": "",
             "required": false,
             "message": "",
             "display": {

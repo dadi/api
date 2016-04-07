@@ -9,9 +9,8 @@ module.exports.getModelSchema = function () {
             "type": "String",
             "label": "Title",
             "comments": "The title of the entry",
-            "limit": "",
             "placement": "Main content",
-            "validation": "",
+            "validation": {},
             "required": false,
             "message": "",
             "display": {
@@ -44,9 +43,8 @@ module.exports.getModelSchemaWithMultipleFields = function () {
             "type": "String",
             "label": "Title",
             "comments": "The title of the entry",
-            "limit": "",
             "placement": "Main content",
-            "validation": "",
+            "validation": {},
             "required": false,
             "message": "",
             "display": {
@@ -58,9 +56,8 @@ module.exports.getModelSchemaWithMultipleFields = function () {
             "type": "String",
             "label": "Title",
             "comments": "The title of the entry",
-            "limit": "",
             "placement": "Main content",
-            "validation": "",
+            "validation": {},
             "required": false,
             "message": "",
             "display": {

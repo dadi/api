@@ -25,9 +25,8 @@ describe('Help', function (done) {
                             "type": "String",
                             "label": "Title",
                             "comments": "The title of the entry",
-                            "limit": "",
                             "placement": "Main content",
-                            "validationRule": "",
+                            "validation": {},
                             "required": false,
                             "message": "",
                             "display": {
@@ -69,9 +68,8 @@ describe('Help', function (done) {
                         "type": "String",
                         "label": "Title",
                         "comments": "The title of the entry",
-                        "limit": "",
                         "placement": "Main content",
-                        "validationRule": "",
+                        "validation": {},
                         "required": false,
                         "message": "",
                         "display": {

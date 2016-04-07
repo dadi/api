@@ -5,9 +5,8 @@
       "label": "name",
       "comments": "This is the human name",
       "example": "John Doe",
-      "limit": "",
       "placement": "Main content",
-      "validationRule": "",
+      "validation": {},
       "required": false,
       "message": "can't be empty",
       "display": {

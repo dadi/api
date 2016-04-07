@@ -74,7 +74,7 @@ function _parseDocument(obj, schema, response) {
     for (var key in obj) {
         // handle objects first
         if (typeof obj[key] === 'object') {
-            if (schema[key] && schema[key].type === 'Object') {
+            if (schema[key] && (schema[key].type === 'Mixed' || schema[key].type === 'Object')) {
                 // do nothing
             }
             else if (schema[key] && schema[key].type === 'Reference') {

@@ -202,6 +202,10 @@ Model.prototype.makeCaseInsensitive = function (obj) {
     var newObj = _.clone(obj);
     var self = this;
     _.each(Object.keys(obj), function(key) {
+        if (key === 'apiVersion') {
+            return;
+        }
+
         if (typeof obj[key] === 'string') {
             if (ObjectID.isValid(obj[key]) && obj[key].match(/^[a-fA-F0-9]{24}$/)) {
                 newObj[key] = obj[key];
@@ -234,6 +238,10 @@ Model.prototype.makeCaseInsensitive = function (obj) {
 
 var convertApparentObjectIds = function (query) {
     _.each(Object.keys(query), function(key) {
+        if (key === 'apiVersion') {
+            return;
+        }
+
         if (key === '$in') {
             if (typeof query[key] === 'object' && _.isArray(query[key])) {
                 var arr = query[key];
@@ -296,12 +304,8 @@ Model.prototype.find = function (query, options, done) {
 
     var self = this;
 
-    var apiVersion = query.apiVersion;
-    delete query.apiVersion;
-
     query = this.makeCaseInsensitive(query);
     query = convertApparentObjectIds(query);
-    if (typeof apiVersion !== 'undefined') query.apiVersion = apiVersion;
 
     var compose = self.compose;
 
@@ -499,7 +503,7 @@ Model.prototype.update = function (query, update, internals, done) {
         // get a reference to the documents that will be updated
         var updatedDocs = [];
 
-        self.find(_.clone(query), {}, function(err, docs) {
+        self.find(query, {}, function(err, docs) {
             if (err) return done(err);
 
             updatedDocs = docs['results'];

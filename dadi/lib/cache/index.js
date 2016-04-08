@@ -41,7 +41,10 @@ var Cache = function(server) {
 
     self.redisClient.on("error", function (err) {
       log.error({module: 'cache'}, err);
-      throw err;
+      log.warn({module: 'cache'}, 'Setting redis client and cache instance to null');
+      self.redisClient = null;
+      instance = null;
+      //throw err;
     });
   }
 }

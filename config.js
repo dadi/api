@@ -254,11 +254,6 @@ var conf = convict({
       doc: "If true, the API version parameter is extracted from the request URL and passed to the database query",
       format: Boolean,
       default: false
-    },
-    path: {
-      doc: "The location in which to save an API blueprint file in Markdown format",
-      format: String,
-      default: "/docs"
     }
   },
   env: {

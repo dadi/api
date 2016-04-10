@@ -38,7 +38,7 @@ describe('Status', function () {
       config.set('status.enabled', false);
 
       client
-      .get('/api/status')
+      .post('/api/status')
       .set('Authorization', 'Bearer ' + token)
       .expect(404, done);
     });
@@ -48,31 +48,34 @@ describe('Status', function () {
     help.getBearerToken(function (err, token) {
       var client = request('http://' + config.get('server.host') + ':' + config.get('server.port'));
       client
-      .get('/api/status')
+      .post('/api/status')
       .set('Authorization', 'Bearer ' + token)
-      .expect(200, done);
+      .expect(200)
+      .end(function(err, res) {
+        done()
+      })
     });
   });
 
   describe('Auth', function(done) {
-    it('should allow "/status" request containing token', function (done) {
+    it('should allow "/api/status" request containing token', function (done) {
       help.getBearerToken(function (err, token) {
         var client = request('http://' + config.get('server.host') + ':' + config.get('server.port'));
 
         client
-        .get('/api/status')
+        .post('/api/status')
         .set('Authorization', 'Bearer ' + token)
         .expect('content-type', 'application/json')
         .expect(200, done);
       });
     });
 
-    it('should not allow "/status" request containing invalid token', function (done) {
+    it('should not allow "/api/status" request containing invalid token', function (done) {
       help.getBearerToken(function (err, token) {
         var client = request('http://' + config.get('server.host') + ':' + config.get('server.port'));
 
         client
-        .get('/api/status')
+        .post('/api/status')
         .set('Authorization', 'Bearer badtokenvalue')
         .expect(401, done);
       });
@@ -89,7 +92,7 @@ describe('Status', function () {
         var client = request('http://' + config.get('server.host') + ':' + config.get('server.port'));
 
         client
-        .get('/api/status')
+        .post('/api/status')
         .set('Authorization', 'Bearer ' + token)
         .expect('content-type', 'application/json')
         .expect(200, function(err, res) {
@@ -111,14 +114,14 @@ describe('Status', function () {
         var client = request('http://' + config.get('server.host') + ':' + config.get('server.port'));
 
         client
-        .get('/api/status')
+        .post('/api/status')
         .set('Authorization', 'Bearer ' + token)
         .expect('content-type', 'application/json')
         .expect(200, function(err, res) {
           var status = res.body;
           status.routes.should.exist;
           status.routes[0].should.exist;
-          status.routes[0].health.should.eql('Green');
+          status.routes[0].healthStatus.should.eql('Green');
           done();
         });
       });
@@ -133,14 +136,14 @@ describe('Status', function () {
         var client = request('http://' + config.get('server.host') + ':' + config.get('server.port'));
 
         client
-        .get('/api/status')
+        .post('/api/status')
         .set('Authorization', 'Bearer ' + token)
         .expect('content-type', 'application/json')
         .expect(200, function(err, res) {
           var status = res.body;
           status.routes.should.exist;
           status.routes[0].should.exist;
-          status.routes[0].health.should.eql('Amber');
+          status.routes[0].healthStatus.should.eql('Amber');
           done();
         });
       });

@@ -237,26 +237,16 @@ var conf = convict({
     format: Boolean,
     default: false
   },
-  apidoc: {
-    title: {
-      doc: "The title to display for the API documentation",
-      format: String,
-      default: "API Documentation"
-    },
-    description: {
-      doc: "A markdown formatted description of the API documentation",
-      format: String,
-      default: "This is the Content API for a RESTful API in JSON built on DADI API."
-    },
-    markdown: {
-      doc: "If true, documentation is rendered as raw Markdown",
+  status: {
+  	enabled: {
+      doc: "If true, status endpoint is enabled.",
       format: Boolean,
       default: false
     },
-    path: {
-      doc: "The location in which to save an API blueprint file in Markdown format",
-      format: String,
-      default: "/docs"
+    routes: {
+      doc: "An array of routes to test. Each route object must contain properties `route` and `expectedResponseTime`.",
+      format: Array,
+      default: []
     }
   },
   query: {

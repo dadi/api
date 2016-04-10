@@ -249,28 +249,16 @@ var conf = convict({
       default: []
     }
   },
-  documentation: {
-    title: {
-      doc: "The title to display for the API documentation",
-      format: String,
-      default: "API Documentation"
-    },
-    description: {
-      doc: "A markdown formatted description of the API documentation",
-      format: String,
-      default: "This is the Content API for a RESTful, composable interface in JSON built on DADI API."
-    },
-    markdown: {
-      doc: "If true, documentation is rendered as raw Markdown",
-      format: Boolean,
-      default: false
-    }
-  },
   query: {
     useVersionFilter: {
       doc: "If true, the API version parameter is extracted from the request URL and passed to the database query",
       format: Boolean,
       default: false
+    },
+    path: {
+      doc: "The location in which to save an API blueprint file in Markdown format",
+      format: String,
+      default: "/docs"
     }
   },
   env: {

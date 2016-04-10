@@ -50,6 +50,7 @@ Cache: locate endpoint matching the request URL using path-to-regex so we can be
 ---
 ##### v1.2.2 (2016-01-18)
 * Requests for paths containing `docs` skip authentication
+* Custom endpoints with JS comments in the head of the file will have those comments added to the global app object, making for more meaningful API documentation (with the use of npm package `dadi-apidoc`)
 
 ##### v1.2.1 (2016-01-13)
 
@@ -63,7 +64,7 @@ Cache: locate endpoint matching the request URL using path-to-regex so we can be
   * collection setting `fieldLimiters` now used when performing a GET request, in addition to fields passed in the querystring
   * `skip` can be passed in the querystring to explicitly set an offset. The `skip` value is normally calculated using the `count` and `page` values, so if `count = 10` and `page = 2` then `skip` becomes `10` (i.e. `(page-1)*count`). If `skip` is specified in the querystring, this value is added to the calculated value to avoid overlapping records on subsequent pages.
 
-* Validation: the `limt` and `validationRule` schema properties have been deprecated in favour of the below. Not all rules are required, of course:
+* Validation: the `limit` and `validationRule` schema properties have been deprecated in favour of the below. Not all rules are required, of course:
 
   ```
   validation: {

@@ -2017,7 +2017,6 @@ describe('Application', function () {
         });
 
         it('should allow custom routing via config() function', function (done) {
-
             var client = request(connectionString);
 
             client
@@ -2027,12 +2026,9 @@ describe('Application', function () {
             .expect('content-type', 'application/json')
             .end(function (err, res) {
                 if (err) return done(err);
-
                 res.body.message.should.equal('Endpoint with custom route provided through config() function...ID passed = 55bb8f0a8d76f74b1303a135');
-
                 done();
             });
-
         });
     });
 
@@ -2048,16 +2044,23 @@ describe('Application', function () {
             // try to cleanup these tests directory tree
             try {
                 fs.unlinkSync(dirs.endpoints + '/v1/endpoint.new-endpoint.js');
-            } catch (err) {
             }
+            catch (err) {}
+
+            try {
+                fs.unlinkSync(dirs.endpoints + '/v1/endpoint.new-endpoint-with-docs.js');
+            }
+            catch (err) {}
+
             try {
                 fs.unlinkSync(dirs.endpoints + '/v2/endpoint.new-endpoint.js');
-            } catch (err) {
             }
+            catch (err) {}
+
             try {
                 fs.rmdirSync(dirs.endpoints + '/v2');
-            } catch (err) {
             }
+            catch (err) {}
             done();
         };
 
@@ -2121,6 +2124,63 @@ describe('Application', function () {
                                 done();
                             });
                         }, 1500);
+                    });
+                });
+            });
+
+            it('should pass inline documentation to the stack', function (done) {
+                var client = request(connectionString);
+
+                // make sure the endpoint exists from last test
+                client
+                .get('/v1/new-endpoint?cache=false')
+                .set('Authorization', 'Bearer ' + bearerToken)
+                .expect(200)
+                .end(function (err, res) {
+                    if (err) return done(err);
+
+                    var documentation = "";
+                    documentation += "/**\n";
+                    documentation += " * Adds two numbers together.\n";
+                    documentation += " * \n";
+                    documentation += " * **Example usage**\n";
+                    documentation += " * \n";
+                    documentation += " * ```js\n";
+                    documentation += " * var result = add(1, 2);\n";
+                    documentation += " * ```\n";
+                    documentation += " * \n";
+                    documentation += " * @param {int} `num1` The first number.\n";
+                    documentation += " * @param {int} `num2` The second number.\n";
+                    documentation += " * @returns {int} The sum of the two numbers.\n";
+                    documentation += " * @api public\n";
+                    documentation += " */\n";
+
+                    var endpointWithDocs = documentation + jsSchemaString;
+
+                    // create endpoint
+                    client
+                    .post('/v1/new-endpoint-with-docs/config')
+                    .send(endpointWithDocs)
+                    .set('content-type', 'text/plain')
+                    .set('Authorization', 'Bearer ' + bearerToken)
+                    .expect(200)
+                    .end(function (err, res) {
+                        if (err) return done(err);
+
+                        setTimeout(function () {
+
+                          var docs = app.docs['/v1/new-endpoint-with-docs'];
+                          docs.should.exist;
+                          docs.should.be.Array;
+
+                          //console.log(docs[0])
+
+                          docs[0].lead.should.eql('Adds two numbers together.');
+
+                          done();
+
+                        }, 500);
+
                     });
                 });
             });

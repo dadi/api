@@ -9,6 +9,7 @@
     "start": "node server.js --node_env=development"
   },
   "dependencies": {
+    "@dadi/status": "git+https://git@github.com/dadi/status.git",
     "async": "^1.4.2",
     "body-parser": "~1.6.5",
     "bunyan": "^1.5.1",
@@ -37,7 +38,6 @@
     "fakeredis": "1.0.2",
     "istanbul": "^0.3.22",
     "istanbul-cobertura-badger": "^1.1.0",
-    "mkdirp": "^0.5.1",
     "mocha": "~1.21.3",
     "proxyquire": "^1.7.4",
     "should": "~4.0.4",

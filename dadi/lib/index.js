@@ -1,3 +1,4 @@
+var site = require('../../package.json').name;
 var version = require('../../package.json').version;
 var nodeVersion = Number(process.version.match(/^v(\d+\.\d+)/)[1]);
 
@@ -19,7 +20,7 @@ var cache = require(__dirname + '/cache');
 var monitor = require(__dirname + '/monitor');
 var log = require(__dirname + '/log');
 var help = require(__dirname + '/help');
-var status = require(__dirname + '/status');
+var dadiStatus = require('@dadi/status');
 
 var config = require(__dirname + '/../../config');
 var configPath = path.resolve(config.configPath());
@@ -84,9 +85,6 @@ Server.prototype.start = function (done) {
 
     // search layer
     search(self);
-
-    // status endpoint
-    status(self);
 
     // start listening
     var server = this.server = app.listen(config.get('server.port'), config.get('server.host'));
@@ -181,9 +179,40 @@ Server.prototype.loadApi = function (options) {
             });
         });
 
-
         next();
     });
+
+    this.app.use('/api/status', function (req, res, next) {
+      var method = req.method && req.method.toLowerCase();
+      var authorization = req.headers.authorization;
+
+      if (method !== 'post' || config.get('status.enabled') === false) {
+        return next();
+      }
+      else {
+        var params = {
+          site: site,
+          package: '@dadi/api',
+          version: version,
+          healthCheck: {
+            authorization: authorization,
+            baseUrl: 'http://' + config.get('server.host') + ':' + config.get('server.port'),
+            routes: config.get('status.routes')
+          }
+        }
+
+        dadiStatus(params, function(err, data) {
+          if (err) return next(err);
+          var resBody = JSON.stringify(data, null, 2);
+
+          res.statusCode = 200;
+          res.setHeader('Content-Type', 'application/json');
+          res.setHeader('content-length', Buffer.byteLength(resBody));
+          return res.end(resBody);
+        })
+      }
+    })
+
         // need to ensure filepath exists since this could be a removal
     //     if (endpointFile && fs.existsSync(filepath)) {
     //         return self.addEndpointResource({

@@ -41,10 +41,21 @@ var Cache = function(server) {
 
     self.redisClient.on("error", function (err) {
       log.error({module: 'cache'}, err);
-      log.warn({module: 'cache'}, 'Setting redis client and cache instance to null');
-      self.redisClient = null;
-      instance = null;
-      //throw err;
+
+      if (err.code === 'CONNECTION_BROKEN') {
+        log.warn({module: 'cache'}, 'Resetting Redis client and cache instance. Falling back to directory cache.');
+
+        // close the existing client
+        self.redisClient.end(true);
+        self.redisClient = null;
+
+        // modify config
+        config.set('caching.redis.enabled', false)
+        config.set('caching.directory.enabled', true)
+
+        // restart the cache
+        instance = new Cache(self.server);
+      }
     });
   }
 }
@@ -206,52 +217,6 @@ Cache.prototype.init = function() {
         });
       });
     }
-
-    // fs.stat(cachepath, function (err, stats) {
-    //
-    //   if (err) {
-    //       if (err.code === 'ENOENT') {
-    //           return cacheResponse();
-    //       }
-    //       return next(err);
-    //   }
-    //
-    //     // check if ttl has elapsed
-    //     var ttl = options.ttl || config.get('caching.ttl');
-    //     var lastMod = stats && stats.mtime && stats.mtime.valueOf();
-    //     if (!(lastMod && (Date.now() - lastMod) / 1000 <= ttl)) return cacheResponse();
-    //
-    //     fs.readFile(cachepath, {encoding: cacheEncoding}, function (err, resBody) {
-    //         if (err) return next(err);
-    //
-    //         // there are only two possible types javascript or json
-    //         var dataType = query.callback ? 'text/javascript' : 'application/json';
-    //
-    //         if (resBody === "") {
-    //             return cacheResponse();
-    //         }
-    //
-    //         // allow query string param to bypass cache
-    //         var noCache = query.cache && query.cache.toString().toLowerCase() === 'false';
-    //
-    //         if (noCache) {
-    //             res.setHeader('X-Cache', 'MISS');
-    //             res.setHeader('X-Cache-Lookup', 'HIT');
-    //             return next();
-    //         }
-    //
-    //         res.statusCode = 200;
-    //
-    //         res.setHeader('Server', config.get('server.name'));
-    //         res.setHeader('X-Cache', 'HIT');
-    //         res.setHeader('X-Cache-Lookup', 'HIT');
-    //         res.setHeader('content-type', dataType);
-    //         res.setHeader('content-length', Buffer.byteLength(resBody));
-    //
-    //         // notice resBody is already a string
-    //         res.end(resBody);
-    //     });
-    // });
 
     /*
     * cacheResponse

@@ -202,6 +202,10 @@ Model.prototype.makeCaseInsensitive = function (obj) {
     var newObj = _.clone(obj);
     var self = this;
     _.each(Object.keys(obj), function(key) {
+        if (key === 'apiVersion') {
+            return;
+        }
+
         if (typeof obj[key] === 'string') {
             if (ObjectID.isValid(obj[key]) && obj[key].match(/^[a-fA-F0-9]{24}$/)) {
                 newObj[key] = obj[key];
@@ -234,6 +238,10 @@ Model.prototype.makeCaseInsensitive = function (obj) {
 
 var convertApparentObjectIds = function (query) {
     _.each(Object.keys(query), function(key) {
+        if (key === 'apiVersion') {
+            return;
+        }
+
         if (key === '$in') {
             if (typeof query[key] === 'object' && _.isArray(query[key])) {
                 var arr = query[key];
@@ -296,12 +304,8 @@ Model.prototype.find = function (query, options, done) {
 
     var self = this;
 
-    var apiVersion = query.apiVersion;
-    delete query.apiVersion;
-
     query = this.makeCaseInsensitive(query);
     query = convertApparentObjectIds(query);
-    if (typeof apiVersion !== 'undefined') query.apiVersion = apiVersion;
 
     var compose = self.compose;
 
@@ -489,6 +493,9 @@ Model.prototype.update = function (query, update, internals, done) {
     }
 
     var setUpdate = {$set: update};
+    var updateOptions = {
+        multi: true
+    };
 
     var self = this;
     var _update = function (database) {
@@ -512,16 +519,13 @@ Model.prototype.update = function (query, update, internals, done) {
 
             self.castToBSON(query);
 
-            database.collection(self.name).update(query, setUpdate, function (err, numAffected) {
+            database.collection(self.name).update(query, setUpdate, updateOptions, function (err, numAffected) {
                 if (err) return done(err);
                 if (!numAffected) {
                     err = new Error('Not Found');
                     err.statusCode = 404;
                     return done(err);
                 }
-
-                // query and doc `_id` should be equal
-                query._id && (update._id = query._id);
 
                 var results = {};
 
@@ -550,7 +554,7 @@ Model.prototype.update = function (query, update, internals, done) {
                     });
                 }
                 else {
-                    self.find({ _id: update._id.toString() }, {}, function(err, doc) {
+                    self.find({ _id: { "$in": _.map(updatedDocs, function(doc) { return doc._id.toString() } ) } }, {}, function(err, doc) {
                         if (err) return done(err);
 
                         results = doc;

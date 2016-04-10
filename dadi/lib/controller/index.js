@@ -214,14 +214,29 @@ Controller.prototype.post = function (req, res, next) {
         if (err) return next(err);
 
         // if id is present in the url, then this is an update
-        if (req.params.id) {
+        if (req.params.id || req.body.update) {
 
             internals.lastModifiedAt = Date.now();
             internals.lastModifiedBy = req.client && req.client.clientId;
 
-            return self.model.update({
-                _id: req.params.id, apiVersion: internals.apiVersion
-            }, req.body, internals, sendBackJSON(200, res, next));
+            var query = {}
+            var update = {}
+
+            if (req.params.id) {
+              query._id = req.params.id;
+              update = req.body;
+            }
+            else {
+              query = req.body.query;
+              update = req.body.update;
+            }
+
+            // add the apiVersion filter
+            if (config.get('query.useVersionFilter')) {
+              query.apiVersion = internals.apiVersion
+            }
+
+            return self.model.update(query, update, internals, sendBackJSON(200, res, next));
         }
 
         // if no id is present, then this is a create

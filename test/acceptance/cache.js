@@ -638,6 +638,49 @@ describe('Cache', function (done) {
       done();
     });
 
+    it('should fallback to directory cache if Redis client fails', function(done) {
+
+      delete require.cache[__dirname + '/../../config.js'];
+      config.loadFile(config.configPath());
+
+      var EventEmitter = require('events');
+      var util = require('util');
+
+      /* Fake redis client */
+      function Client() {
+        this.end = function(reallyEnd) { }
+        EventEmitter.call(this);
+      }
+
+      util.inherits(Client, EventEmitter);
+      var redisClient = new Client();
+      /* End Fake redis client */
+
+      sinon.stub(redis, 'createClient').returns(redisClient);
+
+      delete require.cache[__dirname + '/../../dadi/lib/'];
+      cache.reset();
+
+      var c = cache(app);
+      redis.createClient.restore();
+
+      setTimeout(function() {
+        // emit an error event
+        redisClient.emit('error', { code: 'CONNECTION_BROKEN'});
+
+        config.get('caching.directory.enabled').should.eql(true)
+
+        try {
+          app.stop(function(){});
+        }
+        catch (err) {
+        }
+
+        done();
+      }, 1000)
+
+    });
+
     it('should check key exists in Redis', function(done) {
       delete require.cache[__dirname + '/../../config.js'];
       config.loadFile(config.configPath());

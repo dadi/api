@@ -245,9 +245,10 @@ Model.prototype.convertApparentObjectIds = function (query) {
     }
 
     var type;
+    var keyOrParent = (key.split('.').length > 1) ? key.split('.')[0] : key
 
-    if (self.schema[key]) {
-      type = self.schema[key].type
+    if (self.schema[keyOrParent]) {
+      type = self.schema[keyOrParent].type
     }
 
     if (key === '$in') {
@@ -269,7 +270,7 @@ Model.prototype.convertApparentObjectIds = function (query) {
         query[key] = self.convertApparentObjectIds(query[key]);
       }
     }
-    else if (typeof query[key] === 'string' && ObjectID.isValid(query[key]) && query[key].match(/^[a-fA-F0-9]{24}$/)) {
+    else if (typeof query[key] === 'string' && type !== 'Object' && ObjectID.isValid(query[key]) && query[key].match(/^[a-fA-F0-9]{24}$/)) {
       query[key] = new ObjectID.createFromHexString(query[key]);
     }
   });

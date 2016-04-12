@@ -561,8 +561,6 @@ Server.prototype.addEndpointResource = function (options) {
 
         var content = fs.readFileSync(filepath).toString();
 
-        console.log(parsecomments(content))
-
         var opts = {
             route: '/' + options.version + '/' + name,
             component: require(filepath),

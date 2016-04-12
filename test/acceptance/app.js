@@ -2424,6 +2424,7 @@ describe('Application', function () {
             });
 
             it('should pass inline documentation to the stack', function (done) {
+                this.timeout(4000)
                 var client = request(connectionString);
 
                 // make sure the endpoint exists from last test
@@ -2474,7 +2475,7 @@ describe('Application', function () {
 
                           done();
 
-                        }, 500);
+                        }, 1500);
 
                     });
                 });

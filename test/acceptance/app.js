@@ -2435,8 +2435,6 @@ describe('Application', function () {
               .end(function (err, res) {
                 if (err) return done(err);
 
-                console.log(app)
-                console.log(app.docs)
                 var docs = app.docs['/v1/test-endpoint-with-docs'];
                 docs.should.exist;
                 docs.should.be.Array;

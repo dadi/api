@@ -248,7 +248,7 @@ describe('Cache', function (done) {
             if (err) return done(err);
 
             bearerToken = token;
-            help.clearCache();
+            //help.clearCache();
             done();
           });
         });

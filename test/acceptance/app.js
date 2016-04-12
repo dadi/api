@@ -2468,7 +2468,7 @@ describe('Application', function () {
                           docs.should.exist;
                           docs.should.be.Array;
 
-                          //console.log(docs[0])
+                          console.log(docs[0])
 
                           docs[0].lead.should.eql('Adds two numbers together.');
 

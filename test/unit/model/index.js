@@ -292,7 +292,7 @@ describe('Model', function () {
             done();
         });
 
-        it('should not convert Strings to ObjectIDs when a field type is object', function (done) {
+        it('should not convert (sub query) Strings to ObjectIDs when a field type is Object', function (done) {
 
             var fields = help.getModelSchema();
             var schema = {};
@@ -315,6 +315,34 @@ describe('Model', function () {
             query = mod.convertApparentObjectIds(query);
 
             var type = typeof query.field3.id
+            type.should.eql('string');
+
+            done();
+        });
+
+        it('should not convert (dot notation) Strings to ObjectIDs when a field type is Object', function (done) {
+
+            var fields = help.getModelSchema();
+            var schema = {};
+            schema.fields = fields;
+
+            schema.fields.field2 = _.extend({}, schema.fields.fieldName, {
+                type: 'ObjectID',
+                required: false
+            });
+
+            schema.fields.field3 = _.extend({}, schema.fields.fieldName, {
+                type: 'Object',
+                required: false
+            });
+
+            var mod = model('testModelName', schema.fields);
+
+            var query = { "field3.id": "55cb1658341a0a804d4dadcc" }
+
+            query = mod.convertApparentObjectIds(query);
+
+            var type = typeof query[Object.keys(query)[0]]
             type.should.eql('string');
 
             done();

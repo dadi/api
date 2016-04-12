@@ -56,10 +56,12 @@ module.exports.dropDatabase = function (database, done) {
       var database = connection({'database':database||'test'});
       setTimeout(function() {
         database.db.dropDatabase(function (err) {
+          console.log(err)
             if (err) {
               return done(err);
             }
             //db.close(true, done);
+            console.log('db dropped')
             return done()
         });
       }, 500)

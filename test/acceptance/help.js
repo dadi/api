@@ -54,6 +54,7 @@ module.exports.createDocWithSpecificVersion = function (token, apiVersion, doc, 
 module.exports.dropDatabase = function (database, done) {
     if (database.indexOf('test') > -1) {
       var database = connection({'database':database||'test'});
+      console.log(database)
       setTimeout(function() {
         database.db.dropDatabase(function (err) {
           console.log(err)

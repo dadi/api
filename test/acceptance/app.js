@@ -589,6 +589,7 @@ describe('Application', function () {
             });
 
             it('should use apiVersion to filter when selecting update documents if configured', function (done) {
+              this.timeout(6000)
                 var client = request(connectionString);
 
                 config.set('query.useVersionFilter', true)
@@ -2424,60 +2425,25 @@ describe('Application', function () {
             });
 
             it('should pass inline documentation to the stack', function (done) {
-                var client = request(connectionString);
+              this.timeout(2000)
+              var client = request(connectionString);
 
-                // make sure the endpoint exists from last test
-                client
-                .get('/v1/new-endpoint?cache=false')
-                .set('Authorization', 'Bearer ' + bearerToken)
-                .expect(200)
-                .end(function (err, res) {
-                    if (err) return done(err);
+              client
+              .get('/v1/test-endpoint-with-docs?cache=false')
+              .set('Authorization', 'Bearer ' + bearerToken)
+              .expect(200)
+              .end(function (err, res) {
+                if (err) return done(err);
 
-                    var documentation = "";
-                    documentation += "/**\n";
-                    documentation += " * Adds two numbers together.\n";
-                    documentation += " * \n";
-                    documentation += " * **Example usage**\n";
-                    documentation += " * \n";
-                    documentation += " * ```js\n";
-                    documentation += " * var result = add(1, 2);\n";
-                    documentation += " * ```\n";
-                    documentation += " * \n";
-                    documentation += " * @param {int} `num1` The first number.\n";
-                    documentation += " * @param {int} `num2` The second number.\n";
-                    documentation += " * @returns {int} The sum of the two numbers.\n";
-                    documentation += " * @api public\n";
-                    documentation += " */\n";
+                var docs = app.docs['/v1/test-endpoint-with-docs'];
+                docs.should.exist;
+                docs.should.be.Array;
 
-                    var endpointWithDocs = documentation + jsSchemaString;
+                docs[0].lead.should.eql('Adds two numbers together.');
 
-                    // create endpoint
-                    client
-                    .post('/v1/new-endpoint-with-docs/config')
-                    .send(endpointWithDocs)
-                    .set('content-type', 'text/plain')
-                    .set('Authorization', 'Bearer ' + bearerToken)
-                    .expect(200)
-                    .end(function (err, res) {
-                        if (err) return done(err);
+                done();
 
-                        setTimeout(function () {
-
-                          var docs = app.docs['/v1/new-endpoint-with-docs'];
-                          docs.should.exist;
-                          docs.should.be.Array;
-
-                          //console.log(docs[0])
-
-                          docs[0].lead.should.eql('Adds two numbers together.');
-
-                          done();
-
-                        }, 500);
-
-                    });
-                });
+              });
             });
 
             it('should allow updating an endpoint', function (done) {

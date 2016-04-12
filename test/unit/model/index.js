@@ -263,6 +263,64 @@ describe('Model', function () {
         });
     });
 
+    describe('`convertApparentObjectIds` method', function () {
+        it('should be added to model', function (done) {
+            model('testModelName', help.getModelSchema()).convertApparentObjectIds.should.be.Function;
+            done();
+        });
+
+        it('should convert Strings to ObjectIDs when a field type is ObjectID', function (done) {
+
+            var fields = help.getModelSchema();
+            var schema = {};
+            schema.fields = fields;
+
+            schema.fields.field2 = _.extend({}, schema.fields.fieldName, {
+                type: 'ObjectID',
+                required: false
+            });
+
+            var mod = model('testModelName', schema);
+
+            var query = { "field2": "55cb1658341a0a804d4dadcc" }
+
+            query = mod.convertApparentObjectIds(query);
+
+            var type = typeof query.field2
+            type.should.eql('object');
+
+            done();
+        });
+
+        it('should not convert Strings to ObjectIDs when a field type is object', function (done) {
+
+            var fields = help.getModelSchema();
+            var schema = {};
+            schema.fields = fields;
+
+            schema.fields.field2 = _.extend({}, schema.fields.fieldName, {
+                type: 'ObjectID',
+                required: false
+            });
+
+            schema.fields.field3 = _.extend({}, schema.fields.fieldName, {
+                type: 'Object',
+                required: false
+            });
+
+            var mod = model('testModelName', schema.fields);
+
+            var query = { "field3": {"id": "55cb1658341a0a804d4dadcc" }}
+
+            query = mod.convertApparentObjectIds(query);
+
+            var type = typeof query.field3.id
+            type.should.eql('string');
+
+            done();
+        });
+    });
+
     describe('`stats` method', function () {
       it('should be added to model', function (done) {
         model('testModelName', help.getModelSchema()).stats.should.be.Function;

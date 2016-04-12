@@ -133,7 +133,7 @@ Model.prototype.create = function (obj, internals, done) {
 
     // validate each doc
     var validation;
-    
+
     obj.forEach(function (doc) {
         if (validation === undefined || validation.success) {
             validation = self.validate.schema(doc);
@@ -236,35 +236,44 @@ Model.prototype.makeCaseInsensitive = function (obj) {
     return newObj;
 }
 
-var convertApparentObjectIds = function (query) {
-    _.each(Object.keys(query), function(key) {
-        if (key === 'apiVersion') {
-            return;
-        }
+Model.prototype.convertApparentObjectIds = function (query) {
+  var self = this;
 
-        if (key === '$in') {
-            if (typeof query[key] === 'object' && _.isArray(query[key])) {
-                var arr = query[key];
-                _.each(arr, function (value, key) {
-                    if (typeof value === 'string' && ObjectID.isValid(value) && value.match(/^[a-fA-F0-9]{24}$/)) {
-                        arr[key] = new ObjectID.createFromHexString(value);
-                    }
-                });
-                query[key] = arr;
-            }
-        }
-        else if (typeof query[key] === 'object' && query[key] !== null) {
-            query[key] = convertApparentObjectIds(query[key]);
-        }
-        else if (typeof query[key] === 'string' && ObjectID.isValid(query[key]) && query[key].match(/^[a-fA-F0-9]{24}$/)) {
-            query[key] = new ObjectID.createFromHexString(query[key]);
-        }
-        else {
-            // nothing
-            //console.log(query[key]);
-        }
-    });
-    return query;
+  _.each(Object.keys(query), function(key) {
+    if (key === 'apiVersion') {
+      return;
+    }
+
+    var type;
+
+    if (self.schema[key]) {
+      type = self.schema[key].type
+    }
+
+    if (key === '$in') {
+      if (typeof query[key] === 'object' && _.isArray(query[key])) {
+        var arr = query[key];
+        _.each(arr, function (value, key) {
+          if (typeof value === 'string' && ObjectID.isValid(value) && value.match(/^[a-fA-F0-9]{24}$/)) {
+            arr[key] = new ObjectID.createFromHexString(value);
+          }
+        });
+        query[key] = arr;
+      }
+    }
+    else if (typeof query[key] === 'object' && query[key] !== null) {
+      if (typeof type !== 'undefined' && type === 'Object') {
+        // ignore
+      }
+      else {
+        query[key] = self.convertApparentObjectIds(query[key]);
+      }
+    }
+    else if (typeof query[key] === 'string' && ObjectID.isValid(query[key]) && query[key].match(/^[a-fA-F0-9]{24}$/)) {
+      query[key] = new ObjectID.createFromHexString(query[key]);
+    }
+  });
+  return query;
 }
 
 Model.prototype.convertObjectIdsForSave = function (schema, obj) {
@@ -305,7 +314,7 @@ Model.prototype.find = function (query, options, done) {
     var self = this;
 
     query = this.makeCaseInsensitive(query);
-    query = convertApparentObjectIds(query);
+    query = this.convertApparentObjectIds(query);
 
     var compose = self.compose;
 

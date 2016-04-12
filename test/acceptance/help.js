@@ -52,6 +52,7 @@ module.exports.createDocWithSpecificVersion = function (token, apiVersion, doc, 
 
 // helper function to cleanup the dbs
 module.exports.dropDatabase = function (database, done) {
+    connection.resetConnections()
     if (database.indexOf('test') > -1) {
       var database = connection({'database':database||'test'});
       console.log(database)

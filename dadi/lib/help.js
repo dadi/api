@@ -198,14 +198,17 @@ module.exports.clearCache = function (pathname, callback) {
   	var i = 0;
   	var exists = fs.existsSync(cachePath);
 
-  	if (!exists) {
+    if (!exists) {
     	return callback(null);
   	}
   	else {
   		var files = fs.readdirSync(cachePath);
+
   		if(pathname == '*') {
   			files = walkSync(cachePath + '/');
   		}
+
+      if (_.isEmpty(files)) return callback(null)
 
 	    files.forEach(function (filename) {
     		var file = path.join(cachePath, filename);

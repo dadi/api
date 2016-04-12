@@ -589,6 +589,7 @@ describe('Application', function () {
             });
 
             it('should use apiVersion to filter when selecting update documents if configured', function (done) {
+              this.timeout(6000)
                 var client = request(connectionString);
 
                 config.set('query.useVersionFilter', true)

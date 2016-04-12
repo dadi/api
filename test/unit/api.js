@@ -1,5 +1,6 @@
 var should = require('should');
 var http = require('http');
+var http2 = require('http2');
 var api = require(__dirname + '/../../dadi/lib/api');
 var controller = require(__dirname + '/../../dadi/lib/controller');
 var model = require(__dirname + '/../../dadi/lib/model');
@@ -195,10 +196,11 @@ describe('API server', function () {
         });
     });
 
-    describe('server', function () {
+    describe('http server', function () {
         var app, server;
         before(function (done) {
             app = api();
+            config.set('server.http2.enabled', false);
             server = app.listen(config.get('server.port'), config.get('server.host'), null, done);
         });
 
@@ -208,6 +210,24 @@ describe('API server', function () {
 
         it('should be an instance of http.Server', function (done) {
             server.should.be.an.instanceOf(http.Server);
+            done();
+        });
+    });
+
+    describe('http2 server', function () {
+        var app, server;
+        before(function (done) {
+            app = api();
+            config.set('server.http2.enabled', true);
+            server = app.listen(config.get('server.port'), config.get('server.host'), null, done);
+        });
+
+        after(function (done) {
+            server.close(done);
+        });
+
+        it('should be an instance of http2.Server', function (done) {
+            server.should.be.an.instanceOf(http2.Server);
             done();
         });
     });

@@ -2,6 +2,8 @@ var should = require('should');
 var fs = require('fs');
 var path = require('path');
 var request = require('supertest');
+var needle = require('needle');
+var url = require('url');
 var _ = require('underscore');
 var config = require(__dirname + '/../../config');
 var help = require(__dirname + '/help');
@@ -13,10 +15,10 @@ var connectionString = 'http://' + config.get('server.host') + ':' + config.get(
 
 describe('Search', function () {
 
-  describe('Collections', function () {
+  describe('Collections(General Request)', function () {
 
     before(function (done) {
-
+      config.set('server.http2.enabled', false);
       help.dropDatabase('testdb', function (err) {
         if (err) return done(err);
 
@@ -114,6 +116,111 @@ describe('Search', function () {
                 done();
             });
         });
+    });
+  });
+  describe('Collections(HTTP2 Request)', function () {
+
+    before(function (done) {
+      config.set('server.http2.enabled', true);
+      help.dropDatabase('testdb', function (err) {
+        if (err) return done(err);
+
+        app.start(function() {
+          help.getBearerTokenWithAccessTypeHttps("admin", function (err, token) {
+            if (err) return done(err);
+
+            bearerToken = token;
+
+            // add a new field to the schema
+            var jsSchemaString = fs.readFileSync(__dirname + '/../new-schema.json', {encoding: 'utf8'});
+            jsSchemaString = jsSchemaString.replace('newField', 'field1');
+            var schema = JSON.parse(jsSchemaString);
+
+            schema.fields.field2 = _.extend({}, schema.fields.newField, {
+                type: 'Number',
+                required: true,
+                message: 'Provide a value here, please!'
+            });
+
+            schema.fields.field3 = _.extend({}, schema.fields.newField, {
+                type: 'ObjectID',
+                required: false
+            });
+
+            schema.settings.displayName = 'Test Collection';
+            schema.settings.description = 'Test Collection';
+            
+            var doc_link = 'https://localhost:'+config.get('server.port') + '/vtest/testdb/test-schema/config';
+            var options = url.parse(doc_link);
+            options.key = fs.readFileSync(config.get('server.http2.key_path'));
+            options.ca = fs.readFileSync(config.get('server.http2.crt_path'));
+            options.headers = {
+              'content-type': 'text/plain',
+              'Authorization': 'Bearer ' + bearerToken
+            };
+            options.json = true;
+            needle.post(doc_link, schema, options, function(err, res) {
+              if (err) return done(err);
+              should(res.headers['content-type']).be.match(/json/);
+              should(res.statusCode).be.equal(200);
+
+              done();
+            });
+          });
+        });
+      });
+    });
+
+    after(function (done) {
+        // reset the schema
+        var jsSchemaString = fs.readFileSync(__dirname + '/../new-schema.json', {encoding: 'utf8'});
+        jsSchemaString = jsSchemaString.replace('newField', 'field1');
+        var schema = JSON.parse(jsSchemaString);
+        var doc_link = 'https://localhost:'+config.get('server.port') + '/vtest/testdb/test-schema/config';
+        var options = url.parse(doc_link);
+        options.key = fs.readFileSync(config.get('server.http2.key_path'));
+        options.ca = fs.readFileSync(config.get('server.http2.crt_path'));
+        options.headers = {
+          'content-type': 'text/plain',
+          'Authorization': 'Bearer ' + bearerToken
+        };
+        options.json = true;
+        needle.post(doc_link, schema, options, function(err, res) {
+          if (err) return done(err);
+          should(res.headers['content-type']).be.match(/json/);
+          should(res.statusCode).be.equal(200);
+
+          app.stop(done);
+        });
+    })
+
+    it('should return docs from specified collections', function (done) {
+
+      // sample URL "/:version/search?collections=collection/model&query={"field1":{"$regex":"est"}}"
+
+      var doc = { field1: "Test", field2: 1234 };
+
+      help.createDocWithSpecificVersionHttps(bearerToken, 'vtest', doc, function (err, doc) {
+        if (err) return done(err);
+        var doc_link = 'https://localhost:'+config.get('server.port') + '/vtest/search?collections=testdb/test-schema&query={"field1":{"$regex":"est"}}';
+        var options = url.parse(doc_link);
+        options.key = fs.readFileSync(config.get('server.http2.key_path'));
+        options.ca = fs.readFileSync(config.get('server.http2.crt_path'));
+        options.headers = {
+          'content-type': 'text/plain',
+          'Authorization': 'Bearer ' + bearerToken
+        };
+        needle.get(doc_link, options, function(err, res) {
+          if (err) return done(err);
+          should.exist(res.body['test-schema'].results);
+          res.body['test-schema'].results.should.be.Array;
+          res.body['test-schema'].results.length.should.equal(1);
+
+          res.body['test-schema'].results[0].field1.should.equal('Test');
+
+          done();
+        });
+      });
     });
   });
 });

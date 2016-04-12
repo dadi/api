@@ -19,6 +19,7 @@
     "mkdirp": "^0.5.1",
     "moment": "~2.8.1",
     "mongodb": "~1.4.8",
+    "needle": "~1.0.0",
     "node-uuid": "~1.4.1",
     "path-to-regexp": "~1.0.0",
     "q": "^1.4.1",

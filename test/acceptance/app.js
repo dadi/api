@@ -2463,6 +2463,8 @@ describe('Application', function () {
                     .end(function (err, res) {
                         if (err) return done(err);
 
+                        console.log(res)
+
                         setTimeout(function () {
 
                           var docs = app.docs['/v1/new-endpoint-with-docs'];

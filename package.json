@@ -54,7 +54,7 @@
   },
   "homepage": "https://github.com/dadi/api",
   "author": "DADI <team@dadi.tech>",
-  "license": "SEE LICENSE IN GPL.md",
+  "license": "SEE LICENSE IN AGPL.md",
   "description": "A high performance RESTful API layer designed in support of API-first development and the principle of COPE.",
   "directories": {
     "test": "test"

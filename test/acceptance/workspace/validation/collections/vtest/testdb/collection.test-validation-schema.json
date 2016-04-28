@@ -1,7 +1,7 @@
 {
     "fields": {
-        "fieldDate": {
-            "type": "Date",
+        "fieldDateTime": {
+            "type": "DateTime",
             "label": "Article date",
             "comments": "The date of the article",
             "placement": "Main content",

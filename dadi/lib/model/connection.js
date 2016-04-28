@@ -217,7 +217,7 @@ module.exports = function (options) {
       if (conn.readyState === 2) {
         setTimeout(function() {
           conn.connect();
-        }, 2000)
+        }, 5000)
       }
     }
     // else create a new connection

@@ -51,6 +51,77 @@ describe('Model validator', function () {
         done();
       });
 
+      describe('DateTime', function () {
+        it('should inform of invalid DateTime', function (done) {
+          var validator = new Validator({
+            schema: {
+              field1: {
+                type: 'DateTime',
+                required: false
+              }
+            }
+          });
+          var val = validator.schema({field1: 'a123'});
+          val.success.should.be.false;
+          val.errors.length.should.equal(1);
+          val.errors[0].field.should.equal('field1');
+          val.errors[0].message.should.equal('is not a valid DateTime');
+
+          done();
+        });
+
+        it('should allow passing Strings representing a date', function (done) {
+          var validator = new Validator({
+            schema: {
+              field1: { type: 'DateTime', required: false },
+              field2: { type: 'DateTime', required: false },
+              field3: { type: 'DateTime', required: false },
+              field4: { type: 'DateTime', required: false },
+              field5: { type: 'DateTime', required: false }
+            }
+          });
+          var val = validator.schema(
+            {
+              field1: '09/12/2016',
+              field2: '2016-04-25',
+              field3: '2010-01-01T05:06:07',
+              field4: '2013-02-08T09:30:26.123+07:00',
+              field5: 'Jan 1 2001'
+            }
+          );
+          val.success.should.be.true;
+          done();
+        });
+
+        it('should allow passing a Number representing a timestamp in milliseconds', function (done) {
+          var validator = new Validator({
+            schema: {
+              field1: {
+                type: 'DateTime',
+                required: false
+              }
+            }
+          });
+          var val = validator.schema({field1: 1461820582000});
+          val.success.should.be.true;
+          done();
+        });
+
+        it('should allow passing a Number representing a timestamp in seconds', function (done) {
+          var validator = new Validator({
+            schema: {
+              field1: {
+                type: 'DateTime',
+                required: false
+              }
+            }
+          });
+          var val = validator.schema({field1: 1461820582});
+          val.success.should.be.true;
+          done();
+        });
+      })
+
       describe('ObjectID', function () {
         it('should inform of bad type for ObjectID that is not string', function (done) {
           var validator = new Validator({

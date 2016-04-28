@@ -3,6 +3,7 @@
 //   ensure that all objects are JSON
 //   ensure that field validation passes for inserts and updates
 
+var moment = require('moment');
 var ObjectID = require('mongodb').ObjectID;
 var _ = require('underscore');
 var util = require('util');
@@ -92,6 +93,9 @@ function _parseDocument(obj, schema, response) {
                 }
             }
         }
+        else if (key === 'apiVersion') {
+
+        }
         else {
             if (!schema[key]) {
                 response.success = false;
@@ -120,7 +124,7 @@ function _validate(field, schema, key) {
       if (validationObj.hasOwnProperty('maxLength') && field.toString().length > Number(validationObj.maxLength)) return schema.message || 'is too long';
     }
 
-    var primitives = ['String', 'Number', 'Boolean', 'Array', 'Date'];
+    var primitives = ['String', 'Number', 'Boolean', 'Array', 'Date', 'DateTime'];
 
     // check length
     if (schema.limit) {
@@ -128,7 +132,7 @@ function _validate(field, schema, key) {
       newSchema[key] = _.clone(schema);
       newSchema[key].validation = { maxLength: schema.limit };
       delete newSchema[key].limit;
-      var message = 'The use of the `limit` property in field declarations is deprecated and will be removed in v1.5.0\n\nPlease use the following instead:\n\n';
+      var message = 'The use of the `limit` property in field declarations is deprecated and will be removed in v1.7.0\n\nPlease use the following instead:\n\n';
       message += JSON.stringify(newSchema, null, 2);
       console.log(message);
       log.warn(message);
@@ -141,7 +145,7 @@ function _validate(field, schema, key) {
       newSchema[key] = _.clone(schema);
       newSchema[key].validation = { regex: { pattern: schema.validationRule }};
       delete newSchema[key].validationRule;
-      var message = 'The use of the `validationRule` property in field declarations is deprecated and will be removed in v1.5.0\n\nPlease use the following instead:\n\n';
+      var message = 'The use of the `validationRule` property in field declarations is deprecated and will be removed in v1.7.0\n\nPlease use the following instead:\n\n';
       message += JSON.stringify(newSchema, null, 2);
       console.log(message);
       log.warn(message);
@@ -165,15 +169,22 @@ function _validate(field, schema, key) {
         }
     }
 
-    // allow Mixed/ObjectID/Reference fields through
-    if (_.contains(['Mixed', 'ObjectID', 'Reference'], schema.type) === false) {
+    if (schema.type === 'DateTime') {
+      var m = moment(field)
+      if (!m.isValid()) {
+        return 'is not a valid DateTime';
+      }
+    }
+
+    // allow Mixed/ObjectID/Reference/DateTime fields through
+    if (_.contains(['Mixed', 'ObjectID', 'Reference', 'DateTime'], schema.type) === false) {
         // check constructor of field against primitive types and check the type of field == the specified type
         // using constructor.name as array === object in typeof comparisons
         try {
-            if(~primitives.indexOf(field.constructor.name) && schema.type !== field.constructor.name) return schema.message || 'is wrong type';
+          if(~primitives.indexOf(field.constructor.name) && schema.type !== field.constructor.name) return schema.message || 'is wrong type';
         }
         catch(e) {
-            return schema.message || 'is wrong type';
+          return schema.message || 'is wrong type';
         }
     }
 

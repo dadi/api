@@ -4,6 +4,7 @@ var help = require(__dirname + '/../help');
 var Validator = require(__dirname + '/validator');
 var History = require(__dirname + '/history');
 var Composer = require(__dirname + '/../composer').Composer;
+var moment = require('moment');
 var ObjectID = require('mongodb').ObjectID;
 var Hook = require(__dirname + '/hook');
 var _ = require('underscore');
@@ -154,8 +155,13 @@ Model.prototype.create = function (obj, internals, done) {
 
     // ObjectIDs
     obj.forEach(function (doc) {
-        doc = self.convertObjectIdsForSave(self.schema, doc);
-    });
+      doc = self.convertObjectIdsForSave(self.schema, doc);
+    })
+
+    // DateTime
+    obj.forEach(function (doc) {
+      doc = self.convertDateTimeForSave(self.schema, doc);
+    })
 
     var _done = function (database) {
         database.collection(self.name).insert(obj, function(err, doc) {
@@ -296,6 +302,16 @@ Model.prototype.convertObjectIdsForSave = function (schema, obj) {
     });
 
     return obj;
+}
+
+Model.prototype.convertDateTimeForSave = function (schema, obj) {
+  Object.keys(schema)
+  .filter(function (key) { return schema[key].type === 'DateTime' })
+  .forEach(function (key) {
+    obj[key] = new Date(moment(obj[key]).toISOString())
+  })
+
+  return obj;
 }
 
 /**
@@ -497,6 +513,8 @@ Model.prototype.update = function (query, update, internals, done) {
 
     // ObjectIDs
     update = this.convertObjectIdsForSave(this.schema, update);
+    // DateTimes
+    update = this.convertDateTimeForSave(this.schema, update);
 
     if (typeof internals === 'object' && internals != null) { // not null and not undefined
         _.extend(update, internals);

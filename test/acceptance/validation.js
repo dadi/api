@@ -1,6 +1,7 @@
 var fs = require('fs');
 var path = require('path');
 var should = require('should');
+var moment = require('moment');
 var request = require('supertest');
 var _ = require('underscore');
 var config = require(__dirname + '/../../config');
@@ -71,27 +72,104 @@ describe('validation', function () {
             });
         });
 
-        // describe('date', function () {
-        //     it('should not allow setting non-date', function (done) {
-        //         var client = request('http://' + config.get('server.host') + ':' + config.get('server.port'));
+        describe('DateTime', function () {
+          describe('POST', function () {
+            it('should not allow setting invalid DateTime', function (done) {
+              var client = request('http://' + config.get('server.host') + ':' + config.get('server.port'));
 
-        //         client
-        //         .post('/vtest/testdb/test-validation-schema')
-        //         .set('Authorization', 'Bearer ' + bearerToken)
-        //         .send({fieldDate: 1337})
-        //         .expect(400, done);
-        //     });
+              client
+              .post('/vtest/testdb/test-validation-schema')
+              .set('Authorization', 'Bearer ' + bearerToken)
+              .send({fieldDateTime: 'abcdef'})
+              .expect(400)
+              .end(function(err, res) {
+                done()
+              })
+            });
 
-        //     it('should allow setting date', function (done) {
-        //         var client = request('http://' + config.get('server.host') + ':' + config.get('server.port'));
+            it('should allow setting DateTime', function (done) {
+              var client = request('http://' + config.get('server.host') + ':' + config.get('server.port'));
 
-        //         client
-        //         .post('/vtest/testdb/test-validation-schema')
-        //         .set('Authorization', 'Bearer ' + bearerToken)
-        //         .send({fieldDate: "2013/12/08"})
-        //         .expect(200, done);
-        //     });
-        // });
+              var expected = moment("2013/12/08").toISOString()
+
+              client
+              .post('/vtest/testdb/test-validation-schema')
+              .set('Authorization', 'Bearer ' + bearerToken)
+              .send({fieldDateTime: "2013/12/08"})
+              .expect(200)
+              .end(function(err, res) {
+                res.body.results[0].fieldDateTime.should.eql(expected)
+                done()
+              })
+            });
+          })
+
+          describe('PUT', function () {
+            it('should not allow setting invalid DateTime', function (done) {
+              var client = request('http://' + config.get('server.host') + ':' + config.get('server.port'));
+
+              client
+              .post('/vtest/testdb/test-validation-schema')
+              .set('Authorization', 'Bearer ' + bearerToken)
+              .send({fieldDateTime: "2013/12/08"})
+              .expect(200)
+              .end(function(err, res) {
+                var doc = res.body.results[0]
+                var id = doc._id
+
+                doc.fieldDateTime = "abcdef"
+                delete doc.createdAt
+                delete doc.createdBy
+                delete doc._id
+
+                client
+                .put('/vtest/testdb/test-validation-schema/' + id)
+                .set('Authorization', 'Bearer ' + bearerToken)
+                .send(doc)
+                .expect(400)
+                .end(function(err, res) {
+
+                  res.body.success.should.eql(false)
+
+                  done()
+                })
+              })
+
+            });
+
+            it('should allow setting DateTime', function (done) {
+              var client = request('http://' + config.get('server.host') + ':' + config.get('server.port'));
+
+              client
+              .post('/vtest/testdb/test-validation-schema')
+              .set('Authorization', 'Bearer ' + bearerToken)
+              .send({fieldDateTime: "2013/12/08"})
+              .expect(200)
+              .end(function(err, res) {
+                var doc = res.body.results[0]
+                var id = doc._id
+
+                doc.fieldDateTime = "21 May 1977"
+                delete doc.createdAt
+                delete doc.createdBy
+                delete doc._id
+
+                client
+                .put('/vtest/testdb/test-validation-schema/' + id)
+                .set('Authorization', 'Bearer ' + bearerToken)
+                .send(doc)
+                .expect(200)
+                .end(function(err, res) {
+
+                  var expected = moment("21 May 1977").toISOString()
+                  res.body.results[0].fieldDateTime.should.eql(expected)
+
+                  done()
+                })
+              })
+            });
+          })
+        });
 
         describe('number', function () {
             it('should not allow setting non-number', function (done) {

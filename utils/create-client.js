@@ -14,6 +14,6 @@ conn.on('connect', function (db) {
     }, function (err) {
         if (err) throw err;
 
-        conn.mongoClient.close();
+        db.close();
     });
 })

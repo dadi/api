@@ -8,6 +8,7 @@ var parsecomments = require('parse-comments');
 var fs = require('fs');
 var mkdirp = require('mkdirp');
 var path = require('path');
+var pathToRegexp = require('path-to-regexp');
 var stackTrace = require('stack-trace');
 var url = require('url');
 var _ = require('underscore');
@@ -97,6 +98,7 @@ Server.prototype.start = function (done) {
     this.loadApi(options);
 
     this.loadCollectionRoute();
+    this.loadEndpointsRoute();
 
     this.readyState = 1;
 
@@ -353,7 +355,6 @@ Server.prototype.loadConfigApi = function () {
 
 // route to retrieve list of collections
 Server.prototype.loadCollectionRoute = function() {
-
   var self = this;
 
   this.app.use('/api/collections', function (req, res, next) {
@@ -366,15 +367,24 @@ Server.prototype.loadCollectionRoute = function() {
     var collections = [];
 
     _.each(self.components, function (value, key) {
-      if (value.hasOwnProperty("model")) {
+      var model
+      var name = null
+      var slug
+      var parts = _.compact(key.split('/'));
 
-        var model = value.model;
-        var name = model.name;
-        var slug = model.name;
-        var parts = _.compact(key.split('/'));
+      var hasModel = _.contains(Object.keys(value), 'model')
+      var hasGetMethod = _.contains(Object.keys(value), 'get')
+
+      if (hasModel && !hasGetMethod) {
+        model = value.model
+
+        if (model.hasOwnProperty("name")) {
+          name = model.name;
+          slug = model.name;
+        }
 
         if (model.hasOwnProperty("settings") && model.settings.hasOwnProperty("displayName")) {
-            name = model.settings.displayName;
+          name = model.settings.displayName;
         }
 
         collections.push({
@@ -383,11 +393,60 @@ Server.prototype.loadCollectionRoute = function() {
           name: name,
           slug: slug,
           path: "/" + [parts[0], parts[1], slug].join("/")
-        });
+        })
       }
     });
 
     data.collections = _.sortBy(collections, 'path');
+
+    return help.sendBackJSON(200, res, next)(null, data);
+  });
+}
+
+// route to retrieve list of endpoints
+Server.prototype.loadEndpointsRoute = function() {
+  var self = this;
+
+  this.app.use('/api/endpoints', function (req, res, next) {
+
+    var method = req.method && req.method.toLowerCase();
+
+    if (method !== 'get') return help.sendBackJSON(400, res, next)(null, {"error":"Invalid method"});
+
+    var data = {};
+    var endpoints = [];
+
+    _.each(self.components, function (value, key) {
+      var model
+      var name = null
+      var parts = _.compact(key.split('/'));
+
+      var hasModel = _.contains(Object.keys(value), 'model')
+      var hasGetMethod = _.contains(Object.keys(value), 'get')
+
+      if (hasModel) {
+        model = value.model
+
+        if (model.hasOwnProperty("settings") && model.settings.hasOwnProperty("displayName")) {
+          name = model.settings.displayName;
+        }
+      }
+
+      if (hasGetMethod) {
+        // an endpoint
+        var endpoint = {
+          version: parts[0],
+          path: key
+        }
+
+        if (name) endpoint.name = name
+        if (pathToRegexp(key).keys.length > 0) endpoint.params = pathToRegexp(key).keys
+
+        endpoints.push(endpoint)
+      }
+    });
+
+    data.endpoints = _.sortBy(endpoints, 'path');
 
     return help.sendBackJSON(200, res, next)(null, data);
   });
@@ -549,7 +608,7 @@ Server.prototype.updateEndpoints = function (endpointsPath) {
 
 Server.prototype.addEndpointResource = function (options) {
     var endpoint = options.endpoint;
-    if (endpoint.indexOf('.') === 0) return;
+    if (endpoint.indexOf('.') === 0 || endpoint.indexOf('endpoint.') !== 0) return;
 
     var self = this;
     var name = endpoint.slice(endpoint.indexOf('.') + 1, endpoint.indexOf('.js'));

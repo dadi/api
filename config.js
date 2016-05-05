@@ -19,6 +19,7 @@ var conf = convict({
     port: {
       doc: "Accept connections on the specified port. A value of zero will assign a random port.",
       format: Number,
+      default: 8081,
       env: "PORT"
     },
     name: {

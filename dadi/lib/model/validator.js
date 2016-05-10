@@ -37,6 +37,7 @@ Validator.prototype.schema = function (obj, update) {
   };
 
   var schema = this.model.schema;
+  var layout = this.model.layout;
 
   // check for default fields, assign them if the obj didn't
   // provide a value
@@ -65,22 +66,37 @@ Validator.prototype.schema = function (obj, update) {
   });
 
   // check all `obj` fields
-  _parseDocument(obj, schema, response);
+  _parseDocument(obj, schema, response, layout);
   return response;
 };
 
-function _parseDocument(obj, schema, response) {
+function _parseDocument(obj, schema, response, layout) {
     for (var key in obj) {
         // handle objects first
         if (typeof obj[key] === 'object') {
-            if (schema[key] && (schema[key].type === 'Mixed' || schema[key].type === 'Object')) {
+            if (key === '_layout') {
+              if (layout) {
+                var err = layout.validate(obj);
+
+                if (err) {
+                  response.success = false;
+                  response.errors.push.apply(response.errors, err);
+                }
+
+                continue;
+              } else {
+                response.success = false;
+                response.errors.push({field: obj[key], message: 'does not match a layout'});
+              }
+            }
+            else if (schema[key] && (schema[key].type === 'Mixed' || schema[key].type === 'Object')) {
                 // do nothing
             }
             else if (schema[key] && schema[key].type === 'Reference') {
                 // bah!
             }
             else if (obj[key] !== null && !util.isArray(obj[key])) {
-                _parseDocument(obj[key], schema, response);
+                _parseDocument(obj[key], schema, response, layout);
             }
             else if (obj[key] !== null && schema[key].type === 'ObjectID' && util.isArray(obj[key])) {
                 var err = _validate(obj[key], schema[key], key);

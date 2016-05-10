@@ -7,22 +7,26 @@ var Composer = require(__dirname + '/../composer').Composer;
 var moment = require('moment');
 var ObjectID = require('mongodb').ObjectID;
 var Hook = require(__dirname + '/hook');
+var Layout = require(__dirname + '/layout');
 var _ = require('underscore');
 var util = require('util');
 
 // track all models that have been instantiated by this process
 var _models = {};
 
-var Model = function (name, schema, conn, settings, database) {
+var Model = function (name, collectionSchema, conn, settings, database) {
 
     // attach collection name
     this.name = name;
 
-    // attach original schema
-    this.schema = schema;
+    // attach fields schema
+    this.schema = collectionSchema.fields;
 
     // attach default settings
     this.settings = settings || {};
+
+    // create Layout if applicable
+    this.layout = (settings.type === 'layout') ? new Layout(collectionSchema) : undefined;
 
     // attach display name if supplied
     if (this.settings.hasOwnProperty("displayName")) {
@@ -130,6 +134,16 @@ Model.prototype.create = function (obj, internals, done) {
     // internals will not be validated, i.e. should not be user input
     if (typeof internals === 'function') {
         done = internals;
+    }
+
+    if (this.layout) {
+        var doneFn = done;
+
+        done = (function (err, data) {
+            data.results = data.results.map(this.layout.resolve.bind(this.layout));
+
+            return doneFn.apply(this, arguments);
+        }).bind(this);
     }
 
     // validate each doc
@@ -326,6 +340,16 @@ Model.prototype.find = function (query, options, done) {
     if (typeof options === 'function') {
         done = options
         options = {};
+    }
+
+    if (this.layout) {
+        var doneFn = done;
+
+        done = (function (err, data) {
+            data.results = data.results.map(this.layout.resolve.bind(this.layout));
+
+            return doneFn.apply(this, arguments);
+        }).bind(this);
     }
 
     var self = this;
@@ -697,8 +721,8 @@ function getMetadata(options, count) {
 }
 
 // exports
-module.exports = function (name, schema, conn, settings, database) {
-    if (schema) return new Model(name, schema, conn, settings, database);
+module.exports = function (name, collectionSchema, conn, settings, database) {
+    if (collectionSchema) return new Model(name, collectionSchema, conn, settings, database);
     return _models[name];
 };
 

@@ -44,9 +44,6 @@ module.exports.generate = function (req, res, next) {
               getToken(function (returnedToken) {
                 token = returnedToken;
 
-                // Ensure we have a TTL for token documents
-                tokenStore.expire(function (err) {});
-
                 // Save token
                 return tokenStore.set(token, client, function (err) {
                     if (err) return next(err);

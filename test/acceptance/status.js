@@ -5,7 +5,7 @@ var config = require(__dirname + '/../../config');
 var app = require(__dirname + '/../../dadi/lib/');
 
 describe('Status', function () {
-  this.timeout(4000)
+  this.timeout(8000)
   before(function (done) {
     help.createClient(null, function() {
       app.start(function (err) {

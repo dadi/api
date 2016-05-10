@@ -10,12 +10,27 @@ var Store = function () {
     this.connection = connection(dbOptions);
 
     var _done = function (database) {
+      database.collection(storeCollectionName).dropIndexes(function(err) {
+        if (err) console.log(err);
+        console.log('Dropped authentication layer indexes')
+      })
+
       database.collection(storeCollectionName).ensureIndex(
         { 'token': 1,'tokenExpire': 1 },
         { },
         function (err, indexName) {
           if (err) console.log(err);
-          //console.log('Using authentication layer index "' + storeCollectionName  + '.' + indexName + "'");
+          console.log('Created token index "' + storeCollectionName  + '.' + indexName + "'");
+        }
+      );
+
+      // set a TTL index to remove the token documents after the tokenExpire value
+      database.collection(storeCollectionName).ensureIndex(
+        { 'created': 1 },
+        { expireAfterSeconds: config.get('auth.tokenTtl') },
+        function (err, indexName) {
+          if (err) console.log(err);
+          console.log('Created token expiry index "' + storeCollectionName  + '.' + indexName + "', with expireAfterSeconds = " + config.get('auth.tokenTtl'));
         }
       );
     }
@@ -36,19 +51,6 @@ Store.prototype.get = function(token, done) {
     if (this.connection.db) return _done(this.connection.db);
 
     // If the db is not connected queue the insert
-    this.connection.once('connect', _done);
-};
-
-Store.prototype.expire = function(done) {
-    var self = this;
-    var _done = function (database) {
-        // set the TTL index to remove the token documents after the tokenExpire value
-        database.collection(storeCollectionName).ensureIndex({ 'created': 1 }, { expireAfterSeconds: config.get('auth.tokenTtl') }, done);
-    };
-
-    if (this.connection.db) return _done(this.connection.db);
-
-    // If the db is not connected queue the index check
     this.connection.once('connect', _done);
 };
 

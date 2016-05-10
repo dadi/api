@@ -26,7 +26,6 @@ Validator.prototype.query = function (query) {
 };
 
 Validator.prototype.schema = function (obj, update) {
-
   update = update || false;
 
   // `obj` must be a "hash type object", i.e. { ... }
@@ -71,7 +70,6 @@ Validator.prototype.schema = function (obj, update) {
 };
 
 function _parseDocument(obj, schema, response) {
-
     for (var key in obj) {
         // handle objects first
         if (typeof obj[key] === 'object') {
@@ -91,6 +89,18 @@ function _parseDocument(obj, schema, response) {
                     response.success = false;
                     response.errors.push({field: key, message: err});
                 }
+            }
+            else if (util.isArray(obj[key]) && (schema[key].type === 'String')) {
+              // We allow type `String` to actually be an array of Strings. When this
+              // happens, we run the validation against the combination of all strings
+              // glued together.
+
+              var err = _validate(obj[key].join(''), schema[key], key);
+
+              if (err) {
+                  response.success = false;
+                  response.errors.push({field: key, message: err});
+              }
             }
         }
         else if (key === 'apiVersion') {
@@ -114,7 +124,6 @@ function _parseDocument(obj, schema, response) {
 }
 
 function _validate(field, schema, key) {
-
     if (schema.hasOwnProperty('validation')) {
       var validationObj = schema.validation;
 

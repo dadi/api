@@ -19,7 +19,7 @@ var Model = function (name, schema, conn, settings, database) {
     // attach collection name
     this.name = name;
 
-    // attach fields schema
+    // attach original schema
     this.schema = schema;
 
     // attach default settings

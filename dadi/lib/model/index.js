@@ -14,19 +14,19 @@ var util = require('util');
 // track all models that have been instantiated by this process
 var _models = {};
 
-var Model = function (name, collectionSchema, conn, settings, database) {
+var Model = function (name, schema, conn, settings, database) {
 
     // attach collection name
     this.name = name;
 
     // attach fields schema
-    this.schema = collectionSchema.fields;
+    this.schema = schema;
 
     // attach default settings
     this.settings = settings || {};
 
     // create Layout if applicable
-    this.layout = (settings.type === 'layout') ? new Layout(collectionSchema) : undefined;
+    this.layout = this.settings.layout ? new Layout(settings.layout) : undefined;
 
     // attach display name if supplied
     if (this.settings.hasOwnProperty("displayName")) {
@@ -140,7 +140,9 @@ Model.prototype.create = function (obj, internals, done) {
         var doneFn = done;
 
         done = (function (err, data) {
-            data.results = data.results.map(this.layout.resolve.bind(this.layout));
+            if (!err) {
+                data.results = data.results.map(this.layout.resolve.bind(this.layout));
+            }
 
             return doneFn.apply(this, arguments);
         }).bind(this);
@@ -346,7 +348,9 @@ Model.prototype.find = function (query, options, done) {
         var doneFn = done;
 
         done = (function (err, data) {
-            data.results = data.results.map(this.layout.resolve.bind(this.layout));
+            if (!err) {
+                data.results = data.results.map(this.layout.resolve.bind(this.layout));
+            }
 
             return doneFn.apply(this, arguments);
         }).bind(this);
@@ -535,6 +539,18 @@ Model.prototype.update = function (query, update, internals, done) {
         return done(err);
     }
 
+    if (this.layout) {
+        var doneFn = done;
+
+        done = (function (err, data) {
+            if (!err) {
+                data.results = data.results.map(this.layout.resolve.bind(this.layout));
+            }
+
+            return doneFn.apply(this, arguments);
+        }).bind(this);
+    }
+
     // ObjectIDs
     update = this.convertObjectIdsForSave(this.schema, update);
     // DateTimes
@@ -721,8 +737,8 @@ function getMetadata(options, count) {
 }
 
 // exports
-module.exports = function (name, collectionSchema, conn, settings, database) {
-    if (collectionSchema) return new Model(name, collectionSchema, conn, settings, database);
+module.exports = function (name, schema, conn, settings, database) {
+    if (schema) return new Model(name, schema, conn, settings, database);
     return _models[name];
 };
 

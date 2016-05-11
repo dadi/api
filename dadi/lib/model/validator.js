@@ -82,12 +82,12 @@ function _parseDocument(obj, schema, response, layout) {
                   response.success = false;
                   response.errors.push.apply(response.errors, err);
                 }
-
-                continue;
               } else {
                 response.success = false;
                 response.errors.push({field: obj[key], message: 'does not match a layout'});
               }
+
+              continue;
             }
             else if (schema[key] && (schema[key].type === 'Mixed' || schema[key].type === 'Object')) {
                 // do nothing

@@ -551,7 +551,7 @@ Server.prototype.addCollectionResource = function (options) {
 
     var enableCollectionDatabases = config.get('database.enableCollectionDatabases');
     var database = enableCollectionDatabases ? options.database : null;
-    var mod = model(options.name, options.schema, null, options.schema.settings, database);
+    var mod = model(options.name, JSON.parse(fields), null, options.schema.settings, database);
     var control = controller(mod);
 
     this.addComponent({

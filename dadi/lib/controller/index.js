@@ -171,6 +171,10 @@ Controller.prototype.prepareQuery = function(req) {
     _.each(Object.keys(query), function (key) {
       if (!this.keyValidForSchema(key)) {
         delete query[key];
+      } else {
+        var fieldType = this.model.schema[key].type;
+
+        help.transformQuery(query[key], fieldType);
       }
     }, this);
   }

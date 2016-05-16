@@ -79,7 +79,6 @@ module.exports.parseQuery = function (queryStr) {
 // Transforms strings from a query object into more appropriate types, based
 // on the field type
 module.exports.transformQuery = function (obj, type) {
-  var self = this;
   var transformFunction;
 
   switch (type) {
@@ -113,13 +112,13 @@ module.exports.transformQuery = function (obj, type) {
       return obj;
   }
 
-  Object.keys(obj).forEach(function (key) {
+  Object.keys(obj).forEach((function (key) {
     if (typeof obj[key] === 'object') {
-      self.transformQuery(obj[key], type);
+      this.transformQuery(obj[key], type);
     } else if (typeof obj[key] === 'string') {
       obj[key] = transformFunction(obj[key]);
     }
-  });
+  }).bind(this));
 };
 
 module.exports.regExpEscape = function(str) {

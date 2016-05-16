@@ -95,9 +95,11 @@ module.exports.transformQuery = function (obj, type) {
 
     case 'String':
       transformFunction = (function (obj) {
-        if ((obj.charAt(0) === '/') && (obj.charAt(obj.length - 1) === '/')) {
+        var regexParts = obj.match(/\/([^\/]*)\/([i]{0,1})$/);
+
+        if (regexParts) {
           try {
-            var regex = new RegExp(obj.substring(1).slice(0, -1));
+            var regex = new RegExp(regexParts[1], regexParts[2]);
 
             return regex;
           } catch (e) {

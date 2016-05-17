@@ -105,6 +105,8 @@ module.exports.transformQuery = function (obj, type) {
           } catch (e) {
             return obj;
           }
+        } else {
+          return obj;
         }
       });
 

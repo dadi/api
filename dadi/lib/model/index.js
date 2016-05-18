@@ -306,7 +306,7 @@ Model.prototype.convertObjectIdsForSave = function (schema, obj) {
 
 Model.prototype.convertDateTimeForSave = function (schema, obj) {
   Object.keys(schema)
-  .filter(function (key) { return schema[key].type === 'DateTime' })
+  .filter(function (key) { return ((schema[key].type === 'DateTime') && (obj[key] !== null)) })
   .forEach(function (key) {
     obj[key] = new Date(moment(obj[key]).toISOString())
   })

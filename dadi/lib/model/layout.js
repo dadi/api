@@ -15,21 +15,20 @@ Layout.prototype.resolve = function (document) {
   };
 
   Object.keys(this.layout.fixed).forEach((function (field) {
-    if (document.hasOwnProperty(field)) {
-      var position = this.layout.fixed[field].position;
-      var destination = (position && (position < this.layout.free.position)) ? 'beforeFree' : 'afterFree';
+    var position = this.layout.fixed[field].position;
+    var destination = (position && (position < this.layout.free.position)) ? 'beforeFree' : 'afterFree';
 
-      result[destination].push({
-        type: field,
-        content: document[field]
-      });
-    }
+    result[destination].push({
+      type: field,
+      content: document.hasOwnProperty(field) ? document[field] : null
+    });
   }).bind(this));
 
   result.free = document._layout.map(function (block) {
     return {
       type: block.source,
-      content: document[block.source][block.index]
+      content: document[block.source][block.index],
+      free: true
     };
   });
 

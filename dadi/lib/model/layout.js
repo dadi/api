@@ -6,46 +6,57 @@ var Layout = function (layout) {
 };
 
 Layout.prototype.resolve = function (document) {
+  var result = [];
+  var freePosition;
+
   if (!document._layout) return document;
 
-  var result = {
-    beforeFree: [],
-    free: [],
-    afterFree: []
-  };
+  // Add fixed fields
+  this.layout.forEach(function (block, index) {
+    if (!block.source && !block.free) return;
 
-  Object.keys(this.layout.fixed).forEach((function (field) {
-    var position = this.layout.fixed[field].position;
-    var destination = (position && (position < this.layout.free.position)) ? 'beforeFree' : 'afterFree';
-
-    result[destination].push({
-      type: field,
-      content: document.hasOwnProperty(field) ? document[field] : null
-    });
-  }).bind(this));
-
-  result.free = document._layout.map(function (block) {
-    return {
-      type: block.source,
-      content: document[block.source][block.index],
-      free: true
-    };
+    if (block.free) {
+      freePosition = index;
+    } else {
+      result.push({
+        content: document.hasOwnProperty(block.source) ? document[block.source] : null,
+        type: block.source
+      });
+    }
   });
 
-  document._layout = result.beforeFree.concat(result.free).concat(result.afterFree);
+  // Add free fields
+  if (freePosition !== undefined) {
+    document._layout.forEach(function (block, index) {
+      result.splice(freePosition + index, 0, {
+        content: document[block.source][block.index],
+        free: true,
+        type: block.source
+      });
+    });
+  }
+
+  document._layout = result;
 
   return document;
-};
+}
 
 Layout.prototype.validate = function (document) {
   var errors = [];
   var fieldCount = {};
+  var freeFields = this.layout.find(function (elem) {
+    return elem.free;
+  });
+
+  freeFields = freeFields ? freeFields.fields : [];
 
   document._layout.forEach((function (block, blockIndex) {
-    var schemaField = this.layout.free.fields[block.source];
+    var freeField = freeFields.find(function (elem) {
+      return elem.source === block.source;
+    });
 
     // Check if field is part of `free`
-    if (!schemaField) {
+    if (!freeField) {
       return errors.push({field: '_layout', message: 'Layout does not accept \'' + block.source + '\' as a free field'});
     }
 
@@ -62,19 +73,21 @@ Layout.prototype.validate = function (document) {
     }
   }).bind(this));
 
-  Object.keys(this.layout.free.fields).forEach((function (fieldName) {
-    var schemaField = this.layout.free.fields[fieldName];
+  var free = this.layout.find(function (elem) {
+    return elem.free;
+  });
 
+  free.fields.forEach(function (field) {
     // Check for `min` limit
-    if (schemaField.min && (fieldCount[fieldName] < schemaField.min)) {
-      errors.push({field: '_layout', message: 'Layout cannot contain less than ' + schemaField.min + ' instances of \'' + fieldName + '\''});
+    if (field.min && (fieldCount[field.source] < field.min)) {
+      errors.push({field: '_layout', message: 'Layout cannot contain less than ' + field.min + ' instances of \'' + field.source + '\''});
     }
 
     // Check for `max` limit
-    if (schemaField.max && (fieldCount[fieldName] > schemaField.max)) {
-      errors.push({field: '_layout', message: 'Layout cannot contain more than ' + schemaField.max + ' instances of \'' + fieldName + '\''});
+    if (field.max && (fieldCount[field.source] > field.max)) {
+      errors.push({field: '_layout', message: 'Layout cannot contain more than ' + field.max + ' instances of \'' + field.source + '\''});
     }
-  }).bind(this));
+  });
 
   if (errors.length) return errors;
 };

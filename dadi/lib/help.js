@@ -8,6 +8,7 @@ var _ = require('underscore');
 var cache = require(__dirname + '/cache');
 var config = require(__dirname + '/../../config');
 var log = require(__dirname + '/log');
+var moment = require('moment');
 
 var self = this;
 
@@ -74,6 +75,55 @@ module.exports.parseQuery = function (queryStr) {
   if (typeof ret !== 'object' || ret === null) ret = {};
   return ret;
 }
+
+// Transforms strings from a query object into more appropriate types, based
+// on the field type
+module.exports.transformQuery = function (obj, type) {
+  var transformFunction;
+
+  switch (type) {
+    case 'DateTime':
+      transformFunction = (function (obj) {
+        var parsedDate = new moment(obj);
+
+        if (!parsedDate.isValid()) return obj;
+
+        return parsedDate.toDate();
+      });
+
+      break;
+
+    case 'String':
+      transformFunction = (function (obj) {
+        var regexParts = obj.match(/\/([^\/]*)\/([i]{0,1})$/);
+
+        if (regexParts) {
+          try {
+            var regex = new RegExp(regexParts[1], regexParts[2]);
+
+            return regex;
+          } catch (e) {
+            return obj;
+          }
+        } else {
+          return obj;
+        }
+      });
+
+      break;
+
+    default:
+      return obj;
+  }
+
+  Object.keys(obj).forEach((function (key) {
+    if ((typeof obj[key] === 'object') && (obj[key] !== null)) {
+      this.transformQuery(obj[key], type);
+    } else if (typeof obj[key] === 'string') {
+      obj[key] = transformFunction(obj[key]);
+    }
+  }).bind(this));
+};
 
 module.exports.regExpEscape = function(str) {
   return str.replace(/([.?*+^$[\]\\(){}|-])/g, "\\$1");

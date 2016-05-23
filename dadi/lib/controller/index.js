@@ -172,9 +172,11 @@ Controller.prototype.prepareQuery = function(req) {
       if (!this.keyValidForSchema(key)) {
         delete query[key];
       } else {
-        var fieldType = this.model.schema[key].type;
+        if (this.model.schema[key]) {
+          var fieldType = this.model.schema[key].type;
 
-        help.transformQuery(query[key], fieldType);
+          help.transformQuery(query[key], fieldType);
+        }
       }
     }, this);
   }

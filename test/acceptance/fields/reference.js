@@ -167,7 +167,7 @@ describe('Reference Field', function () {
         .end(function (err, res) {
           if (err) return done(err);
 
-          console.log(res.body)
+          //console.log(res.body)
 
           should.exist(res.body.results)
           var bookResult = res.body.results[0]

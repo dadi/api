@@ -7,6 +7,7 @@ var Composer = require(__dirname + '/../composer').Composer;
 var moment = require('moment');
 var ObjectID = require('mongodb').ObjectID;
 var Hook = require(__dirname + '/hook');
+var Layout = require(__dirname + '/layout');
 var _ = require('underscore');
 var util = require('util');
 
@@ -23,6 +24,9 @@ var Model = function (name, schema, conn, settings, database) {
 
     // attach default settings
     this.settings = settings || {};
+
+    // create Layout if applicable
+    this.layout = this.settings.layout ? new Layout(settings.layout) : undefined;
 
     // attach display name if supplied
     if (this.settings.hasOwnProperty("displayName")) {
@@ -130,6 +134,18 @@ Model.prototype.create = function (obj, internals, done) {
     // internals will not be validated, i.e. should not be user input
     if (typeof internals === 'function') {
         done = internals;
+    }
+
+    if (this.layout) {
+        var doneFn = done;
+
+        done = (function (err, data) {
+            if (!err) {
+                data.results = data.results.map(this.layout.resolve.bind(this.layout));
+            }
+
+            return doneFn.apply(this, arguments);
+        }).bind(this);
     }
 
     // validate each doc
@@ -328,6 +344,18 @@ Model.prototype.find = function (query, options, done) {
         options = {};
     }
 
+    if (this.layout) {
+        var doneFn = done;
+
+        done = (function (err, data) {
+            if (!err) {
+                data.results = data.results.map(this.layout.resolve.bind(this.layout));
+            }
+
+            return doneFn.apply(this, arguments);
+        }).bind(this);
+    }
+
     var self = this;
 
     query = this.makeCaseInsensitive(query);
@@ -509,6 +537,18 @@ Model.prototype.update = function (query, update, internals, done) {
         err = validationError();
         err.json = validation;
         return done(err);
+    }
+
+    if (this.layout) {
+        var doneFn = done;
+
+        done = (function (err, data) {
+            if (!err) {
+                data.results = data.results.map(this.layout.resolve.bind(this.layout));
+            }
+
+            return doneFn.apply(this, arguments);
+        }).bind(this);
     }
 
     // ObjectIDs

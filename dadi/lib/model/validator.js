@@ -26,7 +26,6 @@ Validator.prototype.query = function (query) {
 };
 
 Validator.prototype.schema = function (obj, update) {
-
   update = update || false;
 
   // `obj` must be a "hash type object", i.e. { ... }
@@ -38,6 +37,7 @@ Validator.prototype.schema = function (obj, update) {
   };
 
   var schema = this.model.schema;
+  var layout = this.model.layout;
 
   // check for default fields, assign them if the obj didn't
   // provide a value
@@ -66,23 +66,37 @@ Validator.prototype.schema = function (obj, update) {
   });
 
   // check all `obj` fields
-  _parseDocument(obj, schema, response);
+  _parseDocument(obj, schema, response, layout);
   return response;
 };
 
-function _parseDocument(obj, schema, response) {
-
+function _parseDocument(obj, schema, response, layout) {
     for (var key in obj) {
         // handle objects first
         if (typeof obj[key] === 'object') {
-            if (schema[key] && (schema[key].type === 'Mixed' || schema[key].type === 'Object')) {
+            if (key === '_layout') {
+              if (layout) {
+                var err = layout.validate(obj);
+
+                if (err) {
+                  response.success = false;
+                  response.errors.push.apply(response.errors, err);
+                }
+              } else {
+                response.success = false;
+                response.errors.push({field: obj[key], message: 'does not match a layout'});
+              }
+
+              continue;
+            }
+            else if (schema[key] && (schema[key].type === 'Mixed' || schema[key].type === 'Object')) {
                 // do nothing
             }
             else if (schema[key] && schema[key].type === 'Reference') {
                 // bah!
             }
             else if (obj[key] !== null && !util.isArray(obj[key])) {
-                _parseDocument(obj[key], schema, response);
+                _parseDocument(obj[key], schema, response, layout);
             }
             else if (obj[key] !== null && schema[key].type === 'ObjectID' && util.isArray(obj[key])) {
                 var err = _validate(obj[key], schema[key], key);
@@ -91,6 +105,18 @@ function _parseDocument(obj, schema, response) {
                     response.success = false;
                     response.errors.push({field: key, message: err});
                 }
+            }
+            else if (util.isArray(obj[key]) && (schema[key].type === 'String')) {
+              // We allow type `String` to actually be an array of Strings. When this
+              // happens, we run the validation against the combination of all strings
+              // glued together.
+
+              var err = _validate(obj[key].join(''), schema[key], key);
+
+              if (err) {
+                  response.success = false;
+                  response.errors.push({field: key, message: err});
+              }
             }
         }
         else if (key === 'apiVersion') {
@@ -114,7 +140,6 @@ function _parseDocument(obj, schema, response) {
 }
 
 function _validate(field, schema, key) {
-
     if (schema.hasOwnProperty('validation')) {
       var validationObj = schema.validation;
 

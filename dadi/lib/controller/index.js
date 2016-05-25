@@ -117,7 +117,7 @@ Controller.prototype.prepareQueryOptions = function(options) {
   }
 
   // compose / reference fields
-  if (options.hasOwnProperty('compose')) {
+  if (options.compose) {
       queryOptions.compose = options.compose === 'true';
   }
 

@@ -73,7 +73,7 @@ Hook.prototype.apply = function () {
 };
 
 Hook.prototype.load = function () {
-  return require(config.get('paths.hooks') + '/' + this.name);
+  return require(require('path').resolve(config.get('paths.hooks')) + '/' + this.name);
 }
 
 module.exports = function (data, type) {

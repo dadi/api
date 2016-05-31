@@ -265,14 +265,17 @@ Server.prototype.loadConfigApi = function () {
         var method = req.method && req.method.toLowerCase();
         if (method !== 'post') return next();
 
-        var schemaString = typeof req.body === 'object' ? JSON.stringify(req.body, null, 4) : req.body;
-        if (typeof schemaString !== 'string') {
-            var err = new Error('Bad Syntax');
-            err.statusCode = 400;
-            return next(err);
+        //console.log(req)
+
+        try {
+          var schema = typeof req.body === 'object' ? req.body : JSON.parse(req.body)
+        }
+        catch(err) {
+          var err = new Error('Bad Syntax');
+          err.statusCode = 400;
+          return next(err);
         }
 
-        var schema = JSON.parse(schemaString);
         var validation = help.validateCollectionSchema(schema);
 
         if (!validation.success) {
@@ -288,6 +291,8 @@ Server.prototype.loadConfigApi = function () {
         var name = params.collectionName;
         if (schema.hasOwnProperty("model")) name = schema.model;
 
+        schema.settings.lastModifiedAt = Date.now()
+
         var route = ['', params.version, params.database, name, idParam].join('/');
 
         // create schema
@@ -302,7 +307,7 @@ Server.prototype.loadConfigApi = function () {
             );
 
             try {
-                fs.writeFileSync(schemaPath, schemaString);
+                fs.writeFileSync(schemaPath, JSON.stringify(schema, null, 2))
 
                 res.statusCode = 200;
                 res.setHeader('content-type', 'application/json');
@@ -387,13 +392,17 @@ Server.prototype.loadCollectionRoute = function() {
           name = model.settings.displayName;
         }
 
-        collections.push({
+        var collection = {
           version: parts[0],
           database: parts[1],
           name: name,
           slug: slug,
           path: "/" + [parts[0], parts[1], slug].join("/")
-        })
+        }
+        
+        if (model.settings.lastModifiedAt) collection.lastModifiedAt = model.settings.lastModifiedAt
+
+        collections.push(collection)
       }
     });
 
@@ -697,11 +706,12 @@ Server.prototype.addComponent = function (options) {
 
         // set schema
         if (method === 'post' && options.filepath) {
-            var schemaString = typeof req.body === 'object' ? JSON.stringify(req.body, null, 4) : req.body;
+          var schema = typeof req.body === 'object' ? req.body : JSON.parse(req.body)
+          schema.settings.lastModifiedAt = Date.now()
 
- 	          return fs.writeFile(options.filepath, schemaString, function (err) {
-                help.sendBackJSON(200, res, next)(err, {result: 'success'});
-            });
+	        return fs.writeFile(options.filepath, JSON.stringify(schema, null, 2), function (err) {
+            help.sendBackJSON(200, res, next)(err, {result: 'success'});
+          })
         }
 
         // delete schema

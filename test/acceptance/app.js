@@ -1998,6 +1998,11 @@ describe('Application', function () {
             }
 
             try {
+                fs.unlinkSync(dirs.collections + '/vapicreate/testdb/collection.api-create-last-modified.json');
+            } catch (e) {
+            }
+
+            try {
                 fs.unlinkSync(dirs.collections + '/vapicreate/testdb/collection.modelNameFromSchema.json');
             } catch (e) {
             }
@@ -2028,33 +2033,6 @@ describe('Application', function () {
                 if (err) return done(err);
 
                 cleanup(done);
-            });
-        });
-
-        describe('GET', function () {
-            it('should return the schema file', function (done) {
-                request(connectionString)
-                .get('/vtest/testdb/test-schema/config')
-                .set('Authorization', 'Bearer ' + bearerToken)
-                .expect(200)
-                .expect('content-type', 'application/json')
-                .end(function (err, res) {
-                    if (err) return done(err);
-
-                    res.body.should.be.Object;
-                    res.body.should.not.be.Array;
-                    should.exist(res.body.fields);
-                    should.exist(res.body.settings);
-
-                    done();
-                });
-            });
-
-            it('should only allow authenticated users access', function (done) {
-                request(connectionString)
-                .get('/vtest/testdb/test-schema/config')
-                .set('Authorization', 'Bearer e91e69b4-6563-43bd-a793-cb2af4ba62f4') // invalid token
-                .expect(401, done);
             });
         });
 
@@ -2176,6 +2154,39 @@ describe('Application', function () {
                 });
             });
 
+            it('should add lastModifiedAt to schema', function (done) {
+
+                var client = request(connectionString)
+
+                var schema = JSON.parse(jsSchemaString)
+                delete schema.model
+                jsSchemaString = JSON.stringify(schema)
+
+                client
+                .post('/vapicreate/testdb/api-create-last-modified/config')
+                .send(jsSchemaString)
+                .set('content-type', 'text/plain')
+                .set('Authorization', 'Bearer ' + bearerToken)
+                .expect(200)
+                .end(function (err, res) {
+                    if (err) return done(err);
+
+                    setTimeout(function() {
+                      client
+                      .get('/vapicreate/testdb/api-create-last-modified/config')
+                      .set('Authorization', 'Bearer ' + bearerToken)
+                      .expect(200)
+                      .end(function (err, res) {
+                          if (err) return done(err);
+
+                          res.body.settings.lastModifiedAt.should.exist
+
+                          done();
+                      });
+                    }, 1000)
+                });
+            });
+
             it('should allow updating a new collection endpoint', function (done) {
                 var client = request(connectionString);
 
@@ -2190,42 +2201,116 @@ describe('Application', function () {
                 .end(function (err, res) {
                     if (err) return done(err);
 
-                    // add a new field to the schema
-                    var schema = JSON.parse(jsSchemaString);
-                    schema.fields.updatedField = _.extend({}, schema.fields.newField, {
-                        type: 'Number',
-                        required: true
-                    });
-
+                    // view the schema
                     client
-                    .post('/vapicreate/testdb/api-create/config')
-                    .send(JSON.stringify(schema))
-                    .set('content-type', 'text/plain')
+                    .get('/vapicreate/testdb/api-create/config')
                     .set('Authorization', 'Bearer ' + bearerToken)
-                    .expect(200)
-                    .expect('content-type', 'application/json')
                     .end(function (err, res) {
 
-                        if (err) return done(err);
+                      var modifiedDate = res.body.settings.lastModifiedAt
 
-                        // Wait, then test that the schema was updated
-                        setTimeout(function () {
-                            client
-                            .post('/vapicreate/testdb/api-create')
-                            .send({
-                                updatedField: 123
-                            })
-                            .set('Authorization', 'Bearer ' + bearerToken)
-                            .expect(200)
-                            .expect('content-type', 'application/json')
-                            .end(function (err, res) {
-                                //
-                                done();
-                            });
-                        }, 300);
-                    });
+                      // add a new field to the schema
+                      var schema = JSON.parse(jsSchemaString);
+                      schema.fields.updatedField = _.extend({}, schema.fields.newField, {
+                          type: 'Number',
+                          required: true
+                      });
+
+                      client
+                      .post('/vapicreate/testdb/api-create/config')
+                      .send(JSON.stringify(schema))
+                      .set('content-type', 'text/plain')
+                      .set('Authorization', 'Bearer ' + bearerToken)
+                      .expect(200)
+                      .expect('content-type', 'application/json')
+                      .end(function (err, res) {
+
+                          if (err) return done(err);
+
+                          // Wait, then test that the schema was updated
+                          setTimeout(function () {
+                              client
+                              .post('/vapicreate/testdb/api-create')
+                              .send({
+                                  updatedField: 123
+                              })
+                              .set('Authorization', 'Bearer ' + bearerToken)
+                              .expect(200)
+                              .expect('content-type', 'application/json')
+                              .end(function (err, res) {
+
+                                res.body.results[0].updatedField.should.eql(123)
+
+                                // view the updated schema
+                                client
+                                .get('/vapicreate/testdb/api-create/config')
+                                .set('Authorization', 'Bearer ' + bearerToken)
+                                .end(function (err, res) {
+
+                                  (modifiedDate !== res.body.settings.lastModifiedAt).should.eql(true)
+
+                                  done();
+                                })
+                              });
+                          }, 300);
+                      });
+                    })
                 });
+            });
+        });
 
+        describe('GET', function () {
+            it('should return the schema file', function (done) {
+                request(connectionString)
+                .get('/vtest/testdb/test-schema/config')
+                .set('Authorization', 'Bearer ' + bearerToken)
+                .expect(200)
+                .expect('content-type', 'application/json')
+                .end(function (err, res) {
+                    if (err) return done(err);
+
+                    res.body.should.be.Object;
+                    res.body.should.not.be.Array;
+                    should.exist(res.body.fields);
+                    should.exist(res.body.settings);
+
+                    done();
+                });
+            });
+
+            it('should only allow authenticated users access', function (done) {
+                request(connectionString)
+                .get('/vtest/testdb/test-schema/config')
+                .set('Authorization', 'Bearer e91e69b4-6563-43bd-a793-cb2af4ba62f4') // invalid token
+                .expect(401, done);
+            });
+
+            it('should return all loaded collections', function (done) {
+                request(connectionString)
+                .get('/api/collections')
+                .set('Authorization', 'Bearer ' + bearerToken)
+                .expect(200)
+                .expect('content-type', 'application/json')
+                .end(function (err, res) {
+                    if (err) return done(err);
+
+                    res.body.should.be.Object;
+                    res.body.collections.should.be.Array;
+
+                    _.each(res.body.collections, function(collection) {
+                      should.exist(collection.version)
+                      should.exist(collection.database)
+                      should.exist(collection.name)
+                      should.exist(collection.slug)
+                      should.exist(collection.path)
+
+                      if (collection.lastModifiedAt) {
+                        collection.lastModifiedAt.should.be.Number
+                      }
+                    })
+
+                    done();
+                });
             });
         });
 

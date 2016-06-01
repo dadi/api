@@ -7,7 +7,7 @@ var Layout = function (layout) {
 
 Layout.prototype.resolve = function (document) {
   var result = [];
-  var freePosition;
+  var freeSections = [];
 
   if (!document._layout) return document;
 
@@ -16,7 +16,10 @@ Layout.prototype.resolve = function (document) {
     if (!block.source && !block.free) return;
 
     if (block.free) {
-      freePosition = index;
+      freeSections.push({
+        position: index,
+        section: block.name
+      });
     } else {
       result.push({
         content: document.hasOwnProperty(block.source) ? document[block.source] : null,
@@ -26,13 +29,20 @@ Layout.prototype.resolve = function (document) {
   });
 
   // Add free fields
-  if (freePosition !== undefined) {
-    document._layout.forEach(function (block, index) {
-      result.splice(freePosition + index, 0, {
-        content: document[block.source][block.index],
-        free: true,
-        type: block.source
+  if (freeSections.length) {
+    var counter = 0;
+
+    Object.keys(document._layout).forEach(function (section, sectionIndex) {
+      document._layout[section].forEach(function (block, blockIndex) {
+        result.splice(freeSections[sectionIndex].position + blockIndex + counter, 0, {
+          content: document[block.source][block.index],
+          free: true,
+          section: freeSections[sectionIndex].section,
+          type: block.source
+        });
       });
+
+      counter += section.length - 1;
     });
   }
 
@@ -43,50 +53,62 @@ Layout.prototype.resolve = function (document) {
 
 Layout.prototype.validate = function (document) {
   var errors = [];
-  var fieldCount = {};
-  var freeFields = this.layout.find(function (elem) {
+  var fieldCount = [];
+  var freeFieldsSections = this.layout.filter(function (elem) {
     return elem.free;
   });
 
-  freeFields = freeFields ? freeFields.fields : [];
+  Object.keys(document._layout).forEach((function (section, sectionIndex) {
+    if (!freeFieldsSections[sectionIndex]) return;
 
-  document._layout.forEach((function (block, blockIndex) {
-    var freeField = freeFields.find(function (elem) {
-      return elem.source === block.source;
-    });
-
-    // Check if field is part of `free`
-    if (!freeField) {
-      return errors.push({field: '_layout', message: 'Layout does not accept \'' + block.source + '\' as a free field'});
+    if (!fieldCount[sectionIndex]) {
+      fieldCount[sectionIndex] = {};
     }
 
-    // Check if `index` is within bounds
-    if (!util.isArray(document[block.source]) || (document[block.source].length <= block.index)) {
-      return errors.push({field: '_layout', message: block.index + ' is not a valid index for field ' + block.source});
-    }
+    var sectionName = freeFieldsSections[sectionIndex].name || sectionIndex;
 
-    // Increment the field count and check for limits
-    if (fieldCount.hasOwnProperty(block.source)) {
-      fieldCount[block.source]++;
-    } else {
-      fieldCount[block.source] = 1;
-    }
+    document._layout[section].forEach((function (block, blockIndex) {
+      var freeField = freeFieldsSections[sectionIndex].fields.find(function (elem) {
+        return elem.source === block.source;
+      });
+
+      // Check if field is part of `free`
+      if (!freeField) {
+        return errors.push({field: '_layout', message: 'Layout section \'' + sectionName + '\' does not accept \'' + block.source + '\' as a free field'});
+      }
+
+      // Check if `index` is within bounds
+      if (!util.isArray(document[block.source]) || (document[block.source].length <= block.index)) {
+        return errors.push({field: '_layout', message: block.index + ' is not a valid index for field ' + block.source});
+      }
+
+      // Increment the field count and check for limits
+      if (fieldCount[sectionIndex].hasOwnProperty(block.source)) {
+        fieldCount[sectionIndex][block.source]++;
+      } else {
+        fieldCount[sectionIndex][block.source] = 1;
+      }
+    }).bind(this));
   }).bind(this));
 
-  var free = this.layout.find(function (elem) {
+  var free = this.layout.filter(function (elem) {
     return elem.free;
   });
 
-  free.fields.forEach(function (field) {
-    // Check for `min` limit
-    if (field.min && (fieldCount[field.source] < field.min)) {
-      errors.push({field: '_layout', message: 'Layout cannot contain less than ' + field.min + ' instances of \'' + field.source + '\''});
-    }
+  free.forEach(function (section, sectionIndex) {
+    section.name = section.name || sectionIndex;
 
-    // Check for `max` limit
-    if (field.max && (fieldCount[field.source] > field.max)) {
-      errors.push({field: '_layout', message: 'Layout cannot contain more than ' + field.max + ' instances of \'' + field.source + '\''});
-    }
+    section.fields.forEach(function (field) {
+      // Check for `min` limit
+      if (field.min && (fieldCount[sectionIndex][field.source] < field.min)) {
+        errors.push({field: '_layout', message: 'Layout section \'' + section.name + '\' must contain at least ' + field.min + ' instances of \'' + field.source + '\''});
+      }
+
+      // Check for `max` limit
+      if (field.max && (fieldCount[sectionIndex][field.source] > field.max)) {
+        errors.push({field: '_layout', message: 'Layout section \'' + section.name + '\' cannot contain more than ' + field.max + ' instances of \'' + field.source + '\''});
+      }
+    });
   });
 
   if (errors.length) return errors;

@@ -17,8 +17,9 @@ Layout.prototype.resolve = function (document) {
 
     if (block.free) {
       freeSections.push({
+        displayName: block.displayName,
         position: index,
-        section: block.name
+        name: block.name
       });
     } else {
       result.push({
@@ -36,8 +37,9 @@ Layout.prototype.resolve = function (document) {
       document._layout[section].forEach(function (block, blockIndex) {
         result.splice(freeSections[sectionIndex].position + blockIndex + counter, 0, {
           content: document[block.source][block.index],
+          displayName: freeSections[sectionIndex].displayName,
           free: true,
-          section: freeSections[sectionIndex].section,
+          name: freeSections[sectionIndex].name,
           type: block.source
         });
       });

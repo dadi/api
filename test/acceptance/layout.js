@@ -29,27 +29,19 @@ describe.only('Layout', function () {
             var schema = JSON.parse(jsSchemaString);
 
             schema.fields.author = _.extend({}, schema.fields.title, {
-                type: 'String',
-                required: true,
-                message: 'Provide a value here, please!'
+              type: 'String'
             });
 
             schema.fields.paragraph = _.extend({}, schema.fields.title, {
-                type: 'String',
-                required: true,
-                message: 'Provide a value here, please!'
+              type: 'String'
             });
 
             schema.fields.pullquote = _.extend({}, schema.fields.title, {
-                type: 'String',
-                required: true,
-                message: 'Provide a value here, please!'
+              type: 'String'
             });
 
             schema.fields.image = _.extend({}, schema.fields.title, {
-                type: 'Object',
-                required: true,
-                message: 'Provide a value here, please!'
+              type: 'Object'
             });
 
             schema.settings.type = 'article';
@@ -68,7 +60,7 @@ describe.only('Layout', function () {
                   },
                   {
                     "source": "image",
-                    "max": 3
+                    "max": 2
                   },
                   {
                     "source": "pullquote"
@@ -115,23 +107,92 @@ describe.only('Layout', function () {
 
   after(function (done) {
       // reset the schema
-      var jsSchemaString = fs.readFileSync(__dirname + '/../new-schema.json', {encoding: 'utf8'});
-      var schema = JSON.parse(jsSchemaString);
+      // var jsSchemaString = fs.readFileSync(__dirname + '/../new-schema.json', {encoding: 'utf8'});
+      // var schema = JSON.parse(jsSchemaString);
 
-      var client = request(connectionString);
+      // var client = request(connectionString);
 
-      client
-      .post('/vtest/testdb/test-schema/config')
-      .send(JSON.stringify(schema, null, 4))
-      .set('content-type', 'text/plain')
-      .set('Authorization', 'Bearer ' + bearerToken)
-      .expect(200)
-      .expect('content-type', 'application/json')
-      .end(function (err, res) {
-          if (err) return done(err);
+      // client
+      // .post('/vtest/testdb/test-schema/config')
+      // .send(JSON.stringify(schema, null, 4))
+      // .set('content-type', 'text/plain')
+      // .set('Authorization', 'Bearer ' + bearerToken)
+      // .expect(200)
+      // .expect('content-type', 'application/json')
+      // .end(function (err, res) {
+      //     if (err) return done(err);
 
-          app.stop(done);
-      });
+      //     app.stop(done);
+      // });
+  })
+
+  it('should throw an error when layout validation fails', function (done) {
+    var doc = {
+      title: 'A title',
+      author: 'An author',
+      paragraph: ['Paragraph 1', 'Paragraph 2'],
+      pullquote: ['Pull quote 1'],
+      image: [
+        {
+          path: '/some/path.jpg',
+          width: 600,
+          height: 400
+        },
+        {
+          path: '/some/other/path.jpg',
+          width: 800,
+          height: 600
+        },
+        {
+          path: '/yet/another/path.jpg',
+          width: 1024,
+          height: 768
+        }
+      ],
+      _layout: {
+        'mainbody': [
+          {
+            source: 'image',
+            index: 0
+          },
+          {
+            source: 'image',
+            index: 1
+          },
+          {
+            source: 'image',
+            index: 2
+          }
+        ]
+      }
+    };
+
+    var errors = [
+      {
+        field: '_layout',
+        message: 'Layout section \'mainbody\' must contain at least 1 instances of \'paragraph\''
+      },
+      {
+        field: '_layout',
+        message: 'Layout section \'mainbody\' cannot contain more than 2 instances of \'image\''
+      }
+    ];
+
+    request('http://' + config.get('server.host') + ':' + config.get('server.port'))
+    .post('/vtest/testdb/test-schema')
+    .set('Authorization', 'Bearer ' + bearerToken)
+    .send(doc)
+    .expect(400)
+    .end(function (err, res) {
+      console.log('*** ERR:', err);
+      if (err) return done(err);
+
+      res.body.success.should.be.false;
+
+      JSON.stringify(res.body.errors).should.equal(JSON.stringify(errors));
+
+      done();
+    });
   })
 
   it('should insert a document with layout', function (done) {

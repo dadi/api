@@ -101,13 +101,15 @@ Layout.prototype.validate = function (document) {
     section.name = section.name || sectionIndex;
 
     section.fields.forEach(function (field) {
+      var count = (fieldCount[sectionIndex] && fieldCount[sectionIndex][field.source]) ? fieldCount[sectionIndex][field.source] : 0;
+
       // Check for `min` limit
-      if (field.min && (fieldCount[sectionIndex][field.source] < field.min)) {
+      if (field.min && (count < field.min)) {
         errors.push({field: '_layout', message: 'Layout section \'' + section.name + '\' must contain at least ' + field.min + ' instances of \'' + field.source + '\''});
       }
 
       // Check for `max` limit
-      if (field.max && (fieldCount[sectionIndex][field.source] > field.max)) {
+      if (field.max && (count > field.max)) {
         errors.push({field: '_layout', message: 'Layout section \'' + section.name + '\' cannot contain more than ' + field.max + ' instances of \'' + field.source + '\''});
       }
     });

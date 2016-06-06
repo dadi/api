@@ -178,7 +178,7 @@ describe.only('Layout', function () {
       }
     ];
 
-    request('http://' + config.get('server.host') + ':' + config.get('server.port'))
+    request(connectionString)
     .post('/vtest/testdb/test-schema')
     .set('Authorization', 'Bearer ' + bearerToken)
     .send(doc)
@@ -295,7 +295,7 @@ describe.only('Layout', function () {
       }
     ];
 
-    request('http://' + config.get('server.host') + ':' + config.get('server.port'))
+    request(connectionString)
     .post('/vtest/testdb/test-schema')
     .set('Authorization', 'Bearer ' + bearerToken)
     .send(doc)

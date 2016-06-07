@@ -9,8 +9,9 @@ var app = require(__dirname + '/../../dadi/lib/');
 // variables scoped for use throughout tests
 var bearerToken;
 var connectionString = 'http://' + config.get('server.host') + ':' + config.get('server.port');
+var originalSchema
 
-describe.only('Layout', function () {
+describe('Layout', function () {
 
   before(function (done) {
     this.timeout(8000);
@@ -24,8 +25,8 @@ describe.only('Layout', function () {
             bearerToken = token;
 
             // add a new field to the schema
-            var jsSchemaString = fs.readFileSync(__dirname + '/../new-schema.json', {encoding: 'utf8'});
-            jsSchemaString = jsSchemaString.replace('newField', 'title');
+            originalSchema = fs.readFileSync(__dirname + '/../new-schema.json', {encoding: 'utf8'});
+            jsSchemaString = originalSchema.replace('newField', 'title');
             var schema = JSON.parse(jsSchemaString);
 
             schema.fields.author = _.extend({}, schema.fields.title, {
@@ -83,7 +84,7 @@ describe.only('Layout', function () {
                     "max": 5
                   }
                 ]
-              }      
+              }
             ];
 
             var client = request(connectionString);
@@ -98,7 +99,9 @@ describe.only('Layout', function () {
             .end(function (err, res) {
               if (err) return done(err);
 
-              done();
+              setTimeout(function() {
+                done();
+              }, 2000)
           });
         });
       });
@@ -107,23 +110,22 @@ describe.only('Layout', function () {
 
   after(function (done) {
       // reset the schema
-      // var jsSchemaString = fs.readFileSync(__dirname + '/../new-schema.json', {encoding: 'utf8'});
-      // var schema = JSON.parse(jsSchemaString);
+      var schema = JSON.parse(originalSchema);
 
-      // var client = request(connectionString);
+      var client = request(connectionString);
 
-      // client
-      // .post('/vtest/testdb/test-schema/config')
-      // .send(JSON.stringify(schema, null, 4))
-      // .set('content-type', 'text/plain')
-      // .set('Authorization', 'Bearer ' + bearerToken)
-      // .expect(200)
-      // .expect('content-type', 'application/json')
-      // .end(function (err, res) {
-      //     if (err) return done(err);
+      client
+      .post('/vtest/testdb/test-schema/config')
+      .send(JSON.stringify(schema, null, 2))
+      .set('content-type', 'text/plain')
+      .set('Authorization', 'Bearer ' + bearerToken)
+      .expect(200)
+      .expect('content-type', 'application/json')
+      .end(function (err, res) {
+          if (err) return done(err);
 
-      //     app.stop(done);
-      // });
+           app.stop(done);
+      });
   })
 
   it('should throw an error when layout validation fails', function (done) {
@@ -179,20 +181,26 @@ describe.only('Layout', function () {
     ];
 
     request(connectionString)
-    .post('/vtest/testdb/test-schema')
+    .get('/vtest/testdb/test-schema/config')
     .set('Authorization', 'Bearer ' + bearerToken)
-    .send(doc)
-    .expect(400)
     .end(function (err, res) {
-      console.log('*** ERR:', err);
       if (err) return done(err);
 
-      res.body.success.should.be.false;
+      request(connectionString)
+      .post('/vtest/testdb/test-schema')
+      .set('Authorization', 'Bearer ' + bearerToken)
+      .send(doc)
+      .expect(400)
+      .end(function (err, res) {
+        if (err) return done(err);
 
-      JSON.stringify(res.body.errors).should.equal(JSON.stringify(errors));
+        res.body.success.should.be.false;
 
-      done();
-    });
+        JSON.stringify(res.body.errors).should.equal(JSON.stringify(errors));
+
+        done();
+      });
+    })
   })
 
   it('should insert a document with layout', function (done) {

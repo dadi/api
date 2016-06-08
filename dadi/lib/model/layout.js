@@ -17,8 +17,9 @@ Layout.prototype.resolve = function (document) {
 
     if (block.free) {
       freeSections.push({
+        displayName: block.displayName,
         position: index,
-        section: block.name
+        name: block.name
       });
     } else {
       result.push({
@@ -32,12 +33,17 @@ Layout.prototype.resolve = function (document) {
   if (freeSections.length) {
     var counter = 0;
 
-    Object.keys(document._layout).forEach(function (section, sectionIndex) {
+    Object.keys(document._layout).forEach(function (section) {
+      var schemaSection = freeSections.find(function (obj) {
+        return (obj.name === section);
+      });
+
       document._layout[section].forEach(function (block, blockIndex) {
-        result.splice(freeSections[sectionIndex].position + blockIndex + counter, 0, {
+        result.splice(schemaSection.position + blockIndex + counter, 0, {
           content: document[block.source][block.index],
+          displayName: schemaSection.displayName,
           free: true,
-          section: freeSections[sectionIndex].section,
+          name: schemaSection.name,
           type: block.source
         });
       });
@@ -57,24 +63,25 @@ Layout.prototype.validate = function (document) {
   var freeFieldsSections = this.layout.filter(function (elem) {
     return elem.free;
   });
+  Object.keys(document._layout).forEach((function (section) {
+    var schemaSection = freeFieldsSections.find(function (obj) {
+      return (obj.name === section);
+    });
 
-  Object.keys(document._layout).forEach((function (section, sectionIndex) {
-    if (!freeFieldsSections[sectionIndex]) return;
+    if (!schemaSection) return;
 
-    if (!fieldCount[sectionIndex]) {
-      fieldCount[sectionIndex] = {};
+    if (!fieldCount[section]) {
+      fieldCount[section] = {};
     }
 
-    var sectionName = freeFieldsSections[sectionIndex].name || sectionIndex;
-
     document._layout[section].forEach((function (block, blockIndex) {
-      var freeField = freeFieldsSections[sectionIndex].fields.find(function (elem) {
+      var freeField = schemaSection.fields.find(function (elem) {
         return elem.source === block.source;
       });
 
       // Check if field is part of `free`
       if (!freeField) {
-        return errors.push({field: '_layout', message: 'Layout section \'' + sectionName + '\' does not accept \'' + block.source + '\' as a free field'});
+        return errors.push({field: '_layout', message: 'Layout section \'' + schemaSection.name + '\' does not accept \'' + block.source + '\' as a free field'});
       }
 
       // Check if `index` is within bounds
@@ -83,10 +90,10 @@ Layout.prototype.validate = function (document) {
       }
 
       // Increment the field count and check for limits
-      if (fieldCount[sectionIndex].hasOwnProperty(block.source)) {
-        fieldCount[sectionIndex][block.source]++;
+      if (fieldCount[section].hasOwnProperty(block.source)) {
+        fieldCount[section][block.source]++;
       } else {
-        fieldCount[sectionIndex][block.source] = 1;
+        fieldCount[section][block.source] = 1;
       }
     }).bind(this));
   }).bind(this));
@@ -95,17 +102,18 @@ Layout.prototype.validate = function (document) {
     return elem.free;
   });
 
-  free.forEach(function (section, sectionIndex) {
-    section.name = section.name || sectionIndex;
+  free.forEach(function (section) {
 
     section.fields.forEach(function (field) {
+      var count = (fieldCount[section.name] && fieldCount[section.name][field.source]) ? fieldCount[section.name][field.source] : 0;
+
       // Check for `min` limit
-      if (field.min && (fieldCount[sectionIndex][field.source] < field.min)) {
+      if (field.min && (count < field.min)) {
         errors.push({field: '_layout', message: 'Layout section \'' + section.name + '\' must contain at least ' + field.min + ' instances of \'' + field.source + '\''});
       }
 
       // Check for `max` limit
-      if (field.max && (fieldCount[sectionIndex][field.source] > field.max)) {
+      if (field.max && (count > field.max)) {
         errors.push({field: '_layout', message: 'Layout section \'' + section.name + '\' cannot contain more than ' + field.max + ' instances of \'' + field.source + '\''});
       }
     });

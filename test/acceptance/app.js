@@ -2570,7 +2570,7 @@ describe('Application', function () {
                                 res.body.message.should.equal('endpoint updated through the API');
                                 done();
                             });
-                        }, 500);
+                        }, 1500);
                     });
                 });
             });

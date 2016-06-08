@@ -399,7 +399,7 @@ Server.prototype.loadCollectionRoute = function() {
           slug: slug,
           path: "/" + [parts[0], parts[1], slug].join("/")
         }
-        
+
         if (model.settings.lastModifiedAt) collection.lastModifiedAt = model.settings.lastModifiedAt
 
         collections.push(collection)
@@ -622,6 +622,7 @@ Server.prototype.addEndpointResource = function (options) {
     var self = this;
     var name = endpoint.slice(endpoint.indexOf('.') + 1, endpoint.indexOf('.js'));
     var filepath = options.filepath;
+    delete require.cache[filepath];
 
     try {
         // keep reference to component so hot loading component can be
@@ -672,11 +673,18 @@ Server.prototype.addComponent = function (options) {
     }
 
     // only add a route once
-    if (this.components[options.route]) return;
+    if (this.components[options.route]) {
+      // console.log('update/remove')
+      this.removeComponent(options.route)
+      // // update controller and documentation
+      // // this.components[options.route] = options.component;
+      // // this.docs[options.route] = options.docs;
+      // console.log(this.components)
+      //return;
+    }
 
+    // add controller and documentation
     this.components[options.route] = options.component;
-
-    // add documentation by path
     this.docs[options.route] = options.docs;
 
     this.app.use(options.route +'/stats', function (req, res, next) {

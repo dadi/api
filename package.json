@@ -6,15 +6,16 @@
     "init": "validate-commit-msg",
     "test": "env NODE_ENV=test ./node_modules/.bin/istanbul cover -x **/workspace/** --report cobertura --report text --report html --report lcov ./node_modules/.bin/_mocha test",
     "posttest": "./scripts/coverage.js",
-    "start": "node server.js --node_env=development"
+    "start": "node main.js --node_env=development"
   },
   "dependencies": {
     "@dadi/status": "git+https://git@github.com/dadi/status.git",
     "async": "^1.4.2",
     "body-parser": "~1.6.5",
     "bunyan": "^1.5.1",
+    "chokidar": "^1.5.2",
     "colors": "^1.1.2",
-    "console-stamp": "0.2.0",
+    "console-stamp": "^0.2.0",
     "convict": "1.0.1",
     "function-rate-limit": "^1.0.1",
     "latest-version": "~2.0.0",

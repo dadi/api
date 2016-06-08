@@ -264,6 +264,11 @@ var conf = convict({
     env: "NODE_ENV",
     arg: "node_env"
   },
+  cluster: {
+    doc: "If true, API runs in cluster mode, starting a worker for each CPU core",
+    format: Boolean,
+    default: false
+  },
   cors: {
     doc: "If true, responses will include headers for cross-domain resource sharing",
     format: Boolean,

@@ -331,6 +331,74 @@ Model.prototype.convertDateTimeForSave = function (schema, obj) {
 }
 
 /**
+ * Lookup documents in the database, then give back a count
+ *
+ * @param {Object} query
+ * @param {Function} done
+ * @return undefined
+ * @api public
+ */
+Model.prototype.count = function (query, options, done) {
+  var self = this;
+  if (typeof options === 'function') {
+    done = options;
+    options = {};
+  }
+
+  if (this.layout) {
+    var doneFn = done;
+
+    done = (function (err, data) {
+     if (!err) {
+       data.results = data.results.map(this.layout.resolve.bind(this.layout));
+     }
+
+     return doneFn.apply(this, arguments);
+    }).bind(this);
+  }
+
+  query = this.makeCaseInsensitive(query);
+  query = this.convertApparentObjectIds(query);
+
+  var validation = this.validate.query(query);
+  if (!validation.success) {
+    var err = validationError('Bad Query');
+    err.json = validation;
+    return done(err);
+  }
+
+  if (_.isObject(query)) {
+
+    this.castToBSON(query);
+
+    _done = function (database) {
+      database.collection(self.name).count(query, options, function(err, result){
+        if (err) return done(err);
+        var meta = getMetadata(options, result);
+        var results = {
+          metadata: {
+            limit: meta.limit,
+            totalCount: meta.totalCount,
+            totalPages: meta.totalPages
+          }
+        };
+        return done(null, results);
+      });
+    };
+
+  }
+  else {
+    return done(validationError('Bad Query'));
+  }
+
+  if (this.connection.db) return _done(this.connection.db);
+
+  // if the db is not connected queue the find
+  this.connection.once('connect', function (database) {
+    _done(database);
+  });
+};
+/**
  * Lookup documents in the database
  *
  * @param {Object} query

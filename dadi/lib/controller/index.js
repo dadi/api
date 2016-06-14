@@ -301,6 +301,29 @@ Controller.prototype.stats = function (req, res, next) {
     });
 }
 
+Controller.prototype.count = function(req, res, next) {
+   var self = this;
+   var path = url.parse(req.url, true);
+   var pathname = path.pathname;
+   var options = path.query;
+
+   var query = this.prepareQuery(req);
+   var queryOptions = this.prepareQueryOptions(options);
+
+   if (queryOptions.errors.length !== 0) {
+     done = sendBackJSON(400, res, next);
+     return done(null, queryOptions);
+   }
+   else {
+     queryOptions = queryOptions.queryOptions;
+   }
+
+   this.model.count(query, queryOptions, function (err, stats) {
+     if (err) return next(err);
+     return help.sendBackJSON(200, res, next)(null, stats);
+   });
+}
+
 module.exports = function (model) {
     return new Controller(model);
 }

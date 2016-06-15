@@ -61,6 +61,24 @@ module.exports.sendBackJSONP = function (callbackName, res, next) {
   }
 }
 
+// helper that sends text response
+module.exports.sendBackText = function (successCode, res, next) {
+  return function (err, results) {
+    if (err) return next(err)
+
+    var resBody = results
+
+    res.setHeader('Server', config.get('server.name'))
+
+    res.setHeader('content-type', 'application/text')
+    res.setHeader('content-length', Buffer.byteLength(resBody))
+
+    res.statusCode = successCode
+
+    res.end(resBody)
+  }
+}
+
 // function to wrap try - catch for JSON.parse to mitigate pref losses
 module.exports.parseQuery = function (queryStr) {
   var ret;

@@ -1,4 +1,10 @@
-// Example hook: Creates a URL-friendly version (slug) of a field
+/**
+ * Example hook: Creates a URL-friendly version (slug) of a field
+ *
+ * @param {string} `input` The string to slugify
+ * @returns {string} The slugged version of the input
+ * @api public
+ */
 
 function slugify(text) {
 	return text.toString().toLowerCase()

@@ -480,6 +480,49 @@ describe('Model', function () {
     })
   })
 
+  describe('Version number', function () {
+    it('should add v:1 to a new document', function (done) {
+      var conn = connection()
+      var mod = model('testModelName', help.getModelSchema(), conn, { storeRevisions: true })
+
+      mod.create({fieldName: 'foo'}, function (err, result) {
+        if (err) return done(err)
+
+        mod.find({}, { includeHistory: true }, function (err, results) {
+          if (err) return done(err)
+
+          results.results.should.exist
+          results.results.should.be.Array
+          results.results[0].v.should.eql(1)
+          done()
+        })
+      })
+    })
+
+    it('should increment the version number when updating a document', function (done) {
+      var conn = connection()
+      var mod = model('testModelName', help.getModelSchema(), conn, { storeRevisions: true })
+
+      mod.create({fieldName: 'foo'}, function (err, result) {
+        if (err) return done(err)
+
+        mod.update({fieldName: 'foo'}, {fieldName: 'bar'}, function (err, result) {
+          if (err) return done(err)
+
+          mod.find({fieldName: 'bar'}, { includeHistory: true }, function (err, results) {
+            if (err) return done(err)
+
+            results.results.should.exist
+            results.results.should.be.Array
+            results.results[0].v.should.eql(2)
+            results.results[0].history[0].v.should.eql(1)
+            done()
+          })
+        })
+      })
+    })
+  })
+
   describe('`revisions` method', function () {
     it('should be added to model', function (done) {
       model('testModelName', help.getModelSchema()).revisions.should.be.Function
@@ -493,28 +536,27 @@ describe('Model', function () {
       mod.create({fieldName: 'foo'}, function (err, result) {
         if (err) return done(err)
 
-        mod.find({fieldName: 'foo'}, function (err, doc) {
+        mod.update({fieldName: 'foo'}, {fieldName: 'bar'}, function (err, result) {
           if (err) return done(err)
 
-          var doc_id = doc['results'][0]._id
-          var revision_id = doc['results'][0].history[0] // expected history object
-
-          model('testModelName', help.getModelSchema()).revisions(doc_id, function (err, result) {
+          mod.find({fieldName: 'bar'}, function (err, doc) {
             if (err) return done(err)
 
-            console.log(result)
+            var doc_id = doc.results[0]._id
+            var revision_id = doc.results[0].history[0] // expected history object
 
-            result.should.be.Array
+            model('testModelName', help.getModelSchema()).revisions(doc_id, function (err, result) {
+              if (err) return done(err)
 
-            if (result[0]) {
-              result[0]._id.toString().should.equal(revision_id.toString())
-            }
+              result.should.be.Array
 
+              if (result[0]) {
+                result[0]._id.toString().should.equal(revision_id.toString())
+              }
+            })
+            done()
           })
-
-          done()
         })
-
       })
     })
   })
@@ -645,7 +687,7 @@ describe('Model', function () {
           if (err) return done(err)
           should.exist(doc['results'])
           doc['results'][0].history.should.be.Array
-          doc['results'][0].history.length.should.equal(1)
+          doc['results'][0].history.length.should.equal(0) // no updates yet
           done()
         })
       })
@@ -731,7 +773,7 @@ describe('Model', function () {
           result['results'][0].field1.should.equal('bar')
 
           should.exist(result['results'][0].history)
-          result['results'][0].history.length.should.equal(2); // two revisions, one from initial create and one from the update
+          result['results'][0].history.length.should.equal(1); // one revision, from the update
 
           done()
         })

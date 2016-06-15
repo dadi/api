@@ -11,6 +11,8 @@ var util = require('util');
 var log = require(__dirname + '/../log');
 log.info({module: 'validator'}, 'Model validator logging started.');
 
+var ignoredKeys = ['apiVersion', 'v', 'history']
+
 var Validator = function (model) {
   this.model = model;
 };
@@ -70,73 +72,69 @@ Validator.prototype.schema = function (obj, update) {
   return response;
 };
 
-function _parseDocument(obj, schema, response, layout) {
-    for (var key in obj) {
-        // handle objects first
-        if (typeof obj[key] === 'object') {
-            if (key === '_layout') {
-              if (layout) {
-                var err = layout.validate(obj);
+function _parseDocument (obj, schema, response, layout) {
+  var keys = _.difference(Object.keys(obj), ignoredKeys)
 
-                if (err) {
-                  response.success = false;
-                  response.errors.push.apply(response.errors, err);
-                }
-              } else {
-                response.success = false;
-                response.errors.push({field: obj[key], message: 'does not match a layout'});
-              }
+  keys.forEach(function (key) {
+    // handle objects first
+    if (typeof obj[key] === 'object') {
+      if (key === '_layout') {
+        if (layout) {
+          var err = layout.validate(obj)
 
-              continue;
-            }
-            else if (schema[key] && (schema[key].type === 'Mixed' || schema[key].type === 'Object')) {
-                // do nothing
-            }
-            else if (schema[key] && schema[key].type === 'Reference') {
-                // bah!
-            }
-            else if (obj[key] !== null && !util.isArray(obj[key])) {
-                _parseDocument(obj[key], schema, response, layout);
-            }
-            else if (obj[key] !== null && schema[key].type === 'ObjectID' && util.isArray(obj[key])) {
-                var err = _validate(obj[key], schema[key], key);
-
-                if (err) {
-                    response.success = false;
-                    response.errors.push({field: key, message: err});
-                }
-            }
-            else if (util.isArray(obj[key]) && (schema[key].type === 'String')) {
-              // We allow type `String` to actually be an array of Strings. When this
-              // happens, we run the validation against the combination of all strings
-              // glued together.
-
-              var err = _validate(obj[key].join(''), schema[key], key);
-
-              if (err) {
-                  response.success = false;
-                  response.errors.push({field: key, message: err});
-              }
-            }
+          if (err) {
+            response.success = false
+            response.errors.push.apply(response.errors, err)
+          }
+        } else {
+          response.success = false
+          response.errors.push({field: obj[key], message: 'does not match a layout'})
         }
-        else if (key === 'apiVersion') {
+      }
+      else if (schema[key] && (schema[key].type === 'Mixed' || schema[key].type === 'Object')) {
+        // do nothing
+      }
+      else if (schema[key] && schema[key].type === 'Reference') {
+        // bah!
+      }
+      else if (obj[key] !== null && !util.isArray(obj[key])) {
+        _parseDocument(obj[key], schema, response, layout)
+      }
+      else if (obj[key] !== null && schema[key].type === 'ObjectID' && util.isArray(obj[key])) {
+        var err = _validate(obj[key], schema[key], key)
 
+        if (err) {
+          response.success = false
+          response.errors.push({field: key, message: err})
         }
-        else {
-            if (!schema[key]) {
-                response.success = false;
-                response.errors.push({field: key, message: 'doesn\'t exist in the collection schema'});
-                return;
-            }
+      }
+      else if (util.isArray(obj[key]) && (schema[key].type === 'String')) {
+        // We allow type `String` to actually be an array of Strings. When this
+        // happens, we run the validation against the combination of all strings
+        // glued together.
 
-            var err = _validate(obj[key], schema[key], key);
+        var err = _validate(obj[key].join(''), schema[key], key)
 
-            if (err) {
-                response.success = false;
-                response.errors.push({field: key, message: err});
-            }
+        if (err) {
+          response.success = false
+          response.errors.push({field: key, message: err})
         }
+      }
+    } else {
+      if (!schema[key]) {
+        response.success = false
+        response.errors.push({field: key, message: "doesn't exist in the collection schema"})
+        return
+      }
+
+      var err = _validate(obj[key], schema[key], key)
+
+      if (err) {
+        response.success = false
+        response.errors.push({field: key, message: err})
+      }
     }
+  })
 }
 
 function _validate(field, schema, key) {

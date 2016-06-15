@@ -169,6 +169,18 @@ Model.prototype.create = function (obj, internals, done) {
         });
     }
 
+    //
+    if (self.history) {
+      obj.forEach((doc) => {
+        doc.history = []
+      })
+    }
+
+    // add initial document revision number
+    obj.forEach((doc) => {
+      doc.v = 1
+    })
+
     // ObjectIDs
     obj.forEach(function (doc) {
       doc = self.convertObjectIdsForSave(self.schema, doc);
@@ -198,16 +210,16 @@ Model.prototype.create = function (obj, internals, done) {
                 });
             }
 
-            if (self.history) {
-                self.history.createEach(obj, self, function (err, res) {
-                    if (err) return done(err);
-
-                    return done(null, results);
-                });
-            }
-            else {
+            // if (self.history) {
+            //     self.history.createEach(obj, self, function (err, res) {
+            //         if (err) return done(err);
+            //
+            //         return done(null, results);
+            //     });
+            // }
+            // else {
                 return done(null, results);
-            }
+            //}
         });
     };
 
@@ -418,6 +430,7 @@ Model.prototype.count = function (query, options, done) {
     _done(database);
   });
 };
+
 /**
  * Lookup documents in the database
  *
@@ -627,7 +640,8 @@ Model.prototype.update = function (query, update, internals, done) {
         done = internals;
     }
 
-    var validation, err;
+    var validation
+    var err
 
     validation = this.validate.query(query);
     if (!validation.success) {
@@ -701,6 +715,17 @@ Model.prototype.update = function (query, update, internals, done) {
 
                 var results = {};
 
+                var incrementRevisionNumber = function(docs) {
+                  _.each(docs, function(doc) {
+                    database.collection(self.name).findAndModify(
+                      { _id: new ObjectID(doc._id.toString()) },
+                      [['_id','asc']],
+                      { $inc: { v: 1 } },
+                      { new: true },
+                      function(err, doc) {})
+                  })
+                }
+
                 var triggerAfterUpdateHook = function (docs) {
                     if (self.settings.hasOwnProperty('hooks') && (typeof self.settings.hooks.afterUpdate === 'object')) {
                         self.settings.hooks.afterUpdate.forEach(function (hookConfig, index) {
@@ -710,6 +735,9 @@ Model.prototype.update = function (query, update, internals, done) {
                         });
                     }
                 };
+
+                // increment document revision number
+                incrementRevisionNumber(updatedDocs)
 
                 // for each of the updated documents, create
                 // a history revision for it

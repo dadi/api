@@ -220,6 +220,26 @@ Model.prototype.create = function (obj, internals, done) {
     }
 };
 
+/**
+ * Attaches the full history of each document
+ * before returning the results
+ */
+Model.prototype.injectHistory = function (data) {
+  return new Promise((resolve, reject) => {
+    var idx = 0
+    _.each(data.results, (doc) => {
+      this.revisions(doc._id, (err, history) => {
+        doc.history = history
+
+        idx++
+        if (idx === data.results.length) {
+          return resolve(data)
+        }
+      })
+    })
+  })
+}
+
 Model.prototype.makeCaseInsensitive = function (obj) {
     var newObj = _.clone(obj);
     var self = this;
@@ -356,6 +376,23 @@ Model.prototype.find = function (query, options, done) {
         }).bind(this);
     }
 
+    if (options.includeHistory) {
+      var doneFn = done
+
+      done = (function (err, data) {
+        if (err) {
+          return doneFn(err, data)
+        }
+        else {
+          this.injectHistory(data).then(function (data) {
+            return doneFn(null, data)
+          })
+        }
+      }).bind(this)
+
+      delete options.includeHistory
+    }
+
     var self = this;
 
     query = this.makeCaseInsensitive(query);
@@ -440,32 +477,31 @@ Model.prototype.find = function (query, options, done) {
 };
 
 Model.prototype.revisions = function (id, done) {
-
     var self = this;
+
     var _done = function (database) {
-        database.collection(self.name).findOne({"_id":id}, {}, function (err, doc) {
+      database.collection(self.name).findOne({"_id":id}, {}, function (err, doc) {
+        if (err) return done(err);
+
+        if (self.history) {
+          var query = { "_id" : { "$in" : _.map(doc.history, function (id) { return id.toString() }) } }
+
+          database.collection(self.revisionCollection).find({}).toArray(function (err, items) {
             if (err) return done(err);
-
-            if (self.history) {
-
-                database.collection(self.revisionCollection).find( { _id : { "$in" : doc.history } }, {}, function (err, cursor) {
-                    if (err) return done(err);
-
-                    // pass back the full results array
-                    cursor.toArray(done);
-                });
-            }
-
-            done(null, []);
-
-        });
+            return done(null, items)
+          });
+        }
+        else {
+          done(null, []);
+        }
+      });
     }
 
     if (this.connection.db) return _done(this.connection.db);
 
     // if the db is not connected queue the find
     this.connection.once('connect', function (database) {
-        _done(database);
+      _done(database);
     });
 };
 

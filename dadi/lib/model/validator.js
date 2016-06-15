@@ -157,10 +157,10 @@ function _validate(field, schema, key) {
       newSchema[key] = _.clone(schema);
       newSchema[key].validation = { maxLength: schema.limit };
       delete newSchema[key].limit;
-      var message = 'The use of the `limit` property in field declarations is deprecated and will be removed in v1.7.0\n\nPlease use the following instead:\n\n';
+      var message = 'The use of the `limit` property in field declarations is deprecated and was removed in v1.8.0\n\nPlease use the following instead:\n\n';
       message += JSON.stringify(newSchema, null, 2);
-      console.log(message);
       log.warn(message);
+      throw new Error(message);
       if (field.toString().length > Number(newSchema[key].validation.maxLength)) return schema.message || 'is too long';
     }
 
@@ -170,10 +170,10 @@ function _validate(field, schema, key) {
       newSchema[key] = _.clone(schema);
       newSchema[key].validation = { regex: { pattern: schema.validationRule }};
       delete newSchema[key].validationRule;
-      var message = 'The use of the `validationRule` property in field declarations is deprecated and will be removed in v1.7.0\n\nPlease use the following instead:\n\n';
+      var message = 'The use of the `validationRule` property in field declarations is deprecated and was removed in v1.8.0\n\nPlease use the following instead:\n\n';
       message += JSON.stringify(newSchema, null, 2);
-      console.log(message);
       log.warn(message);
+      throw new Error(message);
       if (!new RegExp(schema.validationRule).test(field)) return schema.message || 'is invalid';
     }
 

@@ -460,16 +460,6 @@ describe('validation', function () {
           });
       });
 
-      it('should allow fields to use `limit`', function (done) {
-          var client = request('http://' + config.get('server.host') + ':' + config.get('server.port'));
-
-          client
-          .post('/vtest/testdb/test-validation-schema')
-          .set('Authorization', 'Bearer ' + bearerToken)
-          .send({fieldLimit: '1234'})
-          .expect(200, done);
-      });
-
         it('should allow field lengths less than or equal to `maxLength`', function (done) {
             var client = request('http://' + config.get('server.host') + ':' + config.get('server.port'));
 

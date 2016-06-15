@@ -153,19 +153,6 @@
                 "edit": true
             }
         },
-        "fieldLimit": {
-            "type": "Mixed",
-            "label": "Title",
-            "comments": "The title of the entry",
-            "placement": "Main content",
-            "limit": "4",
-            "required": false,
-            "message": "",
-            "display": {
-                "index": true,
-                "edit": true
-            }
-        },
         "fieldMaxLength": {
             "type": "Mixed",
             "label": "Title",

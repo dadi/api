@@ -417,7 +417,7 @@ describe('Model validator', function () {
         done();
       });
 
-      it('should inform if field is to long', function (done) {
+      it('should inform if field is too long', function (done) {
 
         // make sure limit works for number and string that can be coerced to number
         var validator = new Validator({
@@ -425,11 +425,15 @@ describe('Model validator', function () {
             field1: {
               type: 'String',
               required: false,
-              limit: "9"
+              validation: {
+                maxLength: "9"
+              }
             },
             field2: {
               type: 'String',
-              limit: 9
+              validation: {
+                maxLength: 9
+              }
             }
           }
         });

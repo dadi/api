@@ -101,6 +101,34 @@ module.exports.cleanUpDB = function (done) {
   }, 500)
 }
 
+module.exports.clearCollection = function (collectionName, query, done) {
+  if (typeof query === 'function') {
+    done = query
+    query = {}
+  }
+
+  var database = connection();
+
+  if (!database.db) return done()
+
+  setTimeout(function() {
+    if (database.db.databaseName !== 'test') {
+      var err = new Error('Database should be `test`, not `' + db.databaseName + '`.');
+      return done(err);
+    }
+  }, 500)
+
+  // remove data from collection
+  setTimeout(function() {
+    database.db.collection(collectionName, function(err, collection) {
+      if (err) return done(err);
+      collection.remove(query, function(err, removed) {
+        done()
+      })
+    })
+  }, 500)
+}
+
 module.exports.addUserToDb = function (userObj, dbObj, done) {
     var Db = require('mongodb').Db;
     var Server = require('mongodb').Server;

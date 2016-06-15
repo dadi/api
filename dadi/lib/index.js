@@ -99,6 +99,7 @@ Server.prototype.start = function (done) {
 
     this.loadCollectionRoute();
     this.loadEndpointsRoute();
+    this.loadHooksRoute();
 
     this.readyState = 1;
 
@@ -128,6 +129,7 @@ Server.prototype.loadPaths = function(paths, done) {
 
   options.collectionPath = path.resolve(paths.collections || __dirname + '/../../workspace/collections');
   options.endpointPath = path.resolve(paths.endpoints || __dirname + '/../../workspace/endpoints');
+  options.hookPath = path.resolve(paths.hooks || __dirname + '/../../workspace/hooks');
 
   var idx = 0;
 
@@ -154,6 +156,12 @@ Server.prototype.loadApi = function (options) {
     var self = this;
     var collectionPath = this.collectionPath = options.collectionPath || __dirname + '/../../workspace/collections';
     var endpointPath = this.endpointPath = options.endpointPath || __dirname + '/../../workspace/endpoints';
+    var hookPath = this.hookPath = options.hookPath || __dirname + '/../../workspace/hooks';
+
+    self.updateHooks(hookPath)
+    self.addMonitor(hookPath, function (hook) {
+      self.updateHooks(dirname)
+    })
 
     // Load initial api descriptions
     this.updateVersions(collectionPath);
@@ -461,6 +469,58 @@ Server.prototype.loadEndpointsRoute = function() {
   });
 }
 
+// route to retrieve list of available hooks
+Server.prototype.loadHooksRoute = function() {
+  var self = this;
+
+  this.app.use('/api/hooks', function (req, res, next) {
+    var method = req.method && req.method.toLowerCase()
+    if (method !== 'get') return help.sendBackJSON(400, res, next)(null, {"error":"Invalid method"})
+
+    var data = {}
+    var hooks = []
+
+    _.each(self.components, function(value, key) {
+      if (key.indexOf('hook:') === 0) {
+        var hook = {
+          name: key.replace('hook:','')
+        }
+
+        var docs = self.docs[key]
+        if (docs && docs[0]) {
+          hook.description = docs[0].description
+          hook.params = docs[0].params
+          hook.returns = docs[0].returns
+        }
+
+        hooks.push(hook)
+      }
+    })
+
+    data.hooks = _.sortBy(hooks, 'name')
+
+    return help.sendBackJSON(200, res, next)(null, data)
+  })
+
+  this.app.use('/api/hooks/:hook/config', function (req, res, next) {
+    var method = req.method && req.method.toLowerCase()
+    if (method !== 'get') return help.sendBackJSON(400, res, next)(null, {"error":"Invalid method"})
+
+    _.each(self.components, function(value, key) {
+      if (key.indexOf('hook:') === 0) {
+        var hook = key.replace('hook:','')
+
+        if (hook === req.params.hook) {
+          var content = fs.readFileSync(value)
+          return help.sendBackText(200, res, next)(null, content.toString())
+        }
+      }
+    })
+
+    return help.sendBackJSON(404, res, next)(null, {})
+  })
+}
+
 Server.prototype.updateVersions = function (versionsPath) {
     var self = this;
 
@@ -662,6 +722,61 @@ Server.prototype.addEndpointResource = function (options) {
     log.info({module: 'server'}, 'Endpoint loaded: ' + name);
 }
 
+Server.prototype.updateHooks = function (hookPath) {
+  var self = this
+  var hooks = fs.readdirSync(hookPath)
+
+  hooks.forEach(function (hook) {
+    self.addHook({
+      hook: hook,
+      filepath: path.join(hookPath, hook)
+    })
+  })
+}
+
+Server.prototype.addHook = function (options) {
+  if (path.extname(options.filepath) !== '.js') return;
+  var hook = options.hook
+
+  var self = this
+  var name = hook.replace('.js', '')
+  var filepath = options.filepath
+  delete require.cache[filepath]
+
+  try {
+    var content = fs.readFileSync(filepath).toString()
+
+    var opts = {
+      route: 'hook:' + name,
+      component: filepath,
+      docs: parsecomments(content),
+      filepath: filepath
+    }
+
+    self.addComponent(opts)
+  }
+  catch (e) {
+    console.log(e)
+  }
+
+  self.addMonitor(filepath, function (filename) {
+    delete require.cache[filepath]
+
+    try {
+        opts.component = require(filepath)
+    }
+    catch (e) {
+      // if file was removed "un-use" this component
+      if (e && e.code === 'ENOENT') {
+        self.removeMonitor(filepath);
+        self.removeComponent(opts.route);
+      }
+    }
+  })
+
+  log.info({module: 'server'}, 'Hook loaded: ' + name)
+}
+
 Server.prototype.addComponent = function (options) {
 
     // check if the endpoint is supplying a custom config block
@@ -672,15 +787,9 @@ Server.prototype.addComponent = function (options) {
         }
     }
 
-    // only add a route once
+    // remove it before reloading
     if (this.components[options.route]) {
-      // console.log('update/remove')
       this.removeComponent(options.route)
-      // // update controller and documentation
-      // // this.components[options.route] = options.component;
-      // // this.docs[options.route] = options.docs;
-      // console.log(this.components)
-      //return;
     }
 
     // add controller and documentation

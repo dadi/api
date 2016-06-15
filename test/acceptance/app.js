@@ -1808,7 +1808,7 @@ describe('Application', function () {
       })
     })
 
-    describe.only('Collection count', function () {
+    describe('Collection count', function () {
       before(function (done) {
         help.dropDatabase('testdb', function (err) {
           if (err) return done(err)

@@ -1,4 +1,4 @@
-var app = require(__dirname + '/../../../dadi/lib');
+var app = require('@dadi/api');
 var _ = require('underscore');
 
 module.exports.get = function (req, res, next) {
@@ -6,6 +6,7 @@ module.exports.get = function (req, res, next) {
     var data = {};
     var collections = [];
     var components = app.App ? app.App.components : app.components;
+
     _.each(components, function (value, key) {
       if (value.model) {
 
@@ -23,7 +24,7 @@ module.exports.get = function (req, res, next) {
             path: '/' + parts[0] + '/' + parts[1] + '/' + slug
         };
 
-        if(model.settings && model.settings.showInMenu == false){
+        if( ( model.settings && model.settings.showInMenu === false) || collection.version == 'endpoints' || !collection.name ){
           //do nothing, don't push the collection
         }else{
           //default to showing in menu

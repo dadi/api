@@ -59,6 +59,7 @@ if (config.get('cluster')) {
   else {
     // Start Workers
     var app = require(__dirname + '/index.js')
+    module.exports.App = app
 
     app.start(function() {
       log.info('Process ' + process.pid + ' is listening for incoming requests')

@@ -1,37 +1,40 @@
 var app = require(__dirname + '/../../../dadi/lib');
-
 var _ = require('underscore');
 
 module.exports.get = function (req, res, next) {
 
     var data = {};
     var collections = [];
+    var components = app.App ? app.App.components : app.components;
+    _.each(components, function (value, key) {
+      if (value.model) {
 
-    _.each(app.components, function (value, key) {
-      if (value.hasOwnProperty("model")) {
-        
         var model = value.model;
-        var name = model.name;
         var slug = model.name;
         var parts = _.compact(key.split('/'));
 
-        if (model.hasOwnProperty("settings") && model.settings.hasOwnProperty("displayName")) {
-            name = model.settings.displayName;
-        }
+        var name = model.settings.displayName || model.name;
 
         var collection = {
-            version: parts[0],
-            database: parts[1],
             name: name,
             slug: slug,
-            path: "/" + [parts[0], parts[1], slug].join("/")
-        }
+            version: parts[0],
+            database: parts[1],
+            path: '/' + parts[0] + '/' + parts[1] + '/' + slug
+        };
 
-        collections.push(collection);
+        if(model.settings && model.settings.showInMenu == false){
+          //do nothing, don't push the collection
+        }else{
+          //default to showing in menu
+          collections.push(collection);
+        }
       }
     });
 
-    data["collections"] = _.sortBy(collections, 'path');
+    collections.sort();
+
+    data["collections"] = collections;
 
     res.setHeader('content-type', 'application/json');
     res.statusCode = 200;

@@ -7,6 +7,7 @@ var path = require('path')
 var log = require(__dirname + '/dadi/lib/log.js')
 
 //module.exports       = app = require(__dirname + '/index.js');
+module.exports.App         = {};
 module.exports.Config      = require(__dirname + '/config');
 module.exports.Connection  = require(__dirname + '/dadi/lib/model/connection');
 module.exports.Controller  = require(__dirname + '/dadi/lib/controller/');
@@ -76,6 +77,7 @@ if (config.get('cluster')) {
   log.info('Starting DADI API in single thread mode.')
 
   var app = require(__dirname + '/index.js')
+  module.exports.App = app
   app.start(function() {
     log.info('Process ' + process.pid + ' is listening for incoming requests')
   })

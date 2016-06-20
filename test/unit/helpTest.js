@@ -181,6 +181,15 @@ describe('Help', function (done) {
       done();
     })
 
+    describe('null value query', function () {
+      it('should allow a query for null in String fields', function (done) {
+        var obj = { 'name': null }
+        help.transformQuery(obj, 'String');
+        obj.should.eql({ 'name': null });
+        done();
+      })
+    })
+
     describe('Other fields', function () {
       it('should return original query object if it is not a String or DateTime', function (done) {
         var obj = { 'name': 'John' }

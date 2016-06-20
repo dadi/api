@@ -134,13 +134,15 @@ module.exports.transformQuery = function (obj, type) {
       return obj;
   }
 
-  Object.keys(obj).forEach((function (key) {
-    if ((typeof obj[key] === 'object') && (obj[key] !== null)) {
-      this.transformQuery(obj[key], type);
-    } else if (typeof obj[key] === 'string') {
-      obj[key] = transformFunction(obj[key]);
-    }
-  }).bind(this));
+  if (obj) {
+    Object.keys(obj).forEach((function (key) {
+      if ((typeof obj[key] === 'object') && (obj[key] !== null)) {
+        this.transformQuery(obj[key], type);
+      } else if (typeof obj[key] === 'string') {
+        obj[key] = transformFunction(obj[key]);
+      }
+    }).bind(this));
+  }
 };
 
 module.exports.regExpEscape = function(str) {

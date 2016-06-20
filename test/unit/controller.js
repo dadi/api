@@ -75,6 +75,47 @@ describe('Controller', function (done) {
                 done();
             });
 
+            it('should allow querying for "null"', function (done) {
+                var mod = model('testModel', help.getModelSchema());
+                var stub = sinon.stub(mod, 'find');
+
+                var req = {
+                    url: '/foo/bar?filter={"fieldName": null}'
+                };
+
+                controller(mod).get(req);
+                stub.callCount.should.equal(1);
+                var findArgs = stub.returnsArg(0).args[0][0];
+                findArgs.hasOwnProperty('fieldName').should.eql(true);
+                stub.restore();
+                done();
+            });
+
+            it('should allow querying for "null" and other fields', function (done) {
+                var schema = help.getModelSchema()
+                schema.field2 = {
+                    "type": "String",
+                    "label": "Title",
+                    "required": false
+                }
+
+                var mod = model('testModel', schema);
+                var stub = sinon.stub(mod, 'find');
+
+                var req = {
+                    url: '/foo/bar?filter={"fieldName": null, "field2": "xx"}'
+                };
+
+                controller(mod).get(req);
+                stub.callCount.should.equal(1);
+                var findArgs = stub.returnsArg(0).args[0][0];
+
+                findArgs.hasOwnProperty('fieldName').should.eql(true);
+                findArgs.hasOwnProperty('field2').should.eql(true);
+                stub.restore();
+                done();
+            });
+
             it('should allow Mixed fields to be queried using `unknown` params', function (done) {
                 var schema = help.getModelSchema();
                 schema = _.extend(schema, {

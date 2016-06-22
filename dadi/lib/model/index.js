@@ -1,3 +1,4 @@
+var async = require('async')
 var connection = require(__dirname + '/connection');
 var config = require(__dirname + '/../../../config');
 var help = require(__dirname + '/../help');
@@ -120,17 +121,6 @@ Model.prototype.create = function (obj, internals, done) {
         obj = [obj];
     }
 
-    // apply any existing `beforeCreate` hooks
-    if (this.settings.hasOwnProperty('hooks') && (typeof this.settings.hooks.beforeCreate === 'object')) {
-        obj.forEach(function (doc) {
-            doc = self.settings.hooks.beforeCreate.reduce(function (previous, current, index) {
-                var hook = new Hook(self.settings.hooks.beforeCreate[index], 'beforeCreate');
-
-                return hook.apply(previous);
-            }, doc);
-        });
-    }
-
     // internals will not be validated, i.e. should not be user input
     if (typeof internals === 'function') {
         done = internals;
@@ -191,44 +181,84 @@ Model.prototype.create = function (obj, internals, done) {
       doc = self.convertDateTimeForSave(self.schema, doc);
     })
 
-    var _done = function (database) {
-        database.collection(self.name).insert(obj, function(err, doc) {
-            if (err) return done(err);
+    var _startInsert = (database) => {
+      var abortedInserts = []
 
-            var results = {
-                results: doc
-            };
+      // Running `beforeCreate` hooks
+      if (this.settings.hooks && this.settings.hooks.beforeCreate) {
+        var processedDocs = 0
 
-            // apply any existing `afterCreate` hooks
-            if (self.settings.hasOwnProperty('hooks') && (typeof self.settings.hooks.afterCreate === 'object')) {
-                obj.forEach(function (doc) {
-                    self.settings.hooks.afterCreate.forEach(function (hookConfig, index) {
-                        var hook = new Hook(self.settings.hooks.afterCreate[index], 'afterCreate');
+        obj.forEach((doc, docIndex) => {
+          async.reduce(this.settings.hooks.beforeCreate, doc, (previous, current, callback) => {
+            var hook = new Hook(current, 'beforeCreate')
 
-                        return hook.apply(doc);
-                    });
-                });
+            Promise.resolve(hook.apply(previous)).then((newDoc) => {
+              callback((newDoc === null) ? {} : null, newDoc)
+            }).catch((err) => {
+              callback(err)
+            })
+          }, (err, result) => {
+            if (err) {
+              abortedInserts.push(docIndex)
             }
 
-            // if (self.history) {
-            //     self.history.createEach(obj, self, function (err, res) {
-            //         if (err) return done(err);
-            //
-            //         return done(null, results);
-            //     });
-            // }
-            // else {
-                return done(null, results);
-            //}
+            doc = err ? undefined : result
+
+            processedDocs++
+
+            if (processedDocs === obj.length) {
+              // Remove aborted inserts from the list
+              obj = obj.filter((item, index) => {
+                return (abortedInserts.indexOf(index) === -1)
+              })
+
+              _saveDocuments(database)
+            }
+          })
+        })
+      } else {
+        _saveDocuments(database)
+      }
+    }
+
+    var _saveDocuments = (database) => {
+        database.collection(this.name).insert(obj, (err, doc) => {
+          if (err) return done(err);
+
+          var results = {
+            results: doc
+          }
+
+          // apply any existing `afterCreate` hooks
+          if (this.settings.hasOwnProperty('hooks') && (typeof this.settings.hooks.afterCreate === 'object')) {
+            obj.forEach((doc) => {
+              this.settings.hooks.afterCreate.forEach((hookConfig, index) => {
+                var hook = new Hook(this.settings.hooks.afterCreate[index], 'afterCreate')
+
+                return hook.apply(doc)
+              })
+            })
+          }
+
+          // if (self.history) {
+          //     self.history.createEach(obj, self, function (err, res) {
+          //         if (err) return done(err);
+          //
+          //         return done(null, results);
+          //     });
+          // }
+          // else {
+          return done(null, results)
+          //}
         });
     };
 
     if (this.connection.db) {
-      return _done(this.connection.db);
+      return _startInsert(this.connection.db);
     }
     else {
       // if the db is not connected queue the insert
-      this.connection.once('connect', _done);
+      this.connection.once('connect', _startInsert);
     }
 };
 

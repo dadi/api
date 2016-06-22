@@ -181,7 +181,7 @@ Model.prototype.create = function (obj, internals, done) {
       doc = self.convertDateTimeForSave(self.schema, doc);
     })
 
-    var _startInsert = (database) => {
+    var startInsert = (database) => {
       var abortedInserts = []
 
       // Running `beforeCreate` hooks
@@ -189,10 +189,10 @@ Model.prototype.create = function (obj, internals, done) {
         var processedDocs = 0
 
         obj.forEach((doc, docIndex) => {
-          async.reduce(this.settings.hooks.beforeCreate, doc, (previous, current, callback) => {
-            var hook = new Hook(current, 'beforeCreate')
+          async.reduce(this.settings.hooks.beforeCreate, doc, (current, hookConfig, callback) => {
+            var hook = new Hook(hookConfig, 'beforeCreate')
 
-            Promise.resolve(hook.apply(previous)).then((newDoc) => {
+            Promise.resolve(hook.apply(current)).then((newDoc) => {
               callback((newDoc === null) ? {} : null, newDoc)
             }).catch((err) => {
               callback(err)
@@ -212,16 +212,16 @@ Model.prototype.create = function (obj, internals, done) {
                 return (abortedInserts.indexOf(index) === -1)
               })
 
-              _saveDocuments(database)
+              saveDocuments(database)
             }
           })
         })
       } else {
-        _saveDocuments(database)
+        saveDocuments(database)
       }
     }
 
-    var _saveDocuments = (database) => {
+    var saveDocuments = (database) => {
         database.collection(this.name).insert(obj, (err, doc) => {
           if (err) return done(err);
 
@@ -254,11 +254,11 @@ Model.prototype.create = function (obj, internals, done) {
     };
 
     if (this.connection.db) {
-      return _startInsert(this.connection.db);
+      return startInsert(this.connection.db);
     }
     else {
       // if the db is not connected queue the insert
-      this.connection.once('connect', _startInsert);
+      this.connection.once('connect', startInsert);
     }
 };
 
@@ -665,145 +665,160 @@ Model.prototype.stats = function (options, done) {
  */
 Model.prototype.update = function (query, update, internals, done) {
 
-    // internals will not be validated, i.e. should not be user input
-    if (typeof internals === 'function') {
-        done = internals;
-    }
+  // internals will not be validated, i.e. should not be user input
+  if (typeof internals === 'function') {
+    done = internals
+  }
 
-    var validation
-    var err
+  var validation
+  var err
 
-    validation = this.validate.query(query);
-    if (!validation.success) {
-        err = validationError('Bad Query');
-        err.json = validation;
-        return done(err);
-    }
+  validation = this.validate.query(query)
+  if (!validation.success) {
+    err = validationError('Bad Query')
+    err.json = validation
+    return done(err)
+  }
 
-    validation = this.validate.schema(update, true);
-    if (!validation.success) {
-        err = validationError();
-        err.json = validation;
-        return done(err);
-    }
+  validation = this.validate.schema(update, true)
+  if (!validation.success) {
+    err = validationError()
+    err.json = validation
+    return done(err)
+  }
 
-    if (this.layout) {
-        var doneFn = done;
+  if (this.layout) {
+    var doneFn = done
 
-        done = (function (err, data) {
-            if (!err) {
-                data.results = data.results.map(this.layout.resolve.bind(this.layout));
+    done = ((err, data) => {
+      if (!err) {
+        data.results = data.results.map(this.layout.resolve.bind(this.layout))
+      }
+
+      return doneFn.apply(this, arguments)
+    })
+  }
+
+  // ObjectIDs
+  update = this.convertObjectIdsForSave(this.schema, update)
+  // DateTimes
+  update = this.convertDateTimeForSave(this.schema, update)
+
+  if (typeof internals === 'object' && internals != null) { // not null and not undefined
+    _.extend(update, internals)
+  }
+
+  var setUpdate = {$set: update}
+  var updateOptions = {
+      multi: true
+  }
+
+  var startUpdate = (database) => {
+
+    // get a reference to the documents that will be updated
+    var updatedDocs = []
+
+    this.find(query, {}, (err, docs) => {
+      if (err) return done(err)
+
+      updatedDocs = docs['results']
+
+      this.castToBSON(query)
+
+      var saveDocuments = () => {
+        database.collection(this.name).update(query, setUpdate, updateOptions, (err, numAffected) => {
+          if (err) return done(err)
+          if (!numAffected) {
+              err = new Error('Not Found')
+              err.statusCode = 404
+              return done(err)
+          }
+
+          var results = {}
+
+          var incrementRevisionNumber = (docs) => {
+            _.each(docs, (doc) => {
+              database.collection(this.name).findAndModify(
+                { _id: new ObjectID(doc._id.toString()) },
+                [['_id','asc']],
+                { $inc: { v: 1 } },
+                { new: true },
+                function(err, doc) {})
+            })
+          }
+
+          var triggerAfterUpdateHook = (docs) => {
+            if (this.settings.hasOwnProperty('hooks') && (typeof this.settings.hooks.afterUpdate === 'object')) {
+              this.settings.hooks.afterUpdate.forEach((hookConfig, index) => {
+                var hook = new Hook(this.settings.hooks.afterUpdate[index], 'afterUpdate')
+
+                return hook.apply(docs)
+              });
             }
+          }
 
-            return doneFn.apply(this, arguments);
-        }).bind(this);
-    }
+          // increment document revision number
+          incrementRevisionNumber(updatedDocs)
 
-    // ObjectIDs
-    update = this.convertObjectIdsForSave(this.schema, update);
-    // DateTimes
-    update = this.convertDateTimeForSave(this.schema, update);
+          // for each of the updated documents, create
+          // a history revision for it
+          if (this.history && updatedDocs.length > 0) {
+            this.history.createEach(updatedDocs, this, (err, docs) => {
+              if (err) return done(err)
 
-    if (typeof internals === 'object' && internals != null) { // not null and not undefined
-        _.extend(update, internals);
-    }
+              results.results = docs
 
-    var setUpdate = {$set: update};
-    var updateOptions = {
-        multi: true
-    };
+              // apply any existing `afterUpdate` hooks
+              triggerAfterUpdateHook(docs)
 
-    var self = this;
-    var _update = function (database) {
-
-        // get a reference to the documents that will be updated
-        var updatedDocs = [];
-
-        self.find(query, {}, function(err, docs) {
-            if (err) return done(err);
-
-            updatedDocs = docs['results'];
-
-            // apply any existing `beforeUpdate` hooks
-            if (self.settings.hasOwnProperty('hooks') && (typeof self.settings.hooks.beforeUpdate === 'object')) {
-                update = self.settings.hooks.beforeUpdate.reduce(function (previous, current, index) {
-                    var hook = new Hook(self.settings.hooks.beforeUpdate[index], 'beforeUpdate');
-
-                    return hook.apply(previous, updatedDocs);
-                }, update);
-            }
-
-            self.castToBSON(query);
-
-            database.collection(self.name).update(query, setUpdate, updateOptions, function (err, numAffected) {
-                if (err) return done(err);
-                if (!numAffected) {
-                    err = new Error('Not Found');
-                    err.statusCode = 404;
-                    return done(err);
-                }
-
-                var results = {};
-
-                var incrementRevisionNumber = function(docs) {
-                  _.each(docs, function(doc) {
-                    database.collection(self.name).findAndModify(
-                      { _id: new ObjectID(doc._id.toString()) },
-                      [['_id','asc']],
-                      { $inc: { v: 1 } },
-                      { new: true },
-                      function(err, doc) {})
-                  })
-                }
-
-                var triggerAfterUpdateHook = function (docs) {
-                    if (self.settings.hasOwnProperty('hooks') && (typeof self.settings.hooks.afterUpdate === 'object')) {
-                        self.settings.hooks.afterUpdate.forEach(function (hookConfig, index) {
-                            var hook = new Hook(self.settings.hooks.afterUpdate[index], 'afterUpdate');
-
-                            return hook.apply(docs);
-                        });
-                    }
-                };
-
-                // increment document revision number
-                incrementRevisionNumber(updatedDocs)
-
-                // for each of the updated documents, create
-                // a history revision for it
-                if (self.history && updatedDocs.length > 0) {
-                    self.history.createEach(updatedDocs, self, function(err, docs) {
-                        if (err) return done(err);
-
-                        results.results = docs;
-
-                        // apply any existing `afterUpdate` hooks
-                        triggerAfterUpdateHook(docs);
-
-                        done(null, results);
-                    });
-                }
-                else {
-                    self.find({ _id: { "$in": _.map(updatedDocs, function(doc) { return doc._id.toString() } ) } }, {}, function(err, doc) {
-                        if (err) return done(err);
-
-                        results = doc;
-
-                        // apply any existing `afterUpdate` hooks
-                        triggerAfterUpdateHook(doc);
-
-                        done(null, results);
-                    });
-                }
+              done(null, results)
             });
-        });
-    };
+          }
+          else {
+            this.find({ _id: { "$in": _.map(updatedDocs, (doc) => { return doc._id.toString() } ) } }, {}, (err, doc) => {
+              if (err) return done(err)
 
-    if (this.connection.db) return _update(this.connection.db);
+              results = doc
 
-    // if the db is not connected queue the update
-    this.connection.once('connect', _update);
-};
+              // apply any existing `afterUpdate` hooks
+              triggerAfterUpdateHook(doc)
+
+              done(null, results)
+            })
+          }
+        })
+      }
+
+      // apply any existing `beforeUpdate` hooks, otherwise save the documents straight away
+      if (this.settings.hooks && this.settings.hooks.beforeUpdate) {
+        async.reduce(this.settings.hooks.beforeUpdate, update, (current, hookConfig, callback) => {
+          var hook = new Hook(hookConfig, 'beforeUpdate')
+
+          Promise.resolve(hook.apply(current, updatedDocs)).then((newUpdate) => {
+            callback((newUpdate === null) ? {} : null, newUpdate)
+          }).catch((err) => {
+            callback(err)
+          })
+        }, (err, result) => {
+          if (err) {
+            done(err)
+          } else {
+            update = result
+
+            saveDocuments()
+          }
+        })
+      } else {
+        saveDocuments()
+      }
+    })
+  }
+
+  if (this.connection.db) return startUpdate(this.connection.db)
+
+  // if the db is not connected queue the update
+  this.connection.once('connect', startUpdate)
+}
 
 /**
  * Delete a document from the database
@@ -814,46 +829,60 @@ Model.prototype.update = function (query, update, internals, done) {
  * @api public
  */
 Model.prototype.delete = function (query, done) {
-    // apply any existing `beforeDelete` hooks
-    if (this.settings.hasOwnProperty('hooks') && (typeof this.settings.hooks.beforeDelete === 'object')) {
-        query = this.settings.hooks.beforeDelete.reduce((function (previous, current, index) {
-            var hook = new Hook(this.settings.hooks.beforeDelete[index], 'beforeDelete');
+  var validation = this.validate.query(query)
+  if (!validation.success) {
+    err = validationError('Bad Query')
+    err.json = validation
+    return done(err)
+  }
 
-            return hook.apply(previous);
-        }).bind(this), query);
+  this.castToBSON(query)
+
+  var startDelete = (database) => {
+    // apply any existing `beforeDelete` hooks, otherwise delete the documents straight away
+    if (this.settings.hooks && this.settings.hooks.beforeDelete) {
+      async.reduce(this.settings.hooks.beforeDelete, query, (current, hookConfig, callback) => {
+        var hook = new Hook(hookConfig, 'beforeDelete')
+        var hookError = {}
+
+        Promise.resolve(hook.apply(current, hookError)).then((newQuery) => {
+          callback((newQuery === null) ? {} : null, newQuery)
+        }).catch((err) => {
+          callback(err)
+        })
+      }, (err, result) => {
+        if (err) {
+          done(err)
+        } else {
+          deleteDocuments(database)
+        }
+      })
+    } else {
+      deleteDocuments(database)
     }
+  }
 
-    var validation = this.validate.query(query);
-    if (!validation.success) {
-        err = validationError('Bad Query');
-        err.json = validation;
-        return done(err);
-    }
+  var deleteDocuments = (database) => {
+    database.collection(this.name).remove(query, (err, docs) => {
+      if (!err && (docs > 0)) {
+        // apply any existing `afterDelete` hooks
+        if (this.settings.hasOwnProperty('hooks') && (typeof this.settings.hooks.afterDelete === 'object')) {
+          this.settings.hooks.afterDelete.forEach((hookConfig, index) => {
+            var hook = new Hook(this.settings.hooks.afterDelete[index], 'afterDelete')
 
-    this.castToBSON(query);
+            return hook.apply(query)
+          });
+        }
+      }
 
-    var self = this;
-    var _done = function (database) {
-        database.collection(self.name).remove(query, function (err, docs) {
-            if (!err && (docs > 0)) {
-                // apply any existing `afterDelete` hooks
-                if (self.settings.hasOwnProperty('hooks') && (typeof self.settings.hooks.afterDelete === 'object')) {
-                    self.settings.hooks.afterDelete.forEach(function (hookConfig, index) {
-                        var hook = new Hook(self.settings.hooks.afterDelete[index], 'afterDelete');
+      done(err, docs)
+    })
+  }
 
-                        return hook.apply(query);
-                    });
-                }
-            }
+  if (this.connection.db) return startDelete(this.connection.db)
 
-            done.apply(this, arguments);
-        });
-    };
-
-    if (this.connection.db) return _done(this.connection.db);
-
-    // if the db is not connected queue the delete
-    this.connection.once('connect', _done);
+  // if the db is not connected queue the delete
+  this.connection.once('connect', startDelete)
 };
 
 /**

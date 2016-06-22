@@ -40,7 +40,7 @@ Layout.prototype.resolve = function (document) {
 
       document._layout[section].forEach(function (block, blockIndex) {
         result.splice(schemaSection.position + blockIndex + counter, 0, {
-          content: document[block.source][block.index],
+          content: isNaN(block.index) ? document[block.source] : document[block.source][block.index],
           displayName: schemaSection.displayName,
           free: true,
           name: schemaSection.name,
@@ -85,7 +85,7 @@ Layout.prototype.validate = function (document) {
       }
 
       // Check if `index` is within bounds
-      if (!util.isArray(document[block.source]) || (document[block.source].length <= block.index)) {
+      if (!isNaN(block.index) && (!util.isArray(document[block.source]) || (document[block.source].length <= block.index))) {
         return errors.push({field: '_layout', message: block.index + ' is not a valid index for field ' + block.source});
       }
 

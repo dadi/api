@@ -160,7 +160,7 @@ Server.prototype.loadApi = function (options) {
 
     self.updateHooks(hookPath)
     self.addMonitor(hookPath, function (hook) {
-      self.updateHooks(dirname)
+      self.updateHooks(hookPath)
     })
 
     // Load initial api descriptions

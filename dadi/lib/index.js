@@ -160,7 +160,7 @@ Server.prototype.loadApi = function (options) {
 
     self.updateHooks(hookPath)
     self.addMonitor(hookPath, function (hook) {
-      self.updateHooks(dirname)
+      self.updateHooks(hookPath)
     })
 
     // Load initial api descriptions
@@ -1025,21 +1025,21 @@ function onListening(server) {
 
   var address = server.address()
 
+  var message = "Started DADI API '" + config.get('app.name') + "' (" + version + ", Node.JS v" + nodeVersion + ", " + env + " mode) on " + address.address + ":" + address.port;
+  var startText = '\n\n';
+  startText += '  ----------------------------\n';
+  startText += '  ' + config.get('app.name').green + '\n';
+  startText += '  Started \'DADI API\'\n';
+  startText += '  ----------------------------\n';
+  startText += '  Server:      '.green + address.address + ':' + address.port + '\n';
+  startText += '  Version:     '.green + version + '\n';
+  startText += '  Node.JS:     '.green + nodeVersion + '\n';
+  startText += '  Environment: '.green + env + '\n';
+  startText += '  ----------------------------\n';
+
+  startText += '\n\n  Copyright ' + String.fromCharCode(169) + ' 2015 DADI+ Limited (https://dadi.tech)'.white +'\n';
+
   if (env !== 'test') {
-    var message = "Started DADI API '" + config.get('app.name') + "' (" + version + ", Node.JS v" + nodeVersion + ", " + env + " mode) on " + address.address + ":" + address.port;
-    var startText = '\n\n';
-    startText += '  ----------------------------\n';
-    startText += '  ' + config.get('app.name').green + '\n';
-    startText += '  Started \'DADI API\'\n';
-    startText += '  ----------------------------\n';
-    startText += '  Server:      '.green + address.address + ':' + address.port + '\n';
-    startText += '  Version:     '.green + version + '\n';
-    startText += '  Node.JS:     '.green + nodeVersion + '\n';
-    startText += '  Environment: '.green + env + '\n';
-    startText += '  ----------------------------\n';
-
-    startText += '\n\n  Copyright ' + String.fromCharCode(169) + ' 2015 DADI+ Limited (https://dadi.tech)'.white +'\n';
-
     console.log(startText)
   }
 }

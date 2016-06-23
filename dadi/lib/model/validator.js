@@ -159,7 +159,6 @@ function _validate(field, schema, key) {
       message += JSON.stringify(newSchema, null, 2);
       log.warn(message);
       throw new Error(message);
-      if (field.toString().length > Number(newSchema[key].validation.maxLength)) return schema.message || 'is too long';
     }
 
     // check validation regex
@@ -172,7 +171,6 @@ function _validate(field, schema, key) {
       message += JSON.stringify(newSchema, null, 2);
       log.warn(message);
       throw new Error(message);
-      if (!new RegExp(schema.validationRule).test(field)) return schema.message || 'is invalid';
     }
 
     if (schema.type === 'ObjectID') {

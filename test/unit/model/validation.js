@@ -51,6 +51,36 @@ describe('Model validator', function () {
         done();
       });
 
+      it('should throw error if `limit` is used in schema', function (done) {
+        var validator = new Validator({
+          schema: {
+            field1: {
+              type: 'String',
+              required: false,
+              limit: 9
+            }
+          }
+        });
+
+        should.throws(function() { validator.schema({field1: '1234567890'}) })
+        done();
+      });
+
+      it('should throw error if `validationRule` is used in schema', function (done) {
+        var validator = new Validator({
+          schema: {
+            field1: {
+              type: 'String',
+              required: false,
+              validationRule: '/a-z/'
+            }
+          }
+        });
+
+        should.throws(function() { validator.schema({field1: '1234567890'}) })
+        done();
+      });
+
       describe('DateTime', function () {
         it('should inform of invalid DateTime', function (done) {
           var validator = new Validator({

@@ -2628,6 +2628,27 @@ describe('Application', function () {
           .expect(404)
           .end(done)
       })
+
+      it('should return all loaded endpoints', function (done) {
+        request(connectionString)
+          .get('/api/endpoints')
+          .set('Authorization', 'Bearer ' + bearerToken)
+          .expect(200)
+          .expect('content-type', 'application/json')
+          .end(function (err, res) {
+            if (err) return done(err)
+
+            res.body.should.be.Object
+            res.body.endpoints.should.be.Array
+
+            _.each(res.body.endpoints, function (endpoint) {
+              should.exist(endpoint.version)
+              should.exist(endpoint.path)
+            })
+
+            done()
+          })
+      })
     })
 
     describe('DELETE', function () {
@@ -2637,6 +2658,71 @@ describe('Application', function () {
           .set('Authorization', 'Bearer ' + bearerToken)
           .expect(404)
           .end(done)
+      })
+    })
+  })
+
+  describe('hooks config api', function () {
+
+    before(function (done) {
+      app.start(function () {
+        help.getBearerTokenWithAccessType('admin', function (err, token) {
+          if (err) return done(err)
+
+          bearerToken = token
+          done()
+        })
+      })
+    })
+
+    after(function (done) {
+      app.stop(function (err) {
+        if (err) return done(err)
+        done()
+      })
+    })
+
+    it('should return all loaded hooks', function (done) {
+      request(connectionString)
+      .get('/api/hooks')
+      .set('Authorization', 'Bearer ' + bearerToken)
+      .expect(200)
+      .expect('content-type', 'application/json')
+      .end(function (err, res) {
+        if (err) return done(err)
+
+        res.body.should.be.Object
+        res.body.hooks.should.be.Array
+
+        _.each(res.body.hooks, function (hook) {
+          should.exist(hook.name)
+        })
+        done()
+      })
+    })
+
+    it('should return 400 if request method is not supported', function (done) {
+      request(connectionString)
+      .put('/api/hooks/xx/config')
+      .set('Authorization', 'Bearer ' + bearerToken)
+      .expect(400, done)
+    })
+
+    it('should return 404 if specified hook is not found', function (done) {
+      request(connectionString)
+      .get('/api/hooks/xx/config')
+      .set('Authorization', 'Bearer ' + bearerToken)
+      .expect(404, done)
+    })
+
+    it('should return the hook as text if specified hook is found', function (done) {
+      request(connectionString)
+      .get('/api/hooks/slugify/config')
+      .set('Authorization', 'Bearer ' + bearerToken)
+      .end(function(err, res) {
+        res.statusCode.should.eql(200)
+        res.text.should.not.eql('')
+        done()
       })
     })
   })

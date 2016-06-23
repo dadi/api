@@ -41,9 +41,9 @@ if (config.get('cluster')) {
       cluster.fork();
     })
 
-    // Watch the current directory for a "restart.web" file
+    // Watch the current directory for a "restart.api" file
     var watcher = chokidar.watch(process.cwd(), {
-      depth: 0,
+      depth: 1,
       ignored: /[\/\\]\./,
       ignoreInitial: true
     })
@@ -55,6 +55,13 @@ if (config.get('cluster')) {
         restartWorkers()
       }
     })
+
+    // watcher.on('change', function(filePath) {
+    //   if (/config\.(.*)\.json/.test(path.basename(filePath))) {
+    //     log.info('Shutdown requested')
+    //     restartWorkers()
+    //   }
+    // })
   }
   else {
     // Start Workers

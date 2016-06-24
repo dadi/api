@@ -675,7 +675,7 @@ Model.prototype.update = function (query, update, internals, done) {
         data.results = data.results.map(this.layout.resolve.bind(this.layout))
       }
 
-      return doneFn.apply(this, arguments)
+      return doneFn(err, data)
     })
   }
 

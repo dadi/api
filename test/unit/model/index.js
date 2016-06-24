@@ -292,6 +292,28 @@ describe('Model', function () {
       done()
     })
 
+    it('should allow $in query to convert Strings to ObjectIDs for Reference fields', function (done) {
+      var fields = help.getModelSchema()
+      var schema = {}
+      schema.fields = fields
+
+      schema.fields.field2 = _.extend({}, schema.fields.fieldName, {
+        type: 'Reference',
+        required: false
+      })
+
+      var mod = model('testModelName', schema)
+
+      var query = { 'field2': { '$in': ['55cb1658341a0a804d4dadcc'] } }
+
+      query = mod.convertApparentObjectIds(query)
+
+      var type = typeof query.field2
+      type.should.eql('object')
+
+      done()
+    })
+
     it('should not convert (sub query) Strings to ObjectIDs when a field type is Object', function (done) {
       var fields = help.getModelSchema()
       var schema = {}
@@ -945,7 +967,8 @@ describe('Model', function () {
           mod.update({ fieldName: 'foo_1' }, { refField: anotherDoc._id }, function (err, result) {
             // doc1 should now have anotherDoc == doc3
             mod.find({fieldName: 'foo_1'}, { 'compose': true }, function (err, result) {
-              // console.log(JSON.stringify(result))
+
+              console.log(JSON.stringify(result))
 
               var doc = result.results[0]
               should.exist(doc.refField.fieldName)

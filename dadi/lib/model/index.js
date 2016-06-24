@@ -343,7 +343,7 @@ Model.prototype.convertApparentObjectIds = function (query) {
       if (typeof type !== 'undefined' && type === 'Object') {
         // ignore
       }
-      else if (type !== 'Reference') {
+      else {
         query[key] = self.convertApparentObjectIds(query[key])
       }
     }

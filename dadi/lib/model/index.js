@@ -49,11 +49,7 @@ var Model = function (name, schema, conn, settings, database) {
     this.connection = connection()
   }
 
-  // add default handler to ensure there's no uncaught errors
   var self = this
-  // this.connection.on('error', function (err) {
-  //   console.log('Connection error for collection "' + self.name + '" (' + err + '). Using connection string "' + self.connection.connectionString + '"')
-  // })
 
   _models[name] = this
 
@@ -77,9 +73,12 @@ var Model = function (name, schema, conn, settings, database) {
     && this.settings.index.hasOwnProperty('enabled')
     && this.settings.index.enabled == true
     && this.settings.index.hasOwnProperty('keys')) {
-    this.createIndex(function (err, indexName) {
-      if (err) console.log(err)
-    })
+      if (Object.keys(this.settings.index.keys).length === 1 && Object.keys(this.settings.index.keys)[0] === '_id') {
+      } else {
+        this.createIndex(function (err, indexName) {
+          if (err) console.log(err)
+        })
+      }
   }
 }
 
@@ -237,16 +236,7 @@ Model.prototype.create = function (obj, internals, done) {
         })
       }
 
-      // if (self.history) {
-      //     self.history.createEach(obj, self, function (err, res) {
-      //         if (err) return done(err)
-      //
-      //         return done(null, results)
-      //     })
-      // }
-      // else {
       return done(null, results)
-    // }
     })
   }
 
@@ -465,30 +455,50 @@ Model.prototype.find = function (query, options, done) {
     options = {}
   }
 
-  if (this.layout) {
-    var doneFn = done
+  // Set up a queue of functions to run before finally sending
+  // data back to the client
+  var doneQueue = []
+  var runDoneQueue = function(err, data) {
+    if (doneQueue.length > 0) {
+      // Assign err, data to the first function
+      doneQueue.splice(0, 0, async.apply(assignVariables, err, data))
+      // Run the queue tasks
+      async.waterfall(doneQueue, function (arg1, err, data) {
+        // Return data
+        return done(err, data)
+      }.bind(this))
+    } else {
+      // Nothing queued, send data back
+      return done(err, data)
+    }
+  }
 
-    done = (function (err, data) {
+  // Assign (err, data) variables to the first function in the queue
+  function assignVariables(err, data, callback) {
+    callback(null, err, data)
+  }
+
+  // Queue the layout resolving function
+  if (this.layout) {
+    doneQueue.push(function (err, data, callback) {
       if (!err) {
         data.results = data.results.map(this.layout.resolve.bind(this.layout))
       }
-
-      return doneFn.apply(this, arguments)
-    }).bind(this)
+      return callback(null, err, data)
+    }.bind(this))
   }
 
+  // Queue the history resolving function
   if (options.includeHistory) {
-    var doneFn = done
-
-    done = (function (err, data) {
+    doneQueue.push(function (err, data, callback) {
       if (err) {
-        return doneFn(err, data)
+        return callback(null, err, data)
       } else {
         this.injectHistory(data).then(function (data) {
-          return doneFn(null, data)
+          return callback(null, err, data)
         })
       }
-    }).bind(this)
+    }.bind(this))
 
     delete options.includeHistory
   }
@@ -543,12 +553,12 @@ Model.prototype.find = function (query, options, done) {
               self.composer.compose(result, function (obj) {
                 results.results = obj
                 results.metadata = getMetadata(options, count)
-                done(null, results)
+                runDoneQueue(null, results)
               })
             } else {
               results.results = result
               results.metadata = getMetadata(options, count)
-              done(null, results)
+              runDoneQueue(null, results)
             }
           })
         })
@@ -577,9 +587,9 @@ Model.prototype.revisions = function (id, done) {
       if (err) return done(err)
 
       if (self.history) {
-        var query = { '_id': { '$in': _.map(doc.history, function (id) { return id.toString() }) } }
+        var query = { '_id': { '$in': _.map(doc.history, function (id) { return ObjectID.createFromHexString(id.toString()) }) } }
 
-        database.collection(self.revisionCollection).find({}).toArray(function (err, items) {
+        database.collection(self.revisionCollection).find(query).toArray(function (err, items) {
           if (err) return done(err)
           return done(null, items)
         })
@@ -675,7 +685,7 @@ Model.prototype.update = function (query, update, internals, done) {
         data.results = data.results.map(this.layout.resolve.bind(this.layout))
       }
 
-      return doneFn.apply(this, arguments)
+      return doneFn(err, data)
     })
   }
 

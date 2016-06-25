@@ -12,9 +12,28 @@ var app = require(__dirname + '/../../dadi/lib/')
 // variables scoped for use throughout tests
 var bearerToken
 var connectionString = 'http://' + config.get('server.host') + ':' + config.get('server.port')
+var lastModifiedAt = 0
 
 describe('Application', function () {
+  before(function(done) {
+    // read "lastModifiedAt": 1466832329170
+    // of workspace/collections/vtest/testdb
+    var dirs = config.get('paths')
+    var schemaPath = path.resolve(dirs.collections + '/vtest/testdb/collection.test-schema.json')
+    var schema = JSON.parse(fs.readFileSync(schemaPath).toString())
+    lastModifiedAt = schema.settings.lastModifiedAt
+    done()
+  })
+
   after(function (done) {
+    // reset "lastModifiedAt": 1466832329170
+    // of workspace/collections/vtest/testdb
+    var dirs = config.get('paths')
+    var schemaPath = path.resolve(dirs.collections + '/vtest/testdb/collection.test-schema.json')
+    var schema = JSON.parse(fs.readFileSync(schemaPath).toString())
+    schema.settings.lastModifiedAt = lastModifiedAt
+    fs.writeFileSync(schemaPath, JSON.stringify(schema, null, 2))
+
     help.removeTestClients(done)
   })
 
@@ -1347,7 +1366,54 @@ describe('Application', function () {
               done()
             })
         })
+      })
 
+      it('should add history to results when querystring param HHistory=true', function (done) {
+
+        var client = request(connectionString)
+
+        client
+        .post('/vtest/testdb/test-schema')
+        .set('Authorization', 'Bearer ' + bearerToken)
+        .send({field1: 'original field content'})
+        .expect(200)
+        .end(function (err, res) {
+          if (err) return done(err)
+
+          var doc = res.body.results[0]
+
+          var body = {
+            query: { _id: doc._id },
+            update: {field1: 'updated'}
+          }
+
+          client
+          .put('/vtest/testdb/test-schema/')
+          .set('Authorization', 'Bearer ' + bearerToken)
+          .send(body)
+          .expect(200)
+          .end(function (err, res) {
+            if (err) return done(err)
+
+            res.body.results[0]._id.should.equal(doc._id)
+            res.body.results[0].field1.should.equal('updated')
+
+            client
+            .get('/vtest/testdb/test-schema?includeHistory=true&filter={"_id": "' + doc._id + '"}')
+            .set('Authorization', 'Bearer ' + bearerToken)
+            .expect(200)
+            .expect('content-type', 'application/json')
+            .end(function (err, res) {
+              if (err) return done(err)
+
+              res.body['results'].should.exist
+              res.body['results'].should.be.Array
+              res.body['results'][0].history.should.exist
+              res.body['results'][0].history[0].field1.should.eql('original field content')
+              done()
+            })
+          })
+        })
       })
 
       it('should return single document when querystring param count=1', function (done) {

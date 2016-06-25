@@ -121,6 +121,11 @@ Controller.prototype.prepareQueryOptions = function(options) {
       queryOptions.compose = options.compose === 'true';
   }
 
+  // history
+  if (options.includeHistory) {
+      queryOptions.includeHistory = options.includeHistory === 'true';
+  }
+
   // sorting
   var sort = {};
   var sortOptions = help.isJSON(options.sort);

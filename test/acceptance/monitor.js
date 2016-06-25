@@ -53,17 +53,12 @@ describe('File system watching', function () {
     var testSchema = fs.readFileSync(originalSchemaPath)
     var testEndpoint = fs.readFileSync(originalEndpointPath)
 
-    fs.writeFile(testSchemaPath, testSchema, function (err, result) {
-      if (err) return done(err)
+    fs.writeFileSync(testSchemaPath, testSchema)
+    fs.writeFileSync(testEndpointPath, testEndpoint)
 
-      fs.writeFile(testEndpointPath, testEndpoint, function (err, result) {
-        if (err) return done(err)
-
-        setTimeout(function () {
-          done()
-        }, 500)
-      })
-    })
+    setTimeout(function () {
+      done()
+    }, 500)
   })
 
   describe('changing files', function () {

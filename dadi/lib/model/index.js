@@ -333,7 +333,7 @@ Model.prototype.convertApparentObjectIds = function (query) {
       if (typeof type !== 'undefined' && type === 'Object') {
         // ignore
       }
-      else if(type !== 'Reference') { //Don't return Reference fields for conversion
+      else if (typeof type === 'undefined' || type !== 'Reference') { // Don't convert query id when it's a Reference field
         query[key] = self.convertApparentObjectIds(query[key])
       }
     }

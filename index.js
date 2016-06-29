@@ -1,1 +1,1 @@
-module.exports = require('./dadi/lib');
+module.exports = require('./dadi/lib')

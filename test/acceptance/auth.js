@@ -34,12 +34,10 @@ describe('Authentication', function () {
     });
 
     afterEach(function (done) {
-        var testSchema = fs.readFileSync(originalSchemaPath, {encoding: 'utf8'});
-        testSchema = testSchema.replace('newField', 'field1');
-        fs.writeFile(testSchemaPath, testSchema, function (err) {
-          if (err) throw err;
-          done();
-        });
+      var testSchema = fs.readFileSync(originalSchemaPath, {encoding: 'utf8'})
+      testSchema = testSchema.replace('newField', 'field1')
+      fs.writeFileSync(testSchemaPath, testSchema)
+      done()
     })
 
     it('should issue a bearer token', function (done) {

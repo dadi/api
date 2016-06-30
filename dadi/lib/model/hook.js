@@ -1,10 +1,11 @@
-var config = require(__dirname + '/../../../config');
+var config = require(__dirname + '/../../../config')
 
 /**
  * Creates a new hook. Allowed types:
  *
  * beforeCreate
  * afterCreate
+ * afterGet
  * beforeUpdate
  * afterUpdate
  * beforeDelete
@@ -17,15 +18,15 @@ var config = require(__dirname + '/../../../config');
  */
 var Hook = function (data, type) {
   if (typeof data === 'string') {
-    this.name = data;
+    this.name = data
   } else {
-    this.name = data.hook;
-    this.options = data.options;
+    this.name = data.hook
+    this.options = data.options
   }
 
-  this.hook = this.load();
-  this.type = type;
-};
+  this.hook = this.load()
+  this.type = type
+}
 
 /**
  * Calls the hook function with the appropriate parameters based
@@ -39,45 +40,59 @@ Hook.prototype.apply = function () {
   switch (this.type) {
     case 'beforeCreate':
       return this.hook(arguments[0], this.type, {
-        options: this.options
-      });
+        options: this.options,
+        req: arguments[2],
+        schema: arguments[1]
+      })
 
     case 'afterCreate':
       return this.hook(arguments[0], this.type, {
         options: this.options
-      });
+      })
+
+    case 'afterGet':
+      return this.hook(arguments[0], this.type, {
+        options: this.options,
+        req: arguments[2],
+        schema: arguments[1]
+      })
 
     case 'beforeUpdate':
       return this.hook(arguments[0], this.type, {
-        updatedDocs: arguments[1],
-        options: this.options
-      });
+        options: this.options,
+        req: arguments[3],
+        schema: arguments[2],
+        updatedDocs: arguments[1]
+      })
 
     case 'afterUpdate':
       return this.hook(arguments[0], this.type, {
         options: this.options
-      });
+      })
 
     case 'beforeDelete':
       return this.hook(arguments[0], this.type, {
-        options: this.options
-      });
+        error: arguments[1],
+        options: this.options,
+        req: arguments[3],
+        schema: arguments[2]
+      })
 
     case 'afterDelete':
       return this.hook(arguments[0], this.type, {
         options: this.options
-      });
+      })
   }
 
-  return false;
-};
+  return false
+}
 
 Hook.prototype.load = function () {
-  return require(require('path').resolve(config.get('paths.hooks')) + '/' + this.name);
+  return require(require('path').resolve(config.get('paths.hooks')) + '/' + this.name)
 }
 
 module.exports = function (data, type) {
-  return new Hook(data, type);
-};
+  return new Hook(data, type)
+}
 
-module.exports.Hook = Hook;
+module.exports.Hook = Hook

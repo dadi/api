@@ -241,7 +241,7 @@ describe('Hook', function () {
       })
     })
 
-    it('should not insert documents that fail asynchronous beforeCreate processing', function (done) {
+    it('should not insert documents that fail asynchronous beforeCreate processing', function () {
       var conn = connection()
       var schema = help.getModelSchema()
       schema.title = { type: 'String', required: false }
@@ -259,17 +259,16 @@ describe('Hook', function () {
 
       var mod = model('testModelName', schema, conn, settings)
 
-      mod.create(docs, function (err, result) {
-        if (err) return done(err)
-
+      return mod.create(docs, function (err, result) {
         hook.Hook.prototype.load.restore()
+
+        if (err) return done(err)
 
         // find the objs we just created
         mod.find({fieldName: 'foo'}, function (err, doc) {
           if (err) return done(err)
           doc.results.length.should.eql(1)
           doc.results[0].slug.should.eql('article-one')
-          done()
         })
       })
     })
@@ -293,9 +292,12 @@ describe('Hook', function () {
       var mod = model('testModelName', schema, conn, settings)
 
       mod.create(docs, function (err, result) {
-        if (err) return done(err)
-
         hook.Hook.prototype.load.restore()
+
+        console.log(err)
+        console.log(result)
+
+        if (err) return done(err)
 
         // find the objs we just created
         mod.find({fieldName: 'foo'}, function (err, doc) {

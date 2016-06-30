@@ -86,7 +86,7 @@ function _parseDocument (obj, schema, response) {
       else if (obj[key] !== null && !util.isArray(obj[key])) {
         _parseDocument(obj[key], schema, response)
       }
-      else if (obj[key] !== null && schema[key].type === 'ObjectID' && util.isArray(obj[key])) {
+      else if (obj[key] !== null && schema[key] && schema[key].type === 'ObjectID' && util.isArray(obj[key])) {
         var err = _validate(obj[key], schema[key], key)
 
         if (err) {
@@ -94,7 +94,7 @@ function _parseDocument (obj, schema, response) {
           response.errors.push({field: key, message: err})
         }
       }
-      else if (util.isArray(obj[key]) && (schema[key].type === 'String')) {
+      else if (util.isArray(obj[key]) && schema[key] && (schema[key].type === 'String')) {
         // We allow type `String` to actually be an array of Strings. When this
         // happens, we run the validation against the combination of all strings
         // glued together.

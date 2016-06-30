@@ -8,7 +8,6 @@ var Composer = require(__dirname + '/../composer').Composer
 var moment = require('moment')
 var ObjectID = require('mongodb').ObjectID
 var Hook = require(__dirname + '/hook')
-var Layout = require(__dirname + '/layout')
 var _ = require('underscore')
 var util = require('util')
 
@@ -25,9 +24,6 @@ var Model = function (name, schema, conn, settings, database) {
 
   // attach default settings
   this.settings = settings || {}
-
-  // create Layout if applicable
-  this.layout = this.settings.layout ? new Layout(settings.layout) : undefined
 
   // attach display name if supplied
   if (this.settings.hasOwnProperty('displayName')) {
@@ -110,7 +106,7 @@ Model.prototype.createIndex = function (done) {
  * @return undefined
  * @api public
  */
-Model.prototype.create = function (obj, internals, done) {
+Model.prototype.create = function (obj, internals, done, req) {
   var self = this
 
   if (!(obj instanceof Array)) {
@@ -120,18 +116,6 @@ Model.prototype.create = function (obj, internals, done) {
   // internals will not be validated, i.e. should not be user input
   if (typeof internals === 'function') {
     done = internals
-  }
-
-  if (this.layout) {
-    var doneFn = done
-
-    done = (function (err, data) {
-      if (!err) {
-        data.results = data.results.map(this.layout.resolve.bind(this.layout))
-      }
-
-      return doneFn.apply(this, arguments)
-    }).bind(this)
   }
 
   // validate each doc
@@ -178,8 +162,6 @@ Model.prototype.create = function (obj, internals, done) {
   })
 
   var startInsert = (database) => {
-    var abortedInserts = []
-
     // Running `beforeCreate` hooks
     if (this.settings.hooks && this.settings.hooks.beforeCreate) {
       var processedDocs = 0
@@ -188,27 +170,25 @@ Model.prototype.create = function (obj, internals, done) {
         async.reduce(this.settings.hooks.beforeCreate, doc, (current, hookConfig, callback) => {
           var hook = new Hook(hookConfig, 'beforeCreate')
 
-          Promise.resolve(hook.apply(current)).then((newDoc) => {
+          Promise.resolve(hook.apply(current, this.schema, req)).then((newDoc) => {
             callback((newDoc === null) ? {} : null, newDoc)
           }).catch((err) => {
             callback(err)
           })
         }, (err, result) => {
-          if (err) {
-            abortedInserts.push(docIndex)
-          }
-
-          doc = err ? undefined : result
-
           processedDocs++
 
           if (processedDocs === obj.length) {
-            // Remove aborted inserts from the list
-            obj = obj.filter((item, index) => {
-              return (abortedInserts.indexOf(index) === -1)
-            })
+            if (err) {
+              var errorResponse = {
+                success: false,
+                errors: err
+              }
 
-            saveDocuments(database)
+              done(errorResponse)
+            } else {
+              saveDocuments(database)
+            }
           }
         })
       })
@@ -390,18 +370,6 @@ Model.prototype.count = function (query, options, done) {
     options = {}
   }
 
-  if (this.layout) {
-    var doneFn = done
-
-    done = (function (err, data) {
-      if (!err) {
-        data.results = data.results.map(this.layout.resolve.bind(this.layout))
-      }
-
-      return doneFn.apply(this, arguments)
-    }).bind(this)
-  }
-
   query = this.makeCaseInsensitive(query)
   query = this.convertApparentObjectIds(query)
 
@@ -476,16 +444,6 @@ Model.prototype.find = function (query, options, done) {
   // Assign (err, data) variables to the first function in the queue
   function assignVariables(err, data, callback) {
     callback(null, err, data)
-  }
-
-  // Queue the layout resolving function
-  if (this.layout) {
-    doneQueue.push(function (err, data, callback) {
-      if (!err) {
-        data.results = data.results.map(this.layout.resolve.bind(this.layout))
-      }
-      return callback(null, err, data)
-    }.bind(this))
   }
 
   // Queue the history resolving function
@@ -579,6 +537,34 @@ Model.prototype.find = function (query, options, done) {
   })
 }
 
+/**
+ * Lookup documents in the database and run any associated hooks
+ *
+ * @param {Object} query
+ * @param {Function} done
+ * @return undefined
+ * @api public
+ */
+Model.prototype.get = function (query, options, done, req) {
+  this.find(query, options, (err, results) => {
+    if (this.settings.hooks && this.settings.hooks.afterGet) {
+      async.reduce(this.settings.hooks.afterGet, results, (current, hookConfig, callback) => {
+        var hook = new Hook(hookConfig, 'afterGet')
+
+        Promise.resolve(hook.apply(current, this.schema, req)).then((newResults) => {
+          callback((newResults === null) ? {} : null, newResults)
+        }).catch((err) => {
+          callback(err)
+        })
+      }, (err, finalResult) => {
+        done(err, finalResult)
+      })
+    } else {
+      done(err, results)
+    }
+  })
+}
+
 Model.prototype.revisions = function (id, done) {
   var self = this
 
@@ -653,7 +639,7 @@ Model.prototype.stats = function (options, done) {
  * @return undefined
  * @api public
  */
-Model.prototype.update = function (query, update, internals, done) {
+Model.prototype.update = function (query, update, internals, done, req) {
 
   // internals will not be validated, i.e. should not be user input
   if (typeof internals === 'function') {
@@ -675,18 +661,6 @@ Model.prototype.update = function (query, update, internals, done) {
     err = validationError()
     err.json = validation
     return done(err)
-  }
-
-  if (this.layout) {
-    var doneFn = done
-
-    done = ((err, data) => {
-      if (!err) {
-        data.results = data.results.map(this.layout.resolve.bind(this.layout))
-      }
-
-      return doneFn(err, data)
-    })
   }
 
   // ObjectIDs
@@ -784,7 +758,7 @@ Model.prototype.update = function (query, update, internals, done) {
         async.reduce(this.settings.hooks.beforeUpdate, update, (current, hookConfig, callback) => {
           var hook = new Hook(hookConfig, 'beforeUpdate')
 
-          Promise.resolve(hook.apply(current, updatedDocs)).then((newUpdate) => {
+          Promise.resolve(hook.apply(current, updatedDocs, this.schema, req)).then((newUpdate) => {
             callback((newUpdate === null) ? {} : null, newUpdate)
           }).catch((err) => {
             callback(err)
@@ -818,7 +792,7 @@ Model.prototype.update = function (query, update, internals, done) {
  * @return undefined
  * @api public
  */
-Model.prototype.delete = function (query, done) {
+Model.prototype.delete = function (query, done, req) {
   var validation = this.validate.query(query)
   if (!validation.success) {
     err = validationError('Bad Query')
@@ -835,7 +809,7 @@ Model.prototype.delete = function (query, done) {
         var hook = new Hook(hookConfig, 'beforeDelete')
         var hookError = {}
 
-        Promise.resolve(hook.apply(current, hookError)).then((newQuery) => {
+        Promise.resolve(hook.apply(current, hookError, this.schema, req)).then((newQuery) => {
           callback((newQuery === null) ? {} : null, newQuery)
         }).catch((err) => {
           callback(err)

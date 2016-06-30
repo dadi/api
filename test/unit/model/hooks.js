@@ -45,7 +45,7 @@ failingSyncHook += '  if (!text) return ""\n'
 failingSyncHook += '  return text.toString().toLowerCase().replace(/ /g, "-")\n'
 failingSyncHook += '}\n'
 failingSyncHook += 'module.exports = function (obj, type, data) { \n'
-failingSyncHook += '  if (obj[data.options.from] === "Article One") return null\n'
+failingSyncHook += '  if (obj[data.options.from] === "Article One") return Promise.reject("some message")\n'
 failingSyncHook += '  obj[data.options.to] = slugify(obj[data.options.from])\n'
 failingSyncHook += '}\n'
 var failingSyncFunction = eval(failingSyncHook)
@@ -241,7 +241,7 @@ describe('Hook', function () {
       })
     })
 
-    it('should not insert documents that fail asynchronous beforeCreate processing', function (done) {
+    it('should not insert documents that fail asynchronous beforeCreate processing', function () {
       var conn = connection()
       var schema = help.getModelSchema()
       schema.title = { type: 'String', required: false }
@@ -259,22 +259,21 @@ describe('Hook', function () {
 
       var mod = model('testModelName', schema, conn, settings)
 
-      mod.create(docs, function (err, result) {
-        if (err) return done(err)
-
+      return mod.create(docs, function (err, result) {
         hook.Hook.prototype.load.restore()
+
+        if (err) return done(err)
 
         // find the objs we just created
         mod.find({fieldName: 'foo'}, function (err, doc) {
           if (err) return done(err)
           doc.results.length.should.eql(1)
           doc.results[0].slug.should.eql('article-one')
-          done()
         })
       })
     })
 
-    it('should not insert documents that fail synchronous beforeCreate processing', function (done) {
+    it('should not insert documents that fail synchronous beforeCreate processing', function () {
       var conn = connection()
       var schema = help.getModelSchema()
       schema.title = { type: 'String', required: false }
@@ -292,17 +291,12 @@ describe('Hook', function () {
 
       var mod = model('testModelName', schema, conn, settings)
 
-      mod.create(docs, function (err, result) {
-        if (err) return done(err)
-
+      return mod.create(docs, function (err, result) {
         hook.Hook.prototype.load.restore()
 
         // find the objs we just created
         mod.find({fieldName: 'foo'}, function (err, doc) {
-          if (err) return done(err)
-          doc.results.length.should.eql(1)
-          doc.results[0].slug.should.eql('article-two')
-          done()
+          doc.results.should.eql([])
         })
       })
     })

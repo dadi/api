@@ -56,7 +56,7 @@ Controller.prototype.get = function (req, res, next) {
       queryOptions = queryOptions.queryOptions;
     }
 
-    this.model.find(query, queryOptions, done);
+    this.model.get(query, queryOptions, done, req);
 }
 
 Controller.prototype.prepareQueryOptions = function(options) {
@@ -247,14 +247,14 @@ Controller.prototype.post = function (req, res, next) {
               query.apiVersion = internals.apiVersion
             }
 
-            return self.model.update(query, update, internals, sendBackJSON(200, res, next));
+            return self.model.update(query, update, internals, sendBackJSON(200, res, next), req);
         }
 
         // if no id is present, then this is a create
         internals.createdAt = Date.now();
         internals.createdBy = req.client && req.client.clientId;
 
-        self.model.create(req.body, internals, sendBackJSON(200, res, next));
+        self.model.create(req.body, internals, sendBackJSON(200, res, next), req);
     });
 }
 
@@ -293,7 +293,7 @@ Controller.prototype.delete = function (req, res, next) {
             // send no-content success
             res.statusCode = 204;
             res.end();
-        });
+        }, req);
     });
 }
 

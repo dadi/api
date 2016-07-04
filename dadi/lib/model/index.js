@@ -439,38 +439,79 @@ Model.prototype.find = function (query, options, done) {
         _.each(referenceFieldKeys, function (key) {
           var keyParts = key.split('.')
 
-          var referenceCollection = ''
-          var referenceCollectionKey = keyParts[0]
-          var referenceCollectionSettings = queryUtils.getSchemaOrParent(referenceCollectionKey, self.schema).settings || {}
+          var collection = ''
+          var collectionKey = keyParts[0]
+          var linkKey
+          var queryKey
+          var queryValue = referenceFieldQuery[key]
+          var collectionSettings = queryUtils.getSchemaOrParent(collectionKey, self.schema).settings || {}
 
-          if (referenceCollectionKey !== referenceCollectionSettings.collection) {
-            referenceCollection = referenceCollectionSettings.collection
+          if (collectionKey !== collectionSettings.collection) {
+            collection = collectionSettings.collection
           } else {
-            referenceCollection = referenceCollectionKey
+            collection = collectionKey
           }
 
-          var referenceCollectionField = keyParts[1]
-          var referenceCollectionQuery = {}
+          var fieldsObj = {}
+          if (collectionSettings.fields) {
+            collectionSettings.fields.forEach(function (field) {
+              fieldsObj[field] = 1
+            })
+          }
 
-          referenceCollectionQuery[referenceCollectionField] = referenceFieldQuery[key]
+          queryKey = keyParts[1]
+          var collectionQuery = {}
 
-          database.collection(referenceCollection).findOne(referenceCollectionQuery, { fields: { _id: 1 } }, function (err, results) {
+          if (keyParts.length === 2) {
+            collectionQuery[queryKey] = queryValue
+          } else {
+            linkKey = keyParts[1]
+            queryKey = keyParts[2]
+          }
+
+          // query the reference collection
+          database.collection(collection).find(collectionQuery, { fields: fieldsObj, compose: true }, function (err, cursor) {
             if (err) return done(err)
 
-            if (results && results._id) {
-              // update the original query with a query for the obtained _id
-              // using the appropriate query type for whether the reference settings
-              // allows storing as arrays or not
-              query[referenceCollectionKey] = referenceCollectionSettings.multiple
-                ? { '$in': [results._id.toString()] }
-                : results._id.toString()
-            }
+            cursor.toArray(function (err, results) {
+              if (results && results.length) {
+                if (results.length === 1) {
+                  // update the original query with a query for the obtained _id
+                  // using the appropriate query type for whether the reference settings
+                  // allows storing as arrays or not
+                  query[collectionKey] = collectionSettings.multiple
+                    ? { '$in': [results[0]._id.toString()] }
+                    : results[0]._id.toString()
+                } else {
+                  // filter the results using linkKey
+                  // 1. get the _id of the result matching { queryKey: queryValue }
+                  var parent = _.filter(results, function(result) {
+                    return new RegExp(queryValue).test(result[queryKey]) === true
+                  })
 
-            idx++
-            if (idx === referenceFieldKeys.length) {
-              // run the full query against the original collection
-              runFind()
-            }
+                  var childQuery = {}
+                  childQuery[linkKey] = parent[0]._id.toString()
+                  var children = _.where(results, childQuery)
+
+                  var ids = _.map(_.pluck(children, '_id'), function(id) {
+                    return id.toString()
+                  })
+
+                  query[collectionKey] = { '$in': ids }
+                }
+              } else {
+                // Nothing found in the reference collection, add empty criteria to the main query
+                query[collectionKey] = collectionSettings.multiple
+                  ? { '$in': [] }
+                  : ""
+              }
+
+              idx++
+              if (idx === referenceFieldKeys.length) {
+                // run the full query against the original collection
+                runFind()
+              }
+            })
           })
         })
       } else {

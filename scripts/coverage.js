@@ -30,7 +30,7 @@ coberturaBadger(opts, function parsingResults(err, badgeStatus) {
   // open the README.md and add this url
   fs.readFile(readme, {encoding: 'utf-8'}, function (err, body) {
       body = body.replace(/(!\[coverage\]\()(.+?)(\))/g, function(whole, a, b, c) {
-	return a + badgeUrl + '?style=flat-square' + c;
+	return a + badgeUrl.replace('yellow','yellowgreen') + '?style=flat-square' + c;
       });
 
       fs.writeFile(readme, body, {encoding: 'utf-8'}, function (err) {

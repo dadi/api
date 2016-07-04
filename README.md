@@ -1,6 +1,7 @@
 # DADI API
 
-[![npm version](https://badge.fury.io/js/%40dadi%2Fapi.png)](https://badge.fury.io/js/%40dadi%2Fapi)&nbsp;![Coverage](https://img.shields.io/badge/Coverage-87%-yellow.svg?style=flat-square)
+[![npm (scoped)](https://img.shields.io/npm/v/@dadi/api.svg?maxAge=10800&style=flat-square)](https://www.npmjs.com/package/@dadi/api)
+&nbsp;![Coverage](https://img.shields.io/badge/coverage-87%-yellow.svg?style=flat-square)&nbsp;[![Build](http://ci.dadi.technology/dadi/api/badge?branch=master&service=shield)](http://ci.dadi.technology/dadi/api)
 
 ## Overview
 

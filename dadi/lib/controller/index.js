@@ -150,7 +150,7 @@ Controller.prototype.keyValidForSchema = function(key) {
     if (key.indexOf('.') > 0) {
       var keyParts = key.split('.')
       if (this.model.schema.hasOwnProperty(keyParts[0])) {
-        if ((this.model.schema[keyParts[0]].type === 'Mixed') || (this.model.schema[keyParts[0]].type === 'Object')) {
+        if (/Mixed|Object|Reference/.test(this.model.schema[keyParts[0]].type)) {
           return true;
         }
       }

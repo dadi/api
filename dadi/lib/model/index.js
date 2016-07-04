@@ -11,6 +11,8 @@ var Hook = require(__dirname + '/hook')
 var _ = require('underscore')
 var util = require('util')
 
+var queryUtils = require(__dirname + '/utils')
+
 // track all models that have been instantiated by this process
 var _models = {}
 
@@ -248,82 +250,6 @@ Model.prototype.injectHistory = function (data) {
   })
 }
 
-Model.prototype.makeCaseInsensitive = function (obj) {
-  var newObj = _.clone(obj)
-  var self = this
-  _.each(Object.keys(obj), function (key) {
-    if (key === 'apiVersion') {
-      return
-    }
-
-    if (typeof obj[key] === 'string') {
-      if (ObjectID.isValid(obj[key]) && obj[key].match(/^[a-fA-F0-9]{24}$/)) {
-        newObj[key] = obj[key]
-      }
-      else if (key[0] === '$' && key === '$regex') {
-        newObj[key] = new RegExp(obj[key], 'i')
-      }
-      else if (key[0] === '$' && key !== '$regex') {
-        newObj[key] = obj[key]
-      } else {
-        newObj[key] = new RegExp(['^', help.regExpEscape(obj[key]), '$'].join(''), 'i')
-      }
-    }
-    else if (typeof obj[key] === 'object' && obj[key] !== null) {
-      if (key[0] === '$' && key !== '$regex') {
-        newObj[key] = obj[key]
-      } else {
-        newObj[key] = self.makeCaseInsensitive(obj[key])
-      }
-    } else {
-      return obj
-    }
-  })
-
-  return newObj
-}
-
-Model.prototype.convertApparentObjectIds = function (query) {
-  var self = this
-
-  _.each(Object.keys(query), function (key) {
-    if (key === 'apiVersion') {
-      return
-    }
-
-    var type
-    var keyOrParent = (key.split('.').length > 1) ? key.split('.')[0] : key
-
-    if (self.schema[keyOrParent]) {
-      type = self.schema[keyOrParent].type
-    }
-
-    if (key === '$in') {
-      if (typeof query[key] === 'object' && _.isArray(query[key])) {
-        var arr = query[key]
-        _.each(arr, function (value, key) {
-          if (typeof value === 'string' && ObjectID.isValid(value) && value.match(/^[a-fA-F0-9]{24}$/)) {
-            arr[key] = new ObjectID.createFromHexString(value)
-          }
-        })
-        query[key] = arr
-      }
-    }
-    else if (typeof query[key] === 'object' && query[key] !== null) {
-      if (typeof type !== 'undefined' && type === 'Object') {
-        // ignore
-      }
-      else if (typeof type === 'undefined' || type !== 'Reference') { // Don't convert query id when it's a Reference field
-        query[key] = self.convertApparentObjectIds(query[key])
-      }
-    }
-    else if (typeof query[key] === 'string' && type !== 'Object' && ObjectID.isValid(query[key]) && query[key].match(/^[a-fA-F0-9]{24}$/)) {
-      query[key] = new ObjectID.createFromHexString(query[key])
-    }
-  })
-  return query
-}
-
 Model.prototype.convertObjectIdsForSave = function (schema, obj) {
   Object.keys(schema)
     .filter(function (key) { return schema[key].type === 'ObjectID'; })
@@ -370,8 +296,8 @@ Model.prototype.count = function (query, options, done) {
     options = {}
   }
 
-  query = this.makeCaseInsensitive(query)
-  query = this.convertApparentObjectIds(query)
+  query = queryUtils.makeCaseInsensitive(query)
+  query = queryUtils.convertApparentObjectIds(query, self.schema)
 
   var validation = this.validate.query(query)
   if (!validation.success) {
@@ -423,6 +349,8 @@ Model.prototype.find = function (query, options, done) {
     options = {}
   }
 
+  var self = this
+
   // Set up a queue of functions to run before finally sending
   // data back to the client
   var doneQueue = []
@@ -461,10 +389,8 @@ Model.prototype.find = function (query, options, done) {
     delete options.includeHistory
   }
 
-  var self = this
-
-  query = this.makeCaseInsensitive(query)
-  query = this.convertApparentObjectIds(query)
+  query = queryUtils.makeCaseInsensitive(query)
+  query = queryUtils.convertApparentObjectIds(query, self.schema)
 
   var compose = self.compose
 
@@ -495,32 +421,91 @@ Model.prototype.find = function (query, options, done) {
     this.castToBSON(query)
 
     _done = function (database) {
-      database.collection(self.name).find(query, options, function (err, cursor) {
-        if (err) return done(err)
 
-        var results = {}
+      if (queryUtils.containsNestedReferenceFields(query, self.schema)) {
+        var queries = queryUtils.processReferenceFieldQuery(query, self.schema)
 
-        cursor.count(function (err, count) {
-          if (err) return done(err)
+        // processReferenceFieldQuery sends back an array of queries
+        // [0] is the query with reference field parts removed
+        // [1] contains the reference field parts
+        query = queries[0]
 
-          var resultArray = cursor.toArray(function (err, result) {
+        var referenceFieldQuery = queries[1]
+        var referenceFieldKeys = Object.keys(referenceFieldQuery)
+        var idx = 0
+
+        // for each reference field key, query the specified collection
+        // to obtain an _id value
+        _.each(referenceFieldKeys, function (key) {
+          var keyParts = key.split('.')
+
+          var referenceCollection = ''
+          var referenceCollectionKey = keyParts[0]
+          var referenceCollectionSettings = queryUtils.getSchemaOrParent(referenceCollectionKey, self.schema).settings || {}
+
+          if (referenceCollectionKey !== referenceCollectionSettings.collection) {
+            referenceCollection = referenceCollectionSettings.collection
+          } else {
+            referenceCollection = referenceCollectionKey
+          }
+
+          var referenceCollectionField = keyParts[1]
+          var referenceCollectionQuery = {}
+
+          referenceCollectionQuery[referenceCollectionField] = referenceFieldQuery[key]
+
+          database.collection(referenceCollection).findOne(referenceCollectionQuery, { fields: { _id: 1 } }, function (err, results) {
             if (err) return done(err)
 
-            if (compose) {
-              self.composer.setApiVersion(query.apiVersion)
-              self.composer.compose(result, function (obj) {
-                results.results = obj
-                results.metadata = getMetadata(options, count)
-                runDoneQueue(null, results)
-              })
-            } else {
-              results.results = result
-              results.metadata = getMetadata(options, count)
-              runDoneQueue(null, results)
+            if (results && results._id) {
+              // update the original query with a query for the obtained _id
+              // using the appropriate query type for whether the reference settings
+              // allows storing as arrays or not
+              query[referenceCollectionKey] = referenceCollectionSettings.multiple
+                ? { '$in': [results._id.toString()] }
+                : results._id.toString()
+            }
+
+            idx++
+            if (idx === referenceFieldKeys.length) {
+              // run the full query against the original collection
+              runFind()
             }
           })
         })
-      })
+      } else {
+        runFind()
+      }
+
+      // perform the actual find operation
+      function runFind () {
+        database.collection(self.name).find(query, options, function (err, cursor) {
+          if (err) return done(err)
+
+          var results = {}
+
+          cursor.count(function (err, count) {
+            if (err) return done(err)
+
+            var resultArray = cursor.toArray(function (err, result) {
+              if (err) return done(err)
+
+              if (compose) {
+                self.composer.setApiVersion(query.apiVersion)
+                self.composer.compose(result, function (obj) {
+                  results.results = obj
+                  results.metadata = getMetadata(options, count)
+                  runDoneQueue(null, results)
+                })
+              } else {
+                results.results = result
+                results.metadata = getMetadata(options, count)
+                runDoneQueue(null, results)
+              }
+            })
+          })
+        })
+      }
     }
   } else {
     var err = validationError('Bad Query')
@@ -738,8 +723,8 @@ Model.prototype.update = function (query, update, internals, done, req) {
               done(null, results)
             })
           } else {
-            this.find({ _id: { '$in': _.map(updatedDocs, (doc) => {
-              return doc._id.toString()}) } }, {}, (err, doc) => {
+            var query = { _id: { '$in': _.map(updatedDocs, (doc) => { return doc._id.toString() } ) } }
+            this.find(query, {}, (err, doc) => {
               if (err) return done(err)
 
               results = doc

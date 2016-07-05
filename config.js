@@ -150,22 +150,26 @@ var conf = convict({
       enabled: {
         doc: "If enabled, cache files will be saved to the specified Redis server",
         format: Boolean,
-        default: false
+        default: false,
+        env: "API_REDIS_ENABLED"
       },
       host: {
         doc: "The Redis server host",
         format: String,
-        default: "127.0.0.1"
+        default: "127.0.0.1",
+        env: "REDIS_HOST"
       },
       port: {
         doc: "The port for the Redis server",
         format: 'port',
-        default: 6379
+        default: 6379,
+        env: "REDIS_PORT"
       },
       password: {
         doc: "",
         format: String,
-        default: ""
+        default: "",
+        env: "REDIS_PASSWORD"
       }
     }
   },
@@ -184,12 +188,14 @@ var conf = convict({
     path: {
       doc: "The absolute or relative path to the directory for log files.",
       format: String,
-      default: "./log"
+      default: "./log",
+      env: "API_LOG_PATH"
     },
     filename: {
       doc: "The name to use for the log file, without extension.",
       format: String,
-      default: "api"
+      default: "api",
+      env: "API_LOG_FILENAME"
     },
     extension: {
       doc: "The extension to use for the log file.",
@@ -226,7 +232,8 @@ var conf = convict({
       kinesisStream: {
         doc: "An AWS Kinesis stream to write to log records to.",
         format: String,
-        default: ""
+        default: "",
+        env: "API_KINESISSTREAM"
       }
     }
   },

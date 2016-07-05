@@ -7,25 +7,28 @@ var conf = convict({
     name: {
       doc: "The applicaton name",
       format: String,
-      default: "DADI API Repo Default"
+      default: "DADI API Repo Default",
+      env: "API_APP_NAME"
     }
   },
 	server: {
     host: {
       doc: "Accept connections on the specified address. If the host is omitted, the server will accept connections on any IPv6 address (::) when IPv6 is available, or any IPv4 address (0.0.0.0) otherwise.",
       format: '*',
-      default: null
+      default: null,
+      env: "API_HOST"
     },
     port: {
       doc: "Accept connections on the specified port. A value of zero will assign a random port.",
       format: Number,
       default: 8081,
-      env: "PORT"
+      env: "API_PORT"
     },
     name: {
       doc: "Server name",
       format: String,
-      default: "DADI (API)"
+      default: "DADI (API)",
+      env: "API_NAME"
     }
   },
   database: {
@@ -123,7 +126,8 @@ var conf = convict({
     ttl: {
       doc: "",
       format: Number,
-      default: 300
+      default: 300,
+      env: "API_CACHING_TTL"
     },
     directory: {
       enabled: {
@@ -169,7 +173,8 @@ var conf = convict({
   	enabled: {
       doc: "If true, logging is enabled using the following settings.",
       format: Boolean,
-      default: true
+      default: true,
+      env: "API_LOGGING_ENABLED"
     },
     level: {
       doc: "Sets the logging level.",
@@ -205,7 +210,8 @@ var conf = convict({
       enabled: {
         doc: "If true, HTTP access logging is enabled. The log file name is similar to the setting used for normal logging, with the addition of 'access'. For example `api.access.log`.",
         format: Boolean,
-        default: true
+        default: true,
+        env: "API_ACCESSLOG_ENABLED"
       },
       fileRotationPeriod: {
         doc: "The period at which to rotate the access log file. This is a string of the format '$number$scope' where '$scope' is one of 'ms' (milliseconds), 'h' (hours), 'd' (days), 'w' (weeks), 'm' (months), 'y' (years). The following names can be used 'hourly' (= '1h'), 'daily (= '1d'), 'weekly' ('1w'), 'monthly' ('1m'), 'yearly' ('1y').",
@@ -236,13 +242,15 @@ var conf = convict({
   feedback: {
     doc: "",
     format: Boolean,
-    default: false
+    default: false,
+    env: 'API_FEEDBACK'
   },
   status: {
   	enabled: {
       doc: "If true, status endpoint is enabled.",
       format: Boolean,
-      default: false
+      default: false,
+      env: "API_STATUS_ENABLED"
     },
     routes: {
       doc: "An array of routes to test. Each route object must contain properties `route` and `expectedResponseTime`.",
@@ -267,12 +275,14 @@ var conf = convict({
   cluster: {
     doc: "If true, API runs in cluster mode, starting a worker for each CPU core",
     format: Boolean,
-    default: false
+    default: false,
+    env: "API_CLUSTER"
   },
   cors: {
     doc: "If true, responses will include headers for cross-domain resource sharing",
     format: Boolean,
-    default: false
+    default: false,
+    env: "API_CORS"
   }
 });
 

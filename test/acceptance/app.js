@@ -1171,22 +1171,20 @@ describe('Application', function () {
 
             query = encodeURIComponent(JSON.stringify(query))
 
-            setTimeout(function() {
-              client
-                .get('/vtest/testdb/test-schema/' + doc2._id + '?filter=' + query)
-                .set('Authorization', 'Bearer ' + bearerToken)
-                .expect(200)
-                .expect('content-type', 'application/json')
-                .end(function (err, res) {
-                  if (err) return done(err)
+            client
+              .get('/vtest/testdb/test-schema/' + doc2._id + '?filter=' + query)
+              .set('Authorization', 'Bearer ' + bearerToken)
+              .expect(200)
+              .expect('content-type', 'application/json')
+              .end(function (err, res) {
+                if (err) return done(err)
 
-                  res.body['results'].should.exist
-                  res.body['results'].should.be.Array
-                  res.body['results'].length.should.equal(1)
-                  res.body['results'][0]._id.should.equal(docId)
-                  done()
-                })
-            }, 500)
+                res.body['results'].should.exist
+                res.body['results'].should.be.Array
+                res.body['results'].length.should.equal(1)
+                res.body['results'][0]._id.should.equal(docId)
+                done()
+              })
           })
         })
       })

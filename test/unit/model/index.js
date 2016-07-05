@@ -1,6 +1,7 @@
 var should = require('should')
 var sinon = require('sinon')
 var model = require(__dirname + '/../../../dadi/lib/model')
+var queryUtils = require(__dirname + '/../../../dadi/lib/model/utils')
 var apiHelp = require(__dirname + '/../../../dadi/lib/help')
 var Validator = require(__dirname + '/../../../dadi/lib/model/validator')
 var connection = require(__dirname + '/../../../dadi/lib/model/connection')
@@ -264,111 +265,6 @@ describe('Model', function () {
     })
   })
 
-  describe('`convertApparentObjectIds` method', function () {
-    it('should be added to model', function (done) {
-      model('testModelName', help.getModelSchema()).convertApparentObjectIds.should.be.Function
-      done()
-    })
-
-    it('should convert Strings to ObjectIDs when a field type is ObjectID', function (done) {
-      var fields = help.getModelSchema()
-      var schema = {}
-      schema.fields = fields
-
-      schema.fields.field2 = _.extend({}, schema.fields.fieldName, {
-        type: 'ObjectID',
-        required: false
-      })
-
-      var mod = model('testModelName', schema)
-
-      var query = { 'field2': '55cb1658341a0a804d4dadcc' }
-
-      query = mod.convertApparentObjectIds(query)
-
-      var type = typeof query.field2
-      type.should.eql('object')
-
-      done()
-    })
-
-    it('should allow $in query to convert Strings to ObjectIDs for Reference fields', function (done) {
-      var fields = help.getModelSchema()
-      var schema = {}
-      schema.fields = fields
-
-      schema.fields.field2 = _.extend({}, schema.fields.fieldName, {
-        type: 'Reference',
-        required: false
-      })
-
-      var mod = model('testModelName', schema)
-
-      var query = { 'field2': { '$in': ['55cb1658341a0a804d4dadcc'] } }
-
-      query = mod.convertApparentObjectIds(query)
-
-      var type = typeof query.field2
-      type.should.eql('object')
-
-      done()
-    })
-
-    it('should not convert (sub query) Strings to ObjectIDs when a field type is Object', function (done) {
-      var fields = help.getModelSchema()
-      var schema = {}
-      schema.fields = fields
-
-      schema.fields.field2 = _.extend({}, schema.fields.fieldName, {
-        type: 'ObjectID',
-        required: false
-      })
-
-      schema.fields.field3 = _.extend({}, schema.fields.fieldName, {
-        type: 'Object',
-        required: false
-      })
-
-      var mod = model('testModelName', schema.fields)
-
-      var query = { 'field3': {'id': '55cb1658341a0a804d4dadcc' }}
-
-      query = mod.convertApparentObjectIds(query)
-
-      var type = typeof query.field3.id
-      type.should.eql('string')
-
-      done()
-    })
-
-    it('should not convert (dot notation) Strings to ObjectIDs when a field type is Object', function (done) {
-      var fields = help.getModelSchema()
-      var schema = {}
-      schema.fields = fields
-
-      schema.fields.field2 = _.extend({}, schema.fields.fieldName, {
-        type: 'ObjectID',
-        required: false
-      })
-
-      schema.fields.field3 = _.extend({}, schema.fields.fieldName, {
-        type: 'Object',
-        required: false
-      })
-
-      var mod = model('testModelName', schema.fields)
-
-      var query = { 'field3.id': '55cb1658341a0a804d4dadcc' }
-
-      query = mod.convertApparentObjectIds(query)
-
-      var type = typeof query[Object.keys(query)[0]]
-      type.should.eql('string')
-
-      done()
-    })
-  })
-
   describe('`stats` method', function () {
     it('should be added to model', function (done) {
       model('testModelName', help.getModelSchema()).stats.should.be.Function
@@ -409,48 +305,6 @@ describe('Model', function () {
         should.exist(err)
         done()
       })
-    })
-
-    it('should have a function for making case insensitive queries', function (done) {
-      model('testModelName', help.getModelSchema()).makeCaseInsensitive.should.be.Function
-      done()
-    })
-
-    it('should convert a normal field query to a case insensitive query', function (done) {
-      var mod = model('testModelName', help.getModelSchema())
-
-      var query = { 'test': 'example' }
-      var expected = { 'test': new RegExp(['^', 'example', '$'].join(''), 'i') }
-
-      var result = mod.makeCaseInsensitive(query)
-
-      result.should.eql(expected)
-
-      done()
-    })
-
-    it('should convert a regex query to a case insensitive query', function (done) {
-      var mod = model('testModelName', help.getModelSchema())
-
-      var query = { 'test': { '$regex': 'example'} }
-      var expected = { 'test': { '$regex': new RegExp('example', 'i') } }
-
-      var result = mod.makeCaseInsensitive(query)
-
-      result.should.eql(expected)
-      done()
-    })
-
-    it('should escape characters in a regex query', function (done) {
-      var mod = model('testModelName', help.getModelSchema())
-
-      var query = { 'test': 'BigEyes)' }
-      var expected = { 'test': new RegExp(['^', apiHelp.regExpEscape('BigEyes)'), '$'].join(''), 'i') }
-
-      var result = mod.makeCaseInsensitive(query)
-
-      result.should.eql(expected)
-      done()
     })
   })
 
@@ -887,7 +741,8 @@ describe('Model', function () {
         'booksInSeries': {
           'type': 'Reference',
           'settings': {
-            'collection': 'book'
+            'collection': 'book',
+            'multiple': true
           }
         }
       }
@@ -968,7 +823,7 @@ describe('Model', function () {
             // doc1 should now have anotherDoc == doc3
             mod.find({fieldName: 'foo_1'}, { 'compose': true }, function (err, result) {
 
-              console.log(JSON.stringify(result))
+              //console.log(JSON.stringify(result))
 
               var doc = result.results[0]
               should.exist(doc.refField.fieldName)
@@ -982,9 +837,7 @@ describe('Model', function () {
               done()
             })
           })
-
         })
-
       })
 
       it('should populate a reference field with specified fields only', function (done) {
@@ -1017,9 +870,7 @@ describe('Model', function () {
               done()
             })
           })
-
         })
-
       })
 
       it('should reference a document in the specified collection', function (done) {
@@ -1051,13 +902,10 @@ describe('Model', function () {
 
                   done()
                 })
-
               })
-
             })
           })
         })
-
       })
 
       it('should allow specifying to not resolve the references via the model settings', function (done) {
@@ -1089,13 +937,10 @@ describe('Model', function () {
 
                   done()
                 })
-
               })
-
             })
           })
         })
-
       })
 
       it('should allow specifying to resolve the references via the model settings', function (done) {
@@ -1127,17 +972,13 @@ describe('Model', function () {
 
                   done()
                 })
-
               })
-
             })
           })
         })
-
       })
 
       it('should populate a reference field containing an array of ObjectIDs', function (done) {
-        var conn = connection()
 
         // find a doc
         mod.find({ fieldName: { '$regex': 'foo' } } , {}, function (err, result) {
@@ -1146,14 +987,14 @@ describe('Model', function () {
           var foo1 = _.findWhere(result.results, { fieldName: 'foo_1' })
           result.results.splice(result.results.indexOf(foo1), 1)
 
-          var anotherDoc = _.pluck(result.results, '_id')
+          var anotherDoc = _.map(_.pluck(result.results, '_id'), function(id) {
+            return id.toString()
+          })
 
           // add the id to another doc
           mod.update({ fieldName: 'foo_1' }, { refField: anotherDoc }, function (err, result) {
-            // doc1 should now have anotherDoc == doc3
+            // doc1 should now have refField as array of docs
             mod.find({fieldName: 'foo_1'}, { 'compose': true }, function (err, result) {
-              // console.log(JSON.stringify(result))
-
               var doc = result.results[0]
               doc.refField.length.should.eql(4)
 
@@ -1165,12 +1006,176 @@ describe('Model', function () {
               done()
             })
           })
-
         })
+      })
+
+      describe('Reference field nested query', function () {
+        it('should allow querying nested Reference field properties', function (done) {
+          var conn = connection()
+
+          // add a setting & replace "author" with "person" for this test
+          bookSchema.author.settings.multiple = false
+          var bookSchemaString = JSON.stringify(bookSchema)
+          bookSchemaString = bookSchemaString.replace('author','person')
+
+
+          var book = model('book', JSON.parse(bookSchemaString), conn)
+          var person = model('person', personSchema, conn)
+
+          person.create({name: 'Neil Murray'}, function (err, result) {
+            var neil = result.results[0]._id
+
+            person.create({name: 'J K Rowling', spouse: neil}, function (err, result) {
+              var rowling = result.results[0]._id.toString()
+
+              book.create({title: 'Harry Potter 1', person: rowling}, function (err, result) {
+                var bookid = result.results[0]._id
+                var books = []
+                books.push(bookid)
+
+                book.create({title: 'Neil\'s Autobiography', person: neil}, function (err, result) {
+
+                  // find book where author.name = J K Rowling
+
+                  book.find({ 'person.name': 'J K Rowling' }, { compose: true }, function (err, result) {
+                    //console.log(JSON.stringify(result, null, 2))
+
+                    result.results.length.should.eql(1)
+                    var doc = result.results[0]
+                    should.exist(doc.person.name)
+                    doc.person.name.should.equal('J K Rowling')
+
+                    done()
+                  })
+                })
+              })
+            })
+          })
+        })
+
+        it('should allow querying nested Reference fields with a different property name', function (done) {
+          var conn = connection()
+
+          // add a setting & replace "author" with "person" for this test
+          bookSchema.author.settings.multiple = false
+
+          var book = model('book', bookSchema, conn)
+          var person = model('person', personSchema, conn)
+
+          person.create({name: 'Neil Murray'}, function (err, result) {
+            var neil = result.results[0]._id
+
+            person.create({name: 'J K Rowling', spouse: neil}, function (err, result) {
+              var rowling = result.results[0]._id.toString()
+
+              book.create({title: 'Harry Potter 1', author: rowling}, function (err, result) {
+                var bookid = result.results[0]._id
+                var books = []
+                books.push(bookid)
+
+                book.create({title: 'Neil\'s Autobiography', author: neil}, function (err, result) {
+
+                  // find book where author.name = J K Rowling
+
+                  book.find({ 'author.name': 'J K Rowling' }, { compose: true }, function (err, result) {
+                    //console.log(JSON.stringify(result, null, 2))
+
+                    result.results.length.should.eql(1)
+                    var doc = result.results[0]
+                    should.exist(doc.author.name)
+                    doc.author.name.should.equal('J K Rowling')
+
+                    done()
+                  })
+                })
+              })
+            })
+          })
+        })
+
+        it('should only return specified fields when querying nested Reference field properties', function (done) {
+          var conn = connection()
+
+          bookSchema.author.settings.multiple = false
+
+          // create two models
+          var book = model('book', bookSchema, conn)
+          var person = model('person', personSchema, conn)
+
+          person.create({name: 'Neil Murray'}, function (err, result) {
+            var neil = result.results[0]._id
+
+            person.create({name: 'J K Rowling', spouse: neil}, function (err, result) {
+              var rowling = result.results[0]._id.toString()
+
+              book.create({title: 'Harry Potter 1', author: rowling}, function (err, result) {
+                var bookid = result.results[0]._id
+                var books = []
+                books.push(bookid)
+
+                book.create({title: 'Neil\'s Autobiography', author: neil}, function (err, result) {
+
+                  // find book where author.name = J K Rowling
+
+                  book.find({ 'author.name': 'J K Rowling' }, { compose: true, fields: { 'title': 1, 'author': 1 }}, function (err, result) {
+
+                    result.results.length.should.eql(1)
+                    var doc = result.results[0]
+                    should.exist(doc._id)
+                    should.exist(doc.title)
+                    should.exist(doc.author.name)
+                    should.exist(doc.composed)
+                    should.not.exist(doc.history)
+
+                    done()
+                  })
+                })
+              })
+            })
+          })
+        })
+
+        it('should allow querying normal fields and nested Reference field properties', function (done) {
+          var conn = connection()
+
+          bookSchema.author.settings.multiple = false
+
+          // create two models
+          var book = model('book', bookSchema, conn)
+          var person = model('person', personSchema, conn)
+
+          person.create({name: 'Neil Murray'}, function (err, result) {
+            var neil = result.results[0]._id
+
+            person.create({name: 'J K Rowling', spouse: neil}, function (err, result) {
+              var rowling = result.results[0]._id.toString()
+
+              book.create({title: 'Harry Potter 1', author: rowling}, function (err, result) {
+
+                book.create({title: 'Harry Potter 2', author: rowling}, function (err, result) {
+
+                  book.create({title: 'Neil\'s Autobiography', author: neil}, function (err, result) {
+
+                    // find book where author.name = J K Rowling
+
+                    book.find({ title: 'Harry Potter 1', 'author.name': 'J K Rowling' }, {compose: true}, function (err, result) {
+
+                      result.results.length.should.eql(1)
+                      var doc = result.results[0]
+                      should.exist(doc.author.name)
+                      doc.author.name.should.equal('J K Rowling')
+                      done()
+                    })
+                  })
+                })
+              })
+            })
+          })
+        })
+
 
       })
     })
-
   })
 
   describe('validator', function () {

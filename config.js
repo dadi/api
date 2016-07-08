@@ -8,7 +8,6 @@ var conf = convict({
       doc: "The applicaton name",
       format: String,
       default: "DADI API Repo Default",
-      env: "API_APP_NAME"
     }
   },
 	server: {
@@ -16,19 +15,18 @@ var conf = convict({
       doc: "Accept connections on the specified address. If the host is omitted, the server will accept connections on any IPv6 address (::) when IPv6 is available, or any IPv4 address (0.0.0.0) otherwise.",
       format: '*',
       default: null,
-      env: "API_HOST"
+      env: "HOST"
     },
     port: {
       doc: "Accept connections on the specified port. A value of zero will assign a random port.",
       format: Number,
       default: 8081,
-      env: "API_PORT"
+      env: "PORT"
     },
     name: {
       doc: "Server name",
       format: String,
       default: "DADI (API)",
-      env: "API_NAME"
     }
   },
   database: {
@@ -127,7 +125,6 @@ var conf = convict({
       doc: "",
       format: Number,
       default: 300,
-      env: "API_CACHING_TTL"
     },
     directory: {
       enabled: {
@@ -151,7 +148,7 @@ var conf = convict({
         doc: "If enabled, cache files will be saved to the specified Redis server",
         format: Boolean,
         default: false,
-        env: "API_REDIS_ENABLED"
+        env: "REDIS_ENABLED"
       },
       host: {
         doc: "The Redis server host",
@@ -177,8 +174,7 @@ var conf = convict({
   	enabled: {
       doc: "If true, logging is enabled using the following settings.",
       format: Boolean,
-      default: true,
-      env: "API_LOGGING_ENABLED"
+      default: true
     },
     level: {
       doc: "Sets the logging level.",
@@ -188,14 +184,12 @@ var conf = convict({
     path: {
       doc: "The absolute or relative path to the directory for log files.",
       format: String,
-      default: "./log",
-      env: "API_LOG_PATH"
+      default: "./log"
     },
     filename: {
       doc: "The name to use for the log file, without extension.",
       format: String,
-      default: "api",
-      env: "API_LOG_FILENAME"
+      default: "api"
     },
     extension: {
       doc: "The extension to use for the log file.",
@@ -216,8 +210,7 @@ var conf = convict({
       enabled: {
         doc: "If true, HTTP access logging is enabled. The log file name is similar to the setting used for normal logging, with the addition of 'access'. For example `api.access.log`.",
         format: Boolean,
-        default: true,
-        env: "API_ACCESSLOG_ENABLED"
+        default: true
       },
       fileRotationPeriod: {
         doc: "The period at which to rotate the access log file. This is a string of the format '$number$scope' where '$scope' is one of 'ms' (milliseconds), 'h' (hours), 'd' (days), 'w' (weeks), 'm' (months), 'y' (years). The following names can be used 'hourly' (= '1h'), 'daily (= '1d'), 'weekly' ('1w'), 'monthly' ('1m'), 'yearly' ('1y').",
@@ -233,7 +226,7 @@ var conf = convict({
         doc: "An AWS Kinesis stream to write to log records to.",
         format: String,
         default: "",
-        env: "API_KINESISSTREAM"
+        env: "KINESIS_STREAM"
       }
     }
   },
@@ -250,14 +243,12 @@ var conf = convict({
     doc: "",
     format: Boolean,
     default: false,
-    env: 'API_FEEDBACK'
   },
   status: {
   	enabled: {
       doc: "If true, status endpoint is enabled.",
       format: Boolean,
       default: false,
-      env: "API_STATUS_ENABLED"
     },
     routes: {
       doc: "An array of routes to test. Each route object must contain properties `route` and `expectedResponseTime`.",
@@ -282,14 +273,12 @@ var conf = convict({
   cluster: {
     doc: "If true, API runs in cluster mode, starting a worker for each CPU core",
     format: Boolean,
-    default: false,
-    env: "API_CLUSTER"
+    default: false
   },
   cors: {
     doc: "If true, responses will include headers for cross-domain resource sharing",
     format: Boolean,
-    default: false,
-    env: "API_CORS"
+    default: false
   }
 });
 

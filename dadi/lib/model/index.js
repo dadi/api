@@ -234,11 +234,11 @@ Model.prototype.create = function (obj, internals, done, req) {
  * Attaches the full history of each document
  * before returning the results
  */
-Model.prototype.injectHistory = function (data) {
+Model.prototype.injectHistory = function (data, options) {
   return new Promise((resolve, reject) => {
     var idx = 0
     _.each(data.results, (doc) => {
-      this.revisions(doc._id, (err, history) => {
+      this.revisions(doc._id, options, (err, history) => {
         doc.history = history
 
         idx++
@@ -380,7 +380,7 @@ Model.prototype.find = function (query, options, done) {
       if (err) {
         return callback(null, err, data)
       } else {
-        this.injectHistory(data).then(function (data) {
+        this.injectHistory(data, options).then(function (data) {
           return callback(null, err, data)
         })
       }
@@ -591,17 +591,29 @@ Model.prototype.get = function (query, options, done, req) {
   })
 }
 
-Model.prototype.revisions = function (id, done) {
+Model.prototype.revisions = function (id, options, done) {
   var self = this
+  var fields = options.fields || {}
+  var historyQuery = {}
+
+  if (options.historyFilters) {
+    try {
+      historyQuery = JSON.parse(options.historyFilters)
+    } catch (e) {}
+  }
 
   var _done = function (database) {
-    database.collection(self.name).findOne({'_id': id}, {}, function (err, doc) {
+    database.collection(self.name).findOne({'_id': id}, {history: 1}, function (err, doc) {
       if (err) return done(err)
 
       if (self.history) {
-        var query = { '_id': { '$in': _.map(doc.history, function (id) { return ObjectID.createFromHexString(id.toString()) }) } }
+        historyQuery._id = {
+          '$in': _.map(doc.history, function (id) {
+            return ObjectID.createFromHexString(id.toString())
+          })
+        }
 
-        database.collection(self.revisionCollection).find(query).toArray(function (err, items) {
+        database.collection(self.revisionCollection).find(historyQuery, fields).toArray(function (err, items) {
           if (err) return done(err)
           return done(null, items)
         })

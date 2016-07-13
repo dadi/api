@@ -686,7 +686,7 @@ describe('Model', function () {
       model('testModelName').delete({fieldName: 'foo'}, done)
     })
 
-    it('should delete a document', function (done) {
+    it('should delete a single document', function (done) {
       var mod = model('testModelName')
       mod.create({fieldName: 'foo'}, function (err, result) {
         if (err) return done(err)
@@ -696,6 +696,29 @@ describe('Model', function () {
           if (err) return done(err)
 
           numAffected.should.equal(1)
+
+          mod.find({}, function (err, result) {
+            if (err) return done(err)
+
+            result['results'].length.should.equal(0)
+            done()
+          })
+        })
+      })
+    })
+
+    it('should delete multiple documents', function (done) {
+      var mod = model('testModelName')
+      mod.create([{fieldName: 'foo'}, {fieldName: 'bar'}, {fieldName: 'baz'}], function (err, result) {
+        if (err) return done(err)
+        result.results[0].fieldName.should.equal('foo')
+        result.results[1].fieldName.should.equal('bar')
+        result.results[2].fieldName.should.equal('baz')
+
+        mod.delete({fieldName: {$in: ['foo', 'bar', 'baz']}}, function (err, numAffected) {
+          if (err) return done(err)
+
+          numAffected.should.equal(3)
 
           mod.find({}, function (err, result) {
             if (err) return done(err)

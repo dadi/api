@@ -172,7 +172,7 @@ Model.prototype.create = function (obj, internals, done, req) {
         async.reduce(this.settings.hooks.beforeCreate, doc, (current, hookConfig, callback) => {
           var hook = new Hook(hookConfig, 'beforeCreate')
 
-          Promise.resolve(hook.apply(current, this.schema, req)).then((newDoc) => {
+          Promise.resolve(hook.apply(current, this.schema, this.name, req)).then((newDoc) => {
             callback((newDoc === null) ? {} : null, newDoc)
           }).catch((err) => {
             callback(err)
@@ -213,7 +213,7 @@ Model.prototype.create = function (obj, internals, done, req) {
           this.settings.hooks.afterCreate.forEach((hookConfig, index) => {
             var hook = new Hook(this.settings.hooks.afterCreate[index], 'afterCreate')
 
-            return hook.apply(doc)
+            return hook.apply(doc, this.schema, this.name)
           })
         })
       }
@@ -572,12 +572,17 @@ Model.prototype.find = function (query, options, done) {
  * @api public
  */
 Model.prototype.get = function (query, options, done, req) {
+  if (typeof options === 'function') {
+    done = options
+    options = {}
+  }
+
   this.find(query, options, (err, results) => {
     if (this.settings.hooks && this.settings.hooks.afterGet) {
       async.reduce(this.settings.hooks.afterGet, results, (current, hookConfig, callback) => {
         var hook = new Hook(hookConfig, 'afterGet')
 
-        Promise.resolve(hook.apply(current, this.schema, req)).then((newResults) => {
+        Promise.resolve(hook.apply(current, this.schema, this.name, req)).then((newResults) => {
           callback((newResults === null) ? {} : null, newResults)
         }).catch((err) => {
           callback(err)
@@ -742,7 +747,7 @@ Model.prototype.update = function (query, update, internals, done, req) {
               this.settings.hooks.afterUpdate.forEach((hookConfig, index) => {
                 var hook = new Hook(this.settings.hooks.afterUpdate[index], 'afterUpdate')
 
-                return hook.apply(docs)
+                return hook.apply(docs, this.schema, this.name)
               })
             }
           }
@@ -784,7 +789,7 @@ Model.prototype.update = function (query, update, internals, done, req) {
         async.reduce(this.settings.hooks.beforeUpdate, update, (current, hookConfig, callback) => {
           var hook = new Hook(hookConfig, 'beforeUpdate')
 
-          Promise.resolve(hook.apply(current, updatedDocs, this.schema, req)).then((newUpdate) => {
+          Promise.resolve(hook.apply(current, updatedDocs, this.schema, this.name, req)).then((newUpdate) => {
             callback((newUpdate === null) ? {} : null, newUpdate)
           }).catch((err) => {
             callback(err)
@@ -835,7 +840,7 @@ Model.prototype.delete = function (query, done, req) {
         var hook = new Hook(hookConfig, 'beforeDelete')
         var hookError = {}
 
-        Promise.resolve(hook.apply(current, hookError, this.schema, req)).then((newQuery) => {
+        Promise.resolve(hook.apply(current, hookError, this.schema, this.name, req)).then((newQuery) => {
           callback((newQuery === null) ? {} : null, newQuery)
         }).catch((err) => {
           callback(err)
@@ -860,7 +865,7 @@ Model.prototype.delete = function (query, done, req) {
           this.settings.hooks.afterDelete.forEach((hookConfig, index) => {
             var hook = new Hook(this.settings.hooks.afterDelete[index], 'afterDelete')
 
-            return hook.apply(query)
+            return hook.apply(query, this.schema, this.name)
           })
         }
       }

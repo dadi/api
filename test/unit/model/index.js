@@ -421,7 +421,7 @@ describe('Model', function () {
             var doc_id = doc.results[0]._id
             var revision_id = doc.results[0].history[0] // expected history object
 
-            model('testModelName', help.getModelSchema()).revisions(doc_id, function (err, result) {
+            model('testModelName', help.getModelSchema()).revisions(doc_id, {}, function (err, result) {
               if (err) return done(err)
 
               result.should.be.Array

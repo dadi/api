@@ -124,6 +124,10 @@ Controller.prototype.prepareQueryOptions = function(options) {
   // history
   if (options.includeHistory) {
       queryOptions.includeHistory = options.includeHistory === 'true';
+
+      if (options.historyFilters) {
+        queryOptions.historyFilters = options.historyFilters
+      }
   }
 
   // sorting

@@ -7,14 +7,15 @@ var conf = convict({
     name: {
       doc: "The applicaton name",
       format: String,
-      default: "DADI API Repo Default"
+      default: "DADI API Repo Default",
     }
   },
 	server: {
     host: {
       doc: "Accept connections on the specified address. If the host is omitted, the server will accept connections on any IPv6 address (::) when IPv6 is available, or any IPv4 address (0.0.0.0) otherwise.",
       format: '*',
-      default: null
+      default: null,
+      env: "HOST"
     },
     port: {
       doc: "Accept connections on the specified port. A value of zero will assign a random port.",
@@ -25,7 +26,7 @@ var conf = convict({
     name: {
       doc: "Server name",
       format: String,
-      default: "DADI (API)"
+      default: "DADI (API)",
     }
   },
   database: {
@@ -123,7 +124,7 @@ var conf = convict({
     ttl: {
       doc: "",
       format: Number,
-      default: 300
+      default: 300,
     },
     directory: {
       enabled: {
@@ -146,22 +147,26 @@ var conf = convict({
       enabled: {
         doc: "If enabled, cache files will be saved to the specified Redis server",
         format: Boolean,
-        default: false
+        default: false,
+        env: "REDIS_ENABLED"
       },
       host: {
         doc: "The Redis server host",
         format: String,
-        default: "127.0.0.1"
+        default: "127.0.0.1",
+        env: "REDIS_HOST"
       },
       port: {
         doc: "The port for the Redis server",
         format: 'port',
-        default: 6379
+        default: 6379,
+        env: "REDIS_PORT"
       },
       password: {
         doc: "",
         format: String,
-        default: ""
+        default: "",
+        env: "REDIS_PASSWORD"
       }
     }
   },
@@ -220,7 +225,8 @@ var conf = convict({
       kinesisStream: {
         doc: "An AWS Kinesis stream to write to log records to.",
         format: String,
-        default: ""
+        default: "",
+        env: "KINESIS_STREAM"
       }
     }
   },
@@ -236,13 +242,13 @@ var conf = convict({
   feedback: {
     doc: "",
     format: Boolean,
-    default: false
+    default: false,
   },
   status: {
   	enabled: {
       doc: "If true, status endpoint is enabled.",
       format: Boolean,
-      default: false
+      default: false,
     },
     routes: {
       doc: "An array of routes to test. Each route object must contain properties `route` and `expectedResponseTime`.",

@@ -124,6 +124,10 @@ Controller.prototype.prepareQueryOptions = function(options) {
   // history
   if (options.includeHistory) {
       queryOptions.includeHistory = options.includeHistory === 'true';
+
+      if (options.historyFilters) {
+        queryOptions.historyFilters = options.historyFilters
+      }
   }
 
   // sorting
@@ -263,8 +267,9 @@ Controller.prototype.put = function (req, res, next) {
 }
 
 Controller.prototype.delete = function (req, res, next) {
-    var id = req.params.id;
-    if (!id) return next();
+    var query = req.params.id ? {_id: req.params.id} : req.body.query
+
+    if (!query) return next();
 
     var self = this;
 
@@ -278,7 +283,7 @@ Controller.prototype.delete = function (req, res, next) {
     help.clearCache(pathname, function (err) {
         if (err) return next(err);
 
-        self.model.delete({_id: id}, function (err, results) {
+        self.model.delete(query, function (err, results) {
             if (err) return next(err);
 
             if (config.get('feedback')) {
@@ -286,7 +291,7 @@ Controller.prototype.delete = function (req, res, next) {
                 // send 200 with json message
                 return help.sendBackJSON(200, res, next)(null, {
                     status: 'success',
-                    message: 'Document deleted successfully'
+                    message: 'Documents deleted successfully'
                 });
             }
 

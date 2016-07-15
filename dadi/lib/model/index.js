@@ -290,14 +290,13 @@ Model.prototype.convertDateTimeForSave = function (schema, obj) {
  * @api public
  */
 Model.prototype.count = function (query, options, done) {
-  var self = this
   if (typeof options === 'function') {
     done = options
     options = {}
   }
 
   query = queryUtils.makeCaseInsensitive(query)
-  query = queryUtils.convertApparentObjectIds(query, self.schema)
+  query = queryUtils.convertApparentObjectIds(query, this.schema)
 
   var validation = this.validate.query(query)
   if (!validation.success) {
@@ -309,8 +308,8 @@ Model.prototype.count = function (query, options, done) {
   if (_.isObject(query)) {
     this.castToBSON(query)
 
-    _done = function (database) {
-      database.collection(self.name).count(query, options, function (err, result) {
+    _done = (database) => {
+      database.collection(this.name).count(query, {}, (err, result) => {
         if (err) return done(err)
         var meta = getMetadata(options, result)
         var results = {
@@ -330,7 +329,7 @@ Model.prototype.count = function (query, options, done) {
   if (this.connection.db) return _done(this.connection.db)
 
   // if the db is not connected queue the find
-  this.connection.once('connect', function (database) {
+  this.connection.once('connect', (database) => {
     _done(database)
   })
 }

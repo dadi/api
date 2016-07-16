@@ -1,5 +1,67 @@
 ### Change Log
 
+##### v1.11.1 (2016-07-16)
+
+* no longer convert to ObjectID if the query is using dot notation and the parent field
+is of type `Mixed`. This supports legacy CMS use in some cases
+* remove the options when calling a collection's count endpoint, to ensure no
+`limit` parameter is sent
+
+##### v1.11.0 (2016-07-14)
+
+###### Batch delete of documents
+@eduardoboucas
+
+**Usage:**
+
+Method: DELETE
+URL: `http://api.example.com/1.0/fictional-magazine-brand/articles`
+
+Body:
+```
+{
+  "query": {
+    "title": {"$in": ["foo", "bar", "baz]}
+  }
+}
+```
+
+###### Filter revision history and return specified fields
+@eduardoboucas
+
+The `includeHistory` param now respects the `fields` param, so that documents in history only contain the fields specified.
+
+Added: a `historyFilters` URL parameter, to be used in conjunction with `includeHistory`, which adds the option to have a filter specific to the documents in history, with the same syntax as the existing `filter`.
+
+This makes it possible to retrieve only the revisions where name is `Jim`:
+
+```
+http://api.example.com/1.0/fictional-magazine-brand/users/57866216acc4818e048efd36?includeHistory=true&historyFilters={"name":"Jim"}
+```
+
+Or get revisions between two dates:
+
+```
+http://api.example.com/1.0/fictional-magazine-brand/users/57866216acc4818e048efd36?includeHistory=true&historyFilters={"lastModifiedAt":{"$gte":1468424733361,"$lte":1468424737447}}
+```
+
+###### Environment variables for sensitive data
+@dark12222000
+
+Configuration variables likely to contain sensitive data can now be set from environment variables, rather than committing this data to config files.
+
+Available variables:
+
+* NODE_ENV
+* HOST
+* PORT
+* REDIS_ENABLED
+* REDIS_HOST
+* REDIS_PORT
+* REDIS_PASSWORD
+* KINESIS_STREAM
+
+
 ##### v1.4.0 (2016-03-24)
 
 ###### Support for Hooks (beforeCreate, afterCreate, beforeUpdate, afterUpdate, beforeDelete, afterDelete).

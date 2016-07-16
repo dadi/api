@@ -67,12 +67,12 @@ function convertApparentObjectIds (query, schema) {
         query[key] = arr
       }
     } else if (typeof query[key] === 'object' && query[key] !== null) {
-      if (typeof type !== 'undefined' && type === 'Object') {
+      if (typeof type !== 'undefined' && /^Mixed|Object$/.test(type)) {
         // ignore
       } else if (typeof type === 'undefined' || type !== 'Reference') { // Don't convert query id when it's a Reference field
         query[key] = convertApparentObjectIds(query[key], schema)
       }
-    } else if (typeof query[key] === 'string' && type !== 'Object' && ObjectID.isValid(query[key]) && query[key].match(/^[a-fA-F0-9]{24}$/)) {
+    } else if (typeof query[key] === 'string' && !/^Mixed|Object$/.test(type) && ObjectID.isValid(query[key]) && query[key].match(/^[a-fA-F0-9]{24}$/)) {
       query[key] = new ObjectID.createFromHexString(query[key])
     }
   })

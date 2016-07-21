@@ -275,7 +275,15 @@ Model.prototype.convertDateTimeForSave = function (schema, obj) {
   Object.keys(schema)
     .filter(function (key) { return ((schema[key].type === 'DateTime') && (obj[key] !== null)) })
     .forEach(function (key) {
-      obj[key] = new Date(moment(obj[key]).toISOString())
+      switch(schema[key].format) {
+        case 'unix':
+          //No change
+        break;
+        case 'iso':
+          obj[key] = new Date(moment(obj[key]).toISOString())
+        break;
+        default: obj[key] = new Date(moment(obj[key]).toISOString())
+      }
     })
 
   return obj

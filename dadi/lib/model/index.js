@@ -272,19 +272,20 @@ Model.prototype.convertObjectIdsForSave = function (schema, obj) {
 }
 
 Model.prototype.convertDateTimeForSave = function (schema, obj) {
-  Object.keys(schema)
-    .filter(function (key) { return ((schema[key].type === 'DateTime') && (obj[key] !== null)) })
-    .forEach(function (key) {
-      switch(schema[key].format) {
-        case 'unix':
-          //No change
-        break;
-        case 'iso':
-          obj[key] = new Date(moment(obj[key]).toISOString())
-        break;
-        default: obj[key] = new Date(moment(obj[key]).toISOString())
-      }
-    })
+  Object.keys(schema).filter(function (key) {
+    return ((schema[key].type === 'DateTime') && (obj[key] !== null))
+  }).forEach(function (key) {
+    switch(schema[key].format) {
+      case 'unix':
+        obj[key] = moment(obj[key]).valueOf()
+        break
+      case 'iso':
+        obj[key] = new Date(moment(obj[key]).toISOString())
+        break
+      default:
+        obj[key] = new Date(moment(obj[key]).toISOString())
+    }
+  })
 
   return obj
 }

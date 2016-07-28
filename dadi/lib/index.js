@@ -386,10 +386,11 @@ Server.prototype.loadConfigApi = function () {
         var validation = help.validateCollectionSchema(schema);
 
         if (!validation.success) {
-            var err = new Error('Collection schema validation failed');
-            err.statusCode = 400;
-            err.json = validation;
-            return next(err);
+          var err = new Error('Collection schema validation failed')
+          err.statusCode = 400
+          err.success = validation.success
+          err.errors = JSON.stringify(validation.errors)
+          return next(err)
         }
 
         var params = req.params;

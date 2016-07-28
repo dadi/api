@@ -25,7 +25,7 @@ var Model = function (name, schema, conn, settings, database) {
   this.schema = schema
 
   // attach default settings
-  this.settings = settings || {}
+  this.settings = settings || schema.settings || {}
 
   // attach display name if supplied
   if (this.settings.hasOwnProperty('displayName')) {
@@ -498,14 +498,17 @@ Model.prototype.find = function (query, options, done) {
                   })
 
                   if (parent[0]) {
-                    var childQuery = {}
-                    childQuery[linkKey] = parent[0]._id.toString()
-                    var children = _.where(results, childQuery)
+                    var children = _.filter(results, function(result) {
+                      if (result[linkKey] && result[linkKey].toString() === parent[0]._id.toString()) {
+                        return result
+                      }
+                    })
 
                     var ids = _.map(_.pluck(children, '_id'), function(id) {
                       return id.toString()
                     })
-                  } 
+                  }
+
                   query[collectionKey] = { '$in': ids || [] }
                 }
               } else {

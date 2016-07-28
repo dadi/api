@@ -529,12 +529,12 @@ describe('Model', function () {
       done()
     })
 
-    it('should accept and object and callback', function (done) {
+    it('should accept Object and callback', function (done) {
       var mod = model('testModelName', help.getModelSchema())
       mod.create({fieldName: 'foo'}, done)
     })
 
-    it('should accept and Array and callback', function (done) {
+    it('should accept Array and callback', function (done) {
       var mod = model('testModelName', help.getModelSchema())
       mod.create([{fieldName: 'foo'}, {fieldName: 'bar'}], done)
     })
@@ -1076,6 +1076,54 @@ describe('Model', function () {
           })
         })
 
+        it('should allow querying second level nested Reference field properties', function (done) {
+          var conn = connection()
+
+          // add a setting & replace "author" with "person" for this test
+          bookSchema.author.settings.multiple = false
+          bookSchema.author.settings.compose = true
+          bookSchema.settings = {
+            compose: true
+          }
+
+          var bookSchemaString = JSON.stringify(bookSchema)
+          bookSchemaString = bookSchemaString.replace('author','person')
+
+          personSchema.spouse.settings = {
+            compose: true
+          }
+
+          var book = model('book', JSON.parse(bookSchemaString), conn)
+          var person = model('person', personSchema, conn)
+
+          // console.log(JSON.stringify(book, null, 2))
+          // console.log(JSON.stringify(person, null, 2))
+
+          person.create({name: 'Neil Murray'}, function (err, result) {
+            var neil = result.results[0]._id
+
+            person.create({name: 'J K Rowling', spouse: neil}, function (err, result) {
+              var rowling = result.results[0]._id.toString()
+
+              book.create({title: 'Harry Potter 1', person: rowling}, function (err, result) {
+                var bookid = result.results[0]._id
+                var books = []
+                books.push(bookid)
+
+                book.find({ "person.spouse.name": "Neil Murray" }, { compose: true }, function (err, result) {
+
+                  result.results.length.should.eql(1)
+                  var doc = result.results[0]
+                  should.exist(doc.person.spouse)
+                  doc.person.name.should.equal('J K Rowling')
+
+                  done()
+                })
+              })
+            })
+          })
+        })
+
         it('should allow querying nested Reference fields with a different property name', function (done) {
           var conn = connection()
 
@@ -1196,7 +1244,32 @@ describe('Model', function () {
           })
         })
 
+        it('should only return matching results when querying nested Reference field properties', function (done) {
+          var conn = connection()
+          bookSchema.author.settings.multiple = false
 
+          // create two models
+          var book = model('book', bookSchema, conn)
+          var person = model('person', personSchema, conn)
+          person.create({name: 'Neil Murray'}, function (err, result) {
+            var neil = result.results[0]._id
+            person.create({name: 'J K Rowling', spouse: neil}, function (err, result) {
+              var rowling = result.results[0]._id.toString()
+              book.create({title: 'Harry Potter 1', author: rowling}, function (err, result) {
+                book.create({title: 'Harry Potter 2', author: rowling}, function (err, result) {
+                  book.create({title: 'Neil\'s Autobiography', author: neil}, function (err, result) {
+
+                    // find book where author.name = J K Rowling
+                    book.find({ title: 'Harry Potter 1', 'author.name': 'A B Cowling' }, {compose: true}, function (err, result) {
+                      result.results.length.should.eql(0)
+                      done()
+                    })
+                  })
+                })
+              })
+            })
+          })
+        })
       })
     })
   })

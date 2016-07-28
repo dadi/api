@@ -5,7 +5,7 @@ var config = require(__dirname + '/../../config');
 var EventEmitter = require('events').EventEmitter;
 var fs = require('fs');
 
-describe('Monitor', function () {
+describe.skip('Monitor', function () {
     it('should export constructor', function (done) {
         monitor.Monitor.should.be.Function;
         done();

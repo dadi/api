@@ -1,6 +1,6 @@
 # DADI API
 
-[![npm (scoped)](https://img.shields.io/npm/v/@dadi/api.svg?maxAge=10800&style=flat-square)](https://www.npmjs.com/package/@dadi/api)&nbsp;[![coverage](https://img.shields.io/badge/coverage-87%25-yellow.svg?style=flat-square)](https://github.com/dadi/api)&nbsp;[![build](http://ci.dadi.technology/dadi/api/badge?branch=master&service=shield)](http://ci.dadi.technology/dadi/api)
+[![npm (scoped)](https://img.shields.io/npm/v/@dadi/api.svg?maxAge=10800&style=flat-square)](https://www.npmjs.com/package/@dadi/api)&nbsp;[![coverage](https://img.shields.io/badge/coverage-88%25-yellow.svg?style=flat-square)](https://github.com/dadi/api)&nbsp;[![build](http://ci.dadi.technology/dadi/api/badge?branch=master&service=shield)](http://ci.dadi.technology/dadi/api)
 
 ## Overview
 

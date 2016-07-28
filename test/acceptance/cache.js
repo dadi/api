@@ -783,7 +783,7 @@ describe('Cache', function (done) {
     });
 
     it('should invalidate based on TTL', function(done) {
-      this.timeout(4000);
+      this.timeout(6000);
 
       var configString = fs.readFileSync(config.configPath());
       var newTestConfig = JSON.parse(configString);

@@ -85,7 +85,7 @@ Composer.prototype.composeOne = function (doc, callback) {
     } else {
       // does the collection allow us to compose references beyond the first one
       // (i.e. the one that got us here) ?
-      var compose = help.getFromObj(mod.settings, 'compose', false)
+      var compose = help.getFromObj(schema, key + '.settings.compose', false) || mod.compose
 
       mod.find(query, { 'compose': compose, 'fields': fields }, function (err, result) {
         if (result) {

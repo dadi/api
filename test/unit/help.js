@@ -87,7 +87,7 @@ module.exports.cleanUpDB = function (done) {
       var err = new Error('Database should be `test`, not `' + db.databaseName + '`.');
       return done(err);
     }
-  }, 500)
+  }, 100)
 
   // drop all data
   setTimeout(function() {
@@ -98,7 +98,7 @@ module.exports.cleanUpDB = function (done) {
         //db.close(true, done);
         done()
     });
-  }, 500)
+  }, 100)
 }
 
 module.exports.clearCollection = function (collectionName, query, done) {
@@ -116,7 +116,7 @@ module.exports.clearCollection = function (collectionName, query, done) {
       var err = new Error('Database should be `test`, not `' + db.databaseName + '`.');
       return done(err);
     }
-  }, 500)
+  }, 100)
 
   // remove data from collection
   setTimeout(function() {
@@ -126,7 +126,7 @@ module.exports.clearCollection = function (collectionName, query, done) {
         done()
       })
     })
-  }, 500)
+  }, 100)
 }
 
 module.exports.addUserToDb = function (userObj, dbObj, done) {

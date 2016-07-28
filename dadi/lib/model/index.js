@@ -497,15 +497,16 @@ Model.prototype.find = function (query, options, done) {
                     return new RegExp(queryValue).test(result[queryKey]) === true
                   })
 
-                  var childQuery = {}
-                  childQuery[linkKey] = parent[0]._id.toString()
-                  var children = _.where(results, childQuery)
+                  if (parent[0]) {
+                    var childQuery = {}
+                    childQuery[linkKey] = parent[0]._id.toString()
+                    var children = _.where(results, childQuery)
 
-                  var ids = _.map(_.pluck(children, '_id'), function(id) {
-                    return id.toString()
-                  })
-
-                  query[collectionKey] = { '$in': ids }
+                    var ids = _.map(_.pluck(children, '_id'), function(id) {
+                      return id.toString()
+                    })
+                  } 
+                  query[collectionKey] = { '$in': ids || [] }
                 }
               } else {
                 // Nothing found in the reference collection, add empty criteria to the main query

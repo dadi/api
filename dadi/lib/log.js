@@ -31,20 +31,11 @@ var log = bunyan.createLogger({
 });
 
 function getStreams() {
-  if (options.fileRotationPeriod !== '') {
-    return [
-      { level: 'info', type: 'rotating-file', path: logPath, period: options.fileRotationPeriod, count: options.fileRetentionCount },
-      { level: 'warn', type: 'rotating-file', path: logPath, period: options.fileRotationPeriod, count: options.fileRetentionCount },
-      { level: 'error', type: 'rotating-file', path: logPath, period: options.fileRotationPeriod, count: options.fileRetentionCount }
-    ]
-  }
-  else {
-    return [
-      { level: 'info', path: logPath },
-      { level: 'warn', path: logPath },
-      { level: 'error', path: logPath }
-    ]
-  }
+  return [
+    { level: 'info', path: logPath },
+    { level: 'warn', path: logPath },
+    { level: 'error', path: logPath }
+  ]
 }
 
 // add console logger
@@ -59,9 +50,7 @@ if (options.accessLog.enabled) {
     streams: [
       {
         type: 'rotating-file',
-        path: accessLogPath,
-        period: options.accessLog.fileRotationPeriod,
-        count: options.accessLog.fileRetentionCount
+        path: accessLogPath
       }
     ]
   });

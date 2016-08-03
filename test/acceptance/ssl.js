@@ -115,7 +115,7 @@ describe('SSL', () => {
       server.use(defaultResponse)
       server.listen(config.get('server.port'), config.get('server.host'))
     } catch (ex) {
-      ex.message.should.eql('error:06065064:digital envelope routines:EVP_DecryptFinal_ex:bad decrypt')
+      ex.message.should.eql('error starting https server: incorrect ssl passphrase')
     }
 
     done()
@@ -131,7 +131,7 @@ describe('SSL', () => {
       server.use(defaultResponse)
       server.listen(config.get('server.port'), config.get('server.host'))
     } catch (ex) {
-      ex.message.should.eql('error:0906A068:PEM routines:PEM_do_header:bad password read')
+      ex.message.should.eql('error starting https server: required ssl passphrase not provided')
     }
 
     done()

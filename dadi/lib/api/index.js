@@ -47,7 +47,23 @@ var Api = function () {
       serverOptions.ca = readFileSyncSafe(caPath)
     }
 
-    this.serverInstance = https.createServer(serverOptions, this.listener)
+    // we need to catch any errors resulting from bad parameters
+    // such as incorrect passphrase or no passphrase provided
+    try {
+      this.serverInstance = https.createServer(serverOptions, this.listener)
+    } catch (ex) {
+      var exPrefix = 'error starting https server: '
+      switch (ex.message) {
+        case 'error:06065064:digital envelope routines:EVP_DecryptFinal_ex:bad decrypt':
+          throw new Error(exPrefix + 'incorrect ssl passphrase')
+          break;
+        case 'error:0906A068:PEM routines:PEM_do_header:bad password read':
+          throw new Error(exPrefix + 'required ssl passphrase not provided')
+          break;
+        default:
+          throw new Error(exPrefix + ex.message)
+      }
+    }
   } else {
     // default to http
     this.serverInstance = http.createServer(this.listener)

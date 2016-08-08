@@ -273,7 +273,7 @@ Model.prototype.convertObjectIdsForSave = function (schema, obj) {
 
 Model.prototype.convertDateTimeForSave = function (schema, obj) {
   Object.keys(schema).filter(function (key) {
-    return ((schema[key].type === 'DateTime') && (obj[key] !== null))
+    return ((schema[key].type === 'DateTime') && (obj[key] !== null) && (!_.isUndefined(obj[key])))
   }).forEach(function (key) {
     switch(schema[key].format) {
       case 'unix':

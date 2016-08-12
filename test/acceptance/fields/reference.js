@@ -167,8 +167,6 @@ describe('Reference Field', function () {
         .end(function (err, res) {
           if (err) return done(err);
 
-          //console.log(res.body)
-
           should.exist(res.body.results)
           var bookResult = res.body.results[0]
           //console.log(bookResult)
@@ -180,4 +178,76 @@ describe('Reference Field', function () {
       })
     });
   });
+
+  it('should return results in the same order as the original Array', function (done) {
+
+    var book = { title: 'Death in the Afternoon', author: null };
+    book.author = []
+
+    config.set('query.useVersionFilter', true)
+
+    var client = request(connectionString);
+    client
+    .post('/v1/library/person')
+    .set('Authorization', 'Bearer ' + bearerToken)
+    .send({ name: 'Ernest Hemingway' })
+    .expect(200)
+    .end(function (err, res) {
+
+      var personId = res.body.results[0]._id
+      book.author.push(personId.toString())
+
+      var client = request(connectionString);
+      client
+      .post('/v1/library/person')
+      .set('Authorization', 'Bearer ' + bearerToken)
+      .send({ name: 'A.N. Other' })
+      .expect(200)
+      .end(function (err, res) {
+
+        personId = res.body.results[0]._id
+        book.author.unshift(personId.toString())
+
+        var client = request(connectionString);
+        client
+        .post('/v1/library/person')
+        .set('Authorization', 'Bearer ' + bearerToken)
+        .send({ name: 'Michael Jackson' })
+        .expect(200)
+        .end(function (err, res) {
+
+          personId = res.body.results[0]._id
+          book.author.push(personId.toString())
+
+          client
+          .post('/v1/library/book')
+          .set('Authorization', 'Bearer ' + bearerToken)
+          .send(book)
+          .expect(200)
+          .end(function (err, res) {
+            if (err) return done(err);
+
+            client
+            .get('/v1/library/book?filter={"title":"Death in the Afternoon"}&compose=true')
+            .set('Authorization', 'Bearer ' + bearerToken)
+            .expect(200)
+            .end(function (err, res) {
+
+              should.exist(res.body.results)
+              var bookResult = res.body.results[0]
+
+              should.exist(bookResult.author)
+
+              for (var i = 0; i < bookResult.author.length; i++) {
+                var author = bookResult.author[i]
+                author._id.toString().should.eql(bookResult.composed.author[i].toString())
+              }
+
+              done();
+            })
+          })
+        })
+      })
+    })
+  })
 })

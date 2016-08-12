@@ -99,6 +99,18 @@ Composer.prototype.composeOne = function (doc, callback) {
         if (!doc.composed) doc.composed = {}
         doc.composed[key] = value
 
+        // if an array, ensure the composed values appear
+        // in the same order as the original array
+        if (value.constructor.name === 'Array') {
+          doc[key] = doc[key].sort((a, b) => {
+            var aIndex = value.indexOf(a._id.toString())
+            var bIndex = value.indexOf(b._id.toString())
+
+            if (aIndex === bIndex) return 0
+            return aIndex < bIndex ? -1 : 1
+          })
+        }
+
         keyIdx++
 
         if (keyIdx === composable.length) {

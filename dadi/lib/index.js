@@ -535,8 +535,8 @@ Server.prototype.loadEndpointsRoute = function() {
 
     _.each(self.components, function (value, key) {
       var model
-      var name = null
       var parts = _.compact(key.split('/'));
+      var name = parts[1];
 
       var hasModel = _.contains(Object.keys(value), 'model')
       var hasGetMethod = _.contains(Object.keys(value), 'get')
@@ -552,11 +552,11 @@ Server.prototype.loadEndpointsRoute = function() {
       if (hasGetMethod) {
         // an endpoint
         var endpoint = {
+          name: name,
           version: parts[0],
           path: key
         }
 
-        if (name) endpoint.name = name
         if (pathToRegexp(key).keys.length > 0) endpoint.params = pathToRegexp(key).keys
 
         endpoints.push(endpoint)

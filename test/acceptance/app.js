@@ -2709,8 +2709,15 @@ describe('Application', function () {
 
             _.each(res.body.endpoints, function (endpoint) {
               should.exist(endpoint.version)
+              should.exist(endpoint.name)
               should.exist(endpoint.path)
             })
+
+            var endpointWithDisplayName = _.find(res.body.endpoints, function(endpoint) {
+              return endpoint.name === 'Test Endpoint'
+            })
+
+            should.exist(endpointWithDisplayName)
 
             done()
           })

@@ -1161,7 +1161,8 @@ describe('Model', function () {
               categories: {
                 type: 'Reference',
                 settings: {
-                  collection: "categories"
+                  collection: "categories",
+                  multiple: true
                 }
               }
             },
@@ -1183,21 +1184,29 @@ describe('Model', function () {
               var music = result.results[0]._id
 
               // child categories
-              category.create({name: 'News', furl: 'news', parent: sports.toString()}, function (err, result) {
-                var sportsNews = result.results[0]._id
-                category.create({name: 'News', furl: 'news', parent: music.toString()}, function (err, result) {
-                  var musicNews = result.results[0]._id
+              category.create({name: 'Music News', furl: 'news', parent: music.toString()}, function (err, result) {
+                var musicNews = result.results[0]._id
+                category.create({name: 'Sports News', furl: 'news', parent: sports.toString()}, function (err, result) {
+                  var sportsNews = result.results[0]._id
 
-                  // add an article
-                  article.create({title: 'A Day at the Races', categories: [sportsNews.toString()]}, function (err, result) {
+                  category.create({name: 'Sports Events', furl: 'events', parent: sports.toString()}, function (err, result) {
 
-                    article.find({ "categories.furl": "news", "categories.parent.furl": "sports" }, { compose: true }, function (err, result) {
-                      result.results.length.should.eql(1)
+                    // add an article
+                    article.create({title: 'A Day at the Opera', categories: [musicNews.toString()]}, function (err, result) {
 
-                      var doc = result.results[0]
-                      doc.categories[0].name.should.equal('News')
-                      doc.categories[0].parent.name.should.equal('Sports')
-                      done()
+                      // add an article
+                      article.create({title: 'A Day at the Races', categories: [sportsNews.toString()]}, function (err, result) {
+
+                        article.find({ "categories.furl": "news", "categories.parent.furl": "sports" }, { compose: true, fields: {"categories": 1} }, function (err, result) {
+                          //console.log(JSON.stringify(result.results))
+                          result.results.length.should.eql(1)
+
+                          var doc = result.results[0]
+                          doc.categories[0].name.should.equal('Sports News')
+                          doc.categories[0].parent.name.should.equal('Sports')
+                          done()
+                        })
+                      })
                     })
                   })
                 })

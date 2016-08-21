@@ -483,13 +483,13 @@ Model.prototype.find = function (query, options, done) {
 
             cursor.toArray(function (err, results) {
               if (results && results.length) {
-                if (results.length === 1) {
+                if (!linkKey) { // i.e. it's a one-level nested query
+                  var ids = _.map(_.pluck(results, '_id'), function(id) { return id.toString() })
+
                   // update the original query with a query for the obtained _id
                   // using the appropriate query type for whether the reference settings
                   // allows storing as arrays or not
-                  query[collectionKey] = collectionSettings.multiple
-                    ? { '$in': [results[0]._id.toString()] }
-                    : results[0]._id.toString()
+                  query[collectionKey] = collectionSettings.multiple ? { '$in': ids } : ids[0]
                 } else {
                   // filter the results using linkKey
                   // 1. get the _id of the result matching { queryKey: queryValue }

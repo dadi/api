@@ -1,6 +1,6 @@
 {
   "name": "@dadi/api",
-  "version": "1.11.3",
+  "version": "1.12.1",
   "main": "main.js",
   "scripts": {
     "init": "validate-commit-msg",

@@ -43,7 +43,21 @@ function processReferenceFieldQuery (query, schema) {
     }
   })
 
+  // sort the reference queries by deepest nesting first
+  queryWith = sortQueriesByNestedLevel(queryWith)
+
   return [queryWithout, queryWith]
+}
+
+function sortQueriesByNestedLevel(queries) {
+  var keys = Object.keys(queries).sort((a, b) => {
+    var aLen = a.split('.').length
+    var bLen = b.split('.').length
+    if (aLen === bLen) return 0
+    return aLen < bLen ? 1 : -1
+  })
+
+  return keys.reduce((r, k) => (r[k] = queries[k], r), {})
 }
 
 function convertApparentObjectIds (query, schema) {

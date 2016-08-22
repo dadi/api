@@ -1124,6 +1124,97 @@ describe('Model', function () {
           })
         })
 
+        it('should return results when multiple documents match a nested query', function (done) {
+          var conn = connection()
+
+          var categoriesSchema = {
+            fields: {
+              parent: {
+                type: "Reference",
+                settings: {
+                  collection: "categories"
+                },
+                required: false
+              },
+              name: {
+                type: "String",
+                label: "Name",
+                required: false
+              },
+              furl: {
+                type: "String",
+                label: "Friendly URL",
+                required: false
+              }
+            },
+            settings: {
+              compose: true
+            }
+          }
+
+          var articleSchema = {
+            fields: {
+              title: {
+                type: 'String',
+                required: true
+              },
+              categories: {
+                type: 'Reference',
+                settings: {
+                  collection: "categories",
+                  multiple: true
+                }
+              }
+            },
+            settings: {
+              compose: true
+            }
+          }
+
+          var category = model('categories', categoriesSchema.fields, conn)
+          category.compose = true
+          var article = model('articles', articleSchema.fields, conn)
+          article.compose = true
+
+          // parent categories
+          category.create({name: 'Sports', furl: 'sports'}, function (err, result) {
+            var sports = result.results[0]._id
+
+            category.create({name: 'Music', furl: 'music'}, function (err, result) {
+              var music = result.results[0]._id
+
+              // child categories
+              category.create({name: 'Music News', furl: 'news', parent: music.toString()}, function (err, result) {
+                var musicNews = result.results[0]._id
+                category.create({name: 'Sports News', furl: 'news', parent: sports.toString()}, function (err, result) {
+                  var sportsNews = result.results[0]._id
+
+                  category.create({name: 'Sports Events', furl: 'events', parent: sports.toString()}, function (err, result) {
+
+                    // add an article
+                    article.create({title: 'A Day at the Opera', categories: [musicNews.toString()]}, function (err, result) {
+
+                      // add an article
+                      article.create({title: 'A Day at the Races', categories: [sportsNews.toString()]}, function (err, result) {
+
+                        article.find({ "categories.furl": "news", "categories.parent.furl": "sports" }, { compose: true, fields: {"categories": 1} }, function (err, result) {
+                          //console.log(JSON.stringify(result.results))
+                          result.results.length.should.eql(1)
+
+                          var doc = result.results[0]
+                          doc.categories[0].name.should.equal('Sports News')
+                          doc.categories[0].parent.name.should.equal('Sports')
+                          done()
+                        })
+                      })
+                    })
+                  })
+                })
+              })
+            })
+          })
+        })
+
         it('should allow querying nested Reference fields with a different property name', function (done) {
           var conn = connection()
 

@@ -440,92 +440,105 @@ Model.prototype.find = function (query, options, done) {
 
         var referenceFieldQuery = queries[1]
         var referenceFieldKeys = Object.keys(referenceFieldQuery)
-        var idx = 0
+        var queue = []
 
         // for each reference field key, query the specified collection
         // to obtain an _id value
         _.each(referenceFieldKeys, function (key) {
-          var keyParts = key.split('.')
+          queue.push(function (cb) {
+            var keyParts = key.split('.')
 
-          var collection = ''
-          var collectionKey = keyParts[0]
-          var linkKey
-          var queryKey
-          var queryValue = referenceFieldQuery[key]
-          var collectionSettings = queryUtils.getSchemaOrParent(collectionKey, self.schema).settings || {}
+            var collection = ''
+            var collectionKey = keyParts[0]
+            var linkKey
+            var queryKey
+            var queryValue = referenceFieldQuery[key]
+            var collectionSettings = queryUtils.getSchemaOrParent(collectionKey, self.schema).settings || {}
 
-          if (collectionKey !== collectionSettings.collection) {
-            collection = collectionSettings.collection
-          } else {
-            collection = collectionKey
-          }
+            if (collectionKey !== collectionSettings.collection) {
+              collection = collectionSettings.collection
+            } else {
+              collection = collectionKey
+            }
 
-          var fieldsObj = {}
-          if (collectionSettings.fields) {
-            collectionSettings.fields.forEach(function (field) {
-              fieldsObj[field] = 1
-            })
-          }
+            var fieldsObj = {}
+            if (collectionSettings.fields) {
+              collectionSettings.fields.forEach(function (field) {
+                fieldsObj[field] = 1
+              })
+            }
 
-          queryKey = keyParts[1]
-          var collectionQuery = {}
+            queryKey = keyParts[1]
+            var collectionQuery = {}
 
-          if (keyParts.length === 2) {
-            collectionQuery[queryKey] = queryValue
-          } else {
-            linkKey = keyParts[1]
-            queryKey = keyParts[2]
-          }
+            if (keyParts.length === 2) {
+              collectionQuery[queryKey] = queryValue
+            } else {
+              linkKey = keyParts[1]
+              queryKey = keyParts[2]
+            }
 
-          // query the reference collection
-          database.collection(collection).find(collectionQuery, { fields: fieldsObj, compose: true }, function (err, cursor) {
-            if (err) return done(err)
+            // if we already have a value for this field inserted
+            // into the final query object (e.g. a parent nested query has been done first),
+            // supplement the current query with the ids
+            if (query[collectionKey]) {
+              collectionQuery['_id'] = query[collectionKey]
+              collectionQuery = queryUtils.convertApparentObjectIds(collectionQuery, self.schema)
+            }
 
-            cursor.toArray(function (err, results) {
-              if (results && results.length) {
-                if (results.length === 1) {
-                  // update the original query with a query for the obtained _id
-                  // using the appropriate query type for whether the reference settings
-                  // allows storing as arrays or not
-                  query[collectionKey] = collectionSettings.multiple
-                    ? { '$in': [results[0]._id.toString()] }
-                    : results[0]._id.toString()
-                } else {
-                  // filter the results using linkKey
-                  // 1. get the _id of the result matching { queryKey: queryValue }
-                  var parent = _.filter(results, function(result) {
-                    return new RegExp(queryValue).test(result[queryKey]) === true
-                  })
+            // query the reference collection
+            database.collection(collection).find(collectionQuery, { fields: fieldsObj, compose: true }, function (err, cursor) {
+              if (err) return done(err)
 
-                  if (parent[0]) {
-                    var children = _.filter(results, function(result) {
-                      if (result[linkKey] && result[linkKey].toString() === parent[0]._id.toString()) {
-                        return result
-                      }
+              cursor.toArray(function (err, results) {
+                if (results && results.length) {
+                  if (!linkKey) { // i.e. it's a one-level nested query
+                    var ids = _.map(_.pluck(results, '_id'), function(id) { return id.toString() })
+
+                    // update the original query with a query for the obtained _id
+                    // using the appropriate query type for whether the reference settings
+                    // allows storing as arrays or not
+                    query[collectionKey] = collectionSettings.multiple ? { '$in': ids } : ids[0]
+                  } else {
+                    // filter the results using linkKey
+                    // 1. get the _id of the result matching { queryKey: queryValue }
+                    var parent = _.filter(results, function(result) {
+                      return new RegExp(queryValue).test(result[queryKey]) === true
                     })
 
-                    var ids = _.map(_.pluck(children, '_id'), function(id) {
-                      return id.toString()
-                    })
+                    if (parent[0]) {
+                      var children = _.filter(results, function(result) {
+                        if (result[linkKey] && result[linkKey].toString() === parent[0]._id.toString()) {
+                          return result
+                        }
+                      })
+
+                      var ids = _.map(_.pluck(children, '_id'), function(id) {
+                        return id.toString()
+                      })
+                    }
+
+                    query[collectionKey] = { '$in': ids || [] }
                   }
-
-                  query[collectionKey] = { '$in': ids || [] }
+                } else {
+                  // Nothing found in the reference collection, add empty criteria to the main query
+                  query[collectionKey] = collectionSettings.multiple
+                    ? { '$in': [] }
+                    : ""
                 }
-              } else {
-                // Nothing found in the reference collection, add empty criteria to the main query
-                query[collectionKey] = collectionSettings.multiple
-                  ? { '$in': [] }
-                  : ""
-              }
 
-              idx++
-              if (idx === referenceFieldKeys.length) {
-                // run the full query against the original collection
-                runFind()
-              }
+                cb(null, query)
+              })
             })
           })
         })
+
+        async.series(queue,
+          function(err, results) {
+            //console.log(query)
+            runFind()
+          }
+        )
       } else {
         runFind()
       }

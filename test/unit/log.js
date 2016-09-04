@@ -17,7 +17,7 @@ var resetLog = function (done) {
     done();
 };
 
-describe('logger', function () {
+describe.skip('logger', function () {
 
     describe('access log', function () {
 

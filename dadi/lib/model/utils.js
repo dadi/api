@@ -1,6 +1,8 @@
-var help = require(__dirname + '/../help')
-var ObjectID = require('mongodb').ObjectID
 var _ = require('underscore')
+var ObjectID = require('mongodb').ObjectID
+var path = require('path')
+
+var help = require(path.join(__dirname, '/../help'))
 
 /**
  * Returns the type of field, allowing for dot notation in queries.
@@ -16,7 +18,7 @@ function getSchemaOrParent (key, schema) {
   }
 }
 
-function isReference(key, schema) {
+function isReference (key, schema) {
   return key.split('.').length > 1 && getSchemaOrParent(key, schema).type === 'Reference'
 }
 
@@ -49,7 +51,7 @@ function processReferenceFieldQuery (query, schema) {
   return [queryWithout, queryWith]
 }
 
-function sortQueriesByNestedLevel(queries) {
+function sortQueriesByNestedLevel (queries) {
   var keys = Object.keys(queries).sort((a, b) => {
     var aLen = a.split('.').length
     var bLen = b.split('.').length
@@ -57,12 +59,11 @@ function sortQueriesByNestedLevel(queries) {
     return aLen < bLen ? 1 : -1
   })
 
-  return keys.reduce((r, k) => (r[k] = queries[k], r), {})
+  return keys.reduce((r, k) => (r[k] = queries[k], r), {}) // eslint-disable-line
 }
 
 function convertApparentObjectIds (query, schema) {
   _.each(Object.keys(query), function (key) {
-
     if (/apiVersion/.test(key)) {
       return
     }
@@ -75,7 +76,7 @@ function convertApparentObjectIds (query, schema) {
         var arr = query[key]
         _.each(arr, function (value, key) {
           if (typeof value === 'string' && ObjectID.isValid(value) && value.match(/^[a-fA-F0-9]{24}$/)) {
-            arr[key] = new ObjectID.createFromHexString(value)
+            arr[key] = ObjectID.createFromHexString(value)
           }
         })
         query[key] = arr
@@ -87,7 +88,7 @@ function convertApparentObjectIds (query, schema) {
         query[key] = convertApparentObjectIds(query[key], schema)
       }
     } else if (typeof query[key] === 'string' && !/^Mixed|Object$/.test(type) && ObjectID.isValid(query[key]) && query[key].match(/^[a-fA-F0-9]{24}$/)) {
-      query[key] = new ObjectID.createFromHexString(query[key])
+      query[key] = ObjectID.createFromHexString(query[key])
     }
   })
 
@@ -105,17 +106,14 @@ function makeCaseInsensitive (obj) {
     if (typeof obj[key] === 'string') {
       if (ObjectID.isValid(obj[key]) && obj[key].match(/^[a-fA-F0-9]{24}$/)) {
         newObj[key] = obj[key]
-      }
-      else if (key[0] === '$' && key === '$regex') {
+      } else if (key[0] === '$' && key === '$regex') {
         newObj[key] = new RegExp(obj[key], 'i')
-      }
-      else if (key[0] === '$' && key !== '$regex') {
+      } else if (key[0] === '$' && key !== '$regex') {
         newObj[key] = obj[key]
       } else {
         newObj[key] = new RegExp(['^', help.regExpEscape(obj[key]), '$'].join(''), 'i')
       }
-    }
-    else if (typeof obj[key] === 'object' && obj[key] !== null) {
+    } else if (typeof obj[key] === 'object' && obj[key] !== null) {
       if (key[0] === '$' && key !== '$regex') {
         newObj[key] = obj[key]
       } else {
@@ -140,10 +138,10 @@ module.exports = {
 _.mixin({
   // Get/set the value of a nested property
   deep: function (obj, key, value) {
-    var keys = key.replace(/\[(["']?)([^\1]+?)\1?\]/g, '.$2').replace(/^\./, '').split('.'),
-      root,
-      i = 0,
-      n = keys.length
+    var keys = key.replace(/\[(["']?)([^\1]+?)\1?\]/g, '.$2').replace(/^\./, '').split('.')
+    var root
+    var i = 0
+    var n = keys.length
 
     // Set deep value
     if (arguments.length > 2) {
@@ -191,7 +189,7 @@ _.mixin({
 
 _.mixin({
   pluckDeep: function (obj, key) {
-    return _.map(obj, function (value) { return _.deep(value, key); })
+    return _.map(obj, function (value) { return _.deep(value, key) })
   }
 })
 
@@ -205,6 +203,6 @@ _.mixin({
 //   deeply: {
 //     nested: 'bar'
 //   }
-// }];
+// }]
 //
 // _.pluckDeep(arr, 'deeply.nested') // ['foo', 'bar']

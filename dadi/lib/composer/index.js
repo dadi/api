@@ -1,8 +1,7 @@
-var ObjectID = require('mongodb').ObjectID
 var _ = require('underscore')
-var util = require('util')
+var path = require('path')
 
-var help = require(__dirname + '/../help')
+var help = require(path.join(__dirname, '/../help'))
 
 var Composer = function (model) {
   this.model = model
@@ -44,7 +43,7 @@ Composer.prototype.composeOne = function (doc, callback) {
   var keyIdx = 0
 
   _.each(composable, function (key) {
-    var Model = require(__dirname + '/../model/index.js')
+    var Model = require(path.join(__dirname, '/../model/index.js'))
     var mod
 
     var query = {}
@@ -88,6 +87,8 @@ Composer.prototype.composeOne = function (doc, callback) {
       var compose = help.getFromObj(schema, key + '.settings.compose', false) || mod.compose
 
       mod.find(query, { 'compose': compose, 'fields': fields }, function (err, result) {
+        if (err) console.log(err)
+
         if (result) {
           if (result.results.length === 1 && returnArray === false) {
             doc[key] = result.results[0]

@@ -1,47 +1,42 @@
-var url = require('url');
-var ObjectID = require('mongodb').ObjectID;
-var app = require(__dirname + '/../../../dadi/lib');
-var model = require(__dirname + '/../../../dadi/lib/model');
+var path = require('path')
+var url = require('url')
+var model = require(path.join(__dirname, '/../../../dadi/lib/model'))
 
 module.exports.get = function (req, res, next) {
+  var books = model('books')
+  var user = model('user')
 
-    var books = model('books');
+  var query = url.parse(req.url, true).query
+  var bookid = query && query.bookid
+  var bookQuery = bookid && {_id: bookid}
 
-    var user = model('user');
+  if (bookQuery) {
+    // books.castToBSON(bookQuery)
+    // TODO: use an async lib to avoid nesting callbacks
+    return books.find(bookQuery, function (err, books) {
+      if (err) return next(err)
 
-    var query = url.parse(req.url, true).query;
-    var bookid = query && query.bookid;
-    var bookQuery = bookid && {_id: bookid};
+      if (books.results.length) {
+        var userQuery = { _id: books.results[0].authorId }
+        user.castToBSON(userQuery)
 
-    if (bookQuery) {
+        return user.find(userQuery, function (err, users) {
+          if (err) return next(err)
 
-        //books.castToBSON(bookQuery);
+          var book = books.results[0]
 
-        // TODO: use an async lib to avoid nesting callbacks
-        return books.find(bookQuery, function (err, books) {
-            if (err) return next(err);
+          // attach the author data to the book, unless its not found
+          book.authorId = users.length ? users[0] : null
 
-            if (books.results.length) {
-                var userQuery = { _id: books.results[0].authorId };
-                user.castToBSON(userQuery);
+          res.setHeader('content-type', 'application/json')
+          res.statusCode = 200
+          res.end(JSON.stringify(book))
+        })
+      }
 
-                return user.find(userQuery, function (err, users) {
-                    if (err) return next(err);
+      return next()
+    })
+  }
 
-                    var book = books.results[0];
-
-                    // attach the author data to the book, unless its not found
-                    book.authorId = users.length ? users[0] : null;
-
-                    res.setHeader('content-type', 'application/json');
-                    res.statusCode = 200;
-                    res.end(JSON.stringify(book));
-                });
-            }
-
-            return next();
-        });
-    }
-
-    return next();
-};
+  return next()
+}

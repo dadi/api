@@ -52,6 +52,7 @@ describe('Help', function (done) {
       }
 
       var val = help.validateCollectionSchema(schema);
+      console.log(val)
       val.success.should.be.false;
       val.errors[0].section.should.equal('fields');
       val.errors[0].message.should.equal('must include at least one field');

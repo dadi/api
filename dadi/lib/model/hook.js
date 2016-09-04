@@ -1,4 +1,5 @@
-var config = require(__dirname + '/../../../config')
+var path = require('path')
+var config = require(path.join(__dirname, '/../../../config'))
 
 /**
  * Creates a new hook. Allowed types:

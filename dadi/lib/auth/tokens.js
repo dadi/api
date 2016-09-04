@@ -1,8 +1,9 @@
+var path = require('path')
 var uuid = require('node-uuid')
-var config = require(__dirname + '/../../../config.js')
-var connection = require(__dirname + '/../model/connection')
+var config = require(path.join(__dirname, '/../../../config.js'))
+var connection = require(path.join(__dirname, '/../model/connection'))
+var tokenStore = require(path.join(__dirname, '/tokenStore'))()
 
-var tokenStore = require(__dirname + '/tokenStore')()
 var dbOptions = config.get('auth.database')
 dbOptions.auth = true
 var clientStore = connection(dbOptions)
@@ -16,6 +17,8 @@ function getToken (callback) {
   (function checkToken () {
     var token = uuid.v4()
     tokenStore.get(token, function (err, val) {
+      if (err) console.log(err)
+
       if (val) {
         checkToken()
       } else {
@@ -26,7 +29,6 @@ function getToken (callback) {
 }
 
 module.exports.generate = function (req, res, next) {
-
   // Look up the creds in clientStore
   var _done = function (database) {
     database.collection(clientCollectionName).findOne({
@@ -36,7 +38,6 @@ module.exports.generate = function (req, res, next) {
       if (err) return next(err)
 
       if (client) {
-
         // Generate token
         var token
         getToken(function (returnedToken) {
@@ -60,10 +61,10 @@ module.exports.generate = function (req, res, next) {
           })
         })
       } else {
-        var err = new Error('Invalid Credentials')
-        err.statusCode = 401
+        var error = new Error('Invalid Credentials')
+        error.statusCode = 401
         res.setHeader('WWW-Authenticate', 'Bearer, error="invalid_credentials", error_description="Invalid credentials supplied"')
-        return next(err)
+        return next(error)
       }
     })
   }

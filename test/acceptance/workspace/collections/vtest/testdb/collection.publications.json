@@ -1,0 +1,101 @@
+{
+  "fields": {
+    "name": {
+      "type": "String",
+      "label": "Name",
+      "validation": {
+        "maxLength": 250
+      },
+      "publish": {
+        "section": "Editorial",
+        "subSection": "Content"
+      },
+      "required": false,
+      "display": {
+        "index": true,
+        "edit": true
+      }
+    },
+    "furl": {
+      "type": "String",
+      "label": "URL Formatted Name",
+      "validation": {
+        "maxLength": 250
+      },
+      "publish": {
+        "section": "Meta",
+        "subSection": "Url"
+      },
+      "required": false,
+      "display": {
+        "index": true,
+        "edit": true
+      }
+    },
+    "url": {
+      "type": "String",
+      "label": "URL",
+      "publish": {
+        "section": "Meta",
+        "subSection": "Url"
+      },
+      "required": false,
+      "display": {
+        "index": true,
+        "edit": false
+      }
+    },
+    "urlOverride": {
+      "type": "String",
+      "label": "URL Override",
+      "publish": {
+        "section": "Meta",
+        "subSection": "Url"
+      },
+      "required": false,
+      "display": {
+        "index": true,
+        "edit": false
+      }
+    }
+  },
+  "settings": {
+    "cache": true,
+    "compose": true,
+    "callback": null,
+    "defaultFilters": null,
+    "fieldLimiters": null,
+    "cacheTTL": 300,
+    "authenticate": true,
+    "publish": {
+      "group": "Taxonomy"
+    },
+    "allowExtension": true,
+    "displayName": "Publications",
+    "count": 100,
+    "sortOrder": 1,
+    "hooks": {
+      "beforeCreate": [
+        {
+          "hook": "slugify",
+          "options": {
+            "from": "name",
+            "override": "urlOverride",
+            "to": "furl"
+          }
+        }
+      ],
+      "beforeUpdate": [
+        {
+          "hook": "slugify",
+          "options": {
+            "from": "name",
+            "override": "urlOverride",
+            "to": "furl"
+          }
+        }
+      ]
+    },
+    "lastModifiedAt": 1472947876473
+  }
+}

@@ -1,5 +1,6 @@
-var convict = require('convict');
-var fs = require('fs');
+var convict = require('convict')
+var fs = require('fs')
+var path = require('path')
 
 // Define a schema
 var conf = convict({
@@ -296,35 +297,52 @@ var conf = convict({
     format: Boolean,
     default: false
   }
-});
+})
 
 // Load environment dependent configuration
-var env = conf.get('env');
-conf.loadFile('./config/config.' + env + '.json');
+var env = conf.get('env')
+conf.loadFile(getConfigPath())
 
 // Perform validation
-conf.validate({strict: false});
+conf.validate({strict: false})
 
 // Load domain-specific configuration
 conf.updateConfigDataForDomain = function(domain) {
-  var domainConfig = './config/' + domain + '.json';
+  var domainConfig = './config/' + domain + '.json'
   try {
-    var stats = fs.statSync(domainConfig);
+    var stats = fs.statSync(domainConfig)
     // no error, file exists
-    conf.loadFile(domainConfig);
-    conf.validate({strict: false});
+    conf.loadFile(domainConfig)
+    conf.validate({strict: false})
   }
   catch(err) {
     if (err.code === 'ENOENT') {
-      //console.log('No domain-specific configuration file: ' + domainConfig);
+      //console.log('No domain-specific configuration file: ' + domainConfig)
     }
     else {
-      console.log(err);
+      console.log(err)
     }
   }
-};
+}
+
+function getBasePath() {
+  var configFilePath = __dirname
+  var callingDirectoryPath = process.cwd()
+
+  // Running from inside the app directory?
+  if (callingDirectoryPath.indexOf(configFilePath) === 0) {
+    return '.'
+  }
+
+  return path.dirname(path.relative(callingDirectoryPath, process.argv[1]))
+}
+
+function getConfigPath() {
+  var configPath = path.resolve(getBasePath(), 'config', 'config.' + conf.get('env') + '.json')
+
+  return configPath
+}
 
 module.exports = conf;
-module.exports.configPath = function() {
-  return './config/config.' + conf.get('env') + '.json';
-}
+module.exports.basePath = getBasePath()
+module.exports.configPath = getConfigPath

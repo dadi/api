@@ -1,5 +1,6 @@
 var convict = require('convict')
 var fs = require('fs')
+var path = require('path')
 
 // Define a schema
 var conf = convict({
@@ -325,7 +326,15 @@ conf.updateConfigDataForDomain = function(domain) {
 }
 
 function getBasePath() {
-  return path.dirname(path.relative(process.cwd(), process.argv[1]))
+  var configFilePath = __dirname
+  var callingDirectoryPath = process.cwd()
+
+  // Running from inside the app directory?
+  if (callingDirectoryPath.indexOf(configFilePath) === 0) {
+    return '.'
+  }
+
+  return path.dirname(path.relative(callingDirectoryPath, process.argv[1]))
 }
 
 function getConfigPath() {

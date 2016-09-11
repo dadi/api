@@ -300,7 +300,7 @@ var conf = convict({
 
 // Load environment dependent configuration
 var env = conf.get('env')
-conf.loadFile('./config/config.' + env + '.json')
+conf.loadFile(getConfigPath())
 
 // Perform validation
 conf.validate({strict: false})
@@ -324,7 +324,16 @@ conf.updateConfigDataForDomain = function(domain) {
   }
 }
 
-module.exports = conf
-module.exports.configPath = function() {
-  return './config/config.' + conf.get('env') + '.json'
+function getBasePath() {
+  return path.dirname(path.relative(process.cwd(), process.argv[1]))
 }
+
+function getConfigPath() {
+  var configPath = path.resolve(getBasePath(), 'config', 'config.' + conf.get('env') + '.json')
+
+  return configPath
+}
+
+module.exports = conf;
+module.exports.basePath = getBasePath()
+module.exports.configPath = getConfigPath

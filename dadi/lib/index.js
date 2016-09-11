@@ -27,6 +27,7 @@ var help = require(__dirname + '/help');
 var dadiStatus = require('@dadi/status');
 
 var config = require(__dirname + '/../../config');
+var basePath = config.basePath
 var configPath = path.resolve(config.configPath());
 
 if (config.get('env') !== 'test') {
@@ -226,9 +227,9 @@ Server.prototype.loadPaths = function(paths, done) {
   var self = this;
   var options = {};
 
-  options.collectionPath = path.resolve(paths.collections || __dirname + '/../../workspace/collections');
-  options.endpointPath = path.resolve(paths.endpoints || __dirname + '/../../workspace/endpoints');
-  options.hookPath = path.resolve(paths.hooks || __dirname + '/../../workspace/hooks');
+  options.collectionPath = path.resolve(basePath, paths.collections || __dirname + '/../../workspace/collections');
+  options.endpointPath = path.resolve(basePath, paths.endpoints || __dirname + '/../../workspace/endpoints');
+  options.hookPath = path.resolve(basePath, paths.hooks || __dirname + '/../../workspace/hooks');
 
   var idx = 0;
 

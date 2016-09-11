@@ -1,5 +1,5 @@
-var convict = require('convict');
-var fs = require('fs');
+var convict = require('convict')
+var fs = require('fs')
 
 // Define a schema
 var conf = convict({
@@ -296,35 +296,35 @@ var conf = convict({
     format: Boolean,
     default: false
   }
-});
+})
 
 // Load environment dependent configuration
-var env = conf.get('env');
-conf.loadFile('./config/config.' + env + '.json');
+var env = conf.get('env')
+conf.loadFile('./config/config.' + env + '.json')
 
 // Perform validation
-conf.validate({strict: false});
+conf.validate({strict: false})
 
 // Load domain-specific configuration
 conf.updateConfigDataForDomain = function(domain) {
-  var domainConfig = './config/' + domain + '.json';
+  var domainConfig = './config/' + domain + '.json'
   try {
-    var stats = fs.statSync(domainConfig);
+    var stats = fs.statSync(domainConfig)
     // no error, file exists
-    conf.loadFile(domainConfig);
-    conf.validate({strict: false});
+    conf.loadFile(domainConfig)
+    conf.validate({strict: false})
   }
   catch(err) {
     if (err.code === 'ENOENT') {
-      //console.log('No domain-specific configuration file: ' + domainConfig);
+      //console.log('No domain-specific configuration file: ' + domainConfig)
     }
     else {
-      console.log(err);
+      console.log(err)
     }
   }
-};
+}
 
-module.exports = conf;
+module.exports = conf
 module.exports.configPath = function() {
-  return './config/config.' + conf.get('env') + '.json';
+  return './config/config.' + conf.get('env') + '.json'
 }

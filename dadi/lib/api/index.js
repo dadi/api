@@ -1,10 +1,12 @@
 var fs = require('fs')
 var http = require('http')
 var https = require('https')
-var url = require('url')
+var path = require('path')
 var pathToRegexp = require('path-to-regexp')
-var log = require(__dirname + '/../log')
-var config = require(__dirname + '/../../../config')
+var url = require('url')
+
+var log = require('@dadi/logger')
+var config = require(path.join(__dirname, '/../../../config'))
 
 var Api = function () {
   this.paths = {}
@@ -56,10 +58,8 @@ var Api = function () {
       switch (ex.message) {
         case 'error:06065064:digital envelope routines:EVP_DecryptFinal_ex:bad decrypt':
           throw new Error(exPrefix + 'incorrect ssl passphrase')
-          break;
         case 'error:0906A068:PEM routines:PEM_do_header:bad password read':
           throw new Error(exPrefix + 'required ssl passphrase not provided')
-          break;
         default:
           throw new Error(exPrefix + ex.message)
       }
@@ -121,7 +121,6 @@ Api.prototype.listen = function (port, host, backlog, done) {
   return this.serverInstance.listen(port, host, backlog, done)
 }
 
-
 /**
  * convenience method that closes http/https server
  *
@@ -145,7 +144,6 @@ Api.prototype.close = function (done) {
  *  @api public
  */
 Api.prototype.listener = function (req, res) {
-
   // clone the middleware stack
   var stack = this.all.slice(0)
   var path = url.parse(req.url).pathname
@@ -186,7 +184,6 @@ Api.prototype.listener = function (req, res) {
  */
 Api.prototype._match = function (path, req) {
   var paths = this.paths
-  var matches = []
   var handlers = []
 
   // always add params object to avoid need for checking later
@@ -201,7 +198,6 @@ Api.prototype._match = function (path, req) {
     handlers.push(paths[key].handler)
 
     match.forEach(function (k, i) {
-
       var keyOpts = keys[i] || {}
       if (match[i + 1] && keyOpts.name) req.params[keyOpts.name] = match[i + 1]
     })
@@ -217,18 +213,16 @@ module.exports = function () {
 module.exports.Api = Api
 
 // Default error handler, in case application doesn't define error handling
-function defaultError(api) {
+function defaultError (api) {
   return function (err, req, res) {
-
     var resBody
 
     log.error({module: 'api'}, err)
 
     if (err.json) {
-    resBody = JSON.stringify(err.json)
-    }
-    else {
-    resBody = JSON.stringify(err)
+      resBody = JSON.stringify(err.json)
+    } else {
+      resBody = JSON.stringify(err)
     }
 
     res.statusCode = err.statusCode || 500
@@ -239,7 +233,7 @@ function defaultError(api) {
 }
 
 // return a 404
-function notFound(req, res) {
+function notFound (req, res) {
   return function () {
     res.statusCode = 404
     res.end()

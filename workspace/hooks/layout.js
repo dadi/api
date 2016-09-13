@@ -11,7 +11,7 @@ module.exports = function (obj, type, data) {
         if (resolveLayout) {
           obj.results.forEach((document) => {
             document = resolve(data.schema[layoutField].schema, layoutField, document)
-          })          
+          })
         }
 
         // Attaching layout schema to metadata
@@ -39,7 +39,7 @@ module.exports = function (obj, type, data) {
 // Layout resolve
 // --------------------------
 
-function resolve(layoutSchema, layoutField, document) {
+function resolve (layoutSchema, layoutField, document) {
   var result = []
   var freeSections = []
 
@@ -88,14 +88,14 @@ function resolve(layoutSchema, layoutField, document) {
 
   document[layoutField] = result
 
-  return document	
+  return document
 }
 
 // --------------------------
 // Layout validation
 // --------------------------
 
-function validate(layoutSchema, layoutField, document) {
+function validate (layoutSchema, layoutField, document) {
   var errors = []
   var fieldCount = []
   var freeFieldsSections = layoutSchema.filter(function (elem) {
@@ -103,8 +103,8 @@ function validate(layoutSchema, layoutField, document) {
   })
 
   if (document[layoutField]) {
-    Object.keys(document[layoutField]).forEach((function (section) {
-      var schemaSection = freeFieldsSections.find(function (obj) {
+    Object.keys(document[layoutField]).forEach((section) => {
+      var schemaSection = freeFieldsSections.find((obj) => {
         return (obj.name === section)
       })
 
@@ -114,14 +114,14 @@ function validate(layoutSchema, layoutField, document) {
         fieldCount[section] = {}
       }
 
-      document[layoutField][section].forEach((function (block, blockIndex) {
-        var freeField = schemaSection.fields.find(function (elem) {
+      document[layoutField][section].forEach((block, blockIndex) => {
+        var freeField = schemaSection.fields.find((elem) => {
           return elem.source === block.source
         })
 
         // Check if field is part of `free`
         if (!freeField) {
-          return errors.push({field: 'layout', message: 'Layout section \'' + schemaSection.name + '\' does not accept \'' + block.source + '\' as a free field'})
+          return errors.push({field: 'layout', message: "Layout section '" + schemaSection.name + "' does not accept '" + block.source + "' as a free field"})
         }
 
         // Check if `index` is within bounds
@@ -135,31 +135,30 @@ function validate(layoutSchema, layoutField, document) {
         } else {
           fieldCount[section][block.source] = 1
         }
-      }).bind(this))
-    }).bind(this))
+      })
+    })
 
     var free = layoutSchema.filter(function (elem) {
       return elem.free
     })
 
     free.forEach(function (section) {
-
       section.fields.forEach(function (field) {
         var count = (fieldCount[section.name] && fieldCount[section.name][field.source]) ? fieldCount[section.name][field.source] : 0
 
         // Check for `min` limit
         if (field.min && (count < field.min)) {
-          errors.push({field: 'layout', message: 'Layout section \'' + section.name + '\' must contain at least ' + field.min + ' instances of \'' + field.source + '\''})
+          errors.push({field: 'layout', message: "Layout section '" + section.name + "' must contain at least " + field.min + " instances of '" + field.source + "'"})
         }
 
         // Check for `max` limit
         if (field.max && (count > field.max)) {
-          errors.push({field: 'layout', message: 'Layout section \'' + section.name + '\' cannot contain more than ' + field.max + ' instances of \'' + field.source + '\''})
+          errors.push({field: 'layout', message: "Layout section '" + section.name + "' cannot contain more than " + field.max + " instances of '" + field.source + "'"})
         }
       })
-    })    
+    })
   } else {
-    errors.push({message: 'Field \'' + layoutField + '\' does not exist in the collection'})
+    errors.push({message: "Field '" + layoutField + "' does not exist in the collection"})
   }
 
   if (errors.length) return errors

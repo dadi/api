@@ -1,5 +1,6 @@
-var connection = require(__dirname + '/../model/connection')
-var config = require(__dirname + '/../../../config.js')
+var path = require('path')
+var connection = require(path.join(__dirname, '/../model/connection'))
+var config = require(path.join(__dirname, '/../../../config.js'))
 
 var storeCollectionName = config.get('auth.tokenCollection')
 
@@ -11,7 +12,7 @@ var Store = function () {
   var _done = function (database) {
     // set index on token and expiry
     database.collection(storeCollectionName).ensureIndex(
-      { 'token': 1,'tokenExpire': 1 },
+      { 'token': 1, 'tokenExpire': 1 },
       { },
       function (err, indexName) {
         if (err) console.log(err)
@@ -35,7 +36,6 @@ var Store = function () {
 }
 
 Store.prototype.get = function (token, done) {
-  var self = this
   var _done = function (database) {
     database.collection(storeCollectionName).findOne({
       token: token,
@@ -50,8 +50,6 @@ Store.prototype.get = function (token, done) {
 }
 
 Store.prototype.set = function (token, value, done) {
-  var self = this
-
   var _done = function (database) {
     database.collection(storeCollectionName).insert({
       token: token,

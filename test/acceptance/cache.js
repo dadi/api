@@ -569,7 +569,7 @@ describe('Cache', function (done) {
     });
   });
 
-  describe('Redis', function(done) {
+  describe.skip('Redis', function(done) {
 
     beforeEach(function (done) {
       testConfigString = fs.readFileSync(config.configPath());

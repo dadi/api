@@ -1,13 +1,14 @@
-var config = require(__dirname + '/../../../config.js');
-var mongodb = require('mongodb');
-var MongoClient = mongodb.MongoClient;
-var Server = mongodb.Server;
-var EventEmitter = require('events').EventEmitter;
-var util = require('util');
-var _ = require('underscore');
+var _ = require('underscore')
+var EventEmitter = require('events').EventEmitter
+var mongodb = require('mongodb')
+var MongoClient = mongodb.MongoClient
+var path = require('path')
+var util = require('util')
+
+var config = require(path.join(__dirname, '/../../../config.js'))
 
 // instantiate once
-var mongoClient = new MongoClient();
+var mongoClient = new MongoClient()
 var _connections = []
 
 /**
@@ -17,19 +18,19 @@ var _connections = []
  * @api public
  */
 var Connection = function (options) {
-    this.connectionOptions = getConnectionOptions(options);
-    this.connectionString = constructConnectionString(this.connectionOptions);
+  this.connectionOptions = getConnectionOptions(options)
+  this.connectionString = constructConnectionString(this.connectionOptions)
 
-    // connection readyState
-    // 0 = disconnected
-    // 1 = connected
-    // 2 = connecting
-    // 3 = disconnecting
-    this.readyState = 0;
-};
+  // connection readyState
+  // 0 = disconnected
+  // 1 = connected
+  // 2 = connecting
+  // 3 = disconnecting
+  this.readyState = 0
+}
 
 // inherits from EventEmitter
-util.inherits(Connection, EventEmitter);
+util.inherits(Connection, EventEmitter)
 
 /**
  * Connects to the database as specified in the options, or the config
@@ -37,166 +38,157 @@ util.inherits(Connection, EventEmitter);
  *
  */
 Connection.prototype.connect = function () {
-    this.readyState = 2;
+  this.readyState = 2
 
-    var self = this;
+  var self = this
 
-    if (self.db) {
-      self.readyState = 1;
-      self.emit('connect', self.db);
-      return;
+  if (self.db) {
+    self.readyState = 1
+    self.emit('connect', self.db)
+    return
+  }
+
+  mongoClient.connect(this.connectionString, function (err, db) {
+    if (err) {
+      self.readyState = 0
+      return self.emit('error', err)
     }
 
-    mongoClient.connect(this.connectionString, function(err, db) {
+    self.readyState = 1
+    self.db = db
 
-        if (err) {
-            self.readyState = 0;
-            return self.emit('error', err);
-        }
+    _connections[self.connectionOptions.database] = self
 
-        self.readyState = 1;
-        self.db = db;
+    if (!self.connectionOptions.username || !self.connectionOptions.password) {
+      return self.emit('connect', self.db)
+    }
 
-        _connections[self.connectionOptions.database] = self;
-
-        if (!self.connectionOptions.username || !self.connectionOptions.password) {
-            return self.emit('connect', self.db);
-        }
-
-        self.db.authenticate(self.connectionOptions.username, self.connectionOptions.password, function (err) {
-            if (err) return self.emit('error', err);
-            self.emit('connect', self.db);
-        });
-
-    });
-
+    self.db.authenticate(self.connectionOptions.username, self.connectionOptions.password, function (err) {
+      if (err) return self.emit('error', err)
+      self.emit('connect', self.db)
+    })
+  })
 }
 
-function getConnectionOptions(options) {
+function getConnectionOptions (options) {
+  options = options || {}
 
-    options = options || {};
+  var dbConfig = config.get('database')
 
-    var dbConfig = config.get('database');
-
-    if (options.auth) {
-      // extend primary database config with the auth
-      // database options
-      options = _.extend({}, dbConfig, options);
-    }
-    else {
-      if (options.database && dbConfig.enableCollectionDatabases) {
-        if (dbConfig[options.database]) {
-          options = _.extend(dbConfig, dbConfig[options.database], options);
-        }
-        else {
-          options = _.extend(dbConfig, options);
-        }
+  if (options.auth) {
+    // extend primary database config with the auth
+    // database options
+    options = _.extend({}, dbConfig, options)
+  } else {
+    if (options.database && dbConfig.enableCollectionDatabases) {
+      if (dbConfig[options.database]) {
+        options = _.extend(dbConfig, dbConfig[options.database], options)
+      } else {
+        options = _.extend(dbConfig, options)
       }
-      else {
-        // use primary database config
-        options = _.extend({}, dbConfig);
-      }
+    } else {
+      // use primary database config
+      options = _.extend({}, dbConfig)
     }
+  }
 
-    var connectionOptions = options;
+  var connectionOptions = options
 
-    // required config fields
-    if (!(connectionOptions.hosts && connectionOptions.hosts.length)) {
-        throw new Error('`hosts` Array is required for Connection');
-    }
+  // required config fields
+  if (!(connectionOptions.hosts && connectionOptions.hosts.length)) {
+    throw new Error('`hosts` Array is required for Connection')
+  }
 
-    if (!connectionOptions.database) throw new Error('`database` String is required for Connection');
+  if (!connectionOptions.database) throw new Error('`database` String is required for Connection')
 
-    return connectionOptions;
+  return connectionOptions
 }
 
-function constructConnectionString(options) {
+function constructConnectionString (options) {
+  // mongodb://[username:password@]host1[:port1][,host2[:port2],...[,hostN[:portN]]][/[database][?options]]
+  // mongodb://myprimary.com:27017,mysecondary.com:27017/MyDatabase/?replicaset=MySet
 
-    // mongodb://[username:password@]host1[:port1][,host2[:port2],...[,hostN[:portN]]][/[database][?options]]
-    // mongodb://myprimary.com:27017,mysecondary.com:27017/MyDatabase/?replicaset=MySet
+  var connectionOptions = _.extend({
+    options: {}
+  }, options)
 
-    connectionOptions = _.extend({
-        options: {}
-    }, options);
+  if (options.replicaSet) {
+    connectionOptions.options.replicaSet = options.replicaSet
+  }
 
+  if (options.ssl) connectionOptions.options['ssl'] = options.ssl
 
-    if (options.replicaSet) {
-        connectionOptions.options.replicaSet = options.replicaSet;
-    }
+  if (options.maxPoolSize) connectionOptions.options['maxPoolSize'] = options.maxPoolSize
 
-    if (options.ssl) connectionOptions.options['ssl'] = options.ssl;
+  // test specific connection pool size
+  if (config.get('env') === 'test') {
+    connectionOptions.options['maxPoolSize'] = 1
+  }
 
-    if (options.maxPoolSize) connectionOptions.options['maxPoolSize'] = options.maxPoolSize;
+  return 'mongodb://' +
+    credentials(connectionOptions) +
+    connectionOptions.hosts.map(function (host, index) {
+      return host.host + ':' + (host.port || 27017)
+    }).join(',') +
+  '/' +
+  connectionOptions.database +
+  encodeOptions(connectionOptions.options)
 
-    // test specific connection pool size
-    if (config.get('env') === 'test') {
-        connectionOptions.options['maxPoolSize'] = 1;
-    }
-
-    return 'mongodb://'
-        + credentials(connectionOptions)
-        + connectionOptions.hosts.map(function(host, index) {
-                return host.host + ':' + (host.port || 27017);
-            }).join(',')
-        + '/'
-        + connectionOptions.database
-        + encodeOptions(connectionOptions.options);
-
-    /*
-    options = {
+/*
+options = {
+    "hosts": [
+        {
+            "host": "localhost",
+            "port": 27020
+        },
+        {
+            "host": "localhost",
+            "port": 27021
+        }
+    ],
+    "username": "",
+    "password": "",
+    "database": "serama",
+    "ssl": false,
+    "replicaSet": "test",
+    "secondary": {
         "hosts": [
             {
-                "host": "localhost",
-                "port": 27020
-            },
-            {
-                "host": "localhost",
-                "port": 27021
+                "host": "127.0.0.1",
+                "port": 27018
             }
         ],
         "username": "",
         "password": "",
-        "database": "serama",
-        "ssl": false,
-        "replicaSet": "test",
-        "secondary": {
-            "hosts": [
-                {
-                    "host": "127.0.0.1",
-                    "port": 27018
-                }
-            ],
-            "username": "",
-            "password": "",
-            "replicaSet": false,
-            "ssl": false
-        },
-        "testdb": {
-            "hosts": [
-                {
-                    "host": "127.0.0.1",
-                    "port": 27017
-                }
-            ],
-            "username": "",
-            "password": ""
-        }
+        "replicaSet": false,
+        "ssl": false
+    },
+    "testdb": {
+        "hosts": [
+            {
+                "host": "127.0.0.1",
+                "port": 27017
+            }
+        ],
+        "username": "",
+        "password": ""
     }
-    */
+}
+*/
 }
 
-function encodeOptions(options) {
-    if (!options || _.isEmpty(options)) return "";
+function encodeOptions (options) {
+  if (!options || _.isEmpty(options)) return ''
 
-    return "?" + Object.keys(options).map(function(key) {
-        return encodeURIComponent(key) + "=" + encodeURIComponent(options[key] || "");
-    }).join('&');
+  return '?' + Object.keys(options).map(function (key) {
+    return encodeURIComponent(key) + '=' + encodeURIComponent(options[key] || '')
+  }).join('&')
 }
 
-function credentials(options) {
-    if (!options.username || !options.password) return "";
+function credentials (options) {
+  if (!options.username || !options.password) return ''
 
-    return options.username + ":" + options.password + "@";
+  return options.username + ':' + options.password + '@'
 }
 
 /**
@@ -207,38 +199,37 @@ function credentials(options) {
  * @api public
  */
 module.exports = function (options) {
-    var conn;
-    var connectionOptions = getConnectionOptions(options);
+  var conn
+  var connectionOptions = getConnectionOptions(options)
 
-    // if a connection exists for the specified database, return it
-    if (_connections[connectionOptions.database]) {
-      conn = _connections[connectionOptions.database];
+  // if a connection exists for the specified database, return it
+  if (_connections[connectionOptions.database]) {
+    conn = _connections[connectionOptions.database]
 
-      if (conn.readyState === 2) {
-        setTimeout(function() {
-          conn.connect();
-        }, 5000)
-      }
+    if (conn.readyState === 2) {
+      setTimeout(function () {
+        conn.connect()
+      }, 5000)
     }
+  } else {
     // else create a new connection
-    else {
-      conn = new Connection(options);
+    conn = new Connection(options)
 
-      conn.on('error', function (err) {
-        console.log('Connection Error: ' + err + '. Using connection string "' + conn.connectionString + '"');
-      });
+    conn.on('error', function (err) {
+      console.log('Connection Error: ' + err + '. Using connection string "' + conn.connectionString + '"')
+    })
 
-      _connections[conn.connectionOptions.database] = conn;
-      conn.connect();
-    }
+    _connections[conn.connectionOptions.database] = conn
+    conn.connect()
+  }
 
-    return conn;
-};
+  return conn
+}
 
 // test helper
 module.exports.resetConnections = function () {
-  _connections = [];
+  _connections = []
 }
 
 // export constructor
-module.exports.Connection = Connection;
+module.exports.Connection = Connection

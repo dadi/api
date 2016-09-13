@@ -6,10 +6,9 @@
 var _ = require('underscore')
 var moment = require('moment')
 var ObjectID = require('mongodb').ObjectID
-var path = require('path')
 var util = require('util')
 
-var log = require(path.join(__dirname, '/../log'))
+var log = require('@dadi/logger')
 log.info({module: 'validator'}, 'Model validator logging started.')
 
 var ignoredKeys = ['apiVersion', 'v', 'history']

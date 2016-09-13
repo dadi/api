@@ -9,6 +9,7 @@
     "start": "node start.js --node_env=development"
   },
   "dependencies": {
+    "@dadi/logger": "latest",
     "@dadi/status": "git+https://git@github.com/dadi/status.git",
     "async": "^1.4.2",
     "body-parser": "~1.6.5",

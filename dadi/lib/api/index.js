@@ -5,7 +5,7 @@ var path = require('path')
 var pathToRegexp = require('path-to-regexp')
 var url = require('url')
 
-var log = require(path.join(__dirname, '/../log'))
+var log = require('@dadi/logger')
 var config = require(path.join(__dirname, '/../../../config'))
 
 var Api = function () {

@@ -7,7 +7,7 @@ var util = require('util')
 
 var cache = require(path.join(__dirname, '/cache'))
 var config = require(path.join(__dirname, '/../../config'))
-var log = require(path.join(__dirname, '/log'))
+var log = require('@dadi/logger')
 
 var self = this
 

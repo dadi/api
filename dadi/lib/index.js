@@ -15,19 +15,21 @@ var stackTrace = require('stack-trace')
 var url = require('url')
 var _ = require('underscore')
 
-var controller = require(path.join(__dirname, '/controller'))
-var model = require(path.join(__dirname, '/model'))
-var search = require(path.join(__dirname, '/search'))
 var api = require(path.join(__dirname, '/api'))
 var auth = require(path.join(__dirname, '/auth'))
 var cache = require(path.join(__dirname, '/cache'))
-var monitor = require(path.join(__dirname, '/monitor'))
-var log = require(path.join(__dirname, '/log'))
-var help = require(path.join(__dirname, '/help'))
+var controller = require(path.join(__dirname, '/controller'))
 var dadiStatus = require('@dadi/status')
+var help = require(path.join(__dirname, '/help'))
+var log = require('@dadi/logger')
+var model = require(path.join(__dirname, '/model'))
+var monitor = require(path.join(__dirname, '/monitor'))
+var search = require(path.join(__dirname, '/search'))
 
 var config = require(path.join(__dirname, '/../../config'))
 var configPath = path.resolve(config.configPath())
+
+log.init(config.get('logging'), {}, process.env.NODE_ENV)
 
 if (config.get('env') !== 'test') {
   // add timestamps in front of log messages

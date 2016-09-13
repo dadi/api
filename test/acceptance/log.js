@@ -3,7 +3,6 @@ var should = require('should');
 var request = require('supertest');
 
 var config = require(__dirname + '/../../config');
-var logger = require(__dirname + '/../../dadi/lib/log');
 var help = require(__dirname + '/help');
 var app = require(__dirname + '/../../dadi/lib/');
 

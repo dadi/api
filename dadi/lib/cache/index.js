@@ -11,7 +11,7 @@ var url = require('url')
 var _ = require('underscore')
 
 var config = require(path.join(__dirname, '/../../../config'))
-var log = require(path.join(__dirname, '/../../../dadi/lib/log'))
+var log = require('@dadi/logger')
 
 var Cache = function (server) {
   log.info({module: 'cache'}, 'Cache logging started.')

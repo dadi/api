@@ -13,3 +13,4 @@ addons:
       - g++-4.8
 services:
   - mongodb
+before_install: if [[ `npm -v` != 3* ]]; then npm i -g npm@3; fi

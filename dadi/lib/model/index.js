@@ -60,36 +60,76 @@ var Model = function (name, schema, conn, settings, database) {
     this.revisionCollection = (this.settings.revisionCollection ? this.settings.revisionCollection : this.name + 'History')
   }
 
-  // add any configured indexes
-  if (this.settings.hasOwnProperty('index') &&
-    this.settings.index.hasOwnProperty('enabled') &&
-    this.settings.index.enabled === true &&
-    this.settings.index.hasOwnProperty('keys')) {
-    if (Object.keys(this.settings.index.keys).length === 1 && Object.keys(this.settings.index.keys)[0] === '_id') {
-    } else {
-      this.createIndex(function (err, indexName) {
-        if (err) console.log(err)
-      })
+/*
+"index": [
+  {
+    "keys": {
+      "field1": 1,
+      "field2": -1
+    },
+    "options": {
+      "unique": true
     }
+  }
+]
+*/
+  // add any configured indexes
+  if (this.settings.hasOwnProperty('index')) {
+    this.createIndex((err, results) => {
+      if (err) console.log(err)
+      _.each(results, (result) => {
+        // console.log('Index created: ' + result.collection + ', ' + result.index)
+      })
+    })
   }
 }
 
 Model.prototype.createIndex = function (done) {
   var self = this
+
   var _done = function (database) {
     // Create an index on the specified field(s)
-    database.createIndex(self.name,
-      self.settings.index.keys,
-      self.settings.index.options || {},
-      function (err, indexName) {
-        if (err) return done(err)
-        return done(null, indexName)
+    if (!self.name) {
+      return done(null)
+    }
+
+    if (!_.isArray(self.settings.index)) {
+      var indexArray = []
+      indexArray.push({
+        keys: self.settings.index.keys,
+        options: self.settings.index.options || {}
       })
+
+      self.settings.index = indexArray
+    }
+
+    var i = 0
+    var results = []
+
+    _.each(self.settings.index, (index) => {
+      if (Object.keys(index.keys).length === 1 && Object.keys(index.keys)[0] === '_id') {
+        // ignore _id index request, db handles this automatically
+      } else {
+        database.createIndex(self.name,
+          index.keys,
+          index.options,
+          (err, indexName) => {
+            if (err) return done(err)
+            results.push({
+              collection: self.name,
+              index: indexName
+            })
+
+            if (++i === self.settings.index.length) {
+              return done(null, results)
+            }
+          }
+        )
+      }
+    })
   }
 
   if (this.connection.db) return _done(this.connection.db)
-
-  // if the db is not connected queue the index creation
   this.connection.once('connect', _done)
 }
 

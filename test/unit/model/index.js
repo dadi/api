@@ -519,6 +519,47 @@ describe('Model', function () {
         })
       })
     })
+
+    it('should support unique indexes', function (done) {
+      // help.cleanUpDB()
+      var conn = connection()
+      var fields = help.getModelSchema()
+      var schema = {}
+      schema.fields = fields
+
+      schema.fields.field3 = _.extend({}, schema.fields.fieldName, {
+        type: 'String',
+        required: false
+      })
+
+      var mod = model('testModelName',
+        schema.fields,
+        conn,
+        {
+          index: {
+            enabled: true,
+            keys: {
+              field3: 1
+            },
+            options: {
+              unique: true
+            }
+          }
+        }
+      )
+
+      mod.create({field3: 'ABCDEF'}, function (err, result) {
+        if (err) return done(err)
+
+        mod.create({field3: 'ABCDEF'}, function (err, result) {
+          should.exist(err)
+
+          err.name.should.eql('MongoError')
+          err.code.should.eql('11000')
+          done()
+        })
+      })
+    })
   })
 
   describe('`create` method', function () {

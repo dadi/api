@@ -46,7 +46,7 @@ describe('Hooks', function () {
 
 //   if (fs.existsSync(newSchemaPath)) fs.unlinkSync(newSchemaPath)
 
-  it('should does stuff', function (done) {
+  it('should not cause creation of duplicate records', function (done) {
     config.set('query.useVersionFilter', true)
 
     var client = request(connectionString)

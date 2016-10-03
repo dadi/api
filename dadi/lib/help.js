@@ -250,7 +250,7 @@ module.exports.validateCollectionSchema = function (obj) {
     }
 
     if (!indexSpecified) {
-      response.errors.push(formatError.createApiError('0001', { "field": obj.settings.sort }))
+      response.errors.push(formatError.createApiError('0001', { 'field': obj.settings.sort }))
     }
   }
 

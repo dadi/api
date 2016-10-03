@@ -1,5 +1,6 @@
 var _ = require('underscore')
 var crypto = require('crypto')
+var formatError = require('@dadi/format-error')
 var fs = require('fs')
 var Moment = require('moment')
 var path = require('path')
@@ -200,17 +201,18 @@ module.exports.validateCollectionSchema = function (obj) {
 
   getKeys(obj, 'fields', fields)
   if (fields.length === 0) {
-    response.success = false
     response.errors.push({section: 'fields', message: 'must be provided at least once'})
   }
 
   getKeys(obj, 'settings', settings)
   if (settings.length === 0) {
-    response.success = false
     response.errors.push({section: 'settings', message: 'must be provided'})
   }
 
-  if (!response.success) return response
+  if (!_.isEmpty(response.errors)) {
+    response.success = false
+    return response
+  }
 
   // check at least one field has been provided
   if (Object.keys(fields[0]).length === 0) {
@@ -220,14 +222,39 @@ module.exports.validateCollectionSchema = function (obj) {
   }
 
   // check that all required settings are present
-  var requiredSettings = ['cache', 'authenticate', 'callback', 'defaultFilters', 'fieldLimiters', 'count', 'sortOrder']
+  var requiredSettings = ['cache', 'authenticate', 'callback', 'defaultFilters', 'fieldLimiters', 'count']
 
   requiredSettings.forEach(function (key) {
     if (!obj.settings.hasOwnProperty(key)) {
-      response.success = false
       response.errors.push({setting: key, message: 'must be provided'})
     }
   })
+
+  // check that an index exists for the field
+  // specified as the sort field
+  if (obj.settings && obj.settings.sort) {
+    var indexSpecified = true
+
+    if (!obj.settings.index) {
+      indexSpecified = false
+    } else {
+      if (_.isArray(obj.settings.index)) {
+        _.each(obj.settings.index, (index) => {
+          if (!_.contains(index.keys, obj.settings.sort)) {
+            indexSpecified = false
+          }
+        })
+      } else if (!_.contains(obj.settings.index.keys, obj.settings.sort)) {
+        indexSpecified = false
+      }
+    }
+
+    if (!indexSpecified) {
+      response.errors.push(formatError.createApiError('0001', { "field": obj.settings.sort }))
+    }
+  }
+
+  response.success = _.isEmpty(response.errors)
 
   return response
 }

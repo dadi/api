@@ -10,6 +10,7 @@
     "start": "node start.js --node_env=development"
   },
   "dependencies": {
+    "@dadi/format-error": "^1.0.0",
     "@dadi/logger": "latest",
     "@dadi/status": "git+https://git@github.com/dadi/status.git",
     "async": "^1.4.2",

@@ -2165,6 +2165,33 @@ describe('Application', function () {
           })
       })
 
+      it('should check that sort fields are included in the index schema', function (done) {
+        var client = request(connectionString)
+        var schema = JSON.parse(jsSchemaString)
+        schema.settings.sort = 'newField'
+        var newString = JSON.stringify(schema)
+
+        client
+          .post('/vapicreate/testdb/api-create/config')
+          .send(newString)
+          .set('content-type', 'text/plain')
+          .set('Authorization', 'Bearer ' + bearerToken)
+          .expect(400)
+          .expect('content-type', 'application/json')
+          .end(function (err, res) {
+            if (err) return done(err)
+
+            res.body.should.be.Object
+            res.body.should.not.be.Array
+            should.exist(res.body.errors)
+            res.body.errors.should.be.Array
+
+            res.body.errors[0].title.should.eql('Missing Index Key')
+
+            done()
+          })
+      })
+
       it('should allow creating a new collection endpoint', function (done) {
         var client = request(connectionString)
 

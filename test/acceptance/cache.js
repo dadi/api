@@ -22,7 +22,8 @@ var testConfigString;
 var bearerToken;
 
 describe('Cache', function (done) {
-
+  this.timeout(4000)
+  
   after(function(done) {
     testConfigString = fs.readFileSync(config.configPath());
 

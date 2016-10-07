@@ -10,7 +10,7 @@ var conf = convict({
       default: "DADI API Repo Default",
     }
   },
-	server: {
+  server: {
     host: {
       doc: "Accept connections on the specified address. If the host is omitted, the server will accept connections on any IPv6 address (::) when IPv6 is available, or any IPv4 address (0.0.0.0) otherwise.",
       format: '*',
@@ -89,7 +89,7 @@ var conf = convict({
       database: {
         doc: "",
         format: String,
-        default: "serama"
+        default: "test"
       },
       ssl: {
         doc: "",
@@ -108,7 +108,7 @@ var conf = convict({
       }
   },
   auth: {
-  	tokenUrl: {
+    tokenUrl: {
       doc: "",
       format: String,
       default: "/token"
@@ -152,7 +152,7 @@ var conf = convict({
       database: {
         doc: "",
         format: String,
-        default: "serama"
+        default: "test"
       }
     }
   },
@@ -207,7 +207,7 @@ var conf = convict({
     }
   },
   logging: {
-  	enabled: {
+    enabled: {
       doc: "If true, logging is enabled using the following settings.",
       format: Boolean,
       default: true
@@ -261,7 +261,7 @@ var conf = convict({
     default: false,
   },
   status: {
-  	enabled: {
+    enabled: {
       doc: "If true, status endpoint is enabled.",
       format: Boolean,
       default: false,

@@ -165,7 +165,8 @@ Model.prototype.create = function (obj, internals, done, req) {
 
   if (!validation.success) {
     var err = validationError('Validation Failed')
-    err.json = validation
+    err.success = validation.success
+    err.errors = validation.errors
     return done(err)
   }
 

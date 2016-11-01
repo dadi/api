@@ -101,32 +101,66 @@ describe('Query Utils', function () {
   })
 
   describe('`makeCaseInsensitive` method', function () {
-    it('should convert a normal field query to a case insensitive query', function (done) {
-      var query = { 'test': 'example' }
-      var expected = { 'test': new RegExp(['^', 'example', '$'].join(''), 'i') }
+    it('should convert a normal field query to a case insensitive regex query if schema doesn\'t specify otherwise', function (done) {
+      var schema = help.getModelSchema()
+      var query = { 'fieldName': 'example' }
+      var expected = { 'fieldName': new RegExp(['^', 'example', '$'].join(''), 'i') }
 
-      var result = queryUtils.makeCaseInsensitive(query)
+      var result = queryUtils.makeCaseInsensitive(query, schema)
 
       result.should.eql(expected)
 
       done()
     })
 
-    it('should convert a regex query to a case insensitive query', function (done) {
-      var query = { 'test': { '$regex': 'example'} }
-      var expected = { 'test': { '$regex': new RegExp('example', 'i') } }
+    it('should convert a normal field query to a case insensitive regex query if schema specifies', function (done) {
+      var schema = help.getModelSchema()
+      schema['fieldName'].matchType = 'ignoreCase'
 
-      var result = queryUtils.makeCaseInsensitive(query)
+      var query = { 'fieldName': 'example' }
+      var expected = { 'fieldName': new RegExp(['^', 'example', '$'].join(''), 'i') }
+
+      var result = queryUtils.makeCaseInsensitive(query, schema)
 
       result.should.eql(expected)
+
+      done()
+    })
+
+    it('should convert a normal field query to a regex query if schema specifies unknown `matchType`', function (done) {
+      var schema = help.getModelSchema()
+      schema['fieldName'].matchType = 'fuzzy'
+
+      var query = { 'fieldName': 'example' }
+      var expected = { 'fieldName': new RegExp(['^', 'example', '$'].join('')) }
+
+      var result = queryUtils.makeCaseInsensitive(query, schema)
+
+      result.should.eql(expected)
+
+      done()
+    })
+
+    it('should not convert a normal field query to a regex query if schema doesn\'t allow', function (done) {
+      var schema = help.getModelSchema()
+      schema['fieldName'].matchType = 'exact'
+
+      var query = { 'fieldName': 'example' }
+      var expected = { 'fieldName': 'example' }
+
+      var result = queryUtils.makeCaseInsensitive(query, schema)
+
+      result.should.eql(expected)
+
       done()
     })
 
     it('should escape characters in a regex query', function (done) {
-      var query = { 'test': 'BigEyes)' }
-      var expected = { 'test': new RegExp(['^', apiHelp.regExpEscape('BigEyes)'), '$'].join(''), 'i') }
+      var schema = help.getModelSchema()
+      var query = { 'fieldName': 'BigEyes)' }
+      var expected = { 'fieldName': new RegExp(['^', apiHelp.regExpEscape('BigEyes)'), '$'].join(''), 'i') }
 
-      var result = queryUtils.makeCaseInsensitive(query)
+      var result = queryUtils.makeCaseInsensitive(query, schema)
 
       result.should.eql(expected)
       done()

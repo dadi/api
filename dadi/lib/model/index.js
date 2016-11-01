@@ -339,7 +339,7 @@ Model.prototype.count = function (query, options, done) {
     options = {}
   }
 
-  query = queryUtils.makeCaseInsensitive(query)
+  query = queryUtils.makeCaseInsensitive(query, this.schema)
   query = queryUtils.convertApparentObjectIds(query, this.schema)
 
   var validation = this.validate.query(query)
@@ -432,7 +432,7 @@ Model.prototype.find = function (query, options, done) {
     delete options.includeHistory
   }
 
-  query = queryUtils.makeCaseInsensitive(query)
+  query = queryUtils.makeCaseInsensitive(query, self.schema)
   query = queryUtils.convertApparentObjectIds(query, self.schema)
 
   var compose = self.compose

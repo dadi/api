@@ -95,12 +95,17 @@ function convertApparentObjectIds (query, schema) {
   return query
 }
 
-function makeCaseInsensitive (obj) {
+function makeCaseInsensitive (obj, schema) {
   var newObj = _.clone(obj)
 
   _.each(Object.keys(obj), function (key) {
     if (key === 'apiVersion') {
       return
+    }
+
+    var fieldSettings
+    if (key[0] !== '$') {
+      fieldSettings = getSchemaOrParent(key, schema)
     }
 
     if (typeof obj[key] === 'string') {
@@ -111,13 +116,26 @@ function makeCaseInsensitive (obj) {
       } else if (key[0] === '$' && key !== '$regex') {
         newObj[key] = obj[key]
       } else {
-        newObj[key] = new RegExp(['^', help.regExpEscape(obj[key]), '$'].join(''), 'i')
+        if (fieldSettings && fieldSettings.matchType) {
+          switch (fieldSettings.matchType) {
+            case 'exact':
+              newObj[key] = obj[key]
+              break
+            case 'ignoreCase':
+              newObj[key] = new RegExp(['^', help.regExpEscape(obj[key]), '$'].join(''), 'i')
+              break
+            default:
+              newObj[key] = new RegExp(['^', help.regExpEscape(obj[key]), '$'].join(''))
+          }
+        } else {
+          newObj[key] = new RegExp(['^', help.regExpEscape(obj[key]), '$'].join(''), 'i')
+        }
       }
     } else if (typeof obj[key] === 'object' && obj[key] !== null) {
       if (key[0] === '$' && key !== '$regex') {
         newObj[key] = obj[key]
       } else {
-        newObj[key] = makeCaseInsensitive(obj[key])
+        newObj[key] = makeCaseInsensitive(obj[key], schema)
       }
     } else {
       return obj

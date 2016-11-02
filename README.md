@@ -1,4 +1,4 @@
-# DADI API
+<img src="http://52.209.207.148/assets/products/dadi-api-full.png" alt="DADI API" height="65"/>
 
 [![npm (scoped)](https://img.shields.io/npm/v/@dadi/api.svg?maxAge=10800&style=flat-square)](https://www.npmjs.com/package/@dadi/api)
 [![coverage](https://img.shields.io/badge/coverage-85%25-yellow.svg?style=flat-square)](https://github.com/dadi/api)

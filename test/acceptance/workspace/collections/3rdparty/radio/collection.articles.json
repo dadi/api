@@ -1,0 +1,985 @@
+{
+  "fields": {
+    "published": {
+      "type": "Object",
+      "label": "Published State",
+      "required": true,
+      "publish": {
+        "section": "Syndication",
+        "subSection": "Placement",
+        "subType": "PublishedState"
+      },
+      "search": {
+        "indexed": false,
+        "store": true
+      },
+      "display": {
+        "filter": true,
+        "index": true,
+        "edit": true
+      }
+    },
+    "syndicates": {
+      "type": "Object",
+      "label": "Syndicates",
+      "required": false,
+      "publish": {
+        "section": "Syndication",
+        "subSection": "Placement",
+        "subType": "Syndicates"
+      },
+      "search": {
+        "indexed": false,
+        "store": true
+      },
+      "display": {
+        "index": true,
+        "edit": true,
+        "filter": true
+      }
+    },
+    "publications": {
+      "type": "Reference",
+      "settings": {
+        "collection": "publications",
+        "multiple": true,
+        "fields": [
+          "name",
+          "furl"
+        ]
+      },
+      "publish": {
+        "section": "Taxonomy",
+        "subSection": "Syndicates",
+        "displayField": "name",
+        "limit": 0
+      },
+      "search": {
+        "indexed": false,
+        "store": true
+      },
+      "label": "Publications",
+      "required": false,
+      "display": {
+        "filter": true,
+        "index": false,
+        "edit": false
+      }
+    },
+    "categories": {
+      "type": "Reference",
+      "settings": {
+        "collection": "categories",
+        "multiple": true,
+        "fields": [
+          "name",
+          "furl",
+          "parent"
+        ]
+      },
+      "search": {
+        "indexed": false,
+        "store": true
+      },
+      "publish": {
+        "section": "Taxonomy",
+        "subSection": "Syndicates",
+        "displayField": "name",
+        "limit": 0
+      },
+      "label": "Categories",
+      "required": false,
+      "display": {
+        "filter": true,
+        "index": false,
+        "edit": false
+      }
+    },
+    "primarySyndicatePosition": {
+      "type": "Number",
+      "label": "Primary Syndicate",
+      "required": false,
+      "publish": {
+        "section": "Taxonomy",
+        "subSection": "Syndicates"
+      },
+      "search": {
+        "indexed": false,
+        "store": true
+      },
+      "display": {
+        "index": false,
+        "edit": false
+      }
+    },
+    "heroVideo": {
+      "type": "Object",
+      "label": "Hero Video",
+      "publish": {
+        "subType": "Oembed",
+        "section": "Media",
+        "subSection": "Video"
+      },
+      "search": {
+        "indexed": false,
+        "store": true
+      },
+      "required": false,
+      "display": {
+        "index": false,
+        "edit": true
+      }
+    },
+    "heroImage": {
+      "type": "Reference",
+      "label": "Hero Image",
+      "publish": {
+        "section": "Media",
+        "subSection": "Images",
+        "displayField": "image",
+        "limit": 1
+      },
+      "search": {
+        "indexed": false,
+        "store": true
+      },
+      "settings": {
+        "collection": "media",
+        "multiple": true,
+        "fields": [
+          "image",
+          "altText",
+          "credits"
+        ]
+      },
+      "required": false,
+      "display": {
+        "index": true,
+        "edit": true
+      }
+    },
+    "title": {
+      "type": "String",
+      "label": "Title",
+      "validation": {
+        "maxLength": 500
+      },
+      "required": true,
+      "publish": {
+        "displaySize": "kilo",
+        "section": "Editorial",
+        "subSection": "Text"
+      },
+      "search": {
+        "indexed": true,
+        "store": true,
+        "weight": 2
+      },
+      "display": {
+        "filter": true,
+        "index": true,
+        "edit": true
+      }
+    },
+    "urls": {
+      "type": "String",
+      "label": "URLs",
+      "publish": {
+        "section": "Meta",
+        "subSection": "Taxonomy"
+      },
+      "search": {
+        "indexed": false,
+        "store": true
+      },
+      "display": {
+        "index": false,
+        "edit": false
+      }
+    },
+    "legacyUrls": {
+      "type": "String",
+      "label": "Legacy URLs",
+      "publish": {
+        "section": "Meta",
+        "subSection": "Taxonomy"
+      },
+      "search": {
+        "indexed": false,
+        "store": false
+      },
+      "display": {
+        "index": false,
+        "edit": false
+      }
+    },
+    "mobileTitle": {
+      "type": "String",
+      "label": "Short title",
+      "publish": {
+        "section": "Editorial",
+        "subSection": "Text"
+      },
+      "validation": {
+        "maxLength": 250
+      },
+      "required": false,
+      "display": {
+        "index": false,
+        "edit": false
+      }
+    },
+    "subtitle": {
+      "type": "String",
+      "label": "Subtitle",
+      "message": "Article's subtitle",
+      "required": false,
+      "publish": {
+        "displaySize": "gamma",
+        "section": "Editorial",
+        "subSection": "Text"
+      },
+      "display": {
+        "index": false,
+        "edit": true
+      }
+    },
+    "tagLine": {
+      "type": "String",
+      "label": "Tagline",
+      "publish": {
+        "section": "Editorial",
+        "subSection": "Text"
+      },
+      "required": false,
+      "display": {
+        "index": false,
+        "edit": true
+      }
+    },
+    "embeds": {
+      "type": "Object",
+      "label": "Web embed",
+      "publish": {
+        "subType": "Oembed",
+        "section": "Media",
+        "subSection": "Video"
+      },
+      "required": false,
+      "display": {
+        "index": false,
+        "edit": true
+      }
+    },
+    "excerpt": {
+      "type": "String",
+      "label": "Excerpt",
+      "publish": {
+        "section": "Editorial",
+        "subSection": "Text"
+      },
+      "required": false,
+      "display": {
+        "index": false,
+        "edit": true
+      }
+    },
+    "furl": {
+      "type": "String",
+      "label": "Friendly URL",
+      "publish": {
+        "section": "Meta",
+        "subSection": "Url"
+      },
+      "required": false,
+      "display": {
+        "index": false,
+        "edit": false
+      }
+    },
+    "canonical": {
+      "type": "String",
+      "label": "Canonical URL",
+      "publish": {
+        "section": "Meta",
+        "subSection": "Url"
+      },
+      "required": false,
+      "display": {
+        "index": false,
+        "edit": true
+      }
+    },
+    "content": {
+      "type": "String",
+      "label": "Paragraph",
+      "required": false,
+      "publish": {
+        "section": "General",
+        "subSection": "Content",
+        "format": "markdown"
+      },
+      "search": {
+        "indexed": true,
+        "store": true,
+        "weight": 2
+      },
+      "display": {
+        "index": false,
+        "edit": true
+      }
+    },
+    "pullQuotes": {
+      "type": "String",
+      "label": "PullQuote",
+      "required": false,
+      "publish": {
+        "section": "General",
+        "subSection": "Content",
+        "subType": "PullQuote",
+        "format": "markdown"
+      },
+      "search": {
+        "indexed": true,
+        "store": true,
+        "weight": 1
+      },
+      "display": {
+        "index": false,
+        "edit": true
+      }
+    },
+    "author": {
+      "type": "Reference",
+      "label": "Author",
+      "comments": "Article's author",
+      "required": false,
+      "display": {
+        "filter": true,
+        "index": true,
+        "edit": true
+      },
+      "publish": {
+        "section": "Meta",
+        "subSection": "Authoring",
+        "displayField": "fullname"
+      },
+      "settings": {
+        "collection": "authors",
+        "fields": [
+          "fullname"
+        ]
+      }
+    },
+    "pageTemplate": {
+      "type": "String",
+      "label": "Page Template",
+      "required": false,
+      "validation": {
+        "regex": {
+          "pattern": "[article|commercial]"
+        }
+      },
+      "publish": {
+        "section": "General",
+        "subSection": "Content"
+      },
+      "display": {
+        "index": false,
+        "edit": true,
+        "options": [
+          {
+            "option_value": "article",
+            "option_title": "Article"
+          },
+          {
+            "option_value": "commercial",
+            "option_title": "Commercial"
+          }
+        ]
+      }
+    },
+    "trackingPixel": {
+      "type": "Reference",
+      "label": "Tracking Pixel",
+      "required": false,
+      "display": {
+        "index": false,
+        "edit": true
+      },
+      "publish": {
+        "section": "Meta",
+        "subSection": "Analytics",
+        "displayField": "name"
+      },
+      "settings": {
+        "collection": "tracking_pixels",
+        "multiple": true,
+        "fields": [
+          "name"
+        ]
+      }
+    },
+    "trackingScript": {
+      "type": "Object",
+      "label": "Tracking Script",
+      "required": false,
+      "publish": {
+        "section": "Meta",
+        "subSection": "Analytics",
+        "subType": "Script"
+      },
+      "search": {
+        "indexed": false,
+        "store": false
+      },
+      "display": {
+        "index": false,
+        "edit": true
+      }
+    },
+    "publicationDate": {
+      "type": "DateTime",
+      "publish": {
+        "section": "Meta",
+        "subSection": "Publishing"
+      },
+      "format": "unix",
+      "label": "Publication Date",
+      "required": false,
+      "display": {
+        "index": true,
+        "edit": true
+      }
+    },
+    "metaTitle": {
+      "type": "String",
+      "label": "META Title Override",
+      "required": false,
+      "publish": {
+        "section": "Meta",
+        "subSection": "Meta"
+      },
+      "display": {
+        "index": false,
+        "edit": true,
+        "characterCount": true
+      }
+    },
+    "metaDescription": {
+      "type": "String",
+      "label": "META description",
+      "required": false,
+      "publish": {
+        "section": "Meta",
+        "subSection": "Meta"
+      },
+      "display": {
+        "index": false,
+        "edit": true,
+        "multiline": true,
+        "characterCount": true
+      }
+    },
+    "url": {
+      "type": "String",
+      "label": "URL",
+      "validation": {
+        "maxLength": 250
+      },
+      "required": false,
+      "publish": {
+        "section": "Meta",
+        "subSection": "URL"
+      },
+      "display": {
+        "index": false,
+        "edit": false
+      }
+    },
+    "urlOverride": {
+      "type": "String",
+      "label": "URL Slug Override",
+      "publish": {
+        "section": "Meta",
+        "subSection": "Url"
+      },
+      "required": false,
+      "display": {
+        "index": false,
+        "edit": true
+      }
+    },
+    "originalId": {
+      "type": "Number",
+      "label": "Original ID",
+      "publish": {
+        "section": "History",
+        "subSection": "Legacy"
+      },
+      "search": {
+        "indexed": false,
+        "store": true
+      },
+      "required": false,
+      "display": {
+        "filter": true,
+        "index": false,
+        "edit": false
+      }
+    },
+    "isLegacy": {
+      "type": "Boolean",
+      "label": "Is Legacy",
+      "publish": {
+        "section": "History",
+        "subSection": "Legacy"
+      },
+      "required": false,
+      "display": {
+        "index": false,
+        "edit": false
+      }
+    },
+    "hidePublicationDate": {
+      "type": "Boolean",
+      "label": "Hide Publication Date",
+      "publish": {
+        "section": "Taxonomy",
+        "subSection": "Date"
+      },
+      "required": false,
+      "display": {
+        "index": false,
+        "edit": true
+      }
+    },
+    "tags": {
+      "type": "Reference",
+      "label": "Article tags",
+      "settings": {
+        "collection": "tags",
+        "multiple": true,
+        "fields": [
+          "tag",
+          "furl",
+          "url"
+        ]
+      },
+      "publish": {
+        "section": "Taxonomy",
+        "subSection": "Tags",
+        "displayField": "tag",
+        "limit": 0
+      },
+      "required": false,
+      "display": {
+        "filter": true,
+        "index": false,
+        "edit": true
+      }
+    },
+    "presenter": {
+      "type": "Reference",
+      "label": "Article presenters",
+      "settings": {
+        "collection": "presenters",
+        "multiple": true,
+        "fields": [
+          "name",
+          "url",
+          "furl"
+        ]
+      },
+      "publish": {
+        "section": "Taxonomy",
+        "subSection": "Tags",
+        "displayField": "name",
+        "limit": 1
+      },
+      "required": false,
+      "display": {
+        "filter": false,
+        "index": false,
+        "edit": true
+      }
+    },
+    "images": {
+      "type": "Reference",
+      "label": "Image",
+      "required": false,
+      "publish": {
+        "section": "Media",
+        "subSection": "Images",
+        "displayField": "image",
+        "limit": 1
+      },
+      "search": {
+        "indexed": false,
+        "store": true
+      },
+      "settings": {
+        "collection": "media",
+        "multiple": true,
+        "fields": [
+          "image",
+          "altText",
+          "credits"
+        ]
+      },
+      "display": {
+        "index": false,
+        "edit": true
+      }
+    },
+    "contentImageCrop": {
+      "type": "Object",
+      "label": "Content Image Crop",
+      "required": false,
+      "publish": {
+        "subType": "ImageCrop",
+        "section": "Media",
+        "subSection": "Images",
+        "handler": "images",
+        "min": {
+          "width": 500,
+          "height": 500
+        }
+      },
+      "display": {
+        "index": false,
+        "edit": true
+      }
+    },
+    "imageGalleries": {
+      "type": "Reference",
+      "label": "Image Gallery",
+      "required": false,
+      "settings": {
+        "collection": "galleries",
+        "multiple": true,
+        "fields": [
+          "images",
+          "imageCrops",
+          "title",
+          "description",
+          "template"
+        ]
+      },
+      "publish": {
+        "subType": "Gallery",
+        "section": "Media",
+        "subSection": "Images",
+        "displayField": "image",
+        "limit": 0,
+        "handles": [
+          "imageGalleries.imageCrops"
+        ]
+      },
+      "display": {
+        "index": false,
+        "edit": true
+      }
+    },
+    "heroImageLandscape": {
+      "type": "Object",
+      "label": "Lead Image Landscape",
+      "required": false,
+      "publish": {
+        "subType": "ImageCrop",
+        "section": "Media",
+        "subSection": "Images",
+        "handler": "heroImage",
+        "aspectRatio": {
+          "x": 16,
+          "y": 9
+        },
+        "min": {
+          "width": 500,
+          "height": 500
+        }
+      },
+      "display": {
+        "index": false,
+        "edit": true
+      }
+    },
+    "heroImagePortrait": {
+      "type": "Object",
+      "label": "Lead Image Portrait",
+      "required": false,
+      "publish": {
+        "subType": "ImageCrop",
+        "section": "Media",
+        "subSection": "Images",
+        "handler": "heroImage",
+        "aspectRatio": {
+          "x": 9,
+          "y": 16
+        },
+        "max": {
+          "height": 300
+        }
+      },
+      "display": {
+        "index": false,
+        "edit": true
+      }
+    },
+    "heroImageThumb": {
+      "type": "Object",
+      "label": "Lead Image Thumb",
+      "required": false,
+      "publish": {
+        "subType": "ImageCrop",
+        "section": "Media",
+        "subSection": "Images",
+        "handler": "heroImage",
+        "aspectRatio": {
+          "x": 1,
+          "y": 1
+        },
+        "min": {
+          "width": 200,
+          "height": 200
+        },
+        "max": {
+          "width": 600,
+          "height": 600
+        }
+      },
+      "display": {
+        "index": false,
+        "edit": true
+      }
+    },
+    "heroImageThumbLandscape": {
+      "type": "Object",
+      "label": "Lead Image Thumbnail Landscape",
+      "required": false,
+      "publish": {
+        "subType": "ImageCrop",
+        "section": "Media",
+        "subSection": "Images",
+        "handler": "heroImage",
+        "aspectRatio": {
+          "x": 16,
+          "y": 9
+        },
+        "min": {
+          "width": 200,
+          "height": 200
+        },
+        "max": {
+          "width": 600,
+          "height": 600
+        }
+      },
+      "display": {
+        "index": false,
+        "edit": true
+      }
+    },
+    "toplistFeature": {
+      "type": "Boolean",
+      "label": "Toplist Featured",
+      "publish": {
+        "section": "Format",
+        "subSection": "Layout"
+      },
+      "required": false,
+      "display": {
+        "filter": true,
+        "index": false,
+        "edit": true
+      }
+    },
+    "sponsor": {
+      "type": "Reference",
+      "label": "Sponsor",
+      "publish": {
+        "section": "Commercial",
+        "subSection": "Advertising",
+        "displayField": "name",
+        "limit": 1
+      },
+      "settings": {
+        "collection": "sponsors",
+        "fields": [
+          "name"
+        ]
+      },
+      "required": false,
+      "display": {
+        "filter": true,
+        "index": false,
+        "edit": true
+      }
+    },
+    "campaign_name": {
+      "type": "String",
+      "label": "Campaign name",
+      "required": false,
+      "publish": {
+        "section": "Commercial",
+        "subSection": "Advertising"
+      },
+      "display": {
+        "filter": true,
+        "index": false,
+        "edit": true
+      }
+    },
+    "isAdvertorial": {
+      "type": "Boolean",
+      "label": "Advertorial",
+      "publish": {
+        "section": "Commercial",
+        "subSection": "Advertising"
+      },
+      "required": false,
+      "display": {
+        "filter": true,
+        "index": false,
+        "edit": true
+      }
+    },
+    "_layout": {
+      "type": "Object",
+      "label": "Article layout",
+      "required": true,
+      "display": {
+        "index": false,
+        "edit": false
+      },
+      "publish": {
+        "subType": "Layout"
+      },
+      "schema": [
+        {
+          "source": "title"
+        },
+        {
+          "source": "tagLine"
+        },
+        {
+          "source": "subtitle"
+        },
+        {
+          "free": true,
+          "name": "hero",
+          "displayName": "Article Hero",
+          "fields": [
+            {
+              "source": "heroImage",
+              "max": 1
+            },
+            {
+              "source": "heroImageLandscape",
+              "max": 1,
+              "requires": "heroImage"
+            },
+            {
+              "source": "heroImagePortrait",
+              "max": 1,
+              "requires": "heroImage"
+            },
+            {
+              "source": "leadImageThumb",
+              "max": 1,
+              "requires": "heroImage"
+            },
+            {
+              "source": "heroImageThumbLandscape",
+              "max": 1,
+              "requires": "heroImage"
+            },
+            {
+              "source": "heroVideo",
+              "max": 1
+            }
+          ]
+        },
+        {
+          "free": true,
+          "name": "body",
+          "displayName": "Body",
+          "fields": [
+            {
+              "source": "content",
+              "min": 0,
+              "structural": true
+            },
+            {
+              "source": "pullQuotes",
+              "min": 0
+            },
+            {
+              "source": "images",
+              "max": 50
+            },
+            {
+              "source": "contentImageCrop",
+              "max": 50,
+              "requires": "images"
+            },
+            {
+              "source": "imageGalleries"
+            },
+            {
+              "source": "embeds"
+            }
+          ]
+        },
+        {
+          "source": "tags"
+        }
+      ]
+    }
+  },
+  "settings": {
+    "cache": true,
+    "cacheTTL": 300,
+    "authenticate": true,
+    "compose": true,
+    "callback": null,
+    "displayName": "Articles",
+    "storeRevisions": true,
+    "storeSearch": true,
+    "searchIndexCollection": "articlesSearch",
+    "defaultFilters": null,
+    "fieldLimiters": null,
+    "type": "article",
+    "publish": {
+      "group": "Content",
+      "messageCollection": "messages"
+    },
+    "allowExtension": true,
+    "standardEditPage": true,
+    "allowDelete": true,
+    "count": 20,
+    "sortOrder": 1,
+    "sort": "publicationDate",
+    "index": {
+      "enabled": true,
+      "keys": {
+        "_id": 1,
+        "publcationDate": 1,
+        "urls": 1
+      }
+    },
+    "hooks": {
+      "afterGet": [
+        "layout"
+      ],
+      "beforeCreate": [
+        {
+          "hook": "layout"
+        }
+      ],
+      "afterCreate": [],
+      "afterUpdate": []
+    },
+    "lastModifiedAt": 1471879512479
+  }
+}

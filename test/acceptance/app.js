@@ -800,6 +800,12 @@ describe('Application', function () {
               required: false
             })
 
+            // testing here
+            schema.fields._fieldWithUnderscore = _.extend({}, schema.fields.newField, {
+              type: 'Object',
+              required: false
+            })
+
             var client = request(connectionString)
 
             client
@@ -1093,6 +1099,38 @@ describe('Application', function () {
               var obj = _.sample(_.compact(_.map(res.body['results'], function (x) { if (x.hasOwnProperty('field1')) return x; })))
               Object.keys(obj).length.should.equal(1)
               Object.keys(obj)[0].should.equal('field1')
+
+              done()
+            })
+        })
+      })
+
+      it('should allow specifying fields with underscores  (issue #140)', function (done) {
+        var doc = { field1: 'Test', field2: null, _fieldWithUnderscore: { first: 'Ernest', last: 'Hemingway' } }
+
+        help.createDocWithParams(bearerToken, doc, function (err) {
+          if (err) return done(err)
+
+          var client = request(connectionString)
+
+          var fields = {
+            '_fieldWithUnderscore': 1
+          }
+
+          query = encodeURIComponent(JSON.stringify(fields))
+          client
+            .get('/vtest/testdb/test-schema?cache=false&fields=' + query)
+            .set('Authorization', 'Bearer ' + bearerToken)
+            .expect(200)
+            .expect('content-type', 'application/json')
+            .end(function (err, res) {
+              if (err) return done(err)
+
+              res.body['results'].should.exist
+              res.body['results'].should.be.Array
+
+              var obj = _.sample(_.compact(_.map(res.body['results'], function (x) { if (x.hasOwnProperty('_fieldWithUnderscore')) return x; })))
+              should.exist(obj['_fieldWithUnderscore'])
 
               done()
             })

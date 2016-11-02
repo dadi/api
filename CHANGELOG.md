@@ -1,15 +1,28 @@
-### Change Log
+# Change Log
+All notable changes to this project will be documented in this file.
 
-##### v1.11.1 (2016-07-16)
+The format is based on [Keep a Changelog](http://keepachangelog.com/)
+and this project adheres to [Semantic Versioning](http://semver.org/).
+
+## [1.14.0] (2016-11-XX)
+### Added
+* Added a `matchType` property to fields in collection schemas. Determines the type of match allowed when querying using this field. Possible values:
+  *  "exact": query will be performed using the exact value specified, e.g. { "publishedState": "Published" }
+  *  "ignoreCase": query will be performed using a case insensitive regex of the value specified, e.g. { "publishedState": /^published$/i }
+  *  "<anything else>": query will be performed using a regex of the value specified, e.g. { "publishedState": /^published$/ }
+
+> If `matchType` is not specified, the default (for legacy reasons) is _a case insensitive regex of the value specified_, e.g. { "publishedState": /^published$/i }
+
+## v1.11.1 (2016-07-16)
 
 * no longer convert to ObjectID if the query is using dot notation and the parent field
 is of type `Mixed`. This supports legacy CMS use in some cases
 * remove the options when calling a collection's count endpoint, to ensure no
 `limit` parameter is sent
 
-##### v1.11.0 (2016-07-14)
+## v1.11.0 (2016-07-14)
 
-###### Batch delete of documents
+### Batch delete of documents
 @eduardoboucas
 
 **Usage:**
@@ -26,7 +39,7 @@ Body:
 }
 ```
 
-###### Filter revision history and return specified fields
+### Filter revision history and return specified fields
 @eduardoboucas
 
 The `includeHistory` param now respects the `fields` param, so that documents in history only contain the fields specified.
@@ -45,7 +58,7 @@ Or get revisions between two dates:
 http://api.example.com/1.0/fictional-magazine-brand/users/57866216acc4818e048efd36?includeHistory=true&historyFilters={"lastModifiedAt":{"$gte":1468424733361,"$lte":1468424737447}}
 ```
 
-###### Environment variables for sensitive data
+### Environment variables for sensitive data
 @dark12222000
 
 Configuration variables likely to contain sensitive data can now be set from environment variables, rather than committing this data to config files.
@@ -62,12 +75,12 @@ Available variables:
 * KINESIS_STREAM
 
 
-##### v1.4.0 (2016-03-24)
+## v1.4.0 (2016-03-24)
 
-###### Support for Hooks (beforeCreate, afterCreate, beforeUpdate, afterUpdate, beforeDelete, afterDelete).
+### Support for Hooks (beforeCreate, afterCreate, beforeUpdate, afterUpdate, beforeDelete, afterDelete).
 Provided by @eduardoboucas, many thanks for the hard work on this! Full documentation to be made available soon.
 
-###### Breaking change: Endpoint Authentication
+### Breaking change: Endpoint Authentication
 
 The default setting is now 'must authenticate'. This means if you have custom endpoints
 that are currently open and you want them to stay that way, add this block to the JS file:
@@ -80,14 +93,14 @@ module.exports.model = {
 }
 ```
 
-###### Connection module
+### Connection module
 
 Previously created connections for every loaded collection, resulting in a new connection pool
 for each collection. New behaviour is to create one connection per database - if you aren't
 using `enableCollectionDatabases` then this means you'll only be making one connection
 to the database.
 
-###### Other
+### Other
 * Fix #39. Apply apiVersion filter to query only if it's configured using the `useVersionFilter` property (ed1c1d8)
 * Fix #38. Allow Mixed fields through to the data query, giving back the power to use dot notation in the query (49a0a07)
 * Add timestamps to console log statements (018f4f2)
@@ -100,7 +113,7 @@ to the database.
 * Add config settings for log file rotation (4e7e81d)
 * Add logging level to limit log records (e282e62)
 
-##### v1.3.0 (2016-02-26)
+## v1.3.0 (2016-02-26)
 
 Fix #13: Removed auto-creation of API docs path (should only happen if api-doc module is installed)
 Close #14: Load domain-specific configuration if matching file exists
@@ -110,16 +123,16 @@ Close #19: Database `replicaSet` property should be a String, not a Boolean
 Cache: add Redis caching ability and extend config to allow switching between filesystem and Redis caches
 Cache: locate endpoint matching the request URL using path-to-regex so we can be certain of a match
 ---
-##### v1.2.2 (2016-01-18)
+## v1.2.2 (2016-01-18)
 * Requests for paths containing `docs` skip authentication
 * Custom endpoints with JS comments in the head of the file will have those comments added to the global app object, making for more meaningful API documentation (with the use of npm package `dadi-apidoc`)
 
-##### v1.2.1 (2016-01-13)
+## v1.2.1 (2016-01-13)
 
 * `Model.find()`
   * convert simple string filters to ObjectID if they appear to be valid ObjectIDs
 
-##### v1.2.0 (2016-01-06)
+## v1.2.0 (2016-01-06)
 
 * `Model.find()`
   * collection setting `defaultFilters` now used when performing a GET request, in addition to filters passed in the querystring
@@ -138,9 +151,9 @@ Cache: locate endpoint matching the request URL using path-to-regex so we can be
   }
   ```
 
-##### v0.1.10 (2015-11-18)
+## v0.1.10 (2015-11-18)
 
-###### Database
+### Database
 
 * MongoDB Replica Set support
 * `create()` and `update()` operations return a `results` object the same as `find()`
@@ -167,14 +180,14 @@ Cache: locate endpoint matching the request URL using path-to-regex so we can be
 ```
 
 
-###### Collection Schema & Validation
+### Collection Schema & Validation
 
 * Schema validation has been relaxed for update operations. Serama previously expected all required fields to be supplied in an update request, now it's fine to send only changed data
 * Fix to allow required Boolean fields to be set to false
 
 * removed references to /endpoints
 
-###### Authentication & Authorisation
+### Authentication & Authorisation
 
 * Add `created` field when creating new auth tokens to enable automatic removal by TTL index
 * Fixed support for client authorisation by API version, in case you need to restrict a set of users to a specific version of the API:
@@ -191,15 +204,15 @@ Cache: locate endpoint matching the request URL using path-to-regex so we can be
 }
 ```
 
-###### Cache
+### Cache
 * Flush model cache on DELETE requests
 * added X-Cache and X-Cache-Lookup headers
 * added Server name header, default is `Bantam (Serama)`
 
-###### Compose - Reference Fields
+### Compose - Reference Fields
 * allow enabling compose by querystring
 * remove query parameters that don't exist in the model schema
 
-###### Tests
+### Tests
 * check for existence of `test` database before continuing
 * use `test` database or `testdb` explicitly in some tests

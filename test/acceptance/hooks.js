@@ -46,6 +46,181 @@ describe('Hooks', function () {
 
 //   if (fs.existsSync(newSchemaPath)) fs.unlinkSync(newSchemaPath)
 
+  it('testing failure when specifying _layout as a field in a GET request', function (done) {
+    var article = {
+    	"originalId" : 79343,
+    	"publicationDate" : 1469162676000,
+    	"isLegacy" : true,
+    	"title" : "Cyclist in hospital following crash on the banks of Loch Ness",
+    	"mobileTitle" : "",
+    	"metaTitle" : "",
+    	"metaDescription" : "",
+    	"tagLine" : "",
+    	"subtitle" : "A motorcyclist is being treated at Raigmore Hospital this morning after being thrown from his bike on the banks of Loch Ness.",
+    	"content" : [
+    		"**A motorcyclist is being treated at Raigmore Hospital this morning after being thrown from his bike on the banks of Loch Ness.**",
+    		"He was travelling along the A82 near Glenmoriston when the accident happened at around 1.40pm yesterday afternoon.",
+    		"Emergency services helped rescue the man from the edge of the loch, with the help of lifeboat volunteers from RNLI.",
+    		"A spokesman for Loch Ness RNLI said: “We were asked to assist because he had been thrown onto the lochside and was in a difficult to access, steep area.",
+    		"“He had tried to scramble up to the roadside and couldn't make it.",
+    		"“We helped him back up with the assistance of the fire service and he was taken to hospital.”",
+    		"It's understood the man is being treated for suspected leg injuries."
+    	],
+    	"author" : "57a476c6a510df48125da1c3",
+    	"heroImage" : [
+    		"57a47713a510df48125e052e"
+    	],
+    	"heroImageLandscape" : [
+    		{
+    			"width" : 778,
+    			"height" : 436,
+    			"x" : 0,
+    			"y" : 161
+    		}
+    	],
+    	"heroImageThumbLandscape" : [
+    		{
+    			"width" : 380,
+    			"height" : 285,
+    			"x" : 0,
+    			"y" : 243
+    		}
+    	],
+    	"images" : [ ],
+    	"tags" : [
+    		"57a476d5a510df48125dacd9"
+    	],
+    	"publications" : [
+    		"57aa2fd9c57f5ce6369aa33a",
+    		"57aa2fdbc57f5ce6369aa35b",
+    		"57aa2fd9c57f5ce6369aa33a",
+    		"57aa2fd8c57f5ce6369aa315"
+    	],
+    	"categories" : [
+    		"57aa2fbfc57f5ce6369a9f2c",
+    		"57aa2fbfc57f5ce6369a9f2c",
+    		"57aa2fbfc57f5ce6369a9f2c",
+    		"57aa2fbfc57f5ce6369a9f2c"
+    	],
+    	"primarySyndicatePosition" : 0,
+    	"published" : {
+    		"state" : "published",
+    		"scheduledStart" : 1471503540,
+    		"scheduledEnd" : null
+    	},
+    	"embeds" : [ ],
+    	"_layout" : {
+    		"hero" : [
+    			{
+    				"index" : 0,
+    				"source" : "heroImage"
+    			}
+    		],
+    		"body" : [
+    			{
+    				"index" : 0,
+    				"source" : "content"
+    			},
+    			{
+    				"index" : 1,
+    				"source" : "content"
+    			},
+    			{
+    				"index" : 2,
+    				"source" : "content"
+    			},
+    			{
+    				"index" : 3,
+    				"source" : "content"
+    			},
+    			{
+    				"index" : 4,
+    				"source" : "content"
+    			},
+    			{
+    				"index" : 5,
+    				"source" : "content"
+    			},
+    			{
+    				"index" : 6,
+    				"source" : "content"
+    			}
+    		]
+    	},
+    	"pageTemplate" : "article",
+    	"furl" : "cyclist-in-hospital-following-crash-on-the-banks-of-loch-ness",
+    	"urls" : [
+    		"mfr-2/local/news/cyclist-in-hospital-following-crash-on-the-banks-of-loch-ness",
+    		"mfr/local/news/cyclist-in-hospital-following-crash-on-the-banks-of-loch-ness",
+    		"mfr-2/local/news/cyclist-in-hospital-following-crash-on-the-banks-of-loch-ness",
+    		"mfr-3/local/news/cyclist-in-hospital-following-crash-on-the-banks-of-loch-ness"
+    	],
+    	"heroImagePortrait" : null,
+    	"heroImageThumb" : null,
+    	"hidePublicationDate" : false,
+    	"excerpt" : "",
+    	"urlOverride" : "",
+    	"canonical" : "",
+    	"toplistFeature" : false,
+    	"isAdvertorial" : false,
+    	"campaign_name" : "",
+    	"trackingPixel" : "57b550451afba38e182619dc",
+    	"sponsor" : "57b550451afba38e182619dd"
+    }
+
+    config.set('query.useVersionFilter', true)
+
+    sinon.stub(hook.Hook.prototype, 'load').returns(require(__dirname + '/workspace/hooks/layout.js'))
+
+    var client = request(connectionString)
+
+    // create article
+    client
+    .post('/3rdparty/radio/articles')
+    .send(article)
+    .set('content-type', 'application/json')
+    .set('Authorization', 'Bearer ' + bearerToken)
+    .end(function (err, res) {
+      if (err) return done(err)
+
+      var newArticle = res.body.results[0]
+
+      // GET the article
+      client
+      .get('/3rdparty/radio/articles/' + newArticle._id)
+      .set('content-type', 'application/json')
+      .set('Authorization', 'Bearer ' + bearerToken)
+      .end(function (err, res) {
+        if (err) return done(err)
+
+        should.exist(res.body.results)
+        should.exist(res.body.results[0])
+
+        var articleResponse = res.body.results[0]
+        should.exist(articleResponse._layout)
+
+        // GET the article with qs params
+        client
+        .get('/3rdparty/radio/articles/' + newArticle._id + '?fields={"_layout":1}')
+        .set('content-type', 'application/json')
+        .set('Authorization', 'Bearer ' + bearerToken)
+        .end(function (err, res) {
+          if (err) return done(err)
+
+          hook.Hook.prototype.load.restore()
+
+          should.exist(res.body.results)
+          should.exist(res.body.results[0])
+
+          var articleResponse = res.body.results[0]
+          console.log(articleResponse._layout)
+
+          done()
+        })
+      })
+    })
+  })
+
   it('should not cause creation of duplicate records', function (done) {
     config.set('query.useVersionFilter', true)
 

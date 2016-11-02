@@ -4,7 +4,6 @@
 //   ensure that field validation passes for inserts and updates
 
 var _ = require('underscore')
-var moment = require('moment')
 var ObjectID = require('mongodb').ObjectID
 var util = require('util')
 
@@ -176,8 +175,7 @@ function _validate (field, schema, key) {
   }
 
   if (schema.type === 'DateTime') {
-    var m = moment(new Date(field))
-    if (!m.isValid()) {
+    if (new Date(field).toString() === 'Invalid Date') {
       return 'is not a valid DateTime'
     }
   }

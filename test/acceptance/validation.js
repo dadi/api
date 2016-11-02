@@ -89,29 +89,27 @@ describe('validation', function () {
 
             it('should allow setting DateTime', function (done) {
               var client = request('http://' + config.get('server.host') + ':' + config.get('server.port'));
-
-              var expected = moment("2013/12/08").toISOString()
-
+              var date = new Date()
               client
               .post('/vtest/testdb/test-validation-schema')
               .set('Authorization', 'Bearer ' + bearerToken)
-              .send({fieldDateTime: "2013/12/08"})
+              .send({fieldDateTime: date})
               .expect(200)
               .end(function(err, res) {
-                res.body.results[0].fieldDateTime.should.eql(expected)
+                new Date(res.body.results[0].fieldDateTime).should.eql(date)
                 done()
               })
-            });
+            })
           })
 
           describe('PUT', function () {
             it('should not allow setting invalid DateTime', function (done) {
               var client = request('http://' + config.get('server.host') + ':' + config.get('server.port'));
-
+              var date = new Date()
               client
               .post('/vtest/testdb/test-validation-schema')
               .set('Authorization', 'Bearer ' + bearerToken)
-              .send({fieldDateTime: "2013/12/08"})
+              .send({fieldDateTime: date})
               .expect(200)
               .end(function(err, res) {
                 var doc = res.body.results[0]
@@ -128,28 +126,26 @@ describe('validation', function () {
                 .send(doc)
                 .expect(400)
                 .end(function(err, res) {
-
                   res.body.success.should.eql(false)
-
                   done()
                 })
               })
-
             });
 
             it('should allow setting DateTime', function (done) {
               var client = request('http://' + config.get('server.host') + ':' + config.get('server.port'));
-
+              var date = new Date()
               client
               .post('/vtest/testdb/test-validation-schema')
               .set('Authorization', 'Bearer ' + bearerToken)
-              .send({fieldDateTime: "2013/12/08"})
+              .send({fieldDateTime: date})
               .expect(200)
               .end(function(err, res) {
                 var doc = res.body.results[0]
                 var id = doc._id
 
-                doc.fieldDateTime = "21 May 1977"
+                var date2 = new Date()
+                doc.fieldDateTime = date2
                 delete doc.createdAt
                 delete doc.createdBy
                 delete doc._id
@@ -161,8 +157,7 @@ describe('validation', function () {
                 .expect(200)
                 .end(function(err, res) {
 
-                  var expected = moment("21 May 1977").toISOString()
-                  res.body.results[0].fieldDateTime.should.eql(expected)
+                  new Date(res.body.results[0].fieldDateTime).should.eql(date2)
 
                   done()
                 })

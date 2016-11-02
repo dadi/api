@@ -176,7 +176,7 @@ function _validate (field, schema, key) {
   }
 
   if (schema.type === 'DateTime') {
-    var m = moment(field)
+    var m = moment(new Date(field))
     if (!m.isValid()) {
       return 'is not a valid DateTime'
     }

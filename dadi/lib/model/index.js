@@ -318,7 +318,11 @@ Model.prototype.convertDateTimeForSave = function (schema, obj) {
         obj[key] = new Date(moment(obj[key]).toISOString())
         break
       default:
-        obj[key] = new Date(moment(obj[key]).toISOString())
+        if (schema[key].format) {
+          obj[key] = moment(obj[key], schema[key].format || ['MM-DD-YYYY', 'YYYY-MM-DD', 'DD MMMM YYYY', 'DD/MM/YYYY']).format()
+        } else {
+          obj[key] = new Date(moment(obj[key])).toISOString()
+        }
     }
   })
 

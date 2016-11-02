@@ -113,6 +113,20 @@ describe('Query Utils', function () {
       done()
     })
 
+    it('should not convert a query using dot notation to a case insensitive regex query if schema doesn\'t allow', function (done) {
+      var schema = help.getModelSchema()
+      schema['fieldName'].type = 'Object'
+      schema['fieldName'].matchType = 'exact'
+
+      var query = { 'fieldName.inner': 'example' }
+      var expected = { 'fieldName.inner': 'example' }
+
+      var result = queryUtils.makeCaseInsensitive(query, schema)
+
+      result.should.eql(expected)
+      done()
+    })
+
     it('should convert a normal field query to a case insensitive regex query if schema specifies', function (done) {
       var schema = help.getModelSchema()
       schema['fieldName'].matchType = 'ignoreCase'

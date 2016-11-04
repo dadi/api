@@ -1,5 +1,7 @@
-var path = require('path')
-var config = require(path.join(__dirname, '/../../../config'))
+'use strict'
+
+const path = require('path')
+const config = require(path.join(__dirname, '/../../../config'))
 
 /**
  * Creates a new hook. Allowed types:
@@ -17,7 +19,7 @@ var config = require(path.join(__dirname, '/../../../config'))
  * @return Hook
  * @api public
  */
-var Hook = function (data, type) {
+const Hook = function (data, type) {
   if (typeof data === 'string') {
     this.name = data
   } else {
@@ -25,7 +27,20 @@ var Hook = function (data, type) {
     this.options = data.options
   }
 
-  this.hook = this.load()
+  this.hook = function () {
+    let result
+
+    try {
+      const hookFn = this.load()
+
+      result = hookFn.apply(this, arguments)
+    } catch (error) {
+      result = Promise.reject(error)
+    }
+
+    return result
+  }.bind(this)
+
   this.type = type
 }
 
@@ -98,6 +113,22 @@ Hook.prototype.apply = function () {
   return false
 }
 
+/**
+ * Returns the name of the hook
+ *
+ * @return String
+ * @api public
+ */
+Hook.prototype.getName = function () {
+  return this.name
+}
+
+/**
+ * Loads the hook file
+ *
+ * @return Hook module
+ * @api public
+ */
 Hook.prototype.load = function () {
   return require(require('path').resolve(config.get('paths.hooks')) + '/' + this.name)
 }

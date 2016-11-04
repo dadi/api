@@ -5,6 +5,7 @@ var ObjectID = require('mongodb').ObjectID
 var path = require('path')
 
 var connection = require(path.join(__dirname, '/connection'))
+var formatError = require('@dadi/format-error')
 var Validator = require(path.join(__dirname, '/validator'))
 var History = require(path.join(__dirname, '/history'))
 var Composer = require(path.join(__dirname, '/../composer')).Composer
@@ -209,8 +210,11 @@ Model.prototype.create = function (obj, internals, done, req) {
 
           Promise.resolve(hook.apply(current, this.schema, this.name, req)).then((newDoc) => {
             callback((newDoc === null) ? {} : null, newDoc)
-          }).catch((err) => {
-            callback(err)
+          }).catch(err => {
+            callback([formatError.createApiError('0002', {
+              hookName: hook.getName(),
+              errorMessage: err
+            })])
           })
         }, (err, result) => {
           processedDocs++

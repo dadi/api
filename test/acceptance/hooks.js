@@ -213,7 +213,7 @@ describe('Hooks', function () {
           should.exist(res.body.results[0])
 
           var articleResponse = res.body.results[0]
-          console.log(articleResponse._layout)
+          should.exist(articleResponse._layout)
 
           done()
         })

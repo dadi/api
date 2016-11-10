@@ -4,23 +4,57 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
-## [1.14.0] (2016-11-XX)
+## [1.14.0] (2016-11-10)
 ### Added
 * Added a `matchType` property to fields in collection schemas. Determines the type of match allowed when querying using this field. Possible values:
-  *  "exact": query will be performed using the exact value specified, e.g. { "publishedState": "Published" }
-  *  "ignoreCase": query will be performed using a case insensitive regex of the value specified, e.g. { "publishedState": /^published$/i }
-  *  "<anything else>": query will be performed using a regex of the value specified, e.g. { "publishedState": /^published$/ }
 
-> If `matchType` is not specified, the default (for legacy reasons) is _a case insensitive regex of the value specified_, e.g. { "publishedState": /^published$/i }
+|Value | Behaviour
+|:---|:-----
+| "exact" | query will be performed using the exact value specified, e.g. { "publishedState": "published" }
+| "ignoreCase" | query will be performed using a case insensitive regex of the value specified, e.g. { "publishedState": /^published$/i }
+| "anything else" | query will be performed using a regex of the value specified, e.g. { "publishedState": /^published$/ }
 
-## v1.11.1 (2016-07-16)
+> **Note:** If `matchType` is not specified, the default (for legacy reasons) is _a case insensitive regex of the value specified_, e.g. { "publishedState": /^published$/i }
+
+* Added error handling to beforeCreate hooks. If an error is encountered while executing a beforeCreate hook, an error is returned in the response:
+
+```json
+{
+  "success": false,
+  "errors": [
+    {
+      "code": "API-0002",
+      "title": "Hook Error",
+      "details": "The hook 'myHook' failed: 'ReferenceError: title is not defined'",
+      "docLink": "http://docs.dadi.tech/api/errors/API-0002"
+    }
+  ]
+}
+```
+
+* Added environment variables for database configuration properties:
+
+|Property | Environment variable
+|:---|:-----
+|Database username| "DB_USERNAME"
+|Database password| "DB_PASSWORD"
+|Database name| "DB_NAME"
+|Auth database username| "DB_AUTH_USERNAME"
+|Auth database password| "DB_AUTH_PASSWORD"
+|Auth database name| "DB_AUTH_NAME"
+
+### Changed
+
+* Modified the model instantiation to wait a second if the database hasn't been connected yet. This avoids the error about maximum event listeners being added in the `createIndex` method.
+
+## [1.11.1] (2016-07-16)
 
 * no longer convert to ObjectID if the query is using dot notation and the parent field
 is of type `Mixed`. This supports legacy CMS use in some cases
 * remove the options when calling a collection's count endpoint, to ensure no
 `limit` parameter is sent
 
-## v1.11.0 (2016-07-14)
+## [1.11.0] (2016-07-14)
 
 ### Batch delete of documents
 @eduardoboucas
@@ -75,7 +109,7 @@ Available variables:
 * KINESIS_STREAM
 
 
-## v1.4.0 (2016-03-24)
+## [1.4.0] (2016-03-24)
 
 ### Support for Hooks (beforeCreate, afterCreate, beforeUpdate, afterUpdate, beforeDelete, afterDelete).
 Provided by @eduardoboucas, many thanks for the hard work on this! Full documentation to be made available soon.
@@ -113,7 +147,7 @@ to the database.
 * Add config settings for log file rotation (4e7e81d)
 * Add logging level to limit log records (e282e62)
 
-## v1.3.0 (2016-02-26)
+## [1.3.0] (2016-02-26)
 
 Fix #13: Removed auto-creation of API docs path (should only happen if api-doc module is installed)
 Close #14: Load domain-specific configuration if matching file exists
@@ -123,16 +157,16 @@ Close #19: Database `replicaSet` property should be a String, not a Boolean
 Cache: add Redis caching ability and extend config to allow switching between filesystem and Redis caches
 Cache: locate endpoint matching the request URL using path-to-regex so we can be certain of a match
 ---
-## v1.2.2 (2016-01-18)
+## [1.2.2] (2016-01-18)
 * Requests for paths containing `docs` skip authentication
 * Custom endpoints with JS comments in the head of the file will have those comments added to the global app object, making for more meaningful API documentation (with the use of npm package `dadi-apidoc`)
 
-## v1.2.1 (2016-01-13)
+## [1.2.1] (2016-01-13)
 
 * `Model.find()`
   * convert simple string filters to ObjectID if they appear to be valid ObjectIDs
 
-## v1.2.0 (2016-01-06)
+## [1.2.0] (2016-01-06)
 
 * `Model.find()`
   * collection setting `defaultFilters` now used when performing a GET request, in addition to filters passed in the querystring

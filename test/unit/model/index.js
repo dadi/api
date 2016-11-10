@@ -133,9 +133,16 @@ describe('Model', function () {
       })
 
       should.exist(mod.settings)
-      JSON.parse(JSON.stringify(mod.settings.index)).enabled.should.be.true
       JSON.stringify(mod.settings.index.keys).should.equal(JSON.stringify({ orderDate: 1 }))
 
+      done()
+    })
+
+    it('should accept collection indexing settings for v1.14.0 and above', function (done) {
+      var mod = model('testModelName', help.getModelSchema(), null, { index: [ { keys: { orderDate: 1 } } ] })
+
+      should.exist(mod.settings)
+      JSON.stringify(mod.settings.index[0].keys).should.equal(JSON.stringify({ orderDate: 1 }))
       done()
     })
 
@@ -466,98 +473,160 @@ describe('Model', function () {
 
       mod.create({fieldName: 'ABCDEF'}, function (err, result) {
         if (err) return done(err)
-        // Peform a query, with explain to show we hit the index
-        mod.find({'fieldName': 'ABC'}, {explain: true}, function (err, explanation) {
-          var explanationString = JSON.stringify(explanation.results[0])
-          explanationString.indexOf('fieldName_1').should.be.above(-1)
 
-          done()
-        })
+        setTimeout(function() {
+          // Peform a query, with explain to show we hit the index
+          mod.find({'fieldName': 'ABC'}, {explain: true}, function (err, explanation) {
+            var explanationString = JSON.stringify(explanation.results[0])
+            explanationString.indexOf('fieldName_1').should.be.above(-1)
+            done()
+          })
+        }, 1000)
       })
     })
 
     it('should support compound indexes', function (done) {
-      // help.cleanUpDB()
-      var conn = connection()
-      var fields = help.getModelSchema()
-      var schema = {}
-      schema.fields = fields
+      help.cleanUpDB(() => {
+        var conn = connection()
+        var fields = help.getModelSchema()
+        var schema = {}
+        schema.fields = fields
 
-      schema.fields.field2 = _.extend({}, schema.fields.fieldName, {
-        type: 'Number',
-        required: false
-      })
+        schema.fields.field2 = _.extend({}, schema.fields.fieldName, {
+          type: 'Number',
+          required: false
+        })
 
-      var mod = model('testModelName',
-        schema.fields,
-        conn,
-        {
-          index: {
-            enabled: true,
-            keys: {
-              fieldName: 1,
-              field2: 1
-            },
-            options: {
-              unique: false,
-              background: true,
-              dropDups: false,
-              w: 1
+        var mod = model('testModelName',
+          schema.fields,
+          conn,
+          {
+            index: {
+              enabled: true,
+              keys: {
+                fieldName: 1,
+                field2: 1
+              },
+              options: {
+                unique: false,
+                background: true,
+                dropDups: false,
+                w: 1
+              }
             }
           }
-        }
-      )
+        )
 
-      mod.create({fieldName: 'ABCDEF', field2: 2}, function (err, result) {
-        if (err) return done(err)
-        // Peform a query, with explain to show we hit the query
-        mod.find({'fieldName': 'ABC', 'field2': 1}, {explain: true}, function (err, explanation) {
-          var explanationString = JSON.stringify(explanation.results[0])
-          explanationString.indexOf('fieldName_1_field2_1').should.be.above(-1)
+        mod.create({fieldName: 'ABCDEF', field2: 2}, function (err, result) {
+          if (err) return done(err)
 
-          done()
+          setTimeout(function() {
+            // Peform a query, with explain to show we hit the query
+            mod.find({'fieldName': 'ABC', 'field2': 1}, {explain: true}, function (err, explanation) {
+              var explanationString = JSON.stringify(explanation.results[0])
+              explanationString.indexOf('fieldName_1_field2_1').should.be.above(-1)
+
+              done()
+            })
+          }, 1000)
         })
       })
     })
 
     it('should support unique indexes', function (done) {
-      // help.cleanUpDB()
-      var conn = connection()
-      var fields = help.getModelSchema()
-      var schema = {}
-      schema.fields = fields
+      help.cleanUpDB(() => {
+        var conn = connection()
+        var fields = help.getModelSchema()
+        var schema = {}
+        schema.fields = fields
 
-      schema.fields.field3 = _.extend({}, schema.fields.fieldName, {
-        type: 'String',
-        required: false
-      })
+        schema.fields.field3 = _.extend({}, schema.fields.fieldName, {
+          type: 'String',
+          required: false
+        })
 
-      var mod = model('testModelName',
-        schema.fields,
-        conn,
-        {
-          index: {
-            enabled: true,
-            keys: {
-              field3: 1
-            },
-            options: {
-              unique: true
+        var mod = model('testModelName',
+          schema.fields,
+          conn,
+          {
+            index: {
+              enabled: true,
+              keys: {
+                field3: 1
+              },
+              options: {
+                unique: true
+              }
             }
           }
-        }
-      )
+        )
 
-      mod.create({field3: 'ABCDEF'}, function (err, result) {
-        if (err) return done(err)
+        setTimeout(function() {
+          mod.create({field3: 'ABCDEF'}, function (err, result) {
+            if (err) return done(err)
 
-        mod.create({field3: 'ABCDEF'}, function (err, result) {
-          should.exist(err)
+            mod.create({field3: 'ABCDEF'}, function (err, result) {
+              should.exist(err)
 
-          err.name.should.eql('MongoError')
-          err.code.should.eql('11000')
-          done()
+              err.name.should.eql('MongoError')
+              err.code.should.eql('11000')
+              done()
+            })
+          })
+        }, 1000)
+      })
+    })
+
+    it('should support multiple indexes', function (done) {
+      help.cleanUpDB(() => {
+        var conn = connection()
+        var fields = help.getModelSchema()
+        var schema = {}
+        schema.fields = fields
+
+        schema.fields.field3 = _.extend({}, schema.fields.fieldName, {
+          type: 'String',
+          required: false
         })
+
+        var mod = model('testModelName',
+          schema.fields,
+          conn,
+          {
+            index: [
+              {
+                keys: {
+                  fieldName: 1
+                },
+                options: {
+                  unique: true
+                }
+              },
+              {
+                keys: {
+                  field3: 1
+                },
+                options: {
+                  unique: true
+                }
+              }
+            ]
+          }
+        )
+
+        setTimeout(function() {
+          mod.create({fieldName: 'ABCDEF'}, function (err, result) {
+            if (err) return done(err)
+
+            mod.create({fieldName: 'ABCDEF'}, function (err, result) {
+              should.exist(err)
+
+              err.name.should.eql('MongoError')
+              err.code.should.eql('11000')
+              done()
+            })
+          })
+        }, 1000)
       })
     })
   })

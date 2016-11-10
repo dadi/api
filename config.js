@@ -79,17 +79,20 @@ var conf = convict({
       username: {
         doc: "",
         format: String,
-        default: ""
+        default: "",
+        env: "DB_USERNAME"
       },
       password: {
         doc: "",
         format: String,
-        default: ""
+        default: "",
+        env: "DB_PASSWORD"
       },
       database: {
         doc: "",
         format: String,
-        default: "test"
+        default: "test",
+        env: "DB_NAME"
       },
       ssl: {
         doc: "",
@@ -142,17 +145,20 @@ var conf = convict({
       username: {
         doc: "",
         format: String,
-        default: ""
+        default: "",
+        env: "DB_AUTH_USERNAME"
       },
       password: {
         doc: "",
         format: String,
-        default: ""
+        default: "",
+        env: "DB_AUTH_PASSWORD"
       },
       database: {
         doc: "",
         format: String,
-        default: "test"
+        default: "test",
+        env: "DB_AUTH_NAME"
       }
     }
   },

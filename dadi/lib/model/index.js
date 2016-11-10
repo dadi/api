@@ -130,8 +130,20 @@ Model.prototype.createIndex = function (done) {
     })
   }
 
-  if (this.connection.db) return _done(this.connection.db)
-  this.connection.once('connect', _done)
+  if (!this.connection.db) {
+    // wait 1 second before continuing, this will
+    // stop the need to set a listener on every model
+    // as the db should have become available
+    setTimeout(() => {
+      if (!this.connection.db) {
+        this.connection.once('connect', _done)
+      } else {
+        return _done(this.connection.db)
+      }
+    }, 1000)
+  } else {
+    return _done(this.connection.db)
+  }
 }
 
 /**

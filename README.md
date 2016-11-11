@@ -21,7 +21,7 @@ It is part of DADI, a suite of components covering the full development stack, b
 
 ## Documentation
 
-Documentation is maintained under the `docs` branch.
+Documentation can be found at the [DADI Docs site](http://docs.dadi.tech/api/).
 
 ## Licence
 

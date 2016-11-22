@@ -658,7 +658,10 @@ Model.prototype.get = function (query, options, done, req) {
         Promise.resolve(hook.apply(current, this.schema, this.name, req)).then((newResults) => {
           callback((newResults === null) ? {} : null, newResults)
         }).catch((err) => {
-          callback(err)
+          callback([formatError.createApiError('0002', {
+            hookName: hook.getName(),
+            errorMessage: err
+          })])
         })
       }, (err, finalResult) => {
         done(err, finalResult)
@@ -884,7 +887,10 @@ Model.prototype.update = function (query, update, internals, done, req) {
           Promise.resolve(hook.apply(current, updatedDocs, this.schema, this.name, req)).then((newUpdate) => {
             callback((newUpdate === null) ? {} : null, newUpdate)
           }).catch((err) => {
-            callback(err)
+            callback([formatError.createApiError('0002', {
+              hookName: hook.getName(),
+              errorMessage: err
+            })])
           })
         }, (err, result) => {
           if (err) {
@@ -935,7 +941,10 @@ Model.prototype.delete = function (query, done, req) {
         Promise.resolve(hook.apply(current, hookError, this.schema, this.name, req)).then((newQuery) => {
           callback((newQuery === null) ? {} : null, newQuery)
         }).catch((err) => {
-          callback(err)
+          callback([formatError.createApiError('0002', {
+            hookName: hook.getName(),
+            errorMessage: err
+          })])
         })
       }, (err, result) => {
         if (err) {

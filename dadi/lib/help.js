@@ -113,7 +113,7 @@ module.exports.transformQuery = function (obj, type) {
 
     case 'String':
       transformFunction = function (obj) {
-        var regexParts = obj.match(/\/([^\/]*)\/([i]{0,1})$/)
+        var regexParts = obj.match(/\/([^/]*)\/([i]{0,1})$/)
 
         if (regexParts) {
           try {

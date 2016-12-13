@@ -16,6 +16,7 @@
     "async": "^1.4.2",
     "body-parser": "~1.6.5",
     "bunyan": "^1.5.1",
+    "busboy": "^0.2.13",
     "chokidar": "^1.5.2",
     "cli-prompt": "^0.6.0",
     "colors": "^1.1.2",

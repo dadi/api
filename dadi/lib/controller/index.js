@@ -13,6 +13,7 @@ implements methods corresponding to the HTTP methods it needs to support
 
 */
 var _ = require('underscore')
+var Busboy = require('busboy')
 var path = require('path')
 var url = require('url')
 
@@ -216,6 +217,43 @@ Controller.prototype.post = function (req, res, next) {
   // we still get a valid handle on the model name
   // for clearing the cache
   pathname = pathname.replace('/' + req.params.id, '')
+
+  var busboy = new Busboy({ headers: req.headers })
+  this.data = []
+  this.fileName = ''
+
+  // Listen for event when Busboy finds a file to stream
+  busboy.on('file', (fieldname, file, filename, encoding, mimetype) => {
+    this.fileName = filename
+    this.mimetype = mimetype
+
+    file.on('data', (chunk) => {
+      this.data.push(chunk)
+    })
+
+    file.on('end', () => {
+      // console.log('Finished with ' + fieldname)
+    })
+  })
+
+  // Listen for event when Busboy finds a non-file field
+  busboy.on('field', (fieldname, val) => {
+    // Do something with non-file field.
+  })
+
+  // Listen for event when Busboy is finished parsing the form
+  busboy.on('finish', () => {
+    var data = Buffer.concat(this.data)
+    console.log(data)
+
+    console.log(this)
+    // return writeFile(req, this.fileName, this.mimetype, data). then((result) => {
+    //   help.sendBackJSON(201, result, res)
+    // })
+  })
+
+  // Pipe the HTTP Request into Busboy
+  req.pipe(busboy)
 
   // flush cache for POST requests
   help.clearCache(pathname, function (err) {

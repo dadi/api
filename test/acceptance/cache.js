@@ -23,7 +23,7 @@ var bearerToken;
 
 describe('Cache', function (done) {
   this.timeout(4000)
-  
+
   after(function(done) {
     testConfigString = fs.readFileSync(config.configPath());
 
@@ -45,8 +45,6 @@ describe('Cache', function (done) {
   });
 
   it('should use cache if available', function (done) {
-    var spy = sinon.spy(fs, 'createReadStream');
-
     app.start(function() {
       help.dropDatabase('test', function (err) {
         if (err) return done(err);
@@ -91,8 +89,8 @@ describe('Cache', function (done) {
 
                   res2.text.should.equal(res3.text);
 
-                  spy.called.should.be.true;
-                  spy.restore();
+                  should.exist(res3.headers['x-cache'])
+                  res3.headers['x-cache'].should.eql('HIT')
 
                   help.removeTestClients(function() {
                     help.clearCache();
@@ -145,9 +143,9 @@ describe('Cache', function (done) {
               .end(function (err, res2) {
                 if (err) return done(err);
 
-                res2.headers['x-cache'].should.exist;
+                should.exist(res2.headers['x-cache']);
                 res2.headers['x-cache'].should.eql('MISS');
-                res2.headers['x-cache-lookup'].should.exist;
+                should.exist(res2.headers['x-cache-lookup']);
                 res2.headers['x-cache-lookup'].should.eql('HIT');
 
                 help.removeTestClients(function() {

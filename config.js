@@ -291,6 +291,11 @@ var conf = convict({
       format: Boolean,
       default: false
     },
+    collection: {
+      doc: 'The name of the API collection to store the metadata for uploaded media',
+      format: String,
+      default: 'mediaStore'
+    },
     storage: {
       doc: 'Determines the storage type for uploads',
       format: ['disk', 's3'],

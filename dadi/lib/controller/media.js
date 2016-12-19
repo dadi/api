@@ -12,6 +12,8 @@ var streamifier = require('streamifier')
 var Model = require(path.join(__dirname, '/../model'))
 var StorageFactory = require(path.join(__dirname, '/../storage/factory'))
 
+var collectionName = config.get('media.collection')
+
 var schema = {
   'fields': {
     'fileName': {
@@ -54,7 +56,7 @@ var schema = {
 }
 
 var MediaController = function () {
-  this.model = Model('_media', schema.fields, null, schema.settings, null)
+  this.model = Model(collectionName, schema.fields, null, schema.settings, null)
 }
 
 MediaController.prototype.post = function (req, res, next) {

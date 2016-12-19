@@ -19,6 +19,7 @@ var api = require(path.join(__dirname, '/api'))
 var auth = require(path.join(__dirname, '/auth'))
 var cache = require(path.join(__dirname, '/cache'))
 var controller = require(path.join(__dirname, '/controller'))
+var MediaController = require(path.join(__dirname, '/controller/media'))
 var dadiStatus = require('@dadi/status')
 var help = require(path.join(__dirname, '/help'))
 var log = require('@dadi/logger')
@@ -77,7 +78,7 @@ Server.prototype.run = function (done) {
       // Watch the current directory for a "restart.api" file
       var watcher = chokidar.watch(process.cwd(), {
         depth: 1,
-        ignored: /[\/\\]\./,
+        ignored: /(^|[/\\])\../,  // ignores dotfiles, see https://regex101.com/r/7VuO4e/1
         ignoreInitial: true
       })
 
@@ -273,6 +274,18 @@ Server.prototype.loadApi = function (options) {
 
   this.addMonitor(endpointPath, function (endpointFile) {
     self.updateVersions(endpointPath)
+  })
+
+  this.app.use('/api/media', function (req, res, next) {
+    var method = req.method && req.method.toLowerCase()
+    if (method !== 'post') return next()
+
+    if (!config.get('media.enabled')) {
+      return next()
+    }
+
+    var controller = new MediaController()
+    return controller.post(req, res, next)
   })
 
   this.app.use('/api/flush', function (req, res, next) {

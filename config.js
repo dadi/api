@@ -285,6 +285,54 @@ var conf = convict({
       default: false
     }
   },
+  media: {
+    enabled: {
+      doc: 'If true, files can be uploaded to API with a POST request',
+      format: Boolean,
+      default: false
+    },
+    storage: {
+      doc: 'Determines the storage type for uploads',
+      format: ['disk', 's3'],
+      default: 'disk'
+    },
+    basePath: {
+      doc: 'Sets the root directory for uploads',
+      format: String,
+      default: 'workspace/media'
+    },
+    pathFormat: {
+      doc: 'Determines the format for subdirectories that are created to store uploads',
+      format: ['none', 'date', 'datetime', 'sha1/4', 'sha1/5', 'sha1/8'],
+      default: 'date'
+    },
+    s3: {
+      accessKey: {
+        doc: 'The AWS access key used to connect to S3',
+        format: String,
+        default: '',
+        env: 'AWS_S3_ACCESS_KEY'
+      },
+      secretKey: {
+        doc: 'The AWS secret key used to connect to S3',
+        format: String,
+        default: '',
+        env: 'AWS_S3_SECRET_KEY'
+      },
+      bucketName: {
+        doc: 'The name of the S3 bucket in which to store uploads',
+        format: String,
+        default: '',
+        env: 'AWS_S3_BUCKET_NAME'
+      },
+      region: {
+        doc: 'The AWS region',
+        format: String,
+        default: '',
+        env: 'AWS_S3_REGION'
+      }
+    }
+  },
   env: {
     doc: "The applicaton environment.",
     format: ["production", "development", "test", "qa"],

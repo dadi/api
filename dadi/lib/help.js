@@ -1,5 +1,4 @@
 var _ = require('underscore')
-var crypto = require('crypto')
 var formatError = require('@dadi/format-error')
 var fs = require('fs')
 var Moment = require('moment')

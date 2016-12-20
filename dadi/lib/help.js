@@ -1,4 +1,5 @@
 var _ = require('underscore')
+var crypto = require('crypto')
 var formatError = require('@dadi/format-error')
 var fs = require('fs')
 var Moment = require('moment')
@@ -265,8 +266,18 @@ module.exports.validateCollectionSchema = function (obj) {
 module.exports.clearCache = function (pathname, callback) {
   var pattern = ''
 
+  pattern = crypto.createHash('sha1').update(pathname).digest('hex')
+
   if (config.get('caching.redis.enabled')) {
-    pattern = pathname
+    pattern = pattern + '*'
+  }
+
+  if (pathname === '*' || pathname === '') {
+    if (config.get('caching.redis.enabled')) {
+      pattern = '*'
+    } else {
+      pattern = ''
+    }
   }
 
   cache.delete(pattern, function (err) {

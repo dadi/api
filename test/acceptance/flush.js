@@ -115,49 +115,58 @@ describe('Cache', function(done) {
               .expect(200)
               .end(function (err, res) {
                 if (err) return done(err);
-                res.headers['x-cache'].should.exist;
-                res.headers['x-cache'].should.eql('HIT');
 
-                // flush cache for /vtest/testdb/test-schema
                 client
-                .post('/api/flush')
+                .get('/vtest/testdb/test-schema')
                 .set('Authorization', 'Bearer ' + bearerToken)
-                .send({path: '/vtest/testdb/test-schema'})
                 .expect(200)
                 .end(function (err, res) {
-                    if (err) return done(err);
+                  if (err) return done(err);
 
-                    res.body.result.should.equal('success');
+                  res.headers['x-cache'].should.exist;
+                  res.headers['x-cache'].should.eql('HIT');
 
-                    setTimeout(function() {
+                  // flush cache for /vtest/testdb/test-schema
+                  client
+                  .post('/api/flush')
+                  .set('Authorization', 'Bearer ' + bearerToken)
+                  .send({path: '/vtest/testdb/test-schema'})
+                  .expect(200)
+                  .end(function (err, res) {
+                      if (err) return done(err);
 
-                      // test that cache documents still exist for /v1/library/book
-                      client
-                      .get('/v1/library/book')
-                      .set('Authorization', 'Bearer ' + bearerToken)
-                      .expect(200)
-                      .end(function (err, res) {
-                          if (err) return done(err);
-                          res.headers['x-cache'].should.exist;
-                          res.headers['x-cache'].should.eql('HIT');
+                      res.body.result.should.equal('success');
 
-                          setTimeout(function() {
+                      setTimeout(function() {
 
-                            // test that cache has been flushed for /vtest/testdb/test-schema
-                            client
-                            .get('/vtest/testdb/test-schema')
-                            .set('Authorization', 'Bearer ' + bearerToken)
-                            .expect(200)
-                            .end(function (err, res) {
-                                if (err) return done(err);
-                                res.headers['x-cache'].should.exist;
-                                res.headers['x-cache'].should.eql('MISS');
-                                done();
-                            });
-                          }, 500)
-                      });
-                    }, 500)
-                });
+                        // test that cache documents still exist for /v1/library/book
+                        client
+                        .get('/v1/library/book')
+                        .set('Authorization', 'Bearer ' + bearerToken)
+                        .expect(200)
+                        .end(function (err, res) {
+                            if (err) return done(err);
+                            res.headers['x-cache'].should.exist;
+                            res.headers['x-cache'].should.eql('HIT');
+
+                            setTimeout(function() {
+
+                              // test that cache has been flushed for /vtest/testdb/test-schema
+                              client
+                              .get('/vtest/testdb/test-schema')
+                              .set('Authorization', 'Bearer ' + bearerToken)
+                              .expect(200)
+                              .end(function (err, res) {
+                                  if (err) return done(err);
+                                  res.headers['x-cache'].should.exist;
+                                  res.headers['x-cache'].should.eql('MISS');
+                                  done();
+                              });
+                            }, 500)
+                        });
+                      }, 500)
+                    });
+                  });
               });
             });
             }, 500)

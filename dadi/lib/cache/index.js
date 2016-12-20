@@ -6,17 +6,18 @@ var _ = require('underscore')
 
 var config = require(path.join(__dirname, '/../../../config'))
 var log = require('@dadi/logger')
-
 var DadiCache = require('@dadi/cache')
-var cache = new DadiCache(config.get('caching'))
+var cache
 
 var Cache = function (server) {
-  log.info({module: 'cache'}, 'Cache logging started.')
+  this.cache = cache = new DadiCache(config.get('caching'))
 
   this.server = server
   this.enabled = config.get('caching.directory.enabled') || config.get('caching.redis.enabled')
   this.encoding = 'utf8'
   this.options = {}
+
+  log.info({module: 'cache'}, 'Cache logging started.')
 }
 
 var instance
@@ -55,7 +56,7 @@ Cache.prototype.getEndpointContentType = function (req) {
 Cache.prototype.init = function () {
   var self = this
 
-  this.server.app.use(function (req, res, next) {
+  this.server.app.use((req, res, next) => {
     var enabled = self.cachingEnabled(req)
     if (!enabled) return next()
 
@@ -79,6 +80,8 @@ Cache.prototype.init = function () {
 
     // get contentType that current endpoint requires
     var contentType = self.getEndpointContentType(req)
+
+    console.log(cacheKey)
 
     // attempt to get from the cache
     cache.get(cacheKey).then((stream) => {
@@ -149,6 +152,8 @@ module.exports.reset = function () {
  *
  */
 module.exports.delete = function (pattern, callback) {
+  if (!cache) return callback(null)
+
   cache.flush(pattern).then(() => {
     return callback(null)
   }).catch((err) => {

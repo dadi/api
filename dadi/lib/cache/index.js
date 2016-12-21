@@ -81,8 +81,6 @@ Cache.prototype.init = function () {
     // get contentType that current endpoint requires
     var contentType = self.getEndpointContentType(req)
 
-    console.log(cacheKey)
-
     // attempt to get from the cache
     cache.get(cacheKey).then((stream) => {
       log.info({module: 'cache'}, 'Serving ' + req.url + ' from cache')

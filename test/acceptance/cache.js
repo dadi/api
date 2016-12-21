@@ -36,6 +36,7 @@ describe('Cache', function (done) {
 
   beforeEach(function(done) {
     try {
+      cache.reset()
       app.stop(function(){});
       done();
     }
@@ -106,7 +107,6 @@ describe('Cache', function (done) {
   });
 
   it('should allow bypassing cache with query string flag', function (done) {
-
     app.start(function() {
       help.dropDatabase('test', function (err) {
         if (err) return done(err);
@@ -161,7 +161,6 @@ describe('Cache', function (done) {
   });
 
   it('should allow disabling through config', function (done) {
-
     testConfigString = fs.readFileSync(config.configPath());
 
     var newTestConfig = JSON.parse(testConfigString);
@@ -237,8 +236,19 @@ describe('Cache', function (done) {
   });
 
   describe('Filesystem', function(done) {
-
     beforeEach(function (done) {
+      var testConfigString = fs.readFileSync(config.configPath())
+
+      var newTestConfig = JSON.parse(testConfigString)
+      newTestConfig.caching.directory.enabled = true
+      newTestConfig.caching.redis.enabled = false
+
+      fs.writeFileSync(config.configPath(), JSON.stringify(newTestConfig, null, 2))
+      delete require.cache[__dirname + '/../../config']
+      cache.reset()
+
+      config.loadFile(config.configPath())
+
       app.start(function() {
         help.dropDatabase('test', function (err) {
           if (err) return done(err);
@@ -262,7 +272,6 @@ describe('Cache', function (done) {
     });
 
     it('should save responses to the file system', function (done) {
-
       var spy = sinon.spy(fs, 'createWriteStream');
 
       request('http://' + config.get('server.host') + ':' + config.get('server.port'))
@@ -305,8 +314,6 @@ describe('Cache', function (done) {
       .expect(200)
       .end(function (err, res1) {
         if (err) return done(err);
-
-
         client
         .post('/vtest/testdb/test-schema')
         .set('Authorization', 'Bearer ' + bearerToken)
@@ -570,20 +577,22 @@ describe('Cache', function (done) {
 
   describe('Redis', function(done) {
     beforeEach(function (done) {
-      testConfigString = fs.readFileSync(config.configPath());
+      testConfigString = fs.readFileSync(config.configPath())
 
-      var newTestConfig = JSON.parse(testConfigString);
-      newTestConfig.caching.directory.enabled = false;
-      newTestConfig.caching.redis.enabled = true;
+      var newTestConfig = JSON.parse(testConfigString)
+      newTestConfig.caching.directory.enabled = false
+      newTestConfig.caching.redis.enabled = true
 
-      fs.writeFileSync(config.configPath(), JSON.stringify(newTestConfig, null, 2));
+      fs.writeFileSync(config.configPath(), JSON.stringify(newTestConfig, null, 2))
+      delete require.cache[__dirname + '/../../config']
+      cache.reset()
 
-      delete require.cache[__dirname + '/../../dadi/lib/cache'];
-      cache = require(__dirname + '/../../dadi/lib/cache');
+      config.loadFile(config.configPath())
 
-      delete require.cache[__dirname + '/../../config'];
-      config = require(__dirname + '/../../config');
-
+      // delete require.cache[__dirname + '/../../dadi/lib/cache'];
+      // cache = require(__dirname + '/../../dadi/lib/cache');
+      // delete require.cache[__dirname + '/../../config'];
+      // config = require(__dirname + '/../../config');
       done();
     });
 

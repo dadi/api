@@ -1,5 +1,5 @@
 var path = require('path')
-var uuid = require('node-uuid')
+var uuid = require('uuid')
 var config = require(path.join(__dirname, '/../../../config.js'))
 var connection = require(path.join(__dirname, '/../model/connection'))
 var tokenStore = require(path.join(__dirname, '/tokenStore'))()

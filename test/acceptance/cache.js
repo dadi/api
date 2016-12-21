@@ -3,7 +3,7 @@ var fs = require('fs');
 var path = require('path');
 var should = require('should');
 var request = require('supertest');
-var redis = require('redis');
+//var redis = require('redis');
 var fakeredis = require('fakeredis');
 var sinon = require('sinon');
 var proxyquire =  require('proxyquire');
@@ -620,11 +620,11 @@ describe('Cache', function (done) {
 
     });
 
-    it('should initialise Redis client', function(done) {
+    it.skip('should initialise Redis client', function(done) {
       delete require.cache[__dirname + '/../../config.js'];
       config.loadFile(config.configPath());
 
-      sinon.stub(redis, 'createClient', fakeredis.createClient);
+      //sinon.stub(redis, 'createClient', fakeredis.createClient);
 
       delete require.cache[__dirname + '/../../dadi/lib/'];
       cache.reset();
@@ -637,7 +637,7 @@ describe('Cache', function (done) {
       }
 
       var c = cache(app);
-      redis.createClient.restore();
+      //redis.createClient.restore();
       //c.redisClient.should.not.be.null;
       //app.stop(function(){});
       done();
@@ -666,7 +666,7 @@ describe('Cache', function (done) {
       cache.reset();
 
       var c = cache(app);
-      redis.createClient.restore();
+      // redis.createClient.restore();
 
       setTimeout(function() {
         // emit an error event

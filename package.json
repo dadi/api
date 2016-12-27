@@ -13,7 +13,7 @@
     "@dadi/cache": "1.2.0",
     "@dadi/format-error": "^1.0.0",
     "@dadi/logger": "latest",
-    "@dadi/status": "git+https://git@github.com/dadi/status.git",
+    "@dadi/status": "latest",
     "async": "^2.1.4",
     "body-parser": "~1.15.2",
     "bunyan": "^1.5.1",

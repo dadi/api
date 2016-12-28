@@ -667,7 +667,7 @@ Server.prototype.updateCollections = function (collectionsPath) {
 
     // parse the url out of the directory structure
     var cpath = path.join(collectionsPath, collection)
-    var dirs = cpath.split('/')
+    var dirs = cpath.split(path.sep)
     var version = dirs[dirs.length - 3]
     var database = dirs[dirs.length - 2]
 
@@ -740,7 +740,7 @@ Server.prototype.updateEndpoints = function (endpointsPath) {
   endpoints.forEach(function (endpoint) {
     // parse the url out of the directory structure
     var cpath = path.join(endpointsPath, endpoint)
-    var dirs = cpath.split('/')
+    var dirs = cpath.split(path.sep)
     var version = dirs[dirs.length - 2]
 
     self.addEndpointResource({

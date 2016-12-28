@@ -77,7 +77,7 @@ Server.prototype.run = function (done) {
       // Watch the current directory for a "restart.api" file
       var watcher = chokidar.watch(process.cwd(), {
         depth: 1,
-        ignored: /[\/\\]\./,
+        ignored: /[/\\]\./,
         ignoreInitial: true
       })
 

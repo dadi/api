@@ -77,7 +77,7 @@ Server.prototype.run = function (done) {
       // Watch the current directory for a "restart.api" file
       var watcher = chokidar.watch(process.cwd(), {
         depth: 1,
-        ignored: /[/\\]\./,
+        ignored: /(^|[/\\])\../,  // ignores dotfiles, see https://regex101.com/r/7VuO4e/1
         ignoreInitial: true
       })
 

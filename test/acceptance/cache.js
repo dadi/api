@@ -3,7 +3,7 @@ var fs = require('fs');
 var path = require('path');
 var should = require('should');
 var request = require('supertest');
-var redis = require('redis');
+//var redis = require('redis');
 var fakeredis = require('fakeredis');
 var sinon = require('sinon');
 var proxyquire =  require('proxyquire');
@@ -18,12 +18,12 @@ var cache = require(__dirname + '/../../dadi/lib/cache');
 var help = require(__dirname + '/help');
 
 var testConfigString;
-
+var cacheKeys = []
 var bearerToken;
 
 describe('Cache', function (done) {
   this.timeout(4000)
-  
+
   after(function(done) {
     testConfigString = fs.readFileSync(config.configPath());
 
@@ -36,6 +36,7 @@ describe('Cache', function (done) {
 
   beforeEach(function(done) {
     try {
+      cache.reset()
       app.stop(function(){});
       done();
     }
@@ -45,8 +46,6 @@ describe('Cache', function (done) {
   });
 
   it('should use cache if available', function (done) {
-    var spy = sinon.spy(fs, 'createReadStream');
-
     app.start(function() {
       help.dropDatabase('test', function (err) {
         if (err) return done(err);
@@ -91,8 +90,8 @@ describe('Cache', function (done) {
 
                   res2.text.should.equal(res3.text);
 
-                  spy.called.should.be.true;
-                  spy.restore();
+                  should.exist(res3.headers['x-cache'])
+                  res3.headers['x-cache'].should.eql('HIT')
 
                   help.removeTestClients(function() {
                     help.clearCache();
@@ -108,7 +107,6 @@ describe('Cache', function (done) {
   });
 
   it('should allow bypassing cache with query string flag', function (done) {
-
     app.start(function() {
       help.dropDatabase('test', function (err) {
         if (err) return done(err);
@@ -145,9 +143,9 @@ describe('Cache', function (done) {
               .end(function (err, res2) {
                 if (err) return done(err);
 
-                res2.headers['x-cache'].should.exist;
+                should.exist(res2.headers['x-cache']);
                 res2.headers['x-cache'].should.eql('MISS');
-                res2.headers['x-cache-lookup'].should.exist;
+                should.exist(res2.headers['x-cache-lookup']);
                 res2.headers['x-cache-lookup'].should.eql('HIT');
 
                 help.removeTestClients(function() {
@@ -163,7 +161,6 @@ describe('Cache', function (done) {
   });
 
   it('should allow disabling through config', function (done) {
-
     testConfigString = fs.readFileSync(config.configPath());
 
     var newTestConfig = JSON.parse(testConfigString);
@@ -239,8 +236,19 @@ describe('Cache', function (done) {
   });
 
   describe('Filesystem', function(done) {
-
     beforeEach(function (done) {
+      var testConfigString = fs.readFileSync(config.configPath())
+
+      var newTestConfig = JSON.parse(testConfigString)
+      newTestConfig.caching.directory.enabled = true
+      newTestConfig.caching.redis.enabled = false
+
+      fs.writeFileSync(config.configPath(), JSON.stringify(newTestConfig, null, 2))
+      delete require.cache[__dirname + '/../../config']
+      cache.reset()
+
+      config.loadFile(config.configPath())
+
       app.start(function() {
         help.dropDatabase('test', function (err) {
           if (err) return done(err);
@@ -264,7 +272,6 @@ describe('Cache', function (done) {
     });
 
     it('should save responses to the file system', function (done) {
-
       var spy = sinon.spy(fs, 'createWriteStream');
 
       request('http://' + config.get('server.host') + ':' + config.get('server.port'))
@@ -287,7 +294,7 @@ describe('Cache', function (done) {
       });
     });
 
-    it.skip('should invalidate based on TTL', function (done) {
+    it('should invalidate based on TTL', function (done) {
       this.timeout(4000);
 
       var oldTTL = config.get('caching.ttl');
@@ -307,8 +314,6 @@ describe('Cache', function (done) {
       .expect(200)
       .end(function (err, res1) {
         if (err) return done(err);
-
-
         client
         .post('/vtest/testdb/test-schema')
         .set('Authorization', 'Bearer ' + bearerToken)
@@ -570,25 +575,26 @@ describe('Cache', function (done) {
     });
   });
 
-  describe.skip('Redis', function(done) {
-
+  describe('Redis', function(done) {
     beforeEach(function (done) {
-      testConfigString = fs.readFileSync(config.configPath());
+      testConfigString = fs.readFileSync(config.configPath())
 
-      var newTestConfig = JSON.parse(testConfigString);
-      newTestConfig.caching.directory.enabled = false;
-      newTestConfig.caching.redis.enabled = true;
+      var newTestConfig = JSON.parse(testConfigString)
+      newTestConfig.caching.directory.enabled = false
+      newTestConfig.caching.redis.enabled = true
 
-      fs.writeFileSync(config.configPath(), JSON.stringify(newTestConfig, null, 2));
+      fs.writeFileSync(config.configPath(), JSON.stringify(newTestConfig, null, 2))
+      delete require.cache[__dirname + '/../../config']
+      cache.reset()
 
-      // delete require.cache[__dirname + '/cache'];
-      //
+      cacheKeys = []
+
+      config.loadFile(config.configPath())
+
       // delete require.cache[__dirname + '/../../dadi/lib/cache'];
       // cache = require(__dirname + '/../../dadi/lib/cache');
-      //
-      delete require.cache[__dirname + '/../../config'];
-      config = require(__dirname + '/../../config');
-
+      // delete require.cache[__dirname + '/../../config'];
+      // config = require(__dirname + '/../../config');
       done();
     });
 
@@ -598,7 +604,6 @@ describe('Cache', function (done) {
     });
 
     it('should throw error if can\'t connect to Redis client', function(done) {
-
       delete require.cache[__dirname + '/../../config.js'];
       delete require.cache[__dirname + '/../../dadi/lib/'];
 
@@ -615,12 +620,11 @@ describe('Cache', function (done) {
 
     });
 
-    it('should initialise Redis client', function(done) {
-
+    it.skip('should initialise Redis client', function(done) {
       delete require.cache[__dirname + '/../../config.js'];
       config.loadFile(config.configPath());
 
-      sinon.stub(redis, 'createClient', fakeredis.createClient);
+      //sinon.stub(redis, 'createClient', fakeredis.createClient);
 
       delete require.cache[__dirname + '/../../dadi/lib/'];
       cache.reset();
@@ -632,15 +636,14 @@ describe('Cache', function (done) {
       catch (err) {
       }
 
-      var  c = cache(app);
-      redis.createClient.restore();
-      c.redisClient.should.not.be.null;
+      var c = cache(app);
+      //redis.createClient.restore();
+      //c.redisClient.should.not.be.null;
       //app.stop(function(){});
       done();
     });
 
-    it('should fallback to directory cache if Redis client fails', function(done) {
-
+    it.skip('should fallback to directory cache if Redis client fails', function(done) {
       delete require.cache[__dirname + '/../../config.js'];
       config.loadFile(config.configPath());
 
@@ -663,7 +666,7 @@ describe('Cache', function (done) {
       cache.reset();
 
       var c = cache(app);
-      redis.createClient.restore();
+      // redis.createClient.restore();
 
       setTimeout(function() {
         // emit an error event
@@ -686,13 +689,13 @@ describe('Cache', function (done) {
       delete require.cache[__dirname + '/../../config.js'];
       config.loadFile(config.configPath());
 
-      var client = sinon.stub(redis, 'createClient', fakeredis.createClient);
+      delete require.cache[__dirname + '/../../dadi/lib/']
 
-      delete require.cache[__dirname + '/../../dadi/lib/'];
-
-      var  c = cache(app);
-      c.redisClient = fakeredis.createClient();
-      var spy = sinon.spy(c.redisClient, 'exists');
+      cache.reset()
+      var c = cache(app);
+      c.cache.cacheHandler.redisClient = fakeredis.createClient()
+      c.cache.cacheHandler.redisClient.status = 'ready'
+      var spy = sinon.spy(c.cache.cacheHandler.redisClient, 'exists')
 
       // generate expected cacheKey
       var requestUrl = '/vtest/testdb/test-schema';
@@ -714,14 +717,12 @@ describe('Cache', function (done) {
             .set('Authorization', 'Bearer ' + bearerToken)
             .expect(200)
             .end(function (err, res) {
-              if (err) return done(err);
+              if (err) return done(err)
 
               spy.called.should.eql(true);
               spy.args[0][0].should.eql(cacheKey);
 
-              c.redisClient.exists.restore();
-              redis.createClient.restore();
-
+              c.cache.cacheHandler.redisClient.exists.restore()
               app.stop(function(){});
               done();
             });
@@ -748,9 +749,11 @@ describe('Cache', function (done) {
       var filename = crypto.createHash('sha1').update(url.parse(requestUrl).pathname + JSON.stringify(query)).digest('hex');
       var cacheKey = modelDir + '_' + filename;
 
-      var  c = cache(app);
-      c.redisClient = fakeredis.createClient();
-      c.redisClient.set(cacheKey, 'DATA');
+      cache.reset()
+      var c = cache(app);
+      c.cache.cacheHandler.redisClient = fakeredis.createClient()
+      c.cache.cacheHandler.redisClient.status = 'ready'
+      c.cache.cacheHandler.redisClient.set(cacheKey, 'DATA')
 
       try {
         app.start(function() {
@@ -795,14 +798,29 @@ describe('Cache', function (done) {
 
       delete require.cache[__dirname + '/../../config.js'];
       delete require.cache[__dirname + '/../../dadi/lib/'];
-      cache.reset();
 
       config.loadFile(config.configPath());
 
-      var redisClient = fakeredis.createClient();
-      sinon.stub(redis, 'createClient', function () { return redisClient; });
+      cache.reset()
+      var c = cache(app);
+      c.cache.cacheHandler.redisClient = fakeredis.createClient()
+      c.cache.cacheHandler.redisClient.status = 'ready'
 
-      var  c = cache(app);
+      c.cache.cacheHandler.redisClient.scanStream = function (pattern) {
+        var Readable = require('stream').Readable
+        var stream = new Readable({objectMode: true})
+
+        for (var i = 0; i < cacheKeys.length; i++) {
+          if (pattern.match === '*' || cacheKeys[i].indexOf(pattern.match.substring(0, pattern.match.length-1)) === 0) {
+            stream.push([cacheKeys[i]])
+          } else {
+            // console.log('rejected key: ', cacheKeys[i])
+          }
+        }
+
+        stream.push(null)
+        return stream
+      }
 
       try {
         app.start(function() {
@@ -828,26 +846,28 @@ describe('Cache', function (done) {
                 .set('Authorization', 'Bearer ' + bearerToken)
                 .expect(200)
                 .end(function (err, res1) {
-                  if (err) return done(err);
-
                   setTimeout(function () {
+                    // get the cache keys
+                    c.cache.cacheHandler.redisClient.KEYS('*', (err, keys) => {
+                      cacheKeys = keys
 
-                    // ttl should have expired
-                    client
-                    .get('/vtest/testdb/test-schema')
-                    .set('Authorization', 'Bearer ' + bearerToken)
-                    .expect(200)
-                    .end(function (err, res2) {
-                      if (err) return done(err);
+                      setTimeout(function () {
+                        // ttl should have expired
+                        client
+                        .get('/vtest/testdb/test-schema')
+                        .set('Authorization', 'Bearer ' + bearerToken)
+                        .expect(200)
+                        .end(function (err, res2) {
+                          if (err) return done(err);
 
-                      redis.createClient.restore();
+                          res2.headers['x-cache'].should.eql('MISS');
+                          res2.headers['x-cache-lookup'].should.eql('MISS');
 
-                      res2.headers['x-cache'].should.eql('MISS');
-                      res2.headers['x-cache-lookup'].should.eql('MISS');
+                          app.stop(function(){});
+                          done();
 
-                      app.stop(function(){});
-                      done();
-
+                        });
+                      }, 1500);
                     });
                   }, 1500);
                 });
@@ -863,16 +883,33 @@ describe('Cache', function (done) {
     });
 
     it('should flush on POST create request', function(done) {
-      this.timeout(4000);
+      this.timeout(4000)
 
       delete require.cache[__dirname + '/../../config.js'];
       delete require.cache[__dirname + '/../../dadi/lib/'];
-      cache.reset();
 
       config.loadFile(config.configPath());
 
-      var redisClient = fakeredis.createClient(config.get('caching.redis.port'), config.get('caching.redis.host'), {detect_buffers: true, max_attempts: 3});
-      sinon.stub(redis, 'createClient', function () { return redisClient; });
+      cache.reset()
+      var c = cache(app);
+      c.cache.cacheHandler.redisClient = fakeredis.createClient()
+      c.cache.cacheHandler.redisClient.status = 'ready'
+
+      c.cache.cacheHandler.redisClient.scanStream = function (pattern) {
+        var Readable = require('stream').Readable
+        var stream = new Readable({objectMode: true})
+
+        for (var i = 0; i < cacheKeys.length; i++) {
+          if (pattern.match === '*' || cacheKeys[i].indexOf(pattern.match.substring(0, pattern.match.length-1)) === 0) {
+            stream.push([cacheKeys[i]])
+          } else {
+            // console.log('rejected key: ', cacheKeys[i])
+          }
+        }
+
+        stream.push(null)
+        return stream
+      }
 
       try {
         app.start(function() {
@@ -898,34 +935,40 @@ describe('Cache', function (done) {
                   .end(function (err, res1) {
                     if (err) return done(err);
 
-                    client
-                    .post('/vtest/testdb/test-schema')
-                    .set('Authorization', 'Bearer ' + bearerToken)
-                    .send({field1: 'foo!'})
-                    .expect(200)
-                    .end(function (err, res2) {
-                      if (err) return done(err);
+                    setTimeout(function() {
 
-                      setTimeout(function () {
+                      // get the cache keys
+                      c.cache.cacheHandler.redisClient.KEYS('*', (err, keys) => {
+                        cacheKeys = keys
 
                         client
-                        .get('/vtest/testdb/test-schema')
+                        .post('/vtest/testdb/test-schema')
                         .set('Authorization', 'Bearer ' + bearerToken)
+                        .send({field1: 'foo!'})
                         .expect(200)
-                        .end(function (err, res3) {
+                        .end(function (err, res2) {
                           if (err) return done(err);
 
-                          redis.createClient.restore();
+                          setTimeout(function() {
+                            client
+                            .get('/vtest/testdb/test-schema')
+                            .set('Authorization', 'Bearer ' + bearerToken)
+                            .expect(200)
+                            .end(function (err, res3) {
+                              if (err) return done(err);
 
-                          res1.body.results.length.should.eql(2);
-                          res3.body.results.length.should.eql(3);
-                          res3.text.should.not.equal(res1.text);
+                              cache.reset()
+                              res1.body.results.length.should.eql(2);
+                              res3.body.results.length.should.eql(3);
+                              res3.text.should.not.equal(res1.text);
 
-                          app.stop(function(){});
-                          done();
+                              app.stop(function(){});
+                              done()
+                            });
+                          }, 500)
                         });
-                      }, 600);
-                    });
+                      })
+                    }, 500)
                   });
                 });
               });
@@ -944,12 +987,29 @@ describe('Cache', function (done) {
 
       delete require.cache[__dirname + '/../../config.js'];
       delete require.cache[__dirname + '/../../dadi/lib/'];
-      cache.reset();
 
       config.loadFile(config.configPath());
 
-      var redisClient = fakeredis.createClient(config.get('caching.redis.port'), config.get('caching.redis.host'), {detect_buffers: true, max_attempts: 3});
-      sinon.stub(redis, 'createClient', function () { return redisClient; });
+      cache.reset()
+      var c = cache(app)
+      c.cache.cacheHandler.redisClient = fakeredis.createClient()
+      c.cache.cacheHandler.redisClient.status = 'ready'
+
+      c.cache.cacheHandler.redisClient.scanStream = function (pattern) {
+        var Readable = require('stream').Readable
+        var stream = new Readable({objectMode: true})
+
+        for (var i = 0; i < cacheKeys.length; i++) {
+          if (pattern.match === '*' || cacheKeys[i].indexOf(pattern.match.substring(0, pattern.match.length-1)) === 0) {
+            stream.push([cacheKeys[i]])
+          } else {
+            // console.log('rejected key: ', cacheKeys[i])
+          }
+        }
+
+        stream.push(null)
+        return stream
+      }
 
       try {
         app.start(function() {
@@ -996,41 +1056,35 @@ describe('Cache', function (done) {
                        .end(function (err, getRes2) {
                          if (err) return done(err);
 
-                         setTimeout(function () {
+                         setTimeout(function() {
+                           // get the cache keys
+                           c.cache.cacheHandler.redisClient.KEYS('*', (err, keys) => {
+                             cacheKeys = keys
 
-                           // UPDATE again
-                           client
-                           .put('/vtest/testdb/test-schema/' + id)
-                           .set('Authorization', 'Bearer ' + bearerToken)
-                           .send({field1: 'foo bar baz!'})
-                           .expect(200)
-                           .end(function (err, postRes2) {
-                             if (err) return done(err);
+                             // UPDATE again
+                             client
+                             .put('/vtest/testdb/test-schema/' + id)
+                             .set('Authorization', 'Bearer ' + bearerToken)
+                             .send({field1: 'foo bar baz!'})
+                             .expect(200)
+                             .end(function (err, postRes2) {
 
-                             // WAIT, then GET again
-                             setTimeout(function () {
-
-                               client
-                               .get('/vtest/testdb/test-schema')
-                               .set('Authorization', 'Bearer ' + bearerToken)
-                               .expect(200)
-                               .end(function (err, getRes3) {
-                                 if (err) return done(err);
-
-                                 redis.createClient.restore();
-
-                                // console.log(getRes2.body)
-                                //  console.log(getRes3.body)
-                                 var result = _.findWhere(getRes3.body.results, { "_id": id });
-
-                                 result.field1.should.eql('foo bar baz!');
-
-                                 app.stop(function(){});
-                                 done();
-                               });
-                             }, 200);
-                           });
-                         }, 300);
+                               // WAIT, then GET again
+                               setTimeout(function () {
+                                 client
+                                  .get('/vtest/testdb/test-schema')
+                                  .set('Authorization', 'Bearer ' + bearerToken)
+                                  .expect(200)
+                                  .end(function (err, getRes3) {
+                                    var result = _.findWhere(getRes3.body.results, { "_id": id });
+                                    result.field1.should.eql('foo bar baz!');
+                                    app.stop(function(){});
+                                    done();
+                                  });
+                               }, 500);
+                             });
+                          })
+                        }, 500)
                        });
                      });
                    });
@@ -1051,12 +1105,29 @@ describe('Cache', function (done) {
 
       delete require.cache[__dirname + '/../../config.js'];
       delete require.cache[__dirname + '/../../dadi/lib/'];
-      cache.reset();
 
       config.loadFile(config.configPath());
 
-      var redisClient = fakeredis.createClient(config.get('caching.redis.port'), config.get('caching.redis.host'), {detect_buffers: true, max_attempts: 3});
-      sinon.stub(redis, 'createClient', function () { return redisClient; });
+      cache.reset()
+      var c = cache(app)
+      c.cache.cacheHandler.redisClient = fakeredis.createClient()
+      c.cache.cacheHandler.redisClient.status = 'ready'
+
+      c.cache.cacheHandler.redisClient.scanStream = function (pattern) {
+        var Readable = require('stream').Readable
+        var stream = new Readable({objectMode: true})
+
+        for (var i = 0; i < cacheKeys.length; i++) {
+          if (pattern.match === '*' || cacheKeys[i].indexOf(pattern.match.substring(0, pattern.match.length-1)) === 0) {
+            stream.push([cacheKeys[i]])
+          } else {
+            // console.log('rejected key: ', cacheKeys[i])
+          }
+        }
+
+        stream.push(null)
+        return stream
+      }
 
       try {
         app.start(function() {
@@ -1101,40 +1172,36 @@ describe('Cache', function (done) {
                         .set('Authorization', 'Bearer ' + bearerToken)
                         .expect(200)
                         .end(function (err, getRes2) {
-                          if (err) return done(err);
 
                           setTimeout(function () {
+                            // get the cache keys
+                            c.cache.cacheHandler.redisClient.KEYS('*', (err, keys) => {
+                              cacheKeys = keys
 
-                            // DELETE
-                            client
-                            .delete('/vtest/testdb/test-schema/' + id)
-                            .set('Authorization', 'Bearer ' + bearerToken)
-                            .expect(204)
-                            .end(function (err, postRes2) {
-                              if (err) return done(err);
-
-                              // WAIT, then GET again
                               setTimeout(function () {
-
+                                // DELETE
                                 client
-                                .get('/vtest/testdb/test-schema')
+                                .delete('/vtest/testdb/test-schema/' + id)
                                 .set('Authorization', 'Bearer ' + bearerToken)
-                                .expect(200)
-                                .end(function (err, getRes3) {
-                                  if (err) return done(err);
-
-                                  var result = _.findWhere(getRes3.body.results, { "_id": id });
-
-                                  redis.createClient.restore();
-
-                                  should.not.exist(result);
-
-                                  app.stop(function(){});
-                                  done();
+                                .expect(204)
+                                .end(function (err, postRes2) {
+                                  // WAIT, then GET again
+                                  setTimeout(function () {
+                                    client
+                                    .get('/vtest/testdb/test-schema')
+                                    .set('Authorization', 'Bearer ' + bearerToken)
+                                    .expect(200)
+                                    .end(function (err, getRes3) {
+                                      var result = _.findWhere(getRes3.body.results, { "_id": id });
+                                      should.not.exist(result);
+                                      app.stop(function(){});
+                                      done();
+                                    });
+                                  }, 300);
                                 });
-                              }, 300);
-                            });
-                          }, 700);
+                              }, 700);
+                            })
+                          }, 500)
                         });
                       });
                     });
@@ -1151,15 +1218,31 @@ describe('Cache', function (done) {
     });
 
     it('should preserve content-type', function(done) {
-
       delete require.cache[__dirname + '/../../config.js'];
       delete require.cache[__dirname + '/../../dadi/lib/'];
-      cache.reset();
 
       config.loadFile(config.configPath());
 
-      var redisClient = fakeredis.createClient(config.get('caching.redis.port'), config.get('caching.redis.host'), {detect_buffers: true, max_attempts: 3});
-      sinon.stub(redis, 'createClient', function () { return redisClient; });
+      cache.reset()
+      var c = cache(app)
+      c.cache.cacheHandler.redisClient = fakeredis.createClient()
+      c.cache.cacheHandler.redisClient.status = 'ready'
+
+      c.cache.cacheHandler.redisClient.scanStream = function (pattern) {
+        var Readable = require('stream').Readable
+        var stream = new Readable({objectMode: true})
+
+        for (var i = 0; i < cacheKeys.length; i++) {
+          if (pattern.match === '*' || cacheKeys[i].indexOf(pattern.match.substring(0, pattern.match.length-1)) === 0) {
+            stream.push([cacheKeys[i]])
+          } else {
+            // console.log('rejected key: ', cacheKeys[i])
+          }
+        }
+
+        stream.push(null)
+        return stream
+      }
 
       try {
         app.start(function() {
@@ -1174,27 +1257,36 @@ describe('Cache', function (done) {
         .end(function (err, res1) {
           if (err) return done(err);
 
-          client
-          .post('/vtest/testdb/test-schema')
-          .set('Authorization', 'Bearer ' + bearerToken)
-          .send({field1: 'foo!'})
-          .expect(200)
-          .end(function (err, res) {
-            if (err) return done(err);
+          setTimeout(function() {
+            // get the cache keys
+            c.cache.cacheHandler.redisClient.KEYS('*', (err, keys) => {
+              cacheKeys = keys
 
-            client
-            .get('/vtest/testdb/test-schema?callback=myCallback')
-            .set('Authorization', 'Bearer ' + bearerToken)
-            .expect(200)
-            .expect('content-type', 'text/javascript')
-            .end(function (err, res2) {
-              if (err) return done(err);
+              setTimeout(function() {
+                client
+                .post('/vtest/testdb/test-schema')
+                .set('Authorization', 'Bearer ' + bearerToken)
+                .send({field1: 'foo!'})
+                .expect(200)
+                .end(function (err, res) {
+                  if (err) return done(err);
 
-              res2.text.should.not.equal(res1.text);
-              app.stop(function(){});
-              done();
-            });
-          });
+                  client
+                  .get('/vtest/testdb/test-schema?callback=myCallback')
+                  .set('Authorization', 'Bearer ' + bearerToken)
+                  .expect(200)
+                  .expect('content-type', 'text/javascript')
+                  .end(function (err, res2) {
+                    if (err) return done(err);
+
+                    res2.text.should.not.equal(res1.text);
+                    app.stop(function(){});
+                    done();
+                  });
+                });
+              }, 500)
+            })
+          }, 500)
         });
       });
     }

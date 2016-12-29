@@ -1,11 +1,11 @@
 {
   "name": "@dadi/api",
-  "version": "1.14.0",
+  "version": "1.14.1",
   "main": "main.js",
   "scripts": {
     "create-client": "cd ../../.. && ./node_modules/@dadi/api/utils/create-client.js",
     "init": "validate-commit-msg",
-    "test": "standard 'dadi/**/*.js' && env NODE_ENV=test ./node_modules/.bin/istanbul cover -x **/workspace/** --report cobertura --report text --report html --report lcov ./node_modules/.bin/_mocha test",
+    "test": "standard 'dadi/**/*.js' && env NODE_ENV=test ./node_modules/.bin/istanbul cover -x **/workspace/** --report cobertura --report text --report html --report lcov ./node_modules/mocha/bin/_mocha test",
     "posttest": "./scripts/coverage.js",
     "start": "node start.js --node_env=development"
   },

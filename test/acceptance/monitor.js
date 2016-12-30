@@ -106,7 +106,6 @@ describe('File system watching', function () {
         .get('/v1/monitor-test-endpoint?cache=false')
         .set('Authorization', 'Bearer ' + bearerToken)
         .expect(200)
-        // .expect('content-type', 'application/json')
         .end(function (err, res) {
           if (err) return done(err)
 
@@ -120,6 +119,9 @@ describe('File system watching', function () {
           fs.writeFileSync(testEndpointPath, lines.join('\n'))
 
           setTimeout(function () {
+
+            console.log(app.components['/v1/monitor-test-endpoint'])
+
             client
               .get('/v1/monitor-test-endpoint?cache=false')
               .set('Authorization', 'Bearer ' + bearerToken)
@@ -131,7 +133,7 @@ describe('File system watching', function () {
                 res.body.message.should.equal('version 2')
                 done()
               })
-          }, 1500)
+          }, 2000)
         })
     })
   })

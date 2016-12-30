@@ -57,7 +57,7 @@ describe('Application', function () {
       setTimeout(function () {
         var client = request(connectionString)
         client
-          .get('/serama/config')
+          .get('/api/config')
 
           // just need to test that we get some kind of response
           .expect(401)
@@ -1216,7 +1216,7 @@ describe('Application', function () {
               query = encodeURIComponent(JSON.stringify(query))
 
               client
-                .get('/vtest/testdb/test-schema/' + doc2._id + '?filter=' + query)
+                .get('/vtest/testdb/test-schema/' + doc2._id + '?cache=false&filter=' + query)
                 .set('Authorization', 'Bearer ' + bearerToken)
                 .expect(200)
                 .expect('content-type', 'application/json')

@@ -97,7 +97,7 @@ describe('Model connection', function () {
 
     it('should connect with credentials', function (done) {
         help.addUserToDb({
-            username: 'seramatest',
+            username: 'test',
             password: 'test123'
         }, {
             databaseName: 'test',
@@ -107,7 +107,7 @@ describe('Model connection', function () {
             if (err) return done(err);
 
             var conn = connection({
-                username: 'seramatest',
+                username: 'test',
                 password: 'test123',
                 database: 'test',
                 hosts: [{
@@ -127,17 +127,17 @@ describe('Model connection', function () {
 
     it('should construct a valid replica set connection string', function (done) {
         help.addUserToDb({
-            username: 'seramatest',
+            username: 'test',
             password: 'test123'
         }, {
-            databaseName: 'serama',
+            databaseName: 'test',
             host: 'localhost',
             port: 27017
         }, function (err) {
             if (err) return done(err);
 
             var options = {
-                "username": "seramatest",
+                "username": "test",
                 "password": "test123",
                 "database": "test",
                 "replicaSet": "repl-01",
@@ -164,7 +164,7 @@ describe('Model connection', function () {
             config.set('database', options);
 
             var conn = connection();
-            conn.connectionString.should.eql("mongodb://seramatest:test123@127.0.0.1:27016,127.0.0.1:27017,127.0.0.1:27018/test?replicaSet=repl-01&maxPoolSize=1");
+            conn.connectionString.should.eql("mongodb://test:test123@127.0.0.1:27016,127.0.0.1:27017,127.0.0.1:27018/test?replicaSet=repl-01&maxPoolSize=1");
 
             // restore config
             config.set('database', dbConfig);
@@ -174,17 +174,17 @@ describe('Model connection', function () {
 
     it('should raise error when replicaSet servers can\'t be found', function (done) {
         help.addUserToDb({
-            username: 'seramatest',
+            username: 'test',
             password: 'test123'
         }, {
-            databaseName: 'serama',
+            databaseName: 'test',
             host: 'localhost',
             port: 27017
         }, function (err) {
             if (err) return done(err);
 
             var options = {
-                "username": "seramatest",
+                "username": "test",
                 "password": "test123",
                 "database": "test",
                 "replicaSet": "test",
@@ -205,7 +205,7 @@ describe('Model connection', function () {
             var conn = connection(options);
 
             conn.on('error', function (err) {
-                conn.connectionString.should.eql("mongodb://seramatest:test123@127.0.0.1:27016/test?replicaSet=test&maxPoolSize=1");
+                conn.connectionString.should.eql("mongodb://test:test123@127.0.0.1:27016/test?replicaSet=test&maxPoolSize=1");
                 err.toString().should.eql("Error: failed to connect to [127.0.0.1:27016]");
 
                 // restore config

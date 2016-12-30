@@ -116,8 +116,8 @@ describe('Model', function () {
           'port': 27017
         }
       ],
-      'username': 'seramatest',
-      'password': 'serama123',
+      'username': 'test',
+      'password': 'test123',
       'database': 'test',
       'ssl': false,
       'replicaSet': '',
@@ -147,7 +147,7 @@ describe('Model', function () {
     configStub.restore()
 
     var conn = mod.connection
-    conn.connectionString.should.equal('mongodb://seramatest:serama123@127.0.0.1:27017/secondary')
+    conn.connectionString.should.equal('mongodb://test:test123@127.0.0.1:27017/secondary')
 
     done()
   })
@@ -160,8 +160,8 @@ describe('Model', function () {
           'port': 27017
         }
       ],
-      'username': 'seramatest',
-      'password': 'serama123',
+      'username': 'test',
+      'password': 'test123',
       'database': 'test',
       'ssl': false,
       'replicaSet': '',
@@ -184,7 +184,7 @@ describe('Model', function () {
 
     var conn = mod.connection
 
-    conn.connectionString.should.equal('mongodb://seramatest:serama123@127.0.0.1:27017/secondary')
+    conn.connectionString.should.equal('mongodb://test:test123@127.0.0.1:27017/secondary')
 
     done()
   })

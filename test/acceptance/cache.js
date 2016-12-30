@@ -883,7 +883,7 @@ describe('Cache', function (done) {
     });
 
     it('should flush on POST create request', function(done) {
-      this.timeout(4000)
+      this.timeout(8000)
 
       delete require.cache[__dirname + '/../../config.js'];
       delete require.cache[__dirname + '/../../dadi/lib/'];
@@ -983,7 +983,7 @@ describe('Cache', function (done) {
     });
 
     it('should flush on PUT update request', function(done) {
-      this.timeout(4000);
+      this.timeout(8000)
 
       delete require.cache[__dirname + '/../../config.js'];
       delete require.cache[__dirname + '/../../dadi/lib/'];
@@ -1101,7 +1101,7 @@ describe('Cache', function (done) {
     });
 
     it('should flush on DELETE request', function(done) {
-      this.timeout(4000);
+      this.timeout(8000)
 
       delete require.cache[__dirname + '/../../config.js'];
       delete require.cache[__dirname + '/../../dadi/lib/'];

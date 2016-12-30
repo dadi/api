@@ -215,11 +215,13 @@ describe('File system watching', function () {
 
       var client = request('http://' + config.get('server.host') + ':' + config.get('server.port'))
 
-      client
-        .get('/v1/monitor-test-endpoint?cache=false')
-        .set('Authorization', 'Bearer ' + bearerToken)
-        .expect(404)
-        .end(done)
+      setTimeout(function() {
+        client
+          .get('/v1/monitor-test-endpoint?cache=false')
+          .set('Authorization', 'Bearer ' + bearerToken)
+          .expect(404)
+          .end(done)
+      }, 500)
     })
 
     it('should remove collection from api when file is removed', function (done) {
@@ -227,11 +229,13 @@ describe('File system watching', function () {
 
       var client = request('http://' + config.get('server.host') + ':' + config.get('server.port'))
 
-      client
-        .get('/vtest/testdb/monitor-test-schema')
-        .set('Authorization', 'Bearer ' + bearerToken)
-        .expect(404)
-        .end(done)
+      setTimeout(function() {
+        client
+          .get('/vtest/testdb/monitor-test-schema')
+          .set('Authorization', 'Bearer ' + bearerToken)
+          .expect(404)
+          .end(done)
+      }, 500)
     })
   })
 })

@@ -154,7 +154,7 @@ describe('Controller', function (done) {
         };
 
         var res = {
-          setHeader: function setHeader(string, string) {
+          setHeader: function setHeader(str1, str2) {
           },
           end: function end(body) {
           this.body = body;
@@ -181,7 +181,7 @@ describe('Controller', function (done) {
         };
 
         var res = {
-          setHeader: function setHeader(string, string) {
+          setHeader: function setHeader(str1, str2) {
           },
           end: function end(body) {
           this.body = body;

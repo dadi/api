@@ -218,7 +218,7 @@ Controller.prototype.post = function (req, res, next) {
   pathname = pathname.replace('/' + req.params.id, '')
 
   // flush cache for POST requests
-  help.clearCache(pathname, function (err) {
+  help.clearCache(pathname, (err) => {
     if (err) return next(err)
 
     // if id is present in the url, then this is an update

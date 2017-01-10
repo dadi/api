@@ -7,6 +7,7 @@ var chokidar = require('chokidar')
 var cluster = require('cluster')
 var colors = require('colors') // eslint-disable-line
 var parsecomments = require('parse-comments')
+var formatError = require('@dadi/format-error')
 var fs = require('fs')
 var mkdirp = require('mkdirp')
 var path = require('path')
@@ -292,12 +293,14 @@ Server.prototype.loadApi = function (options) {
     var method = req.method && req.method.toLowerCase()
     if (method !== 'post') return next()
 
-    var pathname = req.body.path
+    if (!req.body.path) {
+      return help.sendBackJSON(400, res, next)(null, formatError.createApiError('0003'))
+    }
 
-    return help.clearCache(pathname, function (err) {
+    return help.clearCache(req.body.path, function (err) {
       help.sendBackJSON(200, res, next)(err, {
         result: 'success',
-        message: 'Succeed to clear'
+        message: 'Cache flush successful'
       })
     })
   })
@@ -680,7 +683,7 @@ Server.prototype.updateCollections = function (collectionsPath) {
 
     // parse the url out of the directory structure
     var cpath = path.join(collectionsPath, collection)
-    var dirs = cpath.split('/')
+    var dirs = cpath.split(path.sep)
     var version = dirs[dirs.length - 3]
     var database = dirs[dirs.length - 2]
 
@@ -753,7 +756,7 @@ Server.prototype.updateEndpoints = function (endpointsPath) {
   endpoints.forEach(function (endpoint) {
     // parse the url out of the directory structure
     var cpath = path.join(endpointsPath, endpoint)
-    var dirs = cpath.split('/')
+    var dirs = cpath.split(path.sep)
     var version = dirs[dirs.length - 2]
 
     self.addEndpointResource({
@@ -1109,7 +1112,7 @@ function onListening (server) {
   startText += '  Environment: '.green + env + '\n'
   startText += '  ----------------------------\n'
 
-  startText += '\n\n  Copyright ' + String.fromCharCode(169) + ' 2015 DADI+ Limited (https://dadi.tech)'.white + '\n'
+  startText += '\n\n  Copyright ' + String.fromCharCode(169) + ' 2015-' + new Date().getFullYear() + ' DADI+ Limited (https://dadi.tech)'.white + '\n'
 
   if (env !== 'test') {
     console.log(startText)

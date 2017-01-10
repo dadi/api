@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## [1.14.1] (2016-12-28)
+### Changed
+* [#164](https://github.com/dadi/api/issues/164): Modified collection and endpoint loading to use the current platform's directory separator, rather than assuming '/', which fails under Windows.
+
+
 ## [1.14.0] (2016-11-10)
 ### Added
 * Added a `matchType` property to fields in collection schemas. Determines the type of match allowed when querying using this field. Possible values:

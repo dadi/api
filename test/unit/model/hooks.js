@@ -197,7 +197,7 @@ describe('Hook', function () {
         // find the obj we just created
         mod.find({fieldName: 'foo'}, function (err, doc) {
           if (err) return done(err)
-          
+
           done()
         })
       })
@@ -318,7 +318,7 @@ describe('Hook', function () {
       return mod.create(docs, function (err, result) {
         hook.Hook.prototype.load.restore()
 
-        if (err) return done(err)
+        if (err) return (err)
 
         // find the objs we just created
         mod.find({fieldName: 'foo'}, function (err, doc) {
@@ -404,11 +404,11 @@ describe('Hook', function () {
         // find the obj we just created
         mod.find({fieldName: 'foo'}, function (err, doc) {
           if (err) return done(err)
-          
+
           done()
         })
       })
-    })    
+    })
 
     it('should modify single documents after create', function (done) {
       var conn = connection()
@@ -572,11 +572,11 @@ describe('Hook', function () {
         // find the obj we just created
         mod.find({fieldName: 'foo'}, function (err, doc) {
           if (err) return done(err)
-          
+
           done()
         })
       })
-    })    
+    })
 
     it('should modify documents before update', function (done) {
       var conn = connection()
@@ -678,11 +678,11 @@ describe('Hook', function () {
         // find the obj we just created
         mod.find({fieldName: 'foo'}, function (err, doc) {
           if (err) return done(err)
-          
+
           done()
         })
       })
-    })    
+    })
 
     it('should modify documents after create', function (done) {
       var conn = connection()
@@ -789,11 +789,11 @@ describe('Hook', function () {
         // find the obj we just created
         mod.find({fieldName: 'foo'}, function (err, doc) {
           if (err) return done(err)
-          
+
           done()
         })
       })
-    })    
+    })
 
     // this one writes to a log file before deleting the document
     // see the logFunction declared at the top of this file
@@ -903,11 +903,11 @@ describe('Hook', function () {
         // find the obj we just created
         mod.find({fieldName: 'foo'}, function (err, doc) {
           if (err) return done(err)
-          
+
           done()
         })
       })
-    })    
+    })
 
     // this one writes to a log file before deleting the document
     // see the logFunction declared at the top of this file
@@ -1017,7 +1017,7 @@ describe('Hook', function () {
         // find the obj we just created
         mod.find({fieldName: 'foo'}, function (err, doc) {
           if (err) return done(err)
-          
+
           done()
         })
       })

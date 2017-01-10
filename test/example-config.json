@@ -4,7 +4,7 @@
         "port": 27017,
         "username": "",
         "password": "",
-        "database": "serama",
+        "database": "test",
         "secondary": {
             "enabled": true,
             "host": "127.0.0.1",
@@ -34,7 +34,7 @@
             "port":27017,
             "username":"",
             "password":"",
-            "database":"serama",
+            "database":"test",
             "clientCollection": "clientStore",
             "tokenCollection": "tokenStore"
         }

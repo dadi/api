@@ -148,7 +148,7 @@ options = {
     ],
     "username": "",
     "password": "",
-    "database": "serama",
+    "database": "test",
     "ssl": false,
     "replicaSet": "test",
     "secondary": {

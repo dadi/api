@@ -518,7 +518,7 @@ describe('Authentication', function () {
         });
     });
 
-    // it('should not allow access to serama config when client permissions specified', function (done) {
+    // it('should not allow access to main config when client permissions specified', function (done) {
 
     //     var permissions = { permissions: { collections: [ { apiVersion: "v1", path: "books" } ] } }
 
@@ -529,7 +529,7 @@ describe('Authentication', function () {
     //         // Wait, then test that we can make an unauthenticated request
     //         setTimeout(function () {
     //             client
-    //             .get('/serama/config')
+    //             .get('/api/config')
     //             .set('Authorization', 'Bearer ' + token)
     //             .expect(401)
     //             //.expect('content-type', 'application/json')

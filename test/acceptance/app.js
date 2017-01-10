@@ -15,6 +15,8 @@ var connectionString = 'http://' + config.get('server.host') + ':' + config.get(
 var lastModifiedAt = 0
 
 describe('Application', function () {
+  this.timeout(10000)
+
   before(function(done) {
     // read "lastModifiedAt": 1466832329170
     // of workspace/collections/vtest/testdb
@@ -55,7 +57,7 @@ describe('Application', function () {
       setTimeout(function () {
         var client = request(connectionString)
         client
-          .get('/serama/config')
+          .get('/api/config')
 
           // just need to test that we get some kind of response
           .expect(401)
@@ -167,7 +169,10 @@ describe('Application', function () {
               .end(function (err, res) {
                 if (err) return done(err)
 
-                done()
+                // let's wait a bit
+                setTimeout(function () {
+                  done()
+                }, 500)
               })
           })
         })
@@ -1211,7 +1216,7 @@ describe('Application', function () {
               query = encodeURIComponent(JSON.stringify(query))
 
               client
-                .get('/vtest/testdb/test-schema/' + doc2._id + '?filter=' + query)
+                .get('/vtest/testdb/test-schema/' + doc2._id + '?cache=false&filter=' + query)
                 .set('Authorization', 'Bearer ' + bearerToken)
                 .expect(200)
                 .expect('content-type', 'application/json')
@@ -2663,11 +2668,12 @@ describe('Application', function () {
             docs[0].lead.should.eql('Adds two numbers together.')
 
             done()
-
           })
       })
 
       it('should allow updating an endpoint', function (done) {
+        this.timeout(8000)
+
         var client = request(connectionString)
 
         // make sure the endpoint exists from last test
@@ -2680,7 +2686,7 @@ describe('Application', function () {
 
             // get an updated version of the file
             var fileArr = jsSchemaString.split('\n')
-            fileArr[0] = "var message = {message: 'endpoint updated through the API'};"
+            fileArr[0] = "var message = {message: 'endpoint updated through the API'}"
             jsSchemaString = fileArr.join('\n')
 
             // update endpoint
@@ -2698,15 +2704,14 @@ describe('Application', function () {
                   client
                     .get('/v1/new-endpoint?cache=false')
                     .set('Authorization', 'Bearer ' + bearerToken)
-                    .expect(200)
-                    .expect('content-type', 'application/json')
                     .end(function (err, res) {
                       if (err) return done(err)
 
+                      res.statusCode.should.eql(200)
                       res.body.message.should.equal('endpoint updated through the API')
                       done()
                     })
-                }, 1500)
+                }, 3000)
               })
           })
       })

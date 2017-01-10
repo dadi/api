@@ -99,13 +99,13 @@ describe('File system watching', function () {
     })
 
     it('should update endpoint component when file changes', function (done) {
+      this.timeout(5000)
       var client = request('http://' + config.get('server.host') + ':' + config.get('server.port'))
 
       client
         .get('/v1/monitor-test-endpoint?cache=false')
         .set('Authorization', 'Bearer ' + bearerToken)
         .expect(200)
-        // .expect('content-type', 'application/json')
         .end(function (err, res) {
           if (err) return done(err)
 
@@ -119,6 +119,9 @@ describe('File system watching', function () {
           fs.writeFileSync(testEndpointPath, lines.join('\n'))
 
           setTimeout(function () {
+
+            console.log(app.components['/v1/monitor-test-endpoint'])
+
             client
               .get('/v1/monitor-test-endpoint?cache=false')
               .set('Authorization', 'Bearer ' + bearerToken)
@@ -130,7 +133,7 @@ describe('File system watching', function () {
                 res.body.message.should.equal('version 2')
                 done()
               })
-          }, 300)
+          }, 2000)
         })
     })
   })
@@ -214,11 +217,13 @@ describe('File system watching', function () {
 
       var client = request('http://' + config.get('server.host') + ':' + config.get('server.port'))
 
-      client
-        .get('/v1/monitor-test-endpoint?cache=false')
-        .set('Authorization', 'Bearer ' + bearerToken)
-        .expect(404)
-        .end(done)
+      setTimeout(function() {
+        client
+          .get('/v1/monitor-test-endpoint?cache=false')
+          .set('Authorization', 'Bearer ' + bearerToken)
+          .expect(404)
+          .end(done)
+      }, 500)
     })
 
     it('should remove collection from api when file is removed', function (done) {
@@ -226,11 +231,13 @@ describe('File system watching', function () {
 
       var client = request('http://' + config.get('server.host') + ':' + config.get('server.port'))
 
-      client
-        .get('/vtest/testdb/monitor-test-schema')
-        .set('Authorization', 'Bearer ' + bearerToken)
-        .expect(404)
-        .end(done)
+      setTimeout(function() {
+        client
+          .get('/vtest/testdb/monitor-test-schema')
+          .set('Authorization', 'Bearer ' + bearerToken)
+          .expect(404)
+          .end(done)
+      }, 500)
     })
   })
 })

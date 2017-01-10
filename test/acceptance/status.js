@@ -66,7 +66,10 @@ describe('Status', function () {
         .post('/api/status')
         .set('Authorization', 'Bearer ' + token)
         .expect('content-type', 'application/json')
-        .expect(200, done);
+        .expect(200)
+        .end((err, res) => {
+          done()
+        })
       });
     });
 

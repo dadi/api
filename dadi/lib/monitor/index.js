@@ -9,7 +9,9 @@ var Monitor = function (path) {
 
   var self = this
   this.watcher = fs.watch(this.path, function (eventName, filename) {
-    self.emit('change', filename)
+    setTimeout(function () {
+      self.emit('change', filename)
+    }, 50)
   })
 }
 

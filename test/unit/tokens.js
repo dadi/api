@@ -1,7 +1,7 @@
 var should = require('should');
 var sinon = require('sinon');
 var request = require('supertest');
-var uuid = require('node-uuid');
+var uuid = require('uuid');
 var config = require(__dirname + '/../../config');
 var tokens = require(__dirname + '/../../dadi/lib/auth/tokens');
 var tokenStore = require(__dirname + '/../../dadi/lib/auth/tokenStore');

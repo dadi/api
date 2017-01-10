@@ -264,64 +264,26 @@ module.exports.validateCollectionSchema = function (obj) {
  * Remove each file in the specified cache folder.
  */
 module.exports.clearCache = function (pathname, callback) {
-  var modelDir = crypto.createHash('sha1').update(pathname).digest('hex')
-  if (pathname === '*') modelDir = ''
-  var cachePath = path.join(config.get('caching.directory.path'), modelDir)
+  var pattern = ''
 
-  var walkSync = function (dir, filelist) {
-    var files = fs.readdirSync(dir)
-    filelist = filelist || []
+  pattern = crypto.createHash('sha1').update(pathname).digest('hex')
 
-    files.forEach(function (file) {
-      if (fs.statSync(dir + file).isDirectory()) {
-        filelist = walkSync(dir + file + '/', filelist)
-      } else {
-        filelist.push(dir + file)
-      }
-    })
-    return filelist
+  if (config.get('caching.redis.enabled')) {
+    pattern = pattern + '*'
   }
-  // delete using Redis client
-  if (cache.client()) {
-    setTimeout(function () {
-      cache.delete(modelDir, function (err) {
-        if (err) console.log(err)
-        return callback(null)
-      })
-    }, 200)
-  } else {
-    var i = 0
-    var exists = fs.existsSync(cachePath)
 
-    if (!exists) {
-      return callback(null)
+  if (pathname === '*' || pathname === '') {
+    if (config.get('caching.redis.enabled')) {
+      pattern = '*'
     } else {
-      var files = fs.readdirSync(cachePath)
-
-      if (pathname === '*') {
-        files = walkSync(cachePath + '/')
-      }
-
-      if (_.isEmpty(files)) return callback(null)
-
-      files.forEach(function (filename) {
-        var file = path.join(cachePath, filename)
-        if (pathname === '*') file = filename
-
-        // write empty string to file, as we
-        // can't effectively remove it whilst
-        // the node process is running
-        fs.writeFileSync(file, '')
-
-        i++
-
-        // finished, all files processed
-        if (i === files.length) {
-          return callback(null)
-        }
-      })
+      pattern = ''
     }
   }
+
+  cache.delete(pattern, function (err) {
+    if (err) console.log(err)
+    return callback(null)
+  })
 }
 
 /**

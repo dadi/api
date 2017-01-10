@@ -9,7 +9,6 @@ var libHelp = require(__dirname + '/../../dadi/lib/help');
 var config = require(__dirname + '/../../config');
 
 describe('Controller', function (done) {
-
   before(function(done) {
     cache.reset();
     done();

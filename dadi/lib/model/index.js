@@ -149,17 +149,17 @@ Model.prototype.createIndex = function (done) {
 /**
  * Create a document in the database
  *
- * @param {Object} obj
- * @param {Object} internals
- * @param {Function} done
+ * @param {object} document - a document, or Array of documents to insert in the database
+ * @param {object} internals
+ * @param {function} done
  * @return undefined
  * @api public
  */
-Model.prototype.create = function (obj, internals, done, req) {
+Model.prototype.create = function (document, internals, done, req) {
   var self = this
 
-  if (!(obj instanceof Array)) {
-    obj = [obj]
+  if (!(document instanceof Array)) {
+    document = [document]
   }
 
   // internals will not be validated, i.e. should not be user input
@@ -170,7 +170,7 @@ Model.prototype.create = function (obj, internals, done, req) {
   // validate each doc
   var validation
 
-  obj.forEach(function (doc) {
+  document.forEach(function (doc) {
     if (validation === undefined || validation.success) {
       validation = self.validate.schema(doc)
     }
@@ -184,30 +184,30 @@ Model.prototype.create = function (obj, internals, done, req) {
   }
 
   if (typeof internals === 'object' && internals != null) { // not null and not undefined
-    obj.forEach(function (doc) {
+    document.forEach(function (doc) {
       doc = _.extend(doc, internals)
     })
   }
 
   //
   if (self.history) {
-    obj.forEach((doc) => {
+    document.forEach((doc) => {
       doc.history = []
     })
   }
 
   // add initial document revision number
-  obj.forEach((doc) => {
+  document.forEach((doc) => {
     doc.v = 1
   })
 
   // ObjectIDs
-  obj.forEach(function (doc) {
+  document.forEach(function (doc) {
     doc = self.convertObjectIdsForSave(self.schema, doc)
   })
 
   // DateTime
-  obj.forEach(function (doc) {
+  document.forEach(function (doc) {
     doc = self.convertDateTimeForSave(self.schema, doc)
   })
 
@@ -216,7 +216,7 @@ Model.prototype.create = function (obj, internals, done, req) {
     if (this.settings.hooks && this.settings.hooks.beforeCreate) {
       var processedDocs = 0
 
-      obj.forEach((doc, docIndex) => {
+      document.forEach((doc, docIndex) => {
         async.reduce(this.settings.hooks.beforeCreate, doc, (current, hookConfig, callback) => {
           var hook = new Hook(hookConfig, 'beforeCreate')
 
@@ -231,7 +231,7 @@ Model.prototype.create = function (obj, internals, done, req) {
         }, (err, result) => {
           processedDocs++
 
-          if (processedDocs === obj.length) {
+          if (processedDocs === document.length) {
             if (err) {
               var errorResponse = {
                 success: false,
@@ -251,16 +251,16 @@ Model.prototype.create = function (obj, internals, done, req) {
   }
 
   var saveDocuments = (database) => {
-    database.collection(this.name).insert(obj, (err, doc) => {
+    database.collection(this.name).insertMany(document, (err, result) => {
       if (err) return done(err)
 
       var results = {
-        results: doc
+        results: result.ops
       }
 
       // apply any existing `afterCreate` hooks
       if (this.settings.hasOwnProperty('hooks') && (typeof this.settings.hooks.afterCreate === 'object')) {
-        obj.forEach((doc) => {
+        document.forEach((doc) => {
           this.settings.hooks.afterCreate.forEach((hookConfig, index) => {
             var hook = new Hook(this.settings.hooks.afterCreate[index], 'afterCreate')
 
@@ -375,6 +375,7 @@ Model.prototype.count = function (query, options, done) {
     var _done = (database) => {
       database.collection(this.name).count(query, {}, (err, result) => {
         if (err) return done(err)
+
         var meta = getMetadata(options, result)
         var results = {
           metadata: {
@@ -609,7 +610,7 @@ Model.prototype.find = function (query, options, done) {
 
           var results = {}
 
-          cursor.count(function (err, count) {
+          cursor.count(false, {}, function (err, count) {
             if (err) return done(err)
 
             cursor.toArray(function (err, result) {
@@ -811,18 +812,18 @@ Model.prototype.update = function (query, update, internals, done, req) {
     // get a reference to the documents that will be updated
     var updatedDocs = []
 
-    this.find(query, {}, (err, docs) => {
+    this.find(query, {}, (err, result) => {
       if (err) return done(err)
 
-      updatedDocs = docs['results']
+      updatedDocs = result.results
 
       this.castToBSON(query)
 
       var saveDocuments = () => {
-        database.collection(this.name).update(query, setUpdate, updateOptions, (err, numAffected) => {
+        database.collection(this.name).updateMany(query, setUpdate, updateOptions, (err, result) => {
           if (err) return done(err)
 
-          if (!numAffected) {
+          if (result.matchedCount === 0) {
             err = new Error('Not Found')
             err.statusCode = 404
             return done(err)
@@ -831,15 +832,26 @@ Model.prototype.update = function (query, update, internals, done, req) {
           var results = {}
 
           var incrementRevisionNumber = (docs) => {
-            _.each(docs, (doc) => {
-              database.collection(this.name).findAndModify(
-                { _id: new ObjectID(doc._id.toString()) },
-                [['_id', 'asc']],
-                { $inc: { v: 1 } },
-                { new: true },
-                function (err, doc) {
-                  if (err) return done(err)
-                })
+            return new Promise((resolve, reject) => {
+              var idx = 0
+
+              _.each(docs, (doc) => {
+                return database.collection(this.name).findOneAndUpdate(
+                  { _id: new ObjectID(doc._id.toString()) },
+                  { $inc: { v: 1 } },
+                  {
+                    returnOriginal: false,
+                    sort: [['_id', 'asc']],
+                    upsert: false
+                  }, function (err, result) {
+                    if (err) return done(err)
+
+                    if (++idx === docs.length) {
+                      return resolve()
+                    }
+                  }
+                )
+              })
             })
           }
 
@@ -854,40 +866,40 @@ Model.prototype.update = function (query, update, internals, done, req) {
           }
 
           // increment document revision number
-          incrementRevisionNumber(updatedDocs)
+          incrementRevisionNumber(updatedDocs).then(() => {
+            // for each of the updated documents, create
+            // a history revision for it
+            if (this.history && updatedDocs.length > 0) {
+              this.history.createEach(updatedDocs, this, (err, docs) => {
+                if (err) return done(err)
 
-          // for each of the updated documents, create
-          // a history revision for it
-          if (this.history && updatedDocs.length > 0) {
-            this.history.createEach(updatedDocs, this, (err, docs) => {
-              if (err) return done(err)
+                results.results = docs
 
-              results.results = docs
+                // apply any existing `afterUpdate` hooks
+                triggerAfterUpdateHook(docs)
 
-              // apply any existing `afterUpdate` hooks
-              triggerAfterUpdateHook(docs)
-
-              done(null, results)
-            })
-          } else {
-            var query = {
-              _id: { '$in': _.map(updatedDocs, (doc) => {
-                return doc._id.toString()
+                done(null, results)
               })
+            } else {
+              var query = {
+                _id: { '$in': _.map(updatedDocs, (doc) => {
+                  return doc._id.toString()
+                })
+                }
               }
+
+              this.find(query, {}, (err, doc) => {
+                if (err) return done(err)
+
+                results = doc
+
+                // apply any existing `afterUpdate` hooks
+                triggerAfterUpdateHook(doc)
+
+                done(null, results)
+              })
             }
-
-            this.find(query, {}, (err, doc) => {
-              if (err) return done(err)
-
-              results = doc
-
-              // apply any existing `afterUpdate` hooks
-              triggerAfterUpdateHook(doc)
-
-              done(null, results)
-            })
-          }
+          })
         })
       }
 
@@ -973,8 +985,8 @@ Model.prototype.delete = function (query, done, req) {
   }
 
   var deleteDocuments = (database) => {
-    database.collection(this.name).remove(query, (err, docs) => {
-      if (!err && (docs > 0)) {
+    database.collection(this.name).deleteMany(query, (err, result) => {
+      if (!err && (result.deletedCount > 0)) {
         // apply any existing `afterDelete` hooks
         if (this.settings.hasOwnProperty('hooks') && (typeof this.settings.hooks.afterDelete === 'object')) {
           this.settings.hooks.afterDelete.forEach((hookConfig, index) => {
@@ -985,7 +997,7 @@ Model.prototype.delete = function (query, done, req) {
         }
       }
 
-      done(err, docs)
+      done(err, result.deletedCount)
     })
   }
 

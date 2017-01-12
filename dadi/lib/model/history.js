@@ -11,17 +11,20 @@ History.prototype.create = function (obj, model, done) {
   revisionObj._id = new ObjectID()
 
   var _done = function (database) {
-    database.collection(model.revisionCollection).insert(revisionObj, function (err, doc) {
+    database.collection(model.revisionCollection).insertOne(revisionObj, function (err, doc) {
       if (err) return err
 
-      database.collection(model.name).findAndModify(
+      database.collection(model.name).findOneAndUpdate(
         { _id: obj._id },
-        [['_id', 'asc']],
         { $push: { 'history': revisionObj._id } },
-        { new: true },
-        function (err, doc) {
+        {
+          returnOriginal: false,
+          sort: [['_id', 'asc']],
+          upsert: false
+        },
+        function (err, result) {
           if (err) return done(err, null)
-          return done(null, doc)
+          return done(null, result.value)
         })
     })
   }

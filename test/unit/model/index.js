@@ -66,6 +66,8 @@ describe('Model', function () {
         ]
       })
 
+      // TODO: stub the connect method so this doesn't cause a connection attempt
+
       var mod = model('testModelName', help.getModelSchema(), conn)
       should.exist(mod.connection)
       mod.connection.connectionOptions.hosts[0].host.should.equal('localhost')
@@ -132,10 +134,13 @@ describe('Model', function () {
         }
       })
 
-      should.exist(mod.settings)
+      setTimeout(function() {
+        should.exist(mod1.settings)
+        should.exist(mod1.settings.index)
+        console.log(mod1.settings.index.keys)
       JSON.stringify(mod.settings.index[0].keys).should.equal(JSON.stringify({ orderDate: 1 }))
-
       done()
+      }, 300)
     })
 
     it('should accept collection indexing settings for v1.14.0 and above', function (done) {

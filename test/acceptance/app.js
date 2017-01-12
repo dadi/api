@@ -2567,7 +2567,6 @@ describe('Application', function () {
               .end(function (err, res) {
                 if (err) return done(err)
 
-                // TODO: Wait, then make sure the api was updated correctly
                 setTimeout(function () {
                   client
 

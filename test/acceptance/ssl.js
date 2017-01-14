@@ -36,6 +36,7 @@ describe('SSL', () => {
 
   afterEach((done) => {
     config.set('server.protocol', 'http')
+    config.set('server.redirectPort', '')
     config.set('server.sslPassphrase', '')
     config.set('server.sslPrivateKeyPath', '')
     config.set('server.sslCertificatePath', '')
@@ -50,7 +51,7 @@ describe('SSL', () => {
   it('should respond to a http request when ssl is disabled', (done) => {
     server = api()
     server.use(defaultResponse)
-    server.listen(config.get('server.port'), config.get('server.host'))
+    server.listen()
 
     client
       .get('/')
@@ -63,6 +64,27 @@ describe('SSL', () => {
     done()
   })
 
+  it('should redirect http request to https when redirectPort is set', (done) => {
+    config.set('server.protocol', 'https')
+    config.set('server.redirectPort', '9999')
+    config.set('server.sslPrivateKeyPath', 'test/ssl/unprotected/key.pem')
+    config.set('server.sslCertificatePath', 'test/ssl/unprotected/cert.pem')
+
+    server = api()
+    server.use(defaultResponse)
+    server.listen()
+
+    var httpClient = request('http://' + config.get('server.host') + ':9999')
+    httpClient
+      .get('/')
+      .expect(301)
+      .end((err, res) => {
+        if (err) return done(err)
+        done()
+      })
+  })
+
+
   it('should respond to a https request when using unprotected ssl key without a passphrase', (done) => {
     config.set('server.protocol', 'https')
     config.set('server.sslPrivateKeyPath', 'test/ssl/unprotected/key.pem')
@@ -70,7 +92,7 @@ describe('SSL', () => {
 
     server = api()
     server.use(defaultResponse)
-    server.listen(config.get('server.port'), config.get('server.host'))
+    server.listen()
 
     secureClient
       .get('/')
@@ -91,7 +113,7 @@ describe('SSL', () => {
 
     server = api()
     server.use(defaultResponse)
-    server.listen(config.get('server.port'), config.get('server.host'))
+    server.listen()
 
     secureClient
       .get('/')
@@ -113,7 +135,7 @@ describe('SSL', () => {
     try {
       server = api()
       server.use(defaultResponse)
-      server.listen(config.get('server.port'), config.get('server.host'))
+      server.listen()
     } catch (ex) {
       ex.message.should.eql('error starting https server: incorrect ssl passphrase')
     }
@@ -129,7 +151,7 @@ describe('SSL', () => {
     try {
       server = api()
       server.use(defaultResponse)
-      server.listen(config.get('server.port'), config.get('server.host'))
+      server.listen()
     } catch (ex) {
       ex.message.should.eql('error starting https server: required ssl passphrase not provided')
     }

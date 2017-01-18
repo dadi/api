@@ -15,7 +15,7 @@
     "@dadi/logger": "latest",
     "@dadi/status": "latest",
     "async": "^2.1.4",
-    "body-parser": "~1.15.2",
+    "body-parser": "~1.16.0",
     "bunyan": "^1.5.1",
     "busboy": "^0.2.13",
     "chokidar": "^1.5.2",

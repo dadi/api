@@ -41,7 +41,13 @@ describe('SSL', () => {
     config.set('server.sslPrivateKeyPath', '')
     config.set('server.sslCertificatePath', '')
 
-    done()
+    server.close((err) => {
+      if (err) {
+        console.log(err) // error if server not running
+      }
+
+      done()
+    })
   })
 
   after((done) => {
@@ -58,10 +64,9 @@ describe('SSL', () => {
       .expect('Content-Type', /json/)
       .expect(200)
       .end((err, res) => {
-        if (err) throw err
-      })
-
-    done()
+        if (err) done(err)
+        done()
+    })
   })
 
   it('should redirect http request to https when redirectPort is set', (done) => {
@@ -99,10 +104,9 @@ describe('SSL', () => {
       .expect('Content-Type', /json/)
       .expect(200)
       .end((err, res) => {
-        if (err) throw err
+        if (err) done(err)
+        done()
       })
-
-    done()
   })
 
   it('should respond to a https request when using protected ssl key with a passphrase', (done) => {
@@ -120,10 +124,9 @@ describe('SSL', () => {
       .expect('Content-Type', /json/)
       .expect(200)
       .end((err, res) => {
-        if (err) throw err
+        if (err) done(err)
+        done()
       })
-
-    done()
   })
 
   it('should throw a bad password read exception when using protected ssl key with the wrong passphrase', (done) => {
@@ -158,5 +161,4 @@ describe('SSL', () => {
 
     done()
   })
-
 })

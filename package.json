@@ -1,13 +1,14 @@
 {
   "name": "@dadi/api",
-  "version": "1.14.1",
+  "version": "0.0.0-development",
   "main": "main.js",
   "scripts": {
     "create-client": "cd ../../.. && ./node_modules/@dadi/api/utils/create-client.js",
     "init": "validate-commit-msg",
     "test": "standard 'dadi/**/*.js' && env NODE_ENV=test ./node_modules/.bin/istanbul cover -x **/workspace/** --report cobertura --report text --report html --report lcov ./node_modules/mocha/bin/_mocha test -- --require babel-register",
     "posttest": "./scripts/coverage.js",
-    "start": "node start.js --node_env=development"
+    "start": "node start.js --node_env=development",
+    "semantic-release": "semantic-release pre && npm publish && semantic-release post"
   },
   "dependencies": {
     "@dadi/cache": "^1.2.0",
@@ -54,11 +55,12 @@
     "should": "~4.0.4",
     "sinon": "~1.17.6",
     "standard": "*",
-    "supertest": "~0.13.0"
+    "supertest": "~0.13.0",
+    "semantic-release": "^6.3.2"
   },
   "repository": {
     "type": "git",
-    "url": "git://github.com/dadi/api.git"
+    "url": "https://github.com/dadi/api.git"
   },
   "bugs": {
     "url": "https://github.com/dadi/api/issues"

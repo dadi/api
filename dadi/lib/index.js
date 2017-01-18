@@ -192,7 +192,7 @@ Server.prototype.start = function (done) {
   search(self)
 
   // start listening
-  var server = this.server = app.listen(config.get('server.port'), config.get('server.host'))
+  var server = this.server = app.listen()
 
   server.on('listening', function () { onListening(this) })
   server.on('error', onError)

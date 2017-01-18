@@ -19,9 +19,17 @@ var Api = function () {
   // permanently bind context to listener
   this.listener = this.listener.bind(this)
 
-  this.protocol = config.get('server.protocol') || 'http'
+  this.protocol = config.get('server.protocol')
+  this.redirectPort = config.get('server.redirectPort')
 
-  if (this.protocol === 'https') {
+  if (this.protocol === 'http') {
+    this.httpInstance = http.createServer(this.listener)
+  } else if (this.protocol === 'https') {
+    // Redirect http to https
+    if (this.redirectPort > 0) {
+      this.redirectInstance = http.createServer(this.redirectListener)
+    }
+
     var readFileSyncSafe = (path) => {
       try { return fs.readFileSync(path) } catch (ex) {}
       return null
@@ -52,7 +60,7 @@ var Api = function () {
     // we need to catch any errors resulting from bad parameters
     // such as incorrect passphrase or no passphrase provided
     try {
-      this.serverInstance = https.createServer(serverOptions, this.listener)
+      this.httpsInstance = https.createServer(serverOptions, this.listener)
     } catch (ex) {
       var exPrefix = 'error starting https server: '
       switch (ex.message) {
@@ -64,9 +72,6 @@ var Api = function () {
           throw new Error(exPrefix + ex.message)
       }
     }
-  } else {
-    // default to http
-    this.serverInstance = http.createServer(this.listener)
   }
 }
 
@@ -117,8 +122,25 @@ Api.prototype.unuse = function (path) {
  *  @return http.Server
  *  @api public
  */
-Api.prototype.listen = function (port, host, backlog, done) {
-  return this.serverInstance.listen(port, host, backlog, done)
+Api.prototype.listen = function (backlog, done) {
+  var port = config.get('server.port')
+  var host = config.get('server.host')
+  var redirectPort = config.get('server.redirectPort')
+
+  // If http only, return the http instance
+  if (this.httpInstance) {
+    return this.httpInstance.listen(port, host, backlog, done)
+  }
+
+  // If http should redirect to https, listen but don't return
+  if (this.redirectInstance) {
+    this.redirectInstance.listen(redirectPort, host, backlog, done)
+  }
+
+  // If https enabled, return the https instance
+  if (this.httpsInstance) {
+    return this.httpsInstance.listen(port, host, backlog, done)
+  }
 }
 
 /**
@@ -129,7 +151,15 @@ Api.prototype.listen = function (port, host, backlog, done) {
  */
 Api.prototype.close = function (done) {
   try {
-    this.serverInstance.close(done)
+    if (this.redirectInstance) {
+      this.redirectInstance.close()
+    }
+
+    if (this.httpInstance) {
+      this.httpInstance.close(done)
+    } else if (this.httpsInstance) {
+      this.httpsInstance.close(done)
+    }
   } catch (ex) {
     console.log('error closing server:', ex)
     done()
@@ -173,6 +203,23 @@ Api.prototype.listener = function (req, res) {
 
   // start going through the middleware/routes
   doStack(0)()
+}
+
+/**
+ *  listener function to be passed to node's `createServer`
+ *  @param {http.IncomingMessage} req
+ *  @param {http.ServerResponse} res
+ *  @return undefined
+ *  @api public
+ */
+Api.prototype.redirectListener = function (req, res) {
+  var port = config.get('server.port')
+  var hostname = req.headers.host.split(':')[0]
+  var location = 'https://' + hostname + ':' + port + req.url
+
+  res.setHeader('Location', location)
+  res.statusCode = 301
+  res.end()
 }
 
 /**

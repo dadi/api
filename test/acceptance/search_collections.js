@@ -100,10 +100,12 @@ describe('Search', function () {
             client
             .get('/vtest/search?collections=testdb/test-schema&query={"field1":{"$regex":"est"}}')
             .set('Authorization', 'Bearer ' + bearerToken)
-            .expect(200)
+            //.expect(200)
             //.expect('content-type', 'application/json')
             .end(function (err, res) {
                 if (err) return done(err);
+
+                console.log(res)
 
                 should.exist(res.body['test-schema'].results);
                 res.body['test-schema'].results.should.be.Array;

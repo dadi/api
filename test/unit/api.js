@@ -199,7 +199,7 @@ describe('API server', function () {
         var app, server;
         before(function (done) {
             app = api();
-            server = app.listen(config.get('server.port'), config.get('server.host'), null, done);
+            server = app.listen(null, done);
         });
 
         after(function (done) {

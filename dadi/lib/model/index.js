@@ -4,8 +4,10 @@ var moment = require('moment')
 var ObjectID = require('mongodb').ObjectID
 var path = require('path')
 
+var config = require(path.join(__dirname, '/../../../config'))
 var connection = require(path.join(__dirname, '/connection'))
 var formatError = require('@dadi/format-error')
+var logger = require('@dadi/logger')
 var Validator = require(path.join(__dirname, '/validator'))
 var History = require(path.join(__dirname, '/history'))
 var Composer = require(path.join(__dirname, '/../composer')).Composer
@@ -42,6 +44,12 @@ var Model = function (name, schema, conn, settings, database) {
     this.connection = connection({ database: database })
   } else {
     this.connection = connection()
+  }
+
+  if (config.get('env') !== 'test') {
+    this.connection.once('error', (err) => {
+      logger.error(err)
+    })
   }
 
   _models[name] = this

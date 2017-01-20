@@ -1122,6 +1122,6 @@ function onListening (server) {
 function onError (err) {
   if (err.code === 'EADDRINUSE') {
     console.log('Error ' + err.code + ': Address ' + config.get('server.host') + ':' + config.get('server.port') + ' is already in use, is something else listening on port ' + config.get('server.port') + '?\n\n')
-    process.exit(0)
+    process.exit(1)
   }
 }

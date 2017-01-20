@@ -105,6 +105,7 @@ describe('Model connection', function () {
             if (err) return done(err);
 
             var conn = connection({
+                auth: true,
                 username: 'test',
                 password: 'test123',
                 database: 'test',
@@ -120,6 +121,37 @@ describe('Model connection', function () {
               conn.readyState.should.equal(1);
               done()
             }, 500)
+        });
+    });
+
+    it('should emit error if authentication fails when connecting with credentials', function (done) {
+        help.addUserToDb({
+            username: 'test',
+            password: 'test123'
+        }, {
+            databaseName: 'test',
+            host: '127.0.0.1',
+            port: 27017
+        }, function (err) {
+            if (err) return done(err);
+
+            var conn = connection({
+                auth: true,
+                username: 'test',
+                password: 'test123x',
+                database: 'test',
+                hosts: [{
+                    host: '127.0.0.1',
+                    port: 27017
+                }],
+                replicaSet: ""
+            });
+
+            conn.on('error', (err) => {
+              err.message.should.eql('Authentication failed.')
+              conn.readyState.should.equal(0)
+              done()
+            })
         });
     });
 

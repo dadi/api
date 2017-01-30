@@ -55,7 +55,7 @@
     "should": "~4.0.4",
     "sinon": "~1.17.6",
     "standard": "*",
-    "supertest": "~0.13.0",
+    "supertest": "~3.0.0",
     "semantic-release": "^6.3.2"
   },
   "repository": {

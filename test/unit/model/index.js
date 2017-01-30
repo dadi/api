@@ -137,8 +137,8 @@ describe('Model', function () {
       setTimeout(function() {
         should.exist(mod1.settings)
         should.exist(mod1.settings.index)
-        console.log(mod1.settings.index.keys)
-      JSON.stringify(mod.settings.index[0].keys).should.equal(JSON.stringify({ orderDate: 1 }))
+
+        JSON.stringify(mod1.settings.index[0].keys).should.eql(JSON.stringify({ orderDate: 1 }))
       done()
       }, 300)
     })

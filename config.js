@@ -72,49 +72,54 @@ var conf = convict({
     }
   },
   database: {
-      hosts: {
-        doc: "",
-        format: Array,
-        default: [
-          {
-            host: "127.0.0.1",
-            port: 27017
-          }
-        ]
-      },
-      username: {
-        doc: "",
-        format: String,
-        default: "",
-        env: "DB_USERNAME"
-      },
-      password: {
-        doc: "",
-        format: String,
-        default: "",
-        env: "DB_PASSWORD"
-      },
-      database: {
-        doc: "",
-        format: String,
-        default: "test",
-        env: "DB_NAME"
-      },
-      ssl: {
-        doc: "",
-        format: Boolean,
-        default: false
-      },
-      replicaSet: {
-        doc: "",
-        format: String,
-        default: ""
-      },
-      enableCollectionDatabases: {
-        doc: "",
-        format: Boolean,
-        default: false
-      }
+    hosts: {
+      doc: "",
+      format: Array,
+      default: [
+        {
+          host: "127.0.0.1",
+          port: 27017
+        }
+      ]
+    },
+    username: {
+      doc: "",
+      format: String,
+      default: "",
+      env: "DB_USERNAME"
+    },
+    password: {
+      doc: "",
+      format: String,
+      default: "",
+      env: "DB_PASSWORD"
+    },
+    database: {
+      doc: "",
+      format: String,
+      default: "test",
+      env: "DB_NAME"
+    },
+    ssl: {
+      doc: "",
+      format: Boolean,
+      default: false
+    },
+    replicaSet: {
+      doc: "",
+      format: String,
+      default: ""
+    },
+    readPreference: {
+      doc: "Choose how MongoDB routes read operations to the members of a replica set - see https://docs.mongodb.com/manual/reference/read-preference/",
+      format: ['primary', 'primaryPreferred', 'secondary', 'secondaryPreferred', 'nearest'],
+      default: 'secondaryPreferred'
+    },
+    enableCollectionDatabases: {
+      doc: "",
+      format: Boolean,
+      default: false
+    }
   },
   auth: {
     tokenUrl: {

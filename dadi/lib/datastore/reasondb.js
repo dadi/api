@@ -15,6 +15,14 @@ class books {
   constructor() { }
 }
 
+class book {
+  constructor() { }
+}
+
+class person {
+  constructor() { }
+}
+
 /**
  *
  */
@@ -30,6 +38,7 @@ var DataStore = function (settings) {
  *
  */
 DataStore.prototype.find = function (query, klass) {
+  console.log(query)
   // TODO: accept query options
   return new Promise((resolve, reject) => {
     // TODO: add query formatter
@@ -70,6 +79,8 @@ DataStore.prototype.insert = function (data, klass) {
   }
 
   var queue = []
+
+  console.log(data)
 
   _.each(data, (record) => {
     record._id = record._id || uuid.v4()

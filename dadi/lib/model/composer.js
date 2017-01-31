@@ -11,14 +11,12 @@ Composer.prototype.setApiVersion = function (apiVersion) {
 }
 
 Composer.prototype.compose = function (obj, callback) {
-  var self = this
-
   if (_.isEmpty(obj)) return callback(obj)
 
   var docIdx = 0
 
-  _.each(obj, function (doc) {
-    self.composeOne(doc, function (result) {
+  _.each(obj, (doc) => {
+    this.composeOne(doc, (result) => {
       doc = result
       docIdx++
 
@@ -30,10 +28,9 @@ Composer.prototype.compose = function (obj, callback) {
 }
 
 Composer.prototype.composeOne = function (doc, callback) {
-  var self = this
-  var schema = self.model.schema
+  var schema = this.model.schema
 
-  var composable = Object.keys(schema).filter(function (key) {
+  var composable = Object.keys(schema).filter((key) => {
     return schema[key].type === 'Reference' && typeof doc[key] !== 'undefined'
   })
 
@@ -41,7 +38,7 @@ Composer.prototype.composeOne = function (doc, callback) {
 
   var keyIdx = 0
 
-  _.each(composable, function (key) {
+  _.each(composable, (key) => {
     var Model = require(path.join(__dirname, '/../model/index.js'))
     var mod
 
@@ -59,7 +56,7 @@ Composer.prototype.composeOne = function (doc, callback) {
     }
 
     // add the apiVersion param
-    _.extend(query, { apiVersion: self.apiVersion })
+    _.extend(query, { apiVersion: this.apiVersion })
 
     // are specific fields required?
     var fields = {}
@@ -72,10 +69,10 @@ Composer.prototype.composeOne = function (doc, callback) {
     // load correct model
     var collection = help.getFromObj(schema, key + '.settings', null)
 
-    if (collection && collection.collection && collection.collection !== self.model.name) {
+    if (collection && collection.collection && collection.collection !== this.model.name) {
       mod = Model(collection.collection)
     } else {
-      mod = Model(self.model.name)
+      mod = Model(this.model.name)
     }
 
     if (!mod) {
@@ -85,7 +82,7 @@ Composer.prototype.composeOne = function (doc, callback) {
       // (i.e. the one that got us here) ?
       var compose = help.getFromObj(schema, key + '.settings.compose', false) || mod.compose
 
-      mod.find(query, { 'compose': compose, 'fields': fields }, function (err, result) {
+      mod.find(query, { 'compose': compose, 'fields': fields }, (err, result) => {
         if (err) console.log(err)
 
         if (result) {

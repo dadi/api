@@ -11,7 +11,7 @@ var app = require(__dirname + '/../../dadi/lib/');
 var bearerToken;
 var connectionString = 'http://' + config.get('server.host') + ':' + config.get('server.port');
 
-describe('Search', function () {
+describe.skip('Search', function () {
 
   describe('Collections', function () {
 
@@ -105,7 +105,7 @@ describe('Search', function () {
             .end(function (err, res) {
                 if (err) return done(err);
 
-                //console.log(res)
+                console.log(res)
 
                 should.exist(res.body['test-schema'].results);
                 res.body['test-schema'].results.should.be.Array;

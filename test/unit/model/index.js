@@ -133,7 +133,7 @@ describe('Model', function () {
       })
 
       should.exist(mod.settings)
-      JSON.stringify(mod.settings.index.keys).should.equal(JSON.stringify({ orderDate: 1 }))
+      JSON.stringify(mod.settings.index[0].keys).should.equal(JSON.stringify({ orderDate: 1 }))
 
       done()
     })

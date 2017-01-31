@@ -84,12 +84,13 @@ var Model = function (name, schema, conn, settings, database) {
 */
   // add any configured indexes
   if (this.settings.hasOwnProperty('index')) {
-    this.createIndex((err, results) => {
-      if (err) console.log(err)
-      _.each(results, (result) => {
-        // console.log('Index created: ' + result.collection + ', ' + result.index)
-      })
-    })
+    // TODO: move index creation to MongoDB DataStore
+    // this.createIndex((err, results) => {
+    //   if (err) console.log(err)
+    //   _.each(results, (result) => {
+    //     // console.log('Index created: ' + result.collection + ', ' + result.index)
+    //   })
+    // })
   }
 }
 
@@ -259,26 +260,34 @@ Model.prototype.create = function (document, internals, done, req) {
   }
 
   var saveDocuments = (database) => {
-    database.collection(this.name).insertMany(document, (err, result) => {
-      if (err) return done(err)
-
-      var results = {
-        results: result.ops
+    database.insert(document, this.name).then((results) => {
+      var returnData = {
+        results: results
       }
 
-      // apply any existing `afterCreate` hooks
-      if (this.settings.hasOwnProperty('hooks') && (typeof this.settings.hooks.afterCreate === 'object')) {
-        document.forEach((doc) => {
-          this.settings.hooks.afterCreate.forEach((hookConfig, index) => {
-            var hook = new Hook(this.settings.hooks.afterCreate[index], 'afterCreate')
-
-            return hook.apply(doc, this.schema, this.name)
-          })
-        })
-      }
-
-      return done(null, results)
+      done(null, returnData)
     })
+
+    // database.collection(this.name).insertMany(document, (err, result) => {
+    //   if (err) return done(err)
+    //
+    //   var results = {
+    //     results: result.ops
+    //   }
+    //
+    //   // apply any existing `afterCreate` hooks
+    //   if (this.settings.hasOwnProperty('hooks') && (typeof this.settings.hooks.afterCreate === 'object')) {
+    //     document.forEach((doc) => {
+    //       this.settings.hooks.afterCreate.forEach((hookConfig, index) => {
+    //         var hook = new Hook(this.settings.hooks.afterCreate[index], 'afterCreate')
+    //
+    //         return hook.apply(doc, this.schema, this.name)
+    //       })
+    //     })
+    //   }
+    //
+    //   return done(null, results)
+    // })
   }
 
   if (this.connection.db) {
@@ -613,33 +622,57 @@ Model.prototype.find = function (query, options, done) {
 
       // perform the actual find operation
       function runFind () {
-        database.collection(self.name).find(query, options, function (err, cursor) {
-          if (err) return done(err)
+        // TODO: pass query options
+        database.find(query, self.name).then((results) => {
+          var returnData = {}
+          // TODO: metadata
+          var count = 10 // TODO: get an actual count!
 
-          var results = {}
 
-          cursor.count(false, {}, function (err, count) {
-            if (err) return done(err)
-
-            cursor.toArray(function (err, result) {
-              if (err) return done(err)
-
-              if (compose) {
-                self.composer.setApiVersion(query.apiVersion)
-
-                self.composer.compose(result, function (obj) {
-                  results.results = obj
-                  results.metadata = getMetadata(options, count)
-                  runDoneQueue(null, results)
-                })
-              } else {
-                results.results = result
-                results.metadata = getMetadata(options, count)
-                runDoneQueue(null, results)
-              }
-            })
-          })
+          // TODO: compose
+          // if (compose) {
+          //   self.composer.setApiVersion(query.apiVersion)
+          //
+          //   self.composer.compose(results, (obj) => {
+          //     returnData.results = obj
+          //     returnData.metadata = getMetadata(options, count)
+          //     runDoneQueue(null, returnData)
+          //   })
+          // } else {
+            returnData.results = results
+            returnData.metadata = getMetadata(options, count)
+            //runDoneQueue(null, returnData)
+            done(null, returnData)
+          //}
         })
+
+        // database.collection(self.name).find(query, options, function (err, cursor) {
+        //   if (err) return done(err)
+        //
+        //   var results = {}
+        //
+        //   cursor.count(false, {}, function (err, count) {
+        //     if (err) return done(err)
+        //
+        //     cursor.toArray(function (err, result) {
+        //       if (err) return done(err)
+        //
+        //       if (compose) {
+        //         self.composer.setApiVersion(query.apiVersion)
+        //
+        //         self.composer.compose(result, function (obj) {
+        //           results.results = obj
+        //           results.metadata = getMetadata(options, count)
+        //           runDoneQueue(null, results)
+        //         })
+        //       } else {
+        //         results.results = result
+        //         results.metadata = getMetadata(options, count)
+        //         runDoneQueue(null, results)
+        //       }
+        //     })
+        //   })
+        // })
       }
     }
   } else {

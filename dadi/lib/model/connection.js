@@ -48,26 +48,29 @@ Connection.prototype.connect = function () {
     return
   }
 
-  mongoClient.connect(this.connectionString, function (err, db) {
-    if (err) {
-      self.readyState = 0
-      return self.emit('error', err)
-    }
+  var datastore = require('../datastore')(config.get('datastore'))
+
+  // mongoClient.connect(this.connectionString, function (err, db) {
+  //   if (err) {
+  //     self.readyState = 0
+  //     return self.emit('error', err)
+  //   }
 
     self.readyState = 1
-    self.db = db
+    //self.db = db
+    self.db = datastore
 
-    _connections[self.connectionOptions.database] = self
-
-    if (!self.connectionOptions.username || !self.connectionOptions.password) {
-      return self.emit('connect', self.db)
-    }
-
-    self.db.authenticate(self.connectionOptions.username, self.connectionOptions.password, function (err) {
-      if (err) return self.emit('error', err)
-      self.emit('connect', self.db)
-    })
-  })
+    // _connections[self.connectionOptions.database] = self
+    //
+    // if (!self.connectionOptions.username || !self.connectionOptions.password) {
+    return self.emit('connect', self.db)
+    // }
+    //
+    // self.db.authenticate(self.connectionOptions.username, self.connectionOptions.password, function (err) {
+    //   if (err) return self.emit('error', err)
+    //   self.emit('connect', self.db)
+    // })
+  //})
 }
 
 function getConnectionOptions (options) {

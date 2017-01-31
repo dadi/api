@@ -31,42 +31,69 @@ function getToken (callback) {
 module.exports.generate = function (req, res, next) {
   // Look up the creds in clientStore
   var _done = function (database) {
-    database.collection(clientCollectionName).findOne({
+    database.find({
       clientId: req.body.clientId,
       secret: req.body.secret
-    }, function (err, client) {
-      if (err) return next(err)
+    }).then((results) => {
+      var client = results[0]
 
-      if (client) {
-        // Generate token
-        var token
-        getToken(function (returnedToken) {
-          token = returnedToken
+      // Generate token
+      getToken((returnedToken) => {
+        // Save token
+        return tokenStore.set(returnedToken, client, function (err) {
+          if (err) return next(err)
 
-          // Save token
-          return tokenStore.set(token, client, function (err) {
-            if (err) return next(err)
+          var token = {
+            accessToken: returnedToken,
+            tokenType: 'Bearer',
+            expiresIn: config.get('auth.tokenTtl')
+          }
 
-            var tok = {
-              accessToken: token,
-              tokenType: 'Bearer',
-              expiresIn: config.get('auth.tokenTtl')
-            }
-
-            var json = JSON.stringify(tok)
-            res.setHeader('Content-Type', 'application/json')
-            res.setHeader('Cache-Control', 'no-store')
-            res.setHeader('Pragma', 'no-cache')
-            res.end(json)
-          })
+          var json = JSON.stringify(token)
+          res.setHeader('Content-Type', 'application/json')
+          res.setHeader('Cache-Control', 'no-store')
+          res.setHeader('Pragma', 'no-cache')
+          res.end(json)
         })
-      } else {
-        var error = new Error('Invalid Credentials')
-        error.statusCode = 401
-        res.setHeader('WWW-Authenticate', 'Bearer, error="invalid_credentials", error_description="Invalid credentials supplied"')
-        return next(error)
-      }
+      })
+
     })
+    // database.collection(clientCollectionName).findOne({
+    //   clientId: req.body.clientId,
+    //   secret: req.body.secret
+    // }, function (err, client) {
+    //   if (err) return next(err)
+    //
+    //   if (client) {
+    //     // Generate token
+    //     var token
+    //     getToken(function (returnedToken) {
+    //       token = returnedToken
+    //
+    //       // Save token
+    //       return tokenStore.set(token, client, function (err) {
+    //         if (err) return next(err)
+    //
+    //         var tok = {
+    //           accessToken: token,
+    //           tokenType: 'Bearer',
+    //           expiresIn: config.get('auth.tokenTtl')
+    //         }
+    //
+    //         var json = JSON.stringify(tok)
+    //         res.setHeader('Content-Type', 'application/json')
+    //         res.setHeader('Cache-Control', 'no-store')
+    //         res.setHeader('Pragma', 'no-cache')
+    //         res.end(json)
+    //       })
+    //     })
+    //   } else {
+    //     var error = new Error('Invalid Credentials')
+    //     error.statusCode = 401
+    //     res.setHeader('WWW-Authenticate', 'Bearer, error="invalid_credentials", error_description="Invalid credentials supplied"')
+    //     return next(error)
+    //   }
+    // })
   }
 
   if (clientStore.db) return _done(clientStore.db)
@@ -77,9 +104,7 @@ module.exports.generate = function (req, res, next) {
 module.exports.validate = function (token, done) {
   tokenStore.get(token, function (err, doc) {
     if (err) return done(err)
-
     if (doc) return done(null, doc.value)
-
     done()
   })
 }

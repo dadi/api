@@ -10,25 +10,26 @@ var Store = function () {
   this.connection = connection(dbOptions)
 
   var _done = function (database) {
+    console.log(database)
     // set index on token and expiry
-    database.collection(storeCollectionName).ensureIndex(
-      { 'token': 1, 'tokenExpire': 1 },
-      { },
-      function (err, indexName) {
-        if (err) console.log(err)
-        console.log('Token index: "' + storeCollectionName + '.' + indexName + "'")
-      }
-    )
-
-    // set a TTL index to remove the token documents after the tokenExpire value
-    database.collection(storeCollectionName).ensureIndex(
-      { 'created': 1 },
-      { expireAfterSeconds: config.get('auth.tokenTtl') },
-      function (err, indexName) {
-        if (err) console.log(err)
-        console.log('Token expiry index: "' + storeCollectionName + '.' + indexName + "', with expireAfterSeconds = " + config.get('auth.tokenTtl'))
-      }
-    )
+    // database.collection(storeCollectionName).ensureIndex(
+    //   { 'token': 1, 'tokenExpire': 1 },
+    //   { },
+    //   function (err, indexName) {
+    //     if (err) console.log(err)
+    //     console.log('Token index: "' + storeCollectionName + '.' + indexName + "'")
+    //   }
+    // )
+    //
+    // // set a TTL index to remove the token documents after the tokenExpire value
+    // database.collection(storeCollectionName).ensureIndex(
+    //   { 'created': 1 },
+    //   { expireAfterSeconds: config.get('auth.tokenTtl') },
+    //   function (err, indexName) {
+    //     if (err) console.log(err)
+    //     console.log('Token expiry index: "' + storeCollectionName + '.' + indexName + "', with expireAfterSeconds = " + config.get('auth.tokenTtl'))
+    //   }
+    // )
   }
 
   if (this.connection.db) return _done(this.connection.db)
@@ -37,10 +38,19 @@ var Store = function () {
 
 Store.prototype.get = function (token, done) {
   var _done = function (database) {
-    database.collection(storeCollectionName).findOne({
-      token: token,
+    var query = {
+      token: {$eq: token },
       tokenExpire: {$gte: Date.now()}
-    }, done)
+    }
+
+    database.find(query, storeCollectionName).then((result) => {
+      var tokenResult = result.length ? result[0] : null
+      return done(null, tokenResult)
+    })
+    // database.collection(storeCollectionName).findOne({
+    //   token: token,
+    //   tokenExpire: {$gte: Date.now()}
+    // }, done)
   }
 
   if (this.connection.db) return _done(this.connection.db)
@@ -51,12 +61,19 @@ Store.prototype.get = function (token, done) {
 
 Store.prototype.set = function (token, value, done) {
   var _done = function (database) {
-    database.collection(storeCollectionName).insertOne({
+    database.insert({
       token: token,
       tokenExpire: Date.now() + (config.get('auth.tokenTtl') * 1000),
       created: new Date(),
       value: value
-    }, done)
+    }, storeCollectionName).then(done())
+
+    // database.collection(storeCollectionName).insert({
+    //   token: token,
+    //   tokenExpire: Date.now() + (config.get('auth.tokenTtl') * 1000),
+    //   created: new Date(),
+    //   value: value
+    // }, done)
   }
 
   if (this.connection.db) return _done(this.connection.db)

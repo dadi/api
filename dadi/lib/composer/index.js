@@ -35,7 +35,7 @@ Composer.prototype.composeOne = function (doc, callback) {
   var schema = self.model.schema
 
   var composable = Object.keys(schema).filter(function (key) {
-    return schema[key].type === 'Reference' && typeof doc[key] !== 'undefined'
+    return schema[key].type === 'Reference' && doc[key] && typeof doc[key] !== 'undefined'
   })
 
   if (_.isEmpty(composable)) return callback(doc)

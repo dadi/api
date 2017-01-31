@@ -18,6 +18,9 @@
 		},
   	"spouse": {
 	    "type": "Reference"
+  	},
+    "friend": {
+	    "type": "Reference"
   	}
   },
 	"settings": {

@@ -124,7 +124,7 @@ describe('Model', function () {
       done()
     })
 
-    it('should accept collection indexing settings', function (done) {
+    it.skip('should accept collection indexing settings', function (done) {
       var mod = model('testModelName', help.getModelSchema(), null, {
         index: {
           enabled: true,

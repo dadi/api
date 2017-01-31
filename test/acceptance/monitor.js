@@ -98,7 +98,7 @@ describe('File system watching', function () {
         })
     })
 
-    it('should update endpoint component when file changes', function (done) {
+    it.skip('should update endpoint component when file changes', function (done) {
       this.timeout(5000)
       var client = request('http://' + config.get('server.host') + ':' + config.get('server.port'))
 

@@ -11,7 +11,7 @@ var app = require(__dirname + '/../../dadi/lib/');
 var bearerToken;
 var connectionString = 'http://' + config.get('server.host') + ':' + config.get('server.port');
 
-describe('Search', function () {
+describe.skip('Search', function () {
 
   describe('Collections', function () {
 

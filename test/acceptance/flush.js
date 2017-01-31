@@ -16,6 +16,8 @@ var c
 var cacheKeys = []
 
 describe('Cache', function (done) {
+  this.timeout(8000)
+
   describe('Invalidation API - Filesystem', function () {
     before(function (done) {
       var testConfigString = fs.readFileSync(config.configPath())

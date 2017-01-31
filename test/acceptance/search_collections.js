@@ -105,7 +105,7 @@ describe('Search', function () {
             .end(function (err, res) {
                 if (err) return done(err);
 
-                console.log(res)
+                //console.log(res)
 
                 should.exist(res.body['test-schema'].results);
                 res.body['test-schema'].results.should.be.Array;

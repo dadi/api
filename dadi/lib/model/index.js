@@ -10,7 +10,7 @@ var formatError = require('@dadi/format-error')
 var logger = require('@dadi/logger')
 var Validator = require(path.join(__dirname, '/validator'))
 var History = require(path.join(__dirname, '/history'))
-var Composer = require(path.join(__dirname, '/../composer')).Composer
+var Composer = require(path.join(__dirname, '/composer')).Composer
 var Hook = require(path.join(__dirname, '/hook'))
 var queryUtils = require(path.join(__dirname, '/utils'))
 

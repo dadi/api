@@ -1,6 +1,5 @@
 var _ = require('underscore')
 var path = require('path')
-
 var help = require(path.join(__dirname, '/../help'))
 
 var Composer = function (model) {

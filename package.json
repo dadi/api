@@ -35,6 +35,7 @@
     "parse-comments": "0.4.3",
     "path-to-regexp": "~1.7.0",
     "q": "^1.4.1",
+    "reasondb": "https://github.com/anywhichway/reasondb.git",
     "request": "2.79.0",
     "sha1": "latest",
     "stack-trace": "latest",

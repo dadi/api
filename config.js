@@ -71,6 +71,16 @@ var conf = convict({
       env: "SSL_INTERMEDIATE_CERTIFICATE_PATHS"
     }
   },
+  datastore: {
+    name: {
+      format: String,
+      default: 'reasondb'
+    },
+    path: {
+      format: String,
+      default: '/Users/jameslambie/projects/dadi/product/api/db'
+    }
+  },
   database: {
     hosts: {
       doc: "",

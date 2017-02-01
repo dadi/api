@@ -34,6 +34,18 @@ var DataStore = function (settings) {
   this.db.insert({clientId: "testClient", secret: "superSecret"}).into(Object).exec()
 }
 
+function formatQuery(query) {
+  for (var key in query) {
+    if (query.hasOwnProperty(key)) {
+      if (/string|number/.test(typeof query[key])) {
+        query[key] = { "$eq": query[key] }
+      }
+    }
+  }
+
+  return query
+}
+
 /**
  *
  */
@@ -41,8 +53,7 @@ DataStore.prototype.find = function (query, klass) {
   console.log(query)
   // TODO: accept query options
   return new Promise((resolve, reject) => {
-    // TODO: add query formatter
-    if (klass === 'books') query = { apiVersion: { $eq: 'vjoin'} }
+    query = formatQuery(query)
 
     console.log('>', klass, JSON.stringify(query))
 

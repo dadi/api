@@ -457,28 +457,25 @@ Model.prototype.find = function (query, options, done) {
 
   // Queue the history resolving function
   if (options.includeHistory) {
-    doneQueue.push(function (err, data, callback) {
+    doneQueue.push((err, data, callback) => {
       if (err) {
         return callback(null, err, data)
       } else {
-        this.injectHistory(data, options).then(function (data) {
+        this.injectHistory(data, options).then((data) => {
           return callback(null, err, data)
         })
       }
-    }.bind(this))
+    })
 
     delete options.includeHistory
   }
 
-  query = queryUtils.makeCaseInsensitive(query, self.schema)
-  query = queryUtils.convertApparentObjectIds(query, self.schema)
+  // query = queryUtils.makeCaseInsensitive(query, self.schema)
+  // query = queryUtils.convertApparentObjectIds(query, self.schema)
 
-  var compose = self.compose
-
-  // override the model's settings with a
-  // value from the options object?
+  // override the model's settings with a value from the options object
   if (options.hasOwnProperty('compose')) {
-    compose = options.compose
+    self.compose = options.compose
     delete options.compose
   }
 
@@ -628,22 +625,19 @@ Model.prototype.find = function (query, options, done) {
           // TODO: metadata
           var count = 10 // TODO: get an actual count!
 
+          if (self.compose) {
+            self.composer.setApiVersion(query.apiVersion)
 
-          // TODO: compose
-          // if (compose) {
-          //   self.composer.setApiVersion(query.apiVersion)
-          //
-          //   self.composer.compose(results, (obj) => {
-          //     returnData.results = obj
-          //     returnData.metadata = getMetadata(options, count)
-          //     runDoneQueue(null, returnData)
-          //   })
-          // } else {
+            self.composer.compose(results, (obj) => {
+              returnData.results = obj
+              returnData.metadata = getMetadata(options, count)
+              runDoneQueue(null, returnData)
+            })
+          } else {
             returnData.results = results
             returnData.metadata = getMetadata(options, count)
-            //runDoneQueue(null, returnData)
-            done(null, returnData)
-          //}
+            runDoneQueue(null, returnData)
+          }
         })
 
         // database.collection(self.name).find(query, options, function (err, cursor) {

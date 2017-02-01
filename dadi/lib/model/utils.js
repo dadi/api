@@ -63,10 +63,16 @@ function sortQueriesByNestedLevel (queries) {
 }
 
 function convertApparentObjectIds (query, schema) {
+  console.log('convertApparentObjectIds')
+  console.log(query)
+  console.log(schema)
+
   _.each(Object.keys(query), function (key) {
     if (/apiVersion/.test(key)) {
       return
     }
+
+    console.log(key)
 
     var fieldSettings = getSchemaOrParent(key, schema)
     var type = fieldSettings ? fieldSettings.type : undefined
@@ -82,6 +88,9 @@ function convertApparentObjectIds (query, schema) {
         query[key] = arr
       }
     } else if (typeof query[key] === 'object' && query[key] !== null) {
+      console.log(query[key])
+      console.log(type)
+      console.log(typeof type)
       if (typeof type !== 'undefined' && /^Mixed|Object$/.test(type)) {
         // ignore
       } else if (typeof type === 'undefined' || type !== 'Reference') { // Don't convert query id when it's a Reference field

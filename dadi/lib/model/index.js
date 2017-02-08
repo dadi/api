@@ -46,6 +46,8 @@ var Model = function (name, schema, conn, settings, database) {
     this.connection = connection()
   }
 
+  this.connection.setMaxListeners(35)
+
   if (config.get('env') !== 'test') {
     this.connection.once('error', (err) => {
       logger.error(err)

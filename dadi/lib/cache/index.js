@@ -1,8 +1,8 @@
+var _ = require('underscore')
 var crypto = require('crypto')
 var path = require('path')
 var pathToRegexp = require('path-to-regexp')
 var url = require('url')
-var _ = require('underscore')
 
 var config = require(path.join(__dirname, '/../../../config'))
 var log = require('@dadi/logger')
@@ -16,8 +16,6 @@ var Cache = function (server) {
   this.enabled = config.get('caching.directory.enabled') || config.get('caching.redis.enabled')
   this.encoding = 'utf8'
   this.options = {}
-
-  log.info({module: 'cache'}, 'Cache logging started.')
 }
 
 var instance
@@ -83,14 +81,14 @@ Cache.prototype.init = function () {
 
     // attempt to get from the cache
     cache.get(cacheKey).then((stream) => {
-      log.info({module: 'cache'}, 'Serving ' + req.url + ' from cache')
-
       res.setHeader('X-Cache-Lookup', 'HIT')
 
       if (noCache) {
         res.setHeader('X-Cache', 'MISS')
         return next()
       }
+
+      log.info({module: 'cache'}, 'Serving ' + req.url + ' from cache')
 
       res.statusCode = 200
       res.setHeader('X-Cache', 'HIT')

@@ -1,16 +1,11 @@
 var path = require('path')
-var connection = require(path.join(__dirname, '/../model/connection'))
+var Connection = require(path.join(__dirname, '/../model/connection'))
 var config = require(path.join(__dirname, '/../../../config.js'))
 
-var storeCollectionName = config.get('auth.tokenCollection')
-
 var Store = function () {
-  var dbOptions = config.get('auth.database')
-  dbOptions.auth = true
-  this.connection = connection(dbOptions)
+  this.connect()
 
   var _done = function (database) {
-    console.log(database)
     // set index on token and expiry
     // database.collection(storeCollectionName).ensureIndex(
     //   { 'token': 1, 'tokenExpire': 1 },
@@ -36,50 +31,54 @@ var Store = function () {
   this.connection.once('connect', _done)
 }
 
+/**
+ *
+ */
 Store.prototype.get = function (token, done) {
-  var _done = function (database) {
+  var _done = (database) => {
     var query = {
-      token: {$eq: token },
-      tokenExpire: {$gte: Date.now()}
+      token: token,
+      tokenExpire: { $gte: Date.now() }
     }
 
-    database.find(query, storeCollectionName).then((result) => {
+    database.find(query, this.storeCollectionName).then((result) => {
       var tokenResult = result.length ? result[0] : null
       return done(null, tokenResult)
     })
-    // database.collection(storeCollectionName).findOne({
-    //   token: token,
-    //   tokenExpire: {$gte: Date.now()}
-    // }, done)
   }
 
   if (this.connection.db) return _done(this.connection.db)
-
-  // If the db is not connected queue the insert
   this.connection.once('connect', _done)
 }
 
+/**
+ *
+ */
 Store.prototype.set = function (token, value, done) {
-  var _done = function (database) {
+  var _done = (database) => {
     database.insert({
       token: token,
       tokenExpire: Date.now() + (config.get('auth.tokenTtl') * 1000),
       created: new Date(),
       value: value
-    }, storeCollectionName).then(done())
-
-    // database.collection(storeCollectionName).insert({
-    //   token: token,
-    //   tokenExpire: Date.now() + (config.get('auth.tokenTtl') * 1000),
-    //   created: new Date(),
-    //   value: value
-    // }, done)
+    }, this.storeCollectionName).then(() => {
+      return done()
+    }).catch((err) => {
+      return done(err)
+    })
   }
 
   if (this.connection.db) return _done(this.connection.db)
-
-  // If the db is not connected queue the insert
   this.connection.once('connect', _done)
+}
+
+/**
+ *
+ */
+Store.prototype.connect = function () {
+  this.storeCollectionName = config.get('auth.tokenCollection')
+  var dbOptions = { auth: true, database: config.get('auth.database'), collection: this.storeCollectionName }
+  this.connection = Connection(dbOptions, config.get('auth.datastore'))
 }
 
 module.exports = function () {

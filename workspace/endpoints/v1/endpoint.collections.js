@@ -1,5 +1,6 @@
-var app = require('@dadi/api')
 var _ = require('underscore')
+var path = require('path')
+var app = require(path.join(__dirname, '/../../../dadi/lib/'))
 
 module.exports.get = function (req, res, next) {
   var data = {}

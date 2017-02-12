@@ -1,7 +1,6 @@
-var convict = require('convict');
-var fs = require('fs');
+var convict = require('convict')
+var fs = require('fs')
 
-// Define a schema
 var conf = convict({
   app: {
     name: {
@@ -72,64 +71,9 @@ var conf = convict({
     }
   },
   datastore: {
-    name: {
-      format: String,
-      default: 'reasondb'
-    },
-    path: {
-      format: String,
-      default: '/Users/jameslambie/projects/dadi/product/api/db'
-    }
-  },
-  database: {
-    hosts: {
-      doc: "",
-      format: Array,
-      default: [
-        {
-          host: "127.0.0.1",
-          port: 27017
-        }
-      ]
-    },
-    username: {
-      doc: "",
-      format: String,
-      default: "",
-      env: "DB_USERNAME"
-    },
-    password: {
-      doc: "",
-      format: String,
-      default: "",
-      env: "DB_PASSWORD"
-    },
-    database: {
-      doc: "",
-      format: String,
-      default: "test",
-      env: "DB_NAME"
-    },
-    ssl: {
-      doc: "",
-      format: Boolean,
-      default: false
-    },
-    replicaSet: {
-      doc: "",
-      format: String,
-      default: ""
-    },
-    readPreference: {
-      doc: "Choose how MongoDB routes read operations to the members of a replica set - see https://docs.mongodb.com/manual/reference/read-preference/",
-      format: ['primary', 'primaryPreferred', 'secondary', 'secondaryPreferred', 'nearest'],
-      default: 'secondaryPreferred'
-    },
-    enableCollectionDatabases: {
-      doc: "",
-      format: Boolean,
-      default: false
-    }
+    doc: "",
+    format: String,
+    default: '@dadi/api-mongodb'
   },
   auth: {
     tokenUrl: {
@@ -152,35 +96,16 @@ var conf = convict({
       format: String,
       default: "tokenStore"
     },
+    datastore: {
+      doc: "",
+      format: String,
+      default: '@dadi/api-mongodb'
+    },
     database: {
-      hosts: {
-        doc: "",
-        format: Array,
-        default: [
-          {
-            host: "127.0.0.1",
-            port: 27017
-          }
-        ]
-      },
-      username: {
-        doc: "",
-        format: String,
-        default: "",
-        env: "DB_AUTH_USERNAME"
-      },
-      password: {
-        doc: "",
-        format: String,
-        default: "",
-        env: "DB_AUTH_PASSWORD"
-      },
-      database: {
-        doc: "",
-        format: String,
-        default: "test",
-        env: "DB_AUTH_NAME"
-      }
+      doc: "",
+      format: String,
+      default: "test",
+      env: "DB_AUTH_NAME"
     }
   },
   caching: {
@@ -204,6 +129,16 @@ var conf = convict({
         doc: "The extension to use for cache files",
         format: String,
         default: "json"
+      },
+      autoFlush: {
+        doc: "",
+        format: Boolean,
+        default: true
+      },
+      autoFlushInterval: {
+        doc: "",
+        format: Number,
+        default: 60
       }
     },
     redis: {
@@ -376,35 +311,37 @@ var conf = convict({
     format: Boolean,
     default: false
   }
-});
+})
 
 // Load environment dependent configuration
-var env = conf.get('env');
-conf.loadFile('./config/config.' + env + '.json');
+var env = conf.get('env')
+conf.loadFile('./config/config.' + env + '.json')
 
 // Perform validation
-conf.validate({strict: false});
+conf.validate({strict: true})
 
 // Load domain-specific configuration
 conf.updateConfigDataForDomain = function(domain) {
-  var domainConfig = './config/' + domain + '.json';
+  var domainConfig = './config/' + domain + '.json'
+
   try {
-    var stats = fs.statSync(domainConfig);
+    var stats = fs.statSync(domainConfig)
     // no error, file exists
-    conf.loadFile(domainConfig);
-    conf.validate({strict: false});
+    conf.loadFile(domainConfig)
+    conf.validate({strict: false})
   }
   catch(err) {
     if (err.code === 'ENOENT') {
       //console.log('No domain-specific configuration file: ' + domainConfig);
     }
     else {
-      console.log(err);
+      console.log(err)
     }
   }
-};
+}
 
-module.exports = conf;
+module.exports = conf
+
 module.exports.configPath = function() {
-  return './config/config.' + conf.get('env') + '.json';
+  return './config/config.' + conf.get('env') + '.json'
 }

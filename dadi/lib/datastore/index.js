@@ -1,12 +1,10 @@
 var path = require('path')
+var config = require(path.join(__dirname, '/../../../config.js'))
 
-module.exports = function (config) {
-  if (!config.name) {
-    throw new Error('you must provide `name` value in config')
-  }
+module.exports = function (storeName) {
+  var store = storeName || config.get('datastore')
+  var DataStore = require(store)
+  var DataStoreConfig = require(store).Config
 
-  var storePath = path.join(__dirname, config.name)
-  var DataStore = require(storePath)
-
-  return new DataStore(config)
+  return new DataStore(DataStoreConfig.get())
 }

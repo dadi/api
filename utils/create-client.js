@@ -2,11 +2,20 @@
 
 'use strict'
 
-const Connection = require('@dadi/api').Connection
-const config = require('@dadi/api').Config
+var  Connection
+var config
 
-const connection = Connection(config.get('auth.database'))
+try {
+  Connection = require('@dadi/api').Connection
+  config = require('@dadi/api').Config
+} catch (err) {
+  Connection = require(__dirname + '/../dadi/lib/model/connection')
+  config = require(__dirname + '/../config')
+}
+
 const clientCollectionName = config.get('auth.clientCollection')
+const dbOptions = { auth: true, database: config.get('auth.database'), collection: clientCollectionName }
+const connection = Connection(dbOptions, config.get('auth.datastore'))
 
 const prompt = require('cli-prompt')
 
@@ -52,7 +61,7 @@ connection.on('connect', db => {
       if (options.confirm) {
         delete options.confirm
 
-        db.collection(clientCollectionName).insert(options, err => {
+        db.insert(options, clientCollectionName, err => {
           if (err) throw err
 
           console.log()

@@ -258,7 +258,7 @@ Controller.prototype.put = function (req, res, next) {
 }
 
 Controller.prototype.delete = function (req, res, next) {
-  var query = req.params.id ? {_id: req.params.id} : req.body.query
+  var query = req.params.id ? { _id: req.params.id } : req.body.query
 
   if (!query) return next()
 

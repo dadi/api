@@ -80,9 +80,6 @@ Composer.prototype.composeOne = function (doc, callback) {
       // (i.e. the one that got us here) ?
       var compose = help.getFromObj(schema, key + '.settings.compose', false) || mod.compose
 
-
-      console.log(query)
-
       mod.find(query, { 'compose': compose, 'fields': fields }, (err, result) => {
         if (err) console.log(err)
 

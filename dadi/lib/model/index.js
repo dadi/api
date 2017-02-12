@@ -17,7 +17,7 @@ var queryUtils = require(path.join(__dirname, '/utils'))
 // track all models that have been instantiated by this process
 var _models = {}
 
-var Model = function (name, schema, conn, settings, database) {
+var Model = function (name, schema, conn, settings) {
   // attach collection name
   this.name = name
 
@@ -40,10 +40,8 @@ var Model = function (name, schema, conn, settings, database) {
   // create connection for this model
   if (conn) {
     this.connection = conn
-  } else if (database) {
-    this.connection = connection({ database: database })
   } else {
-    this.connection = connection()
+    this.connection = connection({ database: settings.database, collection: this.name })
   }
 
   if (config.get('env') !== 'test') {
@@ -470,8 +468,8 @@ Model.prototype.find = function (query, options, done) {
     delete options.includeHistory
   }
 
-  // query = queryUtils.makeCaseInsensitive(query, self.schema)
-  // query = queryUtils.convertApparentObjectIds(query, self.schema)
+  query = queryUtils.makeCaseInsensitive(query, self.schema)
+  query = queryUtils.convertApparentObjectIds(query, self.schema)
 
   // override the model's settings with a value from the options object
   if (options.hasOwnProperty('compose')) {
@@ -619,8 +617,7 @@ Model.prototype.find = function (query, options, done) {
 
       // perform the actual find operation
       function runFind () {
-        // TODO: pass query options
-        database.find(query, self.name).then((results) => {
+        database.find(query, self.name, options).then((results) => {
           var returnData = {}
           // TODO: metadata
           var count = 10 // TODO: get an actual count!
@@ -721,7 +718,6 @@ Model.prototype.get = function (query, options, done, req) {
 }
 
 Model.prototype.revisions = function (id, options, done) {
-  var self = this
   var fields = options.fields || {}
   var historyQuery = {}
 
@@ -731,24 +727,25 @@ Model.prototype.revisions = function (id, options, done) {
     } catch (e) {}
   }
 
-  var _done = function (database) {
-    database.collection(self.name).findOne({'_id': id}, {history: 1}, function (err, doc) {
-      if (err) return done(err)
-
-      if (self.history) {
+  var _done = (database) => {
+    database.find({ '_id': id }, this.name, { history: 1, limit: 1 }).then((results) => {
+      if (results && results.length && this.history) {
         historyQuery._id = {
-          '$in': _.map(doc.history, function (id) {
-            return ObjectID.createFromHexString(id.toString())
+          '$in': _.map(results[0].history, function (id) {
+            return id && ObjectID.createFromHexString(id.toString())
           })
         }
 
-        database.collection(self.revisionCollection).find(historyQuery, fields).toArray(function (err, items) {
-          if (err) return done(err)
-          return done(null, items)
+        database.find(historyQuery, this.revisionCollection, fields).then((results) => {
+          return done(null, results)
+        }).catch((err) => {
+          return done(err)
         })
       } else {
-        done(null, [])
+        return done(null, [])
       }
+    }).catch((err) => {
+      return done(err)
     })
   }
 
@@ -767,6 +764,7 @@ Model.prototype.revisions = function (id, options, done) {
  * @return An object representing the database collection stats
  * @api public
  */
+ // TODO: move to DataStore
 Model.prototype.stats = function (options, done) {
   options = options || {}
   var self = this
@@ -838,10 +836,7 @@ Model.prototype.update = function (query, update, internals, done, req) {
     _.extend(update, internals)
   }
 
-  var setUpdate = {$set: update}
-  var updateOptions = {
-    multi: true
-  }
+  var setUpdate = { $set: update }
 
   var startUpdate = (database) => {
     // get a reference to the documents that will be updated
@@ -855,8 +850,9 @@ Model.prototype.update = function (query, update, internals, done, req) {
       this.castToBSON(query)
 
       var saveDocuments = () => {
-        database.collection(this.name).updateMany(query, setUpdate, updateOptions, (err, result) => {
-          if (err) return done(err)
+        database.update(query, this.name, setUpdate, { multi: true }).then((result) => {
+          // if (err) return done(err)
+          // TODO: handle error
 
           if (result.matchedCount === 0) {
             err = new Error('Not Found')
@@ -871,14 +867,13 @@ Model.prototype.update = function (query, update, internals, done, req) {
               var idx = 0
 
               _.each(docs, (doc) => {
-                return database.collection(this.name).findOneAndUpdate(
-                  { _id: new ObjectID(doc._id.toString()) },
+                // TODO: remove reliance on ObjectID
+                // TODO: remove reliance on Mongo options
+                return database.update({ _id: new ObjectID(doc._id.toString()) },
+                  this.name,
                   { $inc: { v: 1 } },
-                  {
-                    returnOriginal: false,
-                    sort: [['_id', 'asc']],
-                    upsert: false
-                  }, function (err, result) {
+                  { returnOriginal: false, sort: [['_id', 'asc']], upsert: false })
+                  .then((result) => {
                     if (err) return done(err)
 
                     if (++idx === docs.length) {
@@ -902,20 +897,16 @@ Model.prototype.update = function (query, update, internals, done, req) {
 
           // increment document revision number
           incrementRevisionNumber(updatedDocs).then(() => {
-            // for each of the updated documents, create
-            // a history revision for it
-            if (this.history && updatedDocs.length > 0) {
-              this.history.createEach(updatedDocs, this, (err, docs) => {
-                if (err) return done(err)
+            var promise
 
-                results.results = docs
-
-                // apply any existing `afterUpdate` hooks
-                triggerAfterUpdateHook(docs)
-
-                done(null, results)
-              })
+            if (this.history) {
+              // for each of the updated documents, create a history revision for it
+              promise = this.history.createEach(updatedDocs, this)
             } else {
+              promise = Promise.resolve()
+            }
+
+            promise.then(() => {
               var query = {
                 _id: { '$in': _.map(updatedDocs, (doc) => {
                   return doc._id.toString()
@@ -933,7 +924,7 @@ Model.prototype.update = function (query, update, internals, done, req) {
 
                 done(null, results)
               })
-            }
+            })
           })
         })
       }
@@ -982,13 +973,12 @@ Model.prototype.update = function (query, update, internals, done, req) {
  */
 Model.prototype.delete = function (query, done, req) {
   var validation = this.validate.query(query)
+
   if (!validation.success) {
     var err = validationError('Bad Query')
     err.json = validation
     return done(err)
   }
-
-  this.castToBSON(query)
 
   query = queryUtils.convertApparentObjectIds(query, this.schema)
 
@@ -1020,7 +1010,7 @@ Model.prototype.delete = function (query, done, req) {
   }
 
   var deleteDocuments = (database) => {
-    database.collection(this.name).deleteMany(query, (err, result) => {
+    database.delete(query, this.name).then((result) => {
       if (!err && (result.deletedCount > 0)) {
         // apply any existing `afterDelete` hooks
         if (this.settings.hasOwnProperty('hooks') && (typeof this.settings.hooks.afterDelete === 'object')) {
@@ -1032,7 +1022,9 @@ Model.prototype.delete = function (query, done, req) {
         }
       }
 
-      done(err, result.deletedCount)
+      done(null, result.deletedCount)
+    }).catch((err) => {
+      done(err)
     })
   }
 
@@ -1084,8 +1076,8 @@ function getMetadata (options, count) {
 }
 
 // exports
-module.exports = function (name, schema, conn, settings, database) {
-  if (schema) return new Model(name, schema, conn, settings, database)
+module.exports = function (name, schema, conn, settings) {
+  if (schema) return new Model(name, schema, conn, settings)
   return _models[name]
 }
 

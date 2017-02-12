@@ -6,6 +6,7 @@ var bodyParser = require('body-parser')
 var chokidar = require('chokidar')
 var cluster = require('cluster')
 var colors = require('colors') // eslint-disable-line
+var debug = require('debug')('api:server')
 var parsecomments = require('parse-comments')
 var formatError = require('@dadi/format-error')
 var fs = require('fs')
@@ -19,18 +20,18 @@ var _ = require('underscore')
 var api = require(path.join(__dirname, '/api'))
 var auth = require(path.join(__dirname, '/auth'))
 var cache = require(path.join(__dirname, '/cache'))
-var controller = require(path.join(__dirname, '/controller'))
+var Controller = require(path.join(__dirname, '/controller'))
 var MediaController = require(path.join(__dirname, '/controller/media'))
 var dadiStatus = require('@dadi/status')
 var help = require(path.join(__dirname, '/help'))
-var log = require('@dadi/logger')
-var model = require(path.join(__dirname, '/model'))
+var Model = require(path.join(__dirname, '/model'))
 var monitor = require(path.join(__dirname, '/monitor'))
 var search = require(path.join(__dirname, '/search'))
 
 var config = require(path.join(__dirname, '/../../config'))
 var configPath = path.resolve(config.configPath())
 
+var log = require('@dadi/logger')
 log.init(config.get('logging'), {}, process.env.NODE_ENV)
 
 if (config.get('env') !== 'test') {
@@ -45,8 +46,6 @@ var Server = function () {
   this.components = {}
   this.monitors = {}
   this.docs = {}
-
-  log.info({module: 'server'}, 'Server logging started.')
 }
 
 Server.prototype.run = function (done) {
@@ -113,10 +112,10 @@ Server.prototype.run = function (done) {
     }
   } else {
     // Single thread start
-    log.info('Starting DADI API in single thread mode.')
+    debug('Starting DADI API in single thread mode')
 
     this.start(function () {
-      log.info('Process ' + process.pid + ' is listening for incoming requests')
+      debug('Process ' + process.pid + ' is listening for incoming requests')
     })
   }
 
@@ -706,22 +705,22 @@ Server.prototype.updateCollections = function (collectionsPath) {
   })
 }
 
+/**
+ * With each schema we create a model.
+ * With each model we create a controller, that acts as a component of the REST api.
+ * We then add the component to the api by adding a route to the app and mapping
+ * req.method` to component methods
+ */
 Server.prototype.addCollectionResource = function (options) {
   var fields = help.getFieldsFromSchema(options.schema)
 
-  // With each schema we create a model.
-  // With each model we create a controller, that acts as a component of the REST api.
-  // We then add the component to the api by adding a route to the app and mapping
-  // `req.method` to component methods
-
-  var enableCollectionDatabases = config.get('database.enableCollectionDatabases')
-  var database = enableCollectionDatabases ? options.database : null
-  var mod = model(options.name, JSON.parse(fields), null, options.schema.settings, database)
-  var control = controller(mod)
+  var settings = _.extend(options.schema.settings, { database: options.database })
+  var model = Model(options.name, JSON.parse(fields), null, settings)
+  var controller = Controller(model)
 
   this.addComponent({
     route: options.route,
-    component: control,
+    component: controller,
     filepath: options.filepath
   })
 
@@ -731,10 +730,11 @@ Server.prototype.addCollectionResource = function (options) {
   this.addMonitor(options.filepath, function (filename) {
     // invalidate schema file cache then reload
     delete require.cache[options.filepath]
+
     try {
       var schemaObj = require(options.filepath)
       var fields = help.getFieldsFromSchema(schemaObj)
-      // This leverages the fact that Javscript's Object keys are references
+
       self.components[options.route].model.schema = JSON.parse(fields)
       self.components[options.route].model.settings = schemaObj.settings
     } catch (e) {
@@ -746,7 +746,7 @@ Server.prototype.addCollectionResource = function (options) {
     }
   })
 
-  log.info({module: 'server'}, 'Collection loaded: ' + options.name)
+  debug('Collection loaded: %s', options.name)
 }
 
 Server.prototype.updateEndpoints = function (endpointsPath) {
@@ -809,7 +809,7 @@ Server.prototype.addEndpointResource = function (options) {
     }
   })
 
-  log.info({module: 'server'}, 'Endpoint loaded: ' + name)
+  debug('Endpoint loaded: %s', name)
 }
 
 Server.prototype.updateHooks = function (hookPath) {
@@ -862,7 +862,7 @@ Server.prototype.addHook = function (options) {
     }
   })
 
-  log.info({module: 'server'}, 'Hook loaded: ' + name)
+  debug('Hook loaded: %s', name)
 }
 
 Server.prototype.addComponent = function (options) {

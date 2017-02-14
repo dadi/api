@@ -131,6 +131,57 @@ describe('Reference Field', function () {
     });
   });
 
+  it('should populate all reference fields that aren\'t null', function (done) {
+
+    // first person
+    var gertrude = { name: 'Gertrude Stein' }
+
+    config.set('query.useVersionFilter', true)
+
+    var client = request(connectionString);
+    client
+    .post('/v1/library/person')
+    .set('Authorization', 'Bearer ' + bearerToken)
+    .send(gertrude)
+    .expect(200)
+    .end(function (err, res) {
+      if (err) return done(err);
+
+      var personId = res.body.results[0]._id
+
+      var ernest = {
+        name: 'Ernest Hemingway',
+        spouse: null,
+        friend: personId.toString()
+      }
+
+      client
+      .post('/v1/library/person')
+      .set('Authorization', 'Bearer ' + bearerToken)
+      .send(ernest)
+      .expect(200)
+      .end(function (err, res) {
+        if (err) return done(err)
+
+        client
+        .get('/v1/library/person?filter={"name":"Ernest Hemingway", "friend":{"$ne":null}}&compose=true')
+        .set('Authorization', 'Bearer ' + bearerToken)
+        .expect(200)
+        .end(function (err, res) {
+          if (err) return done(err);
+
+          should.exist(res.body.results)
+          var result = res.body.results[0]
+
+          should.exist(result.friend)
+          result.friend.name.should.eql('Gertrude Stein')
+
+          done();
+        })
+      })
+    });
+  });
+
   it('should return results for a reference field containing an Array of Strings', function (done) {
 
     var person = { name: 'Ernest Hemingway' };

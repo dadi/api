@@ -934,7 +934,7 @@ describe('Model', function () {
       _.extend(schema, refField)
       _.extend(schema, nameFields)
 
-      var mod = model('testModelName', schema)
+      var mod = model('testModelName', schema, null, { database: 'testdb'})
 
       beforeEach(function (done) {
         help.cleanUpDB(function () {

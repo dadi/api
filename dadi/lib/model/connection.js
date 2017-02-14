@@ -18,7 +18,6 @@ var Connection = function (options, storeName) {
   this.readyState = 0
 }
 
-// inherits from EventEmitter
 util.inherits(Connection, EventEmitter)
 
 /**
@@ -40,6 +39,8 @@ Connection.prototype.connect = function (options) {
     this.db = this.datastore
 
     return this.emit('connect', this.db)
+  }).catch((err) => {
+    return this.emit('error', err)
   })
 
   // mongoClient.connect(this.connectionString, function (err, db) {
@@ -89,6 +90,7 @@ module.exports = function (options, storeName, collection) {
   //   }
   // } else {
   // else create a new connection
+
   var conn = new Connection(options, storeName)
 
   if (collection) {
@@ -96,7 +98,7 @@ module.exports = function (options, storeName, collection) {
   }
 
   conn.on('error', function (err) {
-    console.log('Connection Error: ' + err + '. Using connection string "' + conn.connectionString + '"')
+    console.log('Connection Error: ' + err + '. Using connection string "' + conn.datastore.connectionString + '"')
   })
 
   // _connections[conn.connectionOptions.database] = conn

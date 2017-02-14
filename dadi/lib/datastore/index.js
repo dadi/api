@@ -6,5 +6,9 @@ module.exports = function (storeName) {
   var DataStore = require(store)
   var DataStoreConfig = require(store).Config
 
+  console.log('++++++++++++')
+  console.log(DataStoreConfig.get())
+  console.log('++++++++++++')
+
   return new DataStore(DataStoreConfig.get())
 }

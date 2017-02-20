@@ -1,3 +1,4 @@
+var debug = require('debug')('api:tokenStore')
 var path = require('path')
 var Connection = require(path.join(__dirname, '/../model/connection'))
 var config = require(path.join(__dirname, '/../../../config.js'))
@@ -6,6 +7,8 @@ var Store = function () {
   this.connect()
 
   var _done = function (database) {
+    debug('connected')
+
     // set index on token and expiry
     // database.collection(storeCollectionName).ensureIndex(
     //   { 'token': 1, 'tokenExpire': 1 },

@@ -1,3 +1,4 @@
+var debug = require('debug')('api:tokens')
 var path = require('path')
 var uuid = require('uuid')
 var config = require(path.join(__dirname, '/../../../config.js'))
@@ -28,6 +29,8 @@ function getToken (callback) {
 }
 
 module.exports.generate = function (req, res, next) {
+  debug('generate')
+
   // Look up the credentials supplied in the request body in clientStore
   var credentials = {
     clientId: req.body.clientId,
@@ -67,6 +70,8 @@ module.exports.generate = function (req, res, next) {
 }
 
 module.exports.validate = function (token, done) {
+  debug('validate %s', token)
+
   tokenStore.get(token, function (err, doc) {
     if (err) return done(err)
     if (doc) return done(null, doc.value)

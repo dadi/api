@@ -9,7 +9,7 @@ var querystring = require('querystring')
 var TestHelper = require(__dirname + '/../../TestHelper')()
 var config = require(__dirname + '/../../../config')
 
-describe('Model connection', function () {
+describe.skip('Model connection', function () {
   this.timeout(5000)
 
   beforeEach(function (done) {

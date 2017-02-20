@@ -13,14 +13,13 @@ describe('History', function () {
 
   describe('initialization options', function () {
     it('should take a model name as an argument', function (done) {
-      var mod = model('testModelName', help.getModelSchema())
+      var mod = model('testModelName', help.getModelSchema(), null, { database: 'testdb' })
       var h = new History(mod).model.name.should.equal('testModelName')
       done()
     })
 
     it('should attach specified history collection if `storeRevisions` is true', function (done) {
-      var conn = connection()
-      var mod = model('testModelName', help.getModelSchema(), conn, { storeRevisions: true, revisionCollection: 'modelHistory' })
+      var mod = model('testModelName', help.getModelSchema(), null, { database: 'testdb', storeRevisions: true, revisionCollection: 'modelHistory' })
       should.exist(mod.revisionCollection)
       mod.revisionCollection.should.equal('modelHistory')
 
@@ -33,15 +32,13 @@ describe('History', function () {
     beforeEach(help.cleanUpDB)
 
     it('should be added to history', function (done) {
-      var conn = connection()
-      var mod = model('testModelName', help.getModelSchema(), conn, { storeRevisions: true })
+      var mod = model('testModelName', help.getModelSchema(), null, { database: 'testdb', storeRevisions: true })
       var h = new History(mod).model.history.create.should.be.Function
       done()
     })
 
     it('should save model to history', function (done) {
-      var conn = connection()
-      var mod = model('testModelName', help.getModelSchema(), conn, { storeRevisions: true })
+      var mod = model('testModelName', help.getModelSchema(), null, { database: 'testdb', storeRevisions: true })
 
       mod.create({fieldName: 'foo'}, function (err, result) {
         if (err) return done(err)
@@ -70,14 +67,13 @@ describe('History', function () {
     beforeEach(help.cleanUpDB)
 
     it('should be added to history', function (done) {
-      var mod = model('testModelName', help.getModelSchema())
+      var mod = model('testModelName', help.getModelSchema(), null, { database: 'testdb' })
       var h = new History(mod).model.history.createEach.should.be.Function
       done()
     })
 
     it('should save all models to history', function (done) {
-      var conn = connection()
-      var mod = model('testModelName', help.getModelSchema(), conn, { storeRevisions: true })
+      var mod = model('testModelName', help.getModelSchema(), null, { database: 'testdb', storeRevisions: true })
 
       mod.create({fieldName: 'foo-1'}, function (err, result) {
         if (err) return done(err)
@@ -87,13 +83,9 @@ describe('History', function () {
           mod.find({}, function (err, docs) {
             if (err) return done(err)
 
-            mod.history.createEach(docs['results'], mod, function (err, res) {
-              if (err) return done(err)
-
+            mod.history.createEach(docs['results'], mod).then(() => {
               mod.find({}, function (err, docs) {
                 if (err) return done(err)
-
-                //console.log(docs.results[0])
 
                 docs.results[0].history.length.should.equal(1)
                 docs.results[1].history.length.should.equal(1)
@@ -102,11 +94,7 @@ describe('History', function () {
             })
           })
         })
-
       })
-
     })
-
   })
-
 })

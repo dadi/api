@@ -81,27 +81,55 @@ module.exports.testModelProperty = function (key, val) {
 }
 
 module.exports.cleanUpDB = function (done) {
-  var database = connection()
+  var conn = connection({database: "testdb"})
 
-  console.log(database)
-
-  setTimeout(function () {
-    if (database.db.databaseName !== 'test') {
-      var err = new Error('Database should be `test`, not `' + db.databaseName + '`.')
-      return done(err)
-    }
-  }, 100)
-
-  // drop all data
-  setTimeout(function () {
-    database.db.dropDatabase('test', function (err) {
-      if (err) return done(err)
-
-        // force close this connection
-        // db.close(true, done);
+  if (conn.datastore.dropDatabase) {
+    conn.datastore.dropDatabase().then(() => {
       done()
+    }).catch((err) => {
+      console.log(err)
+      done(err)
     })
-  }, 100)
+   //     if (err) return done(err)
+   //
+   //       // force close this connection
+   //       // db.close(true, done);
+   //     done()
+   //   })
+ } else {
+   return done()
+ }
+  // conn.connect({database: "testdb"}).then(() => {
+  //   if (conn.db.dropDatabase) {
+  //     conn.datastore.dropDatabase('testdb').then(done).catch((err) => { done(err) })
+  //    //     if (err) return done(err)
+  //    //
+  //    //       // force close this connection
+  //    //       // db.close(true, done);
+  //    //     done()
+  //    //   })
+  //  } else {
+  //    return done()
+  //  }
+  // })
+
+  // setTimeout(function () {
+  //   if (database.db.databaseName !== 'test') {
+  //     var err = new Error('Database should be `test`, not `' + db.databaseName + '`.')
+  //     return done(err)
+  //   }
+  // }, 100)
+  //
+  // // drop all data
+  // setTimeout(function () {
+  //   database.db.dropDatabase('test', function (err) {
+  //     if (err) return done(err)
+  //
+  //       // force close this connection
+  //       // db.close(true, done);
+  //     done()
+  //   })
+  // }, 100)
 }
 
 module.exports.clearCollection = function (collectionName, query, done) {
@@ -110,26 +138,15 @@ module.exports.clearCollection = function (collectionName, query, done) {
     query = {}
   }
 
-  var database = connection()
+  var conn = connection({database: "testdb"})
 
-  if (!database.db) return done()
-
-  setTimeout(function () {
-    if (database.db.databaseName !== 'test') {
-      var err = new Error('Database should be `test`, not `' + db.databaseName + '`.')
-      return done(err)
-    }
-  }, 100)
-
-  // remove data from collection
-  setTimeout(function () {
-    database.db.collection(collectionName, function (err, collection) {
-      if (err) return done(err)
-      collection.remove(query, function (err, removed) {
-        done()
-      })
+  if (conn.datastore.dropDatabase) {
+    conn.datastore.dropDatabase(collectionName).then(() => {
+      done()
     })
-  }, 100)
+  } else {
+    return done()
+  }
 }
 
 module.exports.addUserToDb = function (userObj, dbObj, done) {

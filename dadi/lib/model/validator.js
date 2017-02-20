@@ -7,10 +7,7 @@ var _ = require('underscore')
 var ObjectID = require('mongodb').ObjectID
 var util = require('util')
 
-var log = require('@dadi/logger')
-log.info({module: 'validator'}, 'Model validator logging started.')
-
-var ignoredKeys = ['apiVersion', 'v', 'history']
+var ignoredKeys = ['_id', 'apiVersion', 'v', 'history']
 
 var Validator = function (model) {
   this.model = model

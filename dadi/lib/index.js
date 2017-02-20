@@ -746,7 +746,7 @@ Server.prototype.addCollectionResource = function (options) {
     }
   })
 
-  debug('Collection loaded: %s', options.name)
+  debug('collection loaded: %s', options.name)
 }
 
 Server.prototype.updateEndpoints = function (endpointsPath) {
@@ -809,7 +809,7 @@ Server.prototype.addEndpointResource = function (options) {
     }
   })
 
-  debug('Endpoint loaded: %s', name)
+  debug('endpoint loaded: %s', name)
 }
 
 Server.prototype.updateHooks = function (hookPath) {
@@ -862,7 +862,7 @@ Server.prototype.addHook = function (options) {
     }
   })
 
-  debug('Hook loaded: %s', name)
+  debug('hook loaded: %s', name)
 }
 
 Server.prototype.addComponent = function (options) {

@@ -145,14 +145,14 @@ function makeCaseInsensitive (obj, schema) {
   return newObj
 }
 
-function processFilter(query, schema) {
+function processFilter (query, schema) {
   var newQuery = _.clone(query)
 
   Object.keys(query).forEach((key) => {
     if (typeof query[key] === 'string') {
       switch (query[key]) {
         case '$now':
-          newQuery[key] = Math.round(new Date().getTime()/1000.0)
+          newQuery[key] = Math.round(new Date().getTime() / 1000.0)
           break
         default:
           newQuery[key] = query[key]

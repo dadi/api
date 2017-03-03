@@ -1,6 +1,7 @@
 var _ = require('underscore')
 var ObjectID = require('mongodb').ObjectID
 var path = require('path')
+var validator = require('validator')
 
 var help = require(path.join(__dirname, '/../help'))
 
@@ -62,38 +63,42 @@ function sortQueriesByNestedLevel (queries) {
   return keys.reduce((r, k) => (r[k] = queries[k], r), {}) // eslint-disable-line
 }
 
-function convertApparentObjectIds (query, schema) {
-  _.each(Object.keys(query), function (key) {
-    if (/apiVersion/.test(key)) {
-      return
-    }
-
-    var fieldSettings = getSchemaOrParent(key, schema)
-    var type = fieldSettings ? fieldSettings.type : undefined
-
-    if (key === '$in') {
-      if (typeof query[key] === 'object' && _.isArray(query[key])) {
-        var arr = query[key]
-        _.each(arr, function (value, key) {
-          if (typeof value === 'string' && ObjectID.isValid(value) && value.match(/^[a-fA-F0-9]{24}$/)) {
-            arr[key] = ObjectID.createFromHexString(value)
-          }
-        })
-        query[key] = arr
-      }
-    } else if (typeof query[key] === 'object' && query[key] !== null) {
-      if (typeof type !== 'undefined' && /^Mixed|Object$/.test(type)) {
-        // ignore
-      } else if (typeof type === 'undefined' || type !== 'Reference') { // Don't convert query id when it's a Reference field
-        query[key] = convertApparentObjectIds(query[key], schema)
-      }
-    } else if (typeof query[key] === 'string' && !/^Mixed|Object$/.test(type) && ObjectID.isValid(query[key]) && query[key].match(/^[a-fA-F0-9]{24}$/)) {
-      query[key] = ObjectID.createFromHexString(query[key])
-    }
-  })
-
-  return query
-}
+// function convertApparentObjectIds (query, schema) {
+//   // TODO: move this to mongo store
+//   console.log('>>>>> convertApparentObjectIds')
+//
+//   // _.each(Object.keys(query), function (key) {
+//   //   if (/apiVersion/.test(key)) {
+//   //     return
+//   //   }
+//   //
+//   //   var fieldSettings = getSchemaOrParent(key, schema)
+//   //   var type = fieldSettings ? fieldSettings.type : undefined
+//   //
+//   //   if (key === '$in') {
+//   //     if (typeof query[key] === 'object' && _.isArray(query[key])) {
+//   //       var arr = query[key]
+//   //
+//   //       _.each(arr, (value, key) => {
+//   //         if (typeof value === 'string' && ObjectID.isValid(value) && value.match(/^[a-fA-F0-9]{24}$/)) {
+//   //           arr[key] = ObjectID.createFromHexString(value)
+//   //         }
+//   //       })
+//   //       query[key] = arr
+//   //     }
+//   //   } else if (typeof query[key] === 'object' && query[key] !== null) {
+//   //     if (typeof type !== 'undefined' && /^Mixed|Object$/.test(type)) {
+//   //       // ignore
+//   //     } else if (typeof type === 'undefined' || type !== 'Reference') { // Don't convert query id when it's a Reference field
+//   //       query[key] = convertApparentObjectIds(query[key], schema)
+//   //     }
+//   //   } else if (typeof query[key] === 'string' && !/^Mixed|Object$/.test(type) && ObjectID.isValid(query[key]) && query[key].match(/^[a-fA-F0-9]{24}$/)) {
+//   //     query[key] = ObjectID.createFromHexString(query[key])
+//   //   }
+//   // })
+//
+//   return query
+// }
 
 function makeCaseInsensitive (obj, schema) {
   var newObj = _.clone(obj)
@@ -109,7 +114,7 @@ function makeCaseInsensitive (obj, schema) {
     }
 
     if (typeof obj[key] === 'string') {
-      if (ObjectID.isValid(obj[key]) && obj[key].match(/^[a-fA-F0-9]{24}$/)) {
+      if (validator.isMongoId(obj[key]) || validator.isUUID(obj[key])) { //&& obj[key].match(/^[a-fA-F0-9]{24}$/)) {
         newObj[key] = obj[key]
       } else if (key[0] === '$' && key === '$regex') {
         newObj[key] = new RegExp(obj[key], 'i')
@@ -147,7 +152,6 @@ function makeCaseInsensitive (obj, schema) {
 
 module.exports = {
   containsNestedReferenceFields: containsNestedReferenceFields,
-  convertApparentObjectIds: convertApparentObjectIds,
   getSchemaOrParent: getSchemaOrParent,
   makeCaseInsensitive: makeCaseInsensitive,
   processReferenceFieldQuery: processReferenceFieldQuery

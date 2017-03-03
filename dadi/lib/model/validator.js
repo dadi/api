@@ -4,10 +4,11 @@
 //   ensure that field validation passes for inserts and updates
 
 var _ = require('underscore')
-var ObjectID = require('mongodb').ObjectID
-var util = require('util')
+var path = require('path')
+var datastore = require(path.join(__dirname, '../datastore'))()
+var validator = require('validator')
 
-var ignoredKeys = ['_id', 'apiVersion', 'v', 'history']
+var ignoredKeys = _.union(['_id', 'apiVersion', 'v', 'history'], datastore.nonValidatedProperties || [])
 
 var Validator = function (model) {
   this.model = model
@@ -27,7 +28,7 @@ Validator.prototype.schema = function (obj, update) {
   update = update || false
 
   // `obj` must be a "hash type object", i.e. { ... }
-  if (typeof obj !== 'object' || util.isArray(obj) || obj === null) return false
+  if (typeof obj !== 'object' || Array.isArray(obj) || obj === null) return false
 
   var response = {
     success: true,
@@ -59,7 +60,7 @@ Validator.prototype.schema = function (obj, update) {
       } else if (obj.hasOwnProperty(key) && (typeof obj[key] === 'undefined' || obj[key] === '')) {
         // if it's a required field and is blank or null, error
         response.success = false
-        response.errors.push({field: key, message: "can't be blank"})
+        response.errors.push({ field: key, message: 'can\'t be blank' })
       }
     })
 
@@ -79,16 +80,16 @@ function _parseDocument (obj, schema, response) {
         // do nothing
       } else if (schema[key] && schema[key].type === 'Reference') {
         // bah!
-      } else if (obj[key] !== null && !util.isArray(obj[key])) {
+      } else if (obj[key] !== null && !Array.isArray(obj[key])) {
         _parseDocument(obj[key], schema, response)
-      } else if (obj[key] !== null && schema[key] && schema[key].type === 'ObjectID' && util.isArray(obj[key])) {
+      } else if (obj[key] !== null && schema[key] && schema[key].type === 'ObjectID' && Array.isArray(obj[key])) {
         err = _validate(obj[key], schema[key], key)
 
         if (err) {
           response.success = false
           response.errors.push({field: key, message: err})
         }
-      } else if (util.isArray(obj[key]) && schema[key] && (schema[key].type === 'String')) {
+      } else if (Array.isArray(obj[key]) && schema[key] && (schema[key].type === 'String')) {
         // We allow type `String` to actually be an array of Strings. When this
         // happens, we run the validation against the combination of all strings
         // glued together.
@@ -103,7 +104,7 @@ function _parseDocument (obj, schema, response) {
     } else {
       if (!schema[key]) {
         response.success = false
-        response.errors.push({field: key, message: "doesn't exist in the collection schema"})
+        response.errors.push({ field: key, message: 'doesn\'t exist in the collection schema' })
         return
       }
 
@@ -160,12 +161,12 @@ function _validate (field, schema, key) {
     if (typeof field === 'object' && _.isArray(field)) {
       for (var i = field.length - 1; i >= 0; i--) {
         var val = field[i]
-        if (typeof val !== 'string' || !ObjectID.isValid(val)) {
+        if (typeof val !== 'string' || !validator.isMongoId(val)) {
           return val + ' is not a valid ObjectID'
         }
       }
     } else if (typeof field === 'string') {
-      if (!ObjectID.isValid(field)) return 'is not a valid ObjectID'
+      if (!validator.isMongoId(field)) return 'is not a valid ObjectID'
     } else {
       return 'is wrong type'
     }

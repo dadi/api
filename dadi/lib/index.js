@@ -40,7 +40,8 @@ if (config.get('env') !== 'test') {
 }
 
 // add an optional id component to the path, that is formatted to be matched by the `path-to-regexp` module
-var idParam = ':id([a-fA-F0-9]{24})?'
+var idParam = ':id([a-fA-F0-9-]*)?'
+// TODO: allow configurable id param?
 
 var Server = function () {
   this.components = {}
@@ -164,7 +165,7 @@ Server.prototype.start = function (done) {
   // add necessary middlewares in order below here...
 
   app.use(bodyParser.json({ limit: '50mb' }))
-  app.use(bodyParser.urlencoded({ extended: false, limit: '50mb' }))
+  app.use(bodyParser.urlencoded({ extended: true, limit: '50mb' }))
   app.use(bodyParser.text({ limit: '50mb' }))
 
   // update configuration based on domain

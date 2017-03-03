@@ -1,4 +1,5 @@
-var _ = require('underscore')
+var _ = require('underscore-contrib')
+var debug = require('debug')('api:history')
 
 var History = function (model) {
   this.model = model
@@ -6,12 +7,18 @@ var History = function (model) {
 
 History.prototype.create = function (obj, model, done) {
   // create copy of original
-  var revisionObj = _.clone(obj)
+  var revisionObj = _.snapshot(obj)
+
+  // TODO: use datastore plugin's internal fields
   delete revisionObj._id
-  // revisionObj._id = new ObjectID()
+  delete revisionObj.meta
+  delete revisionObj.$loki
 
   var _done = function (database) {
     database.insert(revisionObj, model.revisionCollection, {}).then((doc) => {
+      debug('inserted %o', doc)
+
+      // TODO: remove mongo options
       database.update(
         { _id: obj._id },
         model.name,

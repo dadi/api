@@ -157,7 +157,7 @@ describe('Model connection', function () {
             });
 
             conn.on('error', (err) => {
-              err.message.should.eql('Authentication failed.')
+              err.message.should.eql('auth fails')
               conn.readyState.should.equal(0)
               done()
             })

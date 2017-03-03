@@ -155,8 +155,13 @@ describe('Hook', function () {
     })
   })
 
-  describe('`beforeCreate` hook', function () {
-    beforeEach(help.cleanUpDB)
+  describe('`beforeCreate` hook', function (done) {
+
+    beforeEach(function(done) {
+      help.cleanUpDB(() => {
+        done()
+      })
+    })
 
     it('should receive collection name and schema', function (done) {
       var schema = help.getModelSchema()
@@ -245,8 +250,9 @@ describe('Hook', function () {
         hook.Hook.prototype.load.restore()
 
         // find the obj we just created
-        mod.find({fieldName: 'foo'}, function (err, doc) {
+        mod.find({}, function (err, doc) {
           if (err) return done(err)
+
           doc.results[0].slug.should.eql('article-one')
           done()
         })

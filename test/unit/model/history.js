@@ -73,6 +73,8 @@ describe('History', function () {
     })
 
     it('should save all models to history', function (done) {
+      this.timeout(4000)
+
       var mod = model('testModelName', help.getModelSchema(), null, { database: 'testdb', storeRevisions: true })
 
       mod.create({fieldName: 'foo-1'}, function (err, result) {
@@ -84,13 +86,15 @@ describe('History', function () {
             if (err) return done(err)
 
             mod.history.createEach(docs['results'], mod).then(() => {
-              mod.find({}, function (err, docs) {
+              mod.find({ fieldName: { '$regex' : '^foo-' } }, function (err, docs) {
                 if (err) return done(err)
 
                 docs.results[0].history.length.should.equal(1)
                 docs.results[1].history.length.should.equal(1)
                 done()
               })
+            }).catch((err) => {
+              done(err)
             })
           })
         })

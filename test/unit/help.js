@@ -81,24 +81,30 @@ module.exports.testModelProperty = function (key, val) {
 }
 
 module.exports.cleanUpDB = function (done) {
-  var conn = connection({database: "testdb"})
-
-  if (conn.datastore.dropDatabase) {
-    conn.datastore.dropDatabase().then(() => {
-      done()
-    }).catch((err) => {
-      console.log(err)
-      done(err)
+  module.exports.clearCollection('testModelName', (err) => {
+    module.exports.clearCollection('testModelNameHistory', (err) => {
+      module.exports.clearCollection('articles', (err) => {
+        module.exports.clearCollection('categories', (err) => {
+          module.exports.clearCollection('book', (err) => {
+            module.exports.clearCollection('person', (err) => {
+               done()
+            })
+          })
+        })
+      })
     })
-   //     if (err) return done(err)
-   //
-   //       // force close this connection
-   //       // db.close(true, done);
-   //     done()
-   //   })
- } else {
-   return done()
- }
+  })
+  //
+  // if (conn.datastore.dropDatabase) {
+  //   conn.datastore.dropDatabase().then(() => {
+  //     done()
+  //   }).catch((err) => {
+  //     console.log(err)
+  //     done(err)
+  //   })
+  // } else {
+  //   return done()
+  // }
   // conn.connect({database: "testdb"}).then(() => {
   //   if (conn.db.dropDatabase) {
   //     conn.datastore.dropDatabase('testdb').then(done).catch((err) => { done(err) })
@@ -132,17 +138,14 @@ module.exports.cleanUpDB = function (done) {
   // }, 100)
 }
 
-module.exports.clearCollection = function (collectionName, query, done) {
-  if (typeof query === 'function') {
-    done = query
-    query = {}
-  }
-
-  var conn = connection({database: "testdb"})
+module.exports.clearCollection = function (collectionName, done) {
+  var conn = connection({database: 'testdb', collection: collectionName})
 
   if (conn.datastore.dropDatabase) {
     conn.datastore.dropDatabase(collectionName).then(() => {
-      done()
+      return done()
+    }).catch((err) => {
+      done(err)
     })
   } else {
     return done()

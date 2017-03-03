@@ -11,10 +11,8 @@ var config = require(__dirname + '/../../../config')
 
 describe('Model', function () {
   beforeEach(function (done) {
-    //help.cleanUpDB(done)
     help.clearCollection('testModelName', function() {
       help.clearCollection('testModelNameHistory', function() {
-    //     connection.resetConnections()
          done()
       })
     })
@@ -223,56 +221,6 @@ describe('Model', function () {
       }
 
       help.testModelProperty('display', val)
-      done()
-    })
-  })
-
-  describe.skip('`convertObjectIdsForSave` method', function () {
-    it('should be added to model', function (done) {
-      model('testModelName', help.getModelSchema(), null, { database: 'testdb' }).convertObjectIdsForSave.should.be.Function
-      done()
-    })
-
-    it('should accept schema and object and replace ObjectIDs in array', function (done) {
-      var fields = help.getModelSchema()
-      var schema = {}
-      schema.fields = fields
-
-      schema.fields.field2 = _.extend({}, schema.fields.fieldName, {
-        type: 'ObjectID',
-        required: false
-      })
-
-      var mod = model('testModelName', schema)
-
-      var obj = {fieldName: 'Hello', field2: ['55cb1658341a0a804d4dadcc'] }
-      obj = mod.convertObjectIdsForSave(schema.fields, obj)
-
-      var t = typeof obj.field2[0]
-      t.should.eql('object')
-
-      done()
-    })
-
-    it('should accept schema and object and replace ObjectIDs as single value', function (done) {
-      var fields = help.getModelSchema()
-      var schema = {}
-      schema.fields = fields
-
-      schema.fields.field2 = _.extend({}, schema.fields.fieldName, {
-        type: 'ObjectID',
-        required: false
-      })
-
-      var mod = model('testModelName', schema)
-
-      var obj = {fieldName: 'Hello', field2: '55cb1658341a0a804d4dadcc' }
-
-      obj = mod.convertObjectIdsForSave(schema.fields, obj)
-
-      var t = typeof obj.field2
-      t.should.eql('object')
-
       done()
     })
   })
@@ -1127,7 +1075,6 @@ describe('Model', function () {
           var bookSchemaString = JSON.stringify(bookSchema)
           bookSchemaString = bookSchemaString.replace('author','person')
 
-
           var book = model('book', JSON.parse(bookSchemaString), null, {database: 'testdb'})
           var person = model('person', personSchema, null, {database: 'testdb'})
 
@@ -1143,12 +1090,8 @@ describe('Model', function () {
                 books.push(bookid)
 
                 book.create({title: 'Neil\'s Autobiography', person: neil}, function (err, result) {
-
                   // find book where author.name = J K Rowling
-
                   book.find({ 'person.name': 'J K Rowling' }, { compose: true }, function (err, result) {
-                    //console.log(JSON.stringify(result, null, 2))
-
                     result.results.length.should.eql(1)
                     var doc = result.results[0]
                     should.exist(doc.person.name)
@@ -1214,7 +1157,8 @@ describe('Model', function () {
               parent: {
                 type: "Reference",
                 settings: {
-                  collection: "categories"
+                  collection: "categories",
+                  compose: true
                 },
                 required: false
               },
@@ -1253,8 +1197,9 @@ describe('Model', function () {
             }
           }
 
-          var category = model('categories', categoriesSchema.fields, null, {database: 'testdb'})
+          var category = model('categories', categoriesSchema.fields, null, {database: 'testdb', compose: true})
           category.compose = true
+
           var article = model('articles', articleSchema.fields, null, {database: 'testdb'})
           article.compose = true
 
@@ -1281,8 +1226,8 @@ describe('Model', function () {
 
                         article.find({ "categories.furl": "news", "categories.parent.furl": "sports" }, { compose: true }, function (err, result) {
                           result.results.length.should.eql(1)
-
                           var doc = result.results[0]
+
                           doc.categories[0].name.should.equal('Sports News')
                           doc.categories[0].parent.name.should.equal('Sports')
                           done()

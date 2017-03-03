@@ -145,10 +145,33 @@ function makeCaseInsensitive (obj, schema) {
   return newObj
 }
 
+function processFilter (query, schema) {
+  var newQuery = _.clone(query)
+
+  Object.keys(query).forEach((key) => {
+    if (typeof query[key] === 'string') {
+      switch (query[key]) {
+        case '$now':
+          newQuery[key] = Math.round(new Date().getTime() / 1000.0)
+          break
+        default:
+          newQuery[key] = query[key]
+      }
+    } else if (typeof query[key] === 'object' && query[key] !== null) {
+      newQuery[key] = processFilter(query[key], schema)
+    } else {
+      newQuery[key] = query[key]
+    }
+  })
+
+  return newQuery
+}
+
 module.exports = {
   containsNestedReferenceFields: containsNestedReferenceFields,
   convertApparentObjectIds: convertApparentObjectIds,
   getSchemaOrParent: getSchemaOrParent,
   makeCaseInsensitive: makeCaseInsensitive,
-  processReferenceFieldQuery: processReferenceFieldQuery
+  processReferenceFieldQuery: processReferenceFieldQuery,
+  processFilter: processFilter
 }

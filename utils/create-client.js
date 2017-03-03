@@ -5,7 +5,9 @@
 const Connection = require('@dadi/api').Connection
 const config = require('@dadi/api').Config
 
-const connection = Connection(config.get('auth.database'))
+const options = config.get('auth.database')
+options.auth = true
+const connection = Connection(options)
 const clientCollectionName = config.get('auth.clientCollection')
 
 const prompt = require('cli-prompt')

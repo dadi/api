@@ -20,9 +20,127 @@ DADI API provides a starting point that's further advanced than a framework. It 
 
 It is part of DADI, a suite of components covering the full development stack, built for performance and scale.
 
-## Documentation
+## Requirements
 
-Documentation can be found at the [DADI Docs site](http://docs.dadi.tech/api/).
+* MongoDB version 2.6-3.0
+* Node.js versions:
+   * 4.7.0
+   * 5.12.0
+   * 6.9.2
+
+## Getting started
+
+### Create a new API project
+
+```bash
+$ mkdir my-api-app
+$ cd my-api-app
+```
+
+### Initialise the project
+
+Running `npm init` adds a file called `package.json` to your project, allowing you to easily add dependencies to it:
+
+```bash
+$ npm init
+```
+
+### Install @dadi/api from NPM
+
+All DADI platform microservices are available from [NPM](https://www.npmjs.com/). To add *API* to your project as a dependency:
+
+```bash
+$ npm install --save @dadi/api
+```
+
+### Add an entry point
+
+You'll need an entry point for your project. We'll create a file called `index.js` and later we will start the application with `node index.js`.
+
+```bash
+$ touch index.js
+```
+
+Add the following to the new file:
+
+```js
+/**
+ *  index.js
+ */
+var app = require('@dadi/api')
+
+app.start(function() {
+  console.log('API Started')
+})
+```
+
+### Configuration
+
+API requires a configuration file specific to the application environment. For example in the production environment it will look for a file named `config.production.json`.
+
+Place configuration files in a `config` folder in your application root, for example `config/config.development.json`. Full configuration documentation can be found at http://docs.dadi.tech/api/getting-started/configuration/.
+
+**Sample configuration**
+
+```json
+{
+  "app": {
+    "name": "Your API Name"
+  },
+  "server": {
+    "host": "127.0.0.1",
+    "port": 3000
+  },
+  "database": {
+    "hosts": [
+      {
+        "host": "127.0.0.1",
+        "port": 27017
+      }
+    ],
+    "database": "dadi-api"
+  },
+  "auth": {
+    "tokenUrl": "/token",
+    "tokenTtl": 3600,
+    "clientCollection": "clientStore",
+    "tokenCollection": "tokenStore",
+    "database": {
+      "hosts": [
+        {
+          "host": "127.0.0.1",
+          "port": 27017
+        }
+      ],
+      "database": "dadi-api-auth"
+    }
+  },
+  "paths": {
+    "collections": "workspace/collections",
+    "endpoints": "workspace/endpoints",
+    "hooks": "workspace/hooks"
+  }
+}
+```
+
+### Create the first user
+
+User accounts are required to provide an authentication layer for API. Each user has a "clientId" and a "secret". These are used to obtain access tokens for interacting with the API. See the [Authentication](http://docs.dadi.tech/api/concepts/authentication/) section of the API documentation for full details.
+
+```bash
+$ npm explore @dadi/api -- npm run create-client
+```
+
+This will start the Client Record Generator, accessing you a series of questions and finally inserting the client record into the database you have configured.
+
+To ensure the correct database is used for your environment, add an environment variable to the command:
+
+```bash
+$ NODE_ENV=production npm explore @dadi/api -- npm run create-client
+```
+
+## Links
+* [API Documentation](http://docs.dadi.tech/api/)
 
 ## Licence
 

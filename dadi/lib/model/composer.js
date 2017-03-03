@@ -1,4 +1,4 @@
-var _ = require('underscore')
+var _ = require('underscore-contrib')
 var path = require('path')
 var help = require(path.join(__dirname, '/../help'))
 
@@ -7,6 +7,7 @@ var Composer = function (model) {
 }
 
 Composer.prototype.setApiVersion = function (apiVersion) {
+  console.log('setApiVersion', apiVersion)
   this.apiVersion = apiVersion
 }
 
@@ -15,13 +16,17 @@ Composer.prototype.compose = function (obj, callback) {
 
   var docIdx = 0
 
-  _.each(obj, (doc) => {
-    this.composeOne(doc, (result) => {
-      doc = result
-      docIdx++
+  // convert objectIds to strings before cloning
+  obj.forEach((document) => {
+    document._id = document._id.toString()
+  })
 
-      if (docIdx === obj.length) {
-        return callback(obj)
+  var copy = _.snapshot(obj)
+
+  _.each(copy, (doc) => {
+    this.composeOne(doc, (result) => {
+      if (++docIdx === copy.length) {
+        return callback(copy)
       }
     })
   })
@@ -31,7 +36,7 @@ Composer.prototype.composeOne = function (doc, callback) {
   var schema = this.model.schema
 
   var composable = Object.keys(schema).filter((key) => {
-    return schema[key].type === 'Reference' && doc[key] && doc[key] !== 'undefined'
+    return schema[key].type === 'Reference' && doc[key] && doc[key] !== 'undefined' && !(doc['composed'] && doc['composed'][key])
   })
 
   if (_.isEmpty(composable)) return callback(doc)
@@ -54,7 +59,9 @@ Composer.prototype.composeOne = function (doc, callback) {
     }
 
     // add the apiVersion param
-    _.extend(query, { apiVersion: this.apiVersion })
+    if (this.apiVersion) {
+      _.extend(query, { apiVersion: this.apiVersion })
+    }
 
     // are specific fields required?
     var fields = {}

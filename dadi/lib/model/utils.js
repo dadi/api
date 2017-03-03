@@ -145,24 +145,26 @@ function makeCaseInsensitive (obj, schema) {
   return newObj
 }
 
-function removeInternalFields (obj) {
-  delete obj._id
-  delete obj.createdAt
-  delete obj.createdBy
-  delete obj.lastModifiedAt
-  delete obj.lastModifiedBy
-  delete obj.v
-  delete obj.apiVersion
+function processFilter(query, schema) {
+  var newQuery = _.clone(query)
 
-  if (obj.composed) {
-    _.each(Object.keys(obj.composed), (key) => {
-      obj[key] = obj.composed[key]
-    })
+  Object.keys(query).forEach((key) => {
+    if (typeof query[key] === 'string') {
+      switch (query[key]) {
+        case '$now':
+          newQuery[key] = Math.round(new Date().getTime()/1000.0)
+          break
+        default:
+          newQuery[key] = query[key]
+      }
+    } else if (typeof query[key] === 'object' && query[key] !== null) {
+      newQuery[key] = processFilter(query[key], schema)
+    } else {
+      newQuery[key] = query[key]
+    }
+  })
 
-    delete obj.composed
-  }
-
-  return obj
+  return newQuery
 }
 
 module.exports = {
@@ -171,5 +173,5 @@ module.exports = {
   getSchemaOrParent: getSchemaOrParent,
   makeCaseInsensitive: makeCaseInsensitive,
   processReferenceFieldQuery: processReferenceFieldQuery,
-  removeInternalFields: removeInternalFields
+  processFilter: processFilter
 }

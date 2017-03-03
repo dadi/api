@@ -7,7 +7,7 @@ var tokenStore = require(path.join(__dirname, '/tokenStore'))()
 
 var clientCollectionName = config.get('auth.clientCollection')
 var dbOptions = { auth: true, database: config.get('auth.database'), collection: clientCollectionName }
-var connection = Connection(dbOptions, config.get('auth.datastore'))
+var connection = Connection(dbOptions, null, config.get('auth.datastore'))
 
 /**
  * Generate a token and test that it doesn't already exist in the token store.
@@ -41,6 +41,15 @@ module.exports.generate = function (req, res, next) {
     database.find(credentials, clientCollectionName).then((results) => {
       var client = results[0]
 
+      // no client found matchibg the credentials
+      // return 401 Unauthorized
+      if (!client) {
+        var error = new Error('Invalid Credentials')
+        error.statusCode = 401
+        res.setHeader('WWW-Authenticate', 'Bearer, error="invalid_credentials", error_description="Invalid credentials supplied"')
+        return next(error)
+      }
+
       // Generate token
       getToken((returnedToken) => {
         // Save token
@@ -62,6 +71,8 @@ module.exports.generate = function (req, res, next) {
           return res.end(json)
         })
       })
+    }).catch((err) => {
+      return next(err)
     })
   }
 

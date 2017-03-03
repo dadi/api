@@ -81,7 +81,7 @@ Store.prototype.set = function (token, value, done) {
 Store.prototype.connect = function () {
   this.storeCollectionName = config.get('auth.tokenCollection')
   var dbOptions = { auth: true, database: config.get('auth.database'), collection: this.storeCollectionName }
-  this.connection = Connection(dbOptions, config.get('auth.datastore'))
+  this.connection = Connection(dbOptions, null, config.get('auth.datastore'))
 }
 
 module.exports = function () {

@@ -13,6 +13,7 @@ implements methods corresponding to the HTTP methods it needs to support
 
 */
 var _ = require('underscore')
+var debug = require('debug')('api:controller')
 var path = require('path')
 var url = require('url')
 
@@ -216,6 +217,8 @@ Controller.prototype.post = function (req, res, next) {
   // we still get a valid handle on the model name
   // for clearing the cache
   pathname = pathname.replace('/' + req.params.id, '')
+
+  debug('POST %s %o', pathname, req.params)
 
   // flush cache for POST requests
   help.clearCache(pathname, (err) => {

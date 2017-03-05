@@ -1,7 +1,7 @@
 <img src="http://52.209.207.148/assets/products/dadi-api-full.png" alt="DADI API" height="65"/>
 
 [![npm (scoped)](https://img.shields.io/npm/v/@dadi/api.svg?maxAge=10800&style=flat-square)](https://www.npmjs.com/package/@dadi/api)
-[![coverage](https://img.shields.io/badge/coverage-86%25-yellow.svg?style=flat-square)](https://github.com/dadi/api)
+[![coverage](https://img.shields.io/badge/coverage-85%25-yellow.svg?style=flat-square)](https://github.com/dadi/api)
 [![Build Status](https://travis-ci.org/dadi/api.svg?branch=master)](https://travis-ci.org/dadi/api)
 [![JavaScript Style Guide](https://img.shields.io/badge/code%20style-standard-brightgreen.svg?style=flat-square)](http://standardjs.com/)
 [![semantic-release](https://img.shields.io/badge/%20%20%F0%9F%93%A6%F0%9F%9A%80-semantic--release-e10079.svg?style=flat-square)](https://github.com/semantic-release/semantic-release)
@@ -172,7 +172,7 @@ GNU General Public License for more details.
 
 The GNU General Public License (GPL) is available at
 http://www.gnu.org/licenses/gpl-3.0.en.html.<br />
-A copy can be found in the file AGPL.md distributed with
+A copy can be found in the file GPL.md distributed with
 these files.
 
 This copyright notice MUST APPEAR in all copies of the product!

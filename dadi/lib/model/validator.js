@@ -124,7 +124,14 @@ function _validate (field, schema, key) {
   if (schema.hasOwnProperty('validation')) {
     var validationObj = schema.validation
 
-    if (validationObj.hasOwnProperty('regex') && validationObj.regex.hasOwnProperty('pattern') && !(new RegExp(validationObj.regex.pattern).test(field))) return schema.message || 'should match the pattern ' + validationObj.regex.pattern
+    if (validationObj.regex && validationObj.regex.pattern) {
+      var flags = typeof validationObj.regex.flags === 'string' ? validationObj.regex.flags : ''
+      var regexp = new RegExp(validationObj.regex.pattern, flags)
+
+      if (!regexp.test(field)) {
+        return schema.message || 'should match the pattern ' + validationObj.regex.pattern
+      }
+    }
 
     if (validationObj.hasOwnProperty('minLength') && field.toString().length < Number(validationObj.minLength)) return schema.message || 'is too short'
     if (validationObj.hasOwnProperty('maxLength') && field.toString().length > Number(validationObj.maxLength)) return schema.message || 'is too long'

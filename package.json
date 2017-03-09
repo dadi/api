@@ -35,7 +35,7 @@
     "parse-comments": "0.4.3",
     "path-to-regexp": "~1.7.0",
     "q": "^1.4.1",
-    "request": "2.79.0",
+    "request": "2.81.0",
     "sha1": "latest",
     "stack-trace": "latest",
     "streamifier": "^0.1.1",

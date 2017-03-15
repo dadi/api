@@ -8,6 +8,7 @@ var connection = require(path.join(__dirname, '/connection'))
 var formatError = require('@dadi/format-error')
 var Validator = require(path.join(__dirname, '/validator'))
 var History = require(path.join(__dirname, '/history'))
+var Search = require(path.join(__dirname, '/search'))
 var Composer = require(path.join(__dirname, '/../composer')).Composer
 var Hook = require(path.join(__dirname, '/hook'))
 var queryUtils = require(path.join(__dirname, '/utils'))
@@ -60,6 +61,15 @@ var Model = function (name, schema, conn, settings, database) {
     // if no value is specified, use 'History' suffix by default
     this.revisionCollection = (this.settings.revisionCollection ? this.settings.revisionCollection : this.name + 'History')
   }
+
+  // setup search index if enabled. Default: false
+  this.indexSearch = this.settings.indexSearch || false
+
+  if (this.indexSearch) {
+    this.search = new Search(this)
+  }
+
+
 
 /*
 "index": [
@@ -855,6 +865,11 @@ Model.prototype.update = function (query, update, internals, done, req) {
 
           // increment document revision number
           incrementRevisionNumber(updatedDocs)
+
+          // Index document
+          if (this.search && updatedDocs.length) {
+            this.search.index(updatedDocs)
+          }
 
           // for each of the updated documents, create
           // a history revision for it

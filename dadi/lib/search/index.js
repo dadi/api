@@ -1,87 +1,50 @@
-var _ = require('underscore')
-var path = require('path')
-var url = require('url')
-var help = require(path.join(__dirname, '/../help'))
-var model = require(path.join(__dirname, '/../model'))
-/*
+'use strict'
 
-Search middleware allowing cross-collection querying
 
-Search query URI format:
+const standardAnalyser = require('./analysers/standard')
 
-http://host[:port]/version/search?collections=database/collection[,database2/collection2,...[,databaseN/collectionN]]&query={"title":{"$regex":"brother"}}
+const analysers = {
+  standard_analyser: new standardAnalyser()
+}
 
-Example search query:
+const defaultAnalyser = analysers.standard_analyser
 
-http://api.example.com/1.0/search?collections=library/books,library/films&query={"title":{"$regex":"brother"}}
+const Search = function (_id, fields, doc) {
+  this.fields = fields
+  this.doc = doc
+  this._id = _id
+}
 
-*/
-module.exports = function (server) {
-  server.app.use('/:version/search', function (req, res, next) {
-    // sorry, we only process GET requests at this endpoint
-    var method = req.method && req.method.toLowerCase()
-    if (method !== 'get') {
-      return next()
-    }
+Search.prototype.get = function () {
 
-    var path = url.parse(req.url, true)
-    var options = path.query
+  Object.keys(this.doc).forEach(docKey => {
+    let useDefault = typeof this.fields[docKey] === 'boolean' || (typeof this.fields[docKey] === 'object' && !this.fields[docKey].analyser)
+    let analyser = useDefault ? defaultAnalyser : (analysers[this.fields[docKey].analyser] || defaultAnalyser)
 
-    // no collection and no query params
-    if (!(options.collections && options.query)) {
-      return help.sendBackJSON(400, res, next)(null, {'error': 'Bad Request'})
-    }
+    // Analysers can sometimes build accumulative results, so we simply pass to the analyser each time to let the analyser make that decision
+    analyser.add(docKey, this.doc[docKey])
+    // console.log(analysed)
+    // if (typeof fields[docKey] === 'boolean') {
+      // Set to true, use default
+    // } else if (typeof fields[docKey] === 'object') {
 
-    // split the collections param
-    var collections = options.collections.split(',')
+    // }
+  })
+  this.results()
+}
 
-    // extract the query from the querystring
-    var query = help.parseQuery(options.query)
-
-    // determine API version
-    var apiVersion = path.pathname.split('/')[1]
-
-    // no collections specfied
-    if (collections.length === 0) {
-      return help.sendBackJSON(400, res, next)(null, {'error': 'Bad Request'})
-    }
-
-    var results = {}
-    var idx = 0
-
-    _.each(collections, function (collection) {
-      // get the database and collection name from the
-      // collection parameter
-      var parts = collection.split('/')
-      var database, name, mod
-
-      query.apiVersion = apiVersion
-
-      if (_.isArray(parts) && parts.length > 1) {
-        database = parts[0]
-        name = parts[1]
-        mod = model(name, null, null, database)
-      }
-
-      if (mod) {
-        // query!
-        mod.find(query, function (err, docs) {
-          if (err) {
-            return help.sendBackJSON(500, res, next)(err)
-          }
-
-          // add data to final results array, keyed
-          // on collection name
-          results[name] = docs
-
-          idx++
-
-          // send back data
-          if (idx === collections.length) {
-            return help.sendBackJSON(200, res, next)(err, results)
-          }
-        })
-      }
-    })
+Search.prototype.results = function () {
+  return Object.keys(analysers).map(key => {
+    return analysers[key].results(this._id)
   })
 }
+
+// Search.prototype.find = function () {
+
+// }
+
+module.exports = function (_id, fields, doc) {
+  return new Search(_id, fields, doc)
+}
+
+module.exports.Search = Search

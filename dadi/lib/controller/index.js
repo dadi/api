@@ -18,6 +18,7 @@ var url = require('url')
 
 var config = require(path.join(__dirname, '/../../../config'))
 var help = require(path.join(__dirname, '/../help'))
+var SearchHelper = require(path.join(__dirname, '/../search'))
 
 // helpers
 var sendBackJSON = help.sendBackJSON
@@ -36,6 +37,7 @@ function ApiError (status, code, message, title) {
 var Controller = function (model) {
   if (!model) throw new Error('Model instance required')
   this.model = model
+  this.searchHelper = new SearchHelper(model)
 }
 
 Controller.prototype.get = function (req, res, next) {
@@ -62,6 +64,13 @@ Controller.prototype.prepareQueryOptions = function (options) {
   var response = { errors: [] }
   var queryOptions = {}
   var settings = this.model.settings || {}
+
+  if (options.search) {
+    let searchQuery = parseQuery(options.search)
+    if (searchQuery.value) {
+      queryOptions.search = searchQuery.value
+    }
+  }
 
   if (options.page) {
     options.page = parseInt(options.page)
@@ -168,6 +177,8 @@ Controller.prototype.prepareQuery = function (req) {
   var options = path.query
   var query = parseQuery(options.filter)
 
+  var search = parseQuery(options.search)
+
   // remove filter params that don't exist in
   // the model schema
   if (!_.isArray(query)) {
@@ -184,6 +195,10 @@ Controller.prototype.prepareQuery = function (req) {
     }, this)
   }
 
+  if (search && search.value) {
+    _.extend(query, this.searchHelper.buildQuery(search.value))
+  }
+
   // if id is present in the url, add to the query
   if (req.params && req.params.id) {
     _.extend(query, { _id: req.params.id })
@@ -198,7 +213,6 @@ Controller.prototype.prepareQuery = function (req) {
   if (typeof this.model.settings.defaultFilters === 'object') {
     _.extend(query, this.model.settings.defaultFilters)
   }
-
   return query
 }
 

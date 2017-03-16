@@ -26,7 +26,6 @@ var help = require(path.join(__dirname, '/help'))
 var log = require('@dadi/logger')
 var model = require(path.join(__dirname, '/model'))
 var monitor = require(path.join(__dirname, '/monitor'))
-var search = require(path.join(__dirname, '/search'))
 
 var config = require(path.join(__dirname, '/../../config'))
 var configPath = path.resolve(config.configPath())
@@ -187,9 +186,6 @@ Server.prototype.start = function (done) {
 
   // caching layer
   cache(self).init()
-
-  // search layer
-  search(self)
 
   // start listening
   var server = this.server = app.listen()

@@ -1,24 +1,25 @@
 'use strict'
 
 const path = require('path')
+const _ = require('underscore')
 
 const SearchAnalyser = require(path.join(__dirname, '/../search'))
 
 const Search = function (model) {
   this.model = model
+  this.analyser = new SearchAnalyser(model)
 }
 
-Search.prototype.index = function (docs) {
-  let fields = this.getSearchableFields()
-
-  docs.map(doc => {
-    let reducedDoc = this.reduceToSearchableFields(doc, fields)
-    let analysed = new SearchAnalyser(doc._id, fields, reducedDoc).get()
-    // console.log(analysed)
-  })
+Search.prototype.analyse = function (docs, terms) {
+  let fields = this.getFieldSearch()
+  if (!docs) return
+  return docs.map(doc => {
+    let reducedDoc = this.reduceToSearchableFields(doc)
+    return this.analyser.terms(terms).analyse(fields, reducedDoc)
+  }) // Then sort
 }
 
-Search.prototype.getSearchableFields = function() {
+Search.prototype.getFieldSearch = function () {
   return Object.assign({}, ...Object.keys(this.model.schema).filter(field => {
     return typeof this.model.schema[field].search !== 'undefined'
   }).map(field => {
@@ -26,9 +27,9 @@ Search.prototype.getSearchableFields = function() {
   }))
 }
 
-Search.prototype.reduceToSearchableFields = function(doc, fields) {
+Search.prototype.reduceToSearchableFields = function (doc) {
   return Object.assign({}, ...Object.keys(doc).filter(field => {
-    return typeof fields[field] !== 'undefined'
+    return _.contains(this.analyser.fields, field)
   }).map(field => {
     return {[field]: doc[field]}
   }))

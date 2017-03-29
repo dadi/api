@@ -4,6 +4,60 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## [1.15.5] (2017-03-30)
+
+### Changed
+* [#226](https://github.com/dadi/api/issues/226): historyFilters corrupt model filters
+
+## [1.15.4] (2017-02-15)
+
+### Changed
+* pass auth indicator to connection ([1d3ebed](https://github.com/dadi/api/commit/1d3ebed))
+
+
+## [1.15.3] (2017-02-15)
+
+### Changed
+
+* [#200](https://github.com/dadi/api/issues/200): explicitly add "node" command to create-client script ([8394355](https://github.com/dadi/api/commit/8394355))
+
+
+## [1.15.2] (2017-01-31)
+
+### Changed
+
+* select non-null fields for composition ([21e48bf](https://github.com/dadi/api/commit/21e48bf))
+
+## [1.15.1] (2017-01-23)
+
+### Changed
+
+* revert mongodb version to allow full 1.4 range ([0d2398c](https://github.com/dadi/api/commit/0d2398c))
+
+## [1.15.0] (2017-01-18)
+
+### Added
+
+* add busboy dependency ([3eda9fe](https://github.com/dadi/api/commit/3eda9fe))
+* add configurable media collection name ([c038a58](https://github.com/dadi/api/commit/c038a58))
+* add error handling to remaining hook types ([79df695](https://github.com/dadi/api/commit/79df695))
+* add redirectPort to config ([e1d6c58](https://github.com/dadi/api/commit/e1d6c58))
+* add Redis cache tests back after a long time in exile ([5f3618e](https://github.com/dadi/api/commit/5f3618e))
+* improve SSL handling ([80073eb](https://github.com/dadi/api/commit/80073eb))
+* move media upload to new controller ([12cd39c](https://github.com/dadi/api/commit/12cd39c))
+
+### Changed
+
+* [#164](https://github.com/dadi/api/issues/164): use platform agnostic approach to directory separators ([d4e49b2](https://github.com/dadi/api/commit/d4e49b2))
+* add current year to copyright notice ([1e5be89](https://github.com/dadi/api/commit/1e5be89))
+* missing dependencies ([3a4dd51](https://github.com/dadi/api/commit/3a4dd51))
+* remove unnecessary escape chars ([73aad00](https://github.com/dadi/api/commit/73aad00))
+* remove unused variable ([4b741e3](https://github.com/dadi/api/commit/4b741e3))
+* resolve ObjectIDs in batch delete query ([3d407f9](https://github.com/dadi/api/commit/3d407f9))
+* send error response if path not specified ([c14edf2](https://github.com/dadi/api/commit/c14edf2))
+* use platform agnostic path separator ([cfec695](https://github.com/dadi/api/commit/cfec695))
+
+
 ## [1.14.1] (2016-12-28)
 ### Changed
 * [#164](https://github.com/dadi/api/issues/164): Modified collection and endpoint loading to use the current platform's directory separator, rather than assuming '/', which fails under Windows.

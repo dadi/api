@@ -636,9 +636,9 @@ describe('Model validator', function () {
                 type: 'String',
                 required: false,
                 validation: {
-                regex: {
-                  pattern: /^abc/
-                }
+                  regex: {
+                    pattern: /^abc/
+                  }
                 }
               }
             }

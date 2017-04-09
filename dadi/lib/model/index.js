@@ -211,6 +211,22 @@ Model.prototype.create = function (obj, internals, done, req) {
     doc = self.convertDateTimeForSave(self.schema, doc)
   })
 
+  // Pre-composed References
+  this.composer.setApiVersion(internals.apiVersion)
+
+  obj.forEach((doc) => {
+    this.composer.createFromComposed(doc, req, (err, result) => {
+      console.log('< createFromComposed', err, result)
+      if (err) {
+        console.log(err.json)
+
+        return done(err.json)
+      }
+
+      doc = result
+    })
+  })
+
   var startInsert = (database) => {
     // Running `beforeCreate` hooks
     if (this.settings.hooks && this.settings.hooks.beforeCreate) {
@@ -254,22 +270,25 @@ Model.prototype.create = function (obj, internals, done, req) {
     database.collection(this.name).insert(obj, (err, doc) => {
       if (err) return done(err)
 
-      var results = {
-        results: doc
-      }
+      var results = {}
+      console.log('> GO COMPOSE')
+      this.composer.compose(doc, (obj) => {
+        console.log(obj)
+        results.results = obj
 
-      // apply any existing `afterCreate` hooks
-      if (this.settings.hasOwnProperty('hooks') && (typeof this.settings.hooks.afterCreate === 'object')) {
-        obj.forEach((doc) => {
-          this.settings.hooks.afterCreate.forEach((hookConfig, index) => {
-            var hook = new Hook(this.settings.hooks.afterCreate[index], 'afterCreate')
+        // apply any existing `afterCreate` hooks
+        if (this.settings.hasOwnProperty('hooks') && (typeof this.settings.hooks.afterCreate === 'object')) {
+          obj.forEach((doc) => {
+            this.settings.hooks.afterCreate.forEach((hookConfig, index) => {
+              var hook = new Hook(this.settings.hooks.afterCreate[index], 'afterCreate')
 
-            return hook.apply(doc, this.schema, this.name)
+              return hook.apply(doc, this.schema, this.name)
+            })
           })
-        })
-      }
+        }
 
-      return done(null, results)
+        return done(null, results)
+      })
     })
   }
 
@@ -425,7 +444,7 @@ Model.prototype.find = function (query, options, done) {
     if (doneQueue.length > 0) {
       // Assign err, data to the first function
       doneQueue.splice(0, 0, async.apply(assignVariables, err, data))
-      // Run the queue tasks
+      // Run the req.query.ue tasks
       async.waterfall(doneQueue, function (arg1, err, data) {
         // Return data
         return done(err, data)
@@ -809,6 +828,8 @@ Model.prototype.update = function (query, update, internals, done, req) {
     _.extend(update, internals)
   }
 
+  this.composer.setApiVersion(internals.apiVersion)
+
   var setUpdate = {$set: update}
   var updateOptions = {
     multi: true
@@ -879,12 +900,12 @@ Model.prototype.update = function (query, update, internals, done, req) {
           } else {
             var query = {
               _id: { '$in': _.map(updatedDocs, (doc) => {
-                return doc._id.toString()
-              })
+                  return doc._id.toString()
+                })
               }
             }
 
-            this.find(query, {}, (err, doc) => {
+            this.find(query, { compose: true }, (err, doc) => {
               if (err) return done(err)
 
               results = doc

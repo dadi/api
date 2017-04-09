@@ -121,20 +121,26 @@ function _parseDocument (obj, schema, response) {
 }
 
 function _validate (field, schema, key) {
-  if (schema.hasOwnProperty('validation')) {
+  if (schema.validation) {
     var validationObj = schema.validation
 
     if (validationObj.regex && validationObj.regex.pattern) {
-      var flags = typeof validationObj.regex.flags === 'string' ? validationObj.regex.flags : ''
-      var regexp = new RegExp(validationObj.regex.pattern, flags)
+      var pattern = validationObj.regex.pattern
 
-      if (!regexp.test(field)) {
+      if (Object.prototype.toString.call(pattern) === '[object RegExp]') {
+        pattern = pattern.source
+      }
+
+      var flags = typeof validationObj.regex.flags === 'string' ? validationObj.regex.flags : ''
+      var re = new RegExp(pattern, flags)
+
+      if (!re.test(field)) {
         return schema.message || 'should match the pattern ' + validationObj.regex.pattern
       }
     }
 
-    if (validationObj.hasOwnProperty('minLength') && field.toString().length < Number(validationObj.minLength)) return schema.message || 'is too short'
-    if (validationObj.hasOwnProperty('maxLength') && field.toString().length > Number(validationObj.maxLength)) return schema.message || 'is too long'
+    if (validationObj.minLength && field.toString().length < Number(validationObj.minLength)) return schema.message || 'is too short'
+    if (validationObj.maxLength && field.toString().length > Number(validationObj.maxLength)) return schema.message || 'is too long'
   }
 
   var primitives = ['String', 'Number', 'Boolean', 'Array', 'Date', 'DateTime']

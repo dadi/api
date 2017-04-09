@@ -855,8 +855,6 @@ Model.prototype.update = function (query, update, internals, done, req) {
             return done(err)
           }
 
-          var results = {}
-
           var incrementRevisionNumber = (docs) => {
             _.each(docs, (doc) => {
               database.collection(this.name).findAndModify(
@@ -883,34 +881,31 @@ Model.prototype.update = function (query, update, internals, done, req) {
           // increment document revision number
           incrementRevisionNumber(updatedDocs)
 
+          var getDocumentsForResponse = (done) => {
+            var query = {
+              _id: { '$in': _.map(updatedDocs, (doc) => { return doc._id.toString() }) }
+            }
+
+            this.find(query, { compose: true }, (err, results) => {
+              if (err) return done(err)
+
+              // apply any existing `afterUpdate` hooks
+              triggerAfterUpdateHook(results.results)
+
+              done(null, results)
+            })
+          }
+
           // for each of the updated documents, create
           // a history revision for it
           if (this.history && updatedDocs.length > 0) {
             this.history.createEach(updatedDocs, this, (err, docs) => {
               if (err) return done(err)
 
-              results.results = docs
-
-              // apply any existing `afterUpdate` hooks
-              triggerAfterUpdateHook(docs)
-
-              done(null, results)
+              return getDocumentsForResponse(done)
             })
           } else {
-            var query = {
-              _id: { '$in': _.map(updatedDocs, (doc) => { return doc._id.toString() }) }
-            }
-
-            this.find(query, { compose: true }, (err, doc) => {
-              if (err) return done(err)
-
-              results = doc
-
-              // apply any existing `afterUpdate` hooks
-              triggerAfterUpdateHook(doc)
-
-              done(null, results)
-            })
+            return getDocumentsForResponse(done)
           }
         })
       }

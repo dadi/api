@@ -140,8 +140,8 @@ Validator.prototype._validate = function (field, schema, key) {
       var flags = typeof validationObj.regex.flags === 'string' ? validationObj.regex.flags : ''
       var re = new RegExp(pattern, flags)
 
-      if (!re.test(field)) {
-        return schema.message || 'should match the pattern ' + validationObj.regex.pattern
+      if (re.exec(field) === null) {
+        return schema.message || 'should match the pattern ' + pattern
       }
     }
 

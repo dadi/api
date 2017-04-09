@@ -1,36 +1,36 @@
-var should = require('should');
-var Validator = require(__dirname + '/../../../dadi/lib/model/validator');
-var help = require(__dirname + '/../help');
+var should = require('should')
+var Validator = require(__dirname + '/../../../dadi/lib/model/validator')
+var help = require(__dirname + '/../help')
 
 describe('Model validator', function () {
   describe('`query` method', function () {
     it('should exist', function (done) {
-      var validator = new Validator();
-      validator.query.should.be.Function;
-      done();
-    });
+      var validator = new Validator()
+      validator.query.should.be.Function
+      done()
+    })
 
     it('should return validation object', function (done) {
-      var validator = new Validator();
-      var val = validator.query({$where: 'throw new Error("Insertion Attack!")'});
+      var validator = new Validator()
+      var val = validator.query({$where: 'throw new Error("Insertion Attack!")'})
 
-      val.success.should.be.false;
-      val.errors.length.should.equal(1);
-      val.errors[0].message.should.equal('Bad query');
+      val.success.should.be.false
+      val.errors.length.should.equal(1)
+      val.errors[0].message.should.equal('Bad query')
 
-      val = validator.query({});
-      val.success.should.be.true;
+      val = validator.query({})
+      val.success.should.be.true
 
-      done();
-    });
-  });
+      done()
+    })
+  })
 
   describe('`schema` method', function () {
     it('should exist', function (done) {
-      var validator = new Validator();
-      validator.schema.should.be.Function;
-      done();
-    });
+      var validator = new Validator()
+      validator.schema.should.be.Function
+      done()
+    })
 
     describe('validation object', function () {
       it('should inform of bad type', function (done) {
@@ -41,15 +41,15 @@ describe('Model validator', function () {
               required: true
             }
           }
-        });
-        var val = validator.schema({field1: 123});
-        val.success.should.be.false;
-        val.errors.length.should.equal(1);
-        val.errors[0].field.should.equal('field1');
-        val.errors[0].message.should.equal('is wrong type');
+        })
+        var val = validator.schema({field1: 123})
+        val.success.should.be.false
+        val.errors.length.should.equal(1)
+        val.errors[0].field.should.equal('field1')
+        val.errors[0].message.should.equal('is wrong type')
 
-        done();
-      });
+        done()
+      })
 
       it('should throw error if `limit` is used in schema', function (done) {
         var validator = new Validator({
@@ -60,11 +60,11 @@ describe('Model validator', function () {
               limit: 9
             }
           }
-        });
+        })
 
-        should.throws(function() { validator.schema({field1: '1234567890'}) })
-        done();
-      });
+        should.throws(function () { validator.schema({field1: '1234567890'}) })
+        done()
+      })
 
       it('should throw error if `validationRule` is used in schema', function (done) {
         var validator = new Validator({
@@ -75,11 +75,11 @@ describe('Model validator', function () {
               validationRule: '/a-z/'
             }
           }
-        });
+        })
 
-        should.throws(function() { validator.schema({field1: '1234567890'}) })
-        done();
-      });
+        should.throws(function () { validator.schema({field1: '1234567890'}) })
+        done()
+      })
 
       describe('DateTime', function () {
         it('should inform of invalid DateTime', function (done) {
@@ -90,15 +90,15 @@ describe('Model validator', function () {
                 required: false
               }
             }
-          });
-          var val = validator.schema({field1: 'a123'});
-          val.success.should.be.false;
-          val.errors.length.should.equal(1);
-          val.errors[0].field.should.equal('field1');
-          val.errors[0].message.should.equal('is not a valid DateTime');
+          })
+          var val = validator.schema({field1: 'a123'})
+          val.success.should.be.false
+          val.errors.length.should.equal(1)
+          val.errors[0].field.should.equal('field1')
+          val.errors[0].message.should.equal('is not a valid DateTime')
 
-          done();
-        });
+          done()
+        })
 
         it('should allow passing Strings representing a date', function (done) {
           var validator = new Validator({
@@ -109,7 +109,7 @@ describe('Model validator', function () {
               field4: { type: 'DateTime', required: false },
               field5: { type: 'DateTime', required: false }
             }
-          });
+          })
           var val = validator.schema(
             {
               field1: '09/12/2016',
@@ -118,10 +118,10 @@ describe('Model validator', function () {
               field4: '2013-02-08T09:30:26.123+07:00',
               field5: 'Jan 1 2001'
             }
-          );
-          val.success.should.be.true;
-          done();
-        });
+          )
+          val.success.should.be.true
+          done()
+        })
 
         it('should allow passing a Number representing a timestamp in milliseconds', function (done) {
           var validator = new Validator({
@@ -131,11 +131,11 @@ describe('Model validator', function () {
                 required: false
               }
             }
-          });
-          var val = validator.schema({field1: 1461820582000});
-          val.success.should.be.true;
-          done();
-        });
+          })
+          var val = validator.schema({field1: 1461820582000})
+          val.success.should.be.true
+          done()
+        })
 
         it('should allow passing a Number representing a timestamp in seconds', function (done) {
           var validator = new Validator({
@@ -145,11 +145,11 @@ describe('Model validator', function () {
                 required: false
               }
             }
-          });
-          var val = validator.schema({field1: 1461820582});
-          val.success.should.be.true;
-          done();
-        });
+          })
+          var val = validator.schema({field1: 1461820582})
+          val.success.should.be.true
+          done()
+        })
       })
 
       describe('ObjectID', function () {
@@ -161,15 +161,15 @@ describe('Model validator', function () {
                 required: false
               }
             }
-          });
-          var val = validator.schema({field1: 123});
-          val.success.should.be.false;
-          val.errors.length.should.equal(1);
-          val.errors[0].field.should.equal('field1');
-          val.errors[0].message.should.equal('is wrong type');
+          })
+          var val = validator.schema({field1: 123})
+          val.success.should.be.false
+          val.errors.length.should.equal(1)
+          val.errors[0].field.should.equal('field1')
+          val.errors[0].message.should.equal('is wrong type')
 
-          done();
-        });
+          done()
+        })
 
         it('should inform of invalid ObjectID', function (done) {
           var validator = new Validator({
@@ -179,15 +179,15 @@ describe('Model validator', function () {
                 required: false
               }
             }
-          });
-          var val = validator.schema({field1: '123'});
-          val.success.should.be.false;
-          val.errors.length.should.equal(1);
-          val.errors[0].field.should.equal('field1');
-          val.errors[0].message.should.equal('is not a valid ObjectID');
+          })
+          var val = validator.schema({field1: '123'})
+          val.success.should.be.false
+          val.errors.length.should.equal(1)
+          val.errors[0].field.should.equal('field1')
+          val.errors[0].message.should.equal('is not a valid ObjectID')
 
-          done();
-        });
+          done()
+        })
 
         it('should allow valid ObjectID', function (done) {
           var validator = new Validator({
@@ -197,12 +197,12 @@ describe('Model validator', function () {
                 required: false
               }
             }
-          });
-          var val = validator.schema({field1: '55cb1658341a0a804d4dadcc'});
-          val.success.should.be.true;
+          })
+          var val = validator.schema({field1: '55cb1658341a0a804d4dadcc'})
+          val.success.should.be.true
 
-          done();
-        });
+          done()
+        })
 
         it('should allow array of valid ObjectIDs', function (done) {
           var validator = new Validator({
@@ -212,12 +212,12 @@ describe('Model validator', function () {
                 required: false
               }
             }
-          });
-          var val = validator.schema({field1: ['55cb1658341a0a804d4dadcc'] });
-          val.success.should.be.true;
+          })
+          var val = validator.schema({field1: ['55cb1658341a0a804d4dadcc'] })
+          val.success.should.be.true
 
-          done();
-        });
+          done()
+        })
 
         it('should not allow array with invalid string ObjectIDs', function (done) {
           var validator = new Validator({
@@ -227,12 +227,12 @@ describe('Model validator', function () {
                 required: false
               }
             }
-          });
-          var val = validator.schema({field1: ['55cb1658341a0a804d4dadcc', '55cb1658341a0a8'] });
-          val.success.should.be.false;
+          })
+          var val = validator.schema({field1: ['55cb1658341a0a804d4dadcc', '55cb1658341a0a8'] })
+          val.success.should.be.false
 
-          done();
-        });
+          done()
+        })
 
         it('should not allow array with invalid ObjectIDs', function (done) {
           var validator = new Validator({
@@ -242,13 +242,13 @@ describe('Model validator', function () {
                 required: false
               }
             }
-          });
-          var val = validator.schema({field1: [12345, 566788999] });
-          val.success.should.be.false;
+          })
+          var val = validator.schema({field1: [12345, 566788999] })
+          val.success.should.be.false
 
-          done();
-        });
-      });
+          done()
+        })
+      })
 
       it('should allow Reference types', function (done) {
         var validator = new Validator({
@@ -258,13 +258,13 @@ describe('Model validator', function () {
               required: false
             }
           }
-        });
+        })
 
-        var val = validator.schema({field1: '55cb1658341a0a804d4dadcc'});
-        val.success.should.be.true;
+        var val = validator.schema({field1: '55cb1658341a0a804d4dadcc'})
+        val.success.should.be.true
 
-        done();
-      });
+        done()
+      })
 
       describe('Missing/Blank', function () {
         it('should inform of missing field', function (done) {
@@ -279,15 +279,15 @@ describe('Model validator', function () {
                 required: false
               }
             }
-          });
-          var val = validator.schema({field2: 123});
-          val.success.should.be.false;
-          val.errors.length.should.equal(1);
-          val.errors[0].field.should.equal('field1');
-          val.errors[0].message.should.equal('must be specified');
+          })
+          var val = validator.schema({field2: 123})
+          val.success.should.be.false
+          val.errors.length.should.equal(1)
+          val.errors[0].field.should.equal('field1')
+          val.errors[0].message.should.equal('must be specified')
 
-          done();
-        });
+          done()
+        })
 
         it('should inform of blank field', function (done) {
           var validator = new Validator({
@@ -301,15 +301,15 @@ describe('Model validator', function () {
                 required: false
               }
             }
-          });
-          var val = validator.schema({field1: '', field2: 123});
-          val.success.should.be.false;
-          val.errors.length.should.equal(1);
-          val.errors[0].field.should.equal('field1');
-          val.errors[0].message.should.equal('can\'t be blank');
+          })
+          var val = validator.schema({field1: '', field2: 123})
+          val.success.should.be.false
+          val.errors.length.should.equal(1)
+          val.errors[0].field.should.equal('field1')
+          val.errors[0].message.should.equal('can\'t be blank')
 
-          done();
-        });
+          done()
+        })
 
         it('should inform of blank field on update', function (done) {
           var validator = new Validator({
@@ -323,15 +323,15 @@ describe('Model validator', function () {
                 required: false
               }
             }
-          });
-          var val = validator.schema({field1: '', field2: 123}, true); // update == true
-          val.success.should.be.false;
-          val.errors.length.should.equal(1);
-          val.errors[0].field.should.equal('field1');
-          val.errors[0].message.should.equal('can\'t be blank');
+          })
+          var val = validator.schema({field1: '', field2: 123}, true) // update == true
+          val.success.should.be.false
+          val.errors.length.should.equal(1)
+          val.errors[0].field.should.equal('field1')
+          val.errors[0].message.should.equal('can\'t be blank')
 
-          done();
-        });
+          done()
+        })
 
         it('should allow missing field on update', function (done) {
           var validator = new Validator({
@@ -345,13 +345,13 @@ describe('Model validator', function () {
                 required: false
               }
             }
-          });
+          })
 
-          var val = validator.schema({field2: 123}, true); // update == true
-          val.success.should.be.true;
+          var val = validator.schema({field2: 123}, true) // update == true
+          val.success.should.be.true
 
-          done();
-        });
+          done()
+        })
       })
 
       describe('Default', function () {
@@ -372,12 +372,12 @@ describe('Model validator', function () {
                 default: 'foo'
               }
             }
-          });
-          var val = validator.schema({field1: 'bar', field2: 123});
-          val.success.should.be.true;
+          })
+          var val = validator.schema({field1: 'bar', field2: 123})
+          val.success.should.be.true
 
-          done();
-        });
+          done()
+        })
 
         it('should not add default value if Boolean field is false', function (done) {
           var validator = new Validator({
@@ -396,15 +396,15 @@ describe('Model validator', function () {
                 default: true
               }
             }
-          });
-          var val = validator.schema({field1: 'bar', field2: 123, field3: false});
-          val.success.should.be.true;
+          })
+          var val = validator.schema({field1: 'bar', field2: 123, field3: false})
+          val.success.should.be.true
 
-          done();
-        });
+          done()
+        })
       })
 
-      describe('Mixed', function() {
+      describe('Mixed', function () {
         it('should allow Mixed fields that contain objects', function (done) {
           var validator = new Validator({
             schema: {
@@ -417,13 +417,13 @@ describe('Model validator', function () {
                 required: false
               }
             }
-          });
-          var val = validator.schema({field2: { hour: 20, minute: 30}});
-          val.success.should.be.true;
-          val.errors.length.should.equal(0);
-          done();
-        });
-      });
+          })
+          var val = validator.schema({field2: { hour: 20, minute: 30}})
+          val.success.should.be.true
+          val.errors.length.should.equal(0)
+          done()
+        })
+      })
 
       it('should inform of fields not in the schema', function (done) {
         var validator = new Validator({
@@ -437,18 +437,17 @@ describe('Model validator', function () {
               required: false
             }
           }
-        });
-        var val = validator.schema({field3: 123});
-        val.success.should.be.false;
-        val.errors.length.should.equal(1);
-        val.errors[0].field.should.equal('field3');
-        val.errors[0].message.should.equal('doesn\'t exist in the collection schema');
+        })
+        var val = validator.schema({field3: 123})
+        val.success.should.be.false
+        val.errors.length.should.equal(1)
+        val.errors[0].field.should.equal('field3')
+        val.errors[0].message.should.equal('doesn\'t exist in the collection schema')
 
-        done();
-      });
+        done()
+      })
 
       it('should inform if field is too long', function (done) {
-
         // make sure limit works for number and string that can be coerced to number
         var validator = new Validator({
           schema: {
@@ -456,7 +455,7 @@ describe('Model validator', function () {
               type: 'String',
               required: false,
               validation: {
-                maxLength: "9"
+                maxLength: '9'
               }
             },
             field2: {
@@ -466,27 +465,26 @@ describe('Model validator', function () {
               }
             }
           }
-        });
-        var val = validator.schema({field2: '1234567890'});
-        val.success.should.be.false;
-        val.errors.length.should.equal(1);
-        val.errors[0].field.should.equal('field2');
-        val.errors[0].message.should.equal('is too long');
+        })
+        var val = validator.schema({field2: '1234567890'})
+        val.success.should.be.false
+        val.errors.length.should.equal(1)
+        val.errors[0].field.should.equal('field2')
+        val.errors[0].message.should.equal('is too long')
 
-        val = validator.schema({field1: '1234567890'});
-        val.success.should.be.false;
-        val.errors.length.should.equal(1);
-        val.errors[0].field.should.equal('field1');
-        val.errors[0].message.should.equal('is too long');
+        val = validator.schema({field1: '1234567890'})
+        val.success.should.be.false
+        val.errors.length.should.equal(1)
+        val.errors[0].field.should.equal('field1')
+        val.errors[0].message.should.equal('is too long')
 
-        val = validator.schema({field1: '123456789', field2: '123456789'});
-        val.success.should.be.true;
+        val = validator.schema({field1: '123456789', field2: '123456789'})
+        val.success.should.be.true
 
-        done();
-      });
+        done()
+      })
 
       describe('minLength', function () {
-
         it('should return false if string field is to short', function (done) {
           var validator = new Validator({
             schema: {
@@ -494,23 +492,22 @@ describe('Model validator', function () {
                 type: 'String',
                 required: false,
                 validation: {
-                minLength: 4
+                  minLength: 4
                 }
               }
             }
-          });
+          })
 
-          val = validator.schema({field1: '123'});
-          val.success.should.be.false;
-          val.errors.length.should.equal(1);
-          val.errors[0].field.should.equal('field1');
-          val.errors[0].message.should.equal('is too short');
+          var val = validator.schema({field1: '123'})
+          val.success.should.be.false
+          val.errors.length.should.equal(1)
+          val.errors[0].field.should.equal('field1')
+          val.errors[0].message.should.equal('is too short')
 
-          done();
-        });
+          done()
+        })
 
         it('should return false if number field is to short', function (done) {
-
           // make sure limit works for number and string that can be coerced to number
           var validator = new Validator({
             schema: {
@@ -518,47 +515,43 @@ describe('Model validator', function () {
                 type: 'Number',
                 required: false,
                 validation: {
-                minLength: 4
+                  minLength: 4
                 }
               }
             }
-          });
+          })
 
-          val = validator.schema({field1: 123});
-          val.success.should.be.false;
-          val.errors.length.should.equal(1);
-          val.errors[0].field.should.equal('field1');
-          val.errors[0].message.should.equal('is too short');
+          var val = validator.schema({field1: 123})
+          val.success.should.be.false
+          val.errors.length.should.equal(1)
+          val.errors[0].field.should.equal('field1')
+          val.errors[0].message.should.equal('is too short')
 
-          done();
-        });
+          done()
+        })
 
         it('should return true if string field is specified length', function (done) {
-
           var validator = new Validator({
             schema: {
               field1: {
                 type: 'String',
                 required: false,
                 validation: {
-                minLength: 4
+                  minLength: 4
                 }
               }
             }
-          });
+          })
 
-          val = validator.schema({field1: '1239'});
-          val.success.should.be.true;
+          var val = validator.schema({field1: '1239'})
+          val.success.should.be.true
 
-          done();
-        });
-
-      });
+          done()
+        })
+      })
 
       describe('maxLength', function () {
-
         it('should return false if field is to long', function (done) {
-
           // make sure limit works for number and string that can be coerced to number
           var validator = new Validator({
             schema: {
@@ -566,23 +559,22 @@ describe('Model validator', function () {
                 type: 'String',
                 required: false,
                 validation: {
-                maxLength: 4
+                  maxLength: 4
                 }
               }
             }
-          });
+          })
 
-          val = validator.schema({field1: '123456789'});
-          val.success.should.be.false;
-          val.errors.length.should.equal(1);
-          val.errors[0].field.should.equal('field1');
-          val.errors[0].message.should.equal('is too long');
+          var val = validator.schema({field1: '123456789'})
+          val.success.should.be.false
+          val.errors.length.should.equal(1)
+          val.errors[0].field.should.equal('field1')
+          val.errors[0].message.should.equal('is too long')
 
-          done();
-        });
+          done()
+        })
 
         it('should return false if number field is to long', function (done) {
-
           // make sure limit works for number and string that can be coerced to number
           var validator = new Validator({
             schema: {
@@ -590,121 +582,162 @@ describe('Model validator', function () {
                 type: 'Number',
                 required: false,
                 validation: {
-                maxLength: 4
+                  maxLength: 4
                 }
               }
             }
-          });
+          })
 
-          val = validator.schema({field1: 123456778});
-          val.success.should.be.false;
-          val.errors.length.should.equal(1);
-          val.errors[0].field.should.equal('field1');
-          val.errors[0].message.should.equal('is too long');
+          var val = validator.schema({field1: 123456778})
+          val.success.should.be.false
+          val.errors.length.should.equal(1)
+          val.errors[0].field.should.equal('field1')
+          val.errors[0].message.should.equal('is too long')
 
-          done();
-        });
+          done()
+        })
 
         it('should return true if string field is specified length', function (done) {
-
           var validator = new Validator({
             schema: {
               field1: {
                 type: 'String',
                 required: false,
                 validation: {
-                maxLength: 4
+                  maxLength: 4
                 }
               }
             }
-          });
+          })
 
-          val = validator.schema({field1: '1239'});
-          val.success.should.be.true;
+          var val = validator.schema({field1: '1239'})
+          val.success.should.be.true
 
-          done();
-        });
-
-      });
+          done()
+        })
+      })
 
       describe('regex', function () {
         it('should return false if string field does not match the pattern', function (done) {
-
           var validator = new Validator({
             schema: {
               field1: {
                 type: 'String',
                 required: false,
                 validation: {
-                regex: {
-                  pattern: /^abc/
-                }
+                  regex: {
+                    pattern: /^abc/
+                  }
                 }
               }
             }
-          });
+          })
 
-          val = validator.schema({field1: '123'});
-          val.success.should.be.false;
-          val.errors.length.should.equal(1);
-          val.errors[0].field.should.equal('field1');
-          val.errors[0].message.should.equal('should match the pattern /^abc/');
+          var val = validator.schema({field1: '123'})
+          val.success.should.be.false
+          val.errors.length.should.equal(1)
+          val.errors[0].field.should.equal('field1')
+          val.errors[0].message.should.equal('should match the pattern ^abc')
 
-          done();
-        });
+          done()
+        })
 
         it('should return true if string field matches the pattern', function (done) {
-
           var validator = new Validator({
             schema: {
               field1: {
                 type: 'String',
                 required: false,
                 validation: {
-                regex: {
-                  pattern: /^abc/
-                }
+                  regex: {
+                    pattern: /^abc/
+                  }
                 }
               }
             }
-          });
+          })
 
-          val = validator.schema({field1: 'abcdef'});
-          val.success.should.be.true;
+          var val = validator.schema({field1: 'abcdef'})
+          val.success.should.be.true
 
-          done();
-        });
+          done()
+        })
+      })
 
-      });
+      it('should return true when using flags along with the pattern', function (done) {
+        var validator = new Validator({
+          "schema": {
+            "email": {
+              "type": "String",
+              "label": "Email address",
+              "message": "must be a valid email address",
+              "validation": {
+                "regex": {
+                  "pattern": "^[A-Z]{2,}",
+                  "flags": "gi"
+                }
+              }
+            }
+          }
+        })
+
+        var val = validator.schema({ email: 'abcdef123' })
+        val.success.should.be.true
+        done()
+      })
+
+      it('should return false when using flags along with the pattern', function (done) {
+        var validator = new Validator({
+          "schema": {
+            "email": {
+              "type": "String",
+              "label": "Email address",
+              "message": "must start with uppercase",
+              "validation": {
+                "regex": {
+                  "pattern": "^[A-Z]{2,}",
+                  "flags": "g"
+                }
+              }
+            }
+          }
+        })
+
+        var val = validator.schema({ email: 'abcdef123' })
+        val.success.should.be.false
+        val.errors.length.should.equal(1)
+        val.errors[0].field.should.equal('email')
+        val.errors[0].message.should.equal('must start with uppercase')
+        done()
+      })
 
       describe('regex + length', function () {
         it('should return false if string field matches the pattern but is wrong length', function (done) {
-
           var validator = new Validator({
             schema: {
               field1: {
                 type: 'String',
                 required: false,
                 validation: {
-                regex: {
-                  pattern: /^abc/
-                },
-                minLength: 6
+                  regex: {
+                    pattern: /^abc/
+                  },
+                  minLength: 6
                 }
               }
             }
-          });
+          })
 
-          val = validator.schema({field1: 'abc'});
+          var val = validator.schema({field1: 'abc'})
 
-          val.success.should.be.false;
-          val.errors.length.should.equal(1);
-          val.errors[0].field.should.equal('field1');
-          val.errors[0].message.should.equal('is too short');
+          val.success.should.be.false
+          val.errors.length.should.equal(1)
+          val.errors[0].field.should.equal('field1')
+          val.errors[0].message.should.equal('is too short')
 
-          done();
-        });
-      });
-    });
-  });
-});
+          done()
+        })
+      })
+    })
+  })
+})

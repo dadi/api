@@ -216,10 +216,9 @@ Model.prototype.create = function (obj, internals, done, req) {
 
   obj.forEach((doc) => {
     this.composer.createFromComposed(doc, req, (err, result) => {
-      console.log('< createFromComposed', err, result)
+      // console.log('< createFromComposed', err, result)
       if (err) {
-        console.log(err.json)
-
+        // console.log(err.json)
         return done(err.json)
       }
 
@@ -271,9 +270,9 @@ Model.prototype.create = function (obj, internals, done, req) {
       if (err) return done(err)
 
       var results = {}
-      console.log('> GO COMPOSE')
+      // console.log('> GO COMPOSE')
       this.composer.compose(doc, (obj) => {
-        console.log(obj)
+        // console.log(obj)
         results.results = obj
 
         // apply any existing `afterCreate` hooks
@@ -899,10 +898,7 @@ Model.prototype.update = function (query, update, internals, done, req) {
             })
           } else {
             var query = {
-              _id: { '$in': _.map(updatedDocs, (doc) => {
-                  return doc._id.toString()
-                })
-              }
+              _id: { '$in': _.map(updatedDocs, (doc) => { return doc._id.toString() }) }
             }
 
             this.find(query, { compose: true }, (err, doc) => {

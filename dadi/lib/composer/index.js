@@ -45,74 +45,74 @@ Composer.prototype.composeOne = function (doc, callback) {
 
     if (!value) return callback(null)
 
-    console.log(value, typeof value)
+    // console.log(value, typeof value)
 
     // if (typeof value === 'object' && !Array.isArray(value)) {
     //   keyIdx++
     // } else {
-      if (Array.isArray(value)) {
-        query = { '_id': { '$in': _.map(value, function (val) { return val + '' }) } }
-        returnArray = true
-      } else {
-        query = { '_id': value + '' }
-      }
+    if (Array.isArray(value)) {
+      query = { '_id': { '$in': _.map(value, function (val) { return val + '' }) } }
+      returnArray = true
+    } else {
+      query = { '_id': value + '' }
+    }
 
-      // add the apiVersion param
-      _.extend(query, { apiVersion: this.apiVersion })
+    // add the apiVersion param
+    _.extend(query, { apiVersion: this.apiVersion })
 
-      // are specific fields required?
-      var fields = {}
-      var schemaFields = help.getFromObj(this.model.schema, key + '.settings.fields', [])
+    // are specific fields required?
+    var fields = {}
+    var schemaFields = help.getFromObj(this.model.schema, key + '.settings.fields', [])
 
-      _.each(schemaFields, (field) => {
-        fields[field] = 1
+    _.each(schemaFields, (field) => {
+      fields[field] = 1
+    })
+
+    // load correct model
+    var model = this.getModel(key)
+
+    if (!model) {
+      callback(null)
+    } else {
+      // does the collection allow us to compose references beyond the first one
+      // (i.e. the one that got us here) ?
+      var compose = help.getFromObj(this.model.schema, key + '.settings.compose', false) || model.compose
+      // console.log('composeOne')
+      // console.log(query)
+      model.find(query, { 'compose': compose, 'fields': fields }, (err, result) => {
+        if (err) console.log(err)
+
+        if (result) {
+          if (result.results.length === 1 && returnArray === false) {
+            doc[key] = result.results[0]
+          } else {
+            doc[key] = result.results
+          }
+        }
+
+        if (!doc.composed) doc.composed = {}
+        doc.composed[key] = value
+
+        // if an array, ensure the composed values appear
+        // in the same order as the original array
+        if (value.constructor.name === 'Array') {
+          doc[key] = doc[key].sort((a, b) => {
+            var aIndex = value.indexOf(a._id.toString())
+            var bIndex = value.indexOf(b._id.toString())
+
+            if (aIndex === bIndex) return 0
+            return aIndex < bIndex ? -1 : 1
+          })
+        }
+
+        keyIdx++
+
+        if (keyIdx === composable.length) {
+          callback(doc)
+        }
       })
-
-      // load correct model
-      var model = this.getModel(key)
-
-      if (!model) {
-        callback(null)
-      } else {
-        // does the collection allow us to compose references beyond the first one
-        // (i.e. the one that got us here) ?
-        var compose = help.getFromObj(this.model.schema, key + '.settings.compose', false) || model.compose
-        console.log('composeOne')
-        console.log(query)
-        model.find(query, { 'compose': compose, 'fields': fields }, (err, result) => {
-          if (err) console.log(err)
-
-          if (result) {
-            if (result.results.length === 1 && returnArray === false) {
-              doc[key] = result.results[0]
-            } else {
-              doc[key] = result.results
-            }
-          }
-
-          if (!doc.composed) doc.composed = {}
-          doc.composed[key] = value
-
-          // if an array, ensure the composed values appear
-          // in the same order as the original array
-          if (value.constructor.name === 'Array') {
-            doc[key] = doc[key].sort((a, b) => {
-              var aIndex = value.indexOf(a._id.toString())
-              var bIndex = value.indexOf(b._id.toString())
-
-              if (aIndex === bIndex) return 0
-              return aIndex < bIndex ? -1 : 1
-            })
-          }
-
-          keyIdx++
-
-          if (keyIdx === composable.length) {
-            callback(doc)
-          }
-        })
-      }
-    //}
+    }
+    // }
   })
 }
 
@@ -163,13 +163,18 @@ Composer.prototype.createFromComposed = function (doc, req, callback) {
 
     return callback(null, doc)
   }).catch((err) => {
-    console.log('Promise error')
+    // console.log('Promise error')
     return callback(err, null)
   })
 }
 
 /**
+ * Creates a new document or updates an existing one
  *
+ * @param {Model} model - the model instance for the collection
+ * @param {string} field - the name Reference field containing the subdocument
+ * @param {Object} obj - the subdocument that is the content of the Reference field
+ * @param {Object} req - the original HTTP request
  */
 Composer.prototype.createOrUpdate = function (model, field, obj, req) {
   return new Promise((resolve, reject) => {
@@ -213,6 +218,10 @@ Composer.prototype.createOrUpdate = function (model, field, obj, req) {
       }
 
       model.create(obj, internals, (err, results) => {
+        if (err) {
+          return reject(err)
+        }
+
         var newDoc = results && results.results && results.results[0]
         var result = {}
         result[field] = newDoc._id.toString()

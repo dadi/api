@@ -368,7 +368,7 @@ var env = conf.get('env');
 conf.loadFile('./config/config.' + env + '.json');
 
 // Perform validation
-conf.validate({strict: false});
+conf.validate()
 
 // Load domain-specific configuration
 conf.updateConfigDataForDomain = function(domain) {
@@ -376,8 +376,8 @@ conf.updateConfigDataForDomain = function(domain) {
   try {
     var stats = fs.statSync(domainConfig);
     // no error, file exists
-    conf.loadFile(domainConfig);
-    conf.validate({strict: false});
+    conf.loadFile(domainConfig)
+    conf.validate()
   }
   catch(err) {
     if (err.code === 'ENOENT') {

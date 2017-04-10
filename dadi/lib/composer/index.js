@@ -36,83 +36,78 @@ Composer.prototype.composeOne = function (doc, callback) {
 
   if (_.isEmpty(composable)) return callback(doc)
 
-  var keyIdx = 0
-
-  _.each(composable, (key) => {
+  _.each(composable, (key, idx) => {
     var query = {}
     var returnArray = false
     var value = doc[key]
 
     if (!value) return callback(null)
 
-    // console.log(value, typeof value)
-
-    // if (typeof value === 'object' && !Array.isArray(value)) {
-    //   keyIdx++
-    // } else {
-    if (Array.isArray(value)) {
-      query = { '_id': { '$in': _.map(value, function (val) { return val + '' }) } }
-      returnArray = true
+    if (value.constructor === Object) {
+      if (idx === composable.length - 1) {
+        callback(doc)
+      }
     } else {
-      query = { '_id': value + '' }
-    }
+      if (Array.isArray(value)) {
+        query = { '_id': { '$in': _.map(value, function (val) { return val + '' }) } }
+        returnArray = true
+      } else {
+        query = { '_id': value + '' }
+      }
 
-    // add the apiVersion param
-    _.extend(query, { apiVersion: this.apiVersion })
+      // add the apiVersion param
+      _.extend(query, { apiVersion: this.apiVersion })
 
-    // are specific fields required?
-    var fields = {}
-    var schemaFields = help.getFromObj(this.model.schema, key + '.settings.fields', [])
+      // are specific fields required?
+      var fields = {}
+      var schemaFields = help.getFromObj(this.model.schema, key + '.settings.fields', [])
 
-    _.each(schemaFields, (field) => {
-      fields[field] = 1
-    })
-
-    // load correct model
-    var model = this.getModel(key)
-
-    if (!model) {
-      callback(null)
-    } else {
-      // does the collection allow us to compose references beyond the first one
-      // (i.e. the one that got us here) ?
-      var compose = help.getFromObj(this.model.schema, key + '.settings.compose', false) || model.compose
-      // console.log('composeOne')
-      // console.log(query)
-      model.find(query, { 'compose': compose, 'fields': fields }, (err, result) => {
-        if (err) console.log(err)
-
-        if (result) {
-          if (result.results.length === 1 && returnArray === false) {
-            doc[key] = result.results[0]
-          } else {
-            doc[key] = result.results
-          }
-        }
-
-        if (!doc.composed) doc.composed = {}
-        doc.composed[key] = value
-
-        // if an array, ensure the composed values appear
-        // in the same order as the original array
-        if (value.constructor.name === 'Array') {
-          doc[key] = doc[key].sort((a, b) => {
-            var aIndex = value.indexOf(a._id.toString())
-            var bIndex = value.indexOf(b._id.toString())
-
-            if (aIndex === bIndex) return 0
-            return aIndex < bIndex ? -1 : 1
-          })
-        }
-
-        keyIdx++
-
-        if (keyIdx === composable.length) {
-          callback(doc)
-        }
+      _.each(schemaFields, (field) => {
+        fields[field] = 1
       })
+
+      // load correct model
+      var model = this.getModel(key)
+
+      if (!model) {
+        callback(null)
+      } else {
+        // does the collection allow us to compose references beyond the first one
+        // (i.e. the one that got us here) ?
+        var compose = help.getFromObj(this.model.schema, key + '.settings.compose', false) || model.compose
+
+        model.find(query, { 'compose': compose, 'fields': fields }, (err, result) => {
+          if (err) console.log(err)
+
+          if (result) {
+            if (result.results.length === 1 && returnArray === false) {
+              doc[key] = result.results[0]
+            } else {
+              doc[key] = result.results
+            }
+          }
+
+          if (!doc.composed) doc.composed = {}
+          doc.composed[key] = value
+
+          // if an array, ensure the composed values appear
+          // in the same order as the original array
+          if (value.constructor.name === 'Array') {
+            doc[key] = doc[key].sort((a, b) => {
+              var aIndex = value.indexOf(a._id.toString())
+              var bIndex = value.indexOf(b._id.toString())
+
+              if (aIndex === bIndex) return 0
+              return aIndex < bIndex ? -1 : 1
+            })
+          }
+
+          if (idx === composable.length - 1) {
+            callback(doc)
+          }
+        })
+      }
     }
-    // }
   })
 }
 
@@ -177,6 +172,7 @@ Composer.prototype.createFromComposed = function (doc, req, callback) {
  * @param {Object} req - the original HTTP request
  */
 Composer.prototype.createOrUpdate = function (model, field, obj, req) {
+  console.log('> createOrUpdate', model.name, field, obj)
   return new Promise((resolve, reject) => {
     var internals = {
       apiVersion: this.apiVersion

@@ -95,7 +95,7 @@ describe('Reference Field', function () {
       })
     })
 
-    it.skip('should update reference documents that already have _id fields', function (done) {
+    it('should update reference documents that already have _id fields', function (done) {
       var person = {
         name: 'Ernest Hemingway'
       }
@@ -119,24 +119,24 @@ describe('Reference Field', function () {
 
         config.set('query.useVersionFilter', true)
 
-        var client = request(connectionString)
-        client
-        .post('/v1/library/book')
-        .set('Authorization', 'Bearer ' + bearerToken)
-        .send(book)
-        .expect(200)
-        .end(function (err, res) {
-          if (err) return done(err)
+        setTimeout(function() {
+          var client = request(connectionString)
+          client
+          .post('/v1/library/book')
+          .set('Authorization', 'Bearer ' + bearerToken)
+          .send(book)
+          .expect(200)
+          .end(function (err, res) {
+            if (err) return done(err)
 
-          should.exist(res.body.results)
-          var newDoc = res.body.results[0]
+            should.exist(res.body.results)
+            var newDoc = res.body.results[0]
 
-          console.log(newDoc)
-
-          newDoc.author._id.should.eql(author._id)
-          newDoc.author.name.should.eql(author.name)
-          done()
-        })
+            newDoc.author._id.should.eql(author._id)
+            newDoc.author.name.should.eql(author.name)
+            done()
+          })
+        }, 800)
       })
     })
   })

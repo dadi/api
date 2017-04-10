@@ -211,21 +211,6 @@ Model.prototype.create = function (obj, internals, done, req) {
     doc = self.convertDateTimeForSave(self.schema, doc)
   })
 
-  // Pre-composed References
-  this.composer.setApiVersion(internals.apiVersion)
-
-  obj.forEach((doc) => {
-    this.composer.createFromComposed(doc, req, (err, result) => {
-      // console.log('< createFromComposed', err, result)
-      if (err) {
-        // console.log(err.json)
-        return done(err.json)
-      }
-
-      doc = result
-    })
-  })
-
   var startInsert = (database) => {
     // Running `beforeCreate` hooks
     if (this.settings.hooks && this.settings.hooks.beforeCreate) {
@@ -291,12 +276,29 @@ Model.prototype.create = function (obj, internals, done, req) {
     })
   }
 
-  if (this.connection.db) {
-    return startInsert(this.connection.db)
-  } else {
-    // if the db is not connected queue the insert
-    this.connection.once('connect', startInsert)
-  }
+  // Pre-composed References
+  this.composer.setApiVersion(internals.apiVersion)
+
+  // before the primary document insert, process any Reference fields
+  // that have been passed as subdocuments rather than id strings
+  _.each(obj, (doc, idx) => {
+    this.composer.createFromComposed(doc, req, (err, result) => {
+      if (err) {
+        return done(err.json)
+      }
+
+      doc = result
+
+      if (idx === obj.length - 1) {
+        if (this.connection.db) {
+          return startInsert(this.connection.db)
+        } else {
+          // if the db is not connected queue the insert
+          this.connection.once('connect', startInsert)
+        }
+      }
+    })
+  })
 }
 
 /**
@@ -838,10 +840,10 @@ Model.prototype.update = function (query, update, internals, done, req) {
     // get a reference to the documents that will be updated
     var updatedDocs = []
 
-    this.find(query, {}, (err, docs) => {
+    this.find(query, { compose: false }, (err, docs) => {
       if (err) return done(err)
 
-      updatedDocs = docs['results']
+      updatedDocs = docs.results
 
       this.castToBSON(query)
 
@@ -886,13 +888,13 @@ Model.prototype.update = function (query, update, internals, done, req) {
               _id: { '$in': _.map(updatedDocs, (doc) => { return doc._id.toString() }) }
             }
 
-            this.find(query, { compose: true }, (err, results) => {
+            return this.find(query, { compose: true }, (err, results) => {
               if (err) return done(err)
 
               // apply any existing `afterUpdate` hooks
               triggerAfterUpdateHook(results.results)
 
-              done(null, results)
+              return done(null, results)
             })
           }
 
@@ -928,7 +930,6 @@ Model.prototype.update = function (query, update, internals, done, req) {
             done(err)
           } else {
             update = result
-
             saveDocuments()
           }
         })

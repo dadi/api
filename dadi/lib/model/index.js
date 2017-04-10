@@ -287,6 +287,10 @@ Model.prototype.create = function (obj, internals, done, req) {
  */
 Model.prototype.injectHistory = function (data, options) {
   return new Promise((resolve, reject) => {
+    if (data.results.length === 0) {
+      return resolve(data)
+    }
+
     var idx = 0
     _.each(data.results, (doc) => {
       this.revisions(doc._id, options, (err, history) => {
@@ -439,7 +443,7 @@ Model.prototype.find = function (query, options, done) {
 
   // Queue the history resolving function
   if (options.includeHistory) {
-    doneQueue.push(function (err, data, callback) {
+    doneQueue.push((err, data, callback) => {
       if (err) {
         return callback(null, err, data)
       } else {
@@ -447,7 +451,7 @@ Model.prototype.find = function (query, options, done) {
           return callback(null, err, data)
         })
       }
-    }.bind(this))
+    })
 
     delete options.includeHistory
   }
@@ -604,7 +608,10 @@ Model.prototype.find = function (query, options, done) {
 
       // perform the actual find operation
       function runFind () {
-        database.collection(self.name).find(query, options, function (err, cursor) {
+        var queryOptions = _.clone(options)
+        delete queryOptions.historyFilters
+
+        database.collection(self.name).find(query, queryOptions, function (err, cursor) {
           if (err) return done(err)
 
           var results = {}

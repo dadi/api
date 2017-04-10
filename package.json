@@ -1,6 +1,6 @@
 {
   "name": "@dadi/api",
-  "version": "1.15.0",
+  "version": "1.15.5",
   "main": "main.js",
   "scripts": {
     "create-client": "cd ../../.. && node ./node_modules/@dadi/api/utils/create-client.js",
@@ -28,7 +28,7 @@
     "latest-version": "~2.0.0",
     "length-stream": "^0.1.1",
     "mkdirp": "^0.5.1",
-    "moment": "2.17.1",
+    "moment": "2.18.0",
     "mongodb": "~1.4.8",
     "uuid": "latest",
     "parse-comments": "0.4.3",

@@ -1413,8 +1413,7 @@ describe('Application', function () {
         })
       })
 
-      it('should add history to results when querystring param HHistory=true', function (done) {
-
+      it('should add history to results when querystring param includeHistory=true', function (done) {
         var client = request(connectionString)
 
         client
@@ -1455,6 +1454,55 @@ describe('Application', function () {
               res.body['results'].should.be.Array
               res.body['results'][0].history.should.exist
               res.body['results'][0].history[0].field1.should.eql('original field content')
+              done()
+            })
+          })
+        })
+      })
+
+      it('should use specified historyFilters when querystring param includeHistory=true', function (done) {
+        var client = request(connectionString)
+
+        client
+        .post('/vtest/testdb/test-schema')
+        .set('Authorization', 'Bearer ' + bearerToken)
+        .send({field1: 'ABCDEF', field2: 2001 })
+        .expect(200)
+        .end(function (err, res) {
+          if (err) return done(err)
+          var doc = res.body.results[0]
+
+          var body = {
+            query: { _id: doc._id },
+            update: {field1: 'GHIJKL'}
+          }
+
+          client
+          .put('/vtest/testdb/test-schema/')
+          .set('Authorization', 'Bearer ' + bearerToken)
+          .send(body)
+          .expect(200)
+          .end(function (err, res) {
+            if (err) return done(err)
+
+            res.body.results[0]._id.should.equal(doc._id)
+            res.body.results[0].field1.should.equal('GHIJKL')
+
+            client
+            .get('/vtest/testdb/test-schema?filter={"_id": "' + doc._id + '"}&includeHistory=true&historyFilters={"field2":2001}')
+            .set('Authorization', 'Bearer ' + bearerToken)
+            .expect(200)
+            .expect('content-type', 'application/json')
+            .end(function (err, res) {
+              if (err) return done(err)
+
+              res.body['results'].should.exist
+              res.body['results'].should.be.Array
+              res.body['results'][0].field1.should.exist
+              res.body['results'][0].field1.should.eql('GHIJKL')
+              res.body['results'][0].field2.should.exist
+              res.body['results'][0].history.should.exist
+              res.body['results'][0].history[0].field1.should.eql('ABCDEF')
               done()
             })
           })

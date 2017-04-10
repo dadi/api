@@ -361,6 +361,29 @@ describe('Model', function () {
         })
       })
     })
+
+    it('should use specified historyFilters when includeHistory = true', function (done) {
+      var conn = connection()
+      var mod = model('testModelName', help.getModelSchema(), conn, { storeRevisions: true })
+
+      mod.create({fieldName: 'foo'}, function (err, result) {
+        if (err) return done(err)
+
+        mod.update({fieldName: 'foo'}, {fieldName: 'bar'}, function (err, result) {
+          if (err) return done(err)
+
+          mod.find({}, { includeHistory: true, historyFilters: '{ "fieldName": "foo" }' }, function (err, results) {
+            if (err) return done(err)
+
+            results.results.should.exist
+            results.results.should.be.Array
+            should.exist(results.results[0].history)
+            should.exist(results.results[0].fieldName)
+            done()
+          })
+        })
+      })
+    })
   })
 
   describe('Version number', function () {

@@ -14,7 +14,7 @@
     "@dadi/format-error": "^1.0.0",
     "@dadi/logger": "latest",
     "@dadi/status": "latest",
-    "async": "^2.1.4",
+    "async": "^2.1.5",
     "body-parser": "~1.16.1",
     "bunyan": "^1.5.1",
     "busboy": "^0.2.13",

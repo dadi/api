@@ -56,7 +56,7 @@ DiskStorage.prototype.put = function (stream, folderPath) {
         }
 
         var data = {
-          path: filePath
+          path: `//${config.get('server.host')}:${config.get('server.port')}/api/media/${folderPath}/${this.fileName}`
         }
 
         function lengthListener (length) {

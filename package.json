@@ -30,16 +30,17 @@
     "mkdirp": "^0.5.1",
     "moment": "2.18.0",
     "mongodb": "~1.4.8",
-    "uuid": "latest",
     "parse-comments": "0.4.3",
     "path-to-regexp": "~1.7.0",
     "q": "^1.4.1",
     "request": "2.80.0",
+    "serve-static": "^1.12.1",
     "sha1": "latest",
     "stack-trace": "latest",
     "streamifier": "^0.1.1",
     "underscore": "~1.8.0",
     "underscore.string": "^3.2.2",
+    "uuid": "latest",
     "validate-commit-message": "^3.0.1"
   },
   "devDependencies": {

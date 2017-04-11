@@ -3,6 +3,7 @@ var Busboy = require('busboy')
 var imagesize = require('imagesize')
 var PassThrough = require('stream').PassThrough
 var path = require('path')
+var serveStatic = require('serve-static')
 var sha1 = require('sha1')
 
 var config = require(path.join(__dirname, '/../../../config'))
@@ -57,6 +58,20 @@ var schema = {
 
 var MediaController = function () {
   this.model = Model(collectionName, schema.fields, null, schema.settings, null)
+}
+
+MediaController.prototype.get = function (req, res, next) {
+  this.model.get({}, {}, help.sendBackJSON(200, res, next), req)
+}
+
+MediaController.prototype.getFile = function (req, res, next) {
+  // `serveStatic` will look at the entire URL to find the file it needs to
+  // serve, but we're not serving files from the root. To get around this, we
+  // pass it a modified version of the URL, where the root URL becomes just the
+  // filename parameter.
+  const modifiedReq = Object.assign({}, req, {url: req.params.filename})
+
+  return serveStatic(config.get('media.basePath'))(modifiedReq, res, next)
 }
 
 MediaController.prototype.post = function (req, res, next) {

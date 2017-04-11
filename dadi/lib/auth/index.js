@@ -15,6 +15,14 @@ function mustAuthenticate (endpoints, path, reqMethod) {
   // docs requests don't need to be authenticated
   if (path.pathname.indexOf('docs') > 0) return false
 
+  const staticEndpoint = '/api/media/'
+
+  // If the URL is for a media asset, but not at the root, then it can be
+  // unauthenticated
+  if ((path.pathname.indexOf(staticEndpoint) === 0) && (path.pathname.length > staticEndpoint.length)) {
+    return false
+  }
+
   var endpointKey = _.find(_.keys(endpoints), function (k) { return path.pathname.match(pathToRegexp(k)) })
 
   if (!endpointKey) return true

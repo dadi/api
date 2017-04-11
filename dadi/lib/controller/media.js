@@ -5,12 +5,14 @@ var PassThrough = require('stream').PassThrough
 var path = require('path')
 var serveStatic = require('serve-static')
 var sha1 = require('sha1')
+var url = require('url')
 
 var config = require(path.join(__dirname, '/../../../config'))
 var help = require(path.join(__dirname, '/../help'))
 var streamifier = require('streamifier')
 
 var Model = require(path.join(__dirname, '/../model'))
+var prepareQueryOptions = require(path.join(__dirname, './index')).prepareQueryOptions
 var StorageFactory = require(path.join(__dirname, '/../storage/factory'))
 
 var collectionName = config.get('media.collection')
@@ -61,7 +63,14 @@ var MediaController = function () {
 }
 
 MediaController.prototype.get = function (req, res, next) {
-  this.model.get({}, {}, help.sendBackJSON(200, res, next), req)
+  var path = url.parse(req.url, true)
+  var parsedOptions = prepareQueryOptions(path.query, this.model.settings)
+
+  if (parsedOptions.errors.length > 0) {
+    return help.sendBackJSON(400, res, next)(null, parsedOptions)
+  }
+
+  this.model.get({}, parsedOptions.queryOptions, help.sendBackJSON(200, res, next), req)
 }
 
 MediaController.prototype.getFile = function (req, res, next) {

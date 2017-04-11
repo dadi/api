@@ -16,7 +16,7 @@
     "@dadi/status": "latest",
     "async": "^2.1.4",
     "body-parser": "~1.16.1",
-    "bunyan": "^1.5.1",
+    "bunyan": "^1.8.7",
     "busboy": "^0.2.13",
     "chokidar": "^1.5.2",
     "cli-prompt": "^0.6.0",

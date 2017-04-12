@@ -60,7 +60,7 @@ describe('Storage', function (done) {
       return storage.getFullUrl().should.eql('/tmp/1234/5678/test.jpg')
     })
 
-    it('should set a new filename if a file exists with the specified name', function () {
+    it('should set a new filename if a file exists with the specified name', function (done) {
       config.set('media.enabled', true)
       config.set('media.storage', 'disk')
       config.set('media.basePath', 'test/workspace/media')
@@ -79,12 +79,16 @@ describe('Storage', function (done) {
       readable.push('xxx')
       readable.push(null)
 
-      return storage.put(readable, '1234/5678').then((data) => {
+      storage.put(readable, '1234/5678').then((data) => {
         fs.stat.restore()
+
         new RegExp('^test-[0-9]*.jpg$').test(path.basename(data.path)).should.eql(true)
 
         // remove the file
-        fs.unlinkSync(data.path)
+        setTimeout(function () {
+          fs.unlinkSync(path.join(storage.path, path.basename(data.path)))
+          done()
+        }, 1000)
       })
     })
   })

@@ -33,8 +33,8 @@ DiskStorage.prototype.getFullUrl = function () {
  *
  * @returns {string}
  */
-DiskStorage.prototype.getStaticAssetUrl = function (folderPath) {
-  return `${config.get('server.protocol')}://${config.get('server.host')}:${config.get('server.port')}/api/media/${folderPath}/${this.fileName}`
+DiskStorage.prototype.getStaticAssetUrl = function (folderPath, fileName) {
+  return `${config.get('server.protocol')}://${config.get('server.host')}:${config.get('server.port')}/api/media/${folderPath}/${fileName}`
 }
 
 /**
@@ -59,12 +59,12 @@ DiskStorage.prototype.put = function (stream, folderPath) {
         } else {
           // file exists, give it a new name
           var pathParts = path.parse(filePath)
-          var newFileName = pathParts.name + '-' + Date.now().toString()
-          filePath = path.join(this.path, newFileName + pathParts.ext)
+          var newFileName = pathParts.name + '-' + Date.now().toString() + pathParts.ext
+          filePath = path.join(this.path, newFileName)
         }
 
         var data = {
-          path: this.getStaticAssetUrl(folderPath)
+          path: this.getStaticAssetUrl(folderPath, newFileName || this.fileName)
         }
 
         function lengthListener (length) {

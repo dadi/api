@@ -3,13 +3,16 @@ var Busboy = require('busboy')
 var imagesize = require('imagesize')
 var PassThrough = require('stream').PassThrough
 var path = require('path')
+var serveStatic = require('serve-static')
 var sha1 = require('sha1')
+var url = require('url')
 
 var config = require(path.join(__dirname, '/../../../config'))
 var help = require(path.join(__dirname, '/../help'))
 var streamifier = require('streamifier')
 
 var Model = require(path.join(__dirname, '/../model'))
+var prepareQueryOptions = require(path.join(__dirname, './index')).prepareQueryOptions
 var StorageFactory = require(path.join(__dirname, '/../storage/factory'))
 
 var collectionName = config.get('media.collection')
@@ -57,6 +60,27 @@ var schema = {
 
 var MediaController = function () {
   this.model = Model(collectionName, schema.fields, null, schema.settings, null)
+}
+
+MediaController.prototype.get = function (req, res, next) {
+  var path = url.parse(req.url, true)
+  var parsedOptions = prepareQueryOptions(path.query, this.model.settings)
+
+  if (parsedOptions.errors.length > 0) {
+    return help.sendBackJSON(400, res, next)(null, parsedOptions)
+  }
+
+  this.model.get({}, parsedOptions.queryOptions, help.sendBackJSON(200, res, next), req)
+}
+
+MediaController.prototype.getFile = function (req, res, next) {
+  // `serveStatic` will look at the entire URL to find the file it needs to
+  // serve, but we're not serving files from the root. To get around this, we
+  // pass it a modified version of the URL, where the root URL becomes just the
+  // filename parameter.
+  const modifiedReq = Object.assign({}, req, {url: req.params.filename})
+
+  return serveStatic(config.get('media.basePath'))(modifiedReq, res, next)
 }
 
 MediaController.prototype.post = function (req, res, next) {

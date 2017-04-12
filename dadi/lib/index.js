@@ -279,14 +279,23 @@ Server.prototype.loadApi = function (options) {
 
   this.app.use('/api/media', function (req, res, next) {
     var method = req.method && req.method.toLowerCase()
-    if (method !== 'post') return next()
+    if ((method !== 'post') && (method !== 'get')) return next()
 
     if (!config.get('media.enabled')) {
       return next()
     }
 
     var controller = new MediaController()
-    return controller.post(req, res, next)
+    return controller[method](req, res, next)
+  })
+
+  this.app.use('/api/media/:filename+', function (req, res, next) {
+    if (!config.get('media.enabled')) {
+      return next()
+    }
+
+    var controller = new MediaController()
+    return controller.getFile(req, res, next)
   })
 
   this.app.use('/api/flush', function (req, res, next) {

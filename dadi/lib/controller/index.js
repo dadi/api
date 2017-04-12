@@ -33,35 +33,10 @@ function ApiError (status, code, message, title) {
   return err
 }
 
-var Controller = function (model) {
-  if (!model) throw new Error('Model instance required')
-  this.model = model
-}
-
-Controller.prototype.get = function (req, res, next) {
-  var path = url.parse(req.url, true)
-  var options = path.query
-
-  // determine if this is jsonp
-  var done = options.callback ? sendBackJSONP(options.callback, res, next) : sendBackJSON(200, res, next)
-
-  var query = this.prepareQuery(req)
-  var queryOptions = this.prepareQueryOptions(options)
-
-  if (queryOptions.errors.length !== 0) {
-    done = sendBackJSON(400, res, next)
-    return done(null, queryOptions)
-  } else {
-    queryOptions = queryOptions.queryOptions
-  }
-
-  this.model.get(query, queryOptions, done, req)
-}
-
-Controller.prototype.prepareQueryOptions = function (options) {
+function prepareQueryOptions (options, modelSettings) {
   var response = { errors: [] }
   var queryOptions = {}
-  var settings = this.model.settings || {}
+  var settings = modelSettings || {}
 
   if (options.page) {
     options.page = parseInt(options.page)
@@ -107,8 +82,8 @@ Controller.prototype.prepareQueryOptions = function (options) {
     _.extend(queryOptions.fields, JSON.parse(options.fields))
   }
 
-  if (typeof this.model.settings.fieldLimiters === 'object') {
-    _.extend(queryOptions.fields, this.model.settings.fieldLimiters)
+  if (typeof modelSettings.fieldLimiters === 'object') {
+    _.extend(queryOptions.fields, modelSettings.fieldLimiters)
   }
 
   // compose / reference fields
@@ -140,6 +115,35 @@ Controller.prototype.prepareQueryOptions = function (options) {
 
   response.queryOptions = queryOptions
   return response
+}
+
+var Controller = function (model) {
+  if (!model) throw new Error('Model instance required')
+  this.model = model
+}
+
+Controller.prototype.get = function (req, res, next) {
+  var path = url.parse(req.url, true)
+  var options = path.query
+
+  // determine if this is jsonp
+  var done = options.callback ? sendBackJSONP(options.callback, res, next) : sendBackJSON(200, res, next)
+
+  var query = this.prepareQuery(req)
+  var queryOptions = this.prepareQueryOptions(options)
+
+  if (queryOptions.errors.length !== 0) {
+    done = sendBackJSON(400, res, next)
+    return done(null, queryOptions)
+  } else {
+    queryOptions = queryOptions.queryOptions
+  }
+
+  this.model.get(query, queryOptions, done, req)
+}
+
+Controller.prototype.prepareQueryOptions = function (options) {
+  return prepareQueryOptions(options, this.model.settings)
 }
 
 Controller.prototype.keyValidForSchema = function (key) {
@@ -322,3 +326,4 @@ module.exports = function (model) {
 }
 
 module.exports.Controller = Controller
+module.exports.prepareQueryOptions = prepareQueryOptions

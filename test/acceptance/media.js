@@ -34,6 +34,7 @@ describe('Media', function () {
 
   afterEach((done) => {
     app.stop(() => {
+      config.set('media.enabled', false)
       help.removeTestClients(done)
     })
   })

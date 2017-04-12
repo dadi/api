@@ -69,23 +69,19 @@ MediaController.prototype.post = function (req, res, next) {
   busboy.on('file', (fieldname, file, filename, encoding, mimetype) => {
     if (this.tokenPayload) {
       if (this.tokenPayload.fileName !== filename) {
-        var err = {
+        return next({
           statusCode: 400,
           name: 'Unexpected filename',
           message: 'Expected a file named "' + this.tokenPayload.fileName + '"'
-        }
-
-        return next(err)
+        })
       }
 
       if (this.tokenPayload.mimetype !== mimetype) {
-        var err = {
+        return next({
           statusCode: 400,
           name: 'Unexpected mimetype',
           message: 'Expected a mimetype of "' + this.tokenPayload.mimetype + '"'
-        }
-
-        return next(err)
+        })
       }
     }
 

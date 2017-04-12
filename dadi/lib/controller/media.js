@@ -55,8 +55,9 @@ var schema = {
   }
 }
 
-var MediaController = function () {
+var MediaController = function (tokenPayload) {
   this.model = Model(collectionName, schema.fields, null, schema.settings, null)
+  this.tokenPayload = tokenPayload
 }
 
 MediaController.prototype.post = function (req, res, next) {
@@ -66,6 +67,28 @@ MediaController.prototype.post = function (req, res, next) {
 
   // Listen for event when Busboy finds a file to stream
   busboy.on('file', (fieldname, file, filename, encoding, mimetype) => {
+    if (this.tokenPayload) {
+      if (this.tokenPayload.fileName !== filename) {
+        var err = {
+          statusCode: 400,
+          name: 'Unexpected filename',
+          message: 'Expected a file named "' + this.tokenPayload.fileName + '"'
+        }
+
+        return next(err)
+      }
+
+      if (this.tokenPayload.mimetype !== mimetype) {
+        var err = {
+          statusCode: 400,
+          name: 'Unexpected mimetype',
+          message: 'Expected a mimetype of "' + this.tokenPayload.mimetype + '"'
+        }
+
+        return next(err)
+      }
+    }
+
     this.fileName = filename
     this.mimetype = mimetype
 
@@ -126,8 +149,8 @@ MediaController.prototype.post = function (req, res, next) {
   req.pipe(busboy)
 }
 
-module.exports = function () {
-  return new MediaController()
+module.exports = function (tokenPayload) {
+  return new MediaController(tokenPayload)
 }
 
 module.exports.MediaController = MediaController

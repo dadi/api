@@ -297,6 +297,16 @@ var conf = convict({
       format: Boolean,
       default: false
     },
+    tokenSecret: {
+      doc: 'The secret key used to sign and verify tokens when uploading media',
+      format: String,
+      default: 'catboat-beatific-drizzle'
+    },
+    tokenExpiresIn: {
+      doc: 'The duration a signed token is valid for. Expressed in seconds or a string describing a time span (https://github.com/zeit/ms). Eg: 60, "2 days", "10h", "7d"',
+      format: '*',
+      default: '1h'
+    },
     collection: {
       doc: 'The name of the API collection to store the metadata for uploaded media',
       format: String,

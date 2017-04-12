@@ -734,7 +734,7 @@ describe('Hook', function () {
             var logFileBody = fs.readFileSync(file)
             var obj = JSON.parse(logFileBody.toString())
 
-            obj.results[0]._id.toString().should.eql(doc.results[0]._id.toString())
+            obj[0]._id.toString().should.eql(doc.results[0]._id.toString())
             fs.unlinkSync(file)
             done()
           })

@@ -145,10 +145,31 @@ function makeCaseInsensitive (obj, schema) {
   return newObj
 }
 
+function removeInternalFields (obj) {
+  delete obj._id
+  delete obj.createdAt
+  delete obj.createdBy
+  delete obj.lastModifiedAt
+  delete obj.lastModifiedBy
+  delete obj.v
+  delete obj.apiVersion
+
+  if (obj.composed) {
+    _.each(Object.keys(obj.composed), (key) => {
+      obj[key] = obj.composed[key]
+    })
+
+    delete obj.composed
+  }
+
+  return obj
+}
+
 module.exports = {
   containsNestedReferenceFields: containsNestedReferenceFields,
   convertApparentObjectIds: convertApparentObjectIds,
   getSchemaOrParent: getSchemaOrParent,
   makeCaseInsensitive: makeCaseInsensitive,
-  processReferenceFieldQuery: processReferenceFieldQuery
+  processReferenceFieldQuery: processReferenceFieldQuery,
+  removeInternalFields: removeInternalFields
 }

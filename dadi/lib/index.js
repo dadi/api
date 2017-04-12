@@ -289,9 +289,10 @@ Server.prototype.loadApi = function (options) {
     self.updateVersions(endpointPath)
   })
 
+  // POST media/sign
   this.app.use('/api/media/sign', (req, res, next) => {
     var method = req.method && req.method.toLowerCase()
-    if (method !== 'post') return next()
+    if ((method !== 'post') && (method !== 'get')) return next()
 
     if (!config.get('media.enabled')) {
       return next()
@@ -311,6 +312,7 @@ Server.prototype.loadApi = function (options) {
     })
   })
 
+  // POST media
   this.app.use('/api/media/:token', (req, res, next) => {
     var method = req.method && req.method.toLowerCase()
     if (method !== 'post') return next()
@@ -340,6 +342,25 @@ Server.prototype.loadApi = function (options) {
       var controller = new MediaController(payload)
       return controller.post(req, res, next)
     })
+  })
+
+  // GET media/filename
+  this.app.use('/api/media/:filename+', (req, res, next) => {
+    if (!config.get('media.enabled')) {
+      return next()
+    }
+
+    var controller = new MediaController()
+    return controller.getFile(req, res, next)
+  })
+
+  // GET media
+  this.app.use('/api/media', (req, res, next) => {
+    var method = req.method && req.method.toLowerCase()
+    if (method !== 'get') return next()
+
+    var controller = new MediaController()
+    return controller[method](req, res, next)
   })
 
   this.app.use('/api/flush', function (req, res, next) {

@@ -254,31 +254,51 @@ Model.prototype.create = function (obj, internals, done, req) {
     database.collection(this.name).insert(obj, (err, doc) => {
       if (err) return done(err)
 
-      var results = {
-        results: doc
-      }
+      var results = {}
+      // console.log('> GO COMPOSE')
+      this.composer.compose(doc, (obj) => {
+        // console.log(obj)
+        results.results = obj
 
-      // apply any existing `afterCreate` hooks
-      if (this.settings.hasOwnProperty('hooks') && (typeof this.settings.hooks.afterCreate === 'object')) {
-        obj.forEach((doc) => {
-          this.settings.hooks.afterCreate.forEach((hookConfig, index) => {
-            var hook = new Hook(this.settings.hooks.afterCreate[index], 'afterCreate')
+        // apply any existing `afterCreate` hooks
+        if (this.settings.hasOwnProperty('hooks') && (typeof this.settings.hooks.afterCreate === 'object')) {
+          obj.forEach((doc) => {
+            this.settings.hooks.afterCreate.forEach((hookConfig, index) => {
+              var hook = new Hook(this.settings.hooks.afterCreate[index], 'afterCreate')
 
-            return hook.apply(doc, this.schema, this.name)
+              return hook.apply(doc, this.schema, this.name)
+            })
           })
-        })
-      }
+        }
 
-      return done(null, results)
+        return done(null, results)
+      })
     })
   }
 
-  if (this.connection.db) {
-    return startInsert(this.connection.db)
-  } else {
-    // if the db is not connected queue the insert
-    this.connection.once('connect', startInsert)
-  }
+  // Pre-composed References
+  this.composer.setApiVersion(internals.apiVersion)
+
+  // before the primary document insert, process any Reference fields
+  // that have been passed as subdocuments rather than id strings
+  _.each(obj, (doc, idx) => {
+    this.composer.createFromComposed(doc, req, (err, result) => {
+      if (err) {
+        return done(err.json)
+      }
+
+      doc = result
+
+      if (idx === obj.length - 1) {
+        if (this.connection.db) {
+          return startInsert(this.connection.db)
+        } else {
+          // if the db is not connected queue the insert
+          this.connection.once('connect', startInsert)
+        }
+      }
+    })
+  })
 }
 
 /**
@@ -425,7 +445,7 @@ Model.prototype.find = function (query, options, done) {
     if (doneQueue.length > 0) {
       // Assign err, data to the first function
       doneQueue.splice(0, 0, async.apply(assignVariables, err, data))
-      // Run the queue tasks
+      // Run the req.query.ue tasks
       async.waterfall(doneQueue, function (arg1, err, data) {
         // Return data
         return done(err, data)
@@ -809,6 +829,8 @@ Model.prototype.update = function (query, update, internals, done, req) {
     _.extend(update, internals)
   }
 
+  this.composer.setApiVersion(internals.apiVersion)
+
   var setUpdate = {$set: update}
   var updateOptions = {
     multi: true
@@ -818,10 +840,10 @@ Model.prototype.update = function (query, update, internals, done, req) {
     // get a reference to the documents that will be updated
     var updatedDocs = []
 
-    this.find(query, {}, (err, docs) => {
+    this.find(query, { compose: false }, (err, docs) => {
       if (err) return done(err)
 
-      updatedDocs = docs['results']
+      updatedDocs = docs.results
 
       this.castToBSON(query)
 
@@ -834,8 +856,6 @@ Model.prototype.update = function (query, update, internals, done, req) {
             err.statusCode = 404
             return done(err)
           }
-
-          var results = {}
 
           var incrementRevisionNumber = (docs) => {
             _.each(docs, (doc) => {
@@ -863,37 +883,31 @@ Model.prototype.update = function (query, update, internals, done, req) {
           // increment document revision number
           incrementRevisionNumber(updatedDocs)
 
+          var getDocumentsForResponse = (done) => {
+            var query = {
+              _id: { '$in': _.map(updatedDocs, (doc) => { return doc._id.toString() }) }
+            }
+
+            return this.find(query, { compose: true }, (err, results) => {
+              if (err) return done(err)
+
+              // apply any existing `afterUpdate` hooks
+              triggerAfterUpdateHook(results.results)
+
+              return done(null, results)
+            })
+          }
+
           // for each of the updated documents, create
           // a history revision for it
           if (this.history && updatedDocs.length > 0) {
             this.history.createEach(updatedDocs, this, (err, docs) => {
               if (err) return done(err)
 
-              results.results = docs
-
-              // apply any existing `afterUpdate` hooks
-              triggerAfterUpdateHook(docs)
-
-              done(null, results)
+              return getDocumentsForResponse(done)
             })
           } else {
-            var query = {
-              _id: { '$in': _.map(updatedDocs, (doc) => {
-                return doc._id.toString()
-              })
-              }
-            }
-
-            this.find(query, {}, (err, doc) => {
-              if (err) return done(err)
-
-              results = doc
-
-              // apply any existing `afterUpdate` hooks
-              triggerAfterUpdateHook(doc)
-
-              done(null, results)
-            })
+            return getDocumentsForResponse(done)
           }
         })
       }
@@ -916,7 +930,6 @@ Model.prototype.update = function (query, update, internals, done, req) {
             done(err)
           } else {
             update = result
-
             saveDocuments()
           }
         })

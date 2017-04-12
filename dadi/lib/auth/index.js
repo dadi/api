@@ -15,7 +15,9 @@ function mustAuthenticate (endpoints, requestUrl, reqMethod) {
   // docs requests don't need to be authenticated
   if (parsedUrl.pathname.indexOf('docs') > 0) return false
 
-  if (parsedUrl.pathname.indexOf('api/media') > 0) return false
+  if (isMediaEndpoint(parsedUrl.pathname)) {
+    return false
+  }
 
   var endpointKey = _.find(_.keys(endpoints), function (k) {
     return parsedUrl.pathname.match(pathToRegexp(k))
@@ -32,6 +34,16 @@ function mustAuthenticate (endpoints, requestUrl, reqMethod) {
   } else {
     return true
   }
+}
+
+/**
+ * If the URL is for a media asset, but not at the root, then it can be unauthenticated
+ * @param {string} pathname - the request URL, without protocol and domain
+ * @returns {Boolean} - returns true if the URL starts with '/api/media/' followed by a filename
+ */
+function isMediaEndpoint (pathname) {
+  const staticEndpoint = '/api/media/'
+  return (pathname.indexOf(staticEndpoint) === 0) && (pathname.length > staticEndpoint.length)
 }
 
 function isAuthorized (endpoints, req, client) {

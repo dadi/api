@@ -6,20 +6,22 @@ var config = require(path.join(__dirname, '/../../../config.js'))
 var tokens = require(path.join(__dirname, '/tokens'))
 var pathToRegexp = require('path-to-regexp')
 
-function mustAuthenticate (endpoints, path, reqMethod) {
-  path = url.parse(path, true)
+function mustAuthenticate (endpoints, requestUrl, reqMethod) {
+  var parsedUrl = url.parse(requestUrl, true)
 
   // all /config requests must be authenticated
-  if (path.pathname.indexOf('config') > -1) return true
+  if (parsedUrl.pathname.indexOf('config') > -1) return true
 
   // docs requests don't need to be authenticated
-  if (path.pathname.indexOf('docs') > 0) return false
+  if (parsedUrl.pathname.indexOf('docs') > 0) return false
 
-  if (isMediaEndpoint(path.pathname)) {
+  if (isMediaEndpoint(parsedUrl.pathname)) {
     return false
   }
 
-  var endpointKey = _.find(_.keys(endpoints), function (k) { return path.pathname.match(pathToRegexp(k)) })
+  var endpointKey = _.find(_.keys(endpoints), function (k) {
+    return parsedUrl.pathname.match(pathToRegexp(k))
+  })
 
   if (!endpointKey) return true
 

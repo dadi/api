@@ -25,6 +25,7 @@
     "convict": "3.0.0",
     "function-rate-limit": "^1.0.1",
     "imagesize": "^1.0.0",
+    "jsonwebtoken": "^7.3.0",
     "latest-version": "~2.0.0",
     "length-stream": "^0.1.1",
     "mkdirp": "^0.5.1",

@@ -9,6 +9,7 @@ var colors = require('colors') // eslint-disable-line
 var parsecomments = require('parse-comments')
 var formatError = require('@dadi/format-error')
 var fs = require('fs')
+var jwt = require('jsonwebtoken')
 var mkdirp = require('mkdirp')
 var path = require('path')
 var pathToRegexp = require('path-to-regexp')
@@ -164,6 +165,17 @@ Server.prototype.start = function (done) {
 
   // add necessary middlewares in order below here...
 
+  app.use((req, res, next) => {
+    var FAVICON_REGEX = /\/(favicon|(apple-)?touch-icon(-i(phone|pad))?(-\d{2,}x\d{2,})?(-precomposed)?)\.(jpe?g|png|ico|gif)$/i
+
+    if (FAVICON_REGEX.test(req.url)) {
+      res.statusCode = 204
+      res.end()
+    } else {
+      next()
+    }
+  })
+
   app.use(bodyParser.json({ limit: '50mb' }))
   app.use(bodyParser.urlencoded({ extended: false, limit: '50mb' }))
   app.use(bodyParser.text({ limit: '50mb' }))
@@ -277,25 +289,78 @@ Server.prototype.loadApi = function (options) {
     self.updateVersions(endpointPath)
   })
 
-  this.app.use('/api/media', function (req, res, next) {
+  // POST media/sign
+  this.app.use('/api/media/sign', (req, res, next) => {
     var method = req.method && req.method.toLowerCase()
-    if ((method !== 'post') && (method !== 'get')) return next()
+    if (method !== 'post') return next()
 
     if (!config.get('media.enabled')) {
       return next()
     }
 
-    var controller = new MediaController()
-    return controller[method](req, res, next)
+    try {
+      var token = this._signToken(req.body)
+    } catch (err) {
+      if (err) {
+        err.statusCode = 400
+        return next(err)
+      }
+    }
+
+    help.sendBackJSON(200, res, next)(null, {
+      url: `/api/media/${token}`
+    })
   })
 
-  this.app.use('/api/media/:filename+', function (req, res, next) {
+  // POST media
+  this.app.use('/api/media/:token', (req, res, next) => {
+    var method = req.method && req.method.toLowerCase()
+    if (method !== 'post') return next()
+
+    if (!config.get('media.enabled')) {
+      return next()
+    }
+
+    if (!req.params.token) {
+      var err = {
+        name: 'NoTokenError',
+        statusCode: 400
+      }
+
+      return next(err)
+    }
+
+    jwt.verify(req.params.token, config.get('media.tokenSecret'), (err, payload) => {
+      if (err) {
+        if (err.name === 'TokenExpiredError') {
+          err.statusCode = 400
+        }
+
+        return next(err)
+      }
+
+      var controller = new MediaController(payload)
+      return controller.post(req, res, next)
+    })
+  })
+
+  // GET media/filename
+  this.app.use('/api/media/:filename+', (req, res, next) => {
     if (!config.get('media.enabled')) {
       return next()
     }
 
     var controller = new MediaController()
     return controller.getFile(req, res, next)
+  })
+
+  // GET media
+  this.app.use('/api/media', (req, res, next) => {
+    var method = req.method && req.method.toLowerCase()
+    if (method !== 'get') return next()
+
+    var controller = new MediaController()
+    return controller[method](req, res, next)
   })
 
   this.app.use('/api/flush', function (req, res, next) {
@@ -987,6 +1052,10 @@ Server.prototype.removeComponent = function (route) {
 
   // remove documentation by path
   delete this.docs[route]
+}
+
+Server.prototype._signToken = function (obj) {
+  return jwt.sign(obj, config.get('media.tokenSecret'), { expiresIn: obj.expiresIn || config.get('media.tokenExpiresIn') })
 }
 
 Server.prototype.addMonitor = function (filepath, callback) {

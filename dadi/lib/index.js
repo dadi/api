@@ -292,7 +292,7 @@ Server.prototype.loadApi = function (options) {
   // POST media/sign
   this.app.use('/api/media/sign', (req, res, next) => {
     var method = req.method && req.method.toLowerCase()
-    if ((method !== 'post') && (method !== 'get')) return next()
+    if (method !== 'post') return next()
 
     if (!config.get('media.enabled')) {
       return next()

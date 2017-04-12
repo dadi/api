@@ -22,6 +22,7 @@ var auth = require(path.join(__dirname, '/auth'))
 var cache = require(path.join(__dirname, '/cache'))
 var controller = require(path.join(__dirname, '/controller'))
 var MediaController = require(path.join(__dirname, '/controller/media'))
+var MediaModel = require(path.join(__dirname, '/model/media'))
 var dadiStatus = require('@dadi/status')
 var help = require(path.join(__dirname, '/help'))
 var log = require('@dadi/logger')
@@ -554,6 +555,7 @@ Server.prototype.loadCollectionRoute = function () {
     var data = {}
     var collections = []
 
+    // Adding normal document collections
     _.each(self.components, function (value, key) {
       var model
       var name = null
@@ -590,6 +592,19 @@ Server.prototype.loadCollectionRoute = function () {
     })
 
     data.collections = _.sortBy(collections, 'path')
+
+    // Adding media collections. For now, this will contain a single entry, but
+    // it's still worth keeping it as an array in case we support multiple media
+    // collections in the future, avoiding breaking changes.
+    var mediaCollections = []
+
+    if (config.get('media.enabled')) {
+      mediaCollections = [Object.assign({}, MediaModel.Schema, {
+        name: config.get('media.collection')
+      })]
+    }
+
+    data.mediaCollections = mediaCollections
 
     return help.sendBackJSON(200, res, next)(null, data)
   })

@@ -11,61 +11,20 @@ var config = require(path.join(__dirname, '/../../../config'))
 var help = require(path.join(__dirname, '/../help'))
 var streamifier = require('streamifier')
 
-var Model = require(path.join(__dirname, '/../model'))
+var MediaModel = require(path.join(__dirname, '/../model/media'))
 var prepareQueryOptions = require(path.join(__dirname, './index')).prepareQueryOptions
 var StorageFactory = require(path.join(__dirname, '/../storage/factory'))
 
 var collectionName = config.get('media.collection')
 
-var schema = {
-  'fields': {
-    'fileName': {
-      'type': 'String',
-      'required': true
-    },
-    'mimetype': {
-      'type': 'String',
-      'required': true
-    },
-    'path': {
-      'type': 'String',
-      'required': true
-    },
-    'awsUrl': {
-      'type': 'String',
-      'required': false
-    },
-    'width': {
-      'type': 'Number',
-      'required': true
-    },
-    'height': {
-      'type': 'Number',
-      'required': true
-    },
-    'contentLength': {
-      'type': 'Number',
-      'required': false
-    }
-  },
-  'settings': {
-    'cache': true,
-    'authenticate': true,
-    'count': 40,
-    'sort': 'filename',
-    'sortOrder': 1,
-    'storeRevisions': false
-  }
-}
-
 var MediaController = function (tokenPayload) {
-  this.model = Model(collectionName, schema.fields, null, schema.settings, null)
+  this.model = new MediaModel(collectionName)
   this.tokenPayload = tokenPayload
 }
 
 MediaController.prototype.get = function (req, res, next) {
   var path = url.parse(req.url, true)
-  var parsedOptions = prepareQueryOptions(path.query, this.model.settings)
+  var parsedOptions = prepareQueryOptions(path.query, this.model.getSchema().settings)
 
   if (parsedOptions.errors.length > 0) {
     return help.sendBackJSON(400, res, next)(null, parsedOptions)

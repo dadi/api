@@ -2505,6 +2505,34 @@ describe('Application', function () {
             done()
           })
       })
+
+      it('should return the name and schema of media collections', function (done) {
+        var mediaCollectionSchema = require(__dirname + '/../../dadi/lib/model/media').Schema
+        var mediaCollectionName = 'mediaStore'
+
+        config.set('media.enabled', true)
+        config.set('media.collection', mediaCollectionName)
+
+        request(connectionString)
+          .get('/api/collections')
+          .set('Authorization', 'Bearer ' + bearerToken)
+          .expect(200)
+          .expect('content-type', 'application/json')
+          .end(function (err, res) {
+            if (err) return done(err)
+
+            res.body.should.be.Object
+            res.body.mediaCollections.should.be.Array
+
+            res.body.mediaCollections[0].name.should.eql(mediaCollectionName)
+            JSON.stringify(res.body.mediaCollections[0].fields).should.eql(JSON.stringify(mediaCollectionSchema.fields))
+            JSON.stringify(res.body.mediaCollections[0].settings).should.eql(JSON.stringify(mediaCollectionSchema.settings))
+
+            config.set('media.enabled', false)
+
+            done()
+          })
+      })  
     })
 
     describe('DELETE', function () {

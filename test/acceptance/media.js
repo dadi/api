@@ -251,4 +251,70 @@ describe('Media', function () {
       })
     })
   })
+
+  describe('GET', function () {
+    it('should return an empty result set if no media has been created', function (done) {
+      var client = request(connectionString)
+
+      client
+      .get('/api/media')
+      .set('Authorization', 'Bearer ' + bearerToken)
+      .set('content-type', 'application/json')
+      .expect(200)
+      .end((err, res) => {
+        if (err) return done(err)
+        should.exist(res.body.results)
+        res.body.results.should.be.Array
+        res.body.results.length.should.eql(0)
+        done()
+      })
+    })
+
+    it('should return results of uploaded media', function (done) {
+      var obj = {
+        fileName: '1f525.png',
+        mimetype: 'image/png'
+      }
+
+      var client = request(connectionString)
+
+      client
+      .post('/api/media/sign')
+      .set('Authorization', 'Bearer ' + bearerToken)
+      .set('content-type', 'application/json')
+      .send(obj)
+      .end((err, res) => {
+        if (err) return done(err)
+
+        var url = res.body.url
+
+        client
+        .post(url)
+        .set('content-type', 'application/json')
+        .attach('avatar', 'test/acceptance/workspace/media/1f525.png')
+        .end((err, res) => {
+          if (err) return done(err)
+
+          should.exist(res.body.results)
+          res.body.results.should.be.Array
+          res.body.results.length.should.eql(1)
+          res.body.results[0].fileName.should.eql('1f525.png')
+
+          client
+          .get('/api/media')
+          .set('Authorization', 'Bearer ' + bearerToken)
+          .set('content-type', 'application/json')
+          .expect(200)
+          .end((err, res) => {
+            if (err) return done(err)
+            should.exist(res.body.results)
+            res.body.results.should.be.Array
+            res.body.results.length.should.eql(1)
+            res.body.results[0].fileName.should.eql('1f525.png')
+            done()
+          })
+        })
+      })
+    })
+  })
 })

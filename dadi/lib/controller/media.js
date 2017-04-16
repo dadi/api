@@ -16,9 +16,10 @@ var prepareQueryOptions = require(path.join(__dirname, './index')).prepareQueryO
 var StorageFactory = require(path.join(__dirname, '/../storage/factory'))
 
 var collectionName = config.get('media.collection')
+var model = new MediaModel(collectionName)
 
 var MediaController = function (tokenPayload) {
-  this.model = new MediaModel(collectionName)
+  this.model = model
   this.tokenPayload = tokenPayload
 }
 
@@ -47,6 +48,8 @@ MediaController.prototype.post = function (req, res, next) {
   var busboy = new Busboy({ headers: req.headers })
   this.data = []
   this.fileName = ''
+
+  console.log(res.headers)
 
   // Listen for event when Busboy finds a file to stream
   busboy.on('file', (fieldname, file, filename, encoding, mimetype) => {

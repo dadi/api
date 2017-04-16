@@ -49,12 +49,10 @@ MediaController.prototype.post = function (req, res, next) {
   this.data = []
   this.fileName = ''
 
-  console.log(res.headers)
-
   // Listen for event when Busboy finds a file to stream
   busboy.on('file', (fieldname, file, filename, encoding, mimetype) => {
     if (this.tokenPayload) {
-      if (this.tokenPayload.fileName !== filename) {
+      if (this.tokenPayload.fileName && this.tokenPayload.fileName !== filename) {
         return next({
           statusCode: 400,
           name: 'Unexpected filename',
@@ -62,7 +60,7 @@ MediaController.prototype.post = function (req, res, next) {
         })
       }
 
-      if (this.tokenPayload.mimetype !== mimetype) {
+      if (this.tokenPayload.mimetype && this.tokenPayload.mimetype !== mimetype) {
         return next({
           statusCode: 400,
           name: 'Unexpected mimetype',

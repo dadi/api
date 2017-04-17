@@ -2506,33 +2506,40 @@ describe('Application', function () {
           })
       })
 
-      it('should return the name and schema of media collections', function (done) {
-        var mediaCollectionSchema = require(__dirname + '/../../dadi/lib/model/media').Schema
-        var mediaCollectionName = 'mediaStore'
-
-        config.set('media.enabled', true)
-        config.set('media.collection', mediaCollectionName)
-
+      it('should return media collections', function (done) {
+        // mimic a file that could be sent to the server
+        var mediaSchema = fs.readFileSync(__dirname + '/../media-schema.json', {encoding: 'utf8'})
         request(connectionString)
-          .get('/api/collections')
-          .set('Authorization', 'Bearer ' + bearerToken)
-          .expect(200)
-          .expect('content-type', 'application/json')
-          .end(function (err, res) {
-            if (err) return done(err)
+        .post('/1.0/testdb/media/config')
+        .send(mediaSchema)
+        .set('content-type', 'text/plain')
+        .set('Authorization', 'Bearer ' + bearerToken)
+        .expect(200)
+        .expect('content-type', 'application/json')
+        .end(function (err, res) {
+          if (err) return done(err)
 
-            res.body.should.be.Object
-            res.body.mediaCollections.should.be.Array
+          // Wait for a few seconds then make request to test that the new endpoint is working
+          setTimeout(function () {
+            request(connectionString)
+            .get('/api/collections')
+            .set('Authorization', 'Bearer ' + bearerToken)
+            .expect(200)
+            .expect('content-type', 'application/json')
+            .end((err, res) => {
+              var collections = res.body.collections
+              collections.should.be.Array
 
-            res.body.mediaCollections[0].name.should.eql(mediaCollectionName)
-            JSON.stringify(res.body.mediaCollections[0].fields).should.eql(JSON.stringify(mediaCollectionSchema.fields))
-            JSON.stringify(res.body.mediaCollections[0].settings).should.eql(JSON.stringify(mediaCollectionSchema.settings))
-
-            config.set('media.enabled', false)
-
-            done()
-          })
-      })  
+              // var names = _.pluck(collections, 'name')
+              // _.contains(names, 'media').should.eql(true)
+              var collection = _.findWhere(collections, { name: 'media' })
+              should.exist(collection)
+              collection.type.should.eql('media')
+              done()
+            })
+          }, 300)
+        })
+      })
     })
 
     describe('DELETE', function () {

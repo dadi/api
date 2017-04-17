@@ -22,7 +22,6 @@ var auth = require(path.join(__dirname, '/auth'))
 var cache = require(path.join(__dirname, '/cache'))
 var controller = require(path.join(__dirname, '/controller'))
 var MediaController = require(path.join(__dirname, '/controller/media'))
-var MediaModel = require(path.join(__dirname, '/model/media'))
 var dadiStatus = require('@dadi/status')
 var help = require(path.join(__dirname, '/help'))
 var log = require('@dadi/logger')
@@ -291,78 +290,78 @@ Server.prototype.loadApi = function (options) {
   })
 
   // POST media/sign
-  this.app.use('/api/media/sign', (req, res, next) => {
-    var method = req.method && req.method.toLowerCase()
-    if (method !== 'post') return next()
-
-    if (!config.get('media.enabled')) {
-      return next()
-    }
-
-    try {
-      var token = this._signToken(req.body)
-    } catch (err) {
-      if (err) {
-        err.statusCode = 400
-        return next(err)
-      }
-    }
-
-    help.sendBackJSON(200, res, next)(null, {
-      url: `/api/media/${token}`
-    })
-  })
+  // this.app.use('/api/media/sign', (req, res, next) => {
+  //   var method = req.method && req.method.toLowerCase()
+  //   if (method !== 'post') return next()
+  //
+  //   if (!config.get('media.enabled')) {
+  //     return next()
+  //   }
+  //
+  //   try {
+  //     var token = this._signToken(req.body)
+  //   } catch (err) {
+  //     if (err) {
+  //       err.statusCode = 400
+  //       return next(err)
+  //     }
+  //   }
+  //
+  //   help.sendBackJSON(200, res, next)(null, {
+  //     url: `/api/media/${token}`
+  //   })
+  // })
 
   // POST media
-  this.app.use('/api/media/:token', (req, res, next) => {
-    var method = req.method && req.method.toLowerCase()
-    if (method !== 'post') return next()
+  // this.app.use('/api/media/:token', (req, res, next) => {
+  //   var method = req.method && req.method.toLowerCase()
+  //   if (method !== 'post') return next()
+  //
+  //   if (!config.get('media.enabled')) {
+  //     return next()
+  //   }
+  //
+  //   if (!req.params.token) {
+  //     var err = {
+  //       name: 'NoTokenError',
+  //       statusCode: 400
+  //     }
+  //
+  //     return next(err)
+  //   }
+  //
+  //   jwt.verify(req.params.token, config.get('media.tokenSecret'), (err, payload) => {
+  //     if (err) {
+  //       if (err.name === 'TokenExpiredError') {
+  //         err.statusCode = 400
+  //       }
+  //
+  //       return next(err)
+  //     }
+  //
+  //     var controller = new MediaController(payload)
+  //     return controller.post(req, res, next)
+  //   })
+  // })
 
-    if (!config.get('media.enabled')) {
-      return next()
-    }
-
-    if (!req.params.token) {
-      var err = {
-        name: 'NoTokenError',
-        statusCode: 400
-      }
-
-      return next(err)
-    }
-
-    jwt.verify(req.params.token, config.get('media.tokenSecret'), (err, payload) => {
-      if (err) {
-        if (err.name === 'TokenExpiredError') {
-          err.statusCode = 400
-        }
-
-        return next(err)
-      }
-
-      var controller = new MediaController(payload)
-      return controller.post(req, res, next)
-    })
-  })
-
-  // GET media/filename
-  this.app.use('/api/media/:filename+', (req, res, next) => {
-    if (!config.get('media.enabled')) {
-      return next()
-    }
-
-    var controller = new MediaController()
-    return controller.getFile(req, res, next)
-  })
+  // // GET media/filename
+  // this.app.use('/api/media/:filename+', (req, res, next) => {
+  //   if (!config.get('media.enabled')) {
+  //     return next()
+  //   }
+  //
+  //   var controller = new MediaController()
+  //   return controller.getFile(req, res, next)
+  // })
 
   // GET media
-  this.app.use('/api/media', (req, res, next) => {
-    var method = req.method && req.method.toLowerCase()
-    if (method !== 'get') return next()
-
-    var controller = new MediaController()
-    return controller[method](req, res, next)
-  })
+  // this.app.use('/api/media', (req, res, next) => {
+  //   var method = req.method && req.method.toLowerCase()
+  //   if (method !== 'get') return next()
+  //
+  //   var controller = new MediaController()
+  //   return controller[method](req, res, next)
+  // })
 
   this.app.use('/api/flush', function (req, res, next) {
     var method = req.method && req.method.toLowerCase()
@@ -573,10 +572,6 @@ Server.prototype.loadCollectionRoute = function () {
           slug = model.name
         }
 
-        if (model.hasOwnProperty('settings') && model.settings.hasOwnProperty('displayName')) {
-          name = model.settings.displayName
-        }
-
         var collection = {
           version: parts[0],
           database: parts[1],
@@ -585,7 +580,11 @@ Server.prototype.loadCollectionRoute = function () {
           path: '/' + [parts[0], parts[1], slug].join('/')
         }
 
-        if (model.settings.lastModifiedAt) collection.lastModifiedAt = model.settings.lastModifiedAt
+        if (model.hasOwnProperty('settings')) {
+          if (model.settings.hasOwnProperty('displayName')) collection.name = model.settings.displayName
+          if (model.settings.hasOwnProperty('lastModifiedAt')) collection.lastModifiedAt = model.settings.lastModifiedAt
+          if (model.settings.hasOwnProperty('type')) collection.type = model.settings.type
+        }
 
         collections.push(collection)
       }
@@ -596,15 +595,15 @@ Server.prototype.loadCollectionRoute = function () {
     // Adding media collections. For now, this will contain a single entry, but
     // it's still worth keeping it as an array in case we support multiple media
     // collections in the future, avoiding breaking changes.
-    var mediaCollections = []
-
-    if (config.get('media.enabled')) {
-      mediaCollections = [Object.assign({}, MediaModel.Schema, {
-        name: config.get('media.collection')
-      })]
-    }
-
-    data.mediaCollections = mediaCollections
+    // var mediaCollections = []
+    //
+    // if (config.get('media.enabled')) {
+    //   mediaCollections = [Object.assign({}, MediaModel.Schema, {
+    //     name: config.get('media.collection')
+    //   })]
+    // }
+    //
+    // data.mediaCollections = mediaCollections
 
     return help.sendBackJSON(200, res, next)(null, data)
   })
@@ -805,8 +804,18 @@ Server.prototype.addCollectionResource = function (options) {
 
   var enableCollectionDatabases = config.get('database.enableCollectionDatabases')
   var database = enableCollectionDatabases ? options.database : null
-  var mod = model(options.name, JSON.parse(fields), null, options.schema.settings, database)
-  var control = controller(mod)
+
+  var settings = options.schema.settings
+  var mod
+  var control
+
+  mod = model(options.name, JSON.parse(fields), null, settings, database)
+
+  if (settings.type && settings.type === 'media') {
+    control = MediaController(mod)
+  } else {
+    control = controller(mod)
+  }
 
   this.addComponent({
     route: options.route,
@@ -957,9 +966,9 @@ Server.prototype.addHook = function (options) {
 Server.prototype.addComponent = function (options) {
   // check if the endpoint is supplying a custom config block
   if (options.component.config && typeof options.component.config === 'function') {
-    var config = options.component.config()
-    if (config && config.route) {
-      options.route = config.route
+    var componentConfig = options.component.config()
+    if (componentConfig && componentConfig.route) {
+      options.route = componentConfig.route
     }
   }
 
@@ -1030,35 +1039,130 @@ Server.prototype.addComponent = function (options) {
     next()
   })
 
-  this.app.use(options.route, function (req, res, next) {
-    try {
-      // map request method to controller method
-      var method = req.method && req.method.toLowerCase()
+  if (options.component.constructor.name !== 'MediaController') {
+    this.app.use(options.route, function (req, res, next) {
+      try {
+        // map request method to controller method
+        var method = req.method && req.method.toLowerCase()
 
-      if (method && options.component[method]) return options.component[method](req, res, next)
+        if (method && options.component[method]) return options.component[method](req, res, next)
 
-      if (method && (method === 'options')) return help.sendBackJSON(200, res, next)(null, null)
-    } catch (err) {
-      var trace = stackTrace.parse(err)
+        if (method && (method === 'options')) return help.sendBackJSON(200, res, next)(null, null)
+      } catch (err) {
+        var trace = stackTrace.parse(err)
 
-      if (trace) {
-        var stack = 'Error "' + err + '"\n'
-        for (var i = 0; i < trace.length; i++) {
-          stack += '  at ' + trace[i].methodName + ' (' + trace[i].fileName + ':' + trace[i].lineNumber + ':' + trace[i].columnNumber + ')\n'
+        if (trace) {
+          var stack = 'Error "' + err + '"\n'
+          for (var i = 0; i < trace.length; i++) {
+            stack += '  at ' + trace[i].methodName + ' (' + trace[i].fileName + ':' + trace[i].lineNumber + ':' + trace[i].columnNumber + ')\n'
+          }
+          var error = new Error()
+          error.statusCode = 500
+          error.json = { 'error': stack }
+
+          console.log(stack)
+          return next(error)
+        } else {
+          return next(err)
         }
-        var error = new Error()
-        error.statusCode = 500
-        error.json = { 'error': stack }
-
-        console.log(stack)
-        return next(error)
-      } else {
-        return next(err)
       }
+
+      next()
+    })
+  }
+
+  if (options.component.constructor.name === 'MediaController') {
+    var mediaRoute = options.route.replace('/' + idParam, '')
+    this.components[mediaRoute] = options.component
+    this.components[mediaRoute + '/:token+'] = options.component
+    this.components[mediaRoute + '/:filename(.*png|.*jpg|.*gif|.*bmp|.*tiff)'] = options.component
+
+    if (options.component.setRoute) {
+      options.component.setRoute(mediaRoute)
     }
 
-    next()
-  })
+    this.app.use(mediaRoute, (req, res, next) => {
+      var method = req.method && req.method.toLowerCase()
+      if (method !== 'get') return next()
+
+      if (options.component[method]) {
+        return options.component[method](req, res, next)
+      }
+    })
+
+    // POST media/sign
+    this.app.use(mediaRoute + '/sign', (req, res, next) => {
+      var method = req.method && req.method.toLowerCase()
+      if (method !== 'post') return next()
+
+      // if (!config.get('media.enabled')) {
+      //   return next()
+      // }
+
+      try {
+        var token = this._signToken(req.body)
+      } catch (err) {
+        if (err) {
+          err.statusCode = 400
+          return next(err)
+        }
+      }
+
+      var signedUrl = options.route.replace('/' + idParam, '')
+      signedUrl = `${signedUrl}/${token}`
+
+      help.sendBackJSON(200, res, next)(null, {
+        url: signedUrl
+      })
+    })
+
+    this.app.use(mediaRoute + '/:token', (req, res, next) => {
+      var method = req.method && req.method.toLowerCase()
+      if (method !== 'post') return next()
+
+      // if (!config.get('media.enabled')) {
+      //   return next()
+      // }
+
+      if (!req.params.token) {
+        var err = {
+          name: 'NoTokenError',
+          statusCode: 400
+        }
+
+        return next(err)
+      }
+
+      jwt.verify(req.params.token, config.get('media.tokenSecret'), (err, payload) => {
+        if (err) {
+          if (err.name === 'TokenExpiredError') {
+            err.statusCode = 400
+          }
+
+          return next(err)
+        }
+
+        if (options.component.setPayload) {
+          options.component.setPayload(payload)
+        }
+
+        if (options.component[method]) {
+          return options.component[method](req, res, next)
+        }
+      })
+    })
+
+    // GET media/filename
+    this.app.use(mediaRoute + '/:filename(.*png|.*jpg|.*gif|.*bmp|.*tiff)', (req, res, next) => {
+      // if (!config.get('media.enabled')) {
+      //   return next()
+      // }
+
+      if (options.component.getFile) {
+        return options.component.getFile(req, res, next)
+      }
+    })
+  }
 }
 
 Server.prototype.removeComponent = function (route) {

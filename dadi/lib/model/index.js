@@ -445,7 +445,7 @@ Model.prototype.find = function (query, options, done) {
     if (doneQueue.length > 0) {
       // Assign err, data to the first function
       doneQueue.splice(0, 0, async.apply(assignVariables, err, data))
-      // Run the req.query.ue tasks
+      // Run the queued tasks
       async.waterfall(doneQueue, function (arg1, err, data) {
         // Return data
         return done(err, data)

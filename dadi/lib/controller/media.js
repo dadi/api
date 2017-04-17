@@ -1,4 +1,3 @@
-var _ = require('underscore')
 var Busboy = require('busboy')
 var imagesize = require('imagesize')
 var PassThrough = require('stream').PassThrough
@@ -11,27 +10,32 @@ var config = require(path.join(__dirname, '/../../../config'))
 var help = require(path.join(__dirname, '/../help'))
 var streamifier = require('streamifier')
 
-var MediaModel = require(path.join(__dirname, '/../model/media'))
+var prepareQuery = require(path.join(__dirname, './index')).prepareQuery
 var prepareQueryOptions = require(path.join(__dirname, './index')).prepareQueryOptions
 var StorageFactory = require(path.join(__dirname, '/../storage/factory'))
 
-var collectionName = config.get('media.collection')
-var model = new MediaModel(collectionName)
-
-var MediaController = function (tokenPayload) {
+var MediaController = function (model) {
   this.model = model
-  this.tokenPayload = tokenPayload
+}
+
+MediaController.prototype.setRoute = function (route) {
+  this.route = route
+}
+
+MediaController.prototype.setPayload = function (payload) {
+  this.tokenPayload = payload
 }
 
 MediaController.prototype.get = function (req, res, next) {
   var path = url.parse(req.url, true)
-  var parsedOptions = prepareQueryOptions(path.query, this.model.getSchema().settings)
+  var query = prepareQuery(req, this.model)
+  var parsedOptions = prepareQueryOptions(path.query, this.model.settings)
 
   if (parsedOptions.errors.length > 0) {
     return help.sendBackJSON(400, res, next)(null, parsedOptions)
   }
 
-  this.model.get({}, parsedOptions.queryOptions, help.sendBackJSON(200, res, next), req)
+  this.model.get(query, parsedOptions.queryOptions, help.sendBackJSON(200, res, next), req)
 }
 
 MediaController.prototype.getFile = function (req, res, next) {
@@ -51,6 +55,9 @@ MediaController.prototype.post = function (req, res, next) {
 
   // Listen for event when Busboy finds a file to stream
   busboy.on('file', (fieldname, file, filename, encoding, mimetype) => {
+    console.log(filename)
+    console.log(encoding)
+    console.log(mimetype)
     if (this.tokenPayload) {
       if (this.tokenPayload.fileName && this.tokenPayload.fileName !== filename) {
         return next({
@@ -77,7 +84,7 @@ MediaController.prototype.post = function (req, res, next) {
     })
 
     file.on('end', () => {
-      // console.log('Finished with ' + fieldname)
+      console.log('Finished with ' + filename)
     })
   })
 
@@ -105,20 +112,26 @@ MediaController.prototype.post = function (req, res, next) {
         console.log(err)
       }
 
+      var fields = Object.keys(this.model.schema)
+
       var obj = {
-        fileName: this.fileName,
-        mimetype: this.mimetype,
-        width: imageInfo.width,
-        height: imageInfo.height
+        fileName: this.fileName
       }
 
+      if (fields['mimetype']) obj.mimetype = this.mimetype
+      if (fields['width']) obj.width = imageInfo.width
+      if (fields['height']) obj.height = imageInfo.height
+
       var internals = {
+        apiVersion: req.url.split('/')[1],
         createdAt: Date.now(),
         createdBy: req.client && req.client.clientId
       }
 
-      return writeFile(req, this.fileName, this.mimetype, dataStream).then((result) => {
-        obj = _.extend(obj, result)
+      return this.writeFile(req, this.fileName, this.mimetype, dataStream).then((result) => {
+        if (fields['contentLength']) obj.contentLength = result.contentLength
+
+        obj.path = result.path
 
         this.model.create(obj, internals, help.sendBackJSON(201, res, next), req)
       })
@@ -129,15 +142,9 @@ MediaController.prototype.post = function (req, res, next) {
   req.pipe(busboy)
 }
 
-module.exports = function (tokenPayload) {
-  return new MediaController(tokenPayload)
-}
-
-module.exports.MediaController = MediaController
-
-function writeFile (req, fileName, mimetype, stream) {
+MediaController.prototype.writeFile = function (req, fileName, mimetype, stream) {
   return new Promise((resolve, reject) => {
-    var folderPath = getPath(fileName)
+    var folderPath = path.join(this.route, this.getPath(fileName))
     var storageHandler = StorageFactory.create(fileName)
 
     storageHandler.put(stream, folderPath).then((result) => {
@@ -148,7 +155,7 @@ function writeFile (req, fileName, mimetype, stream) {
   })
 }
 
-function getPath (fileName) {
+MediaController.prototype.getPath = function (fileName) {
   var reSplitter
 
   switch (config.get('media.pathFormat')) {
@@ -186,3 +193,9 @@ function formatDate (includeTime) {
 
   return dateParts.join('/')
 }
+
+module.exports = function (model) {
+  return new MediaController(model)
+}
+
+module.exports.MediaController = MediaController

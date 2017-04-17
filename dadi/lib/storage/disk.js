@@ -34,7 +34,7 @@ DiskStorage.prototype.getFullUrl = function () {
  * @returns {string}
  */
 DiskStorage.prototype.getStaticAssetUrl = function (folderPath, fileName) {
-  return `${config.get('server.protocol')}://${config.get('server.host')}:${config.get('server.port')}/api/media/${folderPath}/${fileName}`
+  return `${config.get('server.protocol')}://${config.get('server.host')}:${config.get('server.port')}${folderPath}/${fileName}`
 }
 
 /**

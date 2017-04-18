@@ -1159,7 +1159,7 @@ Server.prototype.addComponent = function (options) {
       // }
 
       if (options.component.getFile) {
-        return options.component.getFile(req, res, next)
+        return options.component.getFile(req, res, next, mediaRoute)
       }
     })
   }

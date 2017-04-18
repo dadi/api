@@ -38,12 +38,14 @@ MediaController.prototype.get = function (req, res, next) {
   this.model.get(query, parsedOptions.queryOptions, help.sendBackJSON(200, res, next), req)
 }
 
-MediaController.prototype.getFile = function (req, res, next) {
+MediaController.prototype.getFile = function (req, res, next, route) {
   // `serveStatic` will look at the entire URL to find the file it needs to
   // serve, but we're not serving files from the root. To get around this, we
   // pass it a modified version of the URL, where the root URL becomes just the
   // filename parameter.
-  const modifiedReq = Object.assign({}, req, {url: req.params.filename})
+  const modifiedReq = Object.assign({}, req, {
+    url: `${route}/${req.params.filename}`
+  })
 
   return serveStatic(config.get('media.basePath'))(modifiedReq, res, next)
 }

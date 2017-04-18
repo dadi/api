@@ -586,7 +586,15 @@ Server.prototype.loadCollectionRoute = function () {
           if (model.settings.hasOwnProperty('type')) collection.type = model.settings.type
         }
 
-        collections.push(collection)
+        const collectionAlreadyAdded = collections.some(collectionInArray => {
+          return collectionInArray.name === collection.name &&
+            collectionInArray.version === collection.version &&
+            collectionInArray.database === collection.database
+        })
+
+        if (!collectionAlreadyAdded) {
+          collections.push(collection)
+        }
       }
     })
 

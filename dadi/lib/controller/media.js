@@ -120,9 +120,9 @@ MediaController.prototype.post = function (req, res, next) {
         fileName: this.fileName
       }
 
-      if (fields['mimetype']) obj.mimetype = this.mimetype
-      if (fields['width']) obj.width = imageInfo.width
-      if (fields['height']) obj.height = imageInfo.height
+      if (fields.includes('mimetype')) obj.mimetype = this.mimetype
+      if (fields.includes('width')) obj.width = imageInfo.width
+      if (fields.includes('height')) obj.height = imageInfo.height
 
       var internals = {
         apiVersion: req.url.split('/')[1],
@@ -131,7 +131,7 @@ MediaController.prototype.post = function (req, res, next) {
       }
 
       return this.writeFile(req, this.fileName, this.mimetype, dataStream).then((result) => {
-        if (fields['contentLength']) obj.contentLength = result.contentLength
+        if (fields.includes('contentLength')) obj.contentLength = result.contentLength
 
         obj.path = result.path
 

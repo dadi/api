@@ -1,3 +1,4 @@
+var _ = require('underscore')
 var Busboy = require('busboy')
 var imagesize = require('imagesize')
 var PassThrough = require('stream').PassThrough
@@ -57,9 +58,6 @@ MediaController.prototype.post = function (req, res, next) {
 
   // Listen for event when Busboy finds a file to stream
   busboy.on('file', (fieldname, file, filename, encoding, mimetype) => {
-    console.log(filename)
-    console.log(encoding)
-    console.log(mimetype)
     if (this.tokenPayload) {
       if (this.tokenPayload.fileName && this.tokenPayload.fileName !== filename) {
         return next({
@@ -120,9 +118,9 @@ MediaController.prototype.post = function (req, res, next) {
         fileName: this.fileName
       }
 
-      if (fields.includes('mimetype')) obj.mimetype = this.mimetype
-      if (fields.includes('width')) obj.width = imageInfo.width
-      if (fields.includes('height')) obj.height = imageInfo.height
+      if (_.contains(fields, 'mimetype')) obj.mimetype = this.mimetype
+      if (_.contains(fields, 'width')) obj.width = imageInfo.width
+      if (_.contains(fields, 'height')) obj.height = imageInfo.height
 
       var internals = {
         apiVersion: req.url.split('/')[1],
@@ -131,7 +129,7 @@ MediaController.prototype.post = function (req, res, next) {
       }
 
       return this.writeFile(req, this.fileName, this.mimetype, dataStream).then((result) => {
-        if (fields.includes('contentLength')) obj.contentLength = result.contentLength
+        if (_.contains(fields, 'contentLength')) obj.contentLength = result.contentLength
 
         obj.path = result.path
 

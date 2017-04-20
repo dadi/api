@@ -292,11 +292,6 @@ var conf = convict({
     }
   },
   media: {
-    enabled: {
-      doc: 'If true, files can be uploaded to API with a POST request',
-      format: Boolean,
-      default: false
-    },
     tokenSecret: {
       doc: 'The secret key used to sign and verify tokens when uploading media',
       format: String,
@@ -306,11 +301,6 @@ var conf = convict({
       doc: 'The duration a signed token is valid for. Expressed in seconds or a string describing a time span (https://github.com/zeit/ms). Eg: 60, "2 days", "10h", "7d"',
       format: '*',
       default: '1h'
-    },
-    collection: {
-      doc: 'The name of the API collection to store the metadata for uploaded media',
-      format: String,
-      default: 'mediaStore'
     },
     storage: {
       doc: 'Determines the storage type for uploads',
@@ -323,7 +313,7 @@ var conf = convict({
       default: 'workspace/media'
     },
     pathFormat: {
-      doc: 'Determines the format for subdirectories that are created to store uploads',
+      doc: 'Determines the format for the generation of subdirectories to store uploads',
       format: ['none', 'date', 'datetime', 'sha1/4', 'sha1/5', 'sha1/8'],
       default: 'date'
     },

@@ -9,6 +9,7 @@ var colors = require('colors') // eslint-disable-line
 var parsecomments = require('parse-comments')
 var formatError = require('@dadi/format-error')
 var fs = require('fs')
+var jwt = require('jsonwebtoken')
 var mkdirp = require('mkdirp')
 var path = require('path')
 var pathToRegexp = require('path-to-regexp')
@@ -164,6 +165,17 @@ Server.prototype.start = function (done) {
 
   // add necessary middlewares in order below here...
 
+  app.use((req, res, next) => {
+    var FAVICON_REGEX = /\/(favicon|(apple-)?touch-icon(-i(phone|pad))?(-\d{2,}x\d{2,})?(-precomposed)?)\.(jpe?g|png|ico|gif)$/i
+
+    if (FAVICON_REGEX.test(req.url)) {
+      res.statusCode = 204
+      res.end()
+    } else {
+      next()
+    }
+  })
+
   app.use(bodyParser.json({ limit: '50mb' }))
   app.use(bodyParser.urlencoded({ extended: false, limit: '50mb' }))
   app.use(bodyParser.text({ limit: '50mb' }))
@@ -275,18 +287,6 @@ Server.prototype.loadApi = function (options) {
 
   this.addMonitor(endpointPath, function (endpointFile) {
     self.updateVersions(endpointPath)
-  })
-
-  this.app.use('/api/media', function (req, res, next) {
-    var method = req.method && req.method.toLowerCase()
-    if (method !== 'post') return next()
-
-    if (!config.get('media.enabled')) {
-      return next()
-    }
-
-    var controller = new MediaController()
-    return controller.post(req, res, next)
   })
 
   this.app.use('/api/flush', function (req, res, next) {
@@ -480,6 +480,7 @@ Server.prototype.loadCollectionRoute = function () {
     var data = {}
     var collections = []
 
+    // Adding normal document collections
     _.each(self.components, function (value, key) {
       var model
       var name = null
@@ -497,10 +498,6 @@ Server.prototype.loadCollectionRoute = function () {
           slug = model.name
         }
 
-        if (model.hasOwnProperty('settings') && model.settings.hasOwnProperty('displayName')) {
-          name = model.settings.displayName
-        }
-
         var collection = {
           version: parts[0],
           database: parts[1],
@@ -509,13 +506,38 @@ Server.prototype.loadCollectionRoute = function () {
           path: '/' + [parts[0], parts[1], slug].join('/')
         }
 
-        if (model.settings.lastModifiedAt) collection.lastModifiedAt = model.settings.lastModifiedAt
+        if (model.hasOwnProperty('settings')) {
+          if (model.settings.hasOwnProperty('displayName')) collection.name = model.settings.displayName
+          if (model.settings.hasOwnProperty('lastModifiedAt')) collection.lastModifiedAt = model.settings.lastModifiedAt
+          if (model.settings.hasOwnProperty('type')) collection.type = model.settings.type
+        }
 
-        collections.push(collection)
+        const collectionAlreadyAdded = collections.some(collectionInArray => {
+          return collectionInArray.name === collection.name &&
+            collectionInArray.version === collection.version &&
+            collectionInArray.database === collection.database
+        })
+
+        if (!collectionAlreadyAdded) {
+          collections.push(collection)
+        }
       }
     })
 
     data.collections = _.sortBy(collections, 'path')
+
+    // Adding media collections. For now, this will contain a single entry, but
+    // it's still worth keeping it as an array in case we support multiple media
+    // collections in the future, avoiding breaking changes.
+    // var mediaCollections = []
+    //
+    // if (config.get('media.enabled')) {
+    //   mediaCollections = [Object.assign({}, MediaModel.Schema, {
+    //     name: config.get('media.collection')
+    //   })]
+    // }
+    //
+    // data.mediaCollections = mediaCollections
 
     return help.sendBackJSON(200, res, next)(null, data)
   })
@@ -716,8 +738,18 @@ Server.prototype.addCollectionResource = function (options) {
 
   var enableCollectionDatabases = config.get('database.enableCollectionDatabases')
   var database = enableCollectionDatabases ? options.database : null
-  var mod = model(options.name, JSON.parse(fields), null, options.schema.settings, database)
-  var control = controller(mod)
+
+  var settings = options.schema.settings
+  var mod
+  var control
+
+  mod = model(options.name, JSON.parse(fields), null, settings, database)
+
+  if (settings.type && settings.type === 'media') {
+    control = MediaController(mod)
+  } else {
+    control = controller(mod)
+  }
 
   this.addComponent({
     route: options.route,
@@ -868,9 +900,9 @@ Server.prototype.addHook = function (options) {
 Server.prototype.addComponent = function (options) {
   // check if the endpoint is supplying a custom config block
   if (options.component.config && typeof options.component.config === 'function') {
-    var config = options.component.config()
-    if (config && config.route) {
-      options.route = config.route
+    var componentConfig = options.component.config()
+    if (componentConfig && componentConfig.route) {
+      options.route = componentConfig.route
     }
   }
 
@@ -941,35 +973,126 @@ Server.prototype.addComponent = function (options) {
     next()
   })
 
-  this.app.use(options.route, function (req, res, next) {
-    try {
-      // map request method to controller method
-      var method = req.method && req.method.toLowerCase()
+  if (options.component.constructor.name !== 'MediaController') {
+    this.app.use(options.route, function (req, res, next) {
+      try {
+        // map request method to controller method
+        var method = req.method && req.method.toLowerCase()
 
-      if (method && options.component[method]) return options.component[method](req, res, next)
+        if (method && options.component[method]) return options.component[method](req, res, next)
 
-      if (method && (method === 'options')) return help.sendBackJSON(200, res, next)(null, null)
-    } catch (err) {
-      var trace = stackTrace.parse(err)
+        if (method && (method === 'options')) return help.sendBackJSON(200, res, next)(null, null)
+      } catch (err) {
+        var trace = stackTrace.parse(err)
 
-      if (trace) {
-        var stack = 'Error "' + err + '"\n'
-        for (var i = 0; i < trace.length; i++) {
-          stack += '  at ' + trace[i].methodName + ' (' + trace[i].fileName + ':' + trace[i].lineNumber + ':' + trace[i].columnNumber + ')\n'
+        if (trace) {
+          var stack = 'Error "' + err + '"\n'
+          for (var i = 0; i < trace.length; i++) {
+            stack += '  at ' + trace[i].methodName + ' (' + trace[i].fileName + ':' + trace[i].lineNumber + ':' + trace[i].columnNumber + ')\n'
+          }
+          var error = new Error()
+          error.statusCode = 500
+          error.json = { 'error': stack }
+
+          console.log(stack)
+          return next(error)
+        } else {
+          return next(err)
         }
-        var error = new Error()
-        error.statusCode = 500
-        error.json = { 'error': stack }
-
-        console.log(stack)
-        return next(error)
-      } else {
-        return next(err)
       }
+
+      next()
+    })
+  }
+
+  var isMedia = options.component.model &&
+    options.component.model.settings &&
+    options.component.model.settings.type &&
+    options.component.model.settings.type === 'media'
+
+  if (isMedia) {
+    var mediaRoute = options.route.replace('/' + idParam, '')
+    this.components[mediaRoute] = options.component
+    this.components[mediaRoute + '/:token+'] = options.component
+    this.components[mediaRoute + '/:filename(.*png|.*jpg|.*gif|.*bmp|.*tiff)'] = options.component
+
+    if (options.component.setRoute) {
+      options.component.setRoute(mediaRoute)
     }
 
-    next()
-  })
+    // GET media
+    this.app.use(mediaRoute, (req, res, next) => {
+      var method = req.method && req.method.toLowerCase()
+      if (method !== 'get') return next()
+
+      if (options.component[method]) {
+        return options.component[method](req, res, next)
+      }
+    })
+
+    // GET media/filename
+    this.app.use(mediaRoute + '/:filename(.*png|.*jpg|.*gif|.*bmp|.*tiff)', (req, res, next) => {
+      if (options.component.getFile) {
+        return options.component.getFile(req, res, next, mediaRoute)
+      }
+    })
+
+    // POST media/sign
+    this.app.use(mediaRoute + '/sign', (req, res, next) => {
+      var method = req.method && req.method.toLowerCase()
+      if (method !== 'post') return next()
+
+      try {
+        var token = this._signToken(req.body)
+      } catch (err) {
+        if (err) {
+          err.statusCode = 400
+          return next(err)
+        }
+      }
+
+      help.sendBackJSON(200, res, next)(null, {
+        url: `${mediaRoute}/${token}`
+      })
+    })
+
+    // POST media (upload)
+    this.app.use(mediaRoute + '/:token?', (req, res, next) => {
+      var method = req.method && req.method.toLowerCase()
+      if (method !== 'post') return next()
+
+      var settings = options.component.model.settings
+
+      if (settings.signUploads && !req.params.token) {
+        var err = {
+          name: 'NoTokenError',
+          statusCode: 400
+        }
+
+        return next(err)
+      }
+
+      if (req.params.token) {
+        jwt.verify(req.params.token, config.get('media.tokenSecret'), (err, payload) => {
+          if (err) {
+            if (err.name === 'TokenExpiredError') {
+              err.statusCode = 400
+            }
+
+            return next(err)
+          }
+
+          if (options.component.setPayload) {
+            options.component.setPayload(payload)
+          }
+
+          return options.component[method](req, res, next)
+        })
+      } else {
+        return options.component[method](req, res, next)
+      }
+    })
+  }
 }
 
 Server.prototype.removeComponent = function (route) {
@@ -978,6 +1101,16 @@ Server.prototype.removeComponent = function (route) {
 
   // remove documentation by path
   delete this.docs[route]
+}
+
+/**
+ * Generates a JSON Web Token representing the specified object
+ *
+ * @param {Object} obj - a JSON object containing key:value pairs to be encoded into a token
+ * @returns {string} JSON Web Token
+ */
+Server.prototype._signToken = function (obj) {
+  return jwt.sign(obj, config.get('media.tokenSecret'), { expiresIn: obj.expiresIn || config.get('media.tokenExpiresIn') })
 }
 
 Server.prototype.addMonitor = function (filepath, callback) {

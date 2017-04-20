@@ -43,7 +43,12 @@ function mustAuthenticate (endpoints, req) {
  * @returns {Boolean} - returns true if the URL starts with '/api/media/' followed by a filename
  */
 function isMediaEndpoint (endpoint, req) {
-  if (endpoint.constructor.name === 'MediaController' && (req.params.token || req.params.filename)) {
+  var isMedia = endpoint.model &&
+    endpoint.model.settings &&
+    endpoint.model.settings.type &&
+    endpoint.model.settings.type === 'media'
+
+  if (isMedia && (req.params.token || req.params.filename)) {
     return true
   } else {
     return false

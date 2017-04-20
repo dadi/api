@@ -289,80 +289,6 @@ Server.prototype.loadApi = function (options) {
     self.updateVersions(endpointPath)
   })
 
-  // POST media/sign
-  // this.app.use('/api/media/sign', (req, res, next) => {
-  //   var method = req.method && req.method.toLowerCase()
-  //   if (method !== 'post') return next()
-  //
-  //   if (!config.get('media.enabled')) {
-  //     return next()
-  //   }
-  //
-  //   try {
-  //     var token = this._signToken(req.body)
-  //   } catch (err) {
-  //     if (err) {
-  //       err.statusCode = 400
-  //       return next(err)
-  //     }
-  //   }
-  //
-  //   help.sendBackJSON(200, res, next)(null, {
-  //     url: `/api/media/${token}`
-  //   })
-  // })
-
-  // POST media
-  // this.app.use('/api/media/:token', (req, res, next) => {
-  //   var method = req.method && req.method.toLowerCase()
-  //   if (method !== 'post') return next()
-  //
-  //   if (!config.get('media.enabled')) {
-  //     return next()
-  //   }
-  //
-  //   if (!req.params.token) {
-  //     var err = {
-  //       name: 'NoTokenError',
-  //       statusCode: 400
-  //     }
-  //
-  //     return next(err)
-  //   }
-  //
-  //   jwt.verify(req.params.token, config.get('media.tokenSecret'), (err, payload) => {
-  //     if (err) {
-  //       if (err.name === 'TokenExpiredError') {
-  //         err.statusCode = 400
-  //       }
-  //
-  //       return next(err)
-  //     }
-  //
-  //     var controller = new MediaController(payload)
-  //     return controller.post(req, res, next)
-  //   })
-  // })
-
-  // // GET media/filename
-  // this.app.use('/api/media/:filename+', (req, res, next) => {
-  //   if (!config.get('media.enabled')) {
-  //     return next()
-  //   }
-  //
-  //   var controller = new MediaController()
-  //   return controller.getFile(req, res, next)
-  // })
-
-  // GET media
-  // this.app.use('/api/media', (req, res, next) => {
-  //   var method = req.method && req.method.toLowerCase()
-  //   if (method !== 'get') return next()
-  //
-  //   var controller = new MediaController()
-  //   return controller[method](req, res, next)
-  // })
-
   this.app.use('/api/flush', function (req, res, next) {
     var method = req.method && req.method.toLowerCase()
     if (method !== 'post') return next()
@@ -1079,7 +1005,12 @@ Server.prototype.addComponent = function (options) {
     })
   }
 
-  if (options.component.constructor.name === 'MediaController') {
+  var isMedia = options.component.model &&
+    options.component.model.settings &&
+    options.component.model.settings.type &&
+    options.component.model.settings.type === 'media'
+
+  if (isMedia) {
     var mediaRoute = options.route.replace('/' + idParam, '')
     this.components[mediaRoute] = options.component
     this.components[mediaRoute + '/:token+'] = options.component
@@ -1089,6 +1020,7 @@ Server.prototype.addComponent = function (options) {
       options.component.setRoute(mediaRoute)
     }
 
+    // GET media
     this.app.use(mediaRoute, (req, res, next) => {
       var method = req.method && req.method.toLowerCase()
       if (method !== 'get') return next()
@@ -1098,14 +1030,17 @@ Server.prototype.addComponent = function (options) {
       }
     })
 
+    // GET media/filename
+    this.app.use(mediaRoute + '/:filename(.*png|.*jpg|.*gif|.*bmp|.*tiff)', (req, res, next) => {
+      if (options.component.getFile) {
+        return options.component.getFile(req, res, next, mediaRoute)
+      }
+    })
+
     // POST media/sign
     this.app.use(mediaRoute + '/sign', (req, res, next) => {
       var method = req.method && req.method.toLowerCase()
       if (method !== 'post') return next()
-
-      // if (!config.get('media.enabled')) {
-      //   return next()
-      // }
 
       try {
         var token = this._signToken(req.body)
@@ -1116,23 +1051,19 @@ Server.prototype.addComponent = function (options) {
         }
       }
 
-      var signedUrl = options.route.replace('/' + idParam, '')
-      signedUrl = `${signedUrl}/${token}`
-
       help.sendBackJSON(200, res, next)(null, {
-        url: signedUrl
+        url: `${mediaRoute}/${token}`
       })
     })
 
-    this.app.use(mediaRoute + '/:token', (req, res, next) => {
+    // POST media (upload)
+    this.app.use(mediaRoute + '/:token?', (req, res, next) => {
       var method = req.method && req.method.toLowerCase()
       if (method !== 'post') return next()
 
-      // if (!config.get('media.enabled')) {
-      //   return next()
-      // }
+      var settings = options.component.model.settings
 
-      if (!req.params.token) {
+      if (settings.signUploads && !req.params.token) {
         var err = {
           name: 'NoTokenError',
           statusCode: 400
@@ -1141,33 +1072,24 @@ Server.prototype.addComponent = function (options) {
         return next(err)
       }
 
-      jwt.verify(req.params.token, config.get('media.tokenSecret'), (err, payload) => {
-        if (err) {
-          if (err.name === 'TokenExpiredError') {
-            err.statusCode = 400
+      if (req.params.token) {
+        jwt.verify(req.params.token, config.get('media.tokenSecret'), (err, payload) => {
+          if (err) {
+            if (err.name === 'TokenExpiredError') {
+              err.statusCode = 400
+            }
+
+            return next(err)
           }
 
-          return next(err)
-        }
+          if (options.component.setPayload) {
+            options.component.setPayload(payload)
+          }
 
-        if (options.component.setPayload) {
-          options.component.setPayload(payload)
-        }
-
-        if (options.component[method]) {
           return options.component[method](req, res, next)
-        }
-      })
-    })
-
-    // GET media/filename
-    this.app.use(mediaRoute + '/:filename(.*png|.*jpg|.*gif|.*bmp|.*tiff)', (req, res, next) => {
-      // if (!config.get('media.enabled')) {
-      //   return next()
-      // }
-
-      if (options.component.getFile) {
-        return options.component.getFile(req, res, next, mediaRoute)
+        })
+      } else {
+        return options.component[method](req, res, next)
       }
     })
   }
@@ -1181,6 +1103,12 @@ Server.prototype.removeComponent = function (route) {
   delete this.docs[route]
 }
 
+/**
+ * Generates a JSON Web Token representing the specified object
+ *
+ * @param {Object} obj - a JSON object containing key:value pairs to be encoded into a token
+ * @returns {string} JSON Web Token
+ */
 Server.prototype._signToken = function (obj) {
   return jwt.sign(obj, config.get('media.tokenSecret'), { expiresIn: obj.expiresIn || config.get('media.tokenExpiresIn') })
 }

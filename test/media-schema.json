@@ -27,6 +27,7 @@
     "count": 40,
     "sortOrder": 1,
     "storeRevisions": false,
-    "type": "media"
+    "type": "media",
+    "signUploads": false
   }
 }

@@ -19,14 +19,25 @@ var MediaController = function (model) {
   this.model = model
 }
 
+/**
+ * Sets the route that this controller instance is resonsible for handling
+ *
+ * @param {string} route - a route in the format /apiVersion/database/collection. For example /1.0/library/images
+ */
 MediaController.prototype.setRoute = function (route) {
   this.route = route
 }
 
+/**
+ *
+ */
 MediaController.prototype.setPayload = function (payload) {
   this.tokenPayload = payload
 }
 
+/**
+ *
+ */
 MediaController.prototype.get = function (req, res, next) {
   var path = url.parse(req.url, true)
   var query = prepareQuery(req, this.model)
@@ -39,6 +50,9 @@ MediaController.prototype.get = function (req, res, next) {
   this.model.get(query, parsedOptions.queryOptions, help.sendBackJSON(200, res, next), req)
 }
 
+/**
+ * Serve a media file from it's location on disk.
+ */
 MediaController.prototype.getFile = function (req, res, next, route) {
   // `serveStatic` will look at the entire URL to find the file it needs to
   // serve, but we're not serving files from the root. To get around this, we
@@ -84,7 +98,7 @@ MediaController.prototype.post = function (req, res, next) {
     })
 
     file.on('end', () => {
-      console.log('Finished with ' + filename)
+      // console.log('Finished with ' + filename)
     })
   })
 
@@ -142,6 +156,14 @@ MediaController.prototype.post = function (req, res, next) {
   req.pipe(busboy)
 }
 
+/**
+ * Save a file using the configured storage adapter
+ *
+ * @param {IncomingMessage} req - the HTTP request
+ * @param {string} fileName - the name of the file being uploaded
+ * @param {string} mimetype - the MIME type of the file being uploaded
+ * @param {Object} stream - the stream containing the file being uploaded
+ */
 MediaController.prototype.writeFile = function (req, fileName, mimetype, stream) {
   return new Promise((resolve, reject) => {
     var folderPath = path.join(this.route, this.getPath(fileName))
@@ -155,6 +177,11 @@ MediaController.prototype.writeFile = function (req, fileName, mimetype, stream)
   })
 }
 
+/**
+ * Generate a folder hierarchy for a file, based on a configuration property
+ *
+ * @param {string} fileName - the name of the file being uploaded
+ */
 MediaController.prototype.getPath = function (fileName) {
   var reSplitter
 

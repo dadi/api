@@ -18,8 +18,6 @@ describe('Media', function () {
   this.timeout(5000)
 
   beforeEach((done) => {
-    // config.set('media.enabled', true)
-
     app.start(() => {
       help.dropDatabase('testdb', (err) => {
         if (err) return done(err)
@@ -40,9 +38,24 @@ describe('Media', function () {
           .end(function (err, res) {
             if (err) return done(err)
 
-            setTimeout(function() {
-              done()
-            }, 250)
+            mediaSchema = JSON.parse(mediaSchema)
+            mediaSchema.settings.signUploads = true
+            mediaSchema = JSON.stringify(mediaSchema, null, 2)
+
+            request(connectionString)
+            .post('/1.0/testdb/media2/config')
+            .send(mediaSchema)
+            .set('content-type', 'text/plain')
+            .set('Authorization', 'Bearer ' + bearerToken)
+            .expect(200)
+            .expect('content-type', 'application/json')
+            .end(function (err, res) {
+              if (err) return done(err)
+
+              setTimeout(function() {
+                done()
+              }, 250)
+            })
           })
         })
       })
@@ -51,14 +64,13 @@ describe('Media', function () {
 
   afterEach((done) => {
     app.stop(() => {
-      //config.set('media.enabled', false)
-
       help.removeTestClients(() => {
         var dirs = config.get('paths')
 
 
         try {
           fs.unlinkSync(dirs.collections + '/1.0/testdb/collection.media.json')
+          fs.unlinkSync(dirs.collections + '/1.0/testdb/collection.media2.json')
           return done()
         } catch (e) {}
 
@@ -83,9 +95,6 @@ describe('Media', function () {
       //.expect(200)
       .end((err, res) => {
         if (err) return done(err)
-
-        console.log(res)
-
         should.exist(res.body.url)
         var url = res.body.url.replace('/1.0/testdb/media/', '')
         jwt.verify(url, config.get('media.tokenSecret'), (err, payload) => {
@@ -96,8 +105,6 @@ describe('Media', function () {
     })
 
     it.skip('should return 404 if media is not enabled', function (done) {
-      //config.set('media.enabled', false)
-
       var obj = {
         fileName: 'test.jpg'
       }
@@ -112,14 +119,11 @@ describe('Media', function () {
       .expect(404)
       .end((err, res) => {
         if (err) return done(err)
-
-        //config.set('media.enabled', true)
         done()
       })
     })
 
     it('should return 404 if incorrect HTTP method is used to get a signed token', function (done) {
-      //config.set('media.enabled', true)
       var client = request(connectionString)
 
       client
@@ -134,7 +138,6 @@ describe('Media', function () {
     })
 
     it('should return 400 if tokenExpiresIn configuration parameter is invalid', function (done) {
-      //config.set('media.enabled', true)
       config.set('media.tokenExpiresIn', 0.5)
       var client = request(connectionString)
 
@@ -177,7 +180,31 @@ describe('Media', function () {
     })
   })
 
-  describe('use token', function () {
+  describe('POST', function () {
+    it('should allow upload without using a signed token', function (done) {
+      var client = request(connectionString)
+      client
+      .post('/1.0/testdb/media')
+      .set('Authorization', 'Bearer ' + bearerToken)
+      .attach('avatar', 'test/acceptance/workspace/media/1f525.png')
+      .expect(201)
+      .end((err, res) => {
+        if (err) return done(err)
+        should.exist(res.body.results)
+        done()
+      })
+    })
+
+    it('should error if upload attempted without using a signed token', function (done) {
+      var client = request(connectionString)
+      client
+      .post('/1.0/testdb/media2')
+      .set('Authorization', 'Bearer ' + bearerToken)
+      .attach('avatar', 'test/acceptance/workspace/media/1f525.png')
+      .expect(400)
+      .end(done)
+    })
+
     it('should return an error if specified token has expired', function (done) {
       var obj = {
         fileName: 'test.jpg'

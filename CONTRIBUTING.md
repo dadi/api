@@ -15,10 +15,10 @@ Here are the guidelines we'd like you to follow:
 
 ## <a name="question"></a> Got a Question or Problem?
 
-Documentation is maintained under the `docs` branch and can be found on the [dadi.tech](https://dadi.tech) site.
+Documentation can be found at the [docs.dadi.tech](https://docs.dadi.tech/api) site.
 
 If the documentation doesn't answer your problem please feel free to email the
-DADI team directly on: team@dadi.tech
+DADI team directly on: team@dadi.tech, or join us on [Slack](http://dadi-chat.herokuapp.com).
 
 ## <a name="issue"></a> Found an Issue?
 If you find a bug in the source code or a mistake in the documentation, you can help us by
@@ -216,4 +216,3 @@ The footer should contain any information about **Breaking Changes** and is also
 [issues]: https://github.com/dadi/api/issues
 [pulls]: https://github.com/dadi/api/pulls
 [tests]: https://github.com/dadi/api/tree/master/test
-[docs]: https://github.com/dadi/api/tree/docs/

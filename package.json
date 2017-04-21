@@ -57,7 +57,7 @@
     "sinon": "~1.17.6",
     "standard": "8.6.0",
     "supertest": "~0.13.0",
-    "validate-commit-message": "^3.0.1"
+    "validate-commit-msg": "^2.12.1"
   },
   "repository": {
     "type": "git",

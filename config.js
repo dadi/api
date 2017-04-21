@@ -386,8 +386,8 @@ conf.updateConfigDataForDomain = function(domain) {
     else {
       console.log(err)
     }
-    }
   }
+}
 
 module.exports = conf
 module.exports.configPath = function() {

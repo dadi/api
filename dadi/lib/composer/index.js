@@ -53,11 +53,6 @@ Composer.prototype.composeOne = function (doc, callback) {
         query = { '_id': value + '' }
       }
 
-      // add the apiVersion filter
-      // if (this.apiVersion && config.get('query.useVersionFilter')) {
-      //   query = _.extend(query, { apiVersion: this.apiVersion })
-      // }
-
       // are specific fields required?
       var fields = {}
       var schemaFields = help.getFromObj(this.model.schema, key + '.settings.fields', [])

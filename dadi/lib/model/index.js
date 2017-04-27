@@ -873,24 +873,23 @@ Model.prototype.update = function (query, update, internals, done, req) {
             return new Promise((resolve, reject) => {
               var idx = 0
 
-            _.each(docs, (doc) => {
-              database.collection(this.name).findOneAndUpdate(
-                { _id: new ObjectID(doc._id.toString()) },
-                { $inc: { v: 1 } },
-                {
-                  returnOriginal: false,
-                  sort: [['_id', 'asc']],
-                  upsert: false
-                },
-                function (err, doc) {
-                  if (err) return done(err)
+              _.each(docs, (doc) => {
+                database.collection(this.name).findOneAndUpdate(
+                  { _id: new ObjectID(doc._id.toString()) },
+                  { $inc: { v: 1 } },
+                  {
+                    returnOriginal: false,
+                    sort: [['_id', 'asc']],
+                    upsert: false
+                  }, (err, doc) => {
+                    if (err) return done(err)
 
                     if (++idx === docs.length) {
                       return resolve()
                     }
                   }
                 )
-                })
+              })
             })
           }
 

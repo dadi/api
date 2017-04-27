@@ -905,7 +905,7 @@ Model.prototype.update = function (query, update, internals, done, req) {
           }
 
           // increment document revision number
-          incrementRevisionNumber(updatedDocs).then(() => {
+          incrementRevisionNumber(updatedDocs)
 
           var getDocumentsForResponse = (done) => {
             var query = {

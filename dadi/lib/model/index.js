@@ -870,6 +870,9 @@ Model.prototype.update = function (query, update, internals, done, req) {
           }
 
           var incrementRevisionNumber = (docs) => {
+            return new Promise((resolve, reject) => {
+              var idx = 0
+
             _.each(docs, (doc) => {
               database.collection(this.name).findOneAndUpdate(
                 { _id: new ObjectID(doc._id.toString()) },
@@ -881,6 +884,12 @@ Model.prototype.update = function (query, update, internals, done, req) {
                 },
                 function (err, doc) {
                   if (err) return done(err)
+
+                    if (++idx === docs.length) {
+                      return resolve()
+                    }
+                  }
+                )
                 })
             })
           }
@@ -896,7 +905,7 @@ Model.prototype.update = function (query, update, internals, done, req) {
           }
 
           // increment document revision number
-          incrementRevisionNumber(updatedDocs)
+          incrementRevisionNumber(updatedDocs).then(() => {
 
           var getDocumentsForResponse = (done) => {
             var query = {

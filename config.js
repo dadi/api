@@ -11,6 +11,12 @@ var conf = convict({
     }
   },
   server: {
+    baseUrl: {
+      doc: 'The base URL where the API instance can be accessed at',
+      format: '*',
+      default: null,
+      env: 'BASE_URL'
+    },
     host: {
       doc: 'Accept connections on the specified address. If the host is omitted, the server will accept connections on any IPv6 address (::) when IPv6 is available, or any IPv4 address (0.0.0.0) otherwise.',
       format: '*',
@@ -292,6 +298,16 @@ var conf = convict({
     }
   },
   media: {
+    defaultBucket: {
+      doc: 'The name of the default media bucket',
+      format: String,
+      default: 'mediaStore'
+    },
+    buckets: {
+      doc: 'The names of media buckets to be used',
+      format: Array,
+      default: []
+    },
     tokenSecret: {
       doc: 'The secret key used to sign and verify tokens when uploading media',
       format: String,

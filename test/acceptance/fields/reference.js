@@ -128,7 +128,6 @@ describe('Reference Field', function () {
           .expect(200)
           .end(function (err, res) {
             if (err) return done(err)
-
             should.exist(res.body.results)
             var newDoc = res.body.results[0]
 

@@ -420,7 +420,6 @@ describe('Application', function () {
               .expect(200)
               .end(function (err, res) {
                 if (err) return done(err)
-
                 res.body.results[0]._id.should.equal(doc._id)
                 res.body.results[0].field1.should.equal('updated doc')
 

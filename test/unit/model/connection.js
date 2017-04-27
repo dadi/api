@@ -260,15 +260,7 @@ describe('Model connection', function () {
                 "hosts": [
                     {
                         "host": "127.0.0.1",
-                        "port": 27016
-                    },
-                    {
-                        "host": "127.0.0.1",
                         "port": 27017
-                    },
-                    {
-                        "host": "127.0.0.1",
-                        "port": 27018
                     }
                 ]
             };
@@ -311,7 +303,7 @@ describe('Model connection', function () {
                 "hosts": [
                     {
                         "host": "127.0.0.1",
-                        "port": 27016
+                        "port": 27017
                     }
                 ]
             };
@@ -324,7 +316,7 @@ describe('Model connection', function () {
             var conn = connection(options);
 
             conn.on('error', function (err) {
-                conn.connectionString.should.eql("mongodb://test:test123@127.0.0.1:27016/test?replicaSet=test&maxPoolSize=1");
+                conn.connectionString.should.eql("mongodb://test:test123@127.0.0.1:27017/test?replicaSet=test&maxPoolSize=1");
                 err.toString().should.eql("MongoError: no primary found in replicaset");
 
                 // restore config

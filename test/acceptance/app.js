@@ -2786,12 +2786,45 @@ describe('Application', function () {
           })
       })
 
-      it('should return media collections', function (done) {
-        // mimic a file that could be sent to the server
-        var mediaSchema = fs.readFileSync(__dirname + '/../media-schema.json', {encoding: 'utf8'})
+    //   it('should return media collections', function (done) {
+    //     // mimic a file that could be sent to the server
+    //     var mediaSchema = fs.readFileSync(__dirname + '/../media-schema.json', {encoding: 'utf8'})
+    //     request(connectionString)
+    //     .post('/1.0/testdb/media/config')
+    //     .send(mediaSchema)
+    //     .set('content-type', 'text/plain')
+    //     .set('Authorization', 'Bearer ' + bearerToken)
+    //     .expect(200)
+    //     .expect('content-type', 'application/json')
+    //     .end(function (err, res) {
+    //       if (err) return done(err)
+
+    //       // Wait for a few seconds then make request to test that the new endpoint is working
+    //       setTimeout(function () {
+    //         request(connectionString)
+    //         .get('/api/collections')
+    //         .set('Authorization', 'Bearer ' + bearerToken)
+    //         .expect(200)
+    //         .expect('content-type', 'application/json')
+    //         .end((err, res) => {
+    //           var collections = res.body.collections
+    //           collections.should.be.Array
+
+    //           // var names = _.pluck(collections, 'name')
+    //           // _.contains(names, 'media').should.eql(true)
+    //           var collection = _.findWhere(collections, { name: 'media' })
+    //           should.exist(collection)
+    //           collection.type.should.eql('media')
+    //           done()
+    //         })
+    //       }, 300)
+    //     })
+    //   })
+    // })
+
+    it('list documents on the default media bucket', function (done) {
         request(connectionString)
-        .post('/1.0/testdb/media/config')
-        .send(mediaSchema)
+        .get('/media')
         .set('content-type', 'text/plain')
         .set('Authorization', 'Bearer ' + bearerToken)
         .expect(200)
@@ -2799,25 +2832,11 @@ describe('Application', function () {
         .end(function (err, res) {
           if (err) return done(err)
 
-          // Wait for a few seconds then make request to test that the new endpoint is working
-          setTimeout(function () {
-            request(connectionString)
-            .get('/api/collections')
-            .set('Authorization', 'Bearer ' + bearerToken)
-            .expect(200)
-            .expect('content-type', 'application/json')
-            .end((err, res) => {
-              var collections = res.body.collections
-              collections.should.be.Array
+          res.body.should.be.Object
+          res.body.results.should.be.Array
+          res.body.metadata.should.be.Object
 
-              // var names = _.pluck(collections, 'name')
-              // _.contains(names, 'media').should.eql(true)
-              var collection = _.findWhere(collections, { name: 'media' })
-              should.exist(collection)
-              collection.type.should.eql('media')
-              done()
-            })
-          }, 300)
+          done()
         })
       })
     })

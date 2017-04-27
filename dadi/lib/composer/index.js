@@ -56,9 +56,9 @@ Composer.prototype.composeOne = function (doc, callback) {
       }
 
       // add the apiVersion param
-      if (this.apiVersion) {
-        _.extend(query, { apiVersion: this.apiVersion })
-      }
+      //if (this.apiVersion) {
+        //_.extend(query, { apiVersion: this.apiVersion })
+      //}
 
       // are specific fields required?
       var fields = {}

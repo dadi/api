@@ -20,22 +20,6 @@ var MediaController = function (model) {
 }
 
 /**
- * Sets the route that this controller instance is resonsible for handling
- *
- * @param {string} route - a route in the format /apiVersion/database/collection. For example /1.0/library/images
- */
-MediaController.prototype.setRoute = function (route) {
-  this.route = route
-}
-
-/**
- *
- */
-MediaController.prototype.setPayload = function (payload) {
-  this.tokenPayload = payload
-}
-
-/**
  *
  */
 MediaController.prototype.get = function (req, res, next) {
@@ -47,7 +31,13 @@ MediaController.prototype.get = function (req, res, next) {
     return help.sendBackJSON(400, res, next)(null, parsedOptions)
   }
 
-  this.model.get(query, parsedOptions.queryOptions, help.sendBackJSON(200, res, next), req)
+  const callback = (err, response) => {
+    const output = this.prepareOutput(response)
+
+    help.sendBackJSON(200, res, next)(err, output)
+  }
+
+  this.model.get(query, parsedOptions.queryOptions, callback, req)
 }
 
 /**
@@ -63,6 +53,39 @@ MediaController.prototype.getFile = function (req, res, next, route) {
   })
 
   return serveStatic(config.get('media.basePath'))(modifiedReq, res, next)
+}
+
+/**
+ * Generate a folder hierarchy for a file, based on a configuration property
+ *
+ * @param {string} fileName - the name of the file being uploaded
+ */
+MediaController.prototype.getPath = function (fileName) {
+  var reSplitter
+
+  switch (config.get('media.pathFormat')) {
+    case 'sha1/4':
+      reSplitter = new RegExp('.{1,4}', 'g')
+      return sha1(fileName).match(reSplitter).join('/')
+    case 'sha1/5':
+      reSplitter = new RegExp('.{1,5}', 'g')
+      return sha1(fileName).match(reSplitter).join('/')
+    case 'sha1/8':
+      reSplitter = new RegExp('.{1,8}', 'g')
+      return sha1(fileName).match(reSplitter).join('/')
+    case 'date':
+      return formatDate()
+    case 'datetime':
+      return formatDate(true)
+    default:
+      return ''
+  }
+}
+
+MediaController.prototype.getURLForPath = function (path) {
+  let portString = config.get('url.port') ? `:${config.get('url.port')}` : ''
+
+  return `${config.get('url.protocol')}://${config.get('url.host')}${portString}${path}`
 }
 
 MediaController.prototype.post = function (req, res, next) {
@@ -156,6 +179,38 @@ MediaController.prototype.post = function (req, res, next) {
   req.pipe(busboy)
 }
 
+MediaController.prototype.prepareOutput = function (output) {
+  output.results = output.results.map(result => {
+    // Is this a relative path to a file in the disk? If so, we need to prepend
+    // the API URL.
+    if (result.path.indexOf('/') === 0) {
+      result.path = this.getURLForPath(result.path)
+    }
+
+    delete result.apiVersion
+
+    return result
+  })
+
+  return output
+}
+
+/**
+ *
+ */
+MediaController.prototype.setPayload = function (payload) {
+  this.tokenPayload = payload
+}
+
+/**
+ * Sets the route that this controller instance is resonsible for handling
+ *
+ * @param {string} route - a route in the format /apiVersion/database/collection. For example /1.0/library/images
+ */
+MediaController.prototype.setRoute = function (route) {
+  this.route = route
+}
+
 /**
  * Save a file using the configured storage adapter
  *
@@ -175,33 +230,6 @@ MediaController.prototype.writeFile = function (req, fileName, mimetype, stream)
       return reject(err)
     })
   })
-}
-
-/**
- * Generate a folder hierarchy for a file, based on a configuration property
- *
- * @param {string} fileName - the name of the file being uploaded
- */
-MediaController.prototype.getPath = function (fileName) {
-  var reSplitter
-
-  switch (config.get('media.pathFormat')) {
-    case 'sha1/4':
-      reSplitter = new RegExp('.{1,4}', 'g')
-      return sha1(fileName).match(reSplitter).join('/')
-    case 'sha1/5':
-      reSplitter = new RegExp('.{1,5}', 'g')
-      return sha1(fileName).match(reSplitter).join('/')
-    case 'sha1/8':
-      reSplitter = new RegExp('.{1,8}', 'g')
-      return sha1(fileName).match(reSplitter).join('/')
-    case 'date':
-      return formatDate()
-    case 'datetime':
-      return formatDate(true)
-    default:
-      return ''
-  }
 }
 
 function formatDate (includeTime) {

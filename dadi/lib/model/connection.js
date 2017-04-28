@@ -127,7 +127,7 @@ module.exports = function (options, collection, storeName) {
     console.log('Connection Error: ' + err + '. Using connection string "' + conn.datastore.connectionString + '"')
   })
 
-  //_connections[JSON.stringify(options)] = conn
+  // _connections[JSON.stringify(options)] = conn
   _connections[connectionKey] = conn
 
   conn.connect(options)

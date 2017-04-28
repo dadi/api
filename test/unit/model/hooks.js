@@ -543,7 +543,6 @@ describe('Hook', function () {
     beforeEach(help.cleanUpDB)
 
     it('should receive collection name and schema', function (done) {
-
       var schema = help.getModelSchema()
       schema.title = {
         type: 'String',
@@ -586,15 +585,14 @@ describe('Hook', function () {
         // find the obj we just created
         mod.find({fieldName: 'foo'}, function (err, doc) {
           if (err) return done(err)
-
           done()
         })
       })
     })
 
     it('should modify documents before update', function (done) {
-
       var schema = help.getModelSchema()
+
       schema.title = {
         type: 'String',
         required: false
@@ -751,7 +749,7 @@ describe('Hook', function () {
             var logFileBody = fs.readFileSync(file)
             var obj = JSON.parse(logFileBody.toString())
 
-            obj.results[0]._id.toString().should.eql(doc.results[0]._id.toString())
+            obj[0]._id.toString().should.eql(doc.results[0]._id.toString())
             fs.unlinkSync(file)
             done()
           })

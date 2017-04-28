@@ -159,7 +159,7 @@ describe.skip('Model connection', function () {
       })
 
       conn.on('error', (err) => {
-        err.message.should.eql('Authentication failed.')
+              (err.message.indexOf('fail') > 0).should.eql(true)
         conn.readyState.should.equal(0)
         done()
       })

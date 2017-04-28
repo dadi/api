@@ -1,5 +1,5 @@
-var _ = require('underscore')
-var ObjectID = require('mongodb').ObjectID
+var _ = require('underscore-contrib')
+// var ObjectID = require('mongodb').ObjectID
 var path = require('path')
 var validator = require('validator')
 
@@ -103,25 +103,26 @@ function sortQueriesByNestedLevel (queries) {
 function makeCaseInsensitive (obj, schema) {
   var newObj = _.clone(obj)
 
-  _.each(Object.keys(obj), function (key) {
+  _.each(Object.keys(obj), (key) => {
     if (key === 'apiVersion') {
       return
     }
 
-    var fieldSettings
+    var fieldSettings = {}
+
     if (key[0] !== '$') {
       fieldSettings = getSchemaOrParent(key, schema)
     }
 
     if (typeof obj[key] === 'string') {
-      if (validator.isMongoId(obj[key]) || validator.isUUID(obj[key])) { //&& obj[key].match(/^[a-fA-F0-9]{24}$/)) {
+      if (validator.isMongoId(obj[key]) || validator.isUUID(obj[key])) { // && obj[key].match(/^[a-fA-F0-9]{24}$/)) {
         newObj[key] = obj[key]
       } else if (key[0] === '$' && key === '$regex') {
         newObj[key] = new RegExp(obj[key], 'i')
       } else if (key[0] === '$' && key !== '$regex') {
         newObj[key] = obj[key]
       } else {
-        if (fieldSettings && fieldSettings.matchType) {
+        if (fieldSettings.matchType) {
           switch (fieldSettings.matchType) {
             case 'exact':
               newObj[key] = obj[key]
@@ -139,6 +140,8 @@ function makeCaseInsensitive (obj, schema) {
     } else if (typeof obj[key] === 'object' && obj[key] !== null) {
       if (key[0] === '$' && key !== '$regex') {
         newObj[key] = obj[key]
+      } else if (Object.prototype.toString.call(obj[key]) === '[object RegExp]') {
+        newObj[key] = obj[key]
       } else {
         newObj[key] = makeCaseInsensitive(obj[key], schema)
       }
@@ -150,9 +153,76 @@ function makeCaseInsensitive (obj, schema) {
   return newObj
 }
 
+function processFilter (query, schema) {
+  var newQuery = _.clone(query)
+
+  Object.keys(query).forEach((key) => {
+    if (typeof query[key] === 'string') {
+      switch (query[key]) {
+        case '$now':
+          newQuery[key] = Math.round(new Date().getTime() / 1000.0)
+          break
+        default:
+          newQuery[key] = query[key]
+      }
+    } else if (typeof query[key] === 'object' && query[key] !== null) {
+      newQuery[key] = processFilter(query[key], schema)
+    } else {
+      newQuery[key] = query[key]
+    }
+  })
+
+  return newQuery
+}
+
+function removeInternalFields (obj) {
+  delete obj._id
+  delete obj.createdAt
+  delete obj.createdBy
+  delete obj.lastModifiedAt
+  delete obj.lastModifiedBy
+  delete obj.v
+  delete obj.apiVersion
+
+  if (obj.composed) {
+    _.each(Object.keys(obj.composed), (key) => {
+      obj[key] = obj.composed[key]
+    })
+
+    delete obj.composed
+  }
+
+  return obj
+}
+
+function stringifyProperties (obj) {
+  _.each(Object.keys(obj), (key) => {
+    if (typeof obj[key] === 'object' && !Array.isArray(obj[key]) && validator.isMongoId(obj[key].toString())) {
+      obj[key] = obj[key].toString()
+    }
+  })
+
+  return obj
+}
+
+function snapshot (obj) {
+  if (Array.isArray(obj)) {
+    _.each(obj, (document) => {
+      document = stringifyProperties(document)
+    })
+  } else {
+    obj = stringifyProperties(obj)
+  }
+
+  return _.snapshot(obj)
+}
+
 module.exports = {
   containsNestedReferenceFields: containsNestedReferenceFields,
   getSchemaOrParent: getSchemaOrParent,
   makeCaseInsensitive: makeCaseInsensitive,
-  processReferenceFieldQuery: processReferenceFieldQuery
+  processReferenceFieldQuery: processReferenceFieldQuery,
+  processFilter: processFilter,
+  removeInternalFields: removeInternalFields,
+  snapshot: snapshot
 }

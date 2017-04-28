@@ -3,7 +3,7 @@ var async = require('async')
 var debug = require('debug')('api:model')
 var metadata = require('@dadi/metadata')
 var moment = require('moment')
-var ObjectID = require('mongodb').ObjectID
+// var ObjectID = require('mongodb').ObjectID
 var path = require('path')
 
 var Composer = require(path.join(__dirname, '/composer')).Composer
@@ -69,6 +69,8 @@ var Model = function (name, schema, conn, settings) {
     this.connection = Connection({ database: settings.database, collection: this.name })
   }
 
+  this.connection.setMaxListeners(35)
+
   if (config.get('env') !== 'test') {
     this.connection.once('error', (err) => {
       logger.error(err)
@@ -93,7 +95,7 @@ var Model = function (name, schema, conn, settings) {
   }
 
   if (this.settings.index) {
-    this.createIndex(function(msg) {
+    this.createIndex(msg => {
       console.log(msg)
     })
   }
@@ -166,18 +168,18 @@ Model.prototype.createIndex = function (done) {
 /**
  * Create a document in the database
  *
- * @param {object} document - a document, or Array of documents to insert in the database
+ * @param {object} documents - a document, or Array of documents to insert in the database
  * @param {object} internals
  * @param {function} done
  * @return undefined
  * @api public
  */
-Model.prototype.create = function (document, internals, done, req) {
-  debug('create %o %o', document, internals)
+Model.prototype.create = function (documents, internals, done, req) {
+  debug('create %o %o', documents, internals)
   var self = this
 
-  if (!(document instanceof Array)) {
-    document = [document]
+  if (!(documents instanceof Array)) {
+    documents = [documents]
   }
 
   // internals will not be validated, i.e. should not be user input
@@ -188,7 +190,7 @@ Model.prototype.create = function (document, internals, done, req) {
   // validate each doc
   var validation
 
-  document.forEach(function (doc) {
+  documents.forEach(function (doc) {
     if (validation === undefined || validation.success) {
       validation = self.validate.schema(doc)
     }
@@ -202,30 +204,30 @@ Model.prototype.create = function (document, internals, done, req) {
   }
 
   if (typeof internals === 'object' && internals != null) { // not null and not undefined
-    document.forEach(function (doc) {
+    documents.forEach(function (doc) {
       doc = _.extend(doc, internals)
     })
   }
 
   //
   if (self.history) {
-    document.forEach((doc) => {
+    documents.forEach((doc) => {
       doc.history = []
     })
   }
 
   // add initial document revision number
-  document.forEach((doc) => {
+  documents.forEach((doc) => {
     doc.v = 1
   })
 
-  // // ObjectIDs
-  // document.forEach(function (doc) {
+  // ObjectIDs
+  // documents.forEach(function (doc) {
   //   doc = self.convertObjectIdsForSave(self.schema, doc)
   // })
 
   // DateTime
-  document.forEach(function (doc) {
+  documents.forEach(function (doc) {
     doc = self.convertDateTimeForSave(self.schema, doc)
   })
 
@@ -234,7 +236,7 @@ Model.prototype.create = function (document, internals, done, req) {
     if (this.settings.hooks && this.settings.hooks.beforeCreate) {
       var processedDocs = 0
 
-      document.forEach((doc, docIndex) => {
+      documents.forEach((doc, docIndex) => {
         async.reduce(this.settings.hooks.beforeCreate, doc, (current, hookConfig, callback) => {
           var hook = new Hook(hookConfig, 'beforeCreate')
 
@@ -249,7 +251,7 @@ Model.prototype.create = function (document, internals, done, req) {
         }, (err, result) => {
           processedDocs++
 
-          if (processedDocs === document.length) {
+          if (processedDocs === documents.length) {
             if (err) {
               var errorResponse = {
                 success: false,
@@ -269,34 +271,55 @@ Model.prototype.create = function (document, internals, done, req) {
   }
 
   var saveDocuments = (database) => {
-    database.insert(document, this.name, this.schema).then((results) => {
+    database.insert(documents, this.name, this.schema).then((results) => {
       var returnData = {
         results: results
       }
 
-      // apply any existing `afterCreate` hooks
-      if (this.settings.hasOwnProperty('hooks') && (typeof this.settings.hooks.afterCreate === 'object')) {
-        document.forEach((doc) => {
-          this.settings.hooks.afterCreate.forEach((hookConfig, index) => {
-            var hook = new Hook(this.settings.hooks.afterCreate[index], 'afterCreate')
+      this.composer.compose(returnData.results, (obj) => {
+        returnData.results = obj
 
-            return hook.apply(doc, this.schema, this.name)
+        // apply any existing `afterCreate` hooks
+        if (this.settings.hasOwnProperty('hooks') && (typeof this.settings.hooks.afterCreate === 'object')) {
+          returnData.results.forEach((doc) => {
+            this.settings.hooks.afterCreate.forEach((hookConfig, index) => {
+              var hook = new Hook(this.settings.hooks.afterCreate[index], 'afterCreate')
+
+              return hook.apply(doc, this.schema, this.name)
+            })
           })
-        })
-      }
+        }
 
-      done(null, returnData)
-    }).catch((err) => {
-      return done(err)
+        done(null, returnData)
+      }).catch((err) => {
+        return done(err)
+      })
     })
   }
 
-  if (this.connection.db) {
-    return startInsert(this.connection.db)
-  } else {
-    // if the db is not connected queue the insert
-    this.connection.once('connect', startInsert)
-  }
+  // Pre-composed References
+  this.composer.setApiVersion(internals.apiVersion)
+
+  // before the primary document insert, process any Reference fields
+  // that have been passed as subdocuments rather than id strings
+  _.each(documents, (doc, idx) => {
+    this.composer.createFromComposed(doc, req, (err, result) => {
+      if (err) {
+        return done(err.json)
+      }
+
+      doc = result
+
+      if (idx === documents.length - 1) {
+        if (this.connection.db) {
+          return startInsert(this.connection.db)
+        } else {
+          // if the db is not connected queue the insert
+          this.connection.once('connect', startInsert)
+        }
+      }
+    })
+  })
 }
 
 /**
@@ -305,39 +328,21 @@ Model.prototype.create = function (document, internals, done, req) {
  */
 Model.prototype.injectHistory = function (data, options) {
   return new Promise((resolve, reject) => {
-    var idx = 0
+    if (data.results.length === 0) {
+      return resolve(data)
+    }
 
-    _.each(data.results, (doc) => {
+    _.each(data.results, (doc, idx) => {
       this.revisions(doc._id, options, (err, history) => {
         if (err) console.log(err)
         doc.history = history
 
-        if (++idx === data.results.length) {
+        if (idx === data.results.length - 1) {
           return resolve(data)
         }
       })
     })
   })
-}
-
-Model.prototype.convertObjectIdsForSave = function (schema, obj) {
-  Object.keys(schema)
-    .filter(function (key) { return schema[key].type === 'ObjectID' })
-    .forEach(function (key) {
-      if (typeof obj[key] === 'object' && _.isArray(obj[key])) {
-        var arr = obj[key]
-        _.each(arr, function (value, key) {
-          if (typeof value === 'string' && ObjectID.isValid(value) && value.match(/^[a-fA-F0-9]{24}$/)) {
-            arr[key] = ObjectID.createFromHexString(value)
-          }
-        })
-        obj[key] = arr
-      } else if (typeof obj[key] === 'string') {
-        obj[key] = ObjectID.createFromHexString(obj[key])
-      }
-    })
-
-  return obj
 }
 
 Model.prototype.convertDateTimeForSave = function (schema, obj) {
@@ -377,8 +382,8 @@ Model.prototype.count = function (query, options, done) {
     options = {}
   }
 
-  //query = queryUtils.makeCaseInsensitive(query, this.schema)
-  //query = queryUtils.convertApparentObjectIds(query, this.schema)
+  // query = queryUtils.makeCaseInsensitive(query, this.schema)
+  // query = queryUtils.convertApparentObjectIds(query, this.schema)
 
   var validation = this.validate.query(query)
   if (!validation.success) {
@@ -470,7 +475,7 @@ Model.prototype.find = function (query, options, done) {
   }
 
   query = queryUtils.makeCaseInsensitive(query, self.schema)
-  //query = queryUtils.convertApparentObjectIds(query, self.schema)
+  // query = queryUtils.convertApparentObjectIds(query, self.schema)
 
   debug('find %o %o', query, options)
 
@@ -556,7 +561,7 @@ Model.prototype.find = function (query, options, done) {
             // supplement the current query with the ids
             if (query[collectionKey]) {
               collectionQuery['_id'] = query[collectionKey]
-              //collectionQuery = queryUtils.convertApparentObjectIds(collectionQuery, self.schema)
+              // collectionQuery = queryUtils.convertApparentObjectIds(collectionQuery, self.schema)
             }
 
             // query the reference collection
@@ -565,59 +570,59 @@ Model.prototype.find = function (query, options, done) {
             var referenceModel = new Model(collection, {}, null, { database: collectionSettings.database || self.settings.database, compose: collectionLevelCompose })
 
             referenceModel.find(collectionQuery, { fields: fieldsObj }, (err, results) => {
-              //if (err) return done(err)
-              //cursor.toArray(function (err, results) {
-                //if (err) return done(err)
-                var ids
+              if (err) return done(err)
+              // cursor.toArray(function (err, results) {
+                // if (err) return done(err)
+              var ids
 
-                if (results && results.results && results.results.length) {
-                  results = results.results
+              if (results && results.results && results.results.length) {
+                results = results.results
 
-                  if (!linkKey) { // i.e. it's a one-level nested query
-                    ids = _.map(_.pluck(results, '_id'), function (id) { return id.toString() })
+                if (!linkKey) { // i.e. it's a one-level nested query
+                  ids = _.map(_.pluck(results, '_id'), function (id) { return id.toString() })
 
-                    // update the original query with a query for the obtained _id
-                    // using the appropriate query type for whether the reference settings
-                    // allows storing as arrays or not
-                    query[collectionKey] = collectionSettings.multiple ? { '$containsAny': ids } : ids[0]
-                    //query[collectionKey] = collectionSettings.multiple ? { '$in': ids } : ids[0]
-                  } else {
-                    // filter the results using linkKey
-                    // 1. get the _id of the result matching { queryKey: queryValue }
-                    var parent = _.filter(results, function (result) {
-                      return new RegExp(queryValue).test(result[queryKey]) === true
+                  // update the original query with a query for the obtained _id
+                  // using the appropriate query type for whether the reference settings
+                  // allows storing as arrays or not
+                  // query[collectionKey] = collectionSettings.multiple ? { '$containsAny': ids } : ids[0]
+                  query[collectionKey] = collectionSettings.multiple ? { '$in': ids } : ids[0]
+                } else {
+                  // filter the results using linkKey
+                  // 1. get the _id of the result matching { queryKey: queryValue }
+                  var parent = _.filter(results, function (result) {
+                    return new RegExp(queryValue).test(result[queryKey]) === true
+                  })
+
+                  if (parent[0]) {
+                    var children = _.filter(results, function (result) {
+                      if (result[linkKey]) {
+                        if (typeof result[linkKey] === 'string' && result[linkKey].toString() === parent[0]._id.toString()) {
+                          return result
+                        } else if (typeof result[linkKey] === 'object' && result[linkKey]._id.toString() === parent[0]._id.toString()) {
+                          return result
+                        }
+                      }
                     })
 
-                    if (parent[0]) {
-                      var children = _.filter(results, function (result) {
-                        if (result[linkKey]) {
-                          if (typeof result[linkKey] === 'string' && result[linkKey].toString() === parent[0]._id.toString()) {
-                            return result
-                          } else if (typeof result[linkKey] === 'object' && result[linkKey]._id.toString() === parent[0]._id.toString()) {
-                            return result
-                          }
-                        }
-                      })
-
-                      ids = _.map(_.pluck(children, '_id'), function (id) {
-                        return id.toString()
-                      })
-                    }
-
-                    query[collectionKey] = { '$in': ids || [] }
+                    ids = _.map(_.pluck(children, '_id'), function (id) {
+                      return id.toString()
+                    })
                   }
-                } else {
-                  // Nothing found in the reference collection, add empty criteria to the main query
-                  query[collectionKey] = collectionSettings.multiple
-                    ? { '$in': [] }
-                    : ''
-                }
 
-                cb(null, query)
-              })
+                  query[collectionKey] = { '$in': ids || [] }
+                }
+              } else {
+                // Nothing found in the reference collection, add empty criteria to the main query
+                query[collectionKey] = collectionSettings.multiple
+                  ? { '$in': [] }
+                  : ''
+              }
+
+              cb(null, query)
             })
           })
-        //})
+        })
+        // })
 
         async.series(queue,
           function (err, results) {
@@ -631,8 +636,12 @@ Model.prototype.find = function (query, options, done) {
 
       // perform the actual find operation
       function runFind () {
-        database.find(query, self.name, options, self.schema).then((results) => {
+        var queryOptions = _.clone(options)
+        delete queryOptions.historyFilters
+
+        database.find(query, self.name, queryOptions, self.schema).then((results) => {
           var returnData = {}
+
           // TODO: metadata
           var count = 10 // TODO: get an actual count!
 
@@ -746,12 +755,9 @@ Model.prototype.revisions = function (id, options, done) {
       debug('find in history %o', results)
 
       if (results && results.length && this.history) {
-
         historyQuery._id = {
-          '$in': _.map(results[0].history, function (id) {
-            if (typeof id === 'string') {
-              return id
-            }
+          '$in': _.map(results[0].history, (id) => {
+            return id.toString()
           })
         }
 
@@ -786,7 +792,7 @@ Model.prototype.revisions = function (id, options, done) {
  // TODO: move to DataStore
 Model.prototype.stats = function (options, done) {
   options = options || {}
-  var self = this
+  // var self = this
 
   var _done = function (database) {
     // database.collection(self.name).stats(options, function (err, stats) {
@@ -851,13 +857,15 @@ Model.prototype.update = function (query, update, internals, done, req) {
 
   // ObjectIDs
   // TODO: move this to MongoStore
-  //update = this.convertObjectIdsForSave(this.schema, update)
+  // update = this.convertObjectIdsForSave(this.schema, update)
   // DateTimes
   update = this.convertDateTimeForSave(this.schema, update)
 
   if (typeof internals === 'object' && internals != null) { // not null and not undefined
     _.extend(update, internals)
   }
+
+  this.composer.setApiVersion(internals.apiVersion)
 
   var setUpdate = { $set: update, $inc: { v: 1 } }
 
@@ -868,7 +876,7 @@ Model.prototype.update = function (query, update, internals, done, req) {
       // create a copy of the documents that matched the find
       // query, as these will be updated and we need to send back to the
       // client a full result set of modified documents
-      var updatedDocs  = _.snapshot(result.results)
+      var updatedDocs = queryUtils.snapshot(result.results)
 
       var saveDocuments = () => {
         database.update(query, this.name, setUpdate, { multi: true }, this.schema).then((result) => {
@@ -877,6 +885,28 @@ Model.prototype.update = function (query, update, internals, done, req) {
             err.statusCode = 404
             return done(err)
           }
+
+          // var incrementRevisionNumber = (docs) => {
+          //   return new Promise((resolve, reject) => {
+          //     _.each(docs, (doc, idx) => {
+          //       database.collection(this.name).findOneAndUpdate(
+          //         { _id: new ObjectID(doc._id.toString()) },
+          //         { $inc: { v: 1 } },
+          //         {
+          //           returnOriginal: false,
+          //           sort: [['_id', 'asc']],
+          //           upsert: false
+          //         }, (err, doc) => {
+          //           if (err) return done(err)
+          //
+          //           if (idx === docs.length - 1) {
+          //             return resolve()
+          //           }
+          //         }
+          //       )
+          //     })
+          //   })
+          // }
 
           var triggerAfterUpdateHook = (docs) => {
             if (this.settings.hasOwnProperty('hooks') && (typeof this.settings.hooks.afterUpdate === 'object')) {
@@ -888,7 +918,7 @@ Model.prototype.update = function (query, update, internals, done, req) {
             }
           }
 
-          var results = {}
+          // var results = {}
           var promise
 
           // for each of the updated documents, create a history revision for it
@@ -905,15 +935,13 @@ Model.prototype.update = function (query, update, internals, done, req) {
               }
             }
 
-            this.find(query, {}, (err, doc) => {
+            return this.find(query, {  }, (err, results) => {
               if (err) return done(err)
 
-              results = doc
-
               // apply any existing `afterUpdate` hooks
-              triggerAfterUpdateHook(doc)
+              triggerAfterUpdateHook(results.results)
 
-              done(null, results)
+              return done(null, results)
             })
           })
         }).catch((err) => {
@@ -939,7 +967,6 @@ Model.prototype.update = function (query, update, internals, done, req) {
             done(err)
           } else {
             update = result
-
             saveDocuments()
           }
         })
@@ -972,7 +999,7 @@ Model.prototype.delete = function (query, done, req) {
     return done(err)
   }
 
-  //query = queryUtils.convertApparentObjectIds(query, this.schema)
+  // query = queryUtils.convertApparentObjectIds(query, this.schema)
 
   var startDelete = (database) => {
     // apply any existing `beforeDelete` hooks, otherwise delete the documents straight away

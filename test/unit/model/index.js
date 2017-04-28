@@ -137,7 +137,7 @@ describe('Model', function () {
         should.exist(mod1.settings.index)
 
         JSON.stringify(mod1.settings.index[0].keys).should.eql(JSON.stringify({ orderDate: 1 }))
-        done()
+      done()
       }, 300)
     })
 
@@ -307,6 +307,27 @@ describe('Model', function () {
             results.results.should.be.Array
             results.results[0].history.should.exist
             results.results[0].history[0].fieldName.should.eql('foo')
+            done()
+          })
+        })
+      })
+    })
+
+    it('should use specified historyFilters when includeHistory = true', function (done) {
+      var mod = model('testModelName', help.getModelSchema(), null, { database: 'testdb', storeRevisions: true })
+
+      mod.create({fieldName: 'foo'}, function (err, result) {
+        if (err) return done(err)
+
+        mod.update({fieldName: 'foo'}, {fieldName: 'bar'}, function (err, result) {
+          if (err) return done(err)
+
+          mod.find({}, { includeHistory: true, historyFilters: '{ "fieldName": "foo" }' }, function (err, results) {
+            if (err) return done(err)
+            results.results.should.exist
+            results.results.should.be.Array
+            should.exist(results.results[0].history)
+            should.exist(results.results[0].fieldName)
             done()
           })
         })
@@ -790,6 +811,8 @@ describe('Model', function () {
   })
 
   describe('composer', function () {
+    this.timeout(5000)
+
     it('should be attached to Model', function (done) {
       var mod = model('testModelName', help.getModelSchema(), null, { database: 'testdb' })
       mod.composer.should.be.Object
@@ -890,9 +913,13 @@ describe('Model', function () {
           var anotherDoc = result.results[0]
 
           // add the id to another doc
-          mod.update({ fieldName: 'foo_1' }, { refField: anotherDoc._id }, function (err, result) {
+          mod.update({ fieldName: 'foo_1' }, { refField: anotherDoc._id.toString() }, function (err, result) {
             // doc1 should now have anotherDoc == doc3
             mod.find({fieldName: 'foo_1'}, { 'compose': true }, function (err, result) {
+
+              console.log(result)
+              process.exit(0)
+
               var doc = result.results[0]
               should.exist(doc.refField.fieldName)
               doc.refField.fieldName.should.equal('foo_3')
@@ -900,7 +927,8 @@ describe('Model', function () {
               // composed property
               should.exist(doc.composed)
               should.exist(doc.composed.refField)
-              doc.composed.refField.should.eql(doc.refField._id)
+
+              doc.composed.refField.toString().should.eql(doc.refField._id.toString())
 
               done()
             })
@@ -919,8 +947,6 @@ describe('Model', function () {
           mod.update({ fieldName: 'foo_1' }, { refField: anotherDoc._id }, function (err, result) {
             // doc1 should now have anotherDoc == doc3
             mod.find({fieldName: 'foo_1'}, { 'compose': true }, function (err, result) {
-              // console.log(JSON.stringify(result))
-
               var doc = result.results[0]
               should.not.exist(doc.refField.fieldName)
               should.exist(doc.refField.firstName)
@@ -931,7 +957,7 @@ describe('Model', function () {
               // composed property
               should.exist(doc.composed)
               should.exist(doc.composed.refField)
-              doc.composed.refField.should.eql(doc.refField._id)
+              doc.composed.refField.toString().should.eql(doc.refField._id.toString())
 
               done()
             })
@@ -958,8 +984,6 @@ describe('Model', function () {
               book.create({title: 'Harry Potter 2', author: id, booksInSeries: books}, function (err, result) {
                 // find a book
                 book.find({ title: 'Harry Potter 2' } , { 'compose': true }, function (err, result) {
-                  // console.log(JSON.stringify(result, null, 2))
-
                   var doc = result.results[0]
                   should.exist(doc.author.name)
                   doc.author.name.should.equal('J K Rowling')
@@ -1090,7 +1114,7 @@ describe('Model', function () {
                 books.push(bookid)
 
                 book.create({title: 'Neil\'s Autobiography', person: neil}, function (err, result) {
-                  // find book where author.name = J K Rowling
+                  // find book where person.name = J K Rowling
                   book.find({ 'person.name': 'J K Rowling' }, { compose: true }, function (err, result) {
                     result.results.length.should.eql(1)
                     var doc = result.results[0]

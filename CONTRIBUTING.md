@@ -15,10 +15,10 @@ Here are the guidelines we'd like you to follow:
 
 ## <a name="question"></a> Got a Question or Problem?
 
-Documentation is maintained under the `docs` branch and can be found on the [dadi.tech](https://dadi.tech) site.
+Documentation can be found at the [docs.dadi.tech](https://docs.dadi.tech/api) site.
 
 If the documentation doesn't answer your problem please feel free to email the
-DADI team directly on: team@dadi.tech
+DADI team directly on: team@dadi.tech, or join us on [Slack](http://dadi-chat.herokuapp.com).
 
 ## <a name="issue"></a> Found an Issue?
 If you find a bug in the source code or a mistake in the documentation, you can help us by
@@ -155,7 +155,13 @@ Please don't include more than one change in each patch. If your commit message 
 
 We have very precise rules over how our git commit messages can be formatted. This leads to **more readable messages** that are easy to follow when looking through the **project history**.  We also use the git commit messages to **generate the change log**.
 
-The commit message format validation can be initialised by running `npm run init` from the root of the repository. This will add a symlink at `.git/hooks/commit-msg` which will be run every time you commit.
+We use [husky](https://www.npmjs.com/package/husky) and [validate-commit-msg](https://github.com/kentcdodds/validate-commit-msg) to perform the commit message validation. Commit messages will be validated when you commit. When validation fails, you'll see a message similar to the following:
+
+```bash
+> husky - npm run -s commitmsg
+
+INVALID COMMIT MSG: does not match "<type>(<scope>): <subject>" !
+```
 
 #### Line Length
 
@@ -216,4 +222,3 @@ The footer should contain any information about **Breaking Changes** and is also
 [issues]: https://github.com/dadi/api/issues
 [pulls]: https://github.com/dadi/api/pulls
 [tests]: https://github.com/dadi/api/tree/master/test
-[docs]: https://github.com/dadi/api/tree/docs/

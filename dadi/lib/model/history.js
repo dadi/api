@@ -1,5 +1,7 @@
-var _ = require('underscore-contrib')
+var _ = require('underscore')
 var debug = require('debug')('api:history')
+var path = require('path')
+var queryUtils = require(path.join(__dirname, '/utils'))
 
 var History = function (model) {
   this.model = model
@@ -7,7 +9,7 @@ var History = function (model) {
 
 History.prototype.create = function (obj, model, done) {
   // create copy of original
-  var revisionObj = _.snapshot(obj)
+  var revisionObj = queryUtils.snapshot(obj)
 
   // TODO: use datastore plugin's internal fields
   delete revisionObj._id
@@ -15,7 +17,7 @@ History.prototype.create = function (obj, model, done) {
   delete revisionObj.$loki
 
   var _done = function (database) {
-    database.insert(revisionObj, model.revisionCollection, {}).then((doc) => {
+    database.insert(revisionObj, model.revisionCollection, model.schema).then((doc) => {
       debug('inserted %o', doc)
 
       // TODO: remove mongo options
@@ -23,7 +25,8 @@ History.prototype.create = function (obj, model, done) {
         { _id: obj._id },
         model.name,
         { $push: { 'history': doc[0]._id } },
-        { returnOriginal: false, sort: [['_id', 'asc']], upsert: false }
+        { returnOriginal: false, sort: [['_id', 'asc']], upsert: false },
+        model.schema
       ).then((result) => {
         return done(null, obj)
       }).catch((err) => {

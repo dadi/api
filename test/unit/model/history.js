@@ -47,7 +47,7 @@ describe('History', function () {
         mod.find({fieldName: 'foo'}, function (err, doc) {
           if (err) return done(err)
 
-          mod.history.create(doc['results'][0], mod, function (err, res) {
+          mod.history.create(doc.results[0], mod, (err, res) => {
             if (err) return done(err)
 
             mod.find({fieldName: 'foo'}, function (err, doc) {

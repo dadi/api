@@ -17,7 +17,7 @@ var lastModifiedAt = 0
 describe('Application', function () {
   this.timeout(10000)
 
-  before(function(done) {
+  before(function (done) {
     // read "lastModifiedAt": 1466832329170
     // of workspace/collections/vtest/testdb
     var dirs = config.get('paths')
@@ -309,7 +309,6 @@ describe('Application', function () {
             done()
           })
       })
-
     })
 
     describe('PUT', function () {
@@ -362,7 +361,6 @@ describe('Application', function () {
 
                     done()
                   })
-
               })
           })
         })
@@ -424,7 +422,6 @@ describe('Application', function () {
               .expect(200)
               .end(function (err, res) {
                 if (err) return done(err)
-
                 res.body.results[0]._id.should.equal(doc._id)
                 res.body.results[0].field1.should.equal('updated doc')
 
@@ -653,7 +650,7 @@ describe('Application', function () {
                         res.body['results'].should.exist
                         res.body['results'].should.be.Array
                         res.body['results'].length.should.equal(1)
-                        res.body['results'][0].field1.should.equal('doc'); // not "updated doc"
+                        res.body['results'][0].field1.should.equal('doc') // not "updated doc"
                         res.body['results'][0].apiVersion.should.equal('vjoin')
 
                         config.set('query.useVersionFilter', false)
@@ -736,7 +733,7 @@ describe('Application', function () {
                                 res.body['results'].should.exist
                                 res.body['results'].should.be.Array
                                 res.body['results'].length.should.equal(1)
-                                res.body['results'][0].field1.should.equal('updated doc'); // not "updated doc"
+                                res.body['results'][0].field1.should.equal('updated doc') // not "updated doc"
                                 res.body['results'][0].apiVersion.should.equal('vtest')
 
                                 client
@@ -750,7 +747,7 @@ describe('Application', function () {
                                     res.body['results'].should.exist
                                     res.body['results'].should.be.Array
                                     res.body['results'].length.should.equal(1)
-                                    res.body['results'][0].field1.should.equal('doc'); // not "updated doc"
+                                    res.body['results'][0].field1.should.equal('doc') // not "updated doc"
                                     res.body['results'][0].apiVersion.should.equal('vjoin')
 
                                     config.set('query.useVersionFilter', false)
@@ -1140,7 +1137,7 @@ describe('Application', function () {
               res.body['results'].should.exist
               res.body['results'].should.be.Array
 
-              var obj = _.sample(_.compact(_.map(res.body['results'], function (x) { if (x.hasOwnProperty('_fieldWithUnderscore')) return x; })))
+              var obj = _.sample(_.compact(_.map(res.body['results'], function (x) { if (x.hasOwnProperty('_fieldWithUnderscore')) return x })))
               should.exist(obj['_fieldWithUnderscore'])
 
               done()
@@ -1212,7 +1209,7 @@ describe('Application', function () {
           help.createDoc(bearerToken, function (err, doc2) {
             if (err) return done(err)
 
-            setTimeout(function() {
+            setTimeout(function () {
               var client = request(connectionString)
               var docId = doc2._id
               var query = {
@@ -1373,7 +1370,6 @@ describe('Application', function () {
               done()
             })
         })
-
       })
 
       it.skip('should return normal result set when only using $match in an aggregation query', function (done) {
@@ -1419,8 +1415,7 @@ describe('Application', function () {
         })
       })
 
-      it('should add history to results when querystring param HHistory=true', function (done) {
-
+      it('should add history to results when querystring param includeHistory=true', function (done) {
         var client = request(connectionString)
 
         client
@@ -1467,6 +1462,55 @@ describe('Application', function () {
         })
       })
 
+      it('should use specified historyFilters when querystring param includeHistory=true', function (done) {
+        var client = request(connectionString)
+
+        client
+        .post('/vtest/testdb/test-schema')
+        .set('Authorization', 'Bearer ' + bearerToken)
+        .send({field1: 'ABCDEF', field2: 2001 })
+        .expect(200)
+        .end(function (err, res) {
+          if (err) return done(err)
+          var doc = res.body.results[0]
+
+          var body = {
+            query: { _id: doc._id },
+            update: {field1: 'GHIJKL'}
+          }
+
+          client
+          .put('/vtest/testdb/test-schema/')
+          .set('Authorization', 'Bearer ' + bearerToken)
+          .send(body)
+          .expect(200)
+          .end(function (err, res) {
+            if (err) return done(err)
+
+            res.body.results[0]._id.should.equal(doc._id)
+            res.body.results[0].field1.should.equal('GHIJKL')
+
+            client
+            .get('/vtest/testdb/test-schema?filter={"_id": "' + doc._id + '"}&includeHistory=true&historyFilters={"field2":2001}')
+            .set('Authorization', 'Bearer ' + bearerToken)
+            .expect(200)
+            .expect('content-type', 'application/json')
+            .end(function (err, res) {
+              if (err) return done(err)
+
+              res.body['results'].should.exist
+              res.body['results'].should.be.Array
+              res.body['results'][0].field1.should.exist
+              res.body['results'][0].field1.should.eql('GHIJKL')
+              res.body['results'][0].field2.should.exist
+              res.body['results'][0].history.should.exist
+              res.body['results'][0].history[0].field1.should.eql('ABCDEF')
+              done()
+            })
+          })
+        })
+      })
+
       it('should return single document when querystring param count=1', function (done) {
         // create a bunch of docs
         var ac = new EventEmitter()
@@ -1502,7 +1546,6 @@ describe('Application', function () {
               done()
             })
         })
-
       })
 
       describe('query string params', function () {
@@ -1525,7 +1568,7 @@ describe('Application', function () {
             done()
           })
 
-          asyncControl.on('error', function (err) { throw err; })
+          asyncControl.on('error', function (err) { throw err })
         })
 
         it('should paginate results', function (done) {
@@ -1563,7 +1606,7 @@ describe('Application', function () {
               res.body['metadata'].should.exist
               res.body['metadata'].page.should.equal(1)
               res.body['metadata'].limit.should.equal(docCount)
-              res.body['metadata'].totalPages.should.be.above(1); // Math.ceil(# documents/20 per page)
+              res.body['metadata'].totalPages.should.be.above(1) // Math.ceil(# documents/20 per page)
               res.body['metadata'].nextPage.should.equal(2)
 
               done()
@@ -2117,7 +2160,6 @@ describe('Application', function () {
             })
         })
       })
-
     })
   })
 
@@ -2468,6 +2510,41 @@ describe('Application', function () {
             done()
           })
       })
+
+      it('should return media collections', function (done) {
+        // mimic a file that could be sent to the server
+        var mediaSchema = fs.readFileSync(__dirname + '/../media-schema.json', {encoding: 'utf8'})
+        request(connectionString)
+        .post('/1.0/testdb/media/config')
+        .send(mediaSchema)
+        .set('content-type', 'text/plain')
+        .set('Authorization', 'Bearer ' + bearerToken)
+        .expect(200)
+        .expect('content-type', 'application/json')
+        .end(function (err, res) {
+          if (err) return done(err)
+
+          // Wait for a few seconds then make request to test that the new endpoint is working
+          setTimeout(function () {
+            request(connectionString)
+            .get('/api/collections')
+            .set('Authorization', 'Bearer ' + bearerToken)
+            .expect(200)
+            .expect('content-type', 'application/json')
+            .end((err, res) => {
+              var collections = res.body.collections
+              collections.should.be.Array
+
+              // var names = _.pluck(collections, 'name')
+              // _.contains(names, 'media').should.eql(true)
+              var collection = _.findWhere(collections, { name: 'media' })
+              should.exist(collection)
+              collection.type.should.eql('media')
+              done()
+    })
+          }, 300)
+        })
+      })
     })
 
     describe('DELETE', function () {
@@ -2602,7 +2679,6 @@ describe('Application', function () {
           done()
         })
       })
-
     })
 
     after(function (done) {
@@ -2790,7 +2866,7 @@ describe('Application', function () {
               should.exist(endpoint.path)
             })
 
-            var endpointWithDisplayName = _.find(res.body.endpoints, function(endpoint) {
+            var endpointWithDisplayName = _.find(res.body.endpoints, function (endpoint) {
               return endpoint.name === 'Test Endpoint'
             })
 
@@ -2813,7 +2889,6 @@ describe('Application', function () {
   })
 
   describe('hooks config api', function () {
-
     before(function (done) {
       app.start(function () {
         help.getBearerTokenWithAccessType('admin', function (err, token) {
@@ -2869,7 +2944,7 @@ describe('Application', function () {
       request(connectionString)
       .get('/api/hooks/slugify/config')
       .set('Authorization', 'Bearer ' + bearerToken)
-      .end(function(err, res) {
+      .end(function (err, res) {
         res.statusCode.should.eql(200)
         res.text.should.not.eql('')
         done()

@@ -65,15 +65,15 @@ Validator.prototype.schema = function (obj, update) {
     })
 
   // check all `obj` fields
-  _parseDocument(obj, schema, response)
+  this._parseDocument(obj, schema, response)
   return response
 }
 
-function _parseDocument (obj, schema, response) {
+Validator.prototype._parseDocument = function (obj, schema, response) {
   var keys = _.difference(Object.keys(obj), ignoredKeys)
   var err // eslint-disable-line
 
-  keys.forEach(function (key) {
+  keys.forEach((key) => {
     // handle objects first
     if (typeof obj[key] === 'object') {
       if (schema[key] && (schema[key].type === 'Mixed' || schema[key].type === 'Object')) {
@@ -81,9 +81,9 @@ function _parseDocument (obj, schema, response) {
       } else if (schema[key] && schema[key].type === 'Reference') {
         // bah!
       } else if (obj[key] !== null && !Array.isArray(obj[key])) {
-        _parseDocument(obj[key], schema, response)
+        this._parseDocument(obj[key], schema, response)
       } else if (obj[key] !== null && schema[key] && schema[key].type === 'ObjectID' && Array.isArray(obj[key])) {
-        err = _validate(obj[key], schema[key], key)
+        err = this._validate(obj[key], schema[key], key)
 
         if (err) {
           response.success = false
@@ -94,7 +94,7 @@ function _parseDocument (obj, schema, response) {
         // happens, we run the validation against the combination of all strings
         // glued together.
 
-        err = _validate(obj[key].join(''), schema[key], key)
+        err = this._validate(obj[key].join(''), schema[key], key)
 
         if (err) {
           response.success = false
@@ -104,11 +104,17 @@ function _parseDocument (obj, schema, response) {
     } else {
       if (!schema[key]) {
         response.success = false
-        response.errors.push({ field: key, message: 'doesn\'t exist in the collection schema' })
+        response.errors.push({
+          collection: this.model.name,
+          field: key,
+          message: 'doesn\'t exist in the collection schema',
+          data: obj
+        })
+
         return
       }
 
-      var err = _validate(obj[key], schema[key], key)
+      var err = this._validate(obj[key], schema[key], key)
 
       if (err) {
         response.success = false
@@ -118,14 +124,27 @@ function _parseDocument (obj, schema, response) {
   })
 }
 
-function _validate (field, schema, key) {
-  if (schema.hasOwnProperty('validation')) {
+Validator.prototype._validate = function (field, schema, key) {
+  if (schema.validation) {
     var validationObj = schema.validation
 
-    if (validationObj.hasOwnProperty('regex') && validationObj.regex.hasOwnProperty('pattern') && !(new RegExp(validationObj.regex.pattern).test(field))) return schema.message || 'should match the pattern ' + validationObj.regex.pattern
+    if (validationObj.regex && validationObj.regex.pattern) {
+      var pattern = validationObj.regex.pattern
 
-    if (validationObj.hasOwnProperty('minLength') && field.toString().length < Number(validationObj.minLength)) return schema.message || 'is too short'
-    if (validationObj.hasOwnProperty('maxLength') && field.toString().length > Number(validationObj.maxLength)) return schema.message || 'is too long'
+      if (Object.prototype.toString.call(pattern) === '[object RegExp]') {
+        pattern = pattern.source
+      }
+
+      var flags = typeof validationObj.regex.flags === 'string' ? validationObj.regex.flags : ''
+      var re = new RegExp(pattern, flags)
+
+      if (re.exec(field) === null) {
+        return schema.message || 'should match the pattern ' + pattern
+      }
+    }
+
+    if (validationObj.minLength && field.toString().length < Number(validationObj.minLength)) return schema.message || 'is too short'
+    if (validationObj.maxLength && field.toString().length > Number(validationObj.maxLength)) return schema.message || 'is too long'
   }
 
   var primitives = ['String', 'Number', 'Boolean', 'Array', 'Date', 'DateTime']
@@ -141,7 +160,6 @@ function _validate (field, schema, key) {
     delete newSchema[key].limit
     message = 'The use of the `limit` property in field declarations is deprecated and was removed in v1.8.0\n\nPlease use the following instead:\n\n'
     message += JSON.stringify(newSchema, null, 2)
-    log.warn(message)
     throw new Error(message)
   }
 
@@ -153,7 +171,6 @@ function _validate (field, schema, key) {
     delete newSchema[key].validationRule
     message = 'The use of the `validationRule` property in field declarations is deprecated and was removed in v1.8.0\n\nPlease use the following instead:\n\n'
     message += JSON.stringify(newSchema, null, 2)
-    log.warn(message)
     throw new Error(message)
   }
 

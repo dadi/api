@@ -1074,75 +1074,77 @@ describe('Application', function () {
           .end((err, res) => {
             if (err) return done(err)
 
-            // create some docs
-            client
-            .post('/1.0/library/person')
-            .send({name: 'Neil Murray'})
-            .set('content-type', 'application/json')
-            .set('Authorization', 'Bearer ' + bearerToken)
-            .expect(200)
-            .end((err, res) => {
-              var id = res.body.results[0]._id
-
+            setTimeout(function() {
+              // create some docs
               client
               .post('/1.0/library/person')
-              .send({name: 'J K Rowling', spouse: id})
+              .send({name: 'Neil Murray'})
               .set('content-type', 'application/json')
               .set('Authorization', 'Bearer ' + bearerToken)
               .expect(200)
               .end((err, res) => {
-                id = res.body.results[0]._id
+                var id = res.body.results[0]._id
 
                 client
-                .post('/1.0/library/book')
-                .send({title: 'Harry Potter 1', author: id})
+                .post('/1.0/library/person')
+                .send({name: 'J K Rowling', spouse: id})
                 .set('content-type', 'application/json')
                 .set('Authorization', 'Bearer ' + bearerToken)
                 .expect(200)
                 .end((err, res) => {
-                  var bookid = res.body.results[0]._id
-                  var books = []
-                  books.push(bookid)
+                  id = res.body.results[0]._id
 
                   client
                   .post('/1.0/library/book')
-                  .send({title: 'Harry Potter 2', author: id, booksInSeries: books})
+                  .send({title: 'Harry Potter 1', author: id})
                   .set('content-type', 'application/json')
                   .set('Authorization', 'Bearer ' + bearerToken)
                   .expect(200)
                   .end((err, res) => {
-                    // find a book
-
-                    var Model = require(__dirname + '/../../dadi/lib/model/index.js')
-                    var spy = sinon.spy(Model.Model.prototype, 'find')
+                    var bookid = res.body.results[0]._id
+                    var books = []
+                    books.push(bookid)
 
                     client
-                    .get('/1.0/library/book?filter={ "title": "Harry Potter 2" }&compose=true')
+                    .post('/1.0/library/book')
                     .send({title: 'Harry Potter 2', author: id, booksInSeries: books})
                     .set('content-type', 'application/json')
                     .set('Authorization', 'Bearer ' + bearerToken)
                     .expect(200)
                     .end((err, res) => {
-                      var args = spy.args
-                      spy.restore()
+                      // find a book
 
-                      config.set('query.useVersionFilter', true)
+                      var Model = require(__dirname + '/../../dadi/lib/model/index.js')
+                      var spy = sinon.spy(Model.Model.prototype, 'find')
 
-                      // apiVersion should be in the query passed to find
-                      args.forEach((arg) => {
-                        should.not.exist(arg[0].apiVersion)
+                      client
+                      .get('/1.0/library/book?filter={ "title": "Harry Potter 2" }&compose=true')
+                      .send({title: 'Harry Potter 2', author: id, booksInSeries: books})
+                      .set('content-type', 'application/json')
+                      .set('Authorization', 'Bearer ' + bearerToken)
+                      .expect(200)
+                      .end((err, res) => {
+                        var args = spy.args
+                        spy.restore()
+
+                        config.set('query.useVersionFilter', true)
+
+                        // apiVersion should be in the query passed to find
+                        args.forEach((arg) => {
+                          should.not.exist(arg[0].apiVersion)
+                        })
+
+                        var results = res.body.results
+                        results.should.be.Array
+                        results.length.should.be.above(0)
+
+                        done()
                       })
-
-                      var results = res.body.results
-                      results.should.be.Array
-                      results.length.should.be.above(0)
-
-                      done()
                     })
                   })
                 })
               })
-            })
+            }, 1000)
           })
         })
       })

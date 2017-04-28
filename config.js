@@ -10,13 +10,27 @@ var conf = convict({
       default: 'DADI API Repo Default',
     }
   },
-  server: {
-    baseUrl: {
-      doc: 'The base URL where the API instance can be accessed at',
+  url: {
+    host: {
+      doc: 'The host of the URL where the API instance can be publicly accessed at',
       format: '*',
       default: null,
-      env: 'BASE_URL'
+      env: 'URL_HOST'
     },
+    port: {
+      doc: 'The port of the URL where the API instance can be publicly accessed at',
+      format: '*',
+      default: null,
+      env: 'URL_PORT'
+    },
+    protocol: {
+      doc: 'The protocol of the URL where the API instance can be publicly accessed at',
+      format: 'String',
+      default: 'http',
+      env: 'URL_PROTOCOL'
+    }
+  },
+  server: {
     host: {
       doc: 'Accept connections on the specified address. If the host is omitted, the server will accept connections on any IPv6 address (::) when IPv6 is available, or any IPv4 address (0.0.0.0) otherwise.',
       format: '*',

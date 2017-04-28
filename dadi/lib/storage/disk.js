@@ -31,14 +31,6 @@ DiskStorage.prototype.getFullUrl = function () {
 
 /**
  *
- * @returns {string}
- */
-DiskStorage.prototype.getStaticAssetUrl = function (folderPath, fileName) {
-  return `${config.get('server.protocol')}://${config.get('server.baseUrl')}${folderPath}/${fileName}`
-}
-
-/**
- *
  * @param {Stream} stream - xxx
  * @param {string} folderPath - xxx
  */
@@ -64,7 +56,7 @@ DiskStorage.prototype.put = function (stream, folderPath) {
         }
 
         var data = {
-          path: this.getStaticAssetUrl(folderPath, newFileName || this.fileName)
+          path: `${folderPath}/${newFileName || this.fileName}`
         }
 
         function lengthListener (length) {

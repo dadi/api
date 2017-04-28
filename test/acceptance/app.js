@@ -1,4 +1,5 @@
 var should = require('should')
+var sinon = require('sinon')
 var fs = require('fs')
 var path = require('path')
 var request = require('supertest')
@@ -871,7 +872,284 @@ describe('Application', function () {
         })
       })
 
+      it.skip('should use apiVersion when getting reference documents if useVersionFilter is set to true', function (done) {
+        config.set('query.useVersionFilter', true)
+
+        var bookSchema = {
+          fields: {
+            'title': { 'type': 'String', 'required': true },
+            'author': { 'type': 'Reference',
+              'settings': { 'collection': 'person', 'fields': ['name', 'spouse'] }
+            },
+            'booksInSeries': {
+              'type': 'Reference',
+              'settings': { 'collection': 'book', 'multiple': true }
+            }
+          },
+          settings: {
+            cache: false,
+            authenticate: true,
+            callback: null,
+            defaultFilters: null,
+            fieldLimiters: null,
+            count: 40,
+          }
+        }
+
+        var personSchema = {
+          fields: {
+            'name': { 'type': 'String', 'required': true },
+            'occupation': { 'type': 'String', 'required': false },
+            'nationality': { 'type': 'String', 'required': false },
+            'education': { 'type': 'String', 'required': false },
+            'spouse': { 'type': 'Reference' }
+          },
+          settings: {
+            cache: false,
+            authenticate: true,
+            callback: null,
+            defaultFilters: null,
+            fieldLimiters: null,
+            count: 40,
+          }
+        }
+
+        // create new API endpoint
+        var client = request(connectionString)
+
+        client
+        .post('/1.0/library/book/config')
+        .send(JSON.stringify(bookSchema))
+        .set('content-type', 'text/plain')
+        .set('Authorization', 'Bearer ' + bearerToken)
+        .expect(200)
+        .expect('content-type', 'application/json')
+        .end((err, res) => {
+          if (err) return done(err)
+
+          client
+          .post('/1.0/library/person/config')
+          .send(JSON.stringify(personSchema))
+          .set('content-type', 'text/plain')
+          .set('Authorization', 'Bearer ' + bearerToken)
+          .expect(200)
+          .expect('content-type', 'application/json')
+          .end((err, res) => {
+            if (err) return done(err)
+
+            // create some docs
+            client
+            .post('/1.0/library/person')
+            .send({name: 'Neil Murray'})
+            .set('content-type', 'application/json')
+            .set('Authorization', 'Bearer ' + bearerToken)
+            .expect(200)
+            .end((err, res) => {
+              var id = res.body.results[0]._id
+
+              client
+              .post('/1.0/library/person')
+              .send({name: 'J K Rowling', spouse: id})
+              .set('content-type', 'application/json')
+              .set('Authorization', 'Bearer ' + bearerToken)
+              .expect(200)
+              .end((err, res) => {
+                id = res.body.results[0]._id
+
+                client
+                .post('/1.0/library/book')
+                .send({title: 'Harry Potter 1', author: id})
+                .set('content-type', 'application/json')
+                .set('Authorization', 'Bearer ' + bearerToken)
+                .expect(200)
+                .end((err, res) => {
+                  var bookid = res.body.results[0]._id
+                  var books = []
+                  books.push(bookid)
+
+                  client
+                  .post('/1.0/library/book')
+                  .send({title: 'Harry Potter 2', author: id, booksInSeries: books})
+                  .set('content-type', 'application/json')
+                  .set('Authorization', 'Bearer ' + bearerToken)
+                  .expect(200)
+                  .end((err, res) => {
+                    // find a book
+
+                    var Model = require(__dirname + '/../../dadi/lib/model/index.js')
+                    var spy = sinon.spy(Model.Model.prototype, 'find')
+
+                    client
+                    .get('/1.0/library/book?filter={ "title": "Harry Potter 2" }&compose=true')
+                    .send({title: 'Harry Potter 2', author: id, booksInSeries: books})
+                    .set('content-type', 'application/json')
+                    .set('Authorization', 'Bearer ' + bearerToken)
+                    .expect(200)
+                    .end((err, res) => {
+                      var args = spy.args
+                      spy.restore()
+                      config.set('query.useVersionFilter', false)
+
+                      // apiVersion should be in the query passed to find
+                      args.forEach((arg) => {
+                        should.exist(arg[0].apiVersion)
+                      })
+
+                      var results = res.body.results
+                      results.should.be.Array
+                      results.length.should.eql(1)
+
+                      done()
+                    })
+                  })
+                })
+              })
+            })
+          })
+        })
+      })
+
+      it('should not use apiVersion when getting reference documents if useVersionFilter is set to false', function (done) {
+        config.set('query.useVersionFilter', false)
+
+        var bookSchema = {
+          fields: {
+            'title': { 'type': 'String', 'required': true },
+            'author': { 'type': 'Reference',
+              'settings': { 'collection': 'person', 'fields': ['name', 'spouse'] }
+            },
+            'booksInSeries': {
+              'type': 'Reference',
+              'settings': { 'collection': 'book', 'multiple': true }
+            }
+          },
+          settings: {
+            cache: false,
+            authenticate: true,
+            callback: null,
+            defaultFilters: null,
+            fieldLimiters: null,
+            count: 40,
+          }
+        }
+
+        var personSchema = {
+          fields: {
+            'name': { 'type': 'String', 'required': true },
+            'occupation': { 'type': 'String', 'required': false },
+            'nationality': { 'type': 'String', 'required': false },
+            'education': { 'type': 'String', 'required': false },
+            'spouse': { 'type': 'Reference' }
+          },
+          settings: {
+            cache: false,
+            authenticate: true,
+            callback: null,
+            defaultFilters: null,
+            fieldLimiters: null,
+            count: 40,
+          }
+        }
+
+        // create new API endpoint
+        var client = request(connectionString)
+
+        client
+        .post('/1.0/library/book/config')
+        .send(JSON.stringify(bookSchema))
+        .set('content-type', 'text/plain')
+        .set('Authorization', 'Bearer ' + bearerToken)
+        .expect(200)
+        .expect('content-type', 'application/json')
+        .end((err, res) => {
+          if (err) return done(err)
+
+          client
+          .post('/1.0/library/person/config')
+          .send(JSON.stringify(personSchema))
+          .set('content-type', 'text/plain')
+          .set('Authorization', 'Bearer ' + bearerToken)
+          .expect(200)
+          .expect('content-type', 'application/json')
+          .end((err, res) => {
+            if (err) return done(err)
+
+            // create some docs
+            client
+            .post('/1.0/library/person')
+            .send({name: 'Neil Murray'})
+            .set('content-type', 'application/json')
+            .set('Authorization', 'Bearer ' + bearerToken)
+            .expect(200)
+            .end((err, res) => {
+              var id = res.body.results[0]._id
+
+              client
+              .post('/1.0/library/person')
+              .send({name: 'J K Rowling', spouse: id})
+              .set('content-type', 'application/json')
+              .set('Authorization', 'Bearer ' + bearerToken)
+              .expect(200)
+              .end((err, res) => {
+                id = res.body.results[0]._id
+
+                client
+                .post('/1.0/library/book')
+                .send({title: 'Harry Potter 1', author: id})
+                .set('content-type', 'application/json')
+                .set('Authorization', 'Bearer ' + bearerToken)
+                .expect(200)
+                .end((err, res) => {
+                  var bookid = res.body.results[0]._id
+                  var books = []
+                  books.push(bookid)
+
+                  client
+                  .post('/1.0/library/book')
+                  .send({title: 'Harry Potter 2', author: id, booksInSeries: books})
+                  .set('content-type', 'application/json')
+                  .set('Authorization', 'Bearer ' + bearerToken)
+                  .expect(200)
+                  .end((err, res) => {
+                    // find a book
+
+                    var Model = require(__dirname + '/../../dadi/lib/model/index.js')
+                    var spy = sinon.spy(Model.Model.prototype, 'find')
+
+                    client
+                    .get('/1.0/library/book?filter={ "title": "Harry Potter 2" }&compose=true')
+                    .send({title: 'Harry Potter 2', author: id, booksInSeries: books})
+                    .set('content-type', 'application/json')
+                    .set('Authorization', 'Bearer ' + bearerToken)
+                    .expect(200)
+                    .end((err, res) => {
+                      var args = spy.args
+                      spy.restore()
+
+                      config.set('query.useVersionFilter', true)
+
+                      // apiVersion should be in the query passed to find
+                      args.forEach((arg) => {
+                        should.not.exist(arg[0].apiVersion)
+                      })
+
+                      var results = res.body.results
+                      results.should.be.Array
+                      results.length.should.be.above(0)
+
+                      done()
+                    })
+                  })
+                })
+              })
+            })
+          })
+        })
+      })
+
       it('should ignore apiVersion when getting documents if useVersionFilter is not set', function (done) {
+        config.set('query.useVersionFilter', false)
+
         var jsSchemaString = fs.readFileSync(__dirname + '/../new-schema.json', {encoding: 'utf8'})
 
         help.createDoc(bearerToken, function (err, doc) {

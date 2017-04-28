@@ -9,9 +9,7 @@ var Composer = function (model) {
 }
 
 Composer.prototype.setApiVersion = function (apiVersion) {
-  if (apiVersion) {
-    this.apiVersion = apiVersion
-  }
+  this.apiVersion = apiVersion
 }
 
 Composer.prototype.compose = function (obj, callback) {
@@ -55,10 +53,10 @@ Composer.prototype.composeOne = function (doc, callback) {
         query = { '_id': value + '' }
       }
 
-      // add the apiVersion param
-      if (this.apiVersion) {
-        _.extend(query, { apiVersion: this.apiVersion })
-      }
+      // add the apiVersion filter
+      // if (this.apiVersion && config.get('query.useVersionFilter')) {
+      //   query = _.extend(query, { apiVersion: this.apiVersion })
+      // }
 
       // are specific fields required?
       var fields = {}

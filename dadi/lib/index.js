@@ -743,8 +743,17 @@ Server.prototype.updateCollections = function (collectionsPath) {
   // Loading media collections
   var mediaSchema = mediaModel.getSchema()
 
+  // Adding default media bucket (on root URL)
   this.addMediaCollectionResource({
     route: '/media',
+    name: defaultMediaBucket,
+    schema: mediaSchema,
+    database: 'media'
+  })
+
+  // Adding default media bucket (on its own endpoint)
+  this.addMediaCollectionResource({
+    route: ['', 'media', defaultMediaBucket].join('/'),
     name: defaultMediaBucket,
     schema: mediaSchema,
     database: 'media'

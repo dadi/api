@@ -1,3 +1,6 @@
+--bail
+--growl
+--full-trace
 --ui bdd
 --recursive
 --require=env-test

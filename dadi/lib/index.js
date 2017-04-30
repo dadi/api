@@ -20,12 +20,12 @@ var _ = require('underscore')
 var api = require(path.join(__dirname, '/api'))
 var auth = require(path.join(__dirname, '/auth'))
 var cache = require(path.join(__dirname, '/cache'))
-var controller = require(path.join(__dirname, '/controller'))
+var Controller = require(path.join(__dirname, '/controller'))
 var MediaController = require(path.join(__dirname, '/controller/media'))
 var dadiStatus = require('@dadi/status')
 var help = require(path.join(__dirname, '/help'))
 var log = require('@dadi/logger')
-var model = require(path.join(__dirname, '/model'))
+var Model = require(path.join(__dirname, '/model'))
 var mediaModel = require(path.join(__dirname, '/model/media'))
 var monitor = require(path.join(__dirname, '/monitor'))
 var search = require(path.join(__dirname, '/search'))
@@ -781,20 +781,20 @@ Server.prototype.addCollectionResource = function (options) {
   var database = enableCollectionDatabases ? options.database : null
 
   var settings = options.schema.settings
-  var mod
-  var control
+  var model
+  var controller
 
-  mod = model(options.name, JSON.parse(fields), null, settings, database)
+  model = Model(options.name, JSON.parse(fields), null, settings, database)
 
   if (settings.type && settings.type === 'media') {
-    control = MediaController(mod)
+    controller = MediaController(model)
   } else {
-    control = controller(mod)
+    controller = Controller(model)
   }
 
   this.addComponent({
     route: options.route,
-    component: control,
+    component: controller,
     filepath: options.filepath
   })
 
@@ -826,12 +826,12 @@ Server.prototype.addMediaCollectionResource = function (options) {
   var enableCollectionDatabases = config.get('database.enableCollectionDatabases')
   var database = enableCollectionDatabases ? options.database : null
 
-  var mod = model(options.name, options.schema.fields, null, options.schema.settings, database)
-  var control = MediaController(mod)
+  var model = Model(options.name, options.schema.fields, null, options.schema.settings, database)
+  var controller = MediaController(model)
 
   this.addComponent({
     route: options.route,
-    component: control
+    component: controller
   })
 
   log.info({module: 'server'}, 'Media collection loaded: ' + options.name)
@@ -1114,7 +1114,7 @@ Server.prototype.addComponent = function (options) {
     })
 
     // POST media (upload)
-    this.app.use(mediaRoute + '/:token?', (req, res, next) => {
+    this.app.use(mediaRoute + '/:token+', (req, res, next) => {
       var method = req.method && req.method.toLowerCase()
       if (method !== 'post') return next()
 

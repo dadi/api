@@ -83,6 +83,14 @@
     "filename": "dadi-api",
     "extension": "log"
   },
+  "url": {
+    "protocol": "http",
+    "port": 80,
+    "host": "api.somedomain.tech"
+  },
+  "media": {
+    "defaultBucket": "mediaStore"
+  },
   "feedback": false,
   "cors": false
 }

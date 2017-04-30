@@ -312,7 +312,7 @@ describe('Media', function () {
               res.body.results.should.be.Array
               res.body.results.length.should.eql(1)
               res.body.results[0].fileName.should.eql('1f525.png')
-              res.body.results[0].path.indexOf('mydomain').should.be.above(0)
+              res.body.results[0].path.indexOf('somedomain').should.be.above(0)
               done()
             })
           })

@@ -1,3 +1,5 @@
+'use strict'
+
 var _ = require('underscore')
 var Busboy = require('busboy')
 var imagesize = require('imagesize')

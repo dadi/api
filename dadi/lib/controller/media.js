@@ -13,6 +13,7 @@ var config = require(path.join(__dirname, '/../../../config'))
 var help = require(path.join(__dirname, '/../help'))
 var streamifier = require('streamifier')
 
+var mediaModel = require(path.join(__dirname, '/../model/media'))
 var prepareQuery = require(path.join(__dirname, './index')).prepareQuery
 var prepareQueryOptions = require(path.join(__dirname, './index')).prepareQueryOptions
 var StorageFactory = require(path.join(__dirname, '/../storage/factory'))
@@ -34,9 +35,11 @@ MediaController.prototype.get = function (req, res, next) {
   }
 
   const callback = (err, response) => {
-    const output = this.prepareOutput(response)
+    response.results = response.results.map(document => {
+      return mediaModel.formatDocument(document)
+    })
 
-    help.sendBackJSON(200, res, next)(err, output)
+    help.sendBackJSON(200, res, next)(err, response)
   }
 
   this.model.get(query, parsedOptions.queryOptions, callback, req)
@@ -82,12 +85,6 @@ MediaController.prototype.getPath = function (fileName) {
     default:
       return ''
   }
-}
-
-MediaController.prototype.getURLForPath = function (path) {
-  let portString = config.get('url.port') ? `:${config.get('url.port')}` : ''
-
-  return `${config.get('url.protocol')}://${config.get('url.host')}${portString}${path}`
 }
 
 MediaController.prototype.post = function (req, res, next) {
@@ -179,22 +176,6 @@ MediaController.prototype.post = function (req, res, next) {
 
   // Pipe the HTTP Request into Busboy
   req.pipe(busboy)
-}
-
-MediaController.prototype.prepareOutput = function (output) {
-  output.results = output.results.map(result => {
-    // Is this a relative path to a file in the disk? If so, we need to prepend
-    // the API URL.
-    if (result.path.indexOf('/') === 0) {
-      result.path = this.getURLForPath(result.path)
-    }
-
-    delete result.apiVersion
-
-    return result
-  })
-
-  return output
 }
 
 /**

@@ -1,5 +1,6 @@
 var _ = require('underscore')
 var path = require('path')
+var mediaModel = require(path.join(__dirname, '../model/media'))
 var queryUtils = require(path.join(__dirname, '../model/utils'))
 
 var help = require(path.join(__dirname, '/../help'))
@@ -80,6 +81,13 @@ Composer.prototype.composeOne = function (doc, callback) {
             } else {
               doc[key] = result.results
             }
+          }
+
+          // Are we composing a media document? If so, we need to format it
+          // before returning. This should really go somewhere else, it needs
+          // to be revisited! --eb 03/05/2017
+          if (doc[key].apiVersion === 'media') {
+            doc[key] = mediaModel.formatDocument(doc[key])
           }
 
           if (!doc.composed) doc.composed = {}

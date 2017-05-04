@@ -49,7 +49,7 @@ connection.on('connect', db => {
       },
       {
         label: '-> Access type (admin, user)',
-        key: 'type',
+        key: 'accessType',
         default: 'user'
       },
       {

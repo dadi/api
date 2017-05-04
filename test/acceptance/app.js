@@ -3396,6 +3396,56 @@ describe('Application', function () {
         done()
       })
     })
+
+    it('should delete a hook with a DELETE request', function (done) {
+      const hookName = 'myHook1'
+      const hookContent = `
+        module.exports = (obj, type, data) => {
+          return obj
+        }
+      `.trim()
+
+      request(connectionString)
+      .post(`/api/hooks/${hookName}/config`)
+      .send(hookContent)
+      .set('content-type', 'text/plain')
+      .set('Authorization', 'Bearer ' + bearerToken)
+      .end((err, res) => {
+        setTimeout(() => {
+          request(connectionString)
+          .delete(`/api/hooks/${hookName}/config`)
+          .set('Authorization', 'Bearer ' + bearerToken)
+          .end((err, res) => {
+            res.statusCode.should.eql(200)
+            res.text.should.eql('')
+
+            setTimeout(() => {
+              request(connectionString)
+              .get(`/api/hooks/${hookName}/config`)
+              .set('Authorization', 'Bearer ' + bearerToken)
+              .end((err, res) => {
+                res.statusCode.should.eql(404)
+
+                done()
+              })
+            }, 200)
+          })
+        }, 200)
+      })
+    })
+
+    it('should return 404 when sending a DELETE request to a hook that does not exist', function (done) {
+      const hookName = 'myHook1'
+
+      request(connectionString)
+      .delete(`/api/hooks/${hookName}/config`)
+      .set('Authorization', 'Bearer ' + bearerToken)
+      .end(function (err, res) {
+        res.statusCode.should.eql(404)
+
+        done()
+      })
+    })
   })
 
   describe('config api', function () {

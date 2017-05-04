@@ -10,6 +10,18 @@ const HooksController = function (parameters) {
   this.path = parameters.path
 }
 
+HooksController.prototype._deleteHook = function (name) {
+  const filePath = path.join(this.path, name + '.js')
+
+  return new Promise((resolve, reject) => {
+    fs.unlink(filePath, err => {
+      if (err) return reject(err)
+
+      resolve()
+    })
+  })
+}
+
 HooksController.prototype._findHooks = function (filterByName) {
   let hooks = []
 
@@ -44,6 +56,21 @@ HooksController.prototype._writeHook = function (name, content) {
   })
 }
 
+HooksController.prototype.delete = function (req, res, next) {
+  const name = req.params.hookName
+  const hook = this._findHooks(name)[0]
+
+  if (!hook) {
+    return help.sendBackText(404, res, next)(null, '')
+  }
+
+  this._deleteHook(name).then(() => {
+    return help.sendBackText(200, res, next)(null, '')
+  }).catch(err => {
+    return help.sendBackText(200, res, next)(err, '')
+  })
+}
+
 HooksController.prototype.get = function (req, res, next) {
   // Return the content of a specific hook
   if (req.params.hookName) {
@@ -55,7 +82,7 @@ HooksController.prototype.get = function (req, res, next) {
     }
 
     fs.readFile(this.components[HOOK_PREFIX + name], (err, content) => {
-      return help.sendBackText(200, res, next)(null, content.toString())
+      return help.sendBackText(200, res, next)(err, content.toString())
     })
   } else {
     // List all hooks

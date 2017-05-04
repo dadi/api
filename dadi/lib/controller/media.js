@@ -164,12 +164,20 @@ MediaController.prototype.post = function (req, res, next) {
         createdBy: req.client && req.client.clientId
       }
 
+      const callback = (err, response) => {
+        response.results = response.results.map(document => {
+          return mediaModel.formatDocument(document)
+        })
+
+        help.sendBackJSON(200, res, next)(err, response)
+      }
+
       return this.writeFile(req, this.fileName, this.mimetype, dataStream).then((result) => {
         if (_.contains(fields, 'contentLength')) obj.contentLength = result.contentLength
 
         obj.path = result.path
 
-        this.model.create(obj, internals, help.sendBackJSON(201, res, next), req)
+        this.model.create(obj, internals, callback, req)
       })
     })
   })

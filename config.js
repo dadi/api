@@ -10,7 +10,7 @@ var conf = convict({
       default: 'DADI API Repo Default',
     }
   },
-  url: {
+  publicUrl: {
     host: {
       doc: 'The host of the URL where the API instance can be publicly accessed at',
       format: '*',

@@ -74,9 +74,9 @@ MediaModel.prototype.formatDocument = function (document) {
 }
 
 MediaModel.prototype.getURLForPath = function (path) {
-  const portString = config.get('url.port') ? `:${config.get('url.port')}` : ''
+  const portString = config.get('publicUrl.port') ? `:${config.get('publicUrl.port')}` : ''
 
-  return `${config.get('url.protocol')}://${config.get('url.host')}${portString}${path}`
+  return `${config.get('publicUrl.protocol')}://${config.get('publicUrl.host')}${portString}${path}`
 }
 
 module.exports = new MediaModel()

@@ -6,6 +6,10 @@
     "host": "127.0.0.1",
     "port": 8000
   },
+  "publicUrl": {
+    "host": "localhost",
+    "port": 8000
+  },
   "database": {
     "hosts": [
       {
@@ -82,11 +86,6 @@
     "path": "./log",
     "filename": "dadi-api",
     "extension": "log"
-  },
-  "url": {
-    "protocol": "http",
-    "port": 8000,
-    "host": "localhost"
   },
   "media": {
     "defaultBucket": "mediaStore",

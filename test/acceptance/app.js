@@ -5,10 +5,12 @@ var path = require('path')
 var request = require('supertest')
 var _ = require('underscore')
 var EventEmitter = require('events').EventEmitter
+var FormData = require('form-data')
 var connection = require(__dirname + '/../../dadi/lib/model/connection')
 var config = require(__dirname + '/../../config')
 var help = require(__dirname + '/help')
 var app = require(__dirname + '/../../dadi/lib/')
+var rimraf = require('rimraf')
 
 // variables scoped for use throughout tests
 var bearerToken
@@ -2786,41 +2788,107 @@ describe('Application', function () {
           })
       })
 
-    //   it('should return media collections', function (done) {
-    //     // mimic a file that could be sent to the server
-    //     var mediaSchema = fs.readFileSync(__dirname + '/../media-schema.json', {encoding: 'utf8'})
-    //     request(connectionString)
-    //     .post('/1.0/testdb/media/config')
-    //     .send(mediaSchema)
-    //     .set('content-type', 'text/plain')
-    //     .set('Authorization', 'Bearer ' + bearerToken)
-    //     .expect(200)
-    //     .expect('content-type', 'application/json')
-    //     .end(function (err, res) {
-    //       if (err) return done(err)
+    it('should list documents in the default media bucket (root endpoint)', function (done) {
+      request(connectionString)
+      .get('/media')
+      .set('Authorization', 'Bearer ' + bearerToken)
+      .expect(200)
+      .end(function (err, res) {
+        res.body.results.should.be.Array
+        res.body.metadata.should.be.Object
 
-    //       // Wait for a few seconds then make request to test that the new endpoint is working
-    //       setTimeout(function () {
-    //         request(connectionString)
-    //         .get('/api/collections')
-    //         .set('Authorization', 'Bearer ' + bearerToken)
-    //         .expect(200)
-    //         .expect('content-type', 'application/json')
-    //         .end((err, res) => {
-    //           var collections = res.body.collections
-    //           collections.should.be.Array
+        done()
+      })
+    })
 
-    //           // var names = _.pluck(collections, 'name')
-    //           // _.contains(names, 'media').should.eql(true)
-    //           var collection = _.findWhere(collections, { name: 'media' })
-    //           should.exist(collection)
-    //           collection.type.should.eql('media')
-    //           done()
-    //         })
-    //       }, 300)
-    //     })
-    //   })
-    // })
+    it('should list documents in the default media bucket (named endpoint)', function (done) {
+      const defaultBucket = config.get('media.defaultBucket')
+
+      request(connectionString)
+      .get(`/media/${defaultBucket}`)
+      .set('Authorization', 'Bearer ' + bearerToken)
+      .expect(200)
+      .end(function (err, res) {
+        res.body.results.should.be.Array
+        res.body.metadata.should.be.Object
+
+        done()
+      })
+    })
+
+    it('should return a signed URL for media upload', function (done) {
+      request(connectionString)
+      .post(`/media/sign`)
+      .send({
+        filename: 'flowers.jpg'
+      })
+      .set('content-type', 'application/json')
+      .set('Authorization', 'Bearer ' + bearerToken)
+      .expect(200)
+      .end(function (err, res) {
+        res.body.url.should.be.String
+        res.body.url.indexOf('/media').should.eql(0)
+
+        done()
+      })
+    })
+
+    it('should process and serve an image uploaded via a signed URL', function (done) {
+      var imageFilename = 'flowers.jpg'
+
+      request(connectionString)
+      .post(`/media/sign`)
+      .send({filename: imageFilename})
+      .set('content-type', 'application/json')
+      .set('Authorization', 'Bearer ' + bearerToken)
+      .expect(200)
+      .end(function (err, res) {
+        var filePath = path.join(__dirname, `/../assets/${imageFilename}`)
+        var form = new FormData()
+        var options = {
+          host: config.get('server.host'),
+          path: res.body.url,
+          port: config.get('server.port')
+        }
+
+        var uploadResult = ''
+
+        form.append('file', fs.createReadStream(filePath))
+
+        form.submit(options, (err, response, body) => {
+          if (err) return console.error(err)
+
+          response.on('data', (chunk) => {
+            if (chunk) {
+              uploadResult += chunk
+            }
+          })
+
+          response.on('end', () => {
+            var result = JSON.parse(uploadResult)
+
+            result.should.be.Object
+            result.results.should.be.Array
+            result.results[0].fileName.should.eql(imageFilename)
+            result.results[0].mimetype.should.eql('image/jpeg')
+            result.results[0].path.should.be.String
+
+            setTimeout(() => {
+              request(connectionString)
+              .get(result.results[0].path)
+              .expect(200)
+
+              var mediaDirectory = path.join(__dirname, '/../../', config.get('media.basePath'))
+
+              // Deleting the media directory
+              rimraf(mediaDirectory, () => {
+                done()
+              })
+            }, 200)
+          })
+        })
+      })
+    })
 
     it('list documents on the default media bucket', function (done) {
         request(connectionString)

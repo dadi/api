@@ -85,11 +85,12 @@
   },
   "url": {
     "protocol": "http",
-    "port": 80,
-    "host": "api.somedomain.tech"
+    "port": 8000,
+    "host": "localhost"
   },
   "media": {
-    "defaultBucket": "mediaStore"
+    "defaultBucket": "mediaStore",
+    "basePath": "test/acceptance/workspace/media"
   },
   "feedback": false,
   "cors": false

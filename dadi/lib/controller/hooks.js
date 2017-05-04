@@ -54,9 +54,9 @@ HooksController.prototype.get = function (req, res, next) {
       return help.sendBackText(404, res, next)(null, '')
     }
 
-    const content = fs.readFileSync(this.components[HOOK_PREFIX + name])
-
-    return help.sendBackText(200, res, next)(null, content.toString())
+    fs.readFile(this.components[HOOK_PREFIX + name], (err, content) => {
+      return help.sendBackText(200, res, next)(null, content.toString())
+    })
   } else {
     // List all hooks
     const hooks = this._findHooks().map(key => {

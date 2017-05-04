@@ -1,0 +1,89 @@
+{
+  "app": {
+    "name": "Repo Default"
+  },
+  "server": {
+    "host": "127.0.0.1",
+    "port": 8000
+  },
+  "database": {
+    "hosts": [
+      {
+        "host": "127.0.0.1",
+        "port": 27017
+      }
+    ],
+    "username": "",
+    "password": "",
+    "database": "test",
+    "ssl": false,
+    "replicaSet": "",
+    "enableCollectionDatabases": false,
+    "secondary": {
+      "hosts": [
+        {
+          "host": "127.0.0.1",
+          "port": 27018
+        }
+      ],
+      "username": "",
+      "password": "",
+      "replicaSet": "",
+      "ssl": false
+    },
+    "testdb": {
+      "hosts": [
+        {
+          "host": "127.0.0.1",
+          "port": 27017
+        }
+      ],
+      "username": "",
+      "password": ""
+    }
+  },
+  "auth": {
+    "tokenUrl": "/token",
+    "tokenTtl": 1800,
+    "database": {
+      "hosts": [
+        {
+          "host": "127.0.0.1",
+          "port": 27017
+        }
+      ],
+      "username": "",
+      "password": "",
+      "database": "test"
+    },
+    "clientCollection": "clientStore",
+    "tokenCollection": "tokenStore"
+  },
+  "caching": {
+    "ttl": 300,
+    "directory": {
+      "enabled": true,
+      "path": "./cache/api",
+      "extension": "json"
+    },
+    "redis": {
+      "enabled": false,
+      "host": "127.0.0.1",
+      "port": 6379
+    }
+  },
+  "paths": {
+    "collections": "test/acceptance/workspace/collections",
+    "endpoints": "test/acceptance/workspace/endpoints",
+    "hooks": "test/acceptance/workspace/hooks"
+  },
+  "logging": {
+    "enabled": true,
+    "level": "info",
+    "path": "./log",
+    "filename": "dadi-api",
+    "extension": "log"
+  },
+  "feedback": false,
+  "cors": false
+}

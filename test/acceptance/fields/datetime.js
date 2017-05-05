@@ -136,7 +136,10 @@ describe('DateTime Field', function () {
           .end(function (err, res) {
             if (err) return done(err)
 
-            res.body.results[0].datetime.should.eql(moment(date).toISOString())
+            var d1 = res.body.results[0].datetime
+            var d2 = moment(date).toISOString()
+
+            d1.substring(0, d1.lastIndexOf(':')).should.eql(d2.substring(0, d2.lastIndexOf(':')))
             done()
           })
         })

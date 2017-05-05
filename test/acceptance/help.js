@@ -2,6 +2,7 @@ var fs = require('fs')
 var path = require('path')
 var should = require('should')
 var connection = require(__dirname + '/../../dadi/lib/model/connection')
+var tokenStore = require(__dirname + '/../../dadi/lib/auth/tokenStore')()
 var config = require(__dirname + '/../../config')
 var request = require('supertest')
 var _ = require('underscore')
@@ -28,8 +29,7 @@ module.exports.createDocWithParams = function (token, doc, done) {
     .post('/vtest/testdb/test-schema')
     .set('Authorization', 'Bearer ' + token)
     .send(doc)
-    .expect(200)
-    .end(function (err, res) {
+    .end((err, res) => {
       if (err) return done(err)
       res.body.results.length.should.equal(1)
       done(null, res.body.results[0])
@@ -51,9 +51,25 @@ module.exports.createDocWithSpecificVersion = function (token, apiVersion, doc, 
 }
 
 // helper function to cleanup the dbs
-module.exports.dropDatabase = function (database, done) {
-  var collectionName = 'test-schema'
-  var conn = connection({ database: 'testdb', collection: collectionName })
+module.exports.dropDatabase = function (database, collectionName, done) {
+  if (typeof collectionName === 'function') {
+    done = collectionName
+    collectionName = 'test-schema'
+  }
+
+  var options = {
+    database: 'testdb'
+  }
+
+  if (database) {
+    options.database = database
+  }
+
+  if (collectionName) {
+    options.collection = collectionName
+  }
+
+  var conn = connection(options)
 
   conn.datastore.dropDatabase(collectionName).then(() => {
     return done()
@@ -74,7 +90,7 @@ module.exports.createClient = function (client, done) {
   var conn = connection({ auth: true, database: config.get('auth.database'), collection: collectionName })
 
   setTimeout(function() {
-    conn.datastore.insert(client, collectionName).then(() => {
+    conn.datastore.insert(client, collectionName, tokenStore.getSchema()).then(result => {
       return done()
     }).catch((err) => {
       done(err)
@@ -127,20 +143,20 @@ module.exports.getBearerToken = function (done) {
       if (err) return done(err)
 
       request('http://' + config.get('server.host') + ':' + config.get('server.port'))
-            .post(config.get('auth.tokenUrl'))
-            .send({
-              clientId: 'test123',
-              secret: 'superSecret'
-            })
-            .expect(200)
-            // .expect('content-type', 'application/json')
-            .end(function (err, res) {
-              if (err) return done(err)
-
-              var bearerToken = res.body.accessToken
-              should.exist(bearerToken)
-              done(null, bearerToken)
-            })
+      .post(config.get('auth.tokenUrl'))
+      .set('content-type', 'application/json')
+      .send({
+        clientId: 'test123',
+        secret: 'superSecret'
+      })
+      .expect(200)
+      // .expect('content-type', 'application/json')
+      .end(function (err, res) {
+        if (err) return done(err)
+        var bearerToken = res.body.accessToken
+        should.exist(bearerToken)
+        done(null, bearerToken)
+      })
     })
   })
 }
@@ -160,18 +176,18 @@ module.exports.getBearerTokenWithPermissions = function (permissions, done) {
       if (err) return done(err)
 
       request('http://' + config.get('server.host') + ':' + config.get('server.port'))
-            .post(config.get('auth.tokenUrl'))
-            .send(client)
-            .expect(200)
-            // .expect('content-type', 'application/json')
-            .end(function (err, res) {
-              if (err) return done(err)
+      .post(config.get('auth.tokenUrl'))
+      .send(client)
+      .expect(200)
+      // .expect('content-type', 'application/json')
+      .end(function (err, res) {
+        if (err) return done(err)
 
-              var bearerToken = res.body.accessToken
+        var bearerToken = res.body.accessToken
 
-              should.exist(bearerToken)
-              done(null, bearerToken)
-            })
+        should.exist(bearerToken)
+        done(null, bearerToken)
+      })
     })
   })
 }
@@ -190,18 +206,18 @@ module.exports.getBearerTokenWithAccessType = function (accessType, done) {
       if (err) return done(err)
 
       request('http://' + config.get('server.host') + ':' + config.get('server.port'))
-            .post(config.get('auth.tokenUrl'))
-            .send(client)
-            .expect(200)
-            // .expect('content-type', 'application/json')
-            .end(function (err, res) {
-              if (err) return done(err)
+      .post(config.get('auth.tokenUrl'))
+      .send(client)
+      .expect(200)
+      // .expect('content-type', 'application/json')
+      .end(function (err, res) {
+        if (err) return done(err)
 
-              var bearerToken = res.body.accessToken
+        var bearerToken = res.body.accessToken
 
-              should.exist(bearerToken)
-              done(null, bearerToken)
-            })
+        should.exist(bearerToken)
+        done(null, bearerToken)
+      })
     })
   })
 }

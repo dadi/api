@@ -156,7 +156,6 @@ describe('Hook', function () {
   })
 
   describe('`beforeCreate` hook', function (done) {
-
     beforeEach(function(done) {
       help.cleanUpDB(() => {
         done()

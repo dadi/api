@@ -1,4 +1,7 @@
+--growl
+--timeout 4000
 --ui bdd
+--reporter mochawesome
 --recursive
 --require=env-test
 --require test/pretest.js

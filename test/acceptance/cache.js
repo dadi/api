@@ -47,7 +47,7 @@ describe('Cache', function (done) {
 
   it('should use cache if available', function (done) {
     app.start(function() {
-      help.dropDatabase('test', function (err) {
+      help.dropDatabase('testdb', function (err) {
         if (err) return done(err);
 
         help.getBearerToken(function (err, token) {
@@ -108,7 +108,7 @@ describe('Cache', function (done) {
 
   it('should allow bypassing cache with query string flag', function (done) {
     app.start(function() {
-      help.dropDatabase('test', function (err) {
+      help.dropDatabase('testdb', function (err) {
         if (err) return done(err);
 
         help.getBearerToken(function (err, token) {
@@ -179,7 +179,7 @@ describe('Cache', function (done) {
     var spy = sinon.spy(fs, 'createWriteStream');
 
     app.start(function() {
-      help.dropDatabase('test', function (err) {
+      help.dropDatabase('testdb', function (err) {
         if (err) return done(err);
       help.getBearerToken(function (err, token) {
          if (err) return done(err);
@@ -250,7 +250,7 @@ describe('Cache', function (done) {
       config.loadFile(config.configPath())
 
       app.start(function() {
-        help.dropDatabase('test', function (err) {
+        help.dropDatabase('testdb', function (err) {
           if (err) return done(err);
 
           help.getBearerToken(function (err, token) {
@@ -299,6 +299,8 @@ describe('Cache', function (done) {
 
       var oldTTL = config.get('caching.ttl');
       config.set('caching.ttl', 1);
+
+      cache.reset()
 
       var _done = done;
       done = function (err) {
@@ -824,7 +826,7 @@ describe('Cache', function (done) {
 
       try {
         app.start(function() {
-          help.dropDatabase('test', function (err) {
+          help.dropDatabase('testdb', function (err) {
             if (err) return done(err);
 
            help.getBearerToken(function (err, token) {
@@ -913,7 +915,7 @@ describe('Cache', function (done) {
 
       try {
         app.start(function() {
-          help.dropDatabase('test', function (err) {
+          help.dropDatabase('testdb', function (err) {
             if (err) return done(err);
 
             help.getBearerToken(function (err, token) {
@@ -1013,7 +1015,7 @@ describe('Cache', function (done) {
 
       try {
         app.start(function() {
-          help.dropDatabase('test', function (err) {
+          help.dropDatabase('testdb', function (err) {
             if (err) return done(err);
 
             help.getBearerToken(function (err, token) {
@@ -1131,7 +1133,7 @@ describe('Cache', function (done) {
 
       try {
         app.start(function() {
-          help.dropDatabase('test', function (err) {
+          help.dropDatabase('testdb', function (err) {
             if (err) return done(err);
 
             help.getBearerToken(function (err, token) {

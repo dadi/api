@@ -45,7 +45,7 @@ describe('Tokens', function () {
   })
 
   it('should export a tokenStore', function (done) {
-    tokens.store.should.be.instanceOf(tokenStore.Store)
+    tokens.tokenStore.should.be.instanceOf(tokenStore.TokenStore)
     done()
   })
 
@@ -54,11 +54,13 @@ describe('Tokens', function () {
       var dbOptions = { auth: true, database: config.get('auth.database'), collection: clientCollectionName }
       var conn = Connection(dbOptions, config.get('auth.datastore'))
 
+      var store = tokenStore()
+
       setTimeout(function () {
         conn.datastore.insert({
           clientId: 'test123',
           secret: 'superSecret'
-        }, clientCollectionName).then(() => {
+        }, clientCollectionName, store.getSchema()).then(() => {
           done()}
         )
       }, 500)
@@ -66,11 +68,11 @@ describe('Tokens', function () {
 
     it('should check the generated token doesn\'t already exist before returning token', function (done) {
         // set new tokens
-      tokens.store.set('test123', {id: 'test123'}, function (err) {
+      tokens.tokenStore.set('test123', {id: 'test123'}, function (err) {
         if (err) return done(err)
       })
 
-      tokens.store.set('731a3bac-7872-481c-9069-fa223b318f6d', {id: 'test123'}, function (err) {
+      tokens.tokenStore.set('731a3bac-7872-481c-9069-fa223b318f6d', {id: 'test123'}, function (err) {
         if (err) return done(err)
       })
 
@@ -102,11 +104,13 @@ describe('Tokens', function () {
       var dbOptions = { auth: true, database: config.get('auth.database'), collection: clientCollectionName }
       var conn = Connection(dbOptions, config.get('auth.datastore'))
 
+      var store = tokenStore()
+
       setTimeout(function () {
         conn.datastore.insert({
           clientId: 'test123',
           secret: 'superSecret'
-        }, clientCollectionName).then(() => {
+        }, clientCollectionName, store.getSchema()).then(() => {
           done()}
         )
       }, 500)

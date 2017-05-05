@@ -149,6 +149,7 @@ describe('validation', function () {
                 delete doc.createdAt
                 delete doc.createdBy
                 delete doc._id
+                delete doc.v
 
                 client
                 .put('/vtest/testdb/test-validation-schema/' + id)

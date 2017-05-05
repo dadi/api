@@ -19,7 +19,7 @@ describe('Hooks', function () {
 
   // reset database
   before(function (done) {
-    help.dropDatabase('test', function (err) {
+    help.dropDatabase('testdb', function (err) {
       if (err) return done(err)
 
       app.start((err) => {

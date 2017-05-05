@@ -1,28 +1,30 @@
-var should = require('should');
-var fs = require('fs');
-var path = require('path');
-var request = require('supertest');
-var _ = require('underscore');
-var config = require(__dirname + '/../../../config');
-var help = require(__dirname + '/../help');
-var app = require(__dirname + '/../../../dadi/lib/');
+var should = require('should')
+var fs = require('fs')
+var path = require('path')
+var request = require('supertest')
+var _ = require('underscore')
+var config = require(__dirname + '/../../../config')
+var help = require(__dirname + '/../help')
+var app = require(__dirname + '/../../../dadi/lib/')
 
 // variables scoped for use throughout tests
-var bearerToken;
-var connectionString = 'http://' + config.get('server.host') + ':' + config.get('server.port');
+var bearerToken
+var connectionString = 'http://' + config.get('server.host') + ':' + config.get('server.port')
 
 describe('Reference Field', function () {
   beforeEach(function (done) {
     config.set('paths.collections', 'test/acceptance/workspace/collections')
 
-    help.dropDatabase('testdb', function (err) {
+    help.dropDatabase('library', 'book', function (err) {
       if (err) return done(err)
+      help.dropDatabase('library', 'person', function (err) {
 
-      app.start(function() {
-        help.getBearerToken(function (err, token) {
-          if (err) return done(err)
-          bearerToken = token;
-          done();
+        app.start(function () {
+          help.getBearerToken(function (err, token) {
+            if (err) return done(err)
+            bearerToken = token
+            done()
+          })
         })
       })
     })
@@ -31,7 +33,7 @@ describe('Reference Field', function () {
   afterEach(function (done) {
     config.set('paths.collections', 'workspace/collections')
     app.stop(done)
-  });
+  })
 
   describe('insert', function () {
     it('should create reference documents that don\'t have _id fields', function (done) {
@@ -69,7 +71,7 @@ describe('Reference Field', function () {
           },
           {
             name: 'David Levithan'
-          },
+          }
         ]
       }
 
@@ -100,7 +102,7 @@ describe('Reference Field', function () {
         name: 'Ernest Hemingway'
       }
 
-      var client = request(connectionString);
+      var client = request(connectionString)
       client
       .post('/v1/library/person')
       .set('Authorization', 'Bearer ' + bearerToken)
@@ -119,7 +121,7 @@ describe('Reference Field', function () {
 
         config.set('query.useVersionFilter', true)
 
-        setTimeout(function() {
+        setTimeout(function () {
           var client = request(connectionString)
           client
           .post('/v1/library/book')
@@ -198,18 +200,19 @@ describe('Reference Field', function () {
                           var results = res.body['results']
                           results.should.be.Array
                           results.length.should.equal(1)
+
                           should.exist(results[0].author.name)
 
                           config.set('query.useVersionFilter', false)
 
                           done()
                         })
-                      })
                     })
-                  }, 1000)
                 })
-              })
-            })
+            }, 1000)
+          })
+      })
+    })
 
     it('should compose updated document and return when history is off', function (done) {
       help.getBearerTokenWithAccessType('admin', function (err, token) {
@@ -274,31 +277,30 @@ describe('Reference Field', function () {
 
                           done()
                         })
-                      })
                     })
-                  }, 1000)
                 })
-              })
-            })
+            }, 1000)
+          })
+      })
+    })
   })
 
   describe('find', function () {
     it('should populate a reference field containing an ObjectID', function (done) {
-      var person = { name: 'Ernest Hemingway' };
-      var book = { title: 'For Whom The Bell Tolls', author: null };
+      var person = { name: 'Ernest Hemingway' }
+      var book = { title: 'For Whom The Bell Tolls', author: null }
 
       config.set('query.useVersionFilter', true)
 
-      var client = request(connectionString);
+      var client = request(connectionString)
       client
       .post('/v1/library/person')
       .set('Authorization', 'Bearer ' + bearerToken)
       .send(person)
       .expect(200)
       .end(function (err, res) {
-        if (err) return done(err);
-
-        should.exist(res.body.results);
+        if (err) return done(err)
+        should.exist(res.body.results)
 
         var personId = res.body.results[0]._id
         book.author = personId
@@ -309,41 +311,41 @@ describe('Reference Field', function () {
         .send(book)
         .expect(200)
         .end(function (err, res) {
-          if (err) return done(err);
+          if (err) return done(err)
 
           client
-          .get('/v1/library/book?compose=true')
+          .get('/v1/library/book?filter={"title":"For Whom The Bell Tolls"}&compose=true')
           .set('Authorization', 'Bearer ' + bearerToken)
           .expect(200)
           .end(function (err, res) {
-            if (err) return done(err);
+            if (err) return done(err)
             should.exist(res.body.results)
             var bookResult = res.body.results[0]
             should.exist(bookResult.author)
             should.exist(bookResult.author.name)
 
-            done();
+            done()
           })
         })
-      });
-    });
+      })
+    })
 
     it('should populate a reference field containing a String', function (done) {
-      var person = { name: 'Ernest Hemingway' };
-      var book = { title: 'For Whom The Bell Tolls', author: null };
+      var person = { name: 'Ernest Hemingway' }
+      var book = { title: 'For Whom The Bell Tolls', author: null }
 
       config.set('query.useVersionFilter', true)
 
-      var client = request(connectionString);
+      var client = request(connectionString)
       client
       .post('/v1/library/person')
       .set('Authorization', 'Bearer ' + bearerToken)
       .send(person)
       .expect(200)
       .end(function (err, res) {
-        if (err) return done(err);
+        if (err) return done(err)
 
-        should.exist(res.body.results);
+        should.exist(res.body.results)
 
         var personId = res.body.results[0]._id
         book.author = personId.toString()
@@ -354,26 +356,26 @@ describe('Reference Field', function () {
         .send(book)
         .expect(200)
         .end(function (err, res) {
-          if (err) return done(err);
+          if (err) return done(err)
 
           client
-          .get('/v1/library/book?compose=true')
+          .get('/v1/library/book?filter={"title":"For Whom The Bell Tolls"}&compose=true')
           .set('Authorization', 'Bearer ' + bearerToken)
           .expect(200)
           .end(function (err, res) {
-            if (err) return done(err);
+            if (err) return done(err)
 
             should.exist(res.body.results)
             var bookResult = res.body.results[0]
-            //console.log(bookResult)
+            // console.log(bookResult)
             should.exist(bookResult.author)
             should.exist(bookResult.author.name)
 
-            done();
+            done()
           })
         })
-      });
-    });
+      })
+    })
 
     it('should populate all reference fields that aren\'t null', function (done) {
       // first person
@@ -381,14 +383,14 @@ describe('Reference Field', function () {
 
       config.set('query.useVersionFilter', true)
 
-      var client = request(connectionString);
+      var client = request(connectionString)
       client
       .post('/v1/library/person')
       .set('Authorization', 'Bearer ' + bearerToken)
       .send(gertrude)
       .expect(200)
       .end(function (err, res) {
-        if (err) return done(err);
+        if (err) return done(err)
 
         var personId = res.body.results[0]._id
 
@@ -411,7 +413,7 @@ describe('Reference Field', function () {
           .set('Authorization', 'Bearer ' + bearerToken)
           .expect(200)
           .end(function (err, res) {
-            if (err) return done(err);
+            if (err) return done(err)
 
             should.exist(res.body.results)
             var result = res.body.results[0]
@@ -419,28 +421,28 @@ describe('Reference Field', function () {
             should.exist(result.friend)
             result.friend.name.should.eql('Gertrude Stein')
 
-            done();
+            done()
           })
         })
-      });
-    });
+      })
+    })
 
     it('should return results for a reference field containing an Array of Strings', function (done) {
-      var person = { name: 'Ernest Hemingway' };
-      var book = { title: 'For Whom The Bell Tolls', author: null };
+      var person = { name: 'Ernest Hemingway' }
+      var book = { title: 'For Whom The Bell Tolls', author: null }
 
       config.set('query.useVersionFilter', true)
 
-      var client = request(connectionString);
+      var client = request(connectionString)
       client
       .post('/v1/library/person')
       .set('Authorization', 'Bearer ' + bearerToken)
       .send(person)
       .expect(200)
       .end(function (err, res) {
-        if (err) return done(err);
+        if (err) return done(err)
 
-        should.exist(res.body.results);
+        should.exist(res.body.results)
 
         var personId = res.body.results[0]._id
         book.author = [personId.toString()]
@@ -451,14 +453,14 @@ describe('Reference Field', function () {
         .send(book)
         .expect(200)
         .end(function (err, res) {
-          if (err) return done(err);
+          if (err) return done(err)
 
           client
           .get('/v1/library/book?filter={"book.author":{"$in":' + [personId.toString()] + '}}&compose=true')
           .set('Authorization', 'Bearer ' + bearerToken)
           .expect(200)
           .end(function (err, res) {
-            if (err) return done(err);
+            if (err) return done(err)
 
             should.exist(res.body.results)
             var bookResult = res.body.results[0]
@@ -466,48 +468,45 @@ describe('Reference Field', function () {
             should.exist(bookResult.author)
             should.exist(bookResult.author[0].name)
 
-            done();
+            done()
           })
         })
-      });
-    });
+      })
+    })
 
     it('should return results in the same order as the original Array', function (done) {
-      var book = { title: 'Death in the Afternoon', author: null };
+      var book = { title: 'Death in the Afternoon', author: null }
       book.author = []
 
       config.set('query.useVersionFilter', true)
 
-      var client = request(connectionString);
+      var client = request(connectionString)
       client
       .post('/v1/library/person')
       .set('Authorization', 'Bearer ' + bearerToken)
       .send({ name: 'Ernest Hemingway' })
       .expect(200)
       .end(function (err, res) {
-
         var personId = res.body.results[0]._id
         book.author.push(personId.toString())
 
-        var client = request(connectionString);
+        var client = request(connectionString)
         client
         .post('/v1/library/person')
         .set('Authorization', 'Bearer ' + bearerToken)
         .send({ name: 'A.N. Other' })
         .expect(200)
         .end(function (err, res) {
-
           personId = res.body.results[0]._id
           book.author.unshift(personId.toString())
 
-          var client = request(connectionString);
+          var client = request(connectionString)
           client
           .post('/v1/library/person')
           .set('Authorization', 'Bearer ' + bearerToken)
           .send({ name: 'Michael Jackson' })
           .expect(200)
           .end(function (err, res) {
-
             personId = res.body.results[0]._id
             book.author.push(personId.toString())
 
@@ -517,14 +516,13 @@ describe('Reference Field', function () {
             .send(book)
             .expect(200)
             .end(function (err, res) {
-              if (err) return done(err);
+              if (err) return done(err)
 
               client
               .get('/v1/library/book?filter={"title":"Death in the Afternoon"}&compose=true')
               .set('Authorization', 'Bearer ' + bearerToken)
               .expect(200)
               .end(function (err, res) {
-
                 should.exist(res.body.results)
                 var bookResult = res.body.results[0]
 
@@ -535,7 +533,7 @@ describe('Reference Field', function () {
                   author._id.toString().should.eql(bookResult.composed.author[i].toString())
                 }
 
-                done();
+                done()
               })
             })
           })

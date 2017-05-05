@@ -28,12 +28,12 @@ describe('Token Store', function () {
 
   it('should export function that returns an instance', function (done) {
     var store = tokenStore()
-    store.should.be.an.instanceOf(tokenStore.Store)
+    store.should.be.an.instanceOf(tokenStore.TokenStore)
     done()
   })
 
   it('should export a constructor', function (done) {
-    tokenStore.Store.should.be.Function
+    tokenStore.TokenStore.should.be.Function
     done()
   })
 

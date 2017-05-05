@@ -374,11 +374,12 @@ describe('Application', function () {
 
         var client = request(connectionString)
 
-        client
+        help.getBearerTokenWithAccessType('admin', function (err, token) {
+          client
           .post('/vtest/testdb/test-schema/config')
           .send(JSON.stringify(schema, null, 4))
           .set('content-type', 'text/plain')
-          .set('Authorization', 'Bearer ' + bearerToken)
+          .set('Authorization', 'Bearer ' + token)
           .expect(200)
           .expect('content-type', 'application/json')
           .end(function (err, res) {
@@ -396,6 +397,7 @@ describe('Application', function () {
 
             done()
           })
+        })
       })
 
       it('should update existing documents when passing ID', function (done) {
@@ -681,7 +683,7 @@ describe('Application', function () {
             .send(JSON.stringify(schema, null, 4))
             .set('content-type', 'text/plain')
             .set('Authorization', 'Bearer ' + token)
-            .expect(200)
+            //.expect(200)
             .expect('content-type', 'application/json')
             .end(function (err, res) {
               if (err) return done(err)
@@ -691,7 +693,7 @@ describe('Application', function () {
                 .send(JSON.stringify(schema, null, 4))
                 .set('content-type', 'text/plain')
                 .set('Authorization', 'Bearer ' + token)
-                .expect(200)
+                //.expect(200)
                 .expect('content-type', 'application/json')
                 .end(function (err, res) {
                   if (err) return done(err)
@@ -699,7 +701,7 @@ describe('Application', function () {
                   setTimeout(function () {
                     client
                       .post('/vtest/testdb/test-schema-no-history')
-                      .set('Authorization', 'Bearer ' + bearerToken)
+                      .set('Authorization', 'Bearer ' + token)
                       .send({field1: 'doc'})
                       // .expect(200)
                       .end(function (err, res) {
@@ -707,9 +709,9 @@ describe('Application', function () {
 
                         client
                           .post('/vjoin/testdb/test-schema-no-history')
-                          .set('Authorization', 'Bearer ' + bearerToken)
+                          .set('Authorization', 'Bearer ' + token)
                           .send({field1: 'doc'})
-                          .expect(200)
+                          //.expect(200)
                           .end(function (err, res) {
                             if (err) return done(err)
 
@@ -724,7 +726,7 @@ describe('Application', function () {
 
                             client
                               .put('/vtest/testdb/test-schema-no-history/')
-                              .set('Authorization', 'Bearer ' + bearerToken)
+                              .set('Authorization', 'Bearer ' + token)
                               .send(body)
                               .expect(200)
                               .end(function (err, res) {
@@ -738,7 +740,7 @@ describe('Application', function () {
 
                                 client
                                   .get('/vjoin/testdb/test-schema-no-history?filter={"field1": { "$ne" : "" } }')
-                                  .set('Authorization', 'Bearer ' + bearerToken)
+                                  .set('Authorization', 'Bearer ' + token)
                                   .expect(200)
                                   .expect('content-type', 'application/json')
                                   .end(function (err, res) {
@@ -1591,7 +1593,7 @@ describe('Application', function () {
             })
         })
 
-        it.skip('should return pagination metadata', function (done) {
+        it('should return pagination metadata', function (done) {
           var client = request(connectionString)
           var docCount = 20
 
@@ -1613,7 +1615,7 @@ describe('Application', function () {
             })
         })
 
-        it.skip('should return correct pagination nextPage value', function (done) {
+        it('should return correct pagination nextPage value', function (done) {
           var client = request(connectionString)
           var docCount = 20
 
@@ -1968,7 +1970,7 @@ describe('Application', function () {
       })
     })
 
-    describe.skip('Collection count', function () {
+    describe('Collection count', function () {
       before(function (done) {
         help.dropDatabase('testdb', function (err) {
           if (err) return done(err)
@@ -2030,7 +2032,7 @@ describe('Application', function () {
       })
     })
 
-    describe.skip('Collection stats', function () {
+    describe('Collection stats', function () {
       var cleanup = function (done) {
         // try to cleanup these tests directory tree
         // don't catch errors here, since the paths may not exist
@@ -2459,9 +2461,10 @@ describe('Application', function () {
 
     describe('GET', function () {
       it('should return the schema file', function (done) {
-        request(connectionString)
+        help.getBearerTokenWithAccessType('admin', function (err, token) {
+          request(connectionString)
           .get('/vtest/testdb/test-schema/config')
-          .set('Authorization', 'Bearer ' + bearerToken)
+          .set('Authorization', 'Bearer ' + token)
           .expect(200)
           .expect('content-type', 'application/json')
           .end(function (err, res) {
@@ -2474,6 +2477,7 @@ describe('Application', function () {
 
             done()
           })
+        })
       })
 
       it('should only allow authenticated users access', function (done) {
@@ -2484,9 +2488,10 @@ describe('Application', function () {
       })
 
       it('should return all loaded collections', function (done) {
-        request(connectionString)
+        help.getBearerTokenWithAccessType('admin', function (err, token) {
+          request(connectionString)
           .get('/api/collections')
-          .set('Authorization', 'Bearer ' + bearerToken)
+          .set('Authorization', 'Bearer ' + token)
           .expect(200)
           .expect('content-type', 'application/json')
           .end(function (err, res) {
@@ -2509,11 +2514,13 @@ describe('Application', function () {
 
             done()
           })
+        })
       })
 
       it('should return media collections', function (done) {
         // mimic a file that could be sent to the server
         var mediaSchema = fs.readFileSync(__dirname + '/../media-schema.json', {encoding: 'utf8'})
+        help.getBearerTokenWithAccessType('admin', function (err, bearerToken) {
         request(connectionString)
         .post('/1.0/testdb/media/config')
         .send(mediaSchema)
@@ -2541,47 +2548,50 @@ describe('Application', function () {
               should.exist(collection)
               collection.type.should.eql('media')
               done()
-    })
+            })
           }, 300)
         })
+      })
       })
     })
 
     describe('DELETE', function () {
       it('should allow removing endpoints', function (done) {
-        var client = request(connectionString)
+        help.getBearerTokenWithAccessType('admin', function (err, bearerToken) {
+          var client = request(connectionString)
 
-        // make sure the api is working as expected
-        client
-          .post('/vapicreate/testdb/api-create')
-          .send({
-            updatedField: 123
-          })
-          .set('Authorization', 'Bearer ' + bearerToken)
-          .expect(200)
-          .expect('content-type', 'application/json')
-          .end(function (err) {
-            if (err) return done(err)
+          // make sure the api is working as expected
+          client
+            .post('/vapicreate/testdb/api-create')
+            .send({
+              updatedField: 123
+            })
+            .set('Authorization', 'Bearer ' + bearerToken)
+            .expect(200)
+            .expect('content-type', 'application/json')
+            .end(function (err) {
+              if (err) return done(err)
 
-            // send request to remove the endpoint
-            client
-              .delete('/vapicreate/testdb/api-create/config')
-              .set('Authorization', 'Bearer ' + bearerToken)
-              .expect(200)
-              .expect('content-type', 'application/json')
-              .end(function (err, res) {
-                if (err) return done(err)
+              // send request to remove the endpoint
+              client
+                .delete('/vapicreate/testdb/api-create/config')
+                .set('Authorization', 'Bearer ' + bearerToken)
+                .expect(200)
+                .expect('content-type', 'application/json')
+                .end(function (err, res) {
+                  if (err) return done(err)
 
-                setTimeout(function () {
-                  client
+                  setTimeout(function () {
+                    client
 
-                    // NOTE: cache invalidation is done via ttl, so this endpoint will be removed after ttl has elapsed
-                    .get('/vapicreate/testdb/api-create?cache=false')
-                    .set('Authorization', 'Bearer ' + bearerToken)
-                    .expect(404)
-                    .end(done)
-                }, 300)
-              })
+                      // NOTE: cache invalidation is done via ttl, so this endpoint will be removed after ttl has elapsed
+                      .get('/vapicreate/testdb/api-create?cache=false')
+                      .set('Authorization', 'Bearer ' + bearerToken)
+                      .expect(404)
+                      .end(done)
+                  }, 300)
+                })
+            })
           })
       })
     })
@@ -2597,9 +2607,8 @@ describe('Application', function () {
     })
 
     it('should return hello world', function (done) {
-      var client = request(connectionString)
-
-      client
+      help.getBearerTokenWithAccessType('admin', function (err, bearerToken) {
+        request(connectionString)
         .get('/v1/test-endpoint')
         .set('Authorization', 'Bearer ' + bearerToken)
         .expect(200)
@@ -2609,15 +2618,17 @@ describe('Application', function () {
           res.body.message.should.equal('Hello World')
           done()
         })
+      })
     })
 
     it('should require authentication by default', function (done) {
-      var client = request(connectionString)
-      client
+      help.getBearerTokenWithAccessType('admin', function (err, bearerToken) {
+        request(connectionString)
         .get('/v1/test-endpoint')
         // .set('Authorization', 'Bearer ' + bearerToken)
         .expect(401)
         .end(done)
+      })
     })
 
     it('should allow unauthenticated requests if configured', function (done) {
@@ -2629,9 +2640,8 @@ describe('Application', function () {
     })
 
     it('should allow custom routing via config() function', function (done) {
-      var client = request(connectionString)
-
-      client
+      help.getBearerTokenWithAccessType('admin', function (err, bearerToken) {
+        request(connectionString)
         .get('/v1/new-endpoint-routing/55bb8f0a8d76f74b1303a135')
         .set('Authorization', 'Bearer ' + bearerToken)
         .expect(200)
@@ -2641,6 +2651,7 @@ describe('Application', function () {
           res.body.message.should.equal('Endpoint with custom route provided through config() function...ID passed = 55bb8f0a8d76f74b1303a135')
           done()
         })
+      })
     })
   })
 
@@ -2691,10 +2702,10 @@ describe('Application', function () {
 
     describe('POST', function () {
       it('should allow creating a new custom endpoint', function (done) {
-        var client = request(connectionString)
-
-        // make sure the endpoint is not already there
-        client
+        help.getBearerTokenWithAccessType('admin', function (err, bearerToken) {
+          var client = request(connectionString)
+          // make sure the endpoint is not already there
+          client
           .get('/v1/new-endpoint?cache=false')
           .set('Authorization', 'Bearer ' + bearerToken)
           .expect(404)
@@ -2729,13 +2740,13 @@ describe('Application', function () {
                 }, 1500)
               })
           })
+        })
       })
 
       it('should pass inline documentation to the stack', function (done) {
         this.timeout(2000)
-        var client = request(connectionString)
-
-        client
+        help.getBearerTokenWithAccessType('admin', function (err, bearerToken) {
+          request(connectionString)
           .get('/v1/test-endpoint-with-docs?cache=false')
           .set('Authorization', 'Bearer ' + bearerToken)
           .expect(200)
@@ -2750,15 +2761,15 @@ describe('Application', function () {
 
             done()
           })
+        })
       })
 
       it('should allow updating an endpoint', function (done) {
         this.timeout(8000)
-
-        var client = request(connectionString)
-
-        // make sure the endpoint exists from last test
-        client
+        help.getBearerTokenWithAccessType('admin', function (err, bearerToken) {
+          var client = request(connectionString)
+          // make sure the endpoint exists from last test
+          client
           .get('/v1/new-endpoint?cache=false')
           .set('Authorization', 'Bearer ' + bearerToken)
           .expect(200)
@@ -2795,13 +2806,14 @@ describe('Application', function () {
                 }, 3000)
               })
           })
+        })
       })
 
       it('should allow creating a new endpoint for a new version number', function (done) {
-        var client = request(connectionString)
-
-        // make sure the endpoint is not already there
-        client
+        help.getBearerTokenWithAccessType('admin', function (err, bearerToken) {
+          var client = request(connectionString)
+          // make sure the endpoint is not already there
+          client
           .get('/v2/new-endpoint?cache=false')
           .set('Authorization', 'Bearer ' + bearerToken)
           .expect(404)
@@ -2836,20 +2848,24 @@ describe('Application', function () {
                 }, 1500)
               })
           })
+        })
       })
     })
 
     describe('GET', function () {
       it('should NOT return the Javascript file backing the endpoint', function (done) {
-        request(connectionString)
+        help.getBearerTokenWithAccessType('admin', function (err, bearerToken) {
+          request(connectionString)
           .get('/v1/test-endpoint/config?cache=false')
           .set('Authorization', 'Bearer ' + bearerToken)
           .expect(404)
           .end(done)
+        })
       })
 
       it('should return all loaded endpoints', function (done) {
-        request(connectionString)
+        help.getBearerTokenWithAccessType('admin', function (err, bearerToken) {
+          request(connectionString)
           .get('/api/endpoints')
           .set('Authorization', 'Bearer ' + bearerToken)
           .expect(200)
@@ -2874,16 +2890,19 @@ describe('Application', function () {
 
             done()
           })
+        })
       })
     })
 
     describe('DELETE', function () {
       it('should NOT remove the custom endpoint', function (done) {
-        request(connectionString)
+        help.getBearerTokenWithAccessType('admin', function (err, bearerToken) {
+          request(connectionString)
           .delete('/v1/test-endpoint/config')
           .set('Authorization', 'Bearer ' + bearerToken)
           .expect(404)
           .end(done)
+        })
       })
     })
   })

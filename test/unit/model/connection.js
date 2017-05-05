@@ -6,21 +6,19 @@ var EventEmitter = require('events').EventEmitter
 var url = require('url')
 var querystring = require('querystring')
 
-var TestHelper = require(__dirname + '/../../TestHelper')()
 var config = require(__dirname + '/../../../config')
 
 describe('Model connection', function () {
   this.timeout(5000)
 
-  beforeEach(function (done) {
-      // connection.resetConnections();
-    done()
-  })
+  // beforeEach(function (done) {
+  //     // connection.resetConnections();
+  //   done()
+  // })
 
-  afterEach(function(done) {
-    TestHelper.resetConfigs()
-    done()
-  })
+  // afterEach(function(done) {
+  //   done()
+  // })
 
   describe('constructor', function () {
     it('should be exposed', function (done) {

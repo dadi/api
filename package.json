@@ -6,7 +6,7 @@
     "create-client": "cd ../../.. && node ./node_modules/@dadi/api/utils/create-client.js",
     "docs": "jsdoc -c ./docs/conf.json -R README.md -r dadi/lib -d docs",
     "commitmsg": "validate-commit-msg",
-    "test": "standard 'dadi/**/*.js' | snazzy && env NODE_ENV=test ./node_modules/.bin/istanbul cover -x **/workspace/** --report cobertura --report text --report html --report lcov ./node_modules/mocha/bin/_mocha test",
+    "test": "standard 'dadi/**/*.js' | snazzy && env NODE_ENV=test ./node_modules/.bin/istanbul cover  --report cobertura --report text --report html --report lcov ./node_modules/mocha/bin/_mocha",
     "posttest": "./scripts/coverage.js",
     "start": "node start.js --node_env=development"
   },

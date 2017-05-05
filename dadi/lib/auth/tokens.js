@@ -38,8 +38,8 @@ module.exports.generate = function (req, res, next) {
   }
 
   var _done = function (database) {
-    database.find(credentials, clientCollectionName).then((results) => {
-      var client = results[0]
+    database.find(credentials, clientCollectionName, {}, tokenStore.getSchema()).then((results) => {
+      var client = results.results[0]
 
       // no client found matchibg the credentials
       // return 401 Unauthorized
@@ -90,4 +90,4 @@ module.exports.validate = function (token, done) {
   })
 }
 
-module.exports.store = tokenStore
+module.exports.tokenStore = tokenStore

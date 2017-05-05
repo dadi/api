@@ -779,7 +779,7 @@ Server.prototype.addCollectionResource = function (options) {
     }
   })
 
-  debug('collection loaded: %s', options.name)
+  if (config.get('env') !== 'test') debug('collection loaded: %s', options.name)
 }
 
 Server.prototype.updateEndpoints = function (endpointsPath) {
@@ -842,7 +842,7 @@ Server.prototype.addEndpointResource = function (options) {
     }
   })
 
-  debug('endpoint loaded: %s', name)
+  if (config.get('env') !== 'test') debug('endpoint loaded: %s', name)
 }
 
 Server.prototype.updateHooks = function (hookPath) {
@@ -895,7 +895,7 @@ Server.prototype.addHook = function (options) {
     }
   })
 
-  debug('hook loaded: %s', name)
+  if (config.get('env') !== 'test') debug('hook loaded: %s', name)
 }
 
 Server.prototype.addComponent = function (options) {

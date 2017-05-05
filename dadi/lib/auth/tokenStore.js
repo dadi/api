@@ -3,29 +3,29 @@ var path = require('path')
 var Connection = require(path.join(__dirname, '/../model/connection'))
 var config = require(path.join(__dirname, '/../../../config.js'))
 
-var Store = function () {
+var TokenStore = function () {
   this.connect()
 
   var _done = function (database) {
     debug('connected')
 
     // set index on token and expiry
-    // database.collection(storeCollectionName).ensureIndex(
+    // database.collection(tokenCollection).ensureIndex(
     //   { 'token': 1, 'tokenExpire': 1 },
     //   { },
     //   function (err, indexName) {
     //     if (err) console.log(err)
-    //     console.log('Token index: "' + storeCollectionName + '.' + indexName + "'")
+    //     console.log('Token index: "' + tokenCollection + '.' + indexName + "'")
     //   }
     // )
     //
     // // set a TTL index to remove the token documents after the tokenExpire value
-    // database.collection(storeCollectionName).ensureIndex(
+    // database.collection(tokenCollection).ensureIndex(
     //   { 'created': 1 },
     //   { expireAfterSeconds: config.get('auth.tokenTtl') },
     //   function (err, indexName) {
     //     if (err) console.log(err)
-    //     console.log('Token expiry index: "' + storeCollectionName + '.' + indexName + "', with expireAfterSeconds = " + config.get('auth.tokenTtl'))
+    //     console.log('Token expiry index: "' + tokenCollection + '.' + indexName + "', with expireAfterSeconds = " + config.get('auth.tokenTtl'))
     //   }
     // )
   }
@@ -34,18 +34,44 @@ var Store = function () {
   this.connection.once('connect', _done)
 }
 
+TokenStore.prototype.getSchema = function () {
+  return {
+    fields: {
+      token: {
+        type: 'String',
+        required: true
+      },
+      tokenExpire: {
+        type: 'Number',
+        required: true
+      },
+      created: {
+        type: 'DateTime',
+        required: true
+      },
+      value: {
+        type: 'Object',
+        required: false
+      }
+    },
+    settings: {
+      cache: false
+    }
+  }
+}
+
 /**
  *
  */
-Store.prototype.get = function (token, done) {
+TokenStore.prototype.get = function (token, done) {
   var _done = (database) => {
     var query = {
       token: token,
       tokenExpire: { $gte: Date.now() }
     }
 
-    database.find(query, this.storeCollectionName).then((result) => {
-      var tokenResult = result.length ? result[0] : null
+    database.find(query, this.tokenCollection, {}, this.getSchema()).then((result) => {
+      var tokenResult = result.results.length ? result.results[0] : null
       return done(null, tokenResult)
     })
   }
@@ -57,14 +83,14 @@ Store.prototype.get = function (token, done) {
 /**
  *
  */
-Store.prototype.set = function (token, value, done) {
+TokenStore.prototype.set = function (token, value, done) {
   var _done = (database) => {
     database.insert({
       token: token,
       tokenExpire: Date.now() + (config.get('auth.tokenTtl') * 1000),
       created: new Date(),
       value: value
-    }, this.storeCollectionName).then(() => {
+    }, this.tokenCollection, this.getSchema()).then(() => {
       return done()
     }).catch((err) => {
       return done(err)
@@ -78,14 +104,14 @@ Store.prototype.set = function (token, value, done) {
 /**
  *
  */
-Store.prototype.connect = function () {
-  this.storeCollectionName = config.get('auth.tokenCollection')
-  var dbOptions = { auth: true, database: config.get('auth.database'), collection: this.storeCollectionName }
+TokenStore.prototype.connect = function () {
+  this.tokenCollection = config.get('auth.tokenCollection')
+  var dbOptions = { auth: true, database: config.get('auth.database'), collection: this.tokenCollection }
   this.connection = Connection(dbOptions, null, config.get('auth.datastore'))
 }
 
 module.exports = function () {
-  return new Store()
+  return new TokenStore()
 }
 
-module.exports.Store = Store
+module.exports.TokenStore = TokenStore

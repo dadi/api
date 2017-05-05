@@ -197,8 +197,24 @@ function removeInternalFields (obj) {
 
 function stringifyProperties (obj) {
   _.each(Object.keys(obj), (key) => {
-    if (typeof obj[key] === 'object' && !Array.isArray(obj[key]) && validator.isMongoId(obj[key].toString())) {
-      obj[key] = obj[key].toString()
+    try {
+      if (typeof obj[key] === 'string' && validator.isMongoId(obj[key].toString())) {
+        obj[key] = obj[key].toString()
+      } else if (typeof obj[key] === 'object' && obj[key] !== null) {
+        var value = obj[key].toString()
+
+        if (Array.isArray(obj[key])) {
+          _.each(obj[key], (v, k) => {
+            if (v.toString().match(/^[a-fA-F0-9]{24}$/) && validator.isMongoId(v.toString())) {
+              obj[key][k] = v.toString()
+            }
+          })
+        } else if (value.match(/^[a-fA-F0-9]{24}$/) && validator.isMongoId(value)) {
+          obj[key] = obj[key].toString()
+        }
+      }
+    } catch (err) {
+      console.log('stringifyProperties error', err)
     }
   })
 

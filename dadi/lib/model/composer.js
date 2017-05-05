@@ -1,4 +1,5 @@
 var _ = require('underscore')
+var debug = require('debug')('api:compose')
 var path = require('path')
 var queryUtils = require(path.join(__dirname, '../model/utils'))
 
@@ -9,9 +10,7 @@ var Composer = function (model) {
 }
 
 Composer.prototype.setApiVersion = function (apiVersion) {
-  if (apiVersion) {
-    this.apiVersion = apiVersion
-  }
+  this.apiVersion = apiVersion
 }
 
 Composer.prototype.compose = function (obj, callback) {
@@ -50,10 +49,10 @@ Composer.prototype.composeOne = function (doc, callback) {
         query = { '_id': value + '' }
       }
 
-      // add the apiVersion param
-      if (this.apiVersion) {
-        _.extend(query, { apiVersion: this.apiVersion })
-      }
+      // add the apiVersion filter
+      // if (this.apiVersion && config.get('query.useVersionFilter')) {
+      //   query = _.extend(query, { apiVersion: this.apiVersion })
+      // }
 
       // are specific fields required?
       var fields = {}
@@ -72,8 +71,11 @@ Composer.prototype.composeOne = function (doc, callback) {
         // does the collection allow us to compose references beyond the first one
         // (i.e. the one that got us here) ?
         var compose = help.getFromObj(this.model.schema, key + '.settings.compose', false) || model.compose
+        var options = { 'compose': compose, 'fields': fields }
 
-        model.find(query, { 'compose': compose, 'fields': fields }, (err, result) => {
+        debug('%s %o %o', model.name, query, options)
+
+        model.find(query, options, (err, result) => {
           if (err) console.log(err)
 
           if (result) {

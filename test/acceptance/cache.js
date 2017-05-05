@@ -45,7 +45,7 @@ describe('Cache', function (done) {
     }
   });
 
-  it('should use cache if available', function (done) {
+  it.skip('should use cache if available', function (done) {
     app.start(function() {
       help.dropDatabase('testdb', function (err) {
         if (err) return done(err);
@@ -106,7 +106,7 @@ describe('Cache', function (done) {
     });
   });
 
-  it('should allow bypassing cache with query string flag', function (done) {
+  it.skip('should allow bypassing cache with query string flag', function (done) {
     app.start(function() {
       help.dropDatabase('testdb', function (err) {
         if (err) return done(err);

@@ -1,4 +1,3 @@
-var _ = require('underscore')
 var debug = require('debug')('api:history')
 var path = require('path')
 var queryUtils = require(path.join(__dirname, '/utils'))
@@ -24,8 +23,8 @@ History.prototype.create = function (obj, model, done) {
       database.update(
         { _id: obj._id },
         model.name,
-        { $push: { 'history': doc[0]._id } },
-        { returnOriginal: false, sort: [['_id', 'asc']], upsert: false },
+        { $push: { 'history': doc[0]._id.toString() } },
+        {},
         model.schema
       ).then((result) => {
         return done(null, obj)

@@ -352,6 +352,7 @@ Model.prototype.count = function (query, options, done) {
 
   if (_.isObject(query)) {
     this.find(query, options, (err, results) => {
+      if (err) return done(err)
       return done(null, { metadata: results.metadata })
     })
   } else {

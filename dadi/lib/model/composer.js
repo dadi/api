@@ -1,8 +1,6 @@
 var _ = require('underscore')
-var debug = require('debug')('api:compose')
 var path = require('path')
 var queryUtils = require(path.join(__dirname, '../model/utils'))
-
 var help = require(path.join(__dirname, '/../help'))
 
 var Composer = function (model) {
@@ -13,105 +11,164 @@ Composer.prototype.setApiVersion = function (apiVersion) {
   this.apiVersion = apiVersion
 }
 
+/**
+ *
+ * @param {Array} obj - an array of documents
+ */
 Composer.prototype.compose = function (obj, callback) {
   if (_.isEmpty(obj)) return callback(obj)
 
-  var copy = queryUtils.snapshot(obj)
+  // determine composable fields from the first document in the set
+  var composable = this.getComposable(obj[0])
 
-  _.each(copy, (doc, idx) => {
-    this.composeOne(doc, (result) => {
-      if (idx === copy.length - 1) {
-        return callback(copy)
-      }
-    })
-  })
-}
+  if (_.isEmpty(composable)) return callback(obj)
 
-Composer.prototype.composeOne = function (doc, callback) {
-  var composable = this.getComposable(doc)
+  // for each composable
+  //   get array of id values from all documents
+  //   get fields required from schema
+  //   query model using array of ids and fields object
+  //   populate each document's composable property with results
 
-  if (_.isEmpty(composable)) return callback(doc)
+  _.each(composable, (field, fieldIdx) => {
+    var ids = _.pluck(obj, field)
 
-  _.each(composable, (key, idx) => {
-    var query = {}
-    var returnArray = false
-    var value = doc[key]
+    if (Array.isArray(ids[0])) {
+      ids = _.flatten(ids)
+    }
 
-    if (value.constructor === Object) {
-      if (idx === composable.length - 1) {
-        callback(doc)
-      }
-    } else {
-      if (Array.isArray(value)) {
-        query = { '_id': { '$in': _.map(value, function (val) { return val + '' }) } }
-        returnArray = true
-      } else {
-        query = { '_id': value + '' }
-      }
+    var fields = this.getFields(field)
+    var query = { '_id': { '$in': _.map(ids, id => { return id.toString() }) } }
 
-      // add the apiVersion filter
-      // if (this.apiVersion && config.get('query.useVersionFilter')) {
-      //   query = _.extend(query, { apiVersion: this.apiVersion })
-      // }
+    var model = this.getModel(field)
 
-      // are specific fields required?
-      var fields = {}
-      var schemaFields = help.getFromObj(this.model.schema, key + '.settings.fields', [])
+    if (model) {
+      var compose = this.getComposeValue(field, model)
 
-      _.each(schemaFields, (field) => {
-        fields[field] = 1
-      })
+      model.find(query, { 'compose': compose, 'fields': fields }, (err, result) => {
+        if (err) console.log(err)
 
-      // load correct model
-      var model = this.getModel(key)
+        var results = result.results
 
-      if (!model) {
-        callback(null)
-      } else {
-        // does the collection allow us to compose references beyond the first one
-        // (i.e. the one that got us here) ?
-        var compose = help.getFromObj(this.model.schema, key + '.settings.compose', false) || model.compose
-        var options = { 'compose': compose, 'fields': fields }
+        _.each(obj, (document, docIdx) => {
+          var isArray = Array.isArray(document[field])
+          var originalValue = isArray ? document[field] : [document[field]]
 
-        debug('%s %o %o', model.name, query, options)
+          // add the composed property indicating original values
+          if (!document.composed) document.composed = {}
+          document.composed[field] = isArray ? originalValue : originalValue[0]
 
-        model.find(query, options, (err, result) => {
-          if (err) console.log(err)
+          if (isArray) {
+            document[field] = []
+          }
 
-          if (result) {
-            if (result.results.length === 1 && returnArray === false) {
-              doc[key] = result.results[0]
+          _.each(originalValue, (id, idx) => {
+            var result = _.filter(results, r => { return r._id.toString() === id.toString() })
+
+            if (isArray) {
+              document[field].push(result[0])
             } else {
-              doc[key] = result.results
+              document[field] = result[0]
             }
-          }
 
-          if (!doc.composed) doc.composed = {}
-          doc.composed[key] = value
-
-          // if an array, ensure the composed values appear
-          // in the same order as the original array
-          if (value.constructor.name === 'Array') {
-            doc[key] = doc[key].sort((a, b) => {
-              var aIndex = value.indexOf(a._id.toString())
-              var bIndex = value.indexOf(b._id.toString())
-
-              if (aIndex === bIndex) {
-                return 0
-              }
-
-              return aIndex < bIndex ? -1 : 1
-            })
-          }
-
-          if (idx === composable.length - 1) {
-            callback(doc)
-          }
+            if (
+              fieldIdx === composable.length - 1 &&
+              docIdx === obj.length - 1 &&
+              idx === originalValue.length - 1
+            ) {
+              return callback(obj)
+            }
+          })
         })
+      })
+    } else {
+      if (fieldIdx === composable.length - 1) {
+        return callback(obj)
       }
     }
   })
 }
+
+// Composer.prototype.composeOne = function (doc, callback) {
+//   var composable = this.getComposable(doc)
+//
+//   if (_.isEmpty(composable)) return callback(doc)
+//
+//   _.each(composable, (key, idx) => {
+//     var query = {}
+//     var returnArray = false
+//     var value = doc[key]
+//
+//     if (!value) return callback(null)
+//
+//     if (value.constructor === Object) {
+//       if (idx === composable.length - 1) {
+//         callback(doc)
+//       }
+//     } else {
+//       if (Array.isArray(value)) {
+//         query = { '_id': { '$in': _.map(value, function (val) { return val + '' }) } }
+//         returnArray = true
+//       } else {
+//         query = { '_id': value + '' }
+//       }
+//
+//       // add the apiVersion filter
+//       // if (this.apiVersion && config.get('query.useVersionFilter')) {
+//       //   query = _.extend(query, { apiVersion: this.apiVersion })
+//       // }
+//
+//       // are specific fields required?
+//       var fields = {}
+//       var schemaFields = help.getFromObj(this.model.schema, key + '.settings.fields', [])
+//
+//       _.each(schemaFields, (field) => {
+//         fields[field] = 1
+//       })
+//
+//       // load correct model
+//       var model = this.getModel(key)
+//
+//       if (!model) {
+//         callback(null)
+//       } else {
+//         // does the collection allow us to compose references beyond the first one
+//         // (i.e. the one that got us here) ?
+//         var compose = help.getFromObj(this.model.schema, key + '.settings.compose', false) || model.compose
+//
+//         model.find(query, { 'compose': compose, 'fields': fields }, (err, result) => {
+//           if (err) console.log(err)
+//
+//           if (result) {
+//             if (result.results.length === 1 && returnArray === false) {
+//               doc[key] = result.results[0]
+//             } else {
+//               doc[key] = result.results
+//             }
+//           }
+//
+//           if (!doc.composed) doc.composed = {}
+//           doc.composed[key] = value
+//
+//           // if an array, ensure the composed values appear
+//           // in the same order as the original array
+//           if (value.constructor.name === 'Array') {
+//             doc[key] = doc[key].sort((a, b) => {
+//               var aIndex = value.indexOf(a._id.toString())
+//               var bIndex = value.indexOf(b._id.toString())
+//
+//               if (aIndex === bIndex) return 0
+//               return aIndex < bIndex ? -1 : 1
+//             })
+//           }
+//
+//           if (idx === composable.length - 1) {
+//             callback(doc)
+//           }
+//         })
+//       }
+//     }
+//   })
+// }
 
 /**
  * Given a pre-composed JSON document, creates or updates subdocuments according to
@@ -258,6 +315,27 @@ Composer.prototype.getModel = function (field) {
   } else {
     return Model(this.model.name)
   }
+}
+
+/**
+ *
+ */
+Composer.prototype.getFields = function (field) {
+  var fields = {}
+  var schemaFields = help.getFromObj(this.model.schema, field + '.settings.fields', [])
+
+  _.each(schemaFields, (field) => {
+    fields[field] = 1
+  })
+
+  return fields
+}
+
+/**
+ *
+ */
+Composer.prototype.getComposeValue = function (field, model) {
+  return help.getFromObj(this.model.schema, field + '.settings.compose', false) || model.compose
 }
 
 // exports

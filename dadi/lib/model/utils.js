@@ -1,5 +1,4 @@
 var _ = require('underscore-contrib')
-// var ObjectID = require('mongodb').ObjectID
 var path = require('path')
 var validator = require('validator')
 

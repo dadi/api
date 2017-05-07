@@ -2,7 +2,7 @@
 
 'use strict'
 
-var  Connection
+var Connection
 var config
 
 try {

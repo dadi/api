@@ -153,24 +153,24 @@ module.exports.clearCollection = function (collectionName, done) {
   }
 }
 
-module.exports.addUserToDb = function (userObj, dbObj, done) {
-  var Db = require('mongodb').Db
-  var Server = require('mongodb').Server
-
-  var db = new Db(dbObj.databaseName, new Server(dbObj.host, dbObj.port), {w: 'majority'})
-
-    // Establish connection to db
-  db.open(function (err, db) {
-    if (err) return done(err)
-
-        // Add a user to the database
-    db.addUser(userObj.username, userObj.password, { roles: [{ role: 'readWrite', db: dbObj.databaseName }] }, function (err) {
-            // notice no error handling!
-            // This is because we want this to be an idempotent func that ensures
-            // the user exists in the database.  Since `addUser` will error if
-            // the user already exists we just assume things are ok here
-
-      db.close(done)
-    })
-  })
-}
+// module.exports.addUserToDb = function (userObj, dbObj, done) {
+//   var Db = require('mongodb').Db
+//   var Server = require('mongodb').Server
+//
+//   var db = new Db(dbObj.databaseName, new Server(dbObj.host, dbObj.port), {w: 'majority'})
+//
+//     // Establish connection to db
+//   db.open(function (err, db) {
+//     if (err) return done(err)
+//
+//         // Add a user to the database
+//     db.addUser(userObj.username, userObj.password, { roles: [{ role: 'readWrite', db: dbObj.databaseName }] }, function (err) {
+//             // notice no error handling!
+//             // This is because we want this to be an idempotent func that ensures
+//             // the user exists in the database.  Since `addUser` will error if
+//             // the user already exists we just assume things are ok here
+//
+//       db.close(done)
+//     })
+//   })
+// }

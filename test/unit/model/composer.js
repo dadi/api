@@ -359,12 +359,8 @@ describe('Model', function () {
               var rowling = result.results[0]._id.toString()
 
               book.create({title: 'Harry Potter 1', person: rowling}, function (err, result) {
-                var bookid = result.results[0]._id
-                var books = []
-                books.push(bookid)
 
                 book.find({ "person.spouse.name": "Neil Murray" }, { compose: true }, function (err, result) {
-
                   result.results.length.should.eql(1)
                   var doc = result.results[0]
                   should.exist(doc.person.spouse)

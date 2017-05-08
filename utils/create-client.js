@@ -40,12 +40,12 @@ connection.on('connect', db => {
       {
         label: '-> Client identifier',
         key: 'clientId',
-        default: 'testClient'
+        default: 'api-client'
       },
       {
         label: '-> Secret access key',
         key: 'secret',
-        default: 'secretSquirrel'
+        default: 'client-secret'
       },
       {
         label: '-> Access type (admin, user)',
@@ -61,20 +61,46 @@ connection.on('connect', db => {
       if (options.confirm) {
         delete options.confirm
 
-        db.insert(options, clientCollectionName, err => {
-          if (err) throw err
-
+        db.insert(options, clientCollectionName, getSchema()).then(result => {
           console.log()
           console.log('(*) Client created successfully:')
           console.log()
           console.log(options)
           console.log()
 
-          db.close()
+          process.exit(0)
+        }).catch((err) => {
+          throw err
         })
       } else {
-        db.close()
+        process.exit(0)
       }
     })
   }, 1000)
 })
+
+function getSchema () {
+  return {
+    fields: {
+      token: {
+        type: 'String',
+        required: true
+      },
+      tokenExpire: {
+        type: 'Number',
+        required: true
+      },
+      created: {
+        type: 'DateTime',
+        required: true
+      },
+      value: {
+        type: 'Object',
+        required: false
+      }
+    },
+    settings: {
+      cache: false
+    }
+  }
+}

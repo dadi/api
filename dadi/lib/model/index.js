@@ -444,9 +444,9 @@ Model.prototype.find = function (query, options, done) {
       done('Not implemented')
     }
   } else if (_.isObject(query)) {
-    _done = function (database) {
-      if (queryUtils.containsNestedReferenceFields(query, self.schema)) {
-        var queries = queryUtils.processReferenceFieldQuery(query, self.schema)
+    _done = (database) => {
+      if (queryUtils.containsNestedReferenceFields(query, this.schema)) {
+        var queries = queryUtils.processReferenceFieldQuery(query, this.schema)
 
         debug('find reference %o', queries)
 
@@ -461,8 +461,8 @@ Model.prototype.find = function (query, options, done) {
 
         // for each reference field key, query the specified collection
         // to obtain an _id value
-        _.each(referenceFieldKeys, function (key, index) {
-          queue.push(function (cb) {
+        _.each(referenceFieldKeys, (key, index) => {
+          queue.push((cb) => {
             var keyParts = key.split('.')
 
             var collection = ''
@@ -470,7 +470,7 @@ Model.prototype.find = function (query, options, done) {
             var linkKey
             var queryKey
             var queryValue = referenceFieldQuery[key]
-            var collectionSettings = queryUtils.getSchemaOrParent(collectionKey, self.schema).settings || {}
+            var collectionSettings = queryUtils.getSchemaOrParent(collectionKey, this.schema).settings || {}
             var collectionLevelCompose = true
 
             if (collectionKey !== collectionSettings.collection) {
@@ -511,15 +511,14 @@ Model.prototype.find = function (query, options, done) {
 
             referenceModel.find(collectionQuery, { fields: fieldsObj }, (err, results) => {
               if (err) return done(err)
-              // cursor.toArray(function (err, results) {
-                // if (err) return done(err)
+
               var ids
 
               if (results && results.results && results.results.length) {
                 results = results.results
 
                 if (!linkKey) { // i.e. it's a one-level nested query
-                  ids = _.map(_.pluck(results, '_id'), function (id) { return id.toString() })
+                  ids = _.map(_.pluck(results, '_id'), id => { return id.toString() })
 
                   // update the original query with a query for the obtained _id
                   // using the appropriate query type for whether the reference settings
@@ -529,22 +528,26 @@ Model.prototype.find = function (query, options, done) {
                 } else {
                   // filter the results using linkKey
                   // 1. get the _id of the result matching { queryKey: queryValue }
-                  var parent = _.filter(results, function (result) {
+                  var parent = _.filter(results, result => {
                     return new RegExp(queryValue).test(result[queryKey]) === true
                   })
 
                   if (parent[0]) {
-                    var children = _.filter(results, function (result) {
+                    var children = _.filter(results, result => {
                       if (result[linkKey]) {
                         if (typeof result[linkKey] === 'string' && result[linkKey].toString() === parent[0]._id.toString()) {
                           return result
-                        } else if (typeof result[linkKey] === 'object' && result[linkKey]._id.toString() === parent[0]._id.toString()) {
-                          return result
+                        } else if (typeof result[linkKey] === 'object') {
+                          if (result[linkKey].toString() === '[object Object]' && result[linkKey]._id.toString() === parent[0]._id.toString()) {
+                            return result
+                          } else if (result[linkKey].toString() === parent[0]._id.toString()) {
+                            return result
+                          }
                         }
                       }
                     })
 
-                    ids = _.map(_.pluck(children, '_id'), function (id) {
+                    ids = _.map(_.pluck(children, '_id'), id => {
                       return id.toString()
                     })
                   }

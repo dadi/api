@@ -64,7 +64,7 @@ var Model = function (name, schema, conn, settings) {
   if (conn) {
     this.connection = conn
   } else {
-    this.connection = Connection({ database: settings.database, collection: this.name })
+    this.connection = Connection({ database: settings.database, collection: this.name }, this.name, config.get('datastore'))
   }
 
   this.connection.setMaxListeners(35)
@@ -118,6 +118,23 @@ Model.prototype.createIndex = function (done) {
         return _done(this.connection.db)
       }
     }, 1000)
+  } else {
+    return _done(this.connection.db)
+  }
+}
+
+/**
+ *
+ */
+Model.prototype.getIndexes = function (done) {
+  var _done = database => {
+    database.getIndexes(this.name).then(result => {
+      done(result)
+    })
+  }
+
+  if (!this.connection.db) {
+    this.connection.once('connect', _done)
   } else {
     return _done(this.connection.db)
   }
@@ -419,6 +436,10 @@ Model.prototype.find = function (query, options, done) {
 
   debug('find %o %o', query, options)
 
+  if (JSON.stringify(query).indexOf('object Object') > 0) {
+    console.trace()
+  }
+
   // override the model's settings with a value from the options object
   if (options.hasOwnProperty('compose')) {
     self.compose = options.compose
@@ -518,7 +539,7 @@ Model.prototype.find = function (query, options, done) {
                 results = results.results
 
                 if (!linkKey) { // i.e. it's a one-level nested query
-                  ids = _.map(_.pluck(results, '_id'), id => { return id.toString() })
+                  ids = _.map(_.pluck(results, '_id'), (id) => { return id.toString() })
 
                   // update the original query with a query for the obtained _id
                   // using the appropriate query type for whether the reference settings

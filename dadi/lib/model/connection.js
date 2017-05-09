@@ -50,10 +50,10 @@ Connection.prototype.connect = function (options) {
   debug('connect %o', options)
 
   this.datastore.connect(options).then(() => {
-    debug('connect returned')
-
     this.readyState = 1
     this.db = this.datastore
+
+    debug('connect returned %o', this.db)
 
     return this.emit('connect', this.db)
   }).catch((err) => {
@@ -102,6 +102,16 @@ module.exports = function (options, collection, storeName) {
   // if (_connections[JSON.stringify(options)]) {
   //   return _connections[JSON.stringify(options)]
   // }
+
+  try {
+    var storeConfig = require(storeName).Config
+
+    if (storeConfig.get('connectWithCollection') === false) {
+      delete options.collection
+    }
+  } catch (err) {
+    console.log(err)
+  }
 
   var connectionKey = Object.keys(options).map((option) => { return options[option] }).join(':')
 

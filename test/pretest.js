@@ -1,6 +1,7 @@
-var fs = require('fs');
-var path = require('path');
-var colors = require('colors');
+var exec = require('child_process').exec
+var fs = require('fs')
+var path = require('path')
+var colors = require('colors')
 
 var testConfigPath = './config/config.test.json'
 var testConfigSamplePath = './config/config.test.json.sample'
@@ -13,6 +14,12 @@ function loadConfig(done) {
     var testConfig = fs.readFileSync(testConfigPath, { encoding: 'utf-8'});
     var conf = JSON.parse(testConfig)
     console.log('\n  Running test suite using %s'.green, conf.datastore)
+
+    if (conf.datastore === '@dadi/api-filestore') {
+      exec('rm -rf test/workspace/db', (err, stdout, stderr) => {
+
+      })
+    }
 
     return done(conf)
   }

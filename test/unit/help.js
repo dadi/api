@@ -139,7 +139,7 @@ module.exports.cleanUpDB = function (done) {
 }
 
 module.exports.clearCollection = function (collectionName, done) {
-  var conn = connection({database: 'testdb', collection: collectionName})
+  var conn = connection({database: 'testdb', collection: collectionName}, null, config.get('datastore'))
 
   if (conn.datastore.dropDatabase) {
     conn.datastore.dropDatabase(collectionName).then(() => {

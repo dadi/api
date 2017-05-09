@@ -13,7 +13,7 @@ var clientCollectionName = config.get('auth.clientCollection')
 describe('Tokens', function () {
   before(function (done) {
     var dbOptions = { auth: true, database: config.get('auth.database'), collection: clientCollectionName }
-    var conn = Connection(dbOptions, config.get('auth.datastore'))
+    var conn = Connection(dbOptions, null, config.get('auth.datastore'))
 
     setTimeout(function () {
       if (conn.datastore.dropDatabase) {
@@ -52,7 +52,7 @@ describe('Tokens', function () {
   describe('generate', function () {
     before(function (done) {
       var dbOptions = { auth: true, database: config.get('auth.database'), collection: clientCollectionName }
-      var conn = Connection(dbOptions, config.get('auth.datastore'))
+      var conn = Connection(dbOptions, null, config.get('auth.datastore'))
 
       var store = tokenStore()
 
@@ -90,19 +90,21 @@ describe('Tokens', function () {
 
           should.exist(data.accessToken)
           uuid.v4.restore()
-          uuidStub.callCount.should.eql(3)
+          uuidStub.callCount.should.be.above(1)
           done()
         }
       }
 
-      tokens.generate(req, res)
+      tokens.generate(req, res, (err) => {
+        // console.log('NEXT?', err)
+      })
     })
   })
 
   describe('validate', function () {
     before(function (done) {
       var dbOptions = { auth: true, database: config.get('auth.database'), collection: clientCollectionName }
-      var conn = Connection(dbOptions, config.get('auth.datastore'))
+      var conn = Connection(dbOptions, null, config.get('auth.datastore'))
 
       var store = tokenStore()
 

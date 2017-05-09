@@ -10,7 +10,7 @@ var clientCollectionName = config.get('auth.clientCollection')
 describe('Token Store', function () {
   before(function (done) {
     var dbOptions = { auth: true, database: config.get('auth.database'), collection: clientCollectionName }
-    var conn = Connection(dbOptions, config.get('auth.datastore'))
+    var conn = Connection(dbOptions, null, config.get('auth.datastore'))
 
     setTimeout(function () {
       if (conn.datastore.dropDatabase) {

@@ -69,7 +69,7 @@ module.exports.dropDatabase = function (database, collectionName, done) {
     options.collection = collectionName
   }
 
-  var conn = connection(options)
+  var conn = connection(options, null, config.get('datastore'))
 
   conn.datastore.dropDatabase(collectionName).then(() => {
     return done()
@@ -87,7 +87,7 @@ module.exports.createClient = function (client, done) {
   }
 
   var collectionName = config.get('auth.clientCollection')
-  var conn = connection({ auth: true, database: config.get('auth.database'), collection: collectionName })
+  var conn = connection({ auth: true, database: config.get('auth.database'), collection: collectionName }, null, config.get('datastore'))
 
   setTimeout(function() {
     conn.datastore.insert(client, collectionName, tokenStore.getSchema()).then(result => {
@@ -100,7 +100,7 @@ module.exports.createClient = function (client, done) {
 
 module.exports.removeTestClients = function (done) {
   var collectionName = config.get('auth.clientCollection')
-  var conn = connection({ auth: true, database: config.get('auth.database'), collection: collectionName })
+  var conn = connection({ auth: true, database: config.get('auth.database'), collection: collectionName }, null, config.get('datastore'))
 
   conn.datastore.dropDatabase(collectionName).then(() => {
     return done()

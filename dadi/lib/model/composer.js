@@ -1,4 +1,5 @@
 var _ = require('underscore')
+var debug = require('debug')('api:composer')
 var path = require('path')
 var queryUtils = require(path.join(__dirname, '../model/utils'))
 var help = require(path.join(__dirname, '/../help'))
@@ -29,8 +30,10 @@ Composer.prototype.compose = function (obj, callback) {
   //   query model using array of ids and fields object
   //   populate each document's composable property with results
 
+  var composeCopy = queryUtils.snapshot(obj)
+
   _.each(composable, (field, fieldIdx) => {
-    var ids = _.pluck(obj, field)
+    var ids = _.pluck(composeCopy, field)
 
     if (Array.isArray(ids[0])) {
       ids = _.flatten(ids)
@@ -41,7 +44,9 @@ Composer.prototype.compose = function (obj, callback) {
 
     var model = this.getModel(field)
 
-    if (model) {
+    debug('%s %o', field, ids)
+
+    if (model && !_.isEmpty(ids)) {
       var compose = this.getComposeValue(field, model)
 
       model.find(query, { 'compose': compose, 'fields': fields }, (err, result) => {
@@ -49,7 +54,7 @@ Composer.prototype.compose = function (obj, callback) {
 
         var results = result.results
 
-        _.each(obj, (document, docIdx) => {
+        _.each(composeCopy, (document, docIdx) => {
           var isArray = Array.isArray(document[field])
           var originalValue = isArray ? document[field] : [document[field]]
 
@@ -72,17 +77,17 @@ Composer.prototype.compose = function (obj, callback) {
 
             if (
               fieldIdx === composable.length - 1 &&
-              docIdx === obj.length - 1 &&
+              docIdx === composeCopy.length - 1 &&
               idx === originalValue.length - 1
             ) {
-              return callback(obj)
+              return callback(composeCopy)
             }
           })
         })
       })
     } else {
       if (fieldIdx === composable.length - 1) {
-        return callback(obj)
+        return callback(composeCopy)
       }
     }
   })

@@ -3221,11 +3221,11 @@ describe('Application', function () {
       })
     })
 
-    it('should return 400 if request method is not supported', function (done) {
+    it('should return 405 if request method is not supported', function (done) {
       request(connectionString)
       .put('/api/hooks')
       .set('Authorization', 'Bearer ' + bearerToken)
-      .expect(400, done)
+      .expect(405, done)
     })
 
     it('should return 404 if specified hook is not found', function (done) {

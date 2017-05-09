@@ -7,8 +7,8 @@
     "port": 8000
   },
   "publicUrl": {
-    "host": "localhost",
-    "port": 8000
+    "host": "api.somedomain.tech",
+    "port": 80
   },
   "database": {
     "hosts": [

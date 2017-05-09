@@ -1116,7 +1116,7 @@ Server.prototype.addComponent = function (options) {
     // POST media (upload)
     this.app.use(mediaRoute + '/:token+', (req, res, next) => {
       var method = req.method && req.method.toLowerCase()
-      if (method !== 'post') return next()
+      if (method !== 'post' && method !== 'put') return next()
 
       var settings = options.component.model.settings
 

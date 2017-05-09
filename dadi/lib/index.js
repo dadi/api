@@ -481,7 +481,7 @@ Server.prototype.loadCollectionRoute = function () {
   this.app.use('/api/collections', function (req, res, next) {
     var method = req.method && req.method.toLowerCase()
 
-    if (method !== 'get') return help.sendBackJSON(400, res, next)(null, {'error': 'Invalid method'})
+    if (method !== 'get') return help.sendBackJSON(405, res, next)(null, {'error': 'Invalid method'})
 
     var data = {}
     var collections = []
@@ -562,7 +562,7 @@ Server.prototype.loadEndpointsRoute = function () {
   this.app.use('/api/endpoints', function (req, res, next) {
     var method = req.method && req.method.toLowerCase()
 
-    if (method !== 'get') return help.sendBackJSON(400, res, next)(null, {'error': 'Invalid method'})
+    if (method !== 'get') return help.sendBackJSON(405, res, next)(null, {'error': 'Invalid method'})
 
     var data = {}
     var endpoints = []
@@ -618,7 +618,7 @@ Server.prototype.loadHooksRoute = function (options) {
       return hooksController[method](req, res, next)
     }
 
-    return help.sendBackJSON(400, res, next)(null, {'error': 'Invalid method'})
+    return help.sendBackJSON(405, res, next)(null, {'error': 'Invalid method'})
   })
 
   this.app.use('/api/hooks/:hookName/config', (req, res, next) => {
@@ -628,7 +628,7 @@ Server.prototype.loadHooksRoute = function (options) {
       return hooksController[method](req, res, next)
     }
 
-    return help.sendBackJSON(400, res, next)(null, {'error': 'Invalid method'})
+    return help.sendBackJSON(405, res, next)(null, {'error': 'Invalid method'})
   })
 }
 

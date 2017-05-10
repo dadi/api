@@ -13,7 +13,7 @@ module.exports.createDoc = function (token, done) {
     request('http://' + config.get('server.host') + ':' + config.get('server.port'))
     .post('/vtest/testdb/test-schema')
     .set('Authorization', 'Bearer ' + token)
-    .send({field1: ((Math.random() * 10) | 0).toString()})
+    .send({field1: ((Math.random() * 10) | 1).toString()})
     .expect(200)
     .end(function (err, res) {
         if (err) return done(err);

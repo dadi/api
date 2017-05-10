@@ -1,0 +1,33 @@
+{
+  "fields": {
+    "fileName": {
+      "type": "String",
+      "label": "Filename",
+      "comments": "The asset filename",
+      "validation": {},
+      "required": true,
+      "message": ""
+    },
+    "path": {
+      "type": "String",
+      "label": "Path",
+      "comments": "The asset path after upload",
+      "validation": {},
+      "required": true,
+      "message": ""
+    }
+  },
+  "settings": {
+    "cache": false,
+    "cacheTTL": 300,
+    "authenticate": true,
+    "callback": null,
+    "defaultFilters": null,
+    "fieldLimiters": null,
+    "count": 40,
+    "sortOrder": 1,
+    "storeRevisions": false,
+    "type": "media",
+    "signUploads": false
+  }
+}

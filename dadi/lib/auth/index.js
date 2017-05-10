@@ -6,27 +6,52 @@ var config = require(path.join(__dirname, '/../../../config.js'))
 var tokens = require(path.join(__dirname, '/tokens'))
 var pathToRegexp = require('path-to-regexp')
 
-function mustAuthenticate (endpoints, path, reqMethod) {
-  path = url.parse(path, true)
+function mustAuthenticate (endpoints, req) {
+  var parsedUrl = url.parse(req.url, true)
 
   // all /config requests must be authenticated
-  if (path.pathname.indexOf('config') > -1) return true
+  if (parsedUrl.pathname.indexOf('config') > -1) return true
 
   // docs requests don't need to be authenticated
-  if (path.pathname.indexOf('docs') > 0) return false
+  if (parsedUrl.pathname.indexOf('docs') > 0) return false
 
-  var endpointKey = _.find(_.keys(endpoints), function (k) { return path.pathname.match(pathToRegexp(k)) })
+  var endpointKey = _.find(_.keys(endpoints), function (k) {
+    return parsedUrl.pathname.match(pathToRegexp(k))
+  })
 
   if (!endpointKey) return true
+
+  if (isMediaEndpoint(endpoints[endpointKey], req)) {
+    return false
+  }
 
   if (endpoints[endpointKey].model && endpoints[endpointKey].model.settings && endpoints[endpointKey].model.settings.hasOwnProperty('authenticate')) {
     if (typeof endpoints[endpointKey].model.settings.authenticate === 'boolean') {
       return endpoints[endpointKey].model.settings.authenticate
     } else {
-      return endpoints[endpointKey].model.settings.authenticate.indexOf(reqMethod) > -1
+      return endpoints[endpointKey].model.settings.authenticate.indexOf(req.method) > -1
     }
   } else {
     return true
+  }
+}
+
+/**
+ * If the URL is for a media asset, but not at the root, then it can be unauthenticated
+ * @param {Object} endpoint - the component/controller matching the request URL
+ * @param {Object} req - the original HTTP request
+ * @returns {Boolean} - returns true if the URL starts with '/api/media/' followed by a filename
+ */
+function isMediaEndpoint (endpoint, req) {
+  var isMedia = endpoint.model &&
+    endpoint.model.settings &&
+    endpoint.model.settings.type &&
+    endpoint.model.settings.type === 'media'
+
+  if (isMedia && (req.params.token || req.params.filename)) {
+    return true
+  } else {
+    return false
   }
 }
 
@@ -84,7 +109,7 @@ module.exports = function (server) {
   // Authorize
   server.app.use(function (req, res, next) {
     // Let requests for tokens through, along with endpoints configured to not use authentication
-    if (req.url === tokenRoute || !mustAuthenticate(server.components, req.url, req.method)) return next()
+    if (req.url === tokenRoute || !mustAuthenticate(server.components, req)) return next()
 
     // require an authorization header for every request
     if (!(req.headers && req.headers.authorization)) return fail()

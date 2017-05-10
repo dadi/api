@@ -94,6 +94,26 @@ module.exports.parseQuery = function (queryStr) {
   return ret
 }
 
+module.exports.keyValidForSchema = function (model, key) {
+  if (key !== '_id' && model.schema.hasOwnProperty(key) === false) {
+    // check for dot notation so we can determine the datatype of the first part of the key
+    if (key.indexOf('.') > 0) {
+      var keyParts = key.split('.')
+      if (model.schema.hasOwnProperty(keyParts[0])) {
+        if (/Mixed|Object|Reference/.test(model.schema[keyParts[0]].type)) {
+          return true
+        }
+      }
+    }
+
+    // field/key doesn't exist in the schema
+    return false
+  }
+
+  // key exists in the schema, or
+  return true
+}
+
 // Transforms strings from a query object into more appropriate types, based
 // on the field type
 module.exports.transformQuery = function (obj, type) {

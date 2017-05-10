@@ -1,27 +1,27 @@
-var convict = require('convict');
-var fs = require('fs');
+var convict = require('convict')
+var fs = require('fs')
 
 // Define a schema
 var conf = convict({
   app: {
     name: {
-      doc: "The applicaton name",
+      doc: 'The applicaton name',
       format: String,
-      default: "DADI API Repo Default",
+      default: 'DADI API Repo Default',
     }
   },
   server: {
     host: {
-      doc: "Accept connections on the specified address. If the host is omitted, the server will accept connections on any IPv6 address (::) when IPv6 is available, or any IPv4 address (0.0.0.0) otherwise.",
+      doc: 'Accept connections on the specified address. If the host is omitted, the server will accept connections on any IPv6 address (::) when IPv6 is available, or any IPv4 address (0.0.0.0) otherwise.',
       format: '*',
       default: null,
-      env: "HOST"
+      env: 'HOST'
     },
     port: {
-      doc: "Accept connections on the specified port. A value of zero will assign a random port.",
+      doc: 'Accept connections on the specified port. A value of zero will assign a random port.',
       format: Number,
       default: 8081,
-      env: "PORT"
+      env: 'PORT'
     },
     redirectPort: {
       doc: 'Port to redirect http connections to https from',
@@ -30,236 +30,236 @@ var conf = convict({
       env: 'REDIRECT_PORT'
     },
     name: {
-      doc: "Server name",
+      doc: 'Server name',
       format: String,
-      default: "DADI (API)",
+      default: 'DADI (API)',
     },
     protocol: {
-      doc: "The protocol the web application will use",
+      doc: 'The protocol the web application will use',
       format: String,
-      default: "http",
-      env: "PROTOCOL"
+      default: 'http',
+      env: 'PROTOCOL'
     },
     sslPassphrase: {
-      doc: "The passphrase of the SSL private key",
+      doc: 'The passphrase of the SSL private key',
       format: String,
-      default: "",
-      env: "SSL_PRIVATE_KEY_PASSPHRASE"
+      default: '',
+      env: 'SSL_PRIVATE_KEY_PASSPHRASE'
     },
     sslPrivateKeyPath: {
-      doc: "The filename of the SSL private key",
+      doc: 'The filename of the SSL private key',
       format: String,
-      default: "",
-      env: "SSL_PRIVATE_KEY_PATH"
+      default: '',
+      env: 'SSL_PRIVATE_KEY_PATH'
     },
     sslCertificatePath: {
-      doc: "The filename of the SSL certificate",
+      doc: 'The filename of the SSL certificate',
       format: String,
-      default: "",
-      env: "SSL_CERTIFICATE_PATH"
+      default: '',
+      env: 'SSL_CERTIFICATE_PATH'
     },
     sslIntermediateCertificatePath: {
-      doc: "The filename of an SSL intermediate certificate, if any",
+      doc: 'The filename of an SSL intermediate certificate, if any',
       format: String,
-      default: "",
-      env: "SSL_INTERMEDIATE_CERTIFICATE_PATH"
+      default: '',
+      env: 'SSL_INTERMEDIATE_CERTIFICATE_PATH'
     },
     sslIntermediateCertificatePaths: {
-      doc: "The filenames of SSL intermediate certificates, overrides sslIntermediateCertificate (singular)",
+      doc: 'The filenames of SSL intermediate certificates, overrides sslIntermediateCertificate (singular)',
       format: Array,
       default: [],
-      env: "SSL_INTERMEDIATE_CERTIFICATE_PATHS"
+      env: 'SSL_INTERMEDIATE_CERTIFICATE_PATHS'
     }
   },
   database: {
       hosts: {
-        doc: "",
+        doc: '',
         format: Array,
         default: [
           {
-            host: "127.0.0.1",
+            host: '127.0.0.1',
             port: 27017
           }
         ]
       },
       username: {
-        doc: "",
+        doc: '',
         format: String,
-        default: "",
-        env: "DB_USERNAME"
+        default: '',
+        env: 'DB_USERNAME'
       },
       password: {
-        doc: "",
+        doc: '',
         format: String,
-        default: "",
-        env: "DB_PASSWORD"
+        default: '',
+        env: 'DB_PASSWORD'
       },
       database: {
-        doc: "",
+        doc: '',
         format: String,
-        default: "test",
-        env: "DB_NAME"
+        default: 'test',
+        env: 'DB_NAME'
       },
       ssl: {
-        doc: "",
+        doc: '',
         format: Boolean,
         default: false
       },
       replicaSet: {
-        doc: "",
+        doc: '',
         format: String,
-        default: ""
+        default: ''
       },
       enableCollectionDatabases: {
-        doc: "",
+        doc: '',
         format: Boolean,
         default: false
       }
   },
   auth: {
     tokenUrl: {
-      doc: "",
+      doc: '',
       format: String,
-      default: "/token"
+      default: '/token'
     },
     tokenTtl: {
-      doc: "",
+      doc: '',
       format: Number,
       default: 1800
     },
     clientCollection: {
-      doc: "",
+      doc: '',
       format: String,
-      default: "clientStore"
+      default: 'clientStore'
     },
     tokenCollection: {
-      doc: "",
+      doc: '',
       format: String,
-      default: "tokenStore"
+      default: 'tokenStore'
     },
     database: {
       hosts: {
-        doc: "",
+        doc: '',
         format: Array,
         default: [
           {
-            host: "127.0.0.1",
+            host: '127.0.0.1',
             port: 27017
           }
         ]
       },
       username: {
-        doc: "",
+        doc: '',
         format: String,
-        default: "",
-        env: "DB_AUTH_USERNAME"
+        default: '',
+        env: 'DB_AUTH_USERNAME'
       },
       password: {
-        doc: "",
+        doc: '',
         format: String,
-        default: "",
-        env: "DB_AUTH_PASSWORD"
+        default: '',
+        env: 'DB_AUTH_PASSWORD'
       },
       database: {
-        doc: "",
+        doc: '',
         format: String,
-        default: "test",
-        env: "DB_AUTH_NAME"
+        default: 'test',
+        env: 'DB_AUTH_NAME'
       }
     }
   },
   caching: {
     ttl: {
-      doc: "",
+      doc: '',
       format: Number,
       default: 300,
     },
     directory: {
       enabled: {
-        doc: "If enabled, cache files will be saved to the filesystem",
+        doc: 'If enabled, cache files will be saved to the filesystem',
         format: Boolean,
         default: true
       },
       path: {
-        doc: "The relative path to the cache directory",
+        doc: 'The relative path to the cache directory',
         format: String,
-        default: "./cache/web"
+        default: './cache/web'
       },
       extension: {
-        doc: "The extension to use for cache files",
+        doc: 'The extension to use for cache files',
         format: String,
-        default: "json"
+        default: 'json'
       }
     },
     redis: {
       enabled: {
-        doc: "If enabled, cache files will be saved to the specified Redis server",
+        doc: 'If enabled, cache files will be saved to the specified Redis server',
         format: Boolean,
         default: false,
-        env: "REDIS_ENABLED"
+        env: 'REDIS_ENABLED'
       },
       host: {
-        doc: "The Redis server host",
+        doc: 'The Redis server host',
         format: String,
-        default: "127.0.0.1",
-        env: "REDIS_HOST"
+        default: '127.0.0.1',
+        env: 'REDIS_HOST'
       },
       port: {
-        doc: "The port for the Redis server",
+        doc: 'The port for the Redis server',
         format: 'port',
         default: 6379,
-        env: "REDIS_PORT"
+        env: 'REDIS_PORT'
       },
       password: {
-        doc: "",
+        doc: '',
         format: String,
-        default: "",
-        env: "REDIS_PASSWORD"
+        default: '',
+        env: 'REDIS_PASSWORD'
       }
     }
   },
   logging: {
     enabled: {
-      doc: "If true, logging is enabled using the following settings.",
+      doc: 'If true, logging is enabled using the following settings.',
       format: Boolean,
       default: true
     },
     level: {
-      doc: "Sets the logging level.",
+      doc: 'Sets the logging level.',
       format: ['debug','info','warn','error','trace'],
       default: 'info'
     },
     path: {
-      doc: "The absolute or relative path to the directory for log files.",
+      doc: 'The absolute or relative path to the directory for log files.',
       format: String,
-      default: "./log"
+      default: './log'
     },
     filename: {
-      doc: "The name to use for the log file, without extension.",
+      doc: 'The name to use for the log file, without extension.',
       format: String,
-      default: "api"
+      default: 'api'
     },
     extension: {
-      doc: "The extension to use for the log file.",
+      doc: 'The extension to use for the log file.',
       format: String,
-      default: "log"
+      default: 'log'
     },
     accessLog: {
       enabled: {
-        doc: "If true, HTTP access logging is enabled. The log file name is similar to the setting used for normal logging, with the addition of 'access'. For example `api.access.log`.",
+        doc: 'If true, HTTP access logging is enabled. The log file name is similar to the setting used for normal logging, with the addition of "access". For example `api.access.log`.',
         format: Boolean,
         default: true
       },
       kinesisStream: {
-        doc: "An AWS Kinesis stream to write to log records to.",
+        doc: 'An AWS Kinesis stream to write to log records to.',
         format: String,
-        default: "",
-        env: "KINESIS_STREAM"
+        default: '',
+        env: 'KINESIS_STREAM'
       }
     }
   },
   paths: {
-    doc: "",
+    doc: '',
     format: Object,
     default: {
       collections: __dirname + '/workspace/collections',
@@ -268,39 +268,39 @@ var conf = convict({
     }
   },
   feedback: {
-    doc: "",
+    doc: '',
     format: Boolean,
     default: false,
   },
   status: {
     enabled: {
-      doc: "If true, status endpoint is enabled.",
+      doc: 'If true, status endpoint is enabled.',
       format: Boolean,
       default: false,
     },
     routes: {
-      doc: "An array of routes to test. Each route object must contain properties `route` and `expectedResponseTime`.",
+      doc: 'An array of routes to test. Each route object must contain properties `route` and `expectedResponseTime`.',
       format: Array,
       default: []
     }
   },
   query: {
     useVersionFilter: {
-      doc: "If true, the API version parameter is extracted from the request URL and passed to the database query",
+      doc: 'If true, the API version parameter is extracted from the request URL and passed to the database query',
       format: Boolean,
       default: false
     }
   },
   media: {
-    enabled: {
-      doc: 'If true, files can be uploaded to API with a POST request',
-      format: Boolean,
-      default: false
-    },
-    collection: {
-      doc: 'The name of the API collection to store the metadata for uploaded media',
+    tokenSecret: {
+      doc: 'The secret key used to sign and verify tokens when uploading media',
       format: String,
-      default: 'mediaStore'
+      default: 'catboat-beatific-drizzle'
+    },
+    tokenExpiresIn: {
+      doc: 'The duration a signed token is valid for. Expressed in seconds or a string describing a time span (https://github.com/zeit/ms). Eg: 60, "2 days", "10h", "7d"',
+      format: '*',
+      default: '1h'
     },
     storage: {
       doc: 'Determines the storage type for uploads',
@@ -313,7 +313,7 @@ var conf = convict({
       default: 'workspace/media'
     },
     pathFormat: {
-      doc: 'Determines the format for subdirectories that are created to store uploads',
+      doc: 'Determines the format for the generation of subdirectories to store uploads',
       format: ['none', 'date', 'datetime', 'sha1/4', 'sha1/5', 'sha1/8'],
       default: 'date'
     },
@@ -345,51 +345,51 @@ var conf = convict({
     }
   },
   env: {
-    doc: "The applicaton environment.",
-    format: ["production", "development", "test", "qa"],
-    default: "development",
-    env: "NODE_ENV",
-    arg: "node_env"
+    doc: 'The applicaton environment.',
+    format: ['production', 'development', 'test', 'qa'],
+    default: 'development',
+    env: 'NODE_ENV',
+    arg: 'node_env'
   },
   cluster: {
-    doc: "If true, API runs in cluster mode, starting a worker for each CPU core",
+    doc: 'If true, API runs in cluster mode, starting a worker for each CPU core',
     format: Boolean,
     default: false
   },
   cors: {
-    doc: "If true, responses will include headers for cross-domain resource sharing",
+    doc: 'If true, responses will include headers for cross-domain resource sharing',
     format: Boolean,
     default: false
   }
-});
+})
 
 // Load environment dependent configuration
-var env = conf.get('env');
-conf.loadFile('./config/config.' + env + '.json');
+var env = conf.get('env')
+conf.loadFile('./config/config.' + env + '.json')
 
 // Perform validation
-conf.validate({strict: false});
+conf.validate()
 
 // Load domain-specific configuration
 conf.updateConfigDataForDomain = function(domain) {
-  var domainConfig = './config/' + domain + '.json';
+  var domainConfig = './config/' + domain + '.json'
   try {
-    var stats = fs.statSync(domainConfig);
+    var stats = fs.statSync(domainConfig)
     // no error, file exists
-    conf.loadFile(domainConfig);
-    conf.validate({strict: false});
+    conf.loadFile(domainConfig)
+    conf.validate()
   }
   catch(err) {
     if (err.code === 'ENOENT') {
-      //console.log('No domain-specific configuration file: ' + domainConfig);
+      //console.log('No domain-specific configuration file: ' + domainConfig)
     }
     else {
-      console.log(err);
+      console.log(err)
     }
   }
-};
+}
 
-module.exports = conf;
+module.exports = conf
 module.exports.configPath = function() {
-  return './config/config.' + conf.get('env') + '.json';
+  return './config/config.' + conf.get('env') + '.json'
 }

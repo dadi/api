@@ -1,29 +1,29 @@
 {
-    "fields": {
-        "newField": {
-            "type": "String",
-            "label": "Title",
-            "comments": "The title of the entry",
-            "placement": "Main content",
-            "validation": {},
-            "required": false,
-            "message": "",
-            "display": {
-                "index": true,
-                "edit": true
-            }
-        }
-    },
-    "settings": {
-        "cache": true,
-        "cacheTTL": 300,
-        "authenticate": true,
-        "callback": null,
-        "defaultFilters": null,
-        "fieldLimiters": null,
-        "count": 40,
-        "sortOrder": 1,
-        "storeRevisions": true,
-        "revisionCollection": "testSchemaHistory"
+  "fields": {
+    "newField": {
+      "type": "String",
+      "label": "Title",
+      "comments": "The title of the entry",
+      "placement": "Main content",
+      "validation": {},
+      "required": false,
+      "message": "",
+      "display": {
+          "index": true,
+          "edit": true
+      }
     }
+  },
+  "settings": {
+    "cache": true,
+    "cacheTTL": 300,
+    "authenticate": true,
+    "callback": null,
+    "defaultFilters": null,
+    "fieldLimiters": null,
+    "count": 40,
+    "sortOrder": 1,
+    "storeRevisions": true,
+    "revisionCollection": "testSchemaHistory"
+  }
 }

@@ -1070,29 +1070,12 @@ Server.prototype.addComponent = function (options) {
     var mediaRoute = options.route.replace('/' + idParam, '')
 
     this.components[mediaRoute] = options.component
-    this.components[mediaRoute + '/:token+'] = options.component
+    this.components[mediaRoute + '/:token?'] = options.component
     this.components[mediaRoute + '/:filename(.*png|.*jpg|.*gif|.*bmp|.*tiff)'] = options.component
 
     if (options.component.setRoute) {
       options.component.setRoute(mediaRoute)
     }
-
-    // GET media
-    this.app.use(mediaRoute, (req, res, next) => {
-      var method = req.method && req.method.toLowerCase()
-      if (method !== 'get') return next()
-
-      if (options.component[method]) {
-        return options.component[method](req, res, next)
-      }
-    })
-
-    // GET media/filename
-    this.app.use(mediaRoute + '/:filename(.*png|.*jpg|.*gif|.*bmp|.*tiff)', (req, res, next) => {
-      if (options.component.getFile) {
-        return options.component.getFile(req, res, next, mediaRoute)
-      }
-    })
 
     // POST media/sign
     this.app.use(mediaRoute + '/sign', (req, res, next) => {
@@ -1114,7 +1097,7 @@ Server.prototype.addComponent = function (options) {
     })
 
     // POST media (upload)
-    this.app.use(mediaRoute + '/:token+', (req, res, next) => {
+    this.app.use(mediaRoute + '/:token?', (req, res, next) => {
       var method = req.method && req.method.toLowerCase()
       if (method !== 'post' && method !== 'put') return next()
 
@@ -1147,6 +1130,23 @@ Server.prototype.addComponent = function (options) {
         })
       } else {
         return options.component[method](req, res, next)
+      }
+    })
+
+    // GET media
+    this.app.use(mediaRoute, (req, res, next) => {
+      var method = req.method && req.method.toLowerCase()
+      if (method !== 'get') return next()
+
+      if (options.component[method]) {
+        return options.component[method](req, res, next)
+      }
+    })
+
+    // GET media/filename
+    this.app.use(mediaRoute + '/:filename(.*png|.*jpg|.*gif|.*bmp|.*tiff)', (req, res, next) => {
+      if (options.component.getFile) {
+        return options.component.getFile(req, res, next, mediaRoute)
       }
     })
   }

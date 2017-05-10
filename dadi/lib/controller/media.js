@@ -184,48 +184,49 @@ MediaController.prototype.post = function (req, res, next) {
           createdBy: req.client && req.client.clientId
         }
 
-      const callback = (err, response) => {
-        response.results = response.results.map(document => {
-          return mediaModel.formatDocument(document)
-        })
+        const callback = (err, response) => {
+          response.results = response.results.map(document => {
+            return mediaModel.formatDocument(document)
+          })
 
-        help.sendBackJSON(201, res, next)(err, response)
-      }
-
-      return this.writeFile(req, this.fileName, this.mimetype, dataStream).then((result) => {
-        if (_.contains(fields, 'contentLength')) {
-          obj.contentLength = result.contentLength
+          help.sendBackJSON(201, res, next)(err, response)
         }
 
-        obj.path = result.path
+        return this.writeFile(req, this.fileName, this.mimetype, dataStream).then(result => {
+          if (_.contains(fields, 'contentLength')) {
+            obj.contentLength = result.contentLength
+          }
 
-        this.model.create(obj, internals, callback, req)
+          obj.path = result.path
+
+          this.model.create(obj, internals, callback, req)
+        })
       })
     })
 
     // Pipe the HTTP Request into Busboy
     req.pipe(busboy)
-  }
+  } else {
+    // if id is present in the url, then this is an update
+    if (req.params.id || req.body.update) {
+      var internals = {
+        lastModifiedAt: Date.now(),
+        lastModifiedBy: req.client && req.client.clientId
+      }
 
-  // if id is present in the url, then this is an update
-  if (req.params.id || req.body.update) {
-    var internals = {
-      lastModifiedAt: Date.now(),
-      lastModifiedBy: req.client && req.client.clientId
+      var query = {}
+      var update = {}
+
+      if (req.params.id) {
+        query._id = req.params.id
+        update = req.body
+      } else {
+        query = req.body.query
+        update = req.body.update
+      }
+
+      this.model.update(query, update, internals, help.sendBackJSON(200, res, next), req)
     }
-
-    var query = {}
-    var update = {}
-
-    if (req.params.id) {
-      query._id = req.params.id
-      update = req.body
-    } else {
-      query = req.body.query
-      update = req.body.update
-    }
-
-    this.model.update(query, update, internals, help.sendBackJSON(200, res, next), req)
   }
 }
 

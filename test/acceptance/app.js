@@ -1,4 +1,5 @@
 var should = require('should')
+var sinon = require('sinon')
 var fs = require('fs')
 var path = require('path')
 var request = require('supertest')
@@ -17,7 +18,7 @@ var lastModifiedAt = 0
 describe('Application', function () {
   this.timeout(10000)
 
-  before(function(done) {
+  before(function (done) {
     // read "lastModifiedAt": 1466832329170
     // of workspace/collections/vtest/testdb
     var dirs = config.get('paths')
@@ -309,7 +310,6 @@ describe('Application', function () {
             done()
           })
       })
-
     })
 
     describe('PUT', function () {
@@ -362,7 +362,6 @@ describe('Application', function () {
 
                     done()
                   })
-
               })
           })
         })
@@ -650,7 +649,7 @@ describe('Application', function () {
                         res.body['results'].should.exist
                         res.body['results'].should.be.Array
                         res.body['results'].length.should.equal(1)
-                        res.body['results'][0].field1.should.equal('doc'); // not "updated doc"
+                        res.body['results'][0].field1.should.equal('doc') // not "updated doc"
                         res.body['results'][0].apiVersion.should.equal('vjoin')
 
                         config.set('query.useVersionFilter', false)
@@ -733,7 +732,7 @@ describe('Application', function () {
                                 res.body['results'].should.exist
                                 res.body['results'].should.be.Array
                                 res.body['results'].length.should.equal(1)
-                                res.body['results'][0].field1.should.equal('updated doc'); // not "updated doc"
+                                res.body['results'][0].field1.should.equal('updated doc') // not "updated doc"
                                 res.body['results'][0].apiVersion.should.equal('vtest')
 
                                 client
@@ -747,7 +746,7 @@ describe('Application', function () {
                                     res.body['results'].should.exist
                                     res.body['results'].should.be.Array
                                     res.body['results'].length.should.equal(1)
-                                    res.body['results'][0].field1.should.equal('doc'); // not "updated doc"
+                                    res.body['results'][0].field1.should.equal('doc') // not "updated doc"
                                     res.body['results'][0].apiVersion.should.equal('vjoin')
 
                                     config.set('query.useVersionFilter', false)
@@ -873,7 +872,286 @@ describe('Application', function () {
         })
       })
 
+      it.skip('should use apiVersion when getting reference documents if useVersionFilter is set to true', function (done) {
+        config.set('query.useVersionFilter', true)
+
+        var bookSchema = {
+          fields: {
+            'title': { 'type': 'String', 'required': true },
+            'author': { 'type': 'Reference',
+              'settings': { 'collection': 'person', 'fields': ['name', 'spouse'] }
+            },
+            'booksInSeries': {
+              'type': 'Reference',
+              'settings': { 'collection': 'book', 'multiple': true }
+            }
+          },
+          settings: {
+            cache: false,
+            authenticate: true,
+            callback: null,
+            defaultFilters: null,
+            fieldLimiters: null,
+            count: 40,
+          }
+        }
+
+        var personSchema = {
+          fields: {
+            'name': { 'type': 'String', 'required': true },
+            'occupation': { 'type': 'String', 'required': false },
+            'nationality': { 'type': 'String', 'required': false },
+            'education': { 'type': 'String', 'required': false },
+            'spouse': { 'type': 'Reference' }
+          },
+          settings: {
+            cache: false,
+            authenticate: true,
+            callback: null,
+            defaultFilters: null,
+            fieldLimiters: null,
+            count: 40,
+          }
+        }
+
+        // create new API endpoint
+        var client = request(connectionString)
+
+        client
+        .post('/1.0/library/book/config')
+        .send(JSON.stringify(bookSchema))
+        .set('content-type', 'text/plain')
+        .set('Authorization', 'Bearer ' + bearerToken)
+        .expect(200)
+        .expect('content-type', 'application/json')
+        .end((err, res) => {
+          if (err) return done(err)
+
+          client
+          .post('/1.0/library/person/config')
+          .send(JSON.stringify(personSchema))
+          .set('content-type', 'text/plain')
+          .set('Authorization', 'Bearer ' + bearerToken)
+          .expect(200)
+          .expect('content-type', 'application/json')
+          .end((err, res) => {
+            if (err) return done(err)
+
+            // create some docs
+            client
+            .post('/1.0/library/person')
+            .send({name: 'Neil Murray'})
+            .set('content-type', 'application/json')
+            .set('Authorization', 'Bearer ' + bearerToken)
+            .expect(200)
+            .end((err, res) => {
+              var id = res.body.results[0]._id
+
+              client
+              .post('/1.0/library/person')
+              .send({name: 'J K Rowling', spouse: id})
+              .set('content-type', 'application/json')
+              .set('Authorization', 'Bearer ' + bearerToken)
+              .expect(200)
+              .end((err, res) => {
+                id = res.body.results[0]._id
+
+                client
+                .post('/1.0/library/book')
+                .send({title: 'Harry Potter 1', author: id})
+                .set('content-type', 'application/json')
+                .set('Authorization', 'Bearer ' + bearerToken)
+                .expect(200)
+                .end((err, res) => {
+                  var bookid = res.body.results[0]._id
+                  var books = []
+                  books.push(bookid)
+
+                  client
+                  .post('/1.0/library/book')
+                  .send({title: 'Harry Potter 2', author: id, booksInSeries: books})
+                  .set('content-type', 'application/json')
+                  .set('Authorization', 'Bearer ' + bearerToken)
+                  .expect(200)
+                  .end((err, res) => {
+                    // find a book
+
+                    var Model = require(__dirname + '/../../dadi/lib/model/index.js')
+                    var spy = sinon.spy(Model.Model.prototype, 'find')
+
+                    client
+                    .get('/1.0/library/book?filter={ "title": "Harry Potter 2" }&compose=true')
+                    .send({title: 'Harry Potter 2', author: id, booksInSeries: books})
+                    .set('content-type', 'application/json')
+                    .set('Authorization', 'Bearer ' + bearerToken)
+                    .expect(200)
+                    .end((err, res) => {
+                      var args = spy.args
+                      spy.restore()
+                      config.set('query.useVersionFilter', false)
+
+                      // apiVersion should be in the query passed to find
+                      args.forEach((arg) => {
+                        should.exist(arg[0].apiVersion)
+                      })
+
+                      var results = res.body.results
+                      results.should.be.Array
+                      results.length.should.eql(1)
+
+                      done()
+                    })
+                  })
+                })
+              })
+            })
+          })
+        })
+      })
+
+      it('should not use apiVersion when getting reference documents if useVersionFilter is set to false', function (done) {
+        config.set('query.useVersionFilter', false)
+
+        var bookSchema = {
+          fields: {
+            'title': { 'type': 'String', 'required': true },
+            'author': { 'type': 'Reference',
+              'settings': { 'collection': 'person', 'fields': ['name', 'spouse'] }
+            },
+            'booksInSeries': {
+              'type': 'Reference',
+              'settings': { 'collection': 'book', 'multiple': true }
+            }
+          },
+          settings: {
+            cache: false,
+            authenticate: true,
+            callback: null,
+            defaultFilters: null,
+            fieldLimiters: null,
+            count: 40,
+          }
+        }
+
+        var personSchema = {
+          fields: {
+            'name': { 'type': 'String', 'required': true },
+            'occupation': { 'type': 'String', 'required': false },
+            'nationality': { 'type': 'String', 'required': false },
+            'education': { 'type': 'String', 'required': false },
+            'spouse': { 'type': 'Reference' }
+          },
+          settings: {
+            cache: false,
+            authenticate: true,
+            callback: null,
+            defaultFilters: null,
+            fieldLimiters: null,
+            count: 40,
+          }
+        }
+
+        // create new API endpoint
+        var client = request(connectionString)
+
+        client
+        .post('/1.0/library/book/config')
+        .send(JSON.stringify(bookSchema))
+        .set('content-type', 'text/plain')
+        .set('Authorization', 'Bearer ' + bearerToken)
+        .expect(200)
+        .expect('content-type', 'application/json')
+        .end((err, res) => {
+          if (err) return done(err)
+
+          client
+          .post('/1.0/library/person/config')
+          .send(JSON.stringify(personSchema))
+          .set('content-type', 'text/plain')
+          .set('Authorization', 'Bearer ' + bearerToken)
+          .expect(200)
+          .expect('content-type', 'application/json')
+          .end((err, res) => {
+            if (err) return done(err)
+
+            setTimeout(function() {
+              // create some docs
+              client
+              .post('/1.0/library/person')
+              .send({name: 'Neil Murray'})
+              .set('content-type', 'application/json')
+              .set('Authorization', 'Bearer ' + bearerToken)
+              .expect(200)
+              .end((err, res) => {
+                var id = res.body.results[0]._id
+
+                client
+                .post('/1.0/library/person')
+                .send({name: 'J K Rowling', spouse: id})
+                .set('content-type', 'application/json')
+                .set('Authorization', 'Bearer ' + bearerToken)
+                .expect(200)
+                .end((err, res) => {
+                  id = res.body.results[0]._id
+
+                  client
+                  .post('/1.0/library/book')
+                  .send({title: 'Harry Potter 1', author: id})
+                  .set('content-type', 'application/json')
+                  .set('Authorization', 'Bearer ' + bearerToken)
+                  .expect(200)
+                  .end((err, res) => {
+                    var bookid = res.body.results[0]._id
+                    var books = []
+                    books.push(bookid)
+
+                    client
+                    .post('/1.0/library/book')
+                    .send({title: 'Harry Potter 2', author: id, booksInSeries: books})
+                    .set('content-type', 'application/json')
+                    .set('Authorization', 'Bearer ' + bearerToken)
+                    .expect(200)
+                    .end((err, res) => {
+                      // find a book
+
+                      var Model = require(__dirname + '/../../dadi/lib/model/index.js')
+                      var spy = sinon.spy(Model.Model.prototype, 'find')
+
+                      client
+                      .get('/1.0/library/book?filter={ "title": "Harry Potter 2" }&compose=true')
+                      .send({title: 'Harry Potter 2', author: id, booksInSeries: books})
+                      .set('content-type', 'application/json')
+                      .set('Authorization', 'Bearer ' + bearerToken)
+                      .expect(200)
+                      .end((err, res) => {
+                        var args = spy.args
+                        spy.restore()
+
+                        config.set('query.useVersionFilter', true)
+
+                        // apiVersion should be in the query passed to find
+                        args.forEach((arg) => {
+                          should.not.exist(arg[0].apiVersion)
+                        })
+
+                        var results = res.body.results
+                        results.should.be.Array
+                        results.length.should.be.above(0)
+
+                        done()
+                      })
+                    })
+                  })
+                })
+              })
+            }, 1000)
+          })
+        })
+      })
+
       it('should ignore apiVersion when getting documents if useVersionFilter is not set', function (done) {
+        config.set('query.useVersionFilter', false)
+
         var jsSchemaString = fs.readFileSync(__dirname + '/../new-schema.json', {encoding: 'utf8'})
 
         help.createDoc(bearerToken, function (err, doc) {
@@ -1101,7 +1379,7 @@ describe('Application', function () {
               res.body['results'].should.exist
               res.body['results'].should.be.Array
 
-              var obj = _.sample(_.compact(_.map(res.body['results'], function (x) { if (x.hasOwnProperty('field1')) return x; })))
+              var obj = _.sample(_.compact(_.map(res.body['results'], function (x) { if (x.hasOwnProperty('field1')) return x })))
               Object.keys(obj).length.should.equal(1)
               Object.keys(obj)[0].should.equal('field1')
 
@@ -1134,7 +1412,7 @@ describe('Application', function () {
               res.body['results'].should.exist
               res.body['results'].should.be.Array
 
-              var obj = _.sample(_.compact(_.map(res.body['results'], function (x) { if (x.hasOwnProperty('_fieldWithUnderscore')) return x; })))
+              var obj = _.sample(_.compact(_.map(res.body['results'], function (x) { if (x.hasOwnProperty('_fieldWithUnderscore')) return x })))
               should.exist(obj['_fieldWithUnderscore'])
 
               done()
@@ -1206,7 +1484,7 @@ describe('Application', function () {
           help.createDoc(bearerToken, function (err, doc2) {
             if (err) return done(err)
 
-            setTimeout(function() {
+            setTimeout(function () {
               var client = request(connectionString)
               var docId = doc2._id
               var query = {
@@ -1367,7 +1645,6 @@ describe('Application', function () {
               done()
             })
         })
-
       })
 
       it('should return normal result set when only using $match in an aggregation query', function (done) {
@@ -1413,8 +1690,7 @@ describe('Application', function () {
         })
       })
 
-      it('should add history to results when querystring param HHistory=true', function (done) {
-
+      it('should add history to results when querystring param includeHistory=true', function (done) {
         var client = request(connectionString)
 
         client
@@ -1461,6 +1737,55 @@ describe('Application', function () {
         })
       })
 
+      it('should use specified historyFilters when querystring param includeHistory=true', function (done) {
+        var client = request(connectionString)
+
+        client
+        .post('/vtest/testdb/test-schema')
+        .set('Authorization', 'Bearer ' + bearerToken)
+        .send({field1: 'ABCDEF', field2: 2001 })
+        .expect(200)
+        .end(function (err, res) {
+          if (err) return done(err)
+          var doc = res.body.results[0]
+
+          var body = {
+            query: { _id: doc._id },
+            update: {field1: 'GHIJKL'}
+          }
+
+          client
+          .put('/vtest/testdb/test-schema/')
+          .set('Authorization', 'Bearer ' + bearerToken)
+          .send(body)
+          .expect(200)
+          .end(function (err, res) {
+            if (err) return done(err)
+
+            res.body.results[0]._id.should.equal(doc._id)
+            res.body.results[0].field1.should.equal('GHIJKL')
+
+            client
+            .get('/vtest/testdb/test-schema?filter={"_id": "' + doc._id + '"}&includeHistory=true&historyFilters={"field2":2001}')
+            .set('Authorization', 'Bearer ' + bearerToken)
+            .expect(200)
+            .expect('content-type', 'application/json')
+            .end(function (err, res) {
+              if (err) return done(err)
+
+              res.body['results'].should.exist
+              res.body['results'].should.be.Array
+              res.body['results'][0].field1.should.exist
+              res.body['results'][0].field1.should.eql('GHIJKL')
+              res.body['results'][0].field2.should.exist
+              res.body['results'][0].history.should.exist
+              res.body['results'][0].history[0].field1.should.eql('ABCDEF')
+              done()
+            })
+          })
+        })
+      })
+
       it('should return single document when querystring param count=1', function (done) {
         // create a bunch of docs
         var ac = new EventEmitter()
@@ -1496,7 +1821,6 @@ describe('Application', function () {
               done()
             })
         })
-
       })
 
       describe('query string params', function () {
@@ -1519,7 +1843,7 @@ describe('Application', function () {
             done()
           })
 
-          asyncControl.on('error', function (err) { throw err; })
+          asyncControl.on('error', function (err) { throw err })
         })
 
         it('should paginate results', function (done) {
@@ -1557,7 +1881,7 @@ describe('Application', function () {
               res.body['metadata'].should.exist
               res.body['metadata'].page.should.equal(1)
               res.body['metadata'].limit.should.equal(docCount)
-              res.body['metadata'].totalPages.should.be.above(1); // Math.ceil(# documents/20 per page)
+              res.body['metadata'].totalPages.should.be.above(1) // Math.ceil(# documents/20 per page)
               res.body['metadata'].nextPage.should.equal(2)
 
               done()
@@ -2111,7 +2435,6 @@ describe('Application', function () {
             })
         })
       })
-
     })
   })
 
@@ -2462,6 +2785,41 @@ describe('Application', function () {
             done()
           })
       })
+
+      it('should return media collections', function (done) {
+        // mimic a file that could be sent to the server
+        var mediaSchema = fs.readFileSync(__dirname + '/../media-schema.json', {encoding: 'utf8'})
+        request(connectionString)
+        .post('/1.0/testdb/media/config')
+        .send(mediaSchema)
+        .set('content-type', 'text/plain')
+        .set('Authorization', 'Bearer ' + bearerToken)
+        .expect(200)
+        .expect('content-type', 'application/json')
+        .end(function (err, res) {
+          if (err) return done(err)
+
+          // Wait for a few seconds then make request to test that the new endpoint is working
+          setTimeout(function () {
+            request(connectionString)
+            .get('/api/collections')
+            .set('Authorization', 'Bearer ' + bearerToken)
+            .expect(200)
+            .expect('content-type', 'application/json')
+            .end((err, res) => {
+              var collections = res.body.collections
+              collections.should.be.Array
+
+              // var names = _.pluck(collections, 'name')
+              // _.contains(names, 'media').should.eql(true)
+              var collection = _.findWhere(collections, { name: 'media' })
+              should.exist(collection)
+              collection.type.should.eql('media')
+              done()
+            })
+          }, 300)
+        })
+      })
     })
 
     describe('DELETE', function () {
@@ -2597,7 +2955,6 @@ describe('Application', function () {
           done()
         })
       })
-
     })
 
     after(function (done) {
@@ -2785,7 +3142,7 @@ describe('Application', function () {
               should.exist(endpoint.path)
             })
 
-            var endpointWithDisplayName = _.find(res.body.endpoints, function(endpoint) {
+            var endpointWithDisplayName = _.find(res.body.endpoints, function (endpoint) {
               return endpoint.name === 'Test Endpoint'
             })
 
@@ -2808,7 +3165,6 @@ describe('Application', function () {
   })
 
   describe('hooks config api', function () {
-
     before(function (done) {
       app.start(function () {
         help.getBearerTokenWithAccessType('admin', function (err, token) {
@@ -2864,7 +3220,7 @@ describe('Application', function () {
       request(connectionString)
       .get('/api/hooks/slugify/config')
       .set('Authorization', 'Bearer ' + bearerToken)
-      .end(function(err, res) {
+      .end(function (err, res) {
         res.statusCode.should.eql(200)
         res.text.should.not.eql('')
         done()

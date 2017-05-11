@@ -60,10 +60,10 @@ Controller.prototype.get = function (req, res, next) {
   this.model.get(query, queryOptions, done, req)
 }
 
-Controller.prototype.prepareQueryOptions = function (options) {
+Controller.prototype.prepareQueryOptions = function (options, modelSettings) {
   var response = { errors: [] }
   var queryOptions = {}
-  var settings = this.model.settings || {}
+  var settings = modelSettings || {}
 
   if (options.search) {
     let searchQuery = parseQuery(options.search)
@@ -116,8 +116,8 @@ Controller.prototype.prepareQueryOptions = function (options) {
     _.extend(queryOptions.fields, JSON.parse(options.fields))
   }
 
-  if (typeof this.model.settings.fieldLimiters === 'object') {
-    _.extend(queryOptions.fields, this.model.settings.fieldLimiters)
+  if (typeof modelSettings.fieldLimiters === 'object') {
+    _.extend(queryOptions.fields, modelSettings.fieldLimiters)
   }
 
   // compose / reference fields
@@ -151,27 +151,36 @@ Controller.prototype.prepareQueryOptions = function (options) {
   return response
 }
 
-Controller.prototype.keyValidForSchema = function (key) {
-  if (key !== '_id' && this.model.schema.hasOwnProperty(key) === false) {
-    // check for dot notation so we can determine the datatype of the first part of the key
-    if (key.indexOf('.') > 0) {
-      var keyParts = key.split('.')
-      if (this.model.schema.hasOwnProperty(keyParts[0])) {
-        if (/Mixed|Object|Reference/.test(this.model.schema[keyParts[0]].type)) {
-          return true
-        }
-      }
-    }
-
-    // field/key doesn't exist in the schema
-    return false
-  }
-
-  // key exists in the schema, or
-  return true
+var Controller = function (model) {
+  if (!model) throw new Error('Model instance required')
+  this.model = model
 }
 
-Controller.prototype.prepareQuery = function (req) {
+Controller.prototype.get = function (req, res, next) {
+  var path = url.parse(req.url, true)
+  var options = path.query
+
+  // determine if this is jsonp
+  var done = options.callback ? sendBackJSONP(options.callback, res, next) : sendBackJSON(200, res, next)
+
+  var query = this.prepareQuery(req)
+  var queryOptions = this.prepareQueryOptions(options)
+
+  if (queryOptions.errors.length !== 0) {
+    done = sendBackJSON(400, res, next)
+    return done(null, queryOptions)
+  } else {
+    queryOptions = queryOptions.queryOptions
+  }
+
+  this.model.get(query, queryOptions, done, req)
+}
+
+Controller.prototype.prepareQueryOptions = function (options) {
+  return prepareQueryOptions(options, this.model.settings)
+}
+
+function prepareQuery (req, model) {
   var path = url.parse(req.url, true)
   var apiVersion = path.pathname.split('/')[1]
   var options = path.query
@@ -182,17 +191,17 @@ Controller.prototype.prepareQuery = function (req) {
   // remove filter params that don't exist in
   // the model schema
   if (!_.isArray(query)) {
-    _.each(Object.keys(query), function (key) {
-      if (!this.keyValidForSchema(key)) {
+    _.each(Object.keys(query), (key) => {
+      if (!help.keyValidForSchema(model, key)) {
         delete query[key]
       } else {
-        if (this.model.schema[key]) {
-          var fieldType = this.model.schema[key].type
+        if (model.schema[key]) {
+          var fieldType = model.schema[key].type
 
           help.transformQuery(query[key], fieldType)
         }
       }
-    }, this)
+    })
   }
 
   if (search && search.value) {
@@ -210,10 +219,14 @@ Controller.prototype.prepareQuery = function (req) {
   }
 
   // add the model's default filters, if set
-  if (typeof this.model.settings.defaultFilters === 'object') {
-    _.extend(query, this.model.settings.defaultFilters)
+  if (typeof model.settings.defaultFilters === 'object') {
+    _.extend(query, model.settings.defaultFilters)
   }
   return query
+}
+
+Controller.prototype.prepareQuery = function (req) {
+  return prepareQuery(req, this.model)
 }
 
 Controller.prototype.post = function (req, res, next) {
@@ -336,3 +349,5 @@ module.exports = function (model) {
 }
 
 module.exports.Controller = Controller
+module.exports.prepareQuery = prepareQuery
+module.exports.prepareQueryOptions = prepareQueryOptions

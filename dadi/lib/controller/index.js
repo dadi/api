@@ -48,7 +48,7 @@ Controller.prototype.get = function (req, res, next) {
   var done = options.callback ? sendBackJSONP(options.callback, res, next) : sendBackJSON(200, res, next)
 
   var query = this.prepareQuery(req)
-  var queryOptions = this.prepareQueryOptions(options)
+  var queryOptions = prepareQueryOptions(options)
 
   if (queryOptions.errors.length !== 0) {
     done = sendBackJSON(400, res, next)
@@ -60,7 +60,7 @@ Controller.prototype.get = function (req, res, next) {
   this.model.get(query, queryOptions, done, req)
 }
 
-Controller.prototype.prepareQueryOptions = function (options, modelSettings) {
+const prepareQueryOptions = function (options, modelSettings) {
   var response = { errors: [] }
   var queryOptions = {}
   var settings = modelSettings || {}
@@ -151,11 +151,6 @@ Controller.prototype.prepareQueryOptions = function (options, modelSettings) {
   return response
 }
 
-var Controller = function (model) {
-  if (!model) throw new Error('Model instance required')
-  this.model = model
-}
-
 Controller.prototype.get = function (req, res, next) {
   var path = url.parse(req.url, true)
   var options = path.query
@@ -164,7 +159,7 @@ Controller.prototype.get = function (req, res, next) {
   var done = options.callback ? sendBackJSONP(options.callback, res, next) : sendBackJSON(200, res, next)
 
   var query = this.prepareQuery(req)
-  var queryOptions = this.prepareQueryOptions(options)
+  var queryOptions = prepareQueryOptions(options)
 
   if (queryOptions.errors.length !== 0) {
     done = sendBackJSON(400, res, next)
@@ -331,7 +326,7 @@ Controller.prototype.count = function (req, res, next) {
   var options = url.parse(req.url, true).query
 
   var query = this.prepareQuery(req)
-  var queryOptions = this.prepareQueryOptions(options)
+  var queryOptions = prepareQueryOptions(options)
 
   if (queryOptions.errors.length !== 0) {
     return sendBackJSON(400, res, next)(null, queryOptions)

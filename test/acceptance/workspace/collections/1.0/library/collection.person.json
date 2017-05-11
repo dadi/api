@@ -1,0 +1,32 @@
+{
+  "fields": {
+    "name": {
+      "type": "String",
+      "required": true
+    },
+    "occupation": {
+      "type": "String",
+      "required": false
+    },
+    "nationality": {
+      "type": "String",
+      "required": false
+    },
+    "education": {
+      "type": "String",
+      "required": false
+    },
+    "spouse": {
+      "type": "Reference"
+    }
+  },
+  "settings": {
+    "cache": false,
+    "authenticate": true,
+    "callback": null,
+    "defaultFilters": null,
+    "fieldLimiters": null,
+    "count": 40,
+    "lastModifiedAt": 1494530706644
+  }
+}

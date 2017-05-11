@@ -86,7 +86,7 @@ Composer.prototype.composeOne = function (doc, callback) {
               doc[key] = result.results
             }
 
-            if (result.results[0].apiVersion === 'media') {
+            if (result.results.length && result.results[0].apiVersion === 'media') {
               isMediaDocument = true
             }
           }

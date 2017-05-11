@@ -32,10 +32,7 @@
     "mkdirp": "^0.5.1",
     "moment": "2.18.0",
     "mongodb": "~1.4.8",
-<<<<<<< HEAD
     "natural": "^0.5.0",
-=======
->>>>>>> eaafb4980b20881b2c07bb9b611ecb0f80096114
     "parse-comments": "0.4.3",
     "path-to-regexp": "~1.7.0",
     "request": "2.80.0",
@@ -45,12 +42,7 @@
     "streamifier": "^0.1.1",
     "underscore": "~1.8.0",
     "underscore.string": "^3.2.2",
-<<<<<<< HEAD
-    "uuid": "latest",
-    "validate-commit-message": "^3.0.1"
-=======
     "uuid": "latest"
->>>>>>> eaafb4980b20881b2c07bb9b611ecb0f80096114
   },
   "devDependencies": {
     "aws-sdk-mock": "^1.6.1",

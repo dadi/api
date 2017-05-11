@@ -222,6 +222,7 @@ function prepareQuery (req, model) {
   if (typeof model.settings.defaultFilters === 'object') {
     _.extend(query, model.settings.defaultFilters)
   }
+  
   return query
 }
 

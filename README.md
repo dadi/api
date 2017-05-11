@@ -1,11 +1,7 @@
 <img src="http://52.209.207.148/assets/products/dadi-api-full.png" alt="DADI API" height="65"/>
 
 [![npm (scoped)](https://img.shields.io/npm/v/@dadi/api.svg?maxAge=10800&style=flat-square)](https://www.npmjs.com/package/@dadi/api)
-<<<<<<< HEAD
-[![coverage](https://img.shields.io/badge/coverage-84%25-yellow.svg?style=flat?style=flat-square)](https://github.com/dadi/api)
-=======
 [![coverage](https://img.shields.io/badge/coverage-87%25-yellow.svg?style=flat?style=flat-square)](https://github.com/dadi/api)
->>>>>>> eaafb4980b20881b2c07bb9b611ecb0f80096114
 [![Build Status](https://travis-ci.org/dadi/api.svg?branch=master)](https://travis-ci.org/dadi/api)
 [![JavaScript Style Guide](https://img.shields.io/badge/code%20style-standard-brightgreen.svg?style=flat-square)](http://standardjs.com/)
 

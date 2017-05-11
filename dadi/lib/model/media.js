@@ -59,18 +59,23 @@ MediaModel.prototype.getSchema = function () {
   }
 }
 
-MediaModel.prototype.formatDocument = function (document) {
-  const formattedDocument = Object.assign({}, document)
+MediaModel.prototype.formatDocuments = function (documents) {
+  const multiple = documents instanceof Array
+  const output = (multiple ? documents : [documents]).map(document => {
+    const formattedDocument = Object.assign({}, document)
 
-  // Is this a relative path to a file in the disk? If so, we need to prepend
-  // the API URL.
-  if (formattedDocument.path.indexOf('/') === 0) {
-    formattedDocument.path = this.getURLForPath(formattedDocument.path)
-  }
+    // Is this a relative path to a file in the disk? If so, we need to prepend
+    // the API URL.
+    if (formattedDocument.path.indexOf('/') === 0) {
+      formattedDocument.path = this.getURLForPath(formattedDocument.path)
+    }
 
-  delete formattedDocument.apiVersion
+    delete formattedDocument.apiVersion
 
-  return formattedDocument
+    return formattedDocument
+  })
+
+  return multiple ? output : output[0]
 }
 
 MediaModel.prototype.getURLForPath = function (path) {

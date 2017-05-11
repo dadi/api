@@ -36,7 +36,7 @@ MediaController.prototype.get = function (req, res, next) {
 
   const callback = (err, response) => {
     response.results = response.results.map(document => {
-      return mediaModel.formatDocument(document)
+      return mediaModel.formatDocuments(document)
     })
 
     help.sendBackJSON(200, res, next)(err, response)
@@ -186,7 +186,7 @@ MediaController.prototype.post = function (req, res, next) {
 
         const callback = (err, response) => {
           response.results = response.results.map(document => {
-            return mediaModel.formatDocument(document)
+            return mediaModel.formatDocuments(document)
           })
 
           help.sendBackJSON(201, res, next)(err, response)

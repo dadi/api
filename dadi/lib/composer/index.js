@@ -1,3 +1,5 @@
+'use strict'
+
 var _ = require('underscore')
 var path = require('path')
 var mediaModel = require(path.join(__dirname, '../model/media'))
@@ -75,19 +77,25 @@ Composer.prototype.composeOne = function (doc, callback) {
         model.find(query, { 'compose': compose, 'fields': fields }, (err, result) => {
           if (err) console.log(err)
 
+          let isMediaDocument = false
+
           if (result) {
             if (result.results.length === 1 && returnArray === false) {
               doc[key] = result.results[0]
             } else {
               doc[key] = result.results
             }
+
+            if (result.results[0].apiVersion === 'media') {
+              isMediaDocument = true
+            }
           }
 
           // Are we composing a media document? If so, we need to format it
           // before returning. This should really go somewhere else, it needs
           // to be revisited! --eb 03/05/2017
-          if (doc[key].apiVersion === 'media') {
-            doc[key] = mediaModel.formatDocument(doc[key])
+          if (isMediaDocument) {
+            doc[key] = mediaModel.formatDocuments(doc[key])
           }
 
           if (!doc.composed) doc.composed = {}

@@ -53,7 +53,7 @@ function isMediaEndpoint (endpoint, req) {
   return endpoint.model &&
     endpoint.model.settings &&
     endpoint.model.settings.type &&
-    endpoint.model.settings.type === 'media'
+    endpoint.model.settings.type === 'mediaCollection'
 }
 
 function isAuthorized (endpoints, req, client) {

@@ -1,3 +1,5 @@
+'use strict';
+
 const path = require('path')
 const config = require(path.join(__dirname, '/../../../config'))
 
@@ -54,7 +56,7 @@ MediaModel.prototype.getSchema = function () {
       count: 40,
       sortOrder: 1,
       storeRevisions: false,
-      type: 'media'
+      type: 'mediaCollection'
     }
   }
 }

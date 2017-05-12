@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## [1.16.5] (2017-05-12)
+
+### Changed
+* [#260](https://github.com/dadi/api/issues/260): change media collection type to "mediaCollection"
+
+## [1.16.4] (2017-05-12)
+
+### Changed
+* [#211](https://github.com/dadi/api/issues/211): fix composition so it doesn't return before all fields have been composed
+
 ## [1.15.5] (2017-03-30)
 
 ### Changed

@@ -2814,7 +2814,7 @@ describe('Application', function () {
               // _.contains(names, 'media').should.eql(true)
               var collection = _.findWhere(collections, { name: 'media' })
               should.exist(collection)
-              collection.type.should.eql('media')
+              collection.type.should.eql('mediaCollection')
               done()
             })
           }, 300)

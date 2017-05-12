@@ -34,7 +34,9 @@ Composer.prototype.composeOne = function (doc, callback) {
 
   if (_.isEmpty(composable)) return callback(doc)
 
-  _.each(composable, (key, idx) => {
+  var keyIdx = 0
+
+  _.each(composable, (key) => {
     var query = {}
     var returnArray = false
     var value = doc[key]
@@ -42,7 +44,7 @@ Composer.prototype.composeOne = function (doc, callback) {
     if (!value) return callback(null)
 
     if (value.constructor === Object) {
-      if (idx === composable.length - 1) {
+      if (keyIdx === composable.length) {
         callback(doc)
       }
     } else {
@@ -102,7 +104,9 @@ Composer.prototype.composeOne = function (doc, callback) {
             })
           }
 
-          if (idx === composable.length - 1) {
+          keyIdx++
+
+          if (keyIdx === composable.length) {
             callback(doc)
           }
         })

@@ -76,51 +76,49 @@ Validator.prototype._parseDocument = function (obj, schema, response) {
   var err // eslint-disable-line
 
   keys.forEach((key) => {
-    // handle objects first
-    if (typeof obj[key] === 'object') {
-      if (schema[key] && (schema[key].type === 'Mixed' || schema[key].type === 'Object')) {
-        // do nothing
-      } else if (schema[key] && schema[key].type === 'Reference') {
-        // bah!
-      } else if (obj[key] !== null && !util.isArray(obj[key])) {
-        this._parseDocument(obj[key], schema, response)
-      } else if (obj[key] !== null && schema[key] && schema[key].type === 'ObjectID' && util.isArray(obj[key])) {
-        err = this._validate(obj[key], schema[key], key)
-
-        if (err) {
-          response.success = false
-          response.errors.push({field: key, message: err})
-        }
-      } else if (util.isArray(obj[key]) && schema[key] && (schema[key].type === 'String')) {
-        // We allow type `String` to actually be an array of Strings. When this
-        // happens, we run the validation against the combination of all strings
-        // glued together.
-
-        err = this._validate(obj[key].join(''), schema[key], key)
-
-        if (err) {
-          response.success = false
-          response.errors.push({field: key, message: err})
-        }
-      }
+    if (!schema[key]) {
+      response.success = false
+      response.errors.push({
+        collection: this.model.name,
+        field: key,
+        message: "doesn't exist in the collection schema",
+        data: obj
+      })
     } else {
-      if (!schema[key]) {
-        response.success = false
-        response.errors.push({
-          collection: this.model.name,
-          field: key,
-          message: "doesn't exist in the collection schema",
-          data: obj
-        })
+      // handle objects first
+      if (typeof obj[key] === 'object') {
+        if (schema[key] && (schema[key].type === 'Mixed' || schema[key].type === 'Object')) {
+          // do nothing
+        } else if (schema[key] && schema[key].type === 'Reference') {
+          // bah!
+        } else if (obj[key] !== null && !util.isArray(obj[key])) {
+          this._parseDocument(obj[key], schema, response)
+        } else if (obj[key] !== null && schema[key] && schema[key].type === 'ObjectID' && util.isArray(obj[key])) {
+          err = this._validate(obj[key], schema[key], key)
 
-        return
-      }
+          if (err) {
+            response.success = false
+            response.errors.push({field: key, message: err})
+          }
+        } else if (util.isArray(obj[key]) && schema[key] && (schema[key].type === 'String')) {
+          // We allow type `String` to actually be an array of Strings. When this
+          // happens, we run the validation against the combination of all strings
+          // glued together.
 
-      var err = this._validate(obj[key], schema[key], key)
+          err = this._validate(obj[key].join(''), schema[key], key)
 
-      if (err) {
-        response.success = false
-        response.errors.push({field: key, message: err})
+          if (err) {
+            response.success = false
+            response.errors.push({field: key, message: err})
+          }
+        }
+      } else {
+        var err = this._validate(obj[key], schema[key], key)
+
+        if (err) {
+          response.success = false
+          response.errors.push({field: key, message: err})
+        }
       }
     }
   })

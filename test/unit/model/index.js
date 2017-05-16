@@ -1050,8 +1050,6 @@ describe('Model', function () {
               book.create({title: 'Harry Potter 2', author: id, booksInSeries: books}, function (err, result) {
                 // find a book
                 book.find({ title: 'Harry Potter 2' } , { 'compose': true }, function (err, result) {
-                  // console.log(JSON.stringify(result, null, 2))
-
                   var doc = result.results[0]
                   should.exist(doc.author.name)
                   doc.author.name.should.equal('J K Rowling')
@@ -1091,7 +1089,7 @@ describe('Model', function () {
                   should.exist(doc.author.name)
                   should.not.exist(doc.author.spouse.name)
 
-                  done()
+                  return done()
                 })
               })
             })
@@ -1120,13 +1118,11 @@ describe('Model', function () {
               book.create({title: 'Harry Potter 2', author: id, booksInSeries: books}, function (err, result) {
                 // find a book
                 book.find({ title: 'Harry Potter 2' } , { 'compose': true }, function (err, result) {
-                  // console.log(JSON.stringify(result, null, 2))
-
                   var doc = result.results[0]
                   should.exist(doc.author.name)
                   should.exist(doc.author.spouse.name)
 
-                  done()
+                  return done()
                 })
               })
             })
@@ -1135,7 +1131,6 @@ describe('Model', function () {
       })
 
       it('should populate a reference field containing an array of ObjectIDs', function (done) {
-
         // find a doc
         mod.find({ fieldName: { '$regex': 'foo' } } , {}, function (err, result) {
           // remove foo_1 from the results so we can add the remaining docs

@@ -745,7 +745,7 @@ Server.prototype.addCollectionResource = function (options) {
 
   mod = model(options.name, JSON.parse(fields), null, settings, database)
 
-  if (settings.type && settings.type === 'media') {
+  if (settings.type && settings.type === 'mediaCollection') {
     control = MediaController(mod)
   } else {
     control = controller(mod)
@@ -976,7 +976,7 @@ Server.prototype.addComponent = function (options) {
   var isMedia = options.component.model &&
     options.component.model.settings &&
     options.component.model.settings.type &&
-    options.component.model.settings.type === 'media'
+    options.component.model.settings.type === 'mediaCollection'
 
   if (!isMedia) {
     this.app.use(options.route, function (req, res, next) {

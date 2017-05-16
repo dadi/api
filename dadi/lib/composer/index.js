@@ -29,7 +29,11 @@ Composer.prototype.compose = function (obj, callback) {
   //   query model using array of ids and fields object
   //   populate each document's composable property with results
 
-  _.each(composable, (field, fieldIdx) => {
+  var queue = []
+  var data = {}
+
+  for (var i = 0; i < composable.length; i++) {
+    var field = composable[i]
     var ids = _.pluck(obj, field)
 
     if (Array.isArray(ids[0])) {
@@ -38,53 +42,68 @@ Composer.prototype.compose = function (obj, callback) {
 
     var fields = this.getFields(field)
     var query = { '_id': { '$in': _.map(ids, id => { return id.toString() }) } }
-
     var model = this.getModel(field)
 
     if (model) {
       var compose = this.getComposeValue(field, model)
 
-      model.find(query, { 'compose': compose, 'fields': fields }, (err, result) => {
-        if (err) console.log(err)
+      queue.push(
+        new Promise((resolve, reject) => {
+          var f = field
 
-        var results = result.results
-
-        _.each(obj, (document, docIdx) => {
-          var isArray = Array.isArray(document[field])
-          var originalValue = isArray ? document[field] : [document[field]]
-
-          // add the composed property indicating original values
-          if (!document.composed) document.composed = {}
-          document.composed[field] = isArray ? originalValue : originalValue[0]
-
-          if (isArray) {
-            document[field] = []
-          }
-
-          _.each(originalValue, (id, idx) => {
-            var result = _.filter(results, r => { return r._id.toString() === id.toString() })
-
-            if (isArray) {
-              document[field].push(result[0])
-            } else {
-              document[field] = result[0]
-            }
-
-            if (
-              fieldIdx === composable.length - 1 &&
-              docIdx === obj.length - 1 &&
-              idx === originalValue.length - 1
-            ) {
-              return callback(obj)
-            }
+          model.find(query, { 'compose': compose, 'fields': fields }, (err, result) => {
+            if (err) console.log(err)
+            data[f] = result.results
+            return resolve()
           })
         })
-      })
-    } else {
-      if (fieldIdx === composable.length - 1) {
-        return callback(obj)
-      }
+      )
     }
+  }
+
+  Promise.all(queue).then(results => {
+    var fields = Object.keys(data)
+    var fieldNum = 0
+
+    _.each(fields, (field) => {
+      var docIdx = 0
+      fieldNum++
+
+      var fieldData = data[field]
+
+      _.each(obj, (document) => {
+        var isArray = Array.isArray(document[field])
+        var originalValue = isArray ? document[field] : [document[field]]
+
+        // add the composed property indicating original values
+        if (!document.composed) document.composed = {}
+        document.composed[field] = isArray ? originalValue : originalValue[0]
+
+        if (isArray) {
+          document[field] = []
+        }
+
+        docIdx++
+
+        var idx = 0
+
+        _.each(originalValue, (id) => {
+          var results = _.filter(fieldData, r => { return r._id.toString() === id.toString() })
+
+          if (isArray) {
+            document[field].push(results[0])
+          } else {
+            document[field] = results[0]
+          }
+
+          idx++
+
+          if (fieldNum === fields.length && docIdx === obj.length && idx === originalValue.length) {
+            return callback(obj)
+          }
+        })
+      })
+    })
   })
 }
 

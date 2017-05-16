@@ -46,7 +46,7 @@ function isMediaEndpoint (endpoint, req) {
   var isMedia = endpoint.model &&
     endpoint.model.settings &&
     endpoint.model.settings.type &&
-    endpoint.model.settings.type === 'media'
+    endpoint.model.settings.type === 'mediaCollection'
 
   if (isMedia && (req.params.token || req.params.filename)) {
     return true

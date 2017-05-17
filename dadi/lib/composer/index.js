@@ -34,7 +34,7 @@ Composer.prototype.compose = function (obj, callback) {
 
   for (var i = 0; i < composable.length; i++) {
     var field = composable[i]
-    var ids = _.pluck(obj, field)
+    var ids = _.uniq(_.compact(_.pluck(obj, field)))
 
     if (Array.isArray(ids[0])) {
       ids = _.flatten(ids)
@@ -88,12 +88,20 @@ Composer.prototype.compose = function (obj, callback) {
         var idx = 0
 
         _.each(originalValue, (id) => {
-          var results = _.filter(fieldData, r => { return r._id.toString() === id.toString() })
+          var results = _.filter(fieldData, r => { return id && r._id.toString() === id.toString() })
 
           if (isArray) {
-            document[field].push(results[0])
+            if (_.isEmpty(results)) {
+              document[field].push(id)
+            } else {
+              document[field].push(results[0])
+            }
           } else {
-            document[field] = results[0]
+            if (_.isEmpty(results)) {
+              document[field] = id
+            } else {
+              document[field] = results[0]
+            }
           }
 
           idx++

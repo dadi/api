@@ -24,7 +24,7 @@
     "console-stamp": "^0.2.0",
     "convict": "3.0.0",
     "imagesize": "^1.0.0",
-    "jsonwebtoken": "^7.3.0",
+    "jsonwebtoken": "^7.4.1",
     "length-stream": "^0.1.1",
     "mkdirp": "^0.5.1",
     "moment": "2.18.0",

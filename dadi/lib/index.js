@@ -1008,7 +1008,6 @@ Server.prototype.addComponent = function (options) {
         if (options.filepath.slice(-5) === '.json') {
           return help.sendBackJSON(200, res, next)(null, require(options.filepath))
         }
-      // continue
       }
 
       // set schema
@@ -1029,18 +1028,11 @@ Server.prototype.addComponent = function (options) {
             help.sendBackJSON(200, res, next)(err, {result: 'success'})
           })
         }
-      // continue
       }
 
       next()
     })
 
-  var isMedia = options.component.model &&
-    options.component.model.settings &&
-    options.component.model.settings.type &&
-    options.component.model.settings.type === 'mediaCollection'
-
-  if (!isMedia) {
     this.app.use(options.route, function (req, res, next) {
       try {
         // map request method to controller method

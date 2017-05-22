@@ -389,6 +389,43 @@ describe('Media', function () {
           })
         })
       })
+
+      it('should list media buckets in /api/collections endpoint', function (done) {
+        var additionalBuckets = ['bucketOne', 'bucketTwo']
+        var defaultBucket = config.get('media.defaultBucket')
+        var allBuckets = additionalBuckets.concat(defaultBucket)
+
+        var originalBuckets = config.get('media.buckets')
+
+        config.set('media.buckets', additionalBuckets)
+
+        var client = request(connectionString)
+
+        client
+        .get('/api/collections')
+        .set('Authorization', 'Bearer ' + bearerToken)
+        .set('content-type', 'application/json')
+        .expect(200)
+        .end((err, res) => {
+          if (err) return done(err)
+
+          should.exist(res.body.media)
+
+          res.body.media.defaultBucket.should.be.String
+          res.body.media.defaultBucket.should.eql(defaultBucket)
+
+          res.body.media.buckets.should.be.Array
+          res.body.media.buckets.length.should.eql(allBuckets.length)
+          res.body.media.buckets.forEach(bucket => {
+            allBuckets.indexOf(bucket).should.not.eql(-1)
+          })
+
+          // Restore original list of buckets
+          config.set('media.buckets', originalBuckets)
+
+          done()
+        })
+      })
     })
   })
 

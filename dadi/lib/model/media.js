@@ -69,7 +69,7 @@ MediaModel.prototype.formatDocuments = function (documents) {
     // Is this a relative path to a file in the disk? If so, we need to prepend
     // the API URL.
     if (formattedDocument.path.indexOf('/') === 0) {
-      formattedDocument.path = this.getURLForPath(formattedDocument.path)
+      formattedDocument.url = this.getURLForPath(formattedDocument.path)
     }
 
     delete formattedDocument.apiVersion

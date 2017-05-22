@@ -1035,6 +1035,12 @@ Server.prototype.addComponent = function (options) {
       next()
     })
 
+  var isMedia = options.component.model &&
+    options.component.model.settings &&
+    options.component.model.settings.type &&
+    options.component.model.settings.type === 'mediaCollection'
+
+  if (!isMedia) {
     this.app.use(options.route, function (req, res, next) {
       try {
         // map request method to controller method

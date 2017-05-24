@@ -41,7 +41,7 @@ Composer.prototype.composeOne = function (doc, callback) {
     var returnArray = false
     var value = doc[key]
 
-    if (!value) return callback(null)
+    if (!value && typeof value !== 'undefined') return callback(null)
 
     if (value.constructor === Object) {
       if (keyIdx === composable.length) {

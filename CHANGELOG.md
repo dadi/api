@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## [1.16.6] (2017-05-25)
+
+### Changed
+* improved check within composer module that ignores "undefined" values as well as "null"
+
 ## [1.16.5] (2017-05-12)
 
 ### Changed

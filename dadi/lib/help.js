@@ -116,13 +116,17 @@ module.exports.keyValidForSchema = function (model, key) {
 
 // Transforms strings from a query object into more appropriate types, based
 // on the field type
-module.exports.transformQuery = function (obj, type) {
+module.exports.transformQuery = function (obj, type, format) {
   var transformFunction
 
   switch (type) {
     case 'DateTime':
       transformFunction = function (obj) {
-        var parsedDate = new Moment(obj)
+        if (!format) {
+          format = 'YYYY-MM-DD'
+        }
+
+        var parsedDate = new Moment(obj, format)
 
         if (!parsedDate.isValid()) return obj
 

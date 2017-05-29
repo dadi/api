@@ -51,7 +51,7 @@ Store.prototype.get = function (token, done) {
 
 Store.prototype.set = function (token, value, done) {
   var _done = function (database) {
-    database.collection(storeCollectionName).insert({
+    database.collection(storeCollectionName).insertOne({
       token: token,
       tokenExpire: Date.now() + (config.get('auth.tokenTtl') * 1000),
       created: new Date(),

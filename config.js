@@ -129,6 +129,11 @@ var conf = convict({
         doc: '',
         format: String,
         default: ''
+    },
+    readPreference: {
+      doc: "Choose how MongoDB routes read operations to the members of a replica set - see https://docs.mongodb.com/manual/reference/read-preference/",
+      format: ['primary', 'primaryPreferred', 'secondary', 'secondaryPreferred', 'nearest'],
+      default: 'secondaryPreferred'
       },
       enableCollectionDatabases: {
         doc: '',

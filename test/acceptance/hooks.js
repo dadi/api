@@ -639,7 +639,6 @@ var articleSchema = {
 }
 
 var slugifyHook = ''
-slugifyHook += 'var slugify = require("underscore.string/slugify")\n'
 slugifyHook += 'var _ = require("underscore")\n'
 slugifyHook += '\n'
 slugifyHook += 'var getFieldValue = function(fieldName, object) {\n'
@@ -661,7 +660,7 @@ slugifyHook += '    var object = _.clone(obj)\n'
 slugifyHook += '    //console.log(object)\n'
 slugifyHook += '    var field = getFieldValue(data.options.override, object) || getFieldValue(data.options.from, object)\n'
 slugifyHook += '    if (field) {\n'
-slugifyHook += '      obj[data.options.to] = slugify(field)\n'
+slugifyHook += '      obj[data.options.to] = field.toLowerCase()\n'
 slugifyHook += '    }\n'
 slugifyHook += '    return obj\n'
 slugifyHook += '}\n'

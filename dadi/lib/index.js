@@ -538,18 +538,13 @@ Server.prototype.loadCollectionRoute = function () {
 
     data.collections = _.sortBy(collections, 'path')
 
-    // Adding media collections. For now, this will contain a single entry, but
-    // it's still worth keeping it as an array in case we support multiple media
-    // collections in the future, avoiding breaking changes.
-    // var mediaCollections = []
-    //
-    // if (config.get('media.enabled')) {
-    //   mediaCollections = [Object.assign({}, MediaModel.Schema, {
-    //     name: config.get('media.collection')
-    //   })]
-    // }
-    //
-    // data.mediaCollections = mediaCollections
+    // Adding media buckets
+    const buckets = config.get('media.buckets').concat(config.get('media.defaultBucket'))
+
+    data.media = {
+      buckets: buckets,
+      defaultBucket: config.get('media.defaultBucket')
+    }
 
     return help.sendBackJSON(200, res, next)(null, data)
   })

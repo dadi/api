@@ -1,9 +1,11 @@
 var should = require('should')
+var sinon = require('sinon')
 var fs = require('fs')
 var path = require('path')
 var request = require('supertest')
 var _ = require('underscore')
 var EventEmitter = require('events').EventEmitter
+var FormData = require('form-data')
 var connection = require(__dirname + '/../../dadi/lib/model/connection')
 var config = require(__dirname + '/../../config')
 var help = require(__dirname + '/help')
@@ -870,7 +872,286 @@ describe('Application', function () {
         })
       })
 
+      it.skip('should use apiVersion when getting reference documents if useVersionFilter is set to true', function (done) {
+        config.set('query.useVersionFilter', true)
+
+        var bookSchema = {
+          fields: {
+            'title': { 'type': 'String', 'required': true },
+            'author': { 'type': 'Reference',
+              'settings': { 'collection': 'person', 'fields': ['name', 'spouse'] }
+            },
+            'booksInSeries': {
+              'type': 'Reference',
+              'settings': { 'collection': 'book', 'multiple': true }
+            }
+          },
+          settings: {
+            cache: false,
+            authenticate: true,
+            callback: null,
+            defaultFilters: null,
+            fieldLimiters: null,
+            count: 40,
+          }
+        }
+
+        var personSchema = {
+          fields: {
+            'name': { 'type': 'String', 'required': true },
+            'occupation': { 'type': 'String', 'required': false },
+            'nationality': { 'type': 'String', 'required': false },
+            'education': { 'type': 'String', 'required': false },
+            'spouse': { 'type': 'Reference' }
+          },
+          settings: {
+            cache: false,
+            authenticate: true,
+            callback: null,
+            defaultFilters: null,
+            fieldLimiters: null,
+            count: 40,
+          }
+        }
+
+        // create new API endpoint
+        var client = request(connectionString)
+
+        client
+        .post('/1.0/library/book/config')
+        .send(JSON.stringify(bookSchema))
+        .set('content-type', 'text/plain')
+        .set('Authorization', 'Bearer ' + bearerToken)
+        .expect(200)
+        .expect('content-type', 'application/json')
+        .end((err, res) => {
+          if (err) return done(err)
+
+          client
+          .post('/1.0/library/person/config')
+          .send(JSON.stringify(personSchema))
+          .set('content-type', 'text/plain')
+          .set('Authorization', 'Bearer ' + bearerToken)
+          .expect(200)
+          .expect('content-type', 'application/json')
+          .end((err, res) => {
+            if (err) return done(err)
+
+            // create some docs
+            client
+            .post('/1.0/library/person')
+            .send({name: 'Neil Murray'})
+            .set('content-type', 'application/json')
+            .set('Authorization', 'Bearer ' + bearerToken)
+            .expect(200)
+            .end((err, res) => {
+              var id = res.body.results[0]._id
+
+              client
+              .post('/1.0/library/person')
+              .send({name: 'J K Rowling', spouse: id})
+              .set('content-type', 'application/json')
+              .set('Authorization', 'Bearer ' + bearerToken)
+              .expect(200)
+              .end((err, res) => {
+                id = res.body.results[0]._id
+
+                client
+                .post('/1.0/library/book')
+                .send({title: 'Harry Potter 1', author: id})
+                .set('content-type', 'application/json')
+                .set('Authorization', 'Bearer ' + bearerToken)
+                .expect(200)
+                .end((err, res) => {
+                  var bookid = res.body.results[0]._id
+                  var books = []
+                  books.push(bookid)
+
+                  client
+                  .post('/1.0/library/book')
+                  .send({title: 'Harry Potter 2', author: id, booksInSeries: books})
+                  .set('content-type', 'application/json')
+                  .set('Authorization', 'Bearer ' + bearerToken)
+                  .expect(200)
+                  .end((err, res) => {
+                    // find a book
+
+                    var Model = require(__dirname + '/../../dadi/lib/model/index.js')
+                    var spy = sinon.spy(Model.Model.prototype, 'find')
+
+                    client
+                    .get('/1.0/library/book?filter={ "title": "Harry Potter 2" }&compose=true')
+                    .send({title: 'Harry Potter 2', author: id, booksInSeries: books})
+                    .set('content-type', 'application/json')
+                    .set('Authorization', 'Bearer ' + bearerToken)
+                    .expect(200)
+                    .end((err, res) => {
+                      var args = spy.args
+                      spy.restore()
+                      config.set('query.useVersionFilter', false)
+
+                      // apiVersion should be in the query passed to find
+                      args.forEach((arg) => {
+                        should.exist(arg[0].apiVersion)
+                      })
+
+                      var results = res.body.results
+                      results.should.be.Array
+                      results.length.should.eql(1)
+
+                      done()
+                    })
+                  })
+                })
+              })
+            })
+          })
+        })
+      })
+
+      it('should not use apiVersion when getting reference documents if useVersionFilter is set to false', function (done) {
+        config.set('query.useVersionFilter', false)
+
+        var bookSchema = {
+          fields: {
+            'title': { 'type': 'String', 'required': true },
+            'author': { 'type': 'Reference',
+              'settings': { 'collection': 'person', 'fields': ['name', 'spouse'] }
+            },
+            'booksInSeries': {
+              'type': 'Reference',
+              'settings': { 'collection': 'book', 'multiple': true }
+            }
+          },
+          settings: {
+            cache: false,
+            authenticate: true,
+            callback: null,
+            defaultFilters: null,
+            fieldLimiters: null,
+            count: 40,
+          }
+        }
+
+        var personSchema = {
+          fields: {
+            'name': { 'type': 'String', 'required': true },
+            'occupation': { 'type': 'String', 'required': false },
+            'nationality': { 'type': 'String', 'required': false },
+            'education': { 'type': 'String', 'required': false },
+            'spouse': { 'type': 'Reference' }
+          },
+          settings: {
+            cache: false,
+            authenticate: true,
+            callback: null,
+            defaultFilters: null,
+            fieldLimiters: null,
+            count: 40,
+          }
+        }
+
+        // create new API endpoint
+        var client = request(connectionString)
+
+        client
+        .post('/1.0/library/book/config')
+        .send(JSON.stringify(bookSchema))
+        .set('content-type', 'text/plain')
+        .set('Authorization', 'Bearer ' + bearerToken)
+        .expect(200)
+        .expect('content-type', 'application/json')
+        .end((err, res) => {
+          if (err) return done(err)
+
+          client
+          .post('/1.0/library/person/config')
+          .send(JSON.stringify(personSchema))
+          .set('content-type', 'text/plain')
+          .set('Authorization', 'Bearer ' + bearerToken)
+          .expect(200)
+          .expect('content-type', 'application/json')
+          .end((err, res) => {
+            if (err) return done(err)
+
+            setTimeout(function() {
+              // create some docs
+              client
+              .post('/1.0/library/person')
+              .send({name: 'Neil Murray'})
+              .set('content-type', 'application/json')
+              .set('Authorization', 'Bearer ' + bearerToken)
+              .expect(200)
+              .end((err, res) => {
+                var id = res.body.results[0]._id
+
+                client
+                .post('/1.0/library/person')
+                .send({name: 'J K Rowling', spouse: id})
+                .set('content-type', 'application/json')
+                .set('Authorization', 'Bearer ' + bearerToken)
+                .expect(200)
+                .end((err, res) => {
+                  id = res.body.results[0]._id
+
+                  client
+                  .post('/1.0/library/book')
+                  .send({title: 'Harry Potter 1', author: id})
+                  .set('content-type', 'application/json')
+                  .set('Authorization', 'Bearer ' + bearerToken)
+                  .expect(200)
+                  .end((err, res) => {
+                    var bookid = res.body.results[0]._id
+                    var books = []
+                    books.push(bookid)
+
+                    client
+                    .post('/1.0/library/book')
+                    .send({title: 'Harry Potter 2', author: id, booksInSeries: books})
+                    .set('content-type', 'application/json')
+                    .set('Authorization', 'Bearer ' + bearerToken)
+                    .expect(200)
+                    .end((err, res) => {
+                      // find a book
+
+                      var Model = require(__dirname + '/../../dadi/lib/model/index.js')
+                      var spy = sinon.spy(Model.Model.prototype, 'find')
+
+                      client
+                      .get('/1.0/library/book?filter={ "title": "Harry Potter 2" }&compose=true')
+                      .send({title: 'Harry Potter 2', author: id, booksInSeries: books})
+                      .set('content-type', 'application/json')
+                      .set('Authorization', 'Bearer ' + bearerToken)
+                      .expect(200)
+                      .end((err, res) => {
+                        var args = spy.args
+                        spy.restore()
+
+                        config.set('query.useVersionFilter', true)
+
+                        // apiVersion should be in the query passed to find
+                        args.forEach((arg) => {
+                          should.not.exist(arg[0].apiVersion)
+                        })
+
+                        var results = res.body.results
+                        results.should.be.Array
+                        results.length.should.be.above(0)
+
+                        done()
+                      })
+                    })
+                  })
+                })
+              })
+            }, 1000)
+          })
+        })
+      })
+
       it('should ignore apiVersion when getting documents if useVersionFilter is not set', function (done) {
+        config.set('query.useVersionFilter', false)
+
         var jsSchemaString = fs.readFileSync(__dirname + '/../new-schema.json', {encoding: 'utf8'})
 
         help.createDoc(bearerToken, function (err, doc) {
@@ -2476,69 +2757,6 @@ describe('Application', function () {
           .set('Authorization', 'Bearer e91e69b4-6563-43bd-a793-cb2af4ba62f4') // invalid token
           .expect(401, done)
       })
-
-      it('should return all loaded collections', function (done) {
-        request(connectionString)
-          .get('/api/collections')
-          .set('Authorization', 'Bearer ' + bearerToken)
-          .expect(200)
-          .expect('content-type', 'application/json')
-          .end(function (err, res) {
-            if (err) return done(err)
-
-            res.body.should.be.Object
-            res.body.collections.should.be.Array
-
-            _.each(res.body.collections, function (collection) {
-              should.exist(collection.version)
-              should.exist(collection.database)
-              should.exist(collection.name)
-              should.exist(collection.slug)
-              should.exist(collection.path)
-
-              if (collection.lastModifiedAt) {
-                collection.lastModifiedAt.should.be.Number
-              }
-            })
-
-            done()
-          })
-      })
-
-      it('should return media collections', function (done) {
-        // mimic a file that could be sent to the server
-        var mediaSchema = fs.readFileSync(__dirname + '/../media-schema.json', {encoding: 'utf8'})
-        request(connectionString)
-        .post('/1.0/testdb/media/config')
-        .send(mediaSchema)
-        .set('content-type', 'text/plain')
-        .set('Authorization', 'Bearer ' + bearerToken)
-        .expect(200)
-        .expect('content-type', 'application/json')
-        .end(function (err, res) {
-          if (err) return done(err)
-
-          // Wait for a few seconds then make request to test that the new endpoint is working
-          setTimeout(function () {
-            request(connectionString)
-            .get('/api/collections')
-            .set('Authorization', 'Bearer ' + bearerToken)
-            .expect(200)
-            .expect('content-type', 'application/json')
-            .end((err, res) => {
-              var collections = res.body.collections
-              collections.should.be.Array
-
-              // var names = _.pluck(collections, 'name')
-              // _.contains(names, 'media').should.eql(true)
-              var collection = _.findWhere(collections, { name: 'media' })
-              should.exist(collection)
-              collection.type.should.eql('media')
-              done()
-            })
-          }, 300)
-        })
-      })
     })
 
     describe('DELETE', function () {
@@ -2920,11 +3138,11 @@ describe('Application', function () {
       })
     })
 
-    it('should return 400 if request method is not supported', function (done) {
+    it('should return 405 if request method is not supported', function (done) {
       request(connectionString)
-      .put('/api/hooks/xx/config')
+      .put('/api/hooks')
       .set('Authorization', 'Bearer ' + bearerToken)
-      .expect(400, done)
+      .expect(405, done)
     })
 
     it('should return 404 if specified hook is not found', function (done) {
@@ -2941,6 +3159,207 @@ describe('Application', function () {
       .end(function (err, res) {
         res.statusCode.should.eql(200)
         res.text.should.not.eql('')
+        done()
+      })
+    })
+
+    it('should create a hook with a POST request', function (done) {
+      const hookName = 'myHook1'
+      const hookContent = `
+        module.exports = (obj, type, data) => {
+          return obj
+        }
+      `.trim()
+
+      request(connectionString)
+      .post(`/api/hooks/${hookName}/config`)
+      .send(hookContent)
+      .set('content-type', 'text/plain')
+      .set('Authorization', 'Bearer ' + bearerToken)
+      .end(function (err, res) {
+        res.statusCode.should.eql(200)
+        res.text.should.eql('')
+
+        setTimeout(() => {
+          request(connectionString)
+          .get(`/api/hooks/${hookName}/config`)
+          .set('Authorization', 'Bearer ' + bearerToken)
+          .end((err, res) => {
+            res.statusCode.should.eql(200)
+            res.text.should.eql(hookContent)
+
+            const hooksPath = config.get('paths.hooks')
+
+            // Deleting hook file
+            fs.unlinkSync(path.join(hooksPath, `${hookName}.js`))
+
+            // Give it some time for the monitor to kick in
+            setTimeout(() => {
+              done()
+            }, 200)
+          })
+        }, 200)
+      })
+    })
+
+    it('should return 409 when sending a POST request to a hook that already exists', function (done) {
+      const hookName = 'myHook1'
+      const hookContent = `
+        module.exports = (obj, type, data) => {
+          return obj
+        }
+      `.trim()
+
+      request(connectionString)
+      .post(`/api/hooks/${hookName}/config`)
+      .send(hookContent)
+      .set('content-type', 'text/plain')
+      .set('Authorization', 'Bearer ' + bearerToken)
+      .end(function (err, res) {
+        setTimeout(() => {
+          request(connectionString)
+          .post(`/api/hooks/${hookName}/config`)
+          .send(hookContent)
+          .set('content-type', 'text/plain')
+          .set('Authorization', 'Bearer ' + bearerToken)
+          .end((err, res) => {
+            res.statusCode.should.eql(409)
+
+            const hooksPath = config.get('paths.hooks')
+
+            // Deleting hook file
+            fs.unlinkSync(path.join(hooksPath, `${hookName}.js`))
+
+            // Give it some time for the monitor to kick in
+            setTimeout(() => {
+              done()
+            }, 200)
+          })
+        }, 200)
+      })
+    })
+
+    it('should update a hook with a PUT request', function (done) {
+      const hookName = 'myHook1'
+      const hookOriginalContent = `
+        module.exports = (obj, type, data) => {
+          return obj
+        }
+      `.trim()
+      const hookUpdatedContent = `
+        module.exports = (obj, type, data) => {
+          obj = 'Something else'
+
+          return obj
+        }
+      `.trim()
+
+      request(connectionString)
+      .post(`/api/hooks/${hookName}/config`)
+      .send(hookOriginalContent)
+      .set('content-type', 'text/plain')
+      .set('Authorization', 'Bearer ' + bearerToken)
+      .end((err, res) => {
+        setTimeout(() => {
+          request(connectionString)
+          .put(`/api/hooks/${hookName}/config`)
+          .set('content-type', 'text/plain')
+          .send(hookUpdatedContent)
+          .set('Authorization', 'Bearer ' + bearerToken)
+          .end((err, res) => {
+            res.statusCode.should.eql(200)
+            res.text.should.eql('')
+
+            setTimeout(() => {
+              request(connectionString)
+              .get(`/api/hooks/${hookName}/config`)
+              .set('Authorization', 'Bearer ' + bearerToken)
+              .end((err, res) => {
+                res.statusCode.should.eql(200)
+                res.text.should.eql(hookUpdatedContent)
+
+                const hooksPath = config.get('paths.hooks')
+
+                // Deleting hook file
+                fs.unlinkSync(path.join(hooksPath, `${hookName}.js`))
+
+                // Give it some time for the monitor to kick in
+                setTimeout(() => {
+                  done()
+                }, 200)
+              })
+            }, 200)
+          })
+        }, 200)
+      })
+    })
+
+    it('should return 404 when sending a PUT request to a hook that does not exist', function (done) {
+      const hookName = 'myHook1'
+      const hookUpdatedContent = `
+        module.exports = (obj, type, data) => {
+          return obj
+        }
+      `.trim()
+
+      request(connectionString)
+      .put(`/api/hooks/${hookName}/config`)
+      .send(hookUpdatedContent)
+      .set('content-type', 'text/plain')
+      .set('Authorization', 'Bearer ' + bearerToken)
+      .end(function (err, res) {
+        res.statusCode.should.eql(404)
+
+        done()
+      })
+    })
+
+    it('should delete a hook with a DELETE request', function (done) {
+      const hookName = 'myHook1'
+      const hookContent = `
+        module.exports = (obj, type, data) => {
+          return obj
+        }
+      `.trim()
+
+      request(connectionString)
+      .post(`/api/hooks/${hookName}/config`)
+      .send(hookContent)
+      .set('content-type', 'text/plain')
+      .set('Authorization', 'Bearer ' + bearerToken)
+      .end((err, res) => {
+        setTimeout(() => {
+          request(connectionString)
+          .delete(`/api/hooks/${hookName}/config`)
+          .set('Authorization', 'Bearer ' + bearerToken)
+          .end((err, res) => {
+            res.statusCode.should.eql(200)
+            res.text.should.eql('')
+
+            setTimeout(() => {
+              request(connectionString)
+              .get(`/api/hooks/${hookName}/config`)
+              .set('Authorization', 'Bearer ' + bearerToken)
+              .end((err, res) => {
+                res.statusCode.should.eql(404)
+
+                done()
+              })
+            }, 200)
+          })
+        }, 200)
+      })
+    })
+
+    it('should return 404 when sending a DELETE request to a hook that does not exist', function (done) {
+      const hookName = 'myHook1'
+
+      request(connectionString)
+      .delete(`/api/hooks/${hookName}/config`)
+      .set('Authorization', 'Bearer ' + bearerToken)
+      .end(function (err, res) {
+        res.statusCode.should.eql(404)
+
         done()
       })
     })

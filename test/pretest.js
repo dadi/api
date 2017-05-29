@@ -5,7 +5,7 @@ var colors = require('colors');
 var testConfigPath = './config/config.test.json';
 var testConfigSamplePath = './config/config.test.json.sample';
 
-var testConfigSample = fs.readFileSync(testConfigSamplePath, { encoding: 'utf-8'});
+var testConfigSample = fs.readFileSync(testConfigSamplePath, { encoding: 'utf-8'}).toString();
 
 function loadConfig(done) {
 

@@ -289,7 +289,7 @@ describe('Controller', function (done) {
       it('should call the Model\'s create method', function (done) {
         var mod = model('testModel')
         var stub = sinon.stub(mod, 'create')
-        sinon.stub(libHelp, 'clearCache', function(pathname, callback) {
+        sinon.stub(libHelp, 'clearCache').callsFake(function(pathname, callback) {
           return callback(null)
         })
 
@@ -309,7 +309,7 @@ describe('Controller', function (done) {
       it('should add internally calculated fields during create', function (done) {
         var mod = model('testModel');
         var stub = sinon.stub(mod, 'create')
-        sinon.stub(libHelp, 'clearCache', function(pathname, callback) {
+        sinon.stub(libHelp, 'clearCache').callsFake(function(pathname, callback) {
           return callback(null)
         })
 
@@ -344,7 +344,7 @@ describe('Controller', function (done) {
       it('should call the Model\'s update method', function (done) {
         var mod = model('testModel');
         var stub = sinon.stub(mod, 'update');
-        sinon.stub(libHelp, 'clearCache', function(pathname, callback) {
+        sinon.stub(libHelp, 'clearCache').callsFake(function(pathname, callback) {
           return callback(null)
         })
 
@@ -363,7 +363,7 @@ describe('Controller', function (done) {
       it('should add internally calculated fields during update', function (done) {
         var mod = model('testModel');
         var stub = sinon.stub(mod, 'update')
-        sinon.stub(libHelp, 'clearCache', function(pathname, callback) {
+        sinon.stub(libHelp, 'clearCache').callsFake(function(pathname, callback) {
           return callback(null)
         })
 
@@ -398,7 +398,7 @@ describe('Controller', function (done) {
       it('should call the Model\'s delete method', function (done) {
         var mod = model('testModel');
         var stub = sinon.stub(mod, 'delete');
-        sinon.stub(libHelp, 'clearCache', function(pathname, callback) {
+        sinon.stub(libHelp, 'clearCache').callsFake(function (pathname, callback) {
           return callback(null)
         })
 

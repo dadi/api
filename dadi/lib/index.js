@@ -20,12 +20,14 @@ var _ = require('underscore')
 var api = require(path.join(__dirname, '/api'))
 var auth = require(path.join(__dirname, '/auth'))
 var cache = require(path.join(__dirname, '/cache'))
-var controller = require(path.join(__dirname, '/controller'))
+var Controller = require(path.join(__dirname, '/controller'))
+var HooksController = require(path.join(__dirname, '/controller/hooks'))
 var MediaController = require(path.join(__dirname, '/controller/media'))
 var dadiStatus = require('@dadi/status')
 var help = require(path.join(__dirname, '/help'))
 var log = require('@dadi/logger')
-var model = require(path.join(__dirname, '/model'))
+var Model = require(path.join(__dirname, '/model'))
+var mediaModel = require(path.join(__dirname, '/model/media'))
 var monitor = require(path.join(__dirname, '/monitor'))
 var search = require(path.join(__dirname, '/search'))
 
@@ -213,7 +215,7 @@ Server.prototype.start = function (done) {
 
   this.loadCollectionRoute()
   this.loadEndpointsRoute()
-  this.loadHooksRoute()
+  this.loadHooksRoute(options)
 
   this.readyState = 1
 
@@ -378,6 +380,10 @@ Server.prototype.loadConfigApi = function () {
     // handler if required.
     if (url.parse(req.url).pathname.indexOf('endpoints') > 0) return next()
 
+    // the hooks config endpoint also shares this structure, so if the
+    // URL starts with /api, we move on to the next handler.
+    if (req.params.version === 'api') return next()
+
     var method = req.method && req.method.toLowerCase()
     if (method !== 'post') return next()
 
@@ -475,7 +481,7 @@ Server.prototype.loadCollectionRoute = function () {
   this.app.use('/api/collections', function (req, res, next) {
     var method = req.method && req.method.toLowerCase()
 
-    if (method !== 'get') return help.sendBackJSON(400, res, next)(null, {'error': 'Invalid method'})
+    if (method !== 'get') return help.sendBackJSON(405, res, next)(null, {'error': 'Invalid method'})
 
     var data = {}
     var collections = []
@@ -506,10 +512,16 @@ Server.prototype.loadCollectionRoute = function () {
           path: '/' + [parts[0], parts[1], slug].join('/')
         }
 
-        if (model.hasOwnProperty('settings')) {
-          if (model.settings.hasOwnProperty('displayName')) collection.name = model.settings.displayName
-          if (model.settings.hasOwnProperty('lastModifiedAt')) collection.lastModifiedAt = model.settings.lastModifiedAt
-          if (model.settings.hasOwnProperty('type')) collection.type = model.settings.type
+        if (model.settings) {
+          if (model.settings.displayName) collection.name = model.settings.displayName
+          if (model.settings.lastModifiedAt) collection.lastModifiedAt = model.settings.lastModifiedAt
+          if (model.settings.type) collection.type = model.settings.type
+
+          // If this is a media collection, we don't want to add it to the
+          // collections endpoint.
+          if (collection.type === 'mediaCollection') {
+            return
+          }
         }
 
         const collectionAlreadyAdded = collections.some(collectionInArray => {
@@ -526,18 +538,13 @@ Server.prototype.loadCollectionRoute = function () {
 
     data.collections = _.sortBy(collections, 'path')
 
-    // Adding media collections. For now, this will contain a single entry, but
-    // it's still worth keeping it as an array in case we support multiple media
-    // collections in the future, avoiding breaking changes.
-    // var mediaCollections = []
-    //
-    // if (config.get('media.enabled')) {
-    //   mediaCollections = [Object.assign({}, MediaModel.Schema, {
-    //     name: config.get('media.collection')
-    //   })]
-    // }
-    //
-    // data.mediaCollections = mediaCollections
+    // Adding media buckets
+    const buckets = config.get('media.buckets').concat(config.get('media.defaultBucket'))
+
+    data.media = {
+      buckets: buckets,
+      defaultBucket: config.get('media.defaultBucket')
+    }
 
     return help.sendBackJSON(200, res, next)(null, data)
   })
@@ -550,7 +557,7 @@ Server.prototype.loadEndpointsRoute = function () {
   this.app.use('/api/endpoints', function (req, res, next) {
     var method = req.method && req.method.toLowerCase()
 
-    if (method !== 'get') return help.sendBackJSON(400, res, next)(null, {'error': 'Invalid method'})
+    if (method !== 'get') return help.sendBackJSON(405, res, next)(null, {'error': 'Invalid method'})
 
     var data = {}
     var endpoints = []
@@ -592,54 +599,31 @@ Server.prototype.loadEndpointsRoute = function () {
 }
 
 // route to retrieve list of available hooks
-Server.prototype.loadHooksRoute = function () {
-  var self = this
-
-  this.app.use('/api/hooks', function (req, res, next) {
-    var method = req.method && req.method.toLowerCase()
-    if (method !== 'get') return help.sendBackJSON(400, res, next)(null, {'error': 'Invalid method'})
-
-    var data = {}
-    var hooks = []
-
-    _.each(self.components, function (value, key) {
-      if (key.indexOf('hook:') === 0) {
-        var hook = {
-          name: key.replace('hook:', '')
-        }
-
-        var docs = self.docs[key]
-        if (docs && docs[0]) {
-          hook.description = docs[0].description
-          hook.params = docs[0].params
-          hook.returns = docs[0].returns
-        }
-
-        hooks.push(hook)
-      }
-    })
-
-    data.hooks = _.sortBy(hooks, 'name')
-
-    return help.sendBackJSON(200, res, next)(null, data)
+Server.prototype.loadHooksRoute = function (options) {
+  const hooksController = new HooksController({
+    components: this.components,
+    docs: this.docs,
+    path: options.hookPath
   })
 
-  this.app.use('/api/hooks/:hook/config', function (req, res, next) {
-    var method = req.method && req.method.toLowerCase()
-    if (method !== 'get') return help.sendBackJSON(400, res, next)(null, {'error': 'Invalid method'})
+  this.app.use('/api/hooks', (req, res, next) => {
+    const method = req.method && req.method.toLowerCase()
 
-    _.each(self.components, function (value, key) {
-      if (key.indexOf('hook:') === 0) {
-        var hook = key.replace('hook:', '')
+    if (method === 'get') {
+      return hooksController[method](req, res, next)
+    }
 
-        if (hook === req.params.hook) {
-          var content = fs.readFileSync(value)
-          return help.sendBackText(200, res, next)(null, content.toString())
-        }
-      }
-    })
+    return help.sendBackJSON(405, res, next)(null, {'error': 'Invalid method'})
+  })
 
-    return help.sendBackJSON(404, res, next)(null, {})
+  this.app.use('/api/hooks/:hookName/config', (req, res, next) => {
+    const method = req.method && req.method.toLowerCase()
+
+    if (typeof hooksController[method] === 'function') {
+      return hooksController[method](req, res, next)
+    }
+
+    return help.sendBackJSON(405, res, next)(null, {'error': 'Invalid method'})
   })
 }
 
@@ -697,10 +681,12 @@ Server.prototype.updateCollections = function (collectionsPath) {
   if (!fs.existsSync(collectionsPath)) return
   if (!fs.lstatSync(collectionsPath).isDirectory()) return
 
-  var self = this
   var collections = fs.readdirSync(collectionsPath)
+  var mediaBuckets = config.get('media.buckets')
+  var defaultMediaBucket = config.get('media.defaultBucket')
 
-  collections.forEach(function (collection) {
+  // Loading collections
+  collections.forEach(collection => {
     if (collection.indexOf('.') === 0) return
 
     // parse the url out of the directory structure
@@ -715,15 +701,47 @@ Server.prototype.updateCollections = function (collectionsPath) {
     var schema = require(cpath)
     var name = collection.slice(collection.indexOf('.') + 1, collection.indexOf('.json'))
 
+    if (name === defaultMediaBucket || mediaBuckets.indexOf(name) !== -1) {
+      throw new Error(`Naming conflict: '${name}' is defined as both a collection and media bucket`)
+    }
+
     // override the default name using the supplied property
     if (schema.hasOwnProperty('model')) name = schema.model
 
-    self.addCollectionResource({
+    this.addCollectionResource({
       route: ['', version, database, name, idParam].join('/'),
       filepath: cpath,
       name: name,
       schema: schema,
       database: database
+    })
+  })
+
+  // Loading media collections
+  var mediaSchema = mediaModel.getSchema()
+
+  // Adding default media bucket (on root URL)
+  this.addMediaCollectionResource({
+    route: '/media',
+    name: defaultMediaBucket,
+    schema: mediaSchema,
+    database: 'media'
+  })
+
+  // Adding default media bucket (on its own endpoint)
+  this.addMediaCollectionResource({
+    route: ['', 'media', defaultMediaBucket].join('/'),
+    name: defaultMediaBucket,
+    schema: mediaSchema,
+    database: 'media'
+  })
+
+  mediaBuckets.forEach(mediaCollection => {
+    this.addMediaCollectionResource({
+      route: ['', 'media', mediaCollection].join('/'),
+      name: mediaCollection,
+      schema: mediaSchema,
+      database: 'media'
     })
   })
 }
@@ -740,20 +758,20 @@ Server.prototype.addCollectionResource = function (options) {
   var database = enableCollectionDatabases ? options.database : null
 
   var settings = options.schema.settings
-  var mod
-  var control
+  var model
+  var controller
 
-  mod = model(options.name, JSON.parse(fields), null, settings, database)
+  model = Model(options.name, JSON.parse(fields), null, settings, database)
 
-  if (settings.type && settings.type === 'media') {
-    control = MediaController(mod)
+  if (settings.type && settings.type === 'mediaCollection') {
+    controller = MediaController(model)
   } else {
-    control = controller(mod)
+    controller = Controller(model)
   }
 
   this.addComponent({
     route: options.route,
-    component: control,
+    component: controller,
     filepath: options.filepath
   })
 
@@ -779,6 +797,21 @@ Server.prototype.addCollectionResource = function (options) {
   })
 
   log.info({module: 'server'}, 'Collection loaded: ' + options.name)
+}
+
+Server.prototype.addMediaCollectionResource = function (options) {
+  var enableCollectionDatabases = config.get('database.enableCollectionDatabases')
+  var database = enableCollectionDatabases ? options.database : null
+
+  var model = Model(options.name, options.schema.fields, null, options.schema.settings, database)
+  var controller = MediaController(model)
+
+  this.addComponent({
+    route: options.route,
+    component: controller
+  })
+
+  log.info({module: 'server'}, 'Media collection loaded: ' + options.name)
 }
 
 Server.prototype.updateEndpoints = function (endpointsPath) {
@@ -885,12 +918,10 @@ Server.prototype.addHook = function (options) {
 
     try {
       opts.component = require(filepath)
-    } catch (e) {
+    } catch (err) {
       // if file was removed "un-use" this component
-      if (e && e.code === 'ENOENT') {
-        self.removeMonitor(filepath)
-        self.removeComponent(opts.route)
-      }
+      self.removeMonitor(filepath)
+      self.removeComponent(opts.route)
     }
   })
 
@@ -937,48 +968,46 @@ Server.prototype.addComponent = function (options) {
     }
   })
 
-  this.app.use(options.route + '/config', function (req, res, next) {
-    var method = req.method && req.method.toLowerCase()
-
-    // send schema
-    if (method === 'get' && options.filepath) {
-      // only allow getting collection endpoints
-      if (options.filepath.slice(-5) === '.json') {
-        return help.sendBackJSON(200, res, next)(null, require(options.filepath))
-      }
-    // continue
-    }
-
-    // set schema
-    if (method === 'post' && options.filepath) {
-      var schema = typeof req.body === 'object' ? req.body : JSON.parse(req.body)
-      schema.settings.lastModifiedAt = Date.now()
-
-      return fs.writeFile(options.filepath, JSON.stringify(schema, null, 2), function (err) {
-        help.sendBackJSON(200, res, next)(err, {result: 'success'})
-      })
-    }
-
-    // delete schema
-    if (method === 'delete' && options.filepath) {
-      // only allow removing collection type endpoints
-      if (options.filepath.slice(-5) === '.json') {
-        return fs.unlink(options.filepath, function (err) {
-          help.sendBackJSON(200, res, next)(err, {result: 'success'})
-        })
-      }
-    // continue
-    }
-
-    next()
-  })
-
   var isMedia = options.component.model &&
     options.component.model.settings &&
     options.component.model.settings.type &&
-    options.component.model.settings.type === 'media'
+    options.component.model.settings.type === 'mediaCollection'
 
   if (!isMedia) {
+    this.app.use(options.route + '/config', function (req, res, next) {
+      var method = req.method && req.method.toLowerCase()
+
+      // send schema
+      if (method === 'get' && options.filepath) {
+        // only allow getting collection endpoints
+        if (options.filepath.slice(-5) === '.json') {
+          return help.sendBackJSON(200, res, next)(null, require(options.filepath))
+        }
+      }
+
+      // set schema
+      if (method === 'post' && options.filepath) {
+        var schema = typeof req.body === 'object' ? req.body : JSON.parse(req.body)
+        schema.settings.lastModifiedAt = Date.now()
+
+        return fs.writeFile(options.filepath, JSON.stringify(schema, null, 2), function (err) {
+          help.sendBackJSON(200, res, next)(err, {result: 'success'})
+        })
+      }
+
+      // delete schema
+      if (method === 'delete' && options.filepath) {
+        // only allow removing collection type endpoints
+        if (options.filepath.slice(-5) === '.json') {
+          return fs.unlink(options.filepath, function (err) {
+            help.sendBackJSON(200, res, next)(err, {result: 'success'})
+          })
+        }
+      }
+
+      next()
+    })
+
     this.app.use(options.route, function (req, res, next) {
       try {
         // map request method to controller method
@@ -1012,30 +1041,14 @@ Server.prototype.addComponent = function (options) {
 
   if (isMedia) {
     var mediaRoute = options.route.replace('/' + idParam, '')
+
     this.components[mediaRoute] = options.component
-    this.components[mediaRoute + '/:token+'] = options.component
+    this.components[mediaRoute + '/:token?'] = options.component
     this.components[mediaRoute + '/:filename(.*png|.*jpg|.*gif|.*bmp|.*tiff)'] = options.component
 
     if (options.component.setRoute) {
       options.component.setRoute(mediaRoute)
     }
-
-    // GET media
-    this.app.use(mediaRoute, (req, res, next) => {
-      var method = req.method && req.method.toLowerCase()
-      if (method !== 'get') return next()
-
-      if (options.component[method]) {
-        return options.component[method](req, res, next)
-      }
-    })
-
-    // GET media/filename
-    this.app.use(mediaRoute + '/:filename(.*png|.*jpg|.*gif|.*bmp|.*tiff)', (req, res, next) => {
-      if (options.component.getFile) {
-        return options.component.getFile(req, res, next, mediaRoute)
-      }
-    })
 
     // POST media/sign
     this.app.use(mediaRoute + '/sign', (req, res, next) => {
@@ -1059,7 +1072,7 @@ Server.prototype.addComponent = function (options) {
     // POST media (upload)
     this.app.use(mediaRoute + '/:token?', (req, res, next) => {
       var method = req.method && req.method.toLowerCase()
-      if (method !== 'post') return next()
+      if (method !== 'post' && method !== 'put') return next()
 
       var settings = options.component.model.settings
 
@@ -1090,6 +1103,23 @@ Server.prototype.addComponent = function (options) {
         })
       } else {
         return options.component[method](req, res, next)
+      }
+    })
+
+    // GET media
+    this.app.use(mediaRoute, (req, res, next) => {
+      var method = req.method && req.method.toLowerCase()
+      if (method !== 'get') return next()
+
+      if (options.component[method]) {
+        return options.component[method](req, res, next)
+      }
+    })
+
+    // GET media/filename
+    this.app.use(mediaRoute + '/:filename(.*png|.*jpg|.*gif|.*bmp|.*tiff)', (req, res, next) => {
+      if (options.component.getFile) {
+        return options.component.getFile(req, res, next, mediaRoute)
       }
     })
   }

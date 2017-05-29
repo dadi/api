@@ -1,5 +1,8 @@
+'use strict'
+
 var _ = require('underscore')
 var path = require('path')
+var mediaModel = require(path.join(__dirname, '../model/media'))
 var queryUtils = require(path.join(__dirname, '../model/utils'))
 
 var help = require(path.join(__dirname, '/../help'))
@@ -9,9 +12,7 @@ var Composer = function (model) {
 }
 
 Composer.prototype.setApiVersion = function (apiVersion) {
-  if (apiVersion) {
-    this.apiVersion = apiVersion
-  }
+  this.apiVersion = apiVersion
 }
 
 Composer.prototype.compose = function (obj, callback) {
@@ -36,15 +37,17 @@ Composer.prototype.composeOne = function (doc, callback) {
 
   if (_.isEmpty(composable)) return callback(doc)
 
-  _.each(composable, (key, idx) => {
+  var keyIdx = 0
+
+  _.each(composable, (key) => {
     var query = {}
     var returnArray = false
     var value = doc[key]
 
-    if (!value) return callback(null)
+    if (value === null || typeof value === 'undefined') return callback(null)
 
     if (value.constructor === Object) {
-      if (idx === composable.length - 1) {
+      if (keyIdx === composable.length) {
         callback(doc)
       }
     } else {
@@ -53,11 +56,6 @@ Composer.prototype.composeOne = function (doc, callback) {
         returnArray = true
       } else {
         query = { '_id': value + '' }
-      }
-
-      // add the apiVersion param
-      if (this.apiVersion) {
-        _.extend(query, { apiVersion: this.apiVersion })
       }
 
       // are specific fields required?
@@ -81,12 +79,25 @@ Composer.prototype.composeOne = function (doc, callback) {
         model.find(query, { 'compose': compose, 'fields': fields }, (err, result) => {
           if (err) console.log(err)
 
+          let isMediaDocument = false
+
           if (result) {
             if (result.results.length === 1 && returnArray === false) {
               doc[key] = result.results[0]
             } else {
               doc[key] = result.results
             }
+
+            if (result.results.length && result.results[0].apiVersion === 'media') {
+              isMediaDocument = true
+            }
+          }
+
+          // Are we composing a media document? If so, we need to format it
+          // before returning. This should really go somewhere else, it needs
+          // to be revisited! --eb 03/05/2017
+          if (isMediaDocument) {
+            doc[key] = mediaModel.formatDocuments(doc[key])
           }
 
           if (!doc.composed) doc.composed = {}
@@ -104,7 +115,9 @@ Composer.prototype.composeOne = function (doc, callback) {
             })
           }
 
-          if (idx === composable.length - 1) {
+          keyIdx++
+
+          if (keyIdx === composable.length) {
             callback(doc)
           }
         })
@@ -128,17 +141,17 @@ Composer.prototype.createFromComposed = function (doc, req, callback) {
 
   var queue = []
 
-  _.each(composable, (key, idx) => {
+  _.each(composable, (key) => {
     var model = this.getModel(key)
     var value = doc[key]
 
     if (Array.isArray(value)) {
       _.each(value, (val) => {
-        if (val.constructor === Object) {
+        if (val && val.constructor === Object) {
           queue.push(this.createOrUpdate(model, key, val, req))
         }
       })
-    } else if (value.constructor === Object) {
+    } else if (value && value.constructor === Object) {
       queue.push(this.createOrUpdate(model, key, value, req))
     }
   })

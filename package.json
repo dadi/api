@@ -1,12 +1,13 @@
 {
   "name": "@dadi/api",
-  "version": "1.16.2",
+  "version": "1.16.6",
   "main": "main.js",
   "scripts": {
     "create-client": "cd ../../.. && node ./node_modules/@dadi/api/utils/create-client.js",
     "commitmsg": "validate-commit-msg",
     "test": "standard 'dadi/**/*.js' && env NODE_ENV=test ./node_modules/.bin/istanbul cover -x **/workspace/** --report cobertura --report text --report html --report lcov ./node_modules/mocha/bin/_mocha test",
     "posttest": "./scripts/coverage.js",
+    "postinstall": "node ./scripts/copy-config.js && node ./scripts/copy-workspace.js",
     "start": "node start.js --node_env=development"
   },
   "dependencies": {
@@ -24,8 +25,9 @@
     "concat-stream": "^1.6.0",
     "console-stamp": "^0.2.0",
     "convict": "3.0.0",
+    "fs-extra": "^3.0.1",
     "imagesize": "^1.0.0",
-    "jsonwebtoken": "^7.3.0",
+    "jsonwebtoken": "^7.4.x",
     "length-stream": "^0.1.1",
     "mkdirp": "^0.5.1",
     "moment": "2.18.1",
@@ -43,13 +45,14 @@
     "aws-sdk-mock": "^1.6.1",
     "env-test": "^1.0.0",
     "fakeredis": "1.0.3",
+    "form-data": "^2.1.4",
     "husky": "^0.13.3",
     "istanbul": "^1.1.0-alpha.1",
     "istanbul-cobertura-badger": "^1.1.0",
     "mocha": "~3.2.0",
     "proxyquire": "^1.7.4",
     "should": "~4.0.4",
-    "sinon": "~1.17.6",
+    "sinon": "~2.3.2",
     "standard": "8.6.0",
     "supertest": "~0.13.0",
     "validate-commit-msg": "^2.12.1"

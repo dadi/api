@@ -157,7 +157,7 @@ describe('Media', function () {
           fileName: 'test.jpg'
         }
 
-        sinon.stub(app, '_signToken', function (obj) {
+        sinon.stub(app, '_signToken').callsFake(function (obj) {
           return jwt.sign(obj, config.get('media.tokenSecret'), { expiresIn: 1 })
         })
 
@@ -567,7 +567,7 @@ describe('Media', function () {
           fileName: 'test.jpg'
         }
 
-        sinon.stub(app, '_signToken', function (obj) {
+        sinon.stub(app, '_signToken').callsFake(function (obj) {
           return jwt.sign(obj, config.get('media.tokenSecret'), { expiresIn: 1 })
         })
 

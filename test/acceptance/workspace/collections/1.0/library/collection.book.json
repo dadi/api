@@ -1,0 +1,34 @@
+{
+  "fields": {
+    "title": {
+      "type": "String",
+      "required": true
+    },
+    "author": {
+      "type": "Reference",
+      "settings": {
+        "collection": "person",
+        "fields": [
+          "name",
+          "spouse"
+        ]
+      }
+    },
+    "booksInSeries": {
+      "type": "Reference",
+      "settings": {
+        "collection": "book",
+        "multiple": true
+      }
+    }
+  },
+  "settings": {
+    "cache": false,
+    "authenticate": true,
+    "callback": null,
+    "defaultFilters": null,
+    "fieldLimiters": null,
+    "count": 40,
+    "lastModifiedAt": 1494530706641
+  }
+}

@@ -8,6 +8,7 @@ var connection = require(path.join(__dirname, '/connection'))
 var formatError = require('@dadi/format-error')
 var Validator = require(path.join(__dirname, '/validator'))
 var History = require(path.join(__dirname, '/history'))
+var Search = require(path.join(__dirname, '/search'))
 var Composer = require(path.join(__dirname, '/../composer')).Composer
 var Hook = require(path.join(__dirname, '/hook'))
 var queryUtils = require(path.join(__dirname, '/utils'))
@@ -45,6 +46,8 @@ var Model = function (name, schema, conn, settings, database) {
   }
 
   _models[name] = this
+
+  this.search = new Search(this)
 
   // setup validation context
   this.validate = new Validator(this)
@@ -688,8 +691,10 @@ Model.prototype.get = function (query, options, done, req) {
     done = options
     options = {}
   }
-
   this.find(query, options, (err, results) => {
+    if (options.search) {
+      results.results = this.search.analyse(results.results, options.search)
+    }
     if (this.settings.hooks && this.settings.hooks.afterGet) {
       async.reduce(this.settings.hooks.afterGet, results, (current, hookConfig, callback) => {
         var hook = new Hook(hookConfig, 'afterGet')

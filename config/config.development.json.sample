@@ -78,7 +78,8 @@
   },
   "paths": {
     "collections": "workspace/collections",
-    "endpoints": "workspace/endpoints"
+    "endpoints": "workspace/endpoints",
+    "hooks": "workspace/hooks"
   },
   "logging": {
     "enabled": true,

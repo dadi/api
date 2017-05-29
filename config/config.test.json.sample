@@ -78,7 +78,8 @@
   },
   "paths": {
     "collections": "test/acceptance/workspace/collections",
-    "endpoints": "test/acceptance/workspace/endpoints"
+    "endpoints": "test/acceptance/workspace/endpoints",
+    "hooks": "test/acceptance/workspace/hooks"
   },
   "logging": {
     "enabled": true,

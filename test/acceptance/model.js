@@ -46,12 +46,12 @@ describe('Model', function () {
     configStub.withArgs('database').returns(dbConfig)
     configStub.withArgs('logging').returns(loggingConfig)
 
-    var schema = require(__dirname + '/workspace/secondary-db/vtest/secondary/collection.secondary-schema.json')
+    var schema = require(__dirname + '/workspace/secondary-db/vtest/testdb/collection.secondary-schema.json')
 
-    var mod = model('secondary-schema', help.getFieldsFromSchema(schema), null, schema.settings, 'secondary')
+    var mod = model('secondary-schema', help.getFieldsFromSchema(schema), null, schema.settings, 'testdb')
     var conn = mod.connection
 
-    conn.connectionOptions.database.should.equal('secondary')
+    conn.connectionOptions.database.should.equal('testdb')
     conn.connectionOptions.hosts.should.be.Array
     conn.connectionOptions.hosts.length.should.equal(1)
     conn.connectionOptions.hosts[0].host.should.equal('127.0.0.1')
@@ -96,9 +96,9 @@ describe('Model', function () {
     configStub.withArgs('database').returns(dbConfig)
     configStub.withArgs('logging').returns(loggingConfig)
 
-    var schema = require(__dirname + '/workspace/secondary-db/vtest/secondary/collection.secondary-schema.json')
+    var schema = require(__dirname + '/workspace/secondary-db/vtest/testdb/collection.secondary-schema.json')
 
-    var mod = model('secondary-schema', help.getFieldsFromSchema(schema), null, schema.settings, 'secondary')
+    var mod = model('secondary-schema', help.getFieldsFromSchema(schema), null, schema.settings, 'testdb')
     configStub.restore()
 
     var conn = mod.connection
@@ -140,14 +140,14 @@ describe('Model', function () {
     configStub.withArgs('database').returns(dbConfig)
     configStub.withArgs('logging').returns(loggingConfig)
 
-    var schema = require(__dirname + '/workspace/secondary-db/vtest/secondary/collection.secondary-schema.json')
+    var schema = require(__dirname + '/workspace/secondary-db/vtest/testdb/collection.secondary-schema.json')
 
-    var mod = model('secondary-schema', help.getFieldsFromSchema(schema), null, schema.settings, 'secondary')
+    var mod = model('secondary-schema', help.getFieldsFromSchema(schema), null, schema.settings, 'testdb')
 
     configStub.restore()
 
     var conn = mod.connection
-    conn.connectionString.should.equal('mongodb://test:test123@127.0.0.1:27017/secondary')
+    conn.connectionString.should.equal('mongodb://test:test123@127.0.0.1:27017/testdb')
 
     done()
   })
@@ -177,14 +177,14 @@ describe('Model', function () {
     configStub.withArgs('database').returns(dbConfig)
     configStub.withArgs('logging').returns(loggingConfig)
 
-    var schema = require(__dirname + '/workspace/secondary-db/vtest/secondary/collection.secondary-schema.json')
+    var schema = require(__dirname + '/workspace/secondary-db/vtest/testdb/collection.secondary-schema.json')
 
-    var mod = model('secondary-schema', help.getFieldsFromSchema(schema), null, schema.settings, 'secondary')
+    var mod = model('secondary-schema', help.getFieldsFromSchema(schema), null, schema.settings, 'testdb')
     configStub.restore()
 
     var conn = mod.connection
 
-    conn.connectionString.should.equal('mongodb://test:test123@127.0.0.1:27017/secondary')
+    conn.connectionString.should.equal('mongodb://test:test123@127.0.0.1:27017/testdb')
 
     done()
   })
@@ -203,15 +203,15 @@ describe('Model', function () {
       'ssl': false,
       'replicaSet': '',
       'enableCollectionDatabases': true,
-      'secondary': {
+      'testdb': {
         'hosts': [
           {
             'host': '127.0.0.1',
-            'port': 27016
+            'port': 27017
           }
         ],
         'username': 'test',
-        'password': '123'
+        'password': 'test123'
       }
     }
 
@@ -221,15 +221,49 @@ describe('Model', function () {
     configStub.withArgs('database').returns(dbConfig)
     configStub.withArgs('logging').returns(loggingConfig)
 
-    var schema = require(__dirname + '/workspace/secondary-db/vtest/secondary/collection.secondary-schema.json')
+    var schema = require(__dirname + '/workspace/secondary-db/vtest/testdb/collection.secondary-schema.json')
 
-    var mod = model('secondary-schema', help.getFieldsFromSchema(schema), null, schema.settings, 'secondary')
+    var mod = model('secondary-schema', help.getFieldsFromSchema(schema), null, schema.settings, 'testdb')
     configStub.restore()
     var conn = mod.connection
 
-    conn.connectionString.should.equal('mongodb://test:123@127.0.0.1:27016/secondary')
+    conn.connectionString.should.equal('mongodb://test:test123@127.0.0.1:27017/testdb')
 
     done()
   })
 
+  it.skip('should connect with authentication credentials if supplied', function (done) {
+    var dbConfig = {
+      'hosts': [
+        {
+          'host': '127.0.0.1',
+          'port': 27017
+        }
+      ],
+      'username': 'test',
+      'password': 'test123',
+      'database': 'testdb',
+      'ssl': false,
+      'replicaSet': '',
+      'enableCollectionDatabases': true
+    }
+
+    var configStub = sinon.stub(config, 'get')
+    configStub.withArgs('database').returns(dbConfig)
+
+    connection.resetConnections()
+
+    var conn = connection(dbConfig)
+
+    conn.on('error', (err) => {
+      console.log(err)
+      done(err)
+    })
+
+    conn.on('connect', (db) => {
+      configStub.restore()
+      db.databaseName.should.eql('testdb')
+      done()
+    })
+  })
 })

@@ -119,9 +119,7 @@ describe('File system watching', function () {
           fs.writeFileSync(testEndpointPath, lines.join('\n'))
 
           setTimeout(function () {
-
-            console.log(app.components['/v1/monitor-test-endpoint'])
-
+            //console.log(app.components['/v1/monitor-test-endpoint'])
             client
               .get('/v1/monitor-test-endpoint?cache=false')
               .set('Authorization', 'Bearer ' + bearerToken)

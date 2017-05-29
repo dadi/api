@@ -5,7 +5,7 @@ var config = require(__dirname + '/../../config');
 var EventEmitter = require('events').EventEmitter;
 var fs = require('fs');
 
-describe.skip('Monitor', function () {
+describe('Monitor', function () {
     it('should export constructor', function (done) {
         monitor.Monitor.should.be.Function;
         done();
@@ -54,7 +54,7 @@ describe.skip('Monitor', function () {
 
         it('should be able to watch for new files in a directory', function (done) {
             var watch = monitor(__dirname);
-            watch.on('change', function (filename) {
+            watch.once('change', function (filename) {
                 filename.should.equal(testfile);
                 watch.close();
                 done();

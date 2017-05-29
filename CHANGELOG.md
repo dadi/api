@@ -4,6 +4,156 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## [2.0.0] (2017-05-29)
+
+### Changed
+
+#### Upgraded MongoDB driver
+Upgrade MongoDB driver to 2.2.x, from the existing 1.4.x version.
+
+#### Fixed `create-client` script
+Use correct `accessType` property in client store documents
+
+#### Media collections
+This version introduces a few changes to how media is handled by API.
+
+The concept of media collections has been abstracted from the public API. It removes the requirement for a collection schema, instead using a schema kept internally in API. At the moment it's hardcoded to store images (containing dimensions, size, mime type, etc.), but in the future we will look into making the schema adapt to the type of file being uploaded.
+
+##### Endpoints
+
+| Method | Endpoint | Purpose | Example
+|:-|:---|:----|:--
+| POST |`/media/sign`| Requesting a signed URL for a media upload| |
+| POST  |`/media/:signedUrl`|Uploading a media asset ||
+| GET | `/media`|Listing media assets ||
+| GET | `/media/:assetPath`|Access a specific media asset | `/media/2017/04/27/flowers.jpg`
+
+#### Media buckets
+
+Even though that's abstracted from the end user, assets still need to be stored in collections. Assets POSTed to /media will be stored in a `mediaStore` collection (configurable via the `media.defaultBucket` configuration parameter). It is also possible to add additional "media buckets", configured as an array in the `media.buckets` configuration parameter.
+
+##### Endpoints
+
+Here are the same media collection endpoints for interacting with a media bucket called `mediaAvatars`:
+
+| Method | Endpoint | Purpose | Example
+|:-|:---|:----|:--
+| POST |`/media/mediaAvatars/sign`| Requesting a signed URL for a media upload| |
+| POST  |`/media/mediaAvatars/:signedUrl`|Uploading a media asset ||
+| GET | `/media/mediaAvatars`|Listing media assets ||
+| GET | `/media/mediaAvatars/:assetPath`|Access a specific media asset | `/media/mediaAvatars/2017/04/27/flowers.jpg`
+
+#### Naming conflicts
+
+If there is a data collection with the same name as one of the media buckets, API throws an error detailing the name of the conflicting collection.
+
+#### Discovering media buckets
+
+Added information about media buckets to the /api/collections endpoint, indicating a list of the available media buckets as well as the name of the default one.
+
+```
+GET /api/collections
+```
+
+```json
+{
+  "collections": [
+    {
+      "version": "1.0",
+      "database": "library",
+      "name": "Articles",
+      "slug": "articles",
+      "path": "/1.0/library/articles"
+    },
+    {
+      "version": "1.0",
+      "database": "library",
+      "name": "Books",
+      "slug": "books",
+      "path": "/1.0/library/books"
+    }
+  ],
+  "media": {
+    "buckets": [
+      "authorImages",
+      "mediaStore"
+    ],
+    "defaultBucket": "mediaStore"
+  }
+}
+```
+
+#### Add `url` property to media documents
+Instead of replacing the contents of `path`, leave that as it is and write the full URL to a new property called `url`.
+
+```json
+"image": {
+    "_id": "591b5f29795b683664af01e9",
+    "fileName": "3RdYMTLoL1X16djGF52cFtJovDT.jpg",
+    "mimetype": "image/jpeg",
+    "width": 600,
+    "height": 900,
+    "contentLength": 54907,
+    "path": "/media/2017/05/16/3RdYMTLoL1X16djGF52cFtJovDT-1494966057926.jpg",
+    "createdAt": 1494966057685,
+    "createdBy": null,
+    "v": 1,
+    "url": "http://localhost:5000/media/2017/05/16/3RdYMTLoL1X16djGF52cFtJovDT-1494966057926.jpg"
+}
+```
+
+#### Hook configuration endpoints
+
+Extended the hooks config endpoint (`/api/hooks/:hookName/config`) to accept POST, PUT and DELETE requests to create, update and delete hooks, respectively.
+
+#### Other
+
+* [#245](https://github.com/dadi/api/issues/245): fix media path formatting
+* [#260](https://github.com/dadi/api/issues/260): modify property value that indicates a media collection to "mediaCollection"
+* [#265](https://github.com/dadi/api/issues/265): array not validated against schemas in POST requests
+* [#284](https://github.com/dadi/api/issues/284): indexes not checked correctly when given a sort key
+* remove `apiVersion` query property when composing reference fields, improves performance
+
+### Added
+
+#### MongoDB readPreference configuration
+Added `readPreference` configuration option. Default is `secondaryPreferred`. Closed [#156](https://github.com/dadi/api/issues/156)
+
+```json
+"database": {
+  "hosts": [
+    {
+      "host": "127.0.0.1",
+      "port": 27017
+    }
+  ],
+  "username": "",
+  "password": "",
+  "database": "api",
+  "ssl": false,
+  "replicaSet": "",
+  "enableCollectionDatabases": false,
+  "readPreference": "primary"
+}
+```
+
+#### API baseUrl
+
+We've introduced a `server.baseUrl` configuration parameter, which will be used to determine the URL of media assets when using the disk storage option.
+
+```json
+"baseUrl": {
+  "protocol": "http",
+  "port": 80,
+  "host": "mydomain.com"
+}
+```
+
+
+#### Post install script
+
+Added a post install script which runs following an install of API from NPM. A development configuration file is created along with a basic workspace directory containing two collections, an endpoint and a hook. No files are overwritten if the config and workspace directories already exist.
+
 ## [1.16.6] (2017-05-25)
 
 ### Changed

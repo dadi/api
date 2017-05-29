@@ -1,3 +1,4 @@
+'use strict'
 /*
 
 Ok, this should create a component that takes a req, res, and next function

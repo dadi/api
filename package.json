@@ -34,7 +34,7 @@
     "mongodb": "2.2.x",
     "parse-comments": "0.4.3",
     "path-to-regexp": "~1.7.0",
-    "serve-static": "^1.12.1",
+    "serve-static": "^1.12.3",
     "sha1": "latest",
     "stack-trace": "latest",
     "streamifier": "^0.1.1",

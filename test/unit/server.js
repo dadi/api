@@ -14,31 +14,33 @@ describe('Server', function () {
 
     describe('start', function () {
         it('should set readyState', function (done) {
-            var stub = sinon.stub(fs, 'readdirSync', function () { return []; });
+          var fakeFn = function () { return []; }
+          var stub = sinon.stub(fs, 'readdirSync').callsFake(fakeFn)
 
-            server.start();
+          server.start();
 
-            server.readyState.should.equal(1);
-            stub.called.should.be.true;
-            stub.restore();
+          server.readyState.should.equal(1);
+          stub.called.should.be.true;
+          stub.restore();
 
-            done();
+          done();
         });
     });
 
     describe('stop', function () {
         it('should set readyState', function (done) {
-            var stub = sinon.stub(server.server, 'close', function (cb) { cb(); });
+          var fakeFn = function (cb) { cb(); }
+          var stub = sinon.stub(server.server, 'close').callsFake(fakeFn)
 
-            server.stop(function (err){
-                if (err) return done(err);
+          server.stop(function (err){
+            if (err) return done(err);
 
-                server.readyState.should.equal(0);
-                stub.called.should.be.true;
-                stub.restore();
+            server.readyState.should.equal(0);
+            stub.called.should.be.true;
+            stub.restore();
 
-                done();
-            });
+            done();
+          });
         });
     });
 

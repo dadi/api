@@ -21,6 +21,7 @@ var api = require(path.join(__dirname, '/api'))
 var auth = require(path.join(__dirname, '/auth'))
 var cache = require(path.join(__dirname, '/cache'))
 var Controller = require(path.join(__dirname, '/controller'))
+var HooksController = require(path.join(__dirname, '/controller/hooks'))
 var MediaController = require(path.join(__dirname, '/controller/media'))
 var dadiStatus = require('@dadi/status')
 var help = require(path.join(__dirname, '/help'))
@@ -214,7 +215,7 @@ Server.prototype.start = function (done) {
 
   this.loadCollectionRoute()
   this.loadEndpointsRoute()
-  this.loadHooksRoute()
+  this.loadHooksRoute(options)
 
   this.readyState = 1
 
@@ -379,6 +380,10 @@ Server.prototype.loadConfigApi = function () {
     // handler if required.
     if (url.parse(req.url).pathname.indexOf('endpoints') > 0) return next()
 
+    // the hooks config endpoint also shares this structure, so if the
+    // URL starts with /api, we move on to the next handler.
+    if (req.params.version === 'api') return next()
+
     var method = req.method && req.method.toLowerCase()
     if (method !== 'post') return next()
 
@@ -476,7 +481,7 @@ Server.prototype.loadCollectionRoute = function () {
   this.app.use('/api/collections', function (req, res, next) {
     var method = req.method && req.method.toLowerCase()
 
-    if (method !== 'get') return help.sendBackJSON(400, res, next)(null, {'error': 'Invalid method'})
+    if (method !== 'get') return help.sendBackJSON(405, res, next)(null, {'error': 'Invalid method'})
 
     var data = {}
     var collections = []
@@ -552,7 +557,7 @@ Server.prototype.loadEndpointsRoute = function () {
   this.app.use('/api/endpoints', function (req, res, next) {
     var method = req.method && req.method.toLowerCase()
 
-    if (method !== 'get') return help.sendBackJSON(400, res, next)(null, {'error': 'Invalid method'})
+    if (method !== 'get') return help.sendBackJSON(405, res, next)(null, {'error': 'Invalid method'})
 
     var data = {}
     var endpoints = []
@@ -594,54 +599,31 @@ Server.prototype.loadEndpointsRoute = function () {
 }
 
 // route to retrieve list of available hooks
-Server.prototype.loadHooksRoute = function () {
-  var self = this
-
-  this.app.use('/api/hooks', function (req, res, next) {
-    var method = req.method && req.method.toLowerCase()
-    if (method !== 'get') return help.sendBackJSON(400, res, next)(null, {'error': 'Invalid method'})
-
-    var data = {}
-    var hooks = []
-
-    _.each(self.components, function (value, key) {
-      if (key.indexOf('hook:') === 0) {
-        var hook = {
-          name: key.replace('hook:', '')
-        }
-
-        var docs = self.docs[key]
-        if (docs && docs[0]) {
-          hook.description = docs[0].description
-          hook.params = docs[0].params
-          hook.returns = docs[0].returns
-        }
-
-        hooks.push(hook)
-      }
-    })
-
-    data.hooks = _.sortBy(hooks, 'name')
-
-    return help.sendBackJSON(200, res, next)(null, data)
+Server.prototype.loadHooksRoute = function (options) {
+  const hooksController = new HooksController({
+    components: this.components,
+    docs: this.docs,
+    path: options.hookPath
   })
 
-  this.app.use('/api/hooks/:hook/config', function (req, res, next) {
-    var method = req.method && req.method.toLowerCase()
-    if (method !== 'get') return help.sendBackJSON(400, res, next)(null, {'error': 'Invalid method'})
+  this.app.use('/api/hooks', (req, res, next) => {
+    const method = req.method && req.method.toLowerCase()
 
-    _.each(self.components, function (value, key) {
-      if (key.indexOf('hook:') === 0) {
-        var hook = key.replace('hook:', '')
+    if (method === 'get') {
+      return hooksController[method](req, res, next)
+    }
 
-        if (hook === req.params.hook) {
-          var content = fs.readFileSync(value)
-          return help.sendBackText(200, res, next)(null, content.toString())
-        }
-      }
-    })
+    return help.sendBackJSON(405, res, next)(null, {'error': 'Invalid method'})
+  })
 
-    return help.sendBackJSON(404, res, next)(null, {})
+  this.app.use('/api/hooks/:hookName/config', (req, res, next) => {
+    const method = req.method && req.method.toLowerCase()
+
+    if (typeof hooksController[method] === 'function') {
+      return hooksController[method](req, res, next)
+    }
+
+    return help.sendBackJSON(405, res, next)(null, {'error': 'Invalid method'})
   })
 }
 
@@ -936,12 +918,10 @@ Server.prototype.addHook = function (options) {
 
     try {
       opts.component = require(filepath)
-    } catch (e) {
+    } catch (err) {
       // if file was removed "un-use" this component
-      if (e && e.code === 'ENOENT') {
-        self.removeMonitor(filepath)
-        self.removeComponent(opts.route)
-      }
+      self.removeMonitor(filepath)
+      self.removeComponent(opts.route)
     }
   })
 

@@ -111,7 +111,7 @@ function constructConnectionString (options) {
     options: {}
   }, options)
 
-  if (options.replicaSet) {
+  if (options.replicaSet && options.replicaSet !== 'false') {
     connectionOptions.options.replicaSet = options.replicaSet
   }
 

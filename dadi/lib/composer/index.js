@@ -18,8 +18,8 @@ Composer.prototype.setApiVersion = function (apiVersion) {
 Composer.prototype.compose = function (obj, callback) {
   if (_.isEmpty(obj)) return callback(obj)
 
-  // determine composable fields from the first document in the set
-  var composable = this.getComposable(obj[0])
+  // determine composable fields from all documents in the set
+  var composable = this.getComposable(obj)
 
   if (_.isEmpty(composable)) return callback(obj)
 
@@ -314,15 +314,27 @@ Composer.prototype.createOrUpdate = function (model, field, obj, req) {
 }
 
 /**
- * Returns an array of Reference field names from the schema for the specified document
+ * Returns an array of Reference field names from the schema for the specified documents
  *
- * @param {Object} doc - the JSON document being processed
+ * @param {Array|Object} obj - an array of JSON documents being processed, or a single document
  * @returns {Array}
  */
-Composer.prototype.getComposable = function (doc) {
-  return Object.keys(this.model.schema).filter((key) => {
-    return this.model.schema[key].type === 'Reference' && doc[key] && typeof doc[key] !== 'undefined'
+Composer.prototype.getComposable = function (obj) {
+  if (!Array.isArray(obj)) {
+    obj = [obj]
+  }
+
+  var composableKeys = []
+
+  _.each(obj, doc => {
+    var keys = Object.keys(this.model.schema).filter((key) => {
+      return this.model.schema[key].type === 'Reference' && doc[key] && typeof doc[key] !== 'undefined'
+    })
+
+    composableKeys = _.union(composableKeys, keys)
   })
+
+  return composableKeys
 }
 
 /**

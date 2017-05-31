@@ -76,8 +76,7 @@ function getConnectionOptions (options) {
   var dbConfig = config.get('database')
 
   if (options.auth) {
-    // extend primary database config with the auth
-    // database options
+    // extend primary database config with the auth database options
     options = _.extend({}, dbConfig, options)
   } else {
     if (options.database && dbConfig.enableCollectionDatabases) {
@@ -112,13 +111,15 @@ function constructConnectionString (options) {
     options: {}
   }, options)
 
-  if (options.replicaSet) {
+  if (options.replicaSet && options.replicaSet !== 'false') {
     connectionOptions.options.replicaSet = options.replicaSet
   }
 
   if (options.ssl) connectionOptions.options['ssl'] = options.ssl
 
   if (options.maxPoolSize) connectionOptions.options['maxPoolSize'] = options.maxPoolSize
+
+  if (options.readPreference) connectionOptions.options['readPreference'] = options.readPreference
 
   // test specific connection pool size
   if (config.get('env') === 'test') {

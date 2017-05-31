@@ -44,9 +44,9 @@ module.exports.createDocWithSpecificVersion = function (token, apiVersion, doc, 
     .send(doc)
     .expect(200)
     .end(function (err, res) {
-        if (err) return done(err);
-        res.body.results.length.should.equal(1);
-        done(null, res.body.results[0]);
+      if (err) return done(err);
+      res.body.results.length.should.equal(1);
+      done(null, res.body.results[0]);
     });
 };
 

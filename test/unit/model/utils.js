@@ -8,6 +8,30 @@ var help = require(__dirname + '/../help')
 var config = require(__dirname + '/../../../config')
 
 describe('Query Utils', function () {
+  describe('`processFilter` method', function () {
+    it('should replace "$now" with current timestamp', function (done) {
+      var query = { 'start': '$now' }
+
+      query = queryUtils.processFilter(query, {});
+
+      (typeof query.start).should.eql('number')
+
+      done()
+    })
+
+    it('should process nested filters', function (done) {
+      query = { 'publishedState.start': { '$gt': '$now' } }
+
+      query = queryUtils.processFilter(query, {})
+
+      var nested = query['publishedState.start'];
+
+      (typeof nested['$gt']).should.eql('number')
+
+      done()
+    })
+  })
+
   describe('`convertApparentObjectIds` method', function () {
     it('should convert Strings to ObjectIDs when a field type is ObjectID', function (done) {
       var fields = help.getModelSchema()

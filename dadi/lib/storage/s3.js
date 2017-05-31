@@ -14,7 +14,6 @@ var S3Storage = function (fileName) {
   this.fileName = fileName
   this.settings = config.get('media')
 
-  AWS.config.setPromisesDependency(require('bluebird'))
   AWS.config.update({ accessKeyId: this.settings.s3.accessKey, secretAccessKey: this.settings.s3.secretKey })
 
   if (this.settings.s3.region && this.settings.s3.region !== '') {

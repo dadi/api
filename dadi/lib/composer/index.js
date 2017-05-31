@@ -23,7 +23,7 @@ Composer.prototype.compose = function (obj, callback) {
 
   if (_.isEmpty(composable)) return callback(obj)
 
-  // for each composable
+  // for each composable field (Reference fields)
   //   get array of id values from all documents
   //   get fields required from schema
   //   query model using array of ids and fields object
@@ -69,8 +69,10 @@ Composer.prototype.compose = function (obj, callback) {
       var docIdx = 0
       fieldNum++
 
+      // reference the correct database results within the data object
       var fieldData = data[field]
 
+      // populate each document's composable property with results
       _.each(obj, (document) => {
         var isArray = Array.isArray(document[field])
         var originalValue = isArray ? document[field] : [document[field]]
@@ -114,88 +116,6 @@ Composer.prototype.compose = function (obj, callback) {
     })
   })
 }
-
-// Composer.prototype.composeOne = function (doc, callback) {
-//   var composable = this.getComposable(doc)
-//
-//   if (_.isEmpty(composable)) return callback(doc)
-//
-//   _.each(composable, (key, idx) => {
-//     var query = {}
-//     var returnArray = false
-//     var value = doc[key]
-//
-//     if (!value) return callback(null)
-//
-//     if (value.constructor === Object) {
-//       if (idx === composable.length - 1) {
-//         callback(doc)
-//       }
-//     } else {
-//       if (Array.isArray(value)) {
-//         query = { '_id': { '$in': _.map(value, function (val) { return val + '' }) } }
-//         returnArray = true
-//       } else {
-//         query = { '_id': value + '' }
-//       }
-//
-//       // add the apiVersion filter
-//       // if (this.apiVersion && config.get('query.useVersionFilter')) {
-//       //   query = _.extend(query, { apiVersion: this.apiVersion })
-//       // }
-//
-//       // are specific fields required?
-//       var fields = {}
-//       var schemaFields = help.getFromObj(this.model.schema, key + '.settings.fields', [])
-//
-//       _.each(schemaFields, (field) => {
-//         fields[field] = 1
-//       })
-//
-//       // load correct model
-//       var model = this.getModel(key)
-//
-//       if (!model) {
-//         callback(null)
-//       } else {
-//         // does the collection allow us to compose references beyond the first one
-//         // (i.e. the one that got us here) ?
-//         var compose = help.getFromObj(this.model.schema, key + '.settings.compose', false) || model.compose
-//
-//         model.find(query, { 'compose': compose, 'fields': fields }, (err, result) => {
-//           if (err) console.log(err)
-//
-//           if (result) {
-//             if (result.results.length === 1 && returnArray === false) {
-//               doc[key] = result.results[0]
-//             } else {
-//               doc[key] = result.results
-//             }
-//           }
-//
-//           if (!doc.composed) doc.composed = {}
-//           doc.composed[key] = value
-//
-//           // if an array, ensure the composed values appear
-//           // in the same order as the original array
-//           if (value.constructor.name === 'Array') {
-//             doc[key] = doc[key].sort((a, b) => {
-//               var aIndex = value.indexOf(a._id.toString())
-//               var bIndex = value.indexOf(b._id.toString())
-//
-//               if (aIndex === bIndex) return 0
-//               return aIndex < bIndex ? -1 : 1
-//             })
-//           }
-//
-//           if (idx === composable.length - 1) {
-//             callback(doc)
-//           }
-//         })
-//       }
-//     }
-//   })
-// }
 
 /**
  * Given a pre-composed JSON document, creates or updates subdocuments according to
@@ -244,7 +164,6 @@ Composer.prototype.createFromComposed = function (doc, req, callback) {
 
     return callback(null, doc)
   }).catch((err) => {
-    // console.log('Promise error')
     return callback(err, null)
   })
 }

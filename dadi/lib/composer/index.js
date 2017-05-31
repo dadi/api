@@ -143,17 +143,17 @@ Composer.prototype.createFromComposed = function (doc, req, callback) {
 
   var queue = []
 
-  _.each(composable, (key, idx) => {
+  _.each(composable, key => {
     var model = this.getModel(key)
     var value = doc[key]
 
     if (Array.isArray(value)) {
       _.each(value, (val) => {
-        if (val.constructor === Object) {
+        if (val && val.constructor === Object) {
           queue.push(this.createOrUpdate(model, key, val, req))
         }
       })
-    } else if (value.constructor === Object) {
+    } else if (value && value.constructor === Object) {
       queue.push(this.createOrUpdate(model, key, value, req))
     }
   })

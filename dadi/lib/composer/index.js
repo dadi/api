@@ -1,6 +1,8 @@
 var _ = require('underscore')
 var path = require('path')
+var mediaModel = require(path.join(__dirname, '../model/media'))
 var queryUtils = require(path.join(__dirname, '../model/utils'))
+
 var help = require(path.join(__dirname, '/../help'))
 
 var Composer = function (model) {
@@ -92,14 +94,23 @@ Composer.prototype.compose = function (obj, callback) {
         _.each(originalValue, (id) => {
           var results = _.filter(fieldData, r => { return id && r._id.toString() === id.toString() })
 
+          // Are we composing media documents? If so, we need to format them
+          // before returning. This should really go somewhere else, it needs
+          // to be revisited! --eb 03/05/2017
+          if (results.length && results[0].apiVersion === 'media') {
+            results[0] = mediaModel.formatDocuments(results[0])
+          }
+
           if (isArray) {
             if (_.isEmpty(results)) {
+              // no results, add the original id value to the array
               document[field].push(id)
             } else {
               document[field].push(results[0])
             }
           } else {
             if (_.isEmpty(results)) {
+              // no results, assign the original id value to the property
               document[field] = id
             } else {
               document[field] = results[0]

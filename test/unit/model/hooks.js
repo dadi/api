@@ -69,7 +69,7 @@ hijackNameHook += '  return obj;\n'
 hijackNameHook += '}\n'
 var hijackFunction = eval(hijackNameHook)
 
-describe('Hook', function () {
+describe.only('Hook', function () {
   it('should export a constructor', function (done) {
     hook.should.be.Function
     done()
@@ -203,7 +203,51 @@ describe('Hook', function () {
       })
     })
 
-    it('should modify single documents before create', function (done) {
+    it('should not modify single documents before create if runHooks is falsy or absent', function (done) {
+      var conn = connection()
+      var schema = help.getModelSchema()
+      schema.title = {
+        type: 'String',
+        required: false
+      }
+
+      schema.slug = {
+        type: 'String',
+        required: false
+      }
+
+      var settings = {
+        storeRevisions: false,
+        hooks: {
+          beforeCreate: [{
+            hook: 'slug',
+            options: {
+              from: 'title',
+              to: 'slug'
+            }
+          }]
+        }
+      }
+
+      sinon.stub(hook.Hook.prototype, 'load').returns(optionsFunction)
+
+      var mod = model('testModelName', schema, conn, settings)
+
+      mod.create({fieldName: 'foo', title: 'Article One', slug: ''}, function (err, result) {
+        if (err) return done(err)
+
+        hook.Hook.prototype.load.restore()
+
+        // find the obj we just created
+        mod.find({fieldName: 'foo'}, function (err, doc) {
+          if (err) return done(err)
+          doc.results[0].slug.should.eql('')
+          done()
+        })
+      })
+    })
+
+    it('should modify single documents before create if runHooks is true', function (done) {
       var conn = connection()
       var schema = help.getModelSchema()
       schema.title = {
@@ -244,10 +288,60 @@ describe('Hook', function () {
           doc.results[0].slug.should.eql('article-one')
           done()
         })
+      }, {}, {runHooks: true})
+    })
+
+    it('should not modify an array of documents before create if runHooks is falsy or absent', function (done) {
+      var conn = connection()
+      var schema = help.getModelSchema()
+      schema.title = {
+        type: 'String',
+        required: false
+      }
+
+      schema.slug = {
+        type: 'String',
+        required: false
+      }
+
+      var settings = {
+        storeRevisions: false,
+        hooks: {
+          beforeCreate: [{
+            hook: 'slug',
+            options: {
+              from: 'title',
+              to: 'slug'
+            }
+          }]
+        }
+      }
+
+      sinon.stub(hook.Hook.prototype, 'load').returns(optionsFunction)
+
+      var docs = [
+        {fieldName: 'foo', title: 'Article One', slug: ''},
+        {fieldName: 'foo', title: 'Article Two', slug: ''}
+      ]
+
+      var mod = model('testModelName', schema, conn, settings)
+
+      mod.create(docs, function (err, result) {
+        if (err) return done(err)
+
+        hook.Hook.prototype.load.restore()
+
+        // find the obj we just created
+        mod.find({fieldName: 'foo'}, function (err, doc) {
+          if (err) return done(err)
+          doc.results[0].slug.should.eql('')
+          doc.results[1].slug.should.eql('')
+          done()
+        })
       })
     })
 
-    it('should modify an array of documents before create', function (done) {
+    it('should modify an array of documents before create if runHooks is true', function (done) {
       var conn = connection()
       var schema = help.getModelSchema()
       schema.title = {
@@ -294,7 +388,7 @@ describe('Hook', function () {
           doc.results[1].slug.should.eql('article-two')
           done()
         })
-      })
+      }, {}, {runHooks: true})
     })
 
     it('should not insert documents that fail asynchronous beforeCreate processing', function () {
@@ -326,7 +420,7 @@ describe('Hook', function () {
           doc.results.length.should.eql(1)
           doc.results[0].slug.should.eql('article-one')
         })
-      })
+      }, {}, {runHooks: true})
     })
 
     it('should not insert documents that fail synchronous beforeCreate processing', function () {
@@ -354,7 +448,7 @@ describe('Hook', function () {
         mod.find({fieldName: 'foo'}, function (err, doc) {
           doc.results.should.eql([])
         })
-      })
+      }, {}, {runHooks: true})
     })
   })
 
@@ -410,7 +504,58 @@ describe('Hook', function () {
       })
     })
 
-    it('should modify single documents after create', function (done) {
+    it('should not modify single documents after create if runHooks is falsy or absent', function (done) {
+      var conn = connection()
+      var schema = help.getModelSchema()
+      schema.title = {
+        type: 'String',
+        required: false
+      }
+
+      schema.slug = {
+        type: 'String',
+        required: false
+      }
+
+      var settings = {
+        storeRevisions: false,
+        hooks: {
+          afterCreate: [{
+            hook: 'writeToLog',
+            options: {
+              filename: 'testAfterCreateHook.log'
+            }
+          }]
+        }
+      }
+
+      sinon.stub(hook.Hook.prototype, 'load').returns(logFunction)
+
+      var mod = model('testModelName', schema, conn, settings)
+
+      mod.create({fieldName: 'foo', title: 'Article One', slug: ''}, function (err, result) {
+        if (err) return done(err)
+
+        // find the obj we just created
+        mod.find({fieldName: 'foo'}, function (err, doc) {
+          if (err) return done(err)
+
+          hook.Hook.prototype.load.restore()
+
+          doc.results[0].slug.should.eql('')
+
+          var fs = require('fs')
+          var path = require('path')
+          var file = path.resolve(path.join(__dirname, 'testAfterCreateHook.log'))
+          fs.stat(file, function (err, stats) {
+            err.code.should.eql('ENOENT')
+            done()
+          })
+        })
+      })
+    })
+
+    it('should modify single documents after create if runHooks is true', function (done) {
       var conn = connection()
       var schema = help.getModelSchema()
       schema.title = {
@@ -459,10 +604,67 @@ describe('Hook', function () {
             done()
           })
         })
+      }, {}, {runHooks: true})
+    })
+
+    it('should not modify an array of documents after create if runHooks is falsy or absent', function (done) {
+      var conn = connection()
+      var schema = help.getModelSchema()
+      schema.title = {
+        type: 'String',
+        required: false
+      }
+
+      schema.slug = {
+        type: 'String',
+        required: false
+      }
+
+      var settings = {
+        storeRevisions: false,
+        hooks: {
+          afterCreate: [{
+            hook: 'writeToLog',
+            options: {
+              filename: 'testAfterCreateHook.log'
+            }
+          }]
+        }
+      }
+
+      sinon.stub(hook.Hook.prototype, 'load').returns(logFunction)
+
+      var docs = [
+        {fieldName: 'foo', title: 'Article One', slug: ''},
+        {fieldName: 'foo', title: 'Article Two', slug: ''}
+      ]
+
+      var mod = model('testModelName', schema, conn, settings)
+
+      mod.create(docs, function (err, result) {
+        if (err) return done(err)
+
+        // find the objs we just created
+        mod.find({fieldName: 'foo'}, function (err, doc) {
+          if (err) return done(err)
+
+          hook.Hook.prototype.load.restore()
+
+          doc.results[0].slug.should.eql('')
+          doc.results[1].slug.should.eql('')
+
+          var fs = require('fs')
+          var path = require('path')
+          var file = path.resolve(path.join(__dirname, 'testAfterCreateHook.log'))
+          fs.stat(file, function (err, stats) {
+            err.code.should.eql('ENOENT')
+            done()
+          })
+        })
       })
     })
 
-    it('should modify an array of documents after create', function (done) {
+    it('should modify an array of documents after create if runHooks is true', function (done) {
       var conn = connection()
       var schema = help.getModelSchema()
       schema.title = {
@@ -522,7 +724,7 @@ describe('Hook', function () {
             done()
           })
         })
-      })
+      }, {}, {runHooks: true})
     })
   })
 
@@ -578,7 +780,60 @@ describe('Hook', function () {
       })
     })
 
-    it('should modify documents before update', function (done) {
+    it('should not modify documents before update if runHooks is falsy or absent', function (done) {
+      var conn = connection()
+      var schema = help.getModelSchema()
+      schema.title = {
+        type: 'String',
+        required: false
+      }
+
+      schema.slug = {
+        type: 'String',
+        required: false
+      }
+
+      var settings = {
+        storeRevisions: false,
+        hooks: {
+          beforeUpdate: [{
+            hook: 'slug',
+            options: {
+              from: 'title',
+              to: 'slug'
+            }
+          }]
+        }
+      }
+
+      sinon.stub(hook.Hook.prototype, 'load').returns(optionsFunction)
+
+      var mod = model('testModelName', schema, conn, settings)
+
+      mod.create({fieldName: 'foo', title: 'Article One', slug: ''}, function (err, result) {
+        if (err) return done(err)
+
+        var id = result.results[0]._id.toString()
+
+        // update the obj we just created
+        mod.update({ _id: id }, {title: 'Article Two'}, function (err, doc) {
+          if (err) return done(err)
+
+          hook.Hook.prototype.load.restore()
+
+          setTimeout(function () {
+            // find the obj
+            mod.find({ _id: id }, function (err, doc) {
+              if (err) return done(err)
+              doc.results[0].slug.should.eql('')
+              done()
+            })
+          }, 500)
+        })
+      })
+    })
+
+    it('should modify documents before update if runHooks is true', function (done) {
       var conn = connection()
       var schema = help.getModelSchema()
       schema.title = {
@@ -627,8 +882,8 @@ describe('Hook', function () {
               done()
             })
           }, 500)
-        })
-      })
+        }, {}, {runHooks: true})
+      }, {}, {runHooks: true})
     })
   })
 
@@ -684,7 +939,60 @@ describe('Hook', function () {
       })
     })
 
-    it('should modify documents after create', function (done) {
+    it('should not modify documents after create if runHooks is falsy or absent', function (done) {
+      var conn = connection()
+      var schema = help.getModelSchema()
+      schema.title = {
+        type: 'String',
+        required: false
+      }
+
+      schema.slug = {
+        type: 'String',
+        required: false
+      }
+
+      var settings = {
+        storeRevisions: false,
+        hooks: {
+          afterUpdate: [{
+            hook: 'writeToLog',
+            options: {
+              filename: 'testAfterUpdateHook.log'
+            }
+          }]
+        }
+      }
+
+      sinon.stub(hook.Hook.prototype, 'load').returns(logFunction)
+
+      var mod = model('testModelName', schema, conn, settings)
+
+      mod.create({fieldName: 'foo', title: 'Article One', slug: ''}, function (err, result) {
+        if (err) return done(err)
+
+        var id = result.results[0]._id.toString()
+
+        // update the obj we just created
+        mod.update({ _id: id }, {title: 'Article Two'}, function (err, doc) {
+          if (err) return done(err)
+
+          hook.Hook.prototype.load.restore()
+
+          doc.results[0].slug.should.eql('')
+
+          var fs = require('fs')
+          var path = require('path')
+          var file = path.resolve(path.join(__dirname, 'testAfterUpdateHook.log'))
+          fs.stat(file, function (err, stats) {
+            err.code.should.eql('ENOENT')
+            done()
+          })
+        })
+      })
+    })
+
+    it('should modify documents after create if runHooks is true', function (done) {
       var conn = connection()
       var schema = help.getModelSchema()
       schema.title = {
@@ -738,8 +1046,8 @@ describe('Hook', function () {
             fs.unlinkSync(file)
             done()
           })
-        })
-      })
+        }, {}, {runHooks: true})
+      }, {}, {runHooks: true})
     })
   })
 
@@ -797,7 +1105,65 @@ describe('Hook', function () {
 
     // this one writes to a log file before deleting the document
     // see the logFunction declared at the top of this file
-    it('should fire delete hook for documents before delete', function (done) {
+    it('should not fire delete hook for documents before delete if runHooks is falsy or absent', function (done) {
+      var conn = connection()
+      var schema = help.getModelSchema()
+      schema.title = {
+        type: 'String',
+        required: false
+      }
+
+      schema.slug = {
+        type: 'String',
+        required: false
+      }
+
+      var settings = {
+        storeRevisions: false,
+        hooks: {
+          beforeDelete: [{
+            hook: 'writeToLog',
+            options: {
+              filename: 'testBeforeDeleteHook.log'
+            }
+          }]
+        }
+      }
+
+      sinon.stub(hook.Hook.prototype, 'load').returns(logFunction)
+
+      var mod = model('testModelName', schema, conn, settings)
+
+      mod.create({fieldName: 'foo', title: 'Article One', slug: ''}, function (err, result) {
+        if (err) return done(err)
+
+        var id = result.results[0]._id.toString()
+
+        // delete the obj we just created
+        mod.delete({ _id: id }, function (err, doc) {
+          if (err) return done(err)
+
+          hook.Hook.prototype.load.restore()
+
+          setTimeout(function () {
+            // try to find the obj
+            mod.find({ _id: id }, function (err, doc) {
+              if (err) return done(err)
+
+              var fs = require('fs')
+              var path = require('path')
+              var file = path.resolve(path.join(__dirname, 'testBeforeDeleteHook.log'))
+              fs.stat(file, function (err, stats) {
+                err.code.should.eql('ENOENT')
+                done()
+              })
+            })
+          }, 500)
+        })
+      })
+    })
+
+    it('should fire delete hook for documents before delete if runHooks is true', function (done) {
       var conn = connection()
       var schema = help.getModelSchema()
       schema.title = {
@@ -852,7 +1218,7 @@ describe('Hook', function () {
               })
             })
           }, 500)
-        })
+        }, {}, {runHooks: true})
       })
     })
   })
@@ -911,7 +1277,65 @@ describe('Hook', function () {
 
     // this one writes to a log file before deleting the document
     // see the logFunction declared at the top of this file
-    it('should fire delete hook for documents after delete', function (done) {
+    it('should not fire delete hook for documents after delete if runHooks is falsy or absent', function (done) {
+      var conn = connection()
+      var schema = help.getModelSchema()
+      schema.title = {
+        type: 'String',
+        required: false
+      }
+
+      schema.slug = {
+        type: 'String',
+        required: false
+      }
+
+      var settings = {
+        storeRevisions: false,
+        hooks: {
+          afterDelete: [{
+            hook: 'writeToLog',
+            options: {
+              filename: 'testBeforeDeleteHook.log'
+            }
+          }]
+        }
+      }
+
+      sinon.stub(hook.Hook.prototype, 'load').returns(logFunction)
+
+      var mod = model('testModelName', schema, conn, settings)
+
+      mod.create({fieldName: 'foo', title: 'Article One', slug: ''}, function (err, result) {
+        if (err) return done(err)
+
+        var id = result.results[0]._id.toString()
+
+        // delete the obj we just created
+        mod.delete({ _id: id }, function (err, doc) {
+          if (err) return done(err)
+
+          hook.Hook.prototype.load.restore()
+
+          setTimeout(function () {
+            // try to find the obj
+            mod.find({ _id: id }, function (err, doc) {
+              if (err) return done(err)
+
+              var fs = require('fs')
+              var path = require('path')
+              var file = path.resolve(path.join(__dirname, 'testBeforeDeleteHook.log'))
+              fs.stat(file, function (err, stats) {
+                err.code.should.eql('ENOENT')
+                done()
+              })
+            })
+          }, 500)
+        })
+      })
+    })    
+
+    it('should fire delete hook for documents after delete if runHooks is true', function (done) {
       var conn = connection()
       var schema = help.getModelSchema()
       schema.title = {
@@ -966,7 +1390,7 @@ describe('Hook', function () {
               })
             })
           }, 500)
-        })
+        }, {}, {runHooks: true})
       })
     })
   })
@@ -1023,7 +1447,47 @@ describe('Hook', function () {
       })
     })
 
-    it('should modify documents before responding to a GET', function (done) {
+    it('should not modify documents before responding to a GET if runHooks is falsy or absent', function (done) {
+      var conn = connection()
+      var schema = help.getModelSchema()
+      schema.title = {
+        type: 'String',
+        required: false
+      }
+
+      schema.slug = {
+        type: 'String',
+        required: false
+      }
+
+      var settings = {
+        storeRevisions: false,
+        hooks: {
+          afterGet: ['slug']
+        }
+      }
+
+      sinon.stub(hook.Hook.prototype, 'load').returns(hijackFunction)
+
+      var mod = model('testModelName', schema, conn, settings)
+
+      mod.create({fieldName: 'foo', title: 'Article One', slug: ''}, function (err, result) {
+        if (err) return done(err)
+
+        // find the obj we just created
+        mod.get({fieldName: 'foo'},function (err, doc) {
+          if (err) return done(err)
+
+          hook.Hook.prototype.load.restore()
+
+          should.not.exist(doc.results[0].name)
+
+          done()
+        })
+      })
+    })
+
+    it('should modify documents before responding to a GET if runHooks is true', function (done) {
       var conn = connection()
       var schema = help.getModelSchema()
       schema.title = {
@@ -1059,7 +1523,7 @@ describe('Hook', function () {
           doc.results[0].name.should.eql('Modified by hook')
 
           done()
-        })
+        }, {}, {runHooks: true})
       })
     })
   })

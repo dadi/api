@@ -54,16 +54,30 @@ connection.on('connect', db => {
       if (options.confirm) {
         delete options.confirm
 
-        db.collection(clientCollectionName).insert(options, err => {
-          if (err) throw err
+        const existingClients = db.collection(clientCollectionName).find({
+          clientId: options.clientId
+        })
 
-          console.log()
-          console.log('(*) Client created successfully:')
-          console.log()
-          console.log(options)
-          console.log()
+        existingClients.toArray((err, documents) => {
+          if (documents.length > 0) {
+            console.log(`(x) The identifier ${options.clientId} already exists. Exiting...`)
 
-          db.close()
+            db.close()
+
+            return
+          }
+
+          db.collection(clientCollectionName).insert(options, err => {
+            if (err) throw err
+
+            console.log()
+            console.log('(*) Client created successfully:')
+            console.log()
+            console.log(options)
+            console.log()
+
+            db.close()
+          })
         })
       } else {
         db.close()

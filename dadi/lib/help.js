@@ -257,19 +257,19 @@ module.exports.validateCollectionSchema = function (obj) {
   // check that an index exists for the field
   // specified as the sort field
   if (obj.settings && obj.settings.sort) {
-    var indexSpecified = true
+    var indexSpecified = false
 
     if (!obj.settings.index) {
       indexSpecified = false
     } else {
       if (_.isArray(obj.settings.index)) {
         _.each(obj.settings.index, (index) => {
-          if (!_.contains(index.keys, obj.settings.sort)) {
-            indexSpecified = false
+          if (_.contains(Object.keys(index.keys), obj.settings.sort)) {
+            indexSpecified = true
           }
         })
-      } else if (!_.contains(obj.settings.index.keys, obj.settings.sort)) {
-        indexSpecified = false
+      } else if (_.contains(Object.keys(obj.settings.index.keys), obj.settings.sort)) {
+        indexSpecified = true
       }
     }
 

@@ -447,6 +447,29 @@ describe('Model validator', function () {
         done()
       })
 
+      it('should inform of fields not in the schema when passed as Array', function (done) {
+        var validator = new Validator({
+          schema: {
+            field1: {
+              type: 'String',
+              required: false
+            },
+            field2: {
+              type: 'Mixed',
+              required: false
+            }
+          }
+        })
+
+        var val = validator.schema({field10: ['123'] })
+        val.success.should.be.false
+        val.errors.length.should.equal(1)
+        val.errors[0].field.should.equal('field10')
+        val.errors[0].message.should.equal('doesn\'t exist in the collection schema')
+
+        done()
+      })
+
       it('should inform if field is too long', function (done) {
         // make sure limit works for number and string that can be coerced to number
         var validator = new Validator({

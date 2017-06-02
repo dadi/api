@@ -6,6 +6,10 @@
     "host": "127.0.0.1",
     "port": 8000
   },
+  "publicUrl": {
+    "host": "api.somedomain.tech",
+    "port": 80
+  },
   "datastore": "@dadi/api-mongodb",
   "auth": {
     "tokenUrl": "/token",
@@ -30,7 +34,8 @@
   },
   "paths": {
     "collections": "test/acceptance/workspace/collections",
-    "endpoints": "test/acceptance/workspace/endpoints"
+    "endpoints": "test/acceptance/workspace/endpoints",
+    "hooks": "test/acceptance/workspace/hooks"
   },
   "logging": {
     "enabled": true,
@@ -38,6 +43,10 @@
     "path": "./log",
     "filename": "api",
     "extension": "log"
+  },
+  "media": {
+    "defaultBucket": "mediaStore",
+    "basePath": "test/acceptance/workspace/media"
   },
   "feedback": false,
   "cors": false,

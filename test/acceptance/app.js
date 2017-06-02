@@ -5,6 +5,7 @@ var path = require('path')
 var request = require('supertest')
 var _ = require('underscore')
 var EventEmitter = require('events').EventEmitter
+var FormData = require('form-data')
 var connection = require(__dirname + '/../../dadi/lib/model/connection')
 var config = require(__dirname + '/../../config')
 var help = require(__dirname + '/help')
@@ -2540,7 +2541,7 @@ describe('Application', function () {
           })
       })
 
-      it('should check that sort fields are included in the index schema', function (done) {
+      it('should error when sort field is specified with no indexes specified', function (done) {
         var client = request(connectionString)
         var schema = JSON.parse(jsSchemaString)
         schema.settings.sort = 'newField'
@@ -2562,6 +2563,101 @@ describe('Application', function () {
             res.body.errors.should.be.Array
 
             res.body.errors[0].title.should.eql('Missing Index Key')
+
+            done()
+          })
+      })
+
+      it('should error when sort field is specified but indexes doesn\'t include it (index style 1)', function (done) {
+        var client = request(connectionString)
+        var schema = JSON.parse(jsSchemaString)
+        schema.settings.sort = 'newField'
+        schema.settings.index = {
+          "keys": {
+            "createdAt" : 1
+          }
+        }
+
+        var newString = JSON.stringify(schema)
+
+        client
+          .post('/vapicreate/testdb/api-create/config')
+          .send(newString)
+          .set('content-type', 'text/plain')
+          .set('Authorization', 'Bearer ' + bearerToken)
+          .expect(400)
+          .expect('content-type', 'application/json')
+          .end(function (err, res) {
+            if (err) return done(err)
+
+            res.body.should.be.Object
+            res.body.should.not.be.Array
+            should.exist(res.body.errors)
+            res.body.errors.should.be.Array
+
+            res.body.errors[0].title.should.eql('Missing Index Key')
+
+            done()
+          })
+      })
+
+      it('should error when sort field is specified but indexes doesn\'t include it (index style 2)', function (done) {
+        var client = request(connectionString)
+        var schema = JSON.parse(jsSchemaString)
+        schema.settings.sort = 'newField'
+        schema.settings.index = [{
+          "keys": {
+            "createdAt" : 1
+          }
+        }]
+
+        var newString = JSON.stringify(schema)
+
+        client
+          .post('/vapicreate/testdb/api-create/config')
+          .send(newString)
+          .set('content-type', 'text/plain')
+          .set('Authorization', 'Bearer ' + bearerToken)
+          .expect(400)
+          .expect('content-type', 'application/json')
+          .end(function (err, res) {
+            if (err) return done(err)
+
+            res.body.should.be.Object
+            res.body.should.not.be.Array
+            should.exist(res.body.errors)
+            res.body.errors.should.be.Array
+
+            res.body.errors[0].title.should.eql('Missing Index Key')
+
+            done()
+          })
+      })
+
+      it('should not error when sort field is specified and indexes includes it (index style 2)', function (done) {
+        var client = request(connectionString)
+        var schema = JSON.parse(jsSchemaString)
+        schema.settings.sort = 'newField'
+        schema.settings.index = [{
+          "keys": {
+            "newField" : 1
+          }
+        }]
+
+        var newString = JSON.stringify(schema)
+
+        client
+          .post('/vapicreate/testdb/api-create/config')
+          .send(newString)
+          .set('content-type', 'text/plain')
+          .set('Authorization', 'Bearer ' + bearerToken)
+          .expect(200)
+          .expect('content-type', 'application/json')
+          .end(function (err, res) {
+            if (err) return done(err)
+
+            should.exist(res.body.result)
+            res.body.result.should.eql('success')
 
             done()
           })
@@ -3225,11 +3321,11 @@ describe('Application', function () {
       })
     })
 
-    it('should return 400 if request method is not supported', function (done) {
+    it('should return 405 if request method is not supported', function (done) {
       request(connectionString)
-      .put('/api/hooks/xx/config')
+      .put('/api/hooks')
       .set('Authorization', 'Bearer ' + bearerToken)
-      .expect(400, done)
+      .expect(405, done)
     })
 
     it('should return 404 if specified hook is not found', function (done) {
@@ -3246,6 +3342,207 @@ describe('Application', function () {
       .end(function (err, res) {
         res.statusCode.should.eql(200)
         res.text.should.not.eql('')
+        done()
+      })
+    })
+
+    it('should create a hook with a POST request', function (done) {
+      const hookName = 'myHook1'
+      const hookContent = `
+        module.exports = (obj, type, data) => {
+          return obj
+        }
+      `.trim()
+
+      request(connectionString)
+      .post(`/api/hooks/${hookName}/config`)
+      .send(hookContent)
+      .set('content-type', 'text/plain')
+      .set('Authorization', 'Bearer ' + bearerToken)
+      .end(function (err, res) {
+        res.statusCode.should.eql(200)
+        res.text.should.eql('')
+
+        setTimeout(() => {
+          request(connectionString)
+          .get(`/api/hooks/${hookName}/config`)
+          .set('Authorization', 'Bearer ' + bearerToken)
+          .end((err, res) => {
+            res.statusCode.should.eql(200)
+            res.text.should.eql(hookContent)
+
+            const hooksPath = config.get('paths.hooks')
+
+            // Deleting hook file
+            fs.unlinkSync(path.join(hooksPath, `${hookName}.js`))
+
+            // Give it some time for the monitor to kick in
+            setTimeout(() => {
+        done()
+            }, 200)
+      })
+        }, 200)
+    })
+  })
+
+    it('should return 409 when sending a POST request to a hook that already exists', function (done) {
+      const hookName = 'myHook1'
+      const hookContent = `
+        module.exports = (obj, type, data) => {
+          return obj
+        }
+      `.trim()
+
+      request(connectionString)
+      .post(`/api/hooks/${hookName}/config`)
+      .send(hookContent)
+      .set('content-type', 'text/plain')
+      .set('Authorization', 'Bearer ' + bearerToken)
+      .end(function (err, res) {
+        setTimeout(() => {
+          request(connectionString)
+          .post(`/api/hooks/${hookName}/config`)
+          .send(hookContent)
+          .set('content-type', 'text/plain')
+          .set('Authorization', 'Bearer ' + bearerToken)
+          .end((err, res) => {
+            res.statusCode.should.eql(409)
+
+            const hooksPath = config.get('paths.hooks')
+
+            // Deleting hook file
+            fs.unlinkSync(path.join(hooksPath, `${hookName}.js`))
+
+            // Give it some time for the monitor to kick in
+            setTimeout(() => {
+              done()
+            }, 200)
+          })
+        }, 200)
+      })
+    })
+
+    it('should update a hook with a PUT request', function (done) {
+      const hookName = 'myHook1'
+      const hookOriginalContent = `
+        module.exports = (obj, type, data) => {
+          return obj
+        }
+      `.trim()
+      const hookUpdatedContent = `
+        module.exports = (obj, type, data) => {
+          obj = 'Something else'
+
+          return obj
+        }
+      `.trim()
+
+      request(connectionString)
+      .post(`/api/hooks/${hookName}/config`)
+      .send(hookOriginalContent)
+      .set('content-type', 'text/plain')
+      .set('Authorization', 'Bearer ' + bearerToken)
+      .end((err, res) => {
+        setTimeout(() => {
+          request(connectionString)
+          .put(`/api/hooks/${hookName}/config`)
+          .set('content-type', 'text/plain')
+          .send(hookUpdatedContent)
+          .set('Authorization', 'Bearer ' + bearerToken)
+          .end((err, res) => {
+            res.statusCode.should.eql(200)
+            res.text.should.eql('')
+
+            setTimeout(() => {
+              request(connectionString)
+              .get(`/api/hooks/${hookName}/config`)
+              .set('Authorization', 'Bearer ' + bearerToken)
+              .end((err, res) => {
+                res.statusCode.should.eql(200)
+                res.text.should.eql(hookUpdatedContent)
+
+                const hooksPath = config.get('paths.hooks')
+
+                // Deleting hook file
+                fs.unlinkSync(path.join(hooksPath, `${hookName}.js`))
+
+                // Give it some time for the monitor to kick in
+                setTimeout(() => {
+                  done()
+                }, 200)
+              })
+            }, 200)
+          })
+        }, 200)
+      })
+    })
+
+    it('should return 404 when sending a PUT request to a hook that does not exist', function (done) {
+      const hookName = 'myHook1'
+      const hookUpdatedContent = `
+        module.exports = (obj, type, data) => {
+          return obj
+        }
+      `.trim()
+
+      request(connectionString)
+      .put(`/api/hooks/${hookName}/config`)
+      .send(hookUpdatedContent)
+      .set('content-type', 'text/plain')
+      .set('Authorization', 'Bearer ' + bearerToken)
+      .end(function (err, res) {
+        res.statusCode.should.eql(404)
+
+        done()
+      })
+    })
+
+    it('should delete a hook with a DELETE request', function (done) {
+      const hookName = 'myHook1'
+      const hookContent = `
+        module.exports = (obj, type, data) => {
+          return obj
+        }
+      `.trim()
+
+      request(connectionString)
+      .post(`/api/hooks/${hookName}/config`)
+      .send(hookContent)
+      .set('content-type', 'text/plain')
+      .set('Authorization', 'Bearer ' + bearerToken)
+      .end((err, res) => {
+        setTimeout(() => {
+          request(connectionString)
+          .delete(`/api/hooks/${hookName}/config`)
+          .set('Authorization', 'Bearer ' + bearerToken)
+          .end((err, res) => {
+            res.statusCode.should.eql(200)
+            res.text.should.eql('')
+
+            setTimeout(() => {
+              request(connectionString)
+              .get(`/api/hooks/${hookName}/config`)
+              .set('Authorization', 'Bearer ' + bearerToken)
+              .end((err, res) => {
+                res.statusCode.should.eql(404)
+
+                done()
+              })
+            }, 200)
+          })
+        }, 200)
+      })
+    })
+
+    it('should return 404 when sending a DELETE request to a hook that does not exist', function (done) {
+      const hookName = 'myHook1'
+
+      request(connectionString)
+      .delete(`/api/hooks/${hookName}/config`)
+      .set('Authorization', 'Bearer ' + bearerToken)
+      .end(function (err, res) {
+        res.statusCode.should.eql(404)
+
         done()
       })
     })

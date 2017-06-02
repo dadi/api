@@ -74,6 +74,15 @@ Validator.prototype._parseDocument = function (obj, schema, response) {
   var err // eslint-disable-line
 
   keys.forEach((key) => {
+    if (!schema[key]) {
+      response.success = false
+      response.errors.push({
+        collection: this.model.name,
+        field: key,
+        message: "doesn't exist in the collection schema",
+        data: obj
+      })
+    } else {
     // handle objects first
     if (typeof obj[key] === 'object') {
       if (schema[key] && (schema[key].type === 'Mixed' || schema[key].type === 'Object')) {
@@ -102,18 +111,6 @@ Validator.prototype._parseDocument = function (obj, schema, response) {
         }
       }
     } else {
-      if (!schema[key]) {
-        response.success = false
-        response.errors.push({
-          collection: this.model.name,
-          field: key,
-          message: 'doesn\'t exist in the collection schema',
-          data: obj
-        })
-
-        return
-      }
-
       var err = this._validate(obj[key], schema[key], key)
 
       if (err) {

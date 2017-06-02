@@ -1,3 +1,4 @@
+var _ = require('underscore')
 var fs = require('fs')
 var http = require('http')
 var https = require('https')
@@ -88,9 +89,12 @@ Api.prototype.use = function (path, handler) {
     return this.all.push(path)
   }
 
+  var regex = pathToRegexp(path)
+
   this.paths[path] = {
     handler: handler,
-    regex: pathToRegexp(path)
+    order: routePriority(path, regex.keys),
+    regex: regex
   }
 }
 
@@ -236,7 +240,7 @@ Api.prototype._match = function (path, req) {
   // always add params object to avoid need for checking later
   req.params = {}
 
-  Object.keys(paths).forEach(function (key) {
+  Object.keys(paths).forEach((key) => {
     var match = paths[key].regex.exec(path)
     if (!match) return
 
@@ -244,7 +248,7 @@ Api.prototype._match = function (path, req) {
 
     handlers.push(paths[key].handler)
 
-    match.forEach(function (k, i) {
+    match.forEach((k, i) => {
       var keyOpts = keys[i] || {}
       if (match[i + 1] && keyOpts.name) req.params[keyOpts.name] = match[i + 1]
     })
@@ -285,4 +289,31 @@ function notFound (req, res) {
     res.statusCode = 404
     res.end()
   }
+}
+
+function routePriority (path, keys) {
+  var tokens = pathToRegexp.parse(path)
+
+  var staticRouteLength = 0
+  if (typeof tokens[0] === 'string') {
+    staticRouteLength = _.compact(tokens[0].split('/')).length
+  }
+
+  var requiredParamLength = _.filter(keys, function (key) {
+    return !key.optional
+  }).length
+
+  var optionalParamLength = _.filter(keys, function (key) {
+    return key.optional
+  }).length
+
+  var order =
+    staticRouteLength * 5 +
+    requiredParamLength * 2 +
+    optionalParamLength
+
+  // make internal routes less important...
+  if (path.indexOf('/api/') > 0) order = -100
+
+  return order
 }

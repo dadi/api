@@ -21,15 +21,22 @@ function mustAuthenticate (endpoints, req) {
 
   if (!endpointKey) return true
 
-  if (isMediaEndpoint(endpoints[endpointKey], req)) {
-    return false
+  var endpoint = endpoints[endpointKey]
+
+  if (isMediaEndpoint(endpoint, req)) {
+    if (req.params.token && req.params.token === 'sign') {
+      return true
+    } else {
+      // no auth required, token is an actual token or req.params.filename exists
+      return false
+    }
   }
 
-  if (endpoints[endpointKey].model && endpoints[endpointKey].model.settings && endpoints[endpointKey].model.settings.hasOwnProperty('authenticate')) {
-    if (typeof endpoints[endpointKey].model.settings.authenticate === 'boolean') {
-      return endpoints[endpointKey].model.settings.authenticate
+  if (endpoint.model && endpoint.model.settings && endpoint.model.settings.hasOwnProperty('authenticate')) {
+    if (typeof endpoint.model.settings.authenticate === 'boolean') {
+      return endpoint.model.settings.authenticate
     } else {
-      return endpoints[endpointKey].model.settings.authenticate.indexOf(req.method) > -1
+      return endpoint.model.settings.authenticate.indexOf(req.method) > -1
     }
   } else {
     return true
@@ -43,16 +50,10 @@ function mustAuthenticate (endpoints, req) {
  * @returns {Boolean} - returns true if the URL starts with '/api/media/' followed by a filename
  */
 function isMediaEndpoint (endpoint, req) {
-  var isMedia = endpoint.model &&
+  return endpoint.model &&
     endpoint.model.settings &&
     endpoint.model.settings.type &&
-    endpoint.model.settings.type === 'media'
-
-  if (isMedia && (req.params.token || req.params.filename)) {
-    return true
-  } else {
-    return false
-  }
+    endpoint.model.settings.type === 'mediaCollection'
 }
 
 function isAuthorized (endpoints, req, client) {

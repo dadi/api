@@ -1,3 +1,5 @@
+'use strict'
+
 var _ = require('underscore')
 var Busboy = require('busboy')
 var imagesize = require('imagesize')
@@ -11,28 +13,13 @@ var config = require(path.join(__dirname, '/../../../config'))
 var help = require(path.join(__dirname, '/../help'))
 var streamifier = require('streamifier')
 
+var mediaModel = require(path.join(__dirname, '/../model/media'))
 var prepareQuery = require(path.join(__dirname, './index')).prepareQuery
 var prepareQueryOptions = require(path.join(__dirname, './index')).prepareQueryOptions
 var StorageFactory = require(path.join(__dirname, '/../storage/factory'))
 
 var MediaController = function (model) {
   this.model = model
-}
-
-/**
- * Sets the route that this controller instance is resonsible for handling
- *
- * @param {string} route - a route in the format /apiVersion/database/collection. For example /1.0/library/images
- */
-MediaController.prototype.setRoute = function (route) {
-  this.route = route
-}
-
-/**
- *
- */
-MediaController.prototype.setPayload = function (payload) {
-  this.tokenPayload = payload
 }
 
 /**
@@ -47,7 +34,15 @@ MediaController.prototype.get = function (req, res, next) {
     return help.sendBackJSON(400, res, next)(null, parsedOptions)
   }
 
-  this.model.get(query, parsedOptions.queryOptions, help.sendBackJSON(200, res, next), req)
+  const callback = (err, response) => {
+    response.results = response.results.map(document => {
+      return mediaModel.formatDocuments(document)
+    })
+
+    help.sendBackJSON(200, res, next)(err, response)
+  }
+
+  this.model.get(query, parsedOptions.queryOptions, callback, req)
 }
 
 /**
@@ -78,6 +73,33 @@ MediaController.prototype.getFile = function (req, res, next, route) {
   })
 
   return serveStatic(config.get('media.basePath'))(modifiedReq, res, next)
+}
+
+/**
+ * Generate a folder hierarchy for a file, based on a configuration property
+ *
+ * @param {string} fileName - the name of the file being uploaded
+ */
+MediaController.prototype.getPath = function (fileName) {
+  var reSplitter
+
+  switch (config.get('media.pathFormat')) {
+    case 'sha1/4':
+      reSplitter = new RegExp('.{1,4}', 'g')
+      return sha1(fileName).match(reSplitter).join('/')
+    case 'sha1/5':
+      reSplitter = new RegExp('.{1,5}', 'g')
+      return sha1(fileName).match(reSplitter).join('/')
+    case 'sha1/8':
+      reSplitter = new RegExp('.{1,8}', 'g')
+      return sha1(fileName).match(reSplitter).join('/')
+    case 'date':
+      return formatDate()
+    case 'datetime':
+      return formatDate(true)
+    default:
+      return ''
+  }
 }
 
 MediaController.prototype.put = function (req, res, next) {
@@ -162,40 +184,66 @@ MediaController.prototype.post = function (req, res, next) {
           createdBy: req.client && req.client.clientId
         }
 
-        return this.writeFile(req, this.fileName, this.mimetype, dataStream).then((result) => {
-          if (_.contains(fields, 'contentLength')) obj.contentLength = result.contentLength
+        const callback = (err, response) => {
+          response.results = response.results.map(document => {
+            return mediaModel.formatDocuments(document)
+          })
+
+          help.sendBackJSON(201, res, next)(err, response)
+        }
+
+        return this.writeFile(req, this.fileName, this.mimetype, dataStream).then(result => {
+          if (_.contains(fields, 'contentLength')) {
+            obj.contentLength = result.contentLength
+          }
 
           obj.path = result.path
 
-          this.model.create(obj, internals, help.sendBackJSON(201, res, next), req)
+          this.model.create(obj, internals, callback, req)
         })
       })
     })
 
     // Pipe the HTTP Request into Busboy
     req.pipe(busboy)
-  }
+  } else {
+    // if id is present in the url, then this is an update
+    if (req.params.id || req.body.update) {
+      var internals = {
+        lastModifiedAt: Date.now(),
+        lastModifiedBy: req.client && req.client.clientId
+      }
 
-  // if id is present in the url, then this is an update
-  if (req.params.id || req.body.update) {
-    var internals = {
-      lastModifiedAt: Date.now(),
-      lastModifiedBy: req.client && req.client.clientId
+      var query = {}
+      var update = {}
+
+      if (req.params.id) {
+        query._id = req.params.id
+        update = req.body
+      } else {
+        query = req.body.query
+        update = req.body.update
+      }
+
+      this.model.update(query, update, internals, help.sendBackJSON(200, res, next), req)
     }
-
-    var query = {}
-    var update = {}
-
-    if (req.params.id) {
-      query._id = req.params.id
-      update = req.body
-    } else {
-      query = req.body.query
-      update = req.body.update
-    }
-
-    this.model.update(query, update, internals, help.sendBackJSON(200, res, next), req)
   }
+}
+
+/**
+ *
+ */
+MediaController.prototype.setPayload = function (payload) {
+  this.tokenPayload = payload
+}
+
+/**
+ * Sets the route that this controller instance is resonsible for handling
+ *
+ * @param {string} route - a route in the format /apiVersion/database/collection. For example /1.0/library/images
+ */
+MediaController.prototype.setRoute = function (route) {
+  this.route = route
 }
 
 /**
@@ -217,33 +265,6 @@ MediaController.prototype.writeFile = function (req, fileName, mimetype, stream)
       return reject(err)
     })
   })
-}
-
-/**
- * Generate a folder hierarchy for a file, based on a configuration property
- *
- * @param {string} fileName - the name of the file being uploaded
- */
-MediaController.prototype.getPath = function (fileName) {
-  var reSplitter
-
-  switch (config.get('media.pathFormat')) {
-    case 'sha1/4':
-      reSplitter = new RegExp('.{1,4}', 'g')
-      return sha1(fileName).match(reSplitter).join('/')
-    case 'sha1/5':
-      reSplitter = new RegExp('.{1,5}', 'g')
-      return sha1(fileName).match(reSplitter).join('/')
-    case 'sha1/8':
-      reSplitter = new RegExp('.{1,8}', 'g')
-      return sha1(fileName).match(reSplitter).join('/')
-    case 'date':
-      return formatDate()
-    case 'datetime':
-      return formatDate(true)
-    default:
-      return ''
-  }
 }
 
 function formatDate (includeTime) {

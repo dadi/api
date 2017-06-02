@@ -1,5 +1,7 @@
+--bail
 --growl
---timeout 4000
+--full-trace
+--timeout=4000
 --ui bdd
 --reporter mochawesome
 --recursive

@@ -99,7 +99,7 @@ function makeCaseInsensitive (obj, schema) {
   var newObj = _.clone(obj)
 
   _.each(Object.keys(obj), function (key) {
-    if (key === 'apiVersion') {
+    if (key === 'apiVersion' || key === '_id') {
       return
     }
 

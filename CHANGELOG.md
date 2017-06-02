@@ -12,7 +12,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 Upgrade MongoDB driver to 2.2.x, from the existing 1.4.x version.
 
 #### Fixed `create-client` script
-Use correct `accessType` property in client store documents
+ * use correct `accessType` property in client store documents
+ * abort if chosen clientId exists already
 
 #### Media collections
 This version introduces a few changes to how media is handled by API.

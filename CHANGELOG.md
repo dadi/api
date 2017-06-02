@@ -109,9 +109,11 @@ Extended the hooks config endpoint (`/api/hooks/:hookName/config`) to accept POS
 #### Other
 
 * [#245](https://github.com/dadi/api/issues/245): fix media path formatting
+* [#246](https://github.com/dadi/api/issues/246): ignore _id field in query when processing query filters
+* [#257](https://github.com/dadi/api/issues/257): improve performance of Reference field composition
 * [#260](https://github.com/dadi/api/issues/260): modify property value that indicates a media collection to "mediaCollection"
-* [#265](https://github.com/dadi/api/issues/265): array not validated against schemas in POST requests
-* [#284](https://github.com/dadi/api/issues/284): indexes not checked correctly when given a sort key
+* [#265](https://github.com/dadi/api/issues/265): validate arrays against schemas in POST requests
+* [#284](https://github.com/dadi/api/issues/284): check indexes correctly when given a sort key
 * remove `apiVersion` query property when composing reference fields, improves performance
 
 ### Added

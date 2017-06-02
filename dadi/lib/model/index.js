@@ -711,7 +711,7 @@ Model.prototype.get = function (query, options, done, req) {
         }).catch((err) => {
           callback([formatError.createApiError('0002', {
             hookName: hook.getName(),
-            errorMessage: err
+            errorMessage: err + '\n' + err.stack ? err.stack.split('\n')[1] : ''
           })])
         })
       }, (err, finalResult) => {
@@ -945,7 +945,7 @@ Model.prototype.update = function (query, update, internals, done, req) {
           }).catch((err) => {
             callback([formatError.createApiError('0002', {
               hookName: hook.getName(),
-              errorMessage: err
+              errorMessage: err + '\n' + err.stack ? err.stack.split('\n')[1] : ''
             })])
           })
         }, (err, result) => {

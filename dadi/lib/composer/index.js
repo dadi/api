@@ -54,7 +54,8 @@ Composer.prototype.compose = function (obj, callback) {
           var f = field
 
           model.find(query, { 'compose': compose, 'fields': fields }, (err, result) => {
-            if (err) console.log(err)
+            if (err) return reject(err)
+
             data[f] = result.results
             return resolve()
           })

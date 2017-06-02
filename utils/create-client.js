@@ -61,16 +61,26 @@ connection.on('connect', db => {
       if (options.confirm) {
         delete options.confirm
 
-        db.insert(options, clientCollectionName, getSchema()).then(result => {
-          console.log()
-          console.log('(*) Client created successfully:')
-          console.log()
-          console.log(options)
-          console.log()
+        // check for an existing client account
+        db.find({
+          clientId: options.clientId
+        }, clientCollectionName, getSchema()).then(existingClients => {
+          if (existingClients.length > 0) {
+            console.log(`(x) The identifier ${options.clientId} already exists. Exiting...`)
+            return
+          }
 
-          process.exit(0)
-        }).catch((err) => {
-          throw err
+          db.insert(options, clientCollectionName, getSchema()).then(result => {
+            console.log()
+            console.log('(*) Client created successfully:')
+            console.log()
+            console.log(options)
+            console.log()
+
+            process.exit(0)
+          }).catch((err) => {
+            throw err
+          })
         })
       } else {
         process.exit(0)

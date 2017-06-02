@@ -609,19 +609,18 @@ Server.prototype.loadHooksRoute = function (options) {
   this.app.use('/api/hooks', (req, res, next) => {
     const method = req.method && req.method.toLowerCase()
     if (method === 'get') {
-
       return hooksController[method](req, res, next)
-        }
+    }
 
     return help.sendBackJSON(405, res, next)(null, {'error': 'Invalid method'})
-    })
+  })
 
   this.app.use('/api/hooks/:hookName/config', (req, res, next) => {
     const method = req.method && req.method.toLowerCase()
 
     if (typeof hooksController[method] === 'function') {
       return hooksController[method](req, res, next)
-      }
+    }
 
     return help.sendBackJSON(405, res, next)(null, {'error': 'Invalid method'})
   })
@@ -775,10 +774,8 @@ Server.prototype.addCollectionResource = function (options) {
     filepath: options.filepath
   })
 
-  var self = this
-
   // watch the schema's file and update it in place
-  this.addMonitor(options.filepath, function (filename) {
+  this.addMonitor(options.filepath, filename => {
     // invalidate schema file cache then reload
     delete require.cache[options.filepath]
 
@@ -786,21 +783,23 @@ Server.prototype.addCollectionResource = function (options) {
       var schemaObj = require(options.filepath)
       var fields = help.getFieldsFromSchema(schemaObj)
 
-      self.components[options.route].model.schema = JSON.parse(fields)
-      self.components[options.route].model.settings = schemaObj.settings
+      this.components[options.route].model.schema = JSON.parse(fields)
+      this.components[options.route].model.settings = schemaObj.settings
     } catch (e) {
       // if file was removed "un-use" this component
       if (e && e.code === 'ENOENT') {
-        self.removeMonitor(options.filepath)
-        self.removeComponent(options.route)
+        this.removeMonitor(options.filepath)
+        this.removeComponent(options.route)
       }
     }
+  })
+}
 
 Server.prototype.addMediaCollectionResource = function (options) {
-  var enableCollectionDatabases = config.get('database.enableCollectionDatabases')
-  var database = enableCollectionDatabases ? options.database : null
+  // var enableCollectionDatabases = config.get('database.enableCollectionDatabases')
+  // var database = enableCollectionDatabases ? options.database : null
 
-  var model = Model(options.name, options.schema.fields, null, options.schema.settings, database)
+  var model = Model(options.name, options.schema.fields, null, options.schema.settings, options.database)
   var controller = MediaController(model)
 
   this.addComponent({
@@ -971,46 +970,40 @@ Server.prototype.addComponent = function (options) {
     options.component.model.settings.type === 'mediaCollection'
 
   if (!isMedia) {
-  this.app.use(options.route + '/config', function (req, res, next) {
-    var method = req.method && req.method.toLowerCase()
+    this.app.use(options.route + '/config', function (req, res, next) {
+      var method = req.method && req.method.toLowerCase()
 
-    // send schema
-    if (method === 'get' && options.filepath) {
-      // only allow getting collection endpoints
-      if (options.filepath.slice(-5) === '.json') {
-        return help.sendBackJSON(200, res, next)(null, require(options.filepath))
+      // send schema
+      if (method === 'get' && options.filepath) {
+        // only allow getting collection endpoints
+        if (options.filepath.slice(-5) === '.json') {
+          return help.sendBackJSON(200, res, next)(null, require(options.filepath))
+        }
       }
-    }
 
-    // set schema
-    if (method === 'post' && options.filepath) {
-      var schema = typeof req.body === 'object' ? req.body : JSON.parse(req.body)
-      schema.settings.lastModifiedAt = Date.now()
+      // set schema
+      if (method === 'post' && options.filepath) {
+        var schema = typeof req.body === 'object' ? req.body : JSON.parse(req.body)
+        schema.settings.lastModifiedAt = Date.now()
 
-      return fs.writeFile(options.filepath, JSON.stringify(schema, null, 2), function (err) {
-        help.sendBackJSON(200, res, next)(err, {result: 'success'})
-      })
-    }
-
-    // delete schema
-    if (method === 'delete' && options.filepath) {
-      // only allow removing collection type endpoints
-      if (options.filepath.slice(-5) === '.json') {
-        return fs.unlink(options.filepath, function (err) {
+        return fs.writeFile(options.filepath, JSON.stringify(schema, null, 2), function (err) {
           help.sendBackJSON(200, res, next)(err, {result: 'success'})
         })
       }
-    }
 
-    next()
-  })
+      // delete schema
+      if (method === 'delete' && options.filepath) {
+        // only allow removing collection type endpoints
+        if (options.filepath.slice(-5) === '.json') {
+          return fs.unlink(options.filepath, function (err) {
+            help.sendBackJSON(200, res, next)(err, {result: 'success'})
+          })
+        }
+      }
 
-  var isMedia = options.component.model &&
-    options.component.model.settings &&
-    options.component.model.settings.type &&
-    options.component.model.settings.type === 'media'
+      next()
+    })
 
-  if (!isMedia) {
     this.app.use(options.route, function (req, res, next) {
       try {
         // map request method to controller method

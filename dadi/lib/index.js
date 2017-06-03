@@ -921,8 +921,8 @@ Server.prototype.addHook = function (options) {
       opts.component = require(filepath)
     } catch (err) {
       // if file was removed "un-use" this component
-        self.removeMonitor(filepath)
-        self.removeComponent(opts.route)
+      self.removeMonitor(filepath)
+      self.removeComponent(opts.route)
     }
   })
 

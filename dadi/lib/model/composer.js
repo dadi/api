@@ -1,5 +1,4 @@
 var _ = require('underscore')
-var debug = require('debug')('api:composer')
 var path = require('path')
 var mediaModel = require(path.join(__dirname, '../model/media'))
 var queryUtils = require(path.join(__dirname, '../model/utils'))

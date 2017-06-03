@@ -71,7 +71,7 @@ Validator.prototype.schema = function (obj, update) {
 
 Validator.prototype._parseDocument = function (obj, schema, response) {
   var keys = _.difference(Object.keys(obj), ignoredKeys)
-  var err // eslint-disable-line
+  var err = false
 
   keys.forEach(key => {
     if (!schema[key]) {
@@ -111,7 +111,7 @@ Validator.prototype._parseDocument = function (obj, schema, response) {
           }
         }
       } else {
-        var err = this._validate(obj[key], schema[key], key)
+        err = this._validate(obj[key], schema[key], key)
 
         if (err) {
           response.success = false
@@ -203,9 +203,6 @@ Validator.prototype._validate = function (field, schema, key) {
       return schema.message || 'is wrong type'
     }
   }
-
-  // validation passes
-  return
 }
 
 module.exports = Validator

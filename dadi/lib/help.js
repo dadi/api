@@ -4,7 +4,6 @@ var formatError = require('@dadi/format-error')
 var fs = require('fs')
 var Moment = require('moment')
 var path = require('path')
-var util = require('util')
 
 var cache = require(path.join(__dirname, '/cache'))
 var config = require(path.join(__dirname, '/../../config'))
@@ -213,7 +212,7 @@ module.exports.isJSON = function (jsonString) {
 
 module.exports.validateCollectionSchema = function (obj) {
   // `obj` must be a "hash type object", i.e. { ... }
-  if (typeof obj !== 'object' || util.isArray(obj) || obj === null) return false
+  if (typeof obj !== 'object' || Array.isArray(obj) || obj === null) return false
 
   var response = {
     success: true,

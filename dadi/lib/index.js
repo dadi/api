@@ -291,6 +291,8 @@ Server.prototype.loadApi = function (options) {
     self.updateVersions(endpointPath)
   })
 
+  this.loadMediaCollections()
+
   this.app.use('/api/flush', function (req, res, next) {
     var method = req.method && req.method.toLowerCase()
     if (method !== 'post') return next()
@@ -386,8 +388,6 @@ Server.prototype.loadConfigApi = function () {
 
     var method = req.method && req.method.toLowerCase()
     if (method !== 'post') return next()
-
-    // console.log(req)
 
     try {
       var schema = typeof req.body === 'object' ? req.body : JSON.parse(req.body)
@@ -716,6 +716,11 @@ Server.prototype.updateCollections = function (collectionsPath) {
       database: database
     })
   })
+}
+
+Server.prototype.loadMediaCollections = function () {
+  var mediaBuckets = config.get('media.buckets')
+  var defaultMediaBucket = config.get('media.defaultBucket')
 
   // Loading media collections
   var mediaSchema = mediaModel.getSchema()

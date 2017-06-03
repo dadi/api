@@ -162,10 +162,12 @@ Model.prototype.createIndex = function (done) {
  * @param {object} documents - a document, or Array of documents to insert in the database
  * @param {object} internals
  * @param {function} done
+ * @param {object} req
+ * @param {object} options
  * @return undefined
  * @api public
  */
-Model.prototype.create = function (documents, internals, done, req) {
+Model.prototype.create = function (documents, internals, done, req, options) {
   var self = this
 
   if (!(documents instanceof Array)) {
@@ -174,8 +176,12 @@ Model.prototype.create = function (documents, internals, done, req) {
 
   // internals will not be validated, i.e. should not be user input
   if (typeof internals === 'function') {
+    options = req
+    req = done
     done = internals
   }
+
+  options = options || {}
 
   // validate each doc
   var validation
@@ -223,7 +229,11 @@ Model.prototype.create = function (documents, internals, done, req) {
 
   var startInsert = (database) => {
     // Running `beforeCreate` hooks
-    if (this.settings.hooks && this.settings.hooks.beforeCreate) {
+    if (
+      options.runHooks &&
+      this.settings.hooks &&
+      this.settings.hooks.beforeCreate
+    ) {
       var processedDocs = 0
 
       documents.forEach((doc, docIndex) => {
@@ -272,7 +282,11 @@ Model.prototype.create = function (documents, internals, done, req) {
         results.results = obj
 
         // apply any existing `afterCreate` hooks
-        if (this.settings.hasOwnProperty('hooks') && (typeof this.settings.hooks.afterCreate === 'object')) {
+        if (
+          options.runHooks &&
+          this.settings.hooks &&
+          typeof this.settings.hooks.afterCreate === 'object'
+        ) {
           documents.forEach((doc) => {
             this.settings.hooks.afterCreate.forEach((hookConfig, index) => {
               var hook = new Hook(this.settings.hooks.afterCreate[index], 'afterCreate')
@@ -692,17 +706,27 @@ Model.prototype.find = function (query, options, done) {
  *
  * @param {Object} query
  * @param {Function} done
+ * @param {Object} req
+ * @param {Object} modelOptions
  * @return undefined
  * @api public
  */
-Model.prototype.get = function (query, options, done, req) {
+Model.prototype.get = function (query, options, done, req, modelOptions) {
   if (typeof options === 'function') {
+    modelOptions = req
+    req = done
     done = options
     options = {}
   }
 
+  modelOptions = modelOptions || {}
+
   this.find(query, options, (err, results) => {
-    if (this.settings.hooks && this.settings.hooks.afterGet) {
+    if (
+      modelOptions.runHooks &&
+      this.settings.hooks &&
+      this.settings.hooks.afterGet
+    ) {
       async.reduce(this.settings.hooks.afterGet, results, (current, hookConfig, callback) => {
         var hook = new Hook(hookConfig, 'afterGet')
 
@@ -806,14 +830,20 @@ Model.prototype.stats = function (options, done) {
  * @param {Object} query
  * @param {Object} update
  * @param {Function} done
+ * @param {Object} req
+ * @param {Object} options
  * @return undefined
  * @api public
  */
-Model.prototype.update = function (query, update, internals, done, req) {
+Model.prototype.update = function (query, update, internals, done, req, options) {
   // internals will not be validated, i.e. should not be user input
   if (typeof internals === 'function') {
+    options = req
+    req = done
     done = internals
   }
+
+  options = options || {}
 
   var validation
   var err
@@ -894,7 +924,11 @@ Model.prototype.update = function (query, update, internals, done, req) {
           }
 
           var triggerAfterUpdateHook = (docs) => {
-            if (this.settings.hasOwnProperty('hooks') && (typeof this.settings.hooks.afterUpdate === 'object')) {
+            if (
+              options.runHooks &&
+              this.settings.hooks &&
+              typeof this.settings.hooks.afterUpdate === 'object'
+            ) {
               this.settings.hooks.afterUpdate.forEach((hookConfig, index) => {
                 var hook = new Hook(this.settings.hooks.afterUpdate[index], 'afterUpdate')
 
@@ -936,7 +970,11 @@ Model.prototype.update = function (query, update, internals, done, req) {
       }
 
       // apply any existing `beforeUpdate` hooks, otherwise save the documents straight away
-      if (this.settings.hooks && this.settings.hooks.beforeUpdate) {
+      if (
+        options.runHooks &&
+        this.settings.hooks &&
+        this.settings.hooks.beforeUpdate
+      ) {
         async.reduce(this.settings.hooks.beforeUpdate, update, (current, hookConfig, callback) => {
           var hook = new Hook(hookConfig, 'beforeUpdate')
 
@@ -973,10 +1011,14 @@ Model.prototype.update = function (query, update, internals, done, req) {
  *
  * @param {Object} query
  * @param {Function} done
+ * @param {Object} req
+ * @param {Object} options
  * @return undefined
  * @api public
  */
-Model.prototype.delete = function (query, done, req) {
+Model.prototype.delete = function (query, done, req, options) {
+  options = options || {}
+
   var validation = this.validate.query(query)
   if (!validation.success) {
     var err = validationError('Bad Query')
@@ -990,7 +1032,11 @@ Model.prototype.delete = function (query, done, req) {
 
   var startDelete = (database) => {
     // apply any existing `beforeDelete` hooks, otherwise delete the documents straight away
-    if (this.settings.hooks && this.settings.hooks.beforeDelete) {
+    if (
+      options.runHooks &&
+      this.settings.hooks &&
+      this.settings.hooks.beforeDelete
+    ) {
       async.reduce(this.settings.hooks.beforeDelete, query, (current, hookConfig, callback) => {
         var hook = new Hook(hookConfig, 'beforeDelete')
         var hookError = {}
@@ -1019,7 +1065,11 @@ Model.prototype.delete = function (query, done, req) {
     database.collection(this.name).deleteMany(query, (err, result) => {
       if (!err && (result.deletedCount > 0)) {
         // apply any existing `afterDelete` hooks
-        if (this.settings.hasOwnProperty('hooks') && (typeof this.settings.hooks.afterDelete === 'object')) {
+        if (
+          options.runHooks &&
+          this.settings.hooks &&
+          typeof this.settings.hooks.afterDelete === 'object'
+        ) {
           this.settings.hooks.afterDelete.forEach((hookConfig, index) => {
             var hook = new Hook(this.settings.hooks.afterDelete[index], 'afterDelete')
 

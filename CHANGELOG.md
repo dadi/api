@@ -12,7 +12,40 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 Upgrade MongoDB driver to 2.2.x, from the existing 1.4.x version.
 
 #### Fixed `create-client` script
-Use correct `accessType` property in client store documents
+ * use correct `accessType` property in client store documents
+ * abort if chosen clientId exists already
+
+#### Generate new documents from a pre-composed document
+
+It is now possible to send API a full document containing pre-composed Reference fields. API will translate such a request into individual documents for the relevant collections. This functionality reduces the number of API calls that must be made from an application when inserting data.
+
+##### For example
+
+Assume we have two collections, `people` and `cars`. `cars` is a Reference field within the `people` collection schema. Given the following body in a POST request to `/1.0/car-club/people`:
+
+```json
+{
+  "name": "Joe",
+  "cars": [
+    {
+      "model": "Lamborghini Diablo",
+      "year": 1991
+    }
+  ]
+}
+```
+
+API will automatically create new documents in the `cars` collection and use the new identifier value in the `people` document. The final `people` document would look similar to this:
+
+```json
+{
+  "name": "Joe",
+  "cars": [
+    "587cb6aa80222c9e7266cec0"
+  ]
+}
+```
+
 
 #### Media collections
 This version introduces a few changes to how media is handled by API.
@@ -88,17 +121,17 @@ Instead of replacing the contents of `path`, leave that as it is and write the f
 
 ```json
 "image": {
-    "_id": "591b5f29795b683664af01e9",
-    "fileName": "3RdYMTLoL1X16djGF52cFtJovDT.jpg",
-    "mimetype": "image/jpeg",
-    "width": 600,
-    "height": 900,
-    "contentLength": 54907,
-    "path": "/media/2017/05/16/3RdYMTLoL1X16djGF52cFtJovDT-1494966057926.jpg",
-    "createdAt": 1494966057685,
-    "createdBy": null,
-    "v": 1,
-    "url": "http://localhost:5000/media/2017/05/16/3RdYMTLoL1X16djGF52cFtJovDT-1494966057926.jpg"
+  "_id": "591b5f29795b683664af01e9",
+  "fileName": "3RdYMTLoL1X16djGF52cFtJovDT.jpg",
+  "mimetype": "image/jpeg",
+  "width": 600,
+  "height": 900,
+  "contentLength": 54907,
+  "path": "/media/2017/05/16/3RdYMTLoL1X16djGF52cFtJovDT-1494966057926.jpg",
+  "createdAt": 1494966057685,
+  "createdBy": null,
+  "v": 1,
+  "url": "http://localhost:5000/media/2017/05/16/3RdYMTLoL1X16djGF52cFtJovDT-1494966057926.jpg"
 }
 ```
 
@@ -109,9 +142,10 @@ Extended the hooks config endpoint (`/api/hooks/:hookName/config`) to accept POS
 #### Other
 
 * [#245](https://github.com/dadi/api/issues/245): fix media path formatting
-* [#260](https://github.com/dadi/api/issues/260): modify property value that indicates a media collection to "mediaCollection"
-* [#265](https://github.com/dadi/api/issues/265): array not validated against schemas in POST requests
-* [#284](https://github.com/dadi/api/issues/284): indexes not checked correctly when given a sort key
+* [#246](https://github.com/dadi/api/issues/246): ignore _id field in query when processing query filters
+* [#257](https://github.com/dadi/api/issues/257): improve performance of Reference field composition
+* [#265](https://github.com/dadi/api/issues/265): validate arrays against schemas in POST requests
+* [#284](https://github.com/dadi/api/issues/284): check indexes correctly when given a sort key
 * remove `apiVersion` query property when composing reference fields, improves performance
 
 ### Added

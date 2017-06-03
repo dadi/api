@@ -1,5 +1,3 @@
-'use strict'
-
 var _ = require('underscore')
 var path = require('path')
 var mediaModel = require(path.join(__dirname, '../model/media'))
@@ -15,114 +13,119 @@ Composer.prototype.setApiVersion = function (apiVersion) {
   this.apiVersion = apiVersion
 }
 
+/**
+ *
+ * @param {Array} obj - an array of documents
+ */
 Composer.prototype.compose = function (obj, callback) {
   if (_.isEmpty(obj)) return callback(obj)
 
-  var docIdx = 0
+  // determine composable fields from all documents in the set
+  var composable = this.getComposable(obj)
 
-  _.each(obj, (doc) => {
-    this.composeOne(doc, (result) => {
-      doc = result
-      docIdx++
+  if (_.isEmpty(composable)) return callback(obj)
 
-      if (docIdx === obj.length) {
-        return callback(obj)
-      }
-    })
-  })
-}
+  // for each composable field (Reference fields)
+  //   get array of id values from all documents
+  //   get fields required from schema
+  //   query model using array of ids and fields object
+  //   populate each document's composable property with results
 
-Composer.prototype.composeOne = function (doc, callback) {
-  var composable = this.getComposable(doc)
+  var queue = []
+  var data = {}
 
-  if (_.isEmpty(composable)) return callback(doc)
+  for (var i = 0; i < composable.length; i++) {
+    var field = composable[i]
+    var ids = _.uniq(_.compact(_.pluck(obj, field)))
 
-  var keyIdx = 0
+    if (Array.isArray(ids[0])) {
+      ids = _.flatten(ids)
+    }
 
-  _.each(composable, (key) => {
-    var query = {}
-    var returnArray = false
-    var value = doc[key]
+    var fields = this.getFields(field)
+    var query = { '_id': { '$in': _.map(ids, id => { return id.toString() }) } }
+    var model = this.getModel(field)
 
-    if (value === null || typeof value === 'undefined') return callback(null)
+    if (model) {
+      var compose = this.getComposeValue(field, model)
 
-    if (value.constructor === Object) {
-      if (keyIdx === composable.length) {
-        callback(doc)
-      }
-    } else {
-      if (Array.isArray(value)) {
-        query = { '_id': { '$in': _.map(value, function (val) { return val + '' }) } }
-        returnArray = true
-      } else {
-        query = { '_id': value + '' }
-      }
+      queue.push(
+        new Promise((resolve, reject) => {
+          var f = field
 
-      // are specific fields required?
-      var fields = {}
-      var schemaFields = help.getFromObj(this.model.schema, key + '.settings.fields', [])
+          model.find(query, { 'compose': compose, 'fields': fields }, (err, result) => {
+            if (err) return reject(err)
 
-      _.each(schemaFields, (field) => {
-        fields[field] = 1
-      })
+            data[f] = result.results
+            return resolve()
+          })
+        })
+      )
+    }
+  }
 
-      // load correct model
-      var model = this.getModel(key)
+  Promise.all(queue).then(results => {
+    var fields = Object.keys(data)
+    var fieldNum = 0
 
-      if (!model) {
-        callback(null)
-      } else {
-        // does the collection allow us to compose references beyond the first one
-        // (i.e. the one that got us here) ?
-        var compose = help.getFromObj(this.model.schema, key + '.settings.compose', false) || model.compose
+    _.each(fields, (field) => {
+      var docIdx = 0
+      fieldNum++
 
-        model.find(query, { 'compose': compose, 'fields': fields }, (err, result) => {
-          if (err) console.log(err)
+      // reference the correct database results within the data object
+      var fieldData = data[field]
 
-          let isMediaDocument = false
+      // populate each document's composable property with results
+      _.each(obj, (document) => {
+        var isArray = Array.isArray(document[field])
+        var originalValue = isArray ? document[field] : [document[field]]
 
-          if (result) {
-            if (result.results.length === 1 && returnArray === false) {
-              doc[key] = result.results[0]
-            } else {
-              doc[key] = result.results
-            }
+        // add the composed property indicating original values
+        if (!document.composed) document.composed = {}
+        document.composed[field] = isArray ? originalValue : originalValue[0]
 
-            if (result.results.length && result.results[0].apiVersion === 'media') {
-              isMediaDocument = true
-            }
-          }
+        if (isArray) {
+          document[field] = []
+        }
 
-          // Are we composing a media document? If so, we need to format it
+        docIdx++
+
+        var idx = 0
+
+        _.each(originalValue, (id) => {
+          var results = _.filter(fieldData, r => { return id && r._id.toString() === id.toString() })
+
+          // Are we composing media documents? If so, we need to format them
           // before returning. This should really go somewhere else, it needs
           // to be revisited! --eb 03/05/2017
-          if (isMediaDocument) {
-            doc[key] = mediaModel.formatDocuments(doc[key])
+          if (results.length && results[0].apiVersion === 'media') {
+            results[0] = mediaModel.formatDocuments(results[0])
           }
 
-          if (!doc.composed) doc.composed = {}
-          doc.composed[key] = value
-
-          // if an array, ensure the composed values appear
-          // in the same order as the original array
-          if (value.constructor.name === 'Array') {
-            doc[key] = doc[key].sort((a, b) => {
-              var aIndex = value.indexOf(a._id.toString())
-              var bIndex = value.indexOf(b._id.toString())
-
-              if (aIndex === bIndex) return 0
-              return aIndex < bIndex ? -1 : 1
-            })
+          if (isArray) {
+            if (_.isEmpty(results)) {
+              // no results, add the original id value to the array
+              document[field].push(id)
+            } else {
+              document[field].push(results[0])
+            }
+          } else {
+            if (_.isEmpty(results)) {
+              // no results, assign the original id value to the property
+              document[field] = id
+            } else {
+              document[field] = results[0]
+            }
           }
 
-          keyIdx++
+          idx++
 
-          if (keyIdx === composable.length) {
-            callback(doc)
+          if (fieldNum === fields.length && docIdx === obj.length && idx === originalValue.length) {
+            return callback(obj)
           }
         })
-      }
-    }
+      })
+    })
   })
 }
 
@@ -141,7 +144,7 @@ Composer.prototype.createFromComposed = function (doc, req, callback) {
 
   var queue = []
 
-  _.each(composable, (key) => {
+  _.each(composable, key => {
     var model = this.getModel(key)
     var value = doc[key]
 
@@ -173,7 +176,6 @@ Composer.prototype.createFromComposed = function (doc, req, callback) {
 
     return callback(null, doc)
   }).catch((err) => {
-    // console.log('Promise error')
     return callback(err, null)
   })
 }
@@ -243,15 +245,27 @@ Composer.prototype.createOrUpdate = function (model, field, obj, req) {
 }
 
 /**
- * Returns an array of Reference field names from the schema for the specified document
+ * Returns an array of Reference field names from the schema for the specified documents
  *
- * @param {Object} doc - the JSON document being processed
+ * @param {Array|Object} obj - an array of JSON documents being processed, or a single document
  * @returns {Array}
  */
-Composer.prototype.getComposable = function (doc) {
-  return Object.keys(this.model.schema).filter((key) => {
-    return this.model.schema[key].type === 'Reference' && doc[key] && typeof doc[key] !== 'undefined'
+Composer.prototype.getComposable = function (obj) {
+  if (!Array.isArray(obj)) {
+    obj = [obj]
+  }
+
+  var composableKeys = []
+
+  _.each(obj, doc => {
+    var keys = Object.keys(this.model.schema).filter((key) => {
+      return this.model.schema[key].type === 'Reference' && doc[key] && typeof doc[key] !== 'undefined'
+    })
+
+    composableKeys = _.union(composableKeys, keys)
   })
+
+  return composableKeys
 }
 
 /**
@@ -271,6 +285,27 @@ Composer.prototype.getModel = function (field) {
   } else {
     return Model(this.model.name)
   }
+}
+
+/**
+ *
+ */
+Composer.prototype.getFields = function (field) {
+  var fields = {}
+  var schemaFields = help.getFromObj(this.model.schema, field + '.settings.fields', [])
+
+  _.each(schemaFields, (field) => {
+    fields[field] = 1
+  })
+
+  return fields
+}
+
+/**
+ *
+ */
+Composer.prototype.getComposeValue = function (field, model) {
+  return help.getFromObj(this.model.schema, field + '.settings.compose', false) || model.compose
 }
 
 // exports

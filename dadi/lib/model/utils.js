@@ -102,8 +102,8 @@ function sortQueriesByNestedLevel (queries) {
 function makeCaseInsensitive (obj, schema) {
   var newObj = _.clone(obj)
 
-  _.each(Object.keys(obj), (key) => {
-    if (key === 'apiVersion') {
+  _.each(Object.keys(obj), function (key) {
+    if (key === 'apiVersion' || key === '_id') {
       return
     }
 

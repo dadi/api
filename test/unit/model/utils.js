@@ -33,6 +33,19 @@ describe('Query Utils', function () {
   })
 
   describe('`makeCaseInsensitive` method', function () {
+    it('should not convert _id values in a query', function (done) {
+      var schema = help.getModelSchema()
+      schema['fieldName'].type = 'Object'
+
+      var query = { '_id': '1234' }
+      var expected = { '_id': '1234' }
+
+      var result = queryUtils.makeCaseInsensitive(query, schema)
+
+      result.should.eql(expected)
+      done()
+    })
+
     it('should convert a normal field query to a case insensitive regex query if schema doesn\'t specify otherwise', function (done) {
       var schema = help.getModelSchema()
       var query = { 'fieldName': 'example' }

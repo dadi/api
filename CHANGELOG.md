@@ -4,6 +4,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## [1.16.8] (2017-06-08)
+
+### Changed
+* add additional property `action` to history revision documents. Possible values are `"update", "delete"` and the appropriate value is selected when updating/deleting records
+
+### Added
+* [#298](https://github.com/dadi/api/issues/298): documents to be deleted will first have the current state written into the history collection, if enabled
+
+## [1.16.7] (2017-05-30)
+
+* fix product logo in README
+
 ## [1.16.6] (2017-05-25)
 
 ### Changed

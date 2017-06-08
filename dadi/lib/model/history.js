@@ -32,11 +32,13 @@ History.prototype.create = function (obj, model, done) {
   model.connection.once('connect', _done)
 }
 
-History.prototype.createEach = function (objs, model, done) {
+History.prototype.createEach = function (objs, action, model, done) {
   var self = this
   var updatedDocs = []
 
   objs.forEach(function (obj, index, array) {
+    obj.action = action
+
     self.create(obj, model, function (err, doc) {
       if (err) return done(err)
 

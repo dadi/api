@@ -87,7 +87,7 @@ describe('History', function () {
           mod.find({}, function (err, docs) {
             if (err) return done(err)
 
-            mod.history.createEach(docs['results'], mod, function (err, res) {
+            mod.history.createEach(docs['results'], 'update', mod, function (err, res) {
               if (err) return done(err)
 
               mod.find({}, function (err, docs) {

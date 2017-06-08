@@ -901,7 +901,7 @@ Model.prototype.update = function (query, update, internals, done, req) {
           // for each of the updated documents, create
           // a history revision for it
           if (this.history && updatedDocs.length > 0) {
-            this.history.createEach(updatedDocs, this, (err, docs) => {
+            this.history.createEach(updatedDocs, 'update', this, (err, docs) => {
               if (err) return done(err)
 
               return getDocumentsForResponse(done)
@@ -955,6 +955,7 @@ Model.prototype.update = function (query, update, internals, done, req) {
  */
 Model.prototype.delete = function (query, done, req) {
   var validation = this.validate.query(query)
+
   if (!validation.success) {
     var err = validationError('Bad Query')
     err.json = validation
@@ -993,19 +994,52 @@ Model.prototype.delete = function (query, done, req) {
   }
 
   var deleteDocuments = (database) => {
-    database.collection(this.name).remove(query, (err, docs) => {
-      if (!err && (docs > 0)) {
-        // apply any existing `afterDelete` hooks
-        if (this.settings.hasOwnProperty('hooks') && (typeof this.settings.hooks.afterDelete === 'object')) {
-          this.settings.hooks.afterDelete.forEach((hookConfig, index) => {
-            var hook = new Hook(this.settings.hooks.afterDelete[index], 'afterDelete')
+    if (query._id) {
+      query._id = query._id.toString()
+    }
 
-            return hook.apply(query, this.schema, this.name)
-          })
+    var wait = Promise.resolve()
+
+    if (this.history) {
+      wait = new Promise((resolve, reject) => {
+        this.find(query, { compose: false }, (err, docs) => {
+          if (err) return reject(err)
+
+          var deletedDocs = docs.results
+
+          // for each of the about-to-be-deleted documents, create a revision for it
+          if (deletedDocs.length > 0) {
+            this.history.createEach(deletedDocs, 'delete', this, (err, docs) => {
+              if (err) return reject(err)
+
+              return resolve()
+            })
+          } else {
+            return resolve()
+          }
+        })
+      })
+    }
+
+    wait.then(() => {
+      query = queryUtils.convertApparentObjectIds(query, this.schema)
+
+      database.collection(this.name).remove(query, (err, docs) => {
+        if (!err && (docs > 0)) {
+          // apply any existing `afterDelete` hooks
+          if (this.settings.hasOwnProperty('hooks') && (typeof this.settings.hooks.afterDelete === 'object')) {
+            this.settings.hooks.afterDelete.forEach((hookConfig, index) => {
+              var hook = new Hook(this.settings.hooks.afterDelete[index], 'afterDelete')
+
+              return hook.apply(query, this.schema, this.name)
+            })
+          }
         }
-      }
 
-      done(err, docs)
+        done(err, docs)
+      })
+    }).catch((err) => {
+      done(err)
     })
   }
 

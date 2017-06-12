@@ -102,11 +102,60 @@ describe('History', function () {
             })
           })
         })
-
       })
-
     })
 
-  })
+    it('should add action=update to history revisions when a document is updated', function (done) {
+      var conn = connection()
+      var mod = model('testModelName', help.getModelSchema(), conn, { storeRevisions: true })
 
+      mod.create({ fieldName: 'foo-1' }, function (err, result) {
+        mod.update({ fieldName: 'foo-1' }, { fieldName: 'foo-2' }, function (err, result) {
+          mod.find({}, { includeHistory: true }, function (err, docs) {
+            should.exist(docs.results[0].history)
+            should.exist(docs.results[0].history[0])
+            should.exist(docs.results[0].history[0].action)
+            docs.results[0].history[0].action.should.eql('update')
+            done()
+          })
+        })
+      })
+    })
+
+    it('should add action=delete to history revisions when a document is deleted', function (done) {
+      var conn = connection()
+      var mod = model('testModelName', help.getModelSchema(), conn, { storeRevisions: true })
+
+      mod.create({ fieldName: 'foo-1' }, function (err, result) {
+        mod.delete({ fieldName: 'foo-1' }, function (err, result) {
+          mod = model('testModelNameHistory', help.getModelSchema(), conn, { storeRevisions: false })
+          mod.find({}, {}, function (err, docs) {
+            should.exist(docs.results[0])
+            should.exist(docs.results[0].originalDocumentId)
+            should.exist(docs.results[0].action)
+            docs.results[0].action.should.eql('delete')
+            done()
+          })
+        })
+      })
+    })
+
+    it('should add the original document id to history revisions', function (done) {
+      var conn = connection()
+      var mod = model('testModelName', help.getModelSchema(), conn, { storeRevisions: true })
+
+      mod.create({ fieldName: 'foo-1' }, function (err, result) {
+        var id = result.results[0]._id
+        mod.update({ fieldName: 'foo-1' }, { fieldName: 'foo-2' }, function (err, result) {
+          mod.find({}, { includeHistory: true }, function (err, docs) {
+            should.exist(docs.results[0].history)
+            should.exist(docs.results[0].history[0])
+            should.exist(docs.results[0].history[0].originalDocumentId)
+            docs.results[0].history[0].originalDocumentId.should.eql(id)
+            done()
+          })
+        })
+      })
+    })
+  })
 })

@@ -9,6 +9,7 @@ History.prototype.create = function (obj, model, done) {
   // create copy of original
   var revisionObj = _.clone(obj)
   revisionObj._id = new ObjectID()
+  revisionObj.originalDocumentId = obj._id
 
   var _done = function (database) {
     database.collection(model.revisionCollection).insert(revisionObj, function (err, doc) {

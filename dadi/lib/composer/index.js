@@ -42,6 +42,9 @@ Composer.prototype.compose = function (obj, callback) {
       ids = _.flatten(ids)
     }
 
+    // remove any remaining null values
+    ids = _.compact(ids)
+
     var fields = this.getFields(field)
     var query = { '_id': { '$in': _.map(ids, id => { return id.toString() }) } }
     var model = this.getModel(field)

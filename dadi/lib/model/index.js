@@ -6,7 +6,6 @@ var path = require('path')
 
 var config = require(path.join(__dirname, '/../../../config'))
 var connection = require(path.join(__dirname, '/connection'))
-var formatError = require('@dadi/format-error')
 var logger = require('@dadi/logger')
 var Validator = require(path.join(__dirname, '/validator'))
 var History = require(path.join(__dirname, '/history'))

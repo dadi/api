@@ -64,7 +64,7 @@ connection.on('connect', db => {
         // check for an existing client account
         db.find({
           clientId: options.clientId
-        }, clientCollectionName, getSchema()).then(existingClients => {
+        }, clientCollectionName, {}, getSchema()).then(existingClients => {
           if (existingClients.length > 0) {
             console.log(`(x) The identifier ${options.clientId} already exists. Exiting...`)
             return

@@ -1,5 +1,6 @@
 'use strict'
 
+const formatError = require('@dadi/format-error')
 const path = require('path')
 const config = require(path.join(__dirname, '/../../../config'))
 
@@ -111,6 +112,24 @@ Hook.prototype.apply = function () {
   }
 
   return false
+}
+
+/**
+ * Builds an error object for the given hook error
+ *
+ * @param Error
+ * @return Object
+ * @api public
+ */
+Hook.prototype.formatError = function (error) {
+  const errorCode = error.code ? error : '0002'
+  const errorMessage = error.message +
+    (error.stack ? '\n' + error.stack.split('\n')[1] : '')
+
+  return [formatError.createApiError(errorCode, {
+    hookName: this.getName(),
+    errorMessage: errorMessage
+  })]
 }
 
 /**

@@ -6,7 +6,6 @@ var path = require('path')
 
 var config = require(path.join(__dirname, '/../../../config'))
 var connection = require(path.join(__dirname, '/connection'))
-var formatError = require('@dadi/format-error')
 var logger = require('@dadi/logger')
 var Validator = require(path.join(__dirname, '/validator'))
 var History = require(path.join(__dirname, '/history'))
@@ -233,10 +232,7 @@ Model.prototype.create = function (documents, internals, done, req) {
           Promise.resolve(hook.apply(current, this.schema, this.name, req)).then((newDoc) => {
             callback((newDoc === null) ? {} : null, newDoc)
           }).catch(err => {
-            callback([formatError.createApiError('0002', {
-              hookName: hook.getName(),
-              errorMessage: err
-            })])
+            callback(hook.formatError(err))
           })
         }, (err, result) => {
           processedDocs++
@@ -708,11 +704,8 @@ Model.prototype.get = function (query, options, done, req) {
 
         Promise.resolve(hook.apply(current, this.schema, this.name, req)).then((newResults) => {
           callback((newResults === null) ? {} : null, newResults)
-        }).catch((err) => {
-          callback([formatError.createApiError('0002', {
-            hookName: hook.getName(),
-            errorMessage: err + '\n' + err.stack ? err.stack.split('\n')[1] : ''
-          })])
+        }).catch(err => {
+          callback(hook.formatError(err))
         })
       }, (err, finalResult) => {
         done(err, finalResult)
@@ -942,11 +935,8 @@ Model.prototype.update = function (query, update, internals, done, req) {
 
           Promise.resolve(hook.apply(current, updatedDocs, this.schema, this.name, req)).then((newUpdate) => {
             callback((newUpdate === null) ? {} : null, newUpdate)
-          }).catch((err) => {
-            callback([formatError.createApiError('0002', {
-              hookName: hook.getName(),
-              errorMessage: err + '\n' + err.stack ? err.stack.split('\n')[1] : ''
-            })])
+          }).catch(err => {
+            callback(hook.formatError(err))
           })
         }, (err, result) => {
           if (err) {
@@ -999,10 +989,7 @@ Model.prototype.delete = function (query, done, req) {
         Promise.resolve(hook.apply(current, hookError, this.schema, this.name, req)).then((newQuery) => {
           callback((newQuery === null) ? {} : null, newQuery)
         }).catch((err) => {
-          callback([formatError.createApiError('0002', {
-            hookName: hook.getName(),
-            errorMessage: err
-          })])
+          callback(hook.formatError(err))
         })
       }, (err, result) => {
         if (err) {

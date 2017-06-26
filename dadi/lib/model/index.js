@@ -795,6 +795,8 @@ Model.prototype.update = function (query, update, internals, done, req) {
 
       var saveDocuments = () => {
         database.update(query, this.name, setUpdate, { multi: true }, this.schema).then((result) => {
+          // TODO: review, I don't know if sending a 404 is the right response
+          // when no documents were modified
           if (result.matchedCount === 0) {
             err = new Error('Not Found')
             err.statusCode = 404
@@ -816,7 +818,7 @@ Model.prototype.update = function (query, update, internals, done, req) {
 
           // for each of the updated documents, create a history revision for it
           if (this.history) {
-            promise = this.history.createEach(updatedDocs, this)
+            promise = this.history.createEach(updatedDocs, 'update', this)
           } else {
             promise = Promise.resolve()
           }
@@ -836,6 +838,8 @@ Model.prototype.update = function (query, update, internals, done, req) {
 
               return done(null, results)
             })
+          }).catch((err) => {
+            console.log(err)
           })
         }).catch((err) => {
           return done(err)
@@ -931,10 +935,10 @@ Model.prototype.delete = function (query, done, req) {
 
           // for each of the about-to-be-deleted documents, create a revision for it
           if (deletedDocs.length > 0) {
-            this.history.createEach(deletedDocs, 'delete', this, (err, docs) => {
-              if (err) return reject(err)
-
+            this.history.createEach(deletedDocs, 'delete', this).then(() => {
               return resolve()
+            }).catch((err) => {
+              return reject(err)
             })
           } else {
             return resolve()
@@ -944,7 +948,7 @@ Model.prototype.delete = function (query, done, req) {
     }
 
     wait.then(() => {
-      query = queryUtils.convertApparentObjectIds(query, this.schema)
+      // query = queryUtils.convertApparentObjectIds(query, this.schema)
 
       database.delete(query, this.name, this.schema).then((result) => {
         if (!err && (result.deletedCount > 0)) {

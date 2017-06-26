@@ -190,6 +190,7 @@ describe('Cache', function (done) {
         url: '/1.0/library/books'
       };
 
+      cache.reset()
       cache(server.object).cachingEnabled(req).should.eql(true);
 
       done();

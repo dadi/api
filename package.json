@@ -15,7 +15,7 @@
     "@dadi/cache": "1.5.x",
     "@dadi/format-error": "^1.0.0",
     "@dadi/logger": "latest",
-    "@dadi/status": "^1.0.2",
+    "@dadi/status": "latest",
     "async": "^2.1.4",
     "aws-sdk": "^2.46.0",
     "body-parser": "~1.17.1",

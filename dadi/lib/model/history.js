@@ -9,6 +9,7 @@ var History = function (model) {
 History.prototype.create = function (obj, model, done) {
   // create copy of original
   var revisionObj = queryUtils.snapshot(obj)
+  revisionObj.originalDocumentId = obj._id
 
   // TODO: use datastore plugin's internal fields
   delete revisionObj._id
@@ -42,11 +43,13 @@ History.prototype.create = function (obj, model, done) {
   model.connection.once('connect', _done)
 }
 
-History.prototype.createEach = function (objs, model) {
+History.prototype.createEach = function (objs, action, model, done) {
   return new Promise((resolve, reject) => {
     if (objs.length === 0) return resolve()
 
     objs.forEach((obj, index, array) => {
+      obj.action = action
+
       this.create(obj, model, (err, doc) => {
         if (err) return reject(err)
 

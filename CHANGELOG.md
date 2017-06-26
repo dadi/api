@@ -4,6 +4,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## [2.1.0] (2017-05-29)
+
+### Added
+
+* [#298](https://github.com/dadi/api/issues/298): documents to be deleted will first have the current state written into the history collection, if enabled
+
+### Changed
+
+* add additional property `action` to history revision documents. Possible values are "update", "delete" and the appropriate value is selected when updating/deleting records
+* add additional property `originalDocumentId` to history revision documents, value is the identifier of the parent document.
+
 ## [2.0.0] (2017-05-29)
 
 ### Changed

@@ -493,13 +493,14 @@ Server.prototype.loadCollectionRoute = function () {
       var slug
       var parts = _.compact(key.split('/'))
 
-      var hasModel = _.contains(Object.keys(value), 'model')
+      var hasModel = _.contains(Object.keys(value), 'model') &&
+        value.model.constructor.name === 'Model'
       var hasGetMethod = _.contains(Object.keys(value), 'get')
 
       if (hasModel && !hasGetMethod) {
         model = value.model
 
-        if (model.hasOwnProperty('name')) {
+        if (model.name) {
           name = model.name
           slug = model.name
         }

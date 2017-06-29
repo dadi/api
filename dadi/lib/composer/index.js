@@ -95,38 +95,43 @@ Composer.prototype.compose = function (obj, callback) {
 
         var idx = 0
 
-        _.each(originalValue, (id) => {
-          var results = _.filter(fieldData, r => { return id && r._id.toString() === id.toString() })
+        // handles empty array
+        if (originalValue.length === 0 && fieldNum === fields.length && docIdx === obj.length) {
+          return callback(obj)
+        } else {
+          _.each(originalValue, (id) => {
+            var results = _.filter(fieldData, r => { return id && r._id.toString() === id.toString() })
 
-          // Are we composing media documents? If so, we need to format them
-          // before returning. This should really go somewhere else, it needs
-          // to be revisited! --eb 03/05/2017
-          if (results.length && results[0].apiVersion === 'media') {
-            results[0] = mediaModel.formatDocuments(results[0])
-          }
-
-          if (isArray) {
-            if (_.isEmpty(results)) {
-              // no results, add the original id value to the array
-              document[field].push(id)
-            } else {
-              document[field].push(results[0])
+            // Are we composing media documents? If so, we need to format them
+            // before returning. This should really go somewhere else, it needs
+            // to be revisited! --eb 03/05/2017
+            if (results.length && results[0].apiVersion === 'media') {
+              results[0] = mediaModel.formatDocuments(results[0])
             }
-          } else {
-            if (_.isEmpty(results)) {
-              // no results, assign the original id value to the property
-              document[field] = id
+
+            if (isArray) {
+              if (_.isEmpty(results)) {
+                // no results, add the original id value to the array
+                document[field].push(id)
+              } else {
+                document[field].push(results[0])
+              }
             } else {
-              document[field] = results[0]
+              if (_.isEmpty(results)) {
+                // no results, assign the original id value to the property
+                document[field] = id
+              } else {
+                document[field] = results[0]
+              }
             }
-          }
 
-          idx++
+            idx++
 
-          if (fieldNum === fields.length && docIdx === obj.length && idx === originalValue.length) {
-            return callback(obj)
-          }
-        })
+            if (fieldNum === fields.length && docIdx === obj.length && idx === originalValue.length) {
+              return callback(obj)
+            }
+          })
+        }
       })
     })
   })

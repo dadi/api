@@ -60,6 +60,32 @@ describe('Reference Field', function () {
       })
     })
 
+    it('should allow an empty array of reference documents', function (done) {
+      var book = {
+        title: 'The Sun Also Rises',
+        author: []
+      }
+
+      config.set('query.useVersionFilter', true)
+
+      var client = request(connectionString)
+      client
+      .post('/v1/library/book')
+      .set('Authorization', 'Bearer ' + bearerToken)
+      .send(book)
+      .expect(200)
+      .end(function (err, res) {
+        if (err) return done(err)
+        should.exist(res.body.results)
+        var newDoc = res.body.results[0]
+
+        should.exist(newDoc.author)
+        newDoc.author.should.be.Array
+        newDoc.author.should.eql([])
+        done()
+      })
+    })
+
     it('should create array of reference documents that don\'t have _id fields', function (done) {
       var book = {
         title: 'Dash & Lily\'s Book of Dares',

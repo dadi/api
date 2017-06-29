@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## [2.1.2] (2017-06-29)
+
+### Changed
+
+[#289](https://github.com/dadi/api/issues/289): improved error response from hooks
+[#305](https://github.com/dadi/api/issues/305): remove restriction on environment settings. Use any environment name and configuration file, rather than only "development", "qa", "production", "test"
+[#306](https://github.com/dadi/api/issues/306): fix reference field composition when value is an empty array
+
 ## [2.1.0] (2017-05-29)
 
 ### Added

@@ -121,6 +121,59 @@ describe('Reference Field', function () {
       })
     })
 
+    it('should create multiple reference documents that don\'t have _id fields', function (done) {
+      var data = {
+        "word": "animals",
+        "children": [
+          {
+            "word": "dogs",
+            "children": [
+              {
+                "word": "guide_dogs",
+                "children": []
+              },
+              {
+                "word": "puppies",
+                "children": []
+              }
+            ]
+          },
+          {
+            "word": "foxes",
+            "children": []
+          },
+          {
+            "word": "pandas",
+            "children": []
+          }
+        ]
+      }
+
+      config.set('query.useVersionFilter', true)
+
+      var client = request(connectionString)
+      client
+      .post('/v1/library/taxonomy')
+      .set('Authorization', 'Bearer ' + bearerToken)
+      .send(data)
+      .expect(200)
+      .end(function (err, res) {
+        if (err) return done(err)
+
+        should.exist(res.body.results)
+        var newDoc = res.body.results[0]
+
+        should.exist(newDoc.word)
+        newDoc.word.should.eql('animals')
+
+        newDoc.children.length.should.eql(3)
+        newDoc.children[0].word.should.eql('dogs')
+        newDoc.children[1].word.should.eql('foxes')
+        newDoc.children[2].word.should.eql('pandas')
+        done()
+      })
+    })
+
     it('should update reference documents that already have _id fields', function (done) {
       var person = {
         name: 'Ernest Hemingway'

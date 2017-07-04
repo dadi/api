@@ -123,12 +123,27 @@ Hook.prototype.apply = function () {
  */
 Hook.prototype.formatError = function (error) {
   const errorCode = error.code ? error : '0002'
-  const errorMessage = error.message +
-    (error.stack ? '\n' + error.stack.split('\n')[1] : '')
+
+  let errorMessage
+
+  // If `error` is a string and not an actual Error object,
+  // we'll use that as the message.
+  if (typeof error === 'string') {
+    errorMessage = error
+  } else {
+    errorMessage = error.message || ''
+    errorMessage += (error.stack ? '\n' + error.stack.split('\n')[1] : '')
+
+    // If this is a custom error, we attach the name of the hook.
+    if (error.dadiCustomError && !error.dadiCustomError.hookName) {
+      error.dadiCustomError.hookName = this.getName()
+    }
+  }
 
   return [formatError.createApiError(errorCode, {
-    hookName: this.getName(),
-    errorMessage: errorMessage
+    error: error,
+    errorMessage: errorMessage,
+    hookName: this.getName()
   })]
 }
 

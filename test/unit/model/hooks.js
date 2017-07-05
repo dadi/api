@@ -156,7 +156,25 @@ describe('Hook', function () {
   })
 
   describe('`formatError` method', function (done) {
-    it('should return an API-0002 error object for a regular user-thrown error', function (done) {
+    it('should return an API-0002 error object for a user-thrown error as string', function (done) {
+      sinon.stub(hook.Hook.prototype, 'load').returns(simpleFunction)
+
+      var hookName = 'test-hook'
+      var h = new hook(hookName, 'beforeCreate')
+      var errorMessage = 'This is a user-thrown error'
+
+      hook.Hook.prototype.load.restore()
+
+      var errorObject = h.formatError(errorMessage)
+
+      errorObject[0].code.should.equal('API-0002')
+      errorObject[0].title.should.equal('Hook Error')
+      errorObject[0].details.indexOf(errorMessage).should.not.equal(-1)
+
+      done()
+    })
+
+    it('should return an API-0002 error object for a user-thrown Error object', function (done) {
       sinon.stub(hook.Hook.prototype, 'load').returns(simpleFunction)
 
       var hookName = 'test-hook'
@@ -175,7 +193,7 @@ describe('Hook', function () {
       done()
     })
 
-    it('should return an API-0002 error object for a regular runtime error', function (done) {
+    it('should return an API-0002 error object for a runtime error', function (done) {
       sinon.stub(hook.Hook.prototype, 'load').returns(simpleFunction)
 
       var hookName = 'test-hook'
@@ -200,22 +218,57 @@ describe('Hook', function () {
       done()
     })
 
-    it('should return a custom error object for a custom error (defined by a `code` property)', function (done) {
+    it('should return a custom error object for a custom error (defined by a `dadiCustomError` property)', function (done) {
       sinon.stub(hook.Hook.prototype, 'load').returns(simpleFunction)
 
       var hookName = 'test-hook'
       var h = new hook(hookName, 'beforeCreate')
-      var customErrorCode = 'MY-CUSTOM-ERROR'
 
       hook.Hook.prototype.load.restore()
 
+      var errorData = {
+        code: 'MY_CUSTOM_ERROR',
+        someData: {
+          _id: 123456,
+          name: 'foobar'
+        }
+      }
+
       var error = new Error('custom error')
 
-      error.code = customErrorCode
+      error.dadiCustomError = Object.assign({}, errorData)
 
       var errorObject = h.formatError(error)
 
-      errorObject[0].code.should.equal(customErrorCode)
+      errorObject[0].code.should.eql(errorData.code)
+      JSON.stringify(errorObject[0].someData).should.eql(JSON.stringify(errorData.someData))
+
+      done()
+    })
+
+    it('should attach the name of the hook to custom errors', function (done) {
+      sinon.stub(hook.Hook.prototype, 'load').returns(simpleFunction)
+
+      var hookName = 'test-hook'
+      var h = new hook(hookName, 'beforeCreate')
+
+      hook.Hook.prototype.load.restore()
+
+      var errorData = {
+        code: 'MY_CUSTOM_ERROR',
+        someData: {
+          _id: 123456,
+          name: 'foobar'
+        }
+      }
+
+      var error = new Error('custom error')
+
+      error.dadiCustomError = Object.assign({}, errorData)
+
+      var errorObject = h.formatError(error)
+
+      errorObject[0].hookName.should.eql(hookName)
 
       done()
     })

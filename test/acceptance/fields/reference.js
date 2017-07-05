@@ -62,6 +62,32 @@ describe('Reference Field', function () {
       })
     })
 
+    it('should allow an empty array of reference documents', function (done) {
+      var book = {
+        title: 'The Sun Also Rises',
+        author: []
+      }
+
+      config.set('query.useVersionFilter', true)
+
+      var client = request(connectionString)
+      client
+      .post('/v1/library/book')
+      .set('Authorization', 'Bearer ' + bearerToken)
+      .send(book)
+      .expect(200)
+      .end(function (err, res) {
+        if (err) return done(err)
+        should.exist(res.body.results)
+        var newDoc = res.body.results[0]
+
+        should.exist(newDoc.author)
+        newDoc.author.should.be.Array
+        newDoc.author.should.eql([])
+        done()
+      })
+    })
+
     it('should create array of reference documents that don\'t have _id fields', function (done) {
       var book = {
         title: 'Dash & Lily\'s Book of Dares',
@@ -93,6 +119,59 @@ describe('Reference Field', function () {
 
         newDoc.author[0].name.should.eql('Rachel Cohn')
         newDoc.author[1].name.should.eql('David Levithan')
+        done()
+      })
+    })
+
+    it('should create multiple reference documents that don\'t have _id fields', function (done) {
+      var data = {
+        "word": "animals",
+        "children": [
+          {
+            "word": "dogs",
+            "children": [
+              {
+                "word": "guide_dogs",
+                "children": []
+              },
+              {
+                "word": "puppies",
+                "children": []
+              }
+            ]
+          },
+          {
+            "word": "foxes",
+            "children": []
+          },
+          {
+            "word": "pandas",
+            "children": []
+          }
+        ]
+      }
+
+      config.set('query.useVersionFilter', true)
+
+      var client = request(connectionString)
+      client
+      .post('/v1/library/taxonomy')
+      .set('Authorization', 'Bearer ' + bearerToken)
+      .send(data)
+      .expect(200)
+      .end(function (err, res) {
+        if (err) return done(err)
+
+        should.exist(res.body.results)
+        var newDoc = res.body.results[0]
+
+        should.exist(newDoc.word)
+        newDoc.word.should.eql('animals')
+
+        newDoc.children.length.should.eql(3)
+        newDoc.children[0].word.should.eql('dogs')
+        newDoc.children[1].word.should.eql('foxes')
+        newDoc.children[2].word.should.eql('pandas')
         done()
       })
     })

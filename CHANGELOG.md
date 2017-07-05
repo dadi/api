@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## [2.2.0] (2017-07-05)
+
+### Changed
+
+[#289](https://github.com/dadi/api/issues/289): improved error response from hooks, with custom error support
+[#311](https://github.com/dadi/api/issues/311): fix a bug that caused multiple newly-created reference field subdocuments to be returned as a poorly-formed array
+
 ## [2.1.2] (2017-06-29)
 
 ### Changed

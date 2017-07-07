@@ -7,7 +7,6 @@ var path = require('path')
 var Composer = require(path.join(__dirname, '/composer')).Composer
 var config = require(path.join(__dirname, '/../../../config'))
 var Connection = require(path.join(__dirname, '/connection'))
-var formatError = require('@dadi/format-error')
 var History = require(path.join(__dirname, '/history'))
 var Hook = require(path.join(__dirname, '/hook'))
 var logger = require('@dadi/logger')

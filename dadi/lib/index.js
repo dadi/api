@@ -309,6 +309,17 @@ Server.prototype.loadApi = function (options) {
     })
   })
 
+  this.app.use('/hello', function (req, res, next) {
+    var method = req.method && req.method.toLowerCase()
+
+    if (method !== 'get') {
+      return next()
+    }
+
+    res.statusCode = 200
+    return res.end('Welcome to API')
+  })
+
   this.app.use('/api/status', function (req, res, next) {
     var method = req.method && req.method.toLowerCase()
     var authorization = req.headers.authorization

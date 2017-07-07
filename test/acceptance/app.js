@@ -71,6 +71,23 @@ describe('Application', function () {
     })
   })
 
+  it('should respond to the /hello endpoint', function (done) {
+    app.start(function (err) {
+      if (err) return done(err)
+
+      setTimeout(function () {
+        var client = request(connectionString)
+        client
+          .get('/hello')
+          .expect(200)
+          .end(function (err) {
+            if (err) done = done.bind(this, err)
+            app.stop(done)
+          })
+      }, 500)
+    })
+  })
+
   describe('collection initialisation', function () {
     var dirs = config.get('paths')
     var newSchemaPath = dirs.collections + '/vtest/testdb/collection.new-test-schema.json'

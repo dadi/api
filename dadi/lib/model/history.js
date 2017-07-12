@@ -24,7 +24,7 @@ History.prototype.create = function (obj, model, done) {
       database.update(
         { _id: obj._id },
         model.name,
-        { $push: { 'history': doc[0]._id.toString() } },
+        { $push: { '_history': doc[0]._id.toString() } },
         {},
         model.schema
       ).then((result) => {

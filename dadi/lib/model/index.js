@@ -275,6 +275,9 @@ Model.prototype.create = function (documents, internals, done, req) {
           })
         }
 
+        // Prepare result set for output
+        returnData.results = this.formatResultSet(returnData.results)
+
         return done(null, returnData)
       })
     }).catch((err) => {
@@ -735,9 +738,15 @@ Model.prototype.get = function (query, options, done, req) {
           callback(hook.formatError(err))
         })
       }, (err, finalResult) => {
+        // Prepare result set for output
+        finalResult.results = this.formatResultSet(finalResult.results)
+
         done(err, finalResult)
       })
     } else {
+      // Prepare result set for output
+      results.results = this.formatResultSet(results.results)
+
       done(err, results)
     }
   })
@@ -764,6 +773,49 @@ Model.prototype.injectHistory = function (data, options) {
       })
     })
   })
+}
+
+/**
+ * Performs a last round of formatting to the result set before it's
+ * delivered to the client
+ *
+ * @param {Object} documents
+ * @return An object/array of objects representing the prepared documents
+ * @api private
+ */
+Model.prototype.formatResultSet = function (results) {
+  const prefix = config.get('internalFieldsPrefix')
+
+  // For now, the only thing we do in this function is ensure internal
+  // fields are prefixed with the character defined in the config. So,
+  // if the prefix in the config is the default one, we can bypass this
+  // method completely. We can remove this check if we add more logic to
+  // this method in the future.
+
+  if (prefix === '_') {
+    return results
+  }
+
+  const multiple = Array.isArray(results)
+  const documents = multiple ? results : [results]
+
+  let newResultSet = []
+
+  documents.forEach(document => {
+    let newDocument = {}
+
+    Object.keys(document).forEach(field => {
+      const property = field.indexOf('_') === 0
+        ? prefix + field.slice(1)
+        : field
+
+      newDocument[property] = document[field]
+    })
+
+    newResultSet.push(newDocument)
+  })
+
+  return newResultSet
 }
 
 Model.prototype.revisions = function (id, options, done) {
@@ -933,6 +985,9 @@ Model.prototype.update = function (query, update, internals, done, req) {
 
               // apply any existing `afterUpdate` hooks
               triggerAfterUpdateHook(results.results)
+
+              // Prepare result set for output
+              results.results = this.formatResultSet(results.results)
 
               return done(null, results)
             })

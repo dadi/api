@@ -96,46 +96,61 @@ var Model = function (name, schema, conn, settings) {
   }
 }
 
-/**
- *
- */
-Model.prototype.createIndex = function (done) {
-  var _done = (database) => {
-    database.index(this.name, this.settings.index).then(result => {
-      done(result)
-    })
-  }
+Model.prototype.convertDateTimeForSave = function (schema, obj) {
+  Object.keys(schema).filter(function (key) {
+    return schema[key].type === 'DateTime' && obj[key] !== null && !_.isUndefined(obj[key])
+  }).forEach(function (key) {
+    switch (schema[key].format) {
+      case 'unix':
+        obj[key] = moment(obj[key]).valueOf()
+        break
+      case 'iso':
+        obj[key] = new Date(moment(obj[key]).toISOString())
+        break
+      default:
+        if (schema[key].format) {
+          obj[key] = moment(obj[key], schema[key].format || ['MM-DD-YYYY', 'YYYY-MM-DD', 'DD MMMM YYYY', 'DD/MM/YYYY']).format()
+        } else {
+          obj[key] = new Date(moment(obj[key])).toISOString()
+        }
+    }
+  })
 
-  if (!this.connection.db) {
-    // wait 1 second before continuing, this will
-    // stop the need to set a listener on every model
-    // as the db should have become available
-    setTimeout(() => {
-      if (!this.connection.db) {
-        this.connection.once('connect', _done)
-      } else {
-        return _done(this.connection.db)
-      }
-    }, 1000)
-  } else {
-    return _done(this.connection.db)
-  }
+  return obj
 }
 
 /**
+ * Lookup documents in the database, then give back a count
  *
+ * @param {Object} query
+ * @param {Function} done
+ * @return undefined
+ * @api public
  */
-Model.prototype.getIndexes = function (done) {
-  var _done = database => {
-    database.getIndexes(this.name).then(result => {
-      done(result)
-    })
+Model.prototype.count = function (query, options, done) {
+  if (typeof options === 'function') {
+    done = options
+    options = {}
   }
 
-  if (!this.connection.db) {
-    this.connection.once('connect', _done)
+  // query = queryUtils.makeCaseInsensitive(query, this.schema)
+  // query = queryUtils.convertApparentObjectIds(query, this.schema)
+
+  var validation = this.validate.query(query)
+
+  if (!validation.success) {
+    var err = validationError('Bad Query')
+    err.json = validation
+    return done(err)
+  }
+
+  if (_.isObject(query)) {
+    this.find(query, options, (err, results) => {
+      if (err) return done(err)
+      return done(null, { metadata: results.metadata })
+    })
   } else {
-    return _done(this.connection.db)
+    return done(validationError('Bad Query'))
   }
 }
 
@@ -293,68 +308,40 @@ Model.prototype.create = function (documents, internals, done, req) {
 }
 
 /**
- * Attaches the full history of each document
- * before returning the results
+ *
  */
-Model.prototype.injectHistory = function (data, options) {
-  return new Promise((resolve, reject) => {
-    if (data.results.length === 0) {
-      return resolve(data)
-    }
-
-    _.each(data.results, (doc, idx) => {
-      this.revisions(doc._id, options, (err, history) => {
-        if (err) console.log(err)
-        doc._history = history
-
-        if (idx === data.results.length - 1) {
-          return resolve(data)
-        }
-      })
+Model.prototype.createIndex = function (done) {
+  var _done = (database) => {
+    database.index(this.name, this.settings.index).then(result => {
+      done(result)
     })
-  })
-}
+  }
 
-Model.prototype.convertDateTimeForSave = function (schema, obj) {
-  Object.keys(schema).filter(function (key) {
-    return schema[key].type === 'DateTime' && obj[key] !== null && !_.isUndefined(obj[key])
-  }).forEach(function (key) {
-    switch (schema[key].format) {
-      case 'unix':
-        obj[key] = moment(obj[key]).valueOf()
-        break
-      case 'iso':
-        obj[key] = new Date(moment(obj[key]).toISOString())
-        break
-      default:
-        if (schema[key].format) {
-          obj[key] = moment(obj[key], schema[key].format || ['MM-DD-YYYY', 'YYYY-MM-DD', 'DD MMMM YYYY', 'DD/MM/YYYY']).format()
-        } else {
-          obj[key] = new Date(moment(obj[key])).toISOString()
-        }
-    }
-  })
-
-  return obj
+  if (!this.connection.db) {
+    // wait 1 second before continuing, this will
+    // stop the need to set a listener on every model
+    // as the db should have become available
+    setTimeout(() => {
+      if (!this.connection.db) {
+        this.connection.once('connect', _done)
+      } else {
+        return _done(this.connection.db)
+      }
+    }, 1000)
+  } else {
+    return _done(this.connection.db)
+  }
 }
 
 /**
- * Lookup documents in the database, then give back a count
+ * Delete a document from the database
  *
  * @param {Object} query
  * @param {Function} done
  * @return undefined
  * @api public
  */
-Model.prototype.count = function (query, options, done) {
-  if (typeof options === 'function') {
-    done = options
-    options = {}
-  }
-
-  // query = queryUtils.makeCaseInsensitive(query, this.schema)
-  // query = queryUtils.convertApparentObjectIds(query, this.schema)
-
+Model.prototype.delete = function (query, done, req) {
   var validation = this.validate.query(query)
 
   if (!validation.success) {
@@ -363,13 +350,102 @@ Model.prototype.count = function (query, options, done) {
     return done(err)
   }
 
-  if (_.isObject(query)) {
-    this.find(query, options, (err, results) => {
-      if (err) return done(err)
-      return done(null, { metadata: results.metadata })
+  // query = queryUtils.convertApparentObjectIds(query, this.schema)
+
+  var startDelete = (database) => {
+    // apply any existing `beforeDelete` hooks, otherwise delete the documents straight away
+    if (this.settings.hooks && this.settings.hooks.beforeDelete) {
+      async.reduce(this.settings.hooks.beforeDelete, query, (current, hookConfig, callback) => {
+        var hook = new Hook(hookConfig, 'beforeDelete')
+        var hookError = {}
+
+        Promise.resolve(hook.apply(current, hookError, this.schema, this.name, req)).then((newQuery) => {
+          callback((newQuery === null) ? {} : null, newQuery)
+        }).catch((err) => {
+          callback(hook.formatError(err))
+        })
+      }, (err, result) => {
+        if (err) {
+          done(err)
+        } else {
+          deleteDocuments(database)
+        }
+      })
+    } else {
+      deleteDocuments(database)
+    }
+  }
+
+  var deleteDocuments = (database) => {
+    if (query._id) {
+      query._id = query._id.toString()
+    }
+
+    var wait = Promise.resolve()
+
+    if (this.history) {
+      wait = new Promise((resolve, reject) => {
+        this.find(query, { compose: false }, (err, docs) => {
+          if (err) return reject(err)
+
+          var deletedDocs = docs.results
+
+          // for each of the about-to-be-deleted documents, create a revision for it
+          if (deletedDocs.length > 0) {
+            this.history.createEach(deletedDocs, 'delete', this).then(() => {
+              return resolve()
+            }).catch((err) => {
+              return reject(err)
+            })
+          } else {
+            return resolve()
+          }
+        })
+      })
+    }
+
+    wait.then(() => {
+      // query = queryUtils.convertApparentObjectIds(query, this.schema)
+
+      database.delete(query, this.name, this.schema).then((result) => {
+        if (!err && (result.deletedCount > 0)) {
+          // apply any existing `afterDelete` hooks
+          if (this.settings.hasOwnProperty('hooks') && (typeof this.settings.hooks.afterDelete === 'object')) {
+            this.settings.hooks.afterDelete.forEach((hookConfig, index) => {
+              var hook = new Hook(this.settings.hooks.afterDelete[index], 'afterDelete')
+
+              return hook.apply(query, this.schema, this.name)
+            })
+          }
+        }
+
+        done(null, result.deletedCount)
+      })
+    }).catch((err) => {
+      done(err)
     })
+  }
+
+  if (this.connection.db) return startDelete(this.connection.db)
+
+  // if the db is not connected queue the delete
+  this.connection.once('connect', startDelete)
+}
+
+/**
+ *
+ */
+Model.prototype.getIndexes = function (done) {
+  var _done = database => {
+    database.getIndexes(this.name).then(result => {
+      done(result)
+    })
+  }
+
+  if (!this.connection.db) {
+    this.connection.once('connect', _done)
   } else {
-    return done(validationError('Bad Query'))
+    return _done(this.connection.db)
   }
 }
 
@@ -667,6 +743,29 @@ Model.prototype.get = function (query, options, done, req) {
   })
 }
 
+/**
+ * Attaches the full history of each document
+ * before returning the results
+ */
+Model.prototype.injectHistory = function (data, options) {
+  return new Promise((resolve, reject) => {
+    if (data.results.length === 0) {
+      return resolve(data)
+    }
+
+    _.each(data.results, (doc, idx) => {
+      this.revisions(doc._id, options, (err, history) => {
+        if (err) console.log(err)
+        doc._history = history
+
+        if (idx === data.results.length - 1) {
+          return resolve(data)
+        }
+      })
+    })
+  })
+}
+
 Model.prototype.revisions = function (id, options, done) {
   var fields = options.fields || {}
   var historyQuery = {}
@@ -873,105 +972,6 @@ Model.prototype.update = function (query, update, internals, done, req) {
 
   // if the db is not connected queue the update
   this.connection.once('connect', startUpdate)
-}
-
-/**
- * Delete a document from the database
- *
- * @param {Object} query
- * @param {Function} done
- * @return undefined
- * @api public
- */
-Model.prototype.delete = function (query, done, req) {
-  var validation = this.validate.query(query)
-
-  if (!validation.success) {
-    var err = validationError('Bad Query')
-    err.json = validation
-    return done(err)
-  }
-
-  // query = queryUtils.convertApparentObjectIds(query, this.schema)
-
-  var startDelete = (database) => {
-    // apply any existing `beforeDelete` hooks, otherwise delete the documents straight away
-    if (this.settings.hooks && this.settings.hooks.beforeDelete) {
-      async.reduce(this.settings.hooks.beforeDelete, query, (current, hookConfig, callback) => {
-        var hook = new Hook(hookConfig, 'beforeDelete')
-        var hookError = {}
-
-        Promise.resolve(hook.apply(current, hookError, this.schema, this.name, req)).then((newQuery) => {
-          callback((newQuery === null) ? {} : null, newQuery)
-        }).catch((err) => {
-          callback(hook.formatError(err))
-        })
-      }, (err, result) => {
-        if (err) {
-          done(err)
-        } else {
-          deleteDocuments(database)
-        }
-      })
-    } else {
-      deleteDocuments(database)
-    }
-  }
-
-  var deleteDocuments = (database) => {
-    if (query._id) {
-      query._id = query._id.toString()
-    }
-
-    var wait = Promise.resolve()
-
-    if (this.history) {
-      wait = new Promise((resolve, reject) => {
-        this.find(query, { compose: false }, (err, docs) => {
-          if (err) return reject(err)
-
-          var deletedDocs = docs.results
-
-          // for each of the about-to-be-deleted documents, create a revision for it
-          if (deletedDocs.length > 0) {
-            this.history.createEach(deletedDocs, 'delete', this).then(() => {
-              return resolve()
-            }).catch((err) => {
-              return reject(err)
-            })
-          } else {
-            return resolve()
-          }
-        })
-      })
-    }
-
-    wait.then(() => {
-      // query = queryUtils.convertApparentObjectIds(query, this.schema)
-
-      database.delete(query, this.name, this.schema).then((result) => {
-        if (!err && (result.deletedCount > 0)) {
-          // apply any existing `afterDelete` hooks
-          if (this.settings.hasOwnProperty('hooks') && (typeof this.settings.hooks.afterDelete === 'object')) {
-            this.settings.hooks.afterDelete.forEach((hookConfig, index) => {
-              var hook = new Hook(this.settings.hooks.afterDelete[index], 'afterDelete')
-
-              return hook.apply(query, this.schema, this.name)
-            })
-          }
-        }
-
-        done(null, result.deletedCount)
-      })
-    }).catch((err) => {
-      done(err)
-    })
-  }
-
-  if (this.connection.db) return startDelete(this.connection.db)
-
-  // if the db is not connected queue the delete
-  this.connection.once('connect', startDelete)
 }
 
 function validationError (message) {

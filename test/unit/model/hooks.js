@@ -502,7 +502,7 @@ describe('Hook', function () {
         database: 'testdb',
         storeRevisions: false,
         hooks: {
-          beforeCreate: [{
+          afterCreate: [{
             hook: 'slug',
             options: {
               from: 'title',
@@ -672,7 +672,7 @@ describe('Hook', function () {
         database: 'testdb',
         storeRevisions: false,
         hooks: {
-          beforeCreate: [{
+          beforeUpdate: [{
             hook: 'slug',
             options: {
               from: 'title',
@@ -779,7 +779,7 @@ describe('Hook', function () {
         database: 'testdb',
         storeRevisions: false,
         hooks: {
-          beforeCreate: [{
+          afterUpdate: [{
             hook: 'slug',
             options: {
               from: 'title',
@@ -876,7 +876,6 @@ describe('Hook', function () {
     beforeEach(help.cleanUpDB)
 
     it('should receive collection name and schema', function (done) {
-
       var schema = help.getModelSchema()
       schema.title = {
         type: 'String',
@@ -892,7 +891,7 @@ describe('Hook', function () {
         database: 'testdb',
         storeRevisions: false,
         hooks: {
-          beforeCreate: [{
+          beforeDelete: [{
             hook: 'slug',
             options: {
               from: 'title',
@@ -914,13 +913,78 @@ describe('Hook', function () {
       mod.create({fieldName: 'foo', title: 'Article One', slug: ''}, function (err, result) {
         if (err) return done(err)
 
-        hook.Hook.prototype.load.restore()
+        var id = result.results[0]._id.toString()
 
-        // find the obj we just created
-        mod.find({fieldName: 'foo'}, function (err, doc) {
+        // delete the obj we just created
+        mod.delete({ _id: id }, function (err, doc) {
           if (err) return done(err)
 
-          done()
+          hook.Hook.prototype.load.restore()
+
+          // find the obj we just created
+          mod.find({fieldName: 'foo'}, function (err, doc) {
+            if (err) return done(err)
+
+            done()
+          })
+        })
+      })
+    })
+
+    it('should receive an array of documents that will be deleted', function (done) {
+      var schema = help.getModelSchema()
+      schema.title = {
+        type: 'String',
+        required: false
+      }
+
+      schema.slug = {
+        type: 'String',
+        required: false
+      }
+
+      var settings = {
+        database: 'testdb',
+        storeRevisions: false,
+        hooks: {
+          beforeDelete: [{
+            hook: 'slug',
+            options: {
+              from: 'title',
+              to: 'slug'
+            }
+          }]
+        }
+      }
+
+      var inspectFunction = function (obj, type, data) {
+        should.exist(data.deletedDocs)
+        data.deletedDocs.should.be.Array
+        data.deletedDocs.length.should.eql(1)
+        data.deletedDocs[0].fieldName.should.eql('foo')
+      }
+
+      sinon.stub(hook.Hook.prototype, 'load').returns(inspectFunction)
+
+      var mod = model('testModelName', schema, null, settings)
+
+      mod.create({fieldName: 'foo', title: 'Article One', slug: ''}, function (err, result) {
+        if (err) return done(err)
+
+        var id = result.results[0]._id.toString()
+
+        // delete the obj we just created
+        mod.delete({ _id: id }, function (err, doc) {
+          if (err) return done(err)
+
+          hook.Hook.prototype.load.restore()
+
+          // find the obj we just created
+          mod.find({fieldName: 'foo'}, function (err, doc) {
+            if (err) return done(err)
+
+            done()
+          })
         })
       })
     })
@@ -992,7 +1056,6 @@ describe('Hook', function () {
     beforeEach(help.cleanUpDB)
 
     it('should receive collection name and schema', function (done) {
-
       var schema = help.getModelSchema()
       schema.title = {
         type: 'String',
@@ -1008,7 +1071,7 @@ describe('Hook', function () {
         database: 'testdb',
         storeRevisions: false,
         hooks: {
-          beforeCreate: [{
+          afterDelete: [{
             hook: 'slug',
             options: {
               from: 'title',
@@ -1030,13 +1093,71 @@ describe('Hook', function () {
       mod.create({fieldName: 'foo', title: 'Article One', slug: ''}, function (err, result) {
         if (err) return done(err)
 
-        hook.Hook.prototype.load.restore()
-
-        // find the obj we just created
-        mod.find({fieldName: 'foo'}, function (err, doc) {
+        // delete the obj we just created
+        mod.delete({fieldName: 'foo'}, function (err, doc) {
           if (err) return done(err)
 
+          hook.Hook.prototype.load.restore()
+
           done()
+        })
+      })
+    })
+
+    it('should receive an array of documents that were deleted', function (done) {
+      var schema = help.getModelSchema()
+      schema.title = {
+        type: 'String',
+        required: false
+      }
+
+      schema.slug = {
+        type: 'String',
+        required: false
+      }
+
+      var settings = {
+        database: 'testdb',
+        storeRevisions: false,
+        hooks: {
+          afterDelete: [{
+            hook: 'slug',
+            options: {
+              from: 'title',
+              to: 'slug'
+            }
+          }]
+        }
+      }
+
+      var inspectFunction = function (obj, type, data) {
+        should.exist(data.deletedDocs)
+        data.deletedDocs.should.be.Array
+        data.deletedDocs.length.should.eql(1)
+        data.deletedDocs[0].fieldName.should.eql('foo')
+      }
+
+      sinon.stub(hook.Hook.prototype, 'load').returns(inspectFunction)
+
+      var mod = model('testModelName', schema, null, settings)
+
+      mod.create({fieldName: 'foo', title: 'Article One', slug: ''}, function (err, result) {
+        if (err) return done(err)
+
+        var id = result.results[0]._id.toString()
+
+        // delete the obj we just created
+        mod.delete({ _id: id }, function (err, doc) {
+          if (err) return done(err)
+
+          hook.Hook.prototype.load.restore()
+
+          // find the obj we just created
+          mod.find({fieldName: 'foo'}, function (err, doc) {
+            if (err) return done(err)
+
+            done()
+          })
         })
       })
     })
@@ -1124,7 +1245,7 @@ describe('Hook', function () {
         database: 'testdb',
         storeRevisions: false,
         hooks: {
-          beforeCreate: [{
+          afterGet: [{
             hook: 'slug',
             options: {
               from: 'title',

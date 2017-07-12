@@ -1,7 +1,6 @@
 var _ = require('underscore-contrib')
 var async = require('async')
 var debug = require('debug')('api:model')
-var moment = require('moment')
 var path = require('path')
 
 var Composer = require(path.join(__dirname, '/composer')).Composer
@@ -194,14 +193,9 @@ Model.prototype.create = function (documents, internals, done, req) {
     doc.v = 1
   })
 
-  // ObjectIDs
-  // documents.forEach(function (doc) {
-  //   doc = self.convertObjectIdsForSave(self.schema, doc)
-  // })
-
   // DateTime
   documents.forEach(doc => {
-    doc = this.convertDateTimeForSave(this.schema, doc)
+    doc = queryUtils.convertDateTimeForSave(this.schema, doc)
   })
 
   var startInsert = (database) => {
@@ -315,29 +309,6 @@ Model.prototype.injectHistory = function (data, options) {
   })
 }
 
-Model.prototype.convertDateTimeForSave = function (schema, obj) {
-  Object.keys(schema).filter(function (key) {
-    return schema[key].type === 'DateTime' && obj[key] !== null && !_.isUndefined(obj[key])
-  }).forEach(function (key) {
-    switch (schema[key].format) {
-      case 'unix':
-        obj[key] = moment(obj[key]).valueOf()
-        break
-      case 'iso':
-        obj[key] = new Date(moment(obj[key]).toISOString())
-        break
-      default:
-        if (schema[key].format) {
-          obj[key] = moment(obj[key], schema[key].format || ['MM-DD-YYYY', 'YYYY-MM-DD', 'DD MMMM YYYY', 'DD/MM/YYYY']).format()
-        } else {
-          obj[key] = new Date(moment(obj[key])).toISOString()
-        }
-    }
-  })
-
-  return obj
-}
-
 /**
  * Lookup documents in the database, then give back a count
  *
@@ -363,14 +334,10 @@ Model.prototype.count = function (query, options, done) {
     return done(err)
   }
 
-  if (_.isObject(query)) {
-    this.find(query, options, (err, results) => {
-      if (err) return done(err)
-      return done(null, { metadata: results.metadata })
-    })
-  } else {
-    return done(validationError('Bad Query'))
-  }
+  this.find(query, options, (err, results) => {
+    if (err) return done(err)
+    return done(null, { metadata: results.metadata })
+  })
 }
 
 /**
@@ -443,187 +410,170 @@ Model.prototype.find = function (query, options, done) {
   }
 
   var validation = this.validate.query(query)
+
   if (!validation.success) {
     var err = validationError('Bad Query')
     err.json = validation
     return done(err)
   }
 
-  var _done
+  var _done = (database) => {
+    if (queryUtils.containsNestedReferenceFields(query, this.schema)) {
+      var queries = queryUtils.processReferenceFieldQuery(query, this.schema)
 
-  if (_.isArray(query)) {
-    // have we been passed an aggregation pipeline query?
-    _done = function (database) {
-      // database.collection(self.name).aggregate(query, options, function (err, result) {
-      //   if (err) return done(err)
-      //   done(null, result)
-      // })
-      done('Not implemented')
-    }
-  } else if (_.isObject(query)) {
-    _done = (database) => {
-      if (queryUtils.containsNestedReferenceFields(query, this.schema)) {
-        var queries = queryUtils.processReferenceFieldQuery(query, this.schema)
+      debug('find reference %o', queries)
 
-        debug('find reference %o', queries)
+      // processReferenceFieldQuery sends back an array of queries
+      // [0] is the query with reference field parts removed
+      // [1] contains the reference field parts
+      query = queries[0]
 
-        // processReferenceFieldQuery sends back an array of queries
-        // [0] is the query with reference field parts removed
-        // [1] contains the reference field parts
-        query = queries[0]
+      var referenceFieldQuery = queries[1]
+      var referenceFieldKeys = Object.keys(referenceFieldQuery)
+      var queue = []
 
-        var referenceFieldQuery = queries[1]
-        var referenceFieldKeys = Object.keys(referenceFieldQuery)
-        var queue = []
+      // for each reference field key, query the specified collection
+      // to obtain an _id value
+      _.each(referenceFieldKeys, (key, index) => {
+        queue.push((cb) => {
+          var keyParts = key.split('.')
 
-        // for each reference field key, query the specified collection
-        // to obtain an _id value
-        _.each(referenceFieldKeys, (key, index) => {
-          queue.push((cb) => {
-            var keyParts = key.split('.')
+          var collection = ''
+          var collectionKey = keyParts[0]
+          var linkKey
+          var queryKey
+          var queryValue = referenceFieldQuery[key]
+          var collectionSettings = queryUtils.getSchemaOrParent(collectionKey, this.schema).settings || {}
+          var collectionLevelCompose = true
 
-            var collection = ''
-            var collectionKey = keyParts[0]
-            var linkKey
-            var queryKey
-            var queryValue = referenceFieldQuery[key]
-            var collectionSettings = queryUtils.getSchemaOrParent(collectionKey, this.schema).settings || {}
-            var collectionLevelCompose = true
+          if (collectionKey !== collectionSettings.collection) {
+            collection = collectionSettings.collection
+          } else {
+            collection = collectionKey
+          }
 
-            if (collectionKey !== collectionSettings.collection) {
-              collection = collectionSettings.collection
-            } else {
-              collection = collectionKey
-            }
+          var fieldsObj = {}
+          if (collectionSettings.fields) {
+            collectionSettings.fields.forEach(function (field) {
+              fieldsObj[field] = 1
+            })
+          }
 
-            var fieldsObj = {}
-            if (collectionSettings.fields) {
-              collectionSettings.fields.forEach(function (field) {
-                fieldsObj[field] = 1
-              })
-            }
+          queryKey = keyParts[1]
+          var collectionQuery = {}
 
-            queryKey = keyParts[1]
-            var collectionQuery = {}
+          if (keyParts.length === 2) {
+            collectionQuery[queryKey] = queryValue
+          } else {
+            linkKey = keyParts[1]
+            queryKey = keyParts[2]
+          }
 
-            if (keyParts.length === 2) {
-              collectionQuery[queryKey] = queryValue
-            } else {
-              linkKey = keyParts[1]
-              queryKey = keyParts[2]
-            }
+          // if we already have a value for this field inserted
+          // into the final query object (e.g. a parent nested query has been done first),
+          // supplement the current query with the ids
+          if (query[collectionKey]) {
+            collectionQuery['_id'] = query[collectionKey]
+            // collectionQuery = queryUtils.convertApparentObjectIds(collectionQuery, self.schema)
+          }
 
-            // if we already have a value for this field inserted
-            // into the final query object (e.g. a parent nested query has been done first),
-            // supplement the current query with the ids
-            if (query[collectionKey]) {
-              collectionQuery['_id'] = query[collectionKey]
-              // collectionQuery = queryUtils.convertApparentObjectIds(collectionQuery, self.schema)
-            }
+          // query the reference collection
+          debug('find reference in %s with %o', collection, collectionQuery)
 
-            // query the reference collection
-            debug('find reference in %s with %o', collection, collectionQuery)
+          var referenceModel = new Model(collection, {}, null, { database: collectionSettings.database || self.settings.database, compose: collectionLevelCompose })
 
-            var referenceModel = new Model(collection, {}, null, { database: collectionSettings.database || self.settings.database, compose: collectionLevelCompose })
+          referenceModel.find(collectionQuery, { fields: fieldsObj }, (err, results) => {
+            if (err) return done(err)
 
-            referenceModel.find(collectionQuery, { fields: fieldsObj }, (err, results) => {
-              if (err) return done(err)
+            var ids
 
-              var ids
+            if (results && results.results && results.results.length) {
+              results = results.results
 
-              if (results && results.results && results.results.length) {
-                results = results.results
+              if (!linkKey) { // i.e. it's a one-level nested query
+                ids = _.map(_.pluck(results, '_id'), (id) => { return id.toString() })
 
-                if (!linkKey) { // i.e. it's a one-level nested query
-                  ids = _.map(_.pluck(results, '_id'), (id) => { return id.toString() })
+                // update the original query with a query for the obtained _id
+                // using the appropriate query type for whether the reference settings
+                // allows storing as arrays or not
+                query[collectionKey] = collectionSettings.multiple ? { '$containsAny': ids } : ids[0]
+                // query[collectionKey] = collectionSettings.multiple ? { '$in': ids } : ids[0]
+              } else {
+                // filter the results using linkKey
+                // 1. get the _id of the result matching { queryKey: queryValue }
+                var parent = _.filter(results, result => {
+                  return new RegExp(queryValue).test(result[queryKey]) === true
+                })
 
-                  // update the original query with a query for the obtained _id
-                  // using the appropriate query type for whether the reference settings
-                  // allows storing as arrays or not
-                  query[collectionKey] = collectionSettings.multiple ? { '$containsAny': ids } : ids[0]
-                  // query[collectionKey] = collectionSettings.multiple ? { '$in': ids } : ids[0]
-                } else {
-                  // filter the results using linkKey
-                  // 1. get the _id of the result matching { queryKey: queryValue }
-                  var parent = _.filter(results, result => {
-                    return new RegExp(queryValue).test(result[queryKey]) === true
-                  })
-
-                  if (parent[0]) {
-                    var children = _.filter(results, result => {
-                      if (result[linkKey]) {
-                        if (typeof result[linkKey] === 'string' && result[linkKey].toString() === parent[0]._id.toString()) {
+                if (parent[0]) {
+                  var children = _.filter(results, result => {
+                    if (result[linkKey]) {
+                      if (typeof result[linkKey] === 'string' && result[linkKey].toString() === parent[0]._id.toString()) {
+                        return result
+                      } else if (typeof result[linkKey] === 'object') {
+                        if (result[linkKey].toString() === '[object Object]' && result[linkKey]._id.toString() === parent[0]._id.toString()) {
                           return result
-                        } else if (typeof result[linkKey] === 'object') {
-                          if (result[linkKey].toString() === '[object Object]' && result[linkKey]._id.toString() === parent[0]._id.toString()) {
-                            return result
-                          } else if (result[linkKey].toString() === parent[0]._id.toString()) {
-                            return result
-                          }
+                        } else if (result[linkKey].toString() === parent[0]._id.toString()) {
+                          return result
                         }
                       }
-                    })
+                    }
+                  })
 
-                    ids = _.map(_.pluck(children, '_id'), id => {
-                      return id.toString()
-                    })
-                  }
-
-                  query[collectionKey] = { '$in': ids || [] }
+                  ids = _.map(_.pluck(children, '_id'), id => {
+                    return id.toString()
+                  })
                 }
-              } else {
-                // Nothing found in the reference collection, add empty criteria to the main query
-                query[collectionKey] = collectionSettings.multiple
-                  ? { '$in': [] }
-                  : ''
-              }
 
-              cb(null, query)
-            })
+                query[collectionKey] = { '$in': ids || [] }
+              }
+            } else {
+              // Nothing found in the reference collection, add empty criteria to the main query
+              query[collectionKey] = collectionSettings.multiple
+                ? { '$in': [] }
+                : ''
+            }
+
+            cb(null, query)
           })
         })
-        // })
+      })
+      // })
 
-        async.series(queue,
-          function (err, results) {
-            if (err) console.log(err)
-            runFind()
-          }
-        )
-      } else {
-        runFind()
-      }
-
-      // perform the actual find operation
-      function runFind () {
-        var queryOptions = _.clone(options)
-        delete queryOptions.historyFilters
-
-        database.find(query, self.name, queryOptions, self.schema).then((results) => {
-          // NOTE: datastore returns object containing results + metadata
-          //  {
-          //    results: [ { _id: 590bbc9d29ccaf1cb8ab0ed1, fieldName: 'foo' } ],
-          //    metadata: { page: 1, offset: 0, totalCount: 1, totalPages: 1 }
-          //  }
-
-          if (self.compose) {
-            self.composer.setApiVersion(query.apiVersion)
-
-            self.composer.compose(results.results, (obj) => {
-              results.results = obj
-              runDoneQueue(null, results)
-            })
-          } else {
-            runDoneQueue(null, results)
-          }
-        })
-      }
+      async.series(queue,
+        function (err, results) {
+          if (err) console.log(err)
+          runFind()
+        }
+      )
+    } else {
+      runFind()
     }
-  } else {
-    var error = validationError('Bad Query')
-    // err.json = {success: false, errors: [{message: 'Query must be either a JSON array or a JSON object.'}]}
-    // console.log(err)
-    return done(error)
+
+    // perform the actual find operation
+    function runFind () {
+      var queryOptions = _.clone(options)
+      delete queryOptions.historyFilters
+
+      database.find(query, self.name, queryOptions, self.schema).then((results) => {
+        // NOTE: datastore returns object containing results + metadata
+        //  {
+        //    results: [ { _id: 590bbc9d29ccaf1cb8ab0ed1, fieldName: 'foo' } ],
+        //    metadata: { page: 1, offset: 0, totalCount: 1, totalPages: 1 }
+        //  }
+
+        if (self.compose) {
+          self.composer.setApiVersion(query.apiVersion)
+
+          self.composer.compose(results.results, (obj) => {
+            results.results = obj
+            runDoneQueue(null, results)
+          })
+        } else {
+          runDoneQueue(null, results)
+        }
+      })
+    }
   }
 
   if (this.connection.db) return _done(this.connection.db)
@@ -752,10 +702,10 @@ Model.prototype.update = function (query, update, internals, done, req) {
     done = internals
   }
 
-  var validation
   var err
 
-  validation = this.validate.query(query)
+  var validation = this.validate.query(query)
+
   if (!validation.success) {
     err = validationError('Bad Query')
     err.json = validation
@@ -763,17 +713,15 @@ Model.prototype.update = function (query, update, internals, done, req) {
   }
 
   validation = this.validate.schema(update, true)
+
   if (!validation.success) {
     err = validationError()
     err.json = validation
     return done(err)
   }
 
-  // ObjectIDs
-  // TODO: move this to MongoStore
-  // update = this.convertObjectIdsForSave(this.schema, update)
   // DateTimes
-  update = this.convertDateTimeForSave(this.schema, update)
+  update = queryUtils.convertDateTimeForSave(this.schema, update)
 
   if (typeof internals === 'object' && internals != null) { // not null and not undefined
     _.extend(update, internals)
@@ -812,7 +760,6 @@ Model.prototype.update = function (query, update, internals, done, req) {
             }
           }
 
-          // var results = {}
           var promise
 
           // for each of the updated documents, create a history revision for it
@@ -895,76 +842,87 @@ Model.prototype.delete = function (query, done, req) {
   // query = queryUtils.convertApparentObjectIds(query, this.schema)
 
   var startDelete = (database) => {
-    // apply any existing `beforeDelete` hooks, otherwise delete the documents straight away
-    if (this.settings.hooks && this.settings.hooks.beforeDelete) {
-      async.reduce(this.settings.hooks.beforeDelete, query, (current, hookConfig, callback) => {
-        var hook = new Hook(hookConfig, 'beforeDelete')
-        var hookError = {}
-
-        Promise.resolve(hook.apply(current, hookError, this.schema, this.name, req)).then((newQuery) => {
-          callback((newQuery === null) ? {} : null, newQuery)
-        }).catch((err) => {
-          callback(hook.formatError(err))
-        })
-      }, (err, result) => {
-        if (err) {
-          done(err)
-        } else {
-          deleteDocuments(database)
-        }
-      })
-    } else {
-      deleteDocuments(database)
-    }
-  }
-
-  var deleteDocuments = (database) => {
+    // find all the documents affected by the query
     if (query._id) {
       query._id = query._id.toString()
     }
 
-    var wait = Promise.resolve()
+    var deletedDocs = []
+    var allDocs = []
 
-    if (this.history) {
-      wait = new Promise((resolve, reject) => {
-        this.find(query, { compose: false }, (err, docs) => {
-          if (err) return reject(err)
-
-          var deletedDocs = docs.results
-
-          // for each of the about-to-be-deleted documents, create a revision for it
-          if (deletedDocs.length > 0) {
-            this.history.createEach(deletedDocs, 'delete', this).then(() => {
-              return resolve()
-            }).catch((err) => {
-              return reject(err)
-            })
-          } else {
-            return resolve()
-          }
-        })
-      })
-    }
-
-    wait.then(() => {
-      // query = queryUtils.convertApparentObjectIds(query, this.schema)
-
+    var deleteDocuments = (database) => {
       database.delete(query, this.name, this.schema).then((result) => {
-        if (!err && (result.deletedCount > 0)) {
+        if (result.deletedCount > 0) {
           // apply any existing `afterDelete` hooks
           if (this.settings.hasOwnProperty('hooks') && (typeof this.settings.hooks.afterDelete === 'object')) {
             this.settings.hooks.afterDelete.forEach((hookConfig, index) => {
               var hook = new Hook(this.settings.hooks.afterDelete[index], 'afterDelete')
 
-              return hook.apply(query, this.schema, this.name)
+              return hook.apply(query, deletedDocs, this.schema, this.name)
             })
           }
         }
 
-        done(null, result.deletedCount)
+        result.totalCount = allDocs.metadata.totalCount - result.deletedCount
+
+        return done(null, result)
+      }).catch((err) => {
+        return done(err)
       })
-    }).catch((err) => {
-      done(err)
+    }
+
+    this.find({}, { compose: false }, (err, docs) => {
+      allDocs = docs
+
+      this.find(query, { compose: false }, (err, docs) => {
+        if (err) return reject(err)
+
+        deletedDocs = docs.results
+
+        var wait = Promise.resolve()
+
+        if (this.history) {
+          wait = new Promise((resolve, reject) => {
+            // for each of the about-to-be-deleted documents, create a revision for it
+            if (deletedDocs.length > 0) {
+              this.history.createEach(deletedDocs, 'delete', this).then(() => {
+                return resolve()
+              }).catch((err) => {
+                return reject(err)
+              })
+            } else {
+              return resolve()
+            }
+          })
+        }
+
+        wait.then(() => {
+          // apply any existing `beforeDelete` hooks, otherwise delete the documents straight away
+          if (this.settings.hooks && this.settings.hooks.beforeDelete) {
+            async.reduce(this.settings.hooks.beforeDelete, query, (current, hookConfig, callback) => {
+              var hook = new Hook(hookConfig, 'beforeDelete')
+              var hookError = {}
+
+              Promise.resolve(hook.apply(current, deletedDocs, hookError, this.schema, this.name, req)).then((newQuery) => {
+                callback((newQuery === null) ? {} : null, newQuery)
+              }).catch((err) => {
+                callback(hook.formatError(err))
+              })
+            }, (err, result) => {
+              if (err) {
+                done(err)
+              } else {
+                deleteDocuments(database)
+              }
+            })
+          } else {
+            deleteDocuments(database)
+          }
+        }).catch((err) => {
+          console.log(err)
+          done(err)
+        })
+      })
     })
   }
 

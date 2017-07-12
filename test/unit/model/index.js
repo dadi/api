@@ -275,13 +275,6 @@ describe('Model', function () {
       model('testModelName', help.getModelSchema(), null, { database: 'testdb' }).find({}, done)
     })
 
-    it.skip('should accept JSON array for aggregation queries and callback', function (done) {
-      var query = [
-        { $match: { status: 'A' } }
-      ]
-      model('testModelName', help.getModelSchema(), null, { database: 'testdb' }).find(query, done)
-    })
-
     it('should pass error to callback when query uses `$where` operator', function (done) {
       model('testModelName').find({$where: 'this.fieldName === "foo"'}, function (err) {
         should.exist(err)

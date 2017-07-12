@@ -609,7 +609,7 @@ describe('Reference Field', function () {
 
                 for (var i = 0; i < bookResult.author.length; i++) {
                   var author = bookResult.author[i]
-                  author._id.toString().should.eql(bookResult.composed.author[i].toString())
+                  author._id.toString().should.eql(bookResult._composed.author[i].toString())
                 }
 
                 done()

@@ -333,8 +333,8 @@ describe('Model', function () {
 
             results.results.should.exist
             results.results.should.be.Array
-            results.results[0].history.should.exist
-            results.results[0].history[0].fieldName.should.eql('foo')
+            results.results[0]._history.should.exist
+            results.results[0]._history[0].fieldName.should.eql('foo')
             done()
           })
         })
@@ -354,7 +354,7 @@ describe('Model', function () {
             if (err) return done(err)
             results.results.should.exist
             results.results.should.be.Array
-            should.exist(results.results[0].history)
+            should.exist(results.results[0]._history)
             should.exist(results.results[0].fieldName)
             done()
           })
@@ -370,7 +370,7 @@ describe('Model', function () {
       })
     })
 
-    it('should add v:1 to a new document', function (done) {
+    it('should add _version:1 to a new document', function (done) {
       var mod = model('testModelName', help.getModelSchema(), null, { database: 'testdb', storeRevisions: true })
 
       mod.create({fieldName: 'foo'}, function (err, results) {
@@ -378,7 +378,7 @@ describe('Model', function () {
 
         results.results.should.exist
         results.results.should.be.Array
-        results.results[0].v.should.eql(1)
+        results.results[0]._version.should.eql(1)
         done()
       })
     })
@@ -393,8 +393,8 @@ describe('Model', function () {
             if (err) return done(err)
             results.results.should.exist
             results.results.should.be.Array
-            results.results[0].v.should.eql(2)
-            results.results[0].history[0].v.should.eql(1)
+            results.results[0]._version.should.eql(2)
+            results.results[0]._history[0]._version.should.eql(1)
             done()
           })
         })
@@ -427,7 +427,7 @@ describe('Model', function () {
             if (err) return done(err)
 
             var doc_id = doc.results[0]._id
-            var revision_id = doc.results[0].history[0] // expected history object
+            var revision_id = doc.results[0]._history[0] // expected history object
 
             model('testModelName', help.getModelSchema(), null, { database: 'testdb' }).revisions(doc_id, {}, function (err, result) {
               if (err) return done(err)
@@ -679,8 +679,8 @@ describe('Model', function () {
         mod.find({fieldName: 'foo'}, function (err, doc) {
           if (err) return done(err)
           should.exist(doc['results'])
-          doc['results'][0].history.should.be.Array
-          doc['results'][0].history.length.should.equal(0) // no updates yet
+          doc['results'][0]._history.should.be.Array
+          doc['results'][0]._history.length.should.equal(0) // no updates yet
           done()
         })
       })
@@ -782,7 +782,7 @@ describe('Model', function () {
           result['results'][0].field1.should.equal('bar')
 
           should.exist(result['results'][0].history)
-          result['results'][0].history.length.should.equal(1); // one revision, from the update
+          result['results'][0]._history.length.should.equal(1); // one revision, from the update
 
           done()
         })

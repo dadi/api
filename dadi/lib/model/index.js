@@ -185,13 +185,13 @@ Model.prototype.create = function (documents, internals, done, req) {
   //
   if (this.history) {
     documents.forEach(doc => {
-      doc.history = []
+      doc._history = []
     })
   }
 
   // add initial document revision number
   documents.forEach(doc => {
-    doc.v = 1
+    doc._version = 1
   })
 
   // ObjectIDs
@@ -268,7 +268,7 @@ Model.prototype.create = function (documents, internals, done, req) {
   }
 
   // Pre-composed References
-  this.composer.setApiVersion(internals.apiVersion)
+  this.composer.setApiVersion(internals._apiVersion)
 
   // before the primary document insert, process any Reference fields
   // that have been passed as subdocuments rather than id strings
@@ -305,7 +305,7 @@ Model.prototype.injectHistory = function (data, options) {
     _.each(data.results, (doc, idx) => {
       this.revisions(doc._id, options, (err, history) => {
         if (err) console.log(err)
-        doc.history = history
+        doc._history = history
 
         if (idx === data.results.length - 1) {
           return resolve(data)
@@ -607,7 +607,7 @@ Model.prototype.find = function (query, options, done) {
           //  }
 
           if (self.compose) {
-            self.composer.setApiVersion(query.apiVersion)
+            self.composer.setApiVersion(query._apiVersion)
 
             self.composer.compose(results.results, (obj) => {
               results.results = obj
@@ -683,7 +683,7 @@ Model.prototype.revisions = function (id, options, done) {
 
       if (results && results.results && results.results.length && this.history) {
         historyQuery._id = {
-          '$in': _.map(results.results[0].history, (id) => {
+          '$in': _.map(results.results[0]._history, (id) => {
             return id.toString()
           })
         }
@@ -779,9 +779,9 @@ Model.prototype.update = function (query, update, internals, done, req) {
     _.extend(update, internals)
   }
 
-  this.composer.setApiVersion(internals.apiVersion)
+  this.composer.setApiVersion(internals._apiVersion)
 
-  var setUpdate = { $set: update, $inc: { v: 1 } }
+  var setUpdate = { $set: update, $inc: { _version: 1 } }
 
   var startUpdate = (database) => {
     this.find(query, {}, (err, result) => {

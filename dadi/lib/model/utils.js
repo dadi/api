@@ -103,7 +103,7 @@ function makeCaseInsensitive (obj, schema) {
   var newObj = _.clone(obj)
 
   _.each(Object.keys(obj), function (key) {
-    if (key === 'apiVersion' || key === '_id') {
+    if (key === '_apiVersion' || key === '_id') {
       return
     }
 
@@ -176,19 +176,19 @@ function processFilter (query, schema) {
 
 function removeInternalFields (obj) {
   delete obj._id
-  delete obj.createdAt
-  delete obj.createdBy
-  delete obj.lastModifiedAt
-  delete obj.lastModifiedBy
-  delete obj.v
-  delete obj.apiVersion
+  delete obj._createdAt
+  delete obj._createdBy
+  delete obj._lastModifiedAt
+  delete obj._lastModifiedBy
+  delete obj._v
+  delete obj._apiVersion
 
-  if (obj.composed) {
-    _.each(Object.keys(obj.composed), (key) => {
-      obj[key] = obj.composed[key]
+  if (obj._composed) {
+    _.each(Object.keys(obj._composed), (key) => {
+      obj[key] = obj._composed[key]
     })
 
-    delete obj.composed
+    delete obj._composed
   }
 
   return obj

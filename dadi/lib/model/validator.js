@@ -8,7 +8,7 @@ var path = require('path')
 var datastore = require(path.join(__dirname, '../datastore'))()
 var validator = require('validator')
 
-var ignoredKeys = _.union(['_id', 'apiVersion', 'v', 'history'], datastore.nonValidatedProperties || [])
+var ignoredKeys = _.union(['_id', '_apiVersion', '_version', '_history'], datastore.nonValidatedProperties || [])
 
 var Validator = function (model) {
   this.model = model

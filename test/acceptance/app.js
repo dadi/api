@@ -321,10 +321,10 @@ describe('Application', function () {
 
             res.body.results.should.be.Array
             res.body.results.length.should.equal(1)
-            res.body.results[0].createdBy.should.equal('test123')
-            res.body.results[0].createdAt.should.be.Number
-            res.body.results[0].createdAt.should.not.be.above(Date.now())
-            res.body.results[0].apiVersion.should.equal('vtest')
+            res.body.results[0]._createdBy.should.equal('test123')
+            res.body.results[0]._createdAt.should.be.Number
+            res.body.results[0]._createdAt.should.not.be.above(Date.now())
+            res.body.results[0]._apiVersion.should.equal('vtest')
             done()
           })
       })
@@ -609,10 +609,10 @@ describe('Application', function () {
                     res.body['results'].should.exist
                     res.body['results'].should.be.Array
                     res.body['results'].length.should.equal(1)
-                    res.body['results'][0].lastModifiedBy.should.equal('test123')
-                    res.body['results'][0].lastModifiedAt.should.be.Number
-                    res.body['results'][0].lastModifiedAt.should.not.be.above(Date.now())
-                    res.body['results'][0].apiVersion.should.equal('vtest')
+                    res.body['results'][0]._lastModifiedBy.should.equal('test123')
+                    res.body['results'][0]._lastModifiedAt.should.be.Number
+                    res.body['results'][0]._lastModifiedAt.should.not.be.above(Date.now())
+                    res.body['results'][0]._apiVersion.should.equal('vtest')
 
                     done()
                   })
@@ -672,7 +672,7 @@ describe('Application', function () {
                         res.body['results'].should.be.Array
                         res.body['results'].length.should.equal(1)
                         res.body['results'][0].field1.should.equal('doc') // not "updated doc"
-                        res.body['results'][0].apiVersion.should.equal('vjoin')
+                        res.body['results'][0]._apiVersion.should.equal('vjoin')
 
                         config.set('query.useVersionFilter', false)
 
@@ -755,7 +755,7 @@ describe('Application', function () {
                                 res.body['results'].should.be.Array
                                 res.body['results'].length.should.equal(1)
                                 res.body['results'][0].field1.should.equal('updated doc') // not "updated doc"
-                                res.body['results'][0].apiVersion.should.equal('vtest')
+                                res.body['results'][0]._apiVersion.should.equal('vtest')
 
                                 client
                                   .get('/vjoin/testdb/test-schema-no-history?filter={"field1": { "$ne" : "" } }')
@@ -769,7 +769,7 @@ describe('Application', function () {
                                     res.body['results'].should.be.Array
                                     res.body['results'].length.should.equal(1)
                                     res.body['results'][0].field1.should.equal('doc') // not "updated doc"
-                                    res.body['results'][0].apiVersion.should.equal('vjoin')
+                                    res.body['results'][0]._apiVersion.should.equal('vjoin')
 
                                     config.set('query.useVersionFilter', false)
 
@@ -1014,7 +1014,7 @@ describe('Application', function () {
 
                       // apiVersion should be in the query passed to find
                       args.forEach((arg) => {
-                        should.exist(arg[0].apiVersion)
+                        should.exist(arg[0]._apiVersion)
                       })
 
                       var results = res.body.results
@@ -1153,7 +1153,7 @@ describe('Application', function () {
 
                         // apiVersion should be in the query passed to find
                         args.forEach((arg) => {
-                          should.not.exist(arg[0].apiVersion)
+                          should.not.exist(arg[0]._apiVersion)
                         })
 
                         var results = res.body.results
@@ -1179,7 +1179,7 @@ describe('Application', function () {
         help.createDoc(bearerToken, function (err, doc) {
           if (err) return done(err)
 
-          doc.apiVersion.should.equal('vtest')
+          doc._apiVersion.should.equal('vtest')
 
           // create new API endpoint
           var client = request(connectionString)
@@ -1211,7 +1211,7 @@ describe('Application', function () {
 
                         res.body['results'].should.exist
                         res.body['results'].should.be.Array
-                        res.body['results'][0].apiVersion.should.equal('vtest')
+                        res.body['results'][0]._apiVersion.should.equal('vtest')
                         done()
                       })
                   }, 300)
@@ -1229,7 +1229,7 @@ describe('Application', function () {
         help.createDoc(bearerToken, function (err, doc) {
           if (err) return done(err)
 
-          doc.apiVersion.should.equal('vtest')
+          doc._apiVersion.should.equal('vtest')
 
           // create new API endpoint
           var client = request(connectionString)
@@ -1263,7 +1263,7 @@ describe('Application', function () {
 
                         res.body['results'].should.exist
                         res.body['results'].should.be.Array
-                        res.body['results'][0].apiVersion.should.equal('v1')
+                        res.body['results'][0]._apiVersion.should.equal('v1')
                         done()
                       })
                   }, 300)
@@ -1754,8 +1754,8 @@ describe('Application', function () {
 
               res.body['results'].should.exist
               res.body['results'].should.be.Array
-              res.body['results'][0].history.should.exist
-              res.body['results'][0].history[0].field1.should.eql('original field content')
+              res.body['results'][0]._history.should.exist
+              res.body['results'][0]._history[0].field1.should.eql('original field content')
               done()
             })
           })
@@ -1803,8 +1803,8 @@ describe('Application', function () {
               res.body['results'][0].field1.should.exist
               res.body['results'][0].field1.should.eql('GHIJKL')
               res.body['results'][0].field2.should.exist
-              res.body['results'][0].history.should.exist
-              res.body['results'][0].history[0].field1.should.eql('ABCDEF')
+              res.body['results'][0]._history.should.exist
+              res.body['results'][0]._history[0].field1.should.eql('ABCDEF')
               done()
             })
           })
@@ -2591,7 +2591,7 @@ describe('Application', function () {
         schema.settings.sort = 'newField'
         schema.settings.index = {
           "keys": {
-            "createdAt" : 1
+            "_createdAt" : 1
           }
         }
 
@@ -2624,7 +2624,7 @@ describe('Application', function () {
         schema.settings.sort = 'newField'
         schema.settings.index = [{
           "keys": {
-            "createdAt" : 1
+            "_createdAt" : 1
           }
         }]
 

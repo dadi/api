@@ -86,9 +86,9 @@ Composer.prototype.compose = function (obj, callback) {
         var isArray = Array.isArray(document[field])
         var originalValue = isArray ? document[field] : [document[field]]
 
-        // add the composed property indicating original values
-        if (!document.composed) document.composed = {}
-        document.composed[field] = isArray ? originalValue : originalValue[0]
+        // add the _composed property indicating original values
+        if (!document._composed) document._composed = {}
+        document._composed[field] = isArray ? originalValue : originalValue[0]
 
         if (isArray) {
           document[field] = []
@@ -108,7 +108,7 @@ Composer.prototype.compose = function (obj, callback) {
             // Are we composing media documents? If so, we need to format them
             // before returning. This should really go somewhere else, it needs
             // to be revisited! --eb 03/05/2017
-            if (results.length && results[0].apiVersion === 'media') {
+            if (results.length && results[0]._apiVersion === 'media') {
               results[0] = mediaModel.formatDocuments(results[0])
             }
 
@@ -210,11 +210,11 @@ Composer.prototype.createOrUpdate = function (model, field, obj, req) {
   console.log('> createOrUpdate', model.name, field, obj)
   return new Promise((resolve, reject) => {
     var internals = {
-      apiVersion: this.apiVersion
+      _apiVersion: this.apiVersion
     }
 
     if (obj._id) {
-      internals.lastModifiedAt = Date.now()
+      internals._lastModifiedAt = Date.now()
       if (req && req.client) {
         internals.lastModifiedBy = req.client && req.client.clientId
       }
@@ -224,11 +224,6 @@ Composer.prototype.createOrUpdate = function (model, field, obj, req) {
       }
 
       var update = queryUtils.removeInternalFields(obj)
-
-      // add the apiVersion filter
-      // if (config.get('query.useVersionFilter')) {
-      //   query.apiVersion = internals.apiVersion
-      // }
 
       model.update(query, update, internals, (err, results) => {
         if (err) {
@@ -242,10 +237,10 @@ Composer.prototype.createOrUpdate = function (model, field, obj, req) {
       })
     } else {
       // if no id is present, then this is a create
-      internals.createdAt = Date.now()
+      internals._createdAt = Date.now()
 
       if (req && req.client) {
-        internals.createdBy = req.client && req.client.clientId
+        internals._createdBy = req.client && req.client.clientId
       }
 
       model.create(obj, internals, (err, results) => {

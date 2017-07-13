@@ -180,7 +180,7 @@ function removeInternalFields (obj) {
   delete obj._createdBy
   delete obj._lastModifiedAt
   delete obj._lastModifiedBy
-  delete obj._v
+  delete obj._version
   delete obj._apiVersion
 
   if (obj._composed) {

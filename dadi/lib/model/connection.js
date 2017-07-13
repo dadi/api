@@ -98,11 +98,6 @@ module.exports = function (options, collection, storeName) {
   // var connectionOptions = getConnectionOptions(options)
   //
 
-  // if a connection exists for the specified database, return it
-  // if (_connections[JSON.stringify(options)]) {
-  //   return _connections[JSON.stringify(options)]
-  // }
-
   try {
     var storeConfig = require(storeName).Config
 
@@ -115,9 +110,11 @@ module.exports = function (options, collection, storeName) {
 
   var connectionKey = Object.keys(options).map((option) => { return options[option] }).join(':')
 
+  // if a connection exists for the specified database, return it
   if (_connections[connectionKey]) {
     return _connections[connectionKey]
   }
+
   //
   //   if (conn.readyState === 2) {
   //     setTimeout(function () {

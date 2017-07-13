@@ -818,10 +818,10 @@ describe('Model', function () {
         if (err) return done(err)
         result.results[0].fieldName.should.equal('foo')
 
-        mod.delete({fieldName: 'foo'}, function (err, numAffected) {
+        mod.delete({fieldName: 'foo'}, function (err, result) {
           if (err) return done(err)
 
-          numAffected.should.equal(1)
+          result.deletedCount.should.equal(1)
 
           mod.find({}, function (err, result) {
             if (err) return done(err)
@@ -841,10 +841,10 @@ describe('Model', function () {
         result.results[1].fieldName.should.equal('bar')
         result.results[2].fieldName.should.equal('baz')
 
-        mod.delete({fieldName: {$in: ['foo', 'bar', 'baz']}}, function (err, numAffected) {
+        mod.delete({fieldName: {$in: ['foo', 'bar', 'baz']}}, function (err, result) {
           if (err) return done(err)
 
-          numAffected.should.equal(3)
+          result.deletedCount.should.equal(3)
 
           mod.find({}, function (err, result) {
             if (err) return done(err)

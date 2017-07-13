@@ -228,12 +228,12 @@ function stringifyProperties (obj) {
       } else if (typeof obj[key] === 'object' && obj[key] !== null) {
         var value = obj[key].toString()
 
-        console.log('stringifyProperties', value, typeof value, obj[key], typeof obj[key])
+        // console.log('stringifyProperties', value, typeof value, obj[key], typeof obj[key])
 
         if (Array.isArray(obj[key])) {
-          if (obj[key].length === 0) {
-            delete obj[key]
-          } else {
+          // if (obj[key].length === 0) {
+          //   delete obj[key]
+          // } else {
             _.each(obj[key], (v, k) => {
               if (v.toString().match(/^[a-fA-F0-9]{24}$/) && validator.isMongoId(v.toString())) {
                 obj[key][k] = v.toString()
@@ -241,7 +241,7 @@ function stringifyProperties (obj) {
                 obj[key][k] = stringifyProperties(obj[key][k])
               }
             })
-          }
+          // }
         } else if (value.match(/^[a-fA-F0-9]{24}$/) && validator.isMongoId(value)) {
           obj[key] = obj[key].toString()
         }

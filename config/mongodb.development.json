@@ -1,5 +1,4 @@
 {
-  "connectWithCollection": true,
   "hosts": [
     {
       "host": "127.0.0.1",
@@ -8,40 +7,8 @@
   ],
   "username": "",
   "password": "",
-  "database": "testdb",
+  "database": "apiv3",
   "ssl": false,
   "replicaSet": "",
-  "enableCollectionDatabases": true,
-  "secondary": {
-    "hosts": [
-      {
-        "host": "127.0.0.1",
-        "port": 27018
-      }
-    ],
-    "username": "",
-    "password": "",
-    "replicaSet": "",
-    "ssl": false
-  },
-  "testdb": {
-    "hosts": [
-      {
-        "host": "127.0.0.1",
-        "port": 27017
-      }
-    ],
-    "username": "",
-    "password": ""
-  },
-  "api_empire_com": {
-    "hosts": [
-      {
-        "host": "127.0.0.1",
-        "port": 27017
-      }
-    ],
-    "username": "",
-    "password": ""
-  }
+  "enableCollectionDatabases": true
 }

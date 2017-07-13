@@ -278,7 +278,7 @@ Model.prototype.create = function (documents, internals, done, req) {
         }
 
         // Prepare result set for output
-        returnData.results = this.formatResultSet(returnData.results)
+        returnData.results = this.formatResultSetForOutput(returnData.results)
 
         return done(null, returnData)
       })
@@ -725,16 +725,25 @@ Model.prototype.formatQuery = function (query) {
 }
 
 /**
- * Performs a last round of formatting to the result set before it's
- * delivered to the client
+ * Formats a result for being sent to the client (formatForInput = false)
+ * or to be fed into the model (formatForInput = true)
  *
- * @param {Object} documents
+ * @param {Object} results
+ * @param {Boolean} formatForInput
  * @return An object/array of objects representing the prepared documents
  * @api private
  */
-Model.prototype.formatResultSet = function (results) {
+Model.prototype.formatResultSet = function (results, formatForInput) {
   const multiple = Array.isArray(results)
   const documents = multiple ? results : [results]
+  const prefixes = {
+    from: formatForInput
+      ? config.get('internalFieldsPrefix')
+      : '_',
+    to: formatForInput
+      ? '_'
+      : config.get('internalFieldsPrefix')
+  }
 
   let newResultSet = []
 
@@ -742,8 +751,8 @@ Model.prototype.formatResultSet = function (results) {
     let newDocument = {}
 
     Object.keys(document).sort().forEach(field => {
-      const property = field.indexOf('_') === 0
-        ? config.get('internalFieldsPrefix') + field.slice(1)
+      const property = field.indexOf(prefixes.from) === 0
+        ? prefixes.to + field.slice(1)
         : field
 
       // Stripping null values from the response.
@@ -756,6 +765,28 @@ Model.prototype.formatResultSet = function (results) {
   })
 
   return multiple ? newResultSet : newResultSet[0]
+}
+
+/**
+ * Formats a result set before it's fed into the model for insertion/update.
+ *
+ * @param {Object} results
+ * @return An object/array of objects representing the formatted result set
+ * @api public
+ */
+Model.prototype.formatResultSetForInput = function (results) {
+  return this.formatResultSet(results, true)
+}
+
+/**
+ * Formats a result set before it's sent to the client.
+ *
+ * @param {Object} results
+ * @return An object/array of objects representing the formatted result set
+ * @api public
+ */
+Model.prototype.formatResultSetForOutput = function (results) {
+  return this.formatResultSet(results, false)
 }
 
 Model.prototype.revisions = function (id, options, done) {
@@ -826,13 +857,13 @@ Model.prototype.get = function (query, options, done, req) {
         })
       }, (err, finalResult) => {
         // Prepare result set for output
-        finalResult.results = this.formatResultSet(finalResult.results)
+        finalResult.results = this.formatResultSetForOutput(finalResult.results)
 
         done(err, finalResult)
       })
     } else {
       // Prepare result set for output
-      results.results = this.formatResultSet(results.results)
+      results.results = this.formatResultSetForOutput(results.results)
 
       done(err, results)
     }
@@ -870,7 +901,7 @@ Model.prototype.injectHistory = function (data, options) {
       this.revisions(doc._id, options, (err, history) => {
         if (err) console.log(err)
 
-        doc._history = this.formatResultSet(history)
+        doc._history = this.formatResultSetForOutput(history)
 
         if (idx === data.results.length - 1) {
           return resolve(data)
@@ -941,7 +972,7 @@ Model.prototype.stats = function (options, done) {
  * @return undefined
  * @api public
  */
-Model.prototype.update = function (query, update, internals, done, req) {
+Model.prototype.update = function (query, update, internals, done, req, bypassOutputFormatting) {
   debug('update %s %o %o %o', req ? req.url : '', query, update, internals)
 
   // internals will not be validated, i.e. should not be user input
@@ -1036,7 +1067,9 @@ Model.prototype.update = function (query, update, internals, done, req) {
               triggerAfterUpdateHook(results.results)
 
               // Prepare result set for output
-              results.results = this.formatResultSet(results.results)
+              if (!bypassOutputFormatting) {
+                results.results = this.formatResultSetForOutput(results.results)
+              }
 
               return done(null, results)
             })

@@ -119,14 +119,14 @@ Composer.prototype.compose = function (obj, callback) {
                 // no results, add the original id value to the array
                 document[field].push(id)
               } else {
-                document[field].push(model.formatResultSet(results[0]))
+                document[field].push(model.formatResultSetForOutput(results[0]))
               }
             } else {
               if (_.isEmpty(results)) {
                 // no results, assign the original id value to the property
                 document[field] = id
               } else {
-                document[field] = model.formatResultSet(results[0])
+                document[field] = model.formatResultSetForOutput(results[0])
               }
             }
 
@@ -164,11 +164,15 @@ Composer.prototype.createFromComposed = function (doc, req, callback) {
     if (Array.isArray(value)) {
       _.each(value, (val) => {
         if (val && val.constructor === Object) {
-          queue.push(this.createOrUpdate(model, key, val, req))
+          const formattedValue = model.formatResultSetForInput(val)
+
+          queue.push(this.createOrUpdate(model, key, formattedValue, req))
         }
       })
     } else if (value && value.constructor === Object) {
-      queue.push(this.createOrUpdate(model, key, value, req))
+      const formattedValue = model.formatResultSetForInput(value)
+
+      queue.push(this.createOrUpdate(model, key, formattedValue, req))
     }
   })
 
@@ -215,6 +219,7 @@ Composer.prototype.createOrUpdate = function (model, field, obj, req) {
       _apiVersion: this.apiVersion
     }
 
+    // If the object has an ID, we're updating.
     if (obj._id) {
       internals._lastModifiedAt = Date.now()
       if (req && req.client) {
@@ -235,10 +240,11 @@ Composer.prototype.createOrUpdate = function (model, field, obj, req) {
         var newDoc = results && results.results && results.results[0]
         var result = {}
         result[field] = newDoc._id.toString()
+
         return resolve(result)
-      })
+      }, null, true)
     } else {
-      // if no id is present, then this is a create
+      // The object has no ID, so we're creating.
       internals._createdAt = Date.now()
 
       if (req && req.client) {

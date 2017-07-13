@@ -1,3 +1,5 @@
+'use strict'
+
 var _ = require('underscore-contrib')
 var async = require('async')
 var debug = require('debug')('api:model')

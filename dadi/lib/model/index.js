@@ -355,7 +355,7 @@ Model.prototype.delete = function (query, done, req) {
     return done(err)
   }
 
-  // query = queryUtils.convertApparentObjectIds(query, this.schema)
+  query = this.formatQuery(query)
 
   var startDelete = (database) => {
     // apply any existing `beforeDelete` hooks, otherwise delete the documents straight away

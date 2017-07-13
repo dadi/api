@@ -56,8 +56,9 @@ describe('Reference Field', function () {
         if (err) return done(err)
         should.exist(res.body.results)
         var newDoc = res.body.results[0]
+
         should.exist(newDoc.author._id)
-        should.exist(newDoc.author.apiVersion)
+        should.exist(newDoc.author._apiVersion)
         done()
       })
     })

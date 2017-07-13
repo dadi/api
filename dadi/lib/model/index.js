@@ -765,7 +765,8 @@ Model.prototype.injectHistory = function (data, options) {
     _.each(data.results, (doc, idx) => {
       this.revisions(doc._id, options, (err, history) => {
         if (err) console.log(err)
-        doc._history = history
+
+        doc._history = this.formatResultSet(history)
 
         if (idx === data.results.length - 1) {
           return resolve(data)
@@ -784,18 +785,6 @@ Model.prototype.injectHistory = function (data, options) {
  * @api private
  */
 Model.prototype.formatResultSet = function (results) {
-  const prefix = config.get('internalFieldsPrefix')
-
-  // For now, the only thing we do in this function is ensure internal
-  // fields are prefixed with the character defined in the config. So,
-  // if the prefix in the config is the default one, we can bypass this
-  // method completely. We can remove this check if we add more logic to
-  // this method in the future.
-
-  if (prefix === '_') {
-    return results
-  }
-
   const multiple = Array.isArray(results)
   const documents = multiple ? results : [results]
 
@@ -804,9 +793,9 @@ Model.prototype.formatResultSet = function (results) {
   documents.forEach(document => {
     let newDocument = {}
 
-    Object.keys(document).forEach(field => {
+    Object.keys(document).sort().forEach(field => {
       const property = field.indexOf('_') === 0
-        ? prefix + field.slice(1)
+        ? config.get('internalFieldsPrefix') + field.slice(1)
         : field
 
       newDocument[property] = document[field]
@@ -815,7 +804,7 @@ Model.prototype.formatResultSet = function (results) {
     newResultSet.push(newDocument)
   })
 
-  return newResultSet
+  return multiple ? newResultSet : newResultSet[0]
 }
 
 Model.prototype.revisions = function (id, options, done) {

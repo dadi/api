@@ -798,7 +798,10 @@ Model.prototype.formatResultSet = function (results) {
         ? config.get('internalFieldsPrefix') + field.slice(1)
         : field
 
-      newDocument[property] = document[field]
+      // Stripping null values from the response.
+      if (document[field] !== null) {
+        newDocument[property] = document[field]
+      }
     })
 
     newResultSet.push(newDocument)

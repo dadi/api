@@ -920,7 +920,7 @@ Model.prototype.injectHistory = function (data, options) {
  * @api public
  */
 Model.prototype.isKeyValid = function (key) {
-  if (key === '_id' || this.schema[key] !== undefined) {
+  if (key === '_id' || this.schema[key] !== undefined) {
     return true
   }
 

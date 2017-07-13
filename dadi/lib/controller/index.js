@@ -115,6 +115,7 @@ function prepareQueryOptions (options, modelSettings) {
   if (sort && !_.isEmpty(sort)) queryOptions.sort = sort
 
   response.queryOptions = queryOptions
+
   return response
 }
 
@@ -129,7 +130,6 @@ Controller.prototype.get = function (req, res, next) {
 
   // determine if this is jsonp
   var done = options.callback ? sendBackJSONP(options.callback, res, next) : sendBackJSON(200, res, next)
-
   var query = this.prepareQuery(req)
   var queryOptions = this.prepareQueryOptions(options)
 
@@ -153,11 +153,14 @@ function prepareQuery (req, model) {
   var options = path.query
   var query = parseQuery(options.filter)
 
+  // Formatting query
+  query = model.formatQuery(query)
+
   // remove filter params that don't exist in
   // the model schema
   if (!_.isArray(query)) {
     _.each(Object.keys(query), (key) => {
-      if (!help.keyValidForSchema(model, key)) {
+      if (!model.isKeyValid(key)) {
         delete query[key]
       } else {
         if (model.schema[key]) {

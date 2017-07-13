@@ -438,23 +438,6 @@ Model.prototype.delete = function (query, done, req) {
 }
 
 /**
- *
- */
-Model.prototype.getIndexes = function (done) {
-  var _done = database => {
-    database.getIndexes(this.name).then(result => {
-      done(result)
-    })
-  }
-
-  if (!this.connection.db) {
-    this.connection.once('connect', _done)
-  } else {
-    return _done(this.connection.db)
-  }
-}
-
-/**
  * Lookup documents in the database
  *
  * @param {Object} query
@@ -716,66 +699,29 @@ Model.prototype.find = function (query, options, done) {
 }
 
 /**
- * Lookup documents in the database and run any associated hooks
+ * Performs a last round of formatting to the query before it's
+ * delivered to the data adapters
  *
  * @param {Object} query
- * @param {Function} done
- * @return undefined
+ * @return An object representing the formatted query
  * @api public
  */
-Model.prototype.get = function (query, options, done, req) {
-  if (typeof options === 'function') {
-    done = options
-    options = {}
-  }
+Model.prototype.formatQuery = function (query) {
+  const internalFieldsPrefix = config.get('internalFieldsPrefix')
+  let newQuery = {}
 
-  this.find(query, options, (err, results) => {
-    if (this.settings.hooks && this.settings.hooks.afterGet) {
-      async.reduce(this.settings.hooks.afterGet, results, (current, hookConfig, callback) => {
-        var hook = new Hook(hookConfig, 'afterGet')
-
-        Promise.resolve(hook.apply(current, this.schema, this.name, req)).then((newResults) => {
-          callback((newResults === null) ? {} : null, newResults)
-        }).catch(err => {
-          callback(hook.formatError(err))
-        })
-      }, (err, finalResult) => {
-        // Prepare result set for output
-        finalResult.results = this.formatResultSet(finalResult.results)
-
-        done(err, finalResult)
-      })
+  Object.keys(query).forEach(key => {
+    if (
+      internalFieldsPrefix !== '_' &&
+      key.indexOf(internalFieldsPrefix) === 0
+    ) {
+      newQuery['_' + key.slice(1)] = query[key]
     } else {
-      // Prepare result set for output
-      results.results = this.formatResultSet(results.results)
-
-      done(err, results)
+      newQuery[key] = query[key]
     }
   })
-}
 
-/**
- * Attaches the full history of each document
- * before returning the results
- */
-Model.prototype.injectHistory = function (data, options) {
-  return new Promise((resolve, reject) => {
-    if (data.results.length === 0) {
-      return resolve(data)
-    }
-
-    _.each(data.results, (doc, idx) => {
-      this.revisions(doc._id, options, (err, history) => {
-        if (err) console.log(err)
-
-        doc._history = this.formatResultSet(history)
-
-        if (idx === data.results.length - 1) {
-          return resolve(data)
-        }
-      })
-    })
-  })
+  return newQuery
 }
 
 /**
@@ -855,6 +801,112 @@ Model.prototype.revisions = function (id, options, done) {
 }
 
 /**
+ * Lookup documents in the database and run any associated hooks
+ *
+ * @param {Object} query
+ * @param {Function} done
+ * @return undefined
+ * @api public
+ */
+Model.prototype.get = function (query, options, done, req) {
+  if (typeof options === 'function') {
+    done = options
+    options = {}
+  }
+
+  this.find(query, options, (err, results) => {
+    if (this.settings.hooks && this.settings.hooks.afterGet) {
+      async.reduce(this.settings.hooks.afterGet, results, (current, hookConfig, callback) => {
+        var hook = new Hook(hookConfig, 'afterGet')
+
+        Promise.resolve(hook.apply(current, this.schema, this.name, req)).then((newResults) => {
+          callback((newResults === null) ? {} : null, newResults)
+        }).catch(err => {
+          callback(hook.formatError(err))
+        })
+      }, (err, finalResult) => {
+        // Prepare result set for output
+        finalResult.results = this.formatResultSet(finalResult.results)
+
+        done(err, finalResult)
+      })
+    } else {
+      // Prepare result set for output
+      results.results = this.formatResultSet(results.results)
+
+      done(err, results)
+    }
+  })
+}
+
+/**
+ *
+ */
+Model.prototype.getIndexes = function (done) {
+  var _done = database => {
+    database.getIndexes(this.name).then(result => {
+      done(result)
+    })
+  }
+
+  if (!this.connection.db) {
+    this.connection.once('connect', _done)
+  } else {
+    return _done(this.connection.db)
+  }
+}
+
+/**
+ * Attaches the full history of each document
+ * before returning the results
+ */
+Model.prototype.injectHistory = function (data, options) {
+  return new Promise((resolve, reject) => {
+    if (data.results.length === 0) {
+      return resolve(data)
+    }
+
+    _.each(data.results, (doc, idx) => {
+      this.revisions(doc._id, options, (err, history) => {
+        if (err) console.log(err)
+
+        doc._history = this.formatResultSet(history)
+
+        if (idx === data.results.length - 1) {
+          return resolve(data)
+        }
+      })
+    })
+  })
+}
+
+/**
+ * Determines whether the given string is a valid key for
+ * the model
+ *
+ * @param {String} key
+ * @return A Boolean indicating whether the key is valid
+ * @api public
+ */
+Model.prototype.isKeyValid = function (key) {
+  if (key === '_id' || this.schema[key] !== undefined) {
+    return true
+  }
+
+  // Check for dot notation so we can determine the datatype
+  // of the first part of the key.
+  if (key.indexOf('.') > 0) {
+    const keyParts = key.split('.')
+
+    if (this.schema[keyParts[0]] !== undefined) {
+      if (/Mixed|Object|Reference/.test(this.schema[keyParts[0]].type)) {
+        return true
+      }
+    }
+  }
+}
+
+/**
  * Get collection statistics
  *
  * @param {Object} options
@@ -913,6 +965,9 @@ Model.prototype.update = function (query, update, internals, done, req) {
     err.json = validation
     return done(err)
   }
+
+  // Format query
+  query = this.formatQuery(query)
 
   // ObjectIDs
   // TODO: move this to MongoStore

@@ -108,8 +108,8 @@ describe('History', function () {
           mod.find({}, { includeHistory: true }, function (err, docs) {
             should.exist(docs.results[0]._history)
             should.exist(docs.results[0]._history[0])
-            should.exist(docs.results[0]._history[0].action)
-            docs.results[0]._history[0].action.should.eql('update')
+            should.exist(docs.results[0]._history[0]._action)
+            docs.results[0]._history[0]._action.should.eql('update')
             done()
           })
         })
@@ -126,9 +126,9 @@ describe('History', function () {
 
           mod.find({}, {}, function (err, docs) {
             should.exist(docs.results[0])
-            should.exist(docs.results[0].originalDocumentId)
-            should.exist(docs.results[0].action)
-            docs.results[0].action.should.eql('delete')
+            should.exist(docs.results[0]._originalDocumentId)
+            should.exist(docs.results[0]._action)
+            docs.results[0]._action.should.eql('delete')
             done()
           })
         })
@@ -145,9 +145,9 @@ describe('History', function () {
           mod.find({}, { includeHistory: true }, function (err, docs) {
             should.exist(docs.results[0]._history)
             should.exist(docs.results[0]._history[0])
-            should.exist(docs.results[0]._history[0].originalDocumentId)
+            should.exist(docs.results[0]._history[0]._originalDocumentId)
 
-            docs.results[0]._history[0].originalDocumentId.should.eql(id.toString())
+            docs.results[0]._history[0]._originalDocumentId.should.eql(id.toString())
             done()
           })
         })

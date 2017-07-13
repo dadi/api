@@ -146,7 +146,7 @@ describe('validation', function () {
 
                 var date2 = new Date()
                 doc.fieldDateTime = date2
-                delete doc.createdAt
+                delete doc._createdAt
                 delete doc._createdBy
                 delete doc._id
                 delete doc._version

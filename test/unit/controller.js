@@ -333,7 +333,7 @@ describe('Controller', function (done) {
         libHelp.clearCache.restore()
         count.should.equal(1)
         args[0].field1.should.equal('foo')
-        args[1].apiVersion.should.equal('vtest')
+        args[1]._apiVersion.should.equal('vtest')
         args[1]._createdAt.should.be.Number
         args[1]._createdBy.should.equal('clientTestId')
 

@@ -781,7 +781,7 @@ describe('Model', function () {
           should.exist(result['results'] && result['results'][0])
           result['results'][0].field1.should.equal('bar')
 
-          should.exist(result['results'][0].history)
+          should.exist(result['results'][0]._history)
           result['results'][0]._history.length.should.equal(1); // one revision, from the update
 
           done()

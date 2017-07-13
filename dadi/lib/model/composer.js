@@ -63,6 +63,7 @@ Composer.prototype.compose = function (obj, callback) {
             if (err) return reject(err)
 
             data[f] = result.results
+
             return resolve()
           })
         })
@@ -75,6 +76,7 @@ Composer.prototype.compose = function (obj, callback) {
     var fieldNum = 0
 
     fields.forEach(field => {
+      var model = this.getModel(field)
       var docIdx = 0
       fieldNum++
 
@@ -117,14 +119,14 @@ Composer.prototype.compose = function (obj, callback) {
                 // no results, add the original id value to the array
                 document[field].push(id)
               } else {
-                document[field].push(results[0])
+                document[field].push(model.formatResultSet(results[0]))
               }
             } else {
               if (_.isEmpty(results)) {
                 // no results, assign the original id value to the property
                 document[field] = id
               } else {
-                document[field] = results[0]
+                document[field] = model.formatResultSet(results[0])
               }
             }
 

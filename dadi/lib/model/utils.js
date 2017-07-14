@@ -154,7 +154,6 @@ function makeCaseInsensitive (obj, schema) {
 }
 
 function convertDateTimeForSave (schema, obj) {
-  console.log(obj)
   Object.keys(schema).filter(function (key) {
     return schema[key].type === 'DateTime' && obj[key] !== null && !_.isUndefined(obj[key])
   }).forEach(key => {
@@ -234,13 +233,13 @@ function stringifyProperties (obj) {
           // if (obj[key].length === 0) {
           //   delete obj[key]
           // } else {
-            _.each(obj[key], (v, k) => {
-              if (v.toString().match(/^[a-fA-F0-9]{24}$/) && validator.isMongoId(v.toString())) {
-                obj[key][k] = v.toString()
-              } else {
-                obj[key][k] = stringifyProperties(obj[key][k])
-              }
-            })
+          _.each(obj[key], (v, k) => {
+            if (v.toString().match(/^[a-fA-F0-9]{24}$/) && validator.isMongoId(v.toString())) {
+              obj[key][k] = v.toString()
+            } else {
+              obj[key][k] = stringifyProperties(obj[key][k])
+            }
+          })
           // }
         } else if (value.match(/^[a-fA-F0-9]{24}$/) && validator.isMongoId(value)) {
           obj[key] = obj[key].toString()

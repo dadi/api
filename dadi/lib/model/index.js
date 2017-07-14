@@ -97,29 +97,6 @@ var Model = function (name, schema, conn, settings) {
   }
 }
 
-Model.prototype.convertDateTimeForSave = function (schema, obj) {
-  Object.keys(schema).filter(function (key) {
-    return schema[key].type === 'DateTime' && obj[key] !== null && !_.isUndefined(obj[key])
-  }).forEach(function (key) {
-    switch (schema[key].format) {
-      case 'unix':
-        obj[key] = moment(obj[key]).valueOf()
-        break
-      case 'iso':
-        obj[key] = new Date(moment(obj[key]).toISOString())
-        break
-      default:
-        if (schema[key].format) {
-          obj[key] = moment(obj[key], schema[key].format || ['MM-DD-YYYY', 'YYYY-MM-DD', 'DD MMMM YYYY', 'DD/MM/YYYY']).format()
-        } else {
-          obj[key] = new Date(moment(obj[key])).toISOString()
-        }
-    }
-  })
-
-  return obj
-}
-
 /**
  * Lookup documents in the database, then give back a count
  *

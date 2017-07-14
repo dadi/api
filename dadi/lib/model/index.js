@@ -329,76 +329,89 @@ Model.prototype.delete = function (query, done, req) {
   query = this.formatQuery(query)
 
   var startDelete = (database) => {
-    // apply any existing `beforeDelete` hooks, otherwise delete the documents straight away
-    if (this.settings.hooks && this.settings.hooks.beforeDelete) {
-      async.reduce(this.settings.hooks.beforeDelete, query, (current, hookConfig, callback) => {
-        var hook = new Hook(hookConfig, 'beforeDelete')
-        var hookError = {}
-
-        Promise.resolve(hook.apply(current, hookError, this.schema, this.name, req)).then((newQuery) => {
-          callback((newQuery === null) ? {} : null, newQuery)
-        }).catch((err) => {
-          callback(hook.formatError(err))
-        })
-      }, (err, result) => {
-        if (err) {
-          done(err)
-        } else {
-          deleteDocuments(database)
-        }
-      })
-    } else {
-      deleteDocuments(database)
-    }
-  }
-
-  var deleteDocuments = (database) => {
+    // find all the documents affected by the query
     if (query._id) {
       query._id = query._id.toString()
     }
 
-    var wait = Promise.resolve()
+    var deletedDocs = []
+    var allDocs = []
 
-    if (this.history) {
-      wait = new Promise((resolve, reject) => {
-        this.find(query, { compose: false }, (err, docs) => {
-          if (err) return reject(err)
-
-          var deletedDocs = docs.results
-
-          // for each of the about-to-be-deleted documents, create a revision for it
-          if (deletedDocs.length > 0) {
-            this.history.createEach(deletedDocs, 'delete', this).then(() => {
-              return resolve()
-            }).catch((err) => {
-              return reject(err)
-            })
-          } else {
-            return resolve()
-          }
-        })
-      })
-    }
-
-    wait.then(() => {
-      // query = queryUtils.convertApparentObjectIds(query, this.schema)
-
+    var deleteDocuments = (database) => {
       database.delete(query, this.name, this.schema).then((result) => {
-        if (!err && (result.deletedCount > 0)) {
+        if (result.deletedCount > 0) {
           // apply any existing `afterDelete` hooks
           if (this.settings.hasOwnProperty('hooks') && (typeof this.settings.hooks.afterDelete === 'object')) {
             this.settings.hooks.afterDelete.forEach((hookConfig, index) => {
               var hook = new Hook(this.settings.hooks.afterDelete[index], 'afterDelete')
 
-              return hook.apply(query, this.schema, this.name)
+              return hook.apply(query, deletedDocs, this.schema, this.name)
             })
           }
         }
 
-        done(null, result.deletedCount)
+        result.totalCount = allDocs.metadata.totalCount - result.deletedCount
+
+        return done(null, result)
+      }).catch((err) => {
+        return done(err)
       })
-    }).catch((err) => {
-      done(err)
+    }
+
+    this.find({}, { compose: false }, (err, docs) => {
+      if (err) return done(err)
+
+      allDocs = docs
+
+      this.find(query, { compose: false }, (err, docs) => {
+        if (err) return done(err)
+
+        deletedDocs = docs.results
+
+        var wait = Promise.resolve()
+
+        if (this.history) {
+          wait = new Promise((resolve, reject) => {
+            // for each of the about-to-be-deleted documents, create a revision for it
+            if (deletedDocs.length > 0) {
+              this.history.createEach(deletedDocs, 'delete', this).then(() => {
+                return resolve()
+              }).catch((err) => {
+                return reject(err)
+              })
+            } else {
+              return resolve()
+            }
+          })
+        }
+
+        wait.then(() => {
+          // apply any existing `beforeDelete` hooks, otherwise delete the documents straight away
+          if (this.settings.hooks && this.settings.hooks.beforeDelete) {
+            async.reduce(this.settings.hooks.beforeDelete, query, (current, hookConfig, callback) => {
+              var hook = new Hook(hookConfig, 'beforeDelete')
+              var hookError = {}
+
+              Promise.resolve(hook.apply(current, deletedDocs, hookError, this.schema, this.name, req)).then((newQuery) => {
+                callback((newQuery === null) ? {} : null, newQuery)
+              }).catch((err) => {
+                callback(hook.formatError(err))
+              })
+            }, (err, result) => {
+              if (err) {
+                done(err)
+              } else {
+                deleteDocuments(database)
+              }
+            })
+          } else {
+            deleteDocuments(database)
+          }
+        }).catch((err) => {
+          console.log(err)
+          done(err)
+        })
+      })
     })
   }
 

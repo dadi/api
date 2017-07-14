@@ -3,7 +3,6 @@
 var _ = require('underscore-contrib')
 var async = require('async')
 var debug = require('debug')('api:model')
-var moment = require('moment')
 var path = require('path')
 
 var Composer = require(path.join(__dirname, '/composer')).Composer
@@ -211,14 +210,9 @@ Model.prototype.create = function (documents, internals, done, req) {
     doc._version = 1
   })
 
-  // ObjectIDs
-  // documents.forEach(function (doc) {
-  //   doc = self.convertObjectIdsForSave(self.schema, doc)
-  // })
-
   // DateTime
   documents.forEach(doc => {
-    doc = this.convertDateTimeForSave(this.schema, doc)
+    doc = queryUtils.convertDateTimeForSave(this.schema, doc)
   })
 
   var startInsert = (database) => {
@@ -507,187 +501,170 @@ Model.prototype.find = function (query, options, done) {
   }
 
   var validation = this.validate.query(query)
+
   if (!validation.success) {
     var err = validationError('Bad Query')
     err.json = validation
     return done(err)
   }
 
-  var _done
+  var _done = (database) => {
+    if (queryUtils.containsNestedReferenceFields(query, this.schema)) {
+      var queries = queryUtils.processReferenceFieldQuery(query, this.schema)
 
-  if (_.isArray(query)) {
-    // have we been passed an aggregation pipeline query?
-    _done = function (database) {
-      // database.collection(self.name).aggregate(query, options, function (err, result) {
-      //   if (err) return done(err)
-      //   done(null, result)
-      // })
-      done('Not implemented')
-    }
-  } else if (_.isObject(query)) {
-    _done = (database) => {
-      if (queryUtils.containsNestedReferenceFields(query, this.schema)) {
-        var queries = queryUtils.processReferenceFieldQuery(query, this.schema)
+      debug('find reference %o', queries)
 
-        debug('find reference %o', queries)
+      // processReferenceFieldQuery sends back an array of queries
+      // [0] is the query with reference field parts removed
+      // [1] contains the reference field parts
+      query = queries[0]
 
-        // processReferenceFieldQuery sends back an array of queries
-        // [0] is the query with reference field parts removed
-        // [1] contains the reference field parts
-        query = queries[0]
+      var referenceFieldQuery = queries[1]
+      var referenceFieldKeys = Object.keys(referenceFieldQuery)
+      var queue = []
 
-        var referenceFieldQuery = queries[1]
-        var referenceFieldKeys = Object.keys(referenceFieldQuery)
-        var queue = []
+      // for each reference field key, query the specified collection
+      // to obtain an _id value
+      _.each(referenceFieldKeys, (key, index) => {
+        queue.push((cb) => {
+          var keyParts = key.split('.')
 
-        // for each reference field key, query the specified collection
-        // to obtain an _id value
-        _.each(referenceFieldKeys, (key, index) => {
-          queue.push((cb) => {
-            var keyParts = key.split('.')
+          var collection = ''
+          var collectionKey = keyParts[0]
+          var linkKey
+          var queryKey
+          var queryValue = referenceFieldQuery[key]
+          var collectionSettings = queryUtils.getSchemaOrParent(collectionKey, this.schema).settings || {}
+          var collectionLevelCompose = true
 
-            var collection = ''
-            var collectionKey = keyParts[0]
-            var linkKey
-            var queryKey
-            var queryValue = referenceFieldQuery[key]
-            var collectionSettings = queryUtils.getSchemaOrParent(collectionKey, this.schema).settings || {}
-            var collectionLevelCompose = true
+          if (collectionKey !== collectionSettings.collection) {
+            collection = collectionSettings.collection
+          } else {
+            collection = collectionKey
+          }
 
-            if (collectionKey !== collectionSettings.collection) {
-              collection = collectionSettings.collection
-            } else {
-              collection = collectionKey
-            }
+          var fieldsObj = {}
+          if (collectionSettings.fields) {
+            collectionSettings.fields.forEach(function (field) {
+              fieldsObj[field] = 1
+            })
+          }
 
-            var fieldsObj = {}
-            if (collectionSettings.fields) {
-              collectionSettings.fields.forEach(function (field) {
-                fieldsObj[field] = 1
-              })
-            }
+          queryKey = keyParts[1]
+          var collectionQuery = {}
 
-            queryKey = keyParts[1]
-            var collectionQuery = {}
+          if (keyParts.length === 2) {
+            collectionQuery[queryKey] = queryValue
+          } else {
+            linkKey = keyParts[1]
+            queryKey = keyParts[2]
+          }
 
-            if (keyParts.length === 2) {
-              collectionQuery[queryKey] = queryValue
-            } else {
-              linkKey = keyParts[1]
-              queryKey = keyParts[2]
-            }
+          // if we already have a value for this field inserted
+          // into the final query object (e.g. a parent nested query has been done first),
+          // supplement the current query with the ids
+          if (query[collectionKey]) {
+            collectionQuery['_id'] = query[collectionKey]
+            // collectionQuery = queryUtils.convertApparentObjectIds(collectionQuery, self.schema)
+          }
 
-            // if we already have a value for this field inserted
-            // into the final query object (e.g. a parent nested query has been done first),
-            // supplement the current query with the ids
-            if (query[collectionKey]) {
-              collectionQuery['_id'] = query[collectionKey]
-              // collectionQuery = queryUtils.convertApparentObjectIds(collectionQuery, self.schema)
-            }
+          // query the reference collection
+          debug('find reference in %s with %o', collection, collectionQuery)
 
-            // query the reference collection
-            debug('find reference in %s with %o', collection, collectionQuery)
+          var referenceModel = new Model(collection, {}, null, { database: collectionSettings.database || self.settings.database, compose: collectionLevelCompose })
 
-            var referenceModel = new Model(collection, {}, null, { database: collectionSettings.database || self.settings.database, compose: collectionLevelCompose })
+          referenceModel.find(collectionQuery, { fields: fieldsObj }, (err, results) => {
+            if (err) return done(err)
 
-            referenceModel.find(collectionQuery, { fields: fieldsObj }, (err, results) => {
-              if (err) return done(err)
+            var ids
 
-              var ids
+            if (results && results.results && results.results.length) {
+              results = results.results
 
-              if (results && results.results && results.results.length) {
-                results = results.results
+              if (!linkKey) { // i.e. it's a one-level nested query
+                ids = _.map(_.pluck(results, '_id'), (id) => { return id.toString() })
 
-                if (!linkKey) { // i.e. it's a one-level nested query
-                  ids = _.map(_.pluck(results, '_id'), (id) => { return id.toString() })
+                // update the original query with a query for the obtained _id
+                // using the appropriate query type for whether the reference settings
+                // allows storing as arrays or not
+                query[collectionKey] = collectionSettings.multiple ? { '$containsAny': ids } : ids[0]
+                // query[collectionKey] = collectionSettings.multiple ? { '$in': ids } : ids[0]
+              } else {
+                // filter the results using linkKey
+                // 1. get the _id of the result matching { queryKey: queryValue }
+                var parent = _.filter(results, result => {
+                  return new RegExp(queryValue).test(result[queryKey]) === true
+                })
 
-                  // update the original query with a query for the obtained _id
-                  // using the appropriate query type for whether the reference settings
-                  // allows storing as arrays or not
-                  query[collectionKey] = collectionSettings.multiple ? { '$containsAny': ids } : ids[0]
-                  // query[collectionKey] = collectionSettings.multiple ? { '$in': ids } : ids[0]
-                } else {
-                  // filter the results using linkKey
-                  // 1. get the _id of the result matching { queryKey: queryValue }
-                  var parent = _.filter(results, result => {
-                    return new RegExp(queryValue).test(result[queryKey]) === true
-                  })
-
-                  if (parent[0]) {
-                    var children = _.filter(results, result => {
-                      if (result[linkKey]) {
-                        if (typeof result[linkKey] === 'string' && result[linkKey].toString() === parent[0]._id.toString()) {
+                if (parent[0]) {
+                  var children = _.filter(results, result => {
+                    if (result[linkKey]) {
+                      if (typeof result[linkKey] === 'string' && result[linkKey].toString() === parent[0]._id.toString()) {
+                        return result
+                      } else if (typeof result[linkKey] === 'object') {
+                        if (result[linkKey].toString() === '[object Object]' && result[linkKey]._id.toString() === parent[0]._id.toString()) {
                           return result
-                        } else if (typeof result[linkKey] === 'object') {
-                          if (result[linkKey].toString() === '[object Object]' && result[linkKey]._id.toString() === parent[0]._id.toString()) {
-                            return result
-                          } else if (result[linkKey].toString() === parent[0]._id.toString()) {
-                            return result
-                          }
+                        } else if (result[linkKey].toString() === parent[0]._id.toString()) {
+                          return result
                         }
                       }
-                    })
+                    }
+                  })
 
-                    ids = _.map(_.pluck(children, '_id'), id => {
-                      return id.toString()
-                    })
-                  }
-
-                  query[collectionKey] = { '$in': ids || [] }
+                  ids = _.map(_.pluck(children, '_id'), id => {
+                    return id.toString()
+                  })
                 }
-              } else {
-                // Nothing found in the reference collection, add empty criteria to the main query
-                query[collectionKey] = collectionSettings.multiple
-                  ? { '$in': [] }
-                  : ''
-              }
 
-              cb(null, query)
-            })
+                query[collectionKey] = { '$in': ids || [] }
+              }
+            } else {
+              // Nothing found in the reference collection, add empty criteria to the main query
+              query[collectionKey] = collectionSettings.multiple
+                ? { '$in': [] }
+                : ''
+            }
+
+            cb(null, query)
           })
         })
-        // })
+      })
+      // })
 
-        async.series(queue,
-          function (err, results) {
-            if (err) console.log(err)
-            runFind()
-          }
-        )
-      } else {
-        runFind()
-      }
-
-      // perform the actual find operation
-      function runFind () {
-        var queryOptions = _.clone(options)
-        delete queryOptions.historyFilters
-
-        database.find(query, self.name, queryOptions, self.schema).then((results) => {
-          // NOTE: datastore returns object containing results + metadata
-          //  {
-          //    results: [ { _id: 590bbc9d29ccaf1cb8ab0ed1, fieldName: 'foo' } ],
-          //    metadata: { page: 1, offset: 0, totalCount: 1, totalPages: 1 }
-          //  }
-
-          if (self.compose) {
-            self.composer.setApiVersion(query._apiVersion)
-
-            self.composer.compose(results.results, (obj) => {
-              results.results = obj
-              runDoneQueue(null, results)
-            })
-          } else {
-            runDoneQueue(null, results)
-          }
-        })
-      }
+      async.series(queue,
+        function (err, results) {
+          if (err) console.log(err)
+          runFind()
+        }
+      )
+    } else {
+      runFind()
     }
-  } else {
-    var error = validationError('Bad Query')
-    // err.json = {success: false, errors: [{message: 'Query must be either a JSON array or a JSON object.'}]}
-    // console.log(err)
-    return done(error)
+
+    // perform the actual find operation
+    function runFind () {
+      var queryOptions = _.clone(options)
+      delete queryOptions.historyFilters
+
+      database.find(query, self.name, queryOptions, self.schema).then((results) => {
+        // NOTE: datastore returns object containing results + metadata
+        //  {
+        //    results: [ { _id: 590bbc9d29ccaf1cb8ab0ed1, fieldName: 'foo' } ],
+        //    metadata: { page: 1, offset: 0, totalCount: 1, totalPages: 1 }
+        //  }
+
+        if (self.compose) {
+          self.composer.setApiVersion(query._apiVersion)
+
+          self.composer.compose(results.results, (obj) => {
+            results.results = obj
+            runDoneQueue(null, results)
+          })
+        } else {
+          runDoneQueue(null, results)
+        }
+      })
+    }
   }
 
   if (this.connection.db) return _done(this.connection.db)
@@ -980,10 +957,10 @@ Model.prototype.update = function (query, update, internals, done, req, bypassOu
     done = internals
   }
 
-  var validation
   var err
 
-  validation = this.validate.query(query)
+  var validation = this.validate.query(query)
+
   if (!validation.success) {
     err = validationError('Bad Query')
     err.json = validation
@@ -991,6 +968,7 @@ Model.prototype.update = function (query, update, internals, done, req, bypassOu
   }
 
   validation = this.validate.schema(update, true)
+
   if (!validation.success) {
     err = validationError()
     err.json = validation
@@ -1000,11 +978,8 @@ Model.prototype.update = function (query, update, internals, done, req, bypassOu
   // Format query
   query = this.formatQuery(query)
 
-  // ObjectIDs
-  // TODO: move this to MongoStore
-  // update = this.convertObjectIdsForSave(this.schema, update)
   // DateTimes
-  update = this.convertDateTimeForSave(this.schema, update)
+  update = queryUtils.convertDateTimeForSave(this.schema, update)
 
   if (typeof internals === 'object' && internals != null) { // not null and not undefined
     _.extend(update, internals)
@@ -1043,7 +1018,6 @@ Model.prototype.update = function (query, update, internals, done, req, bypassOu
             }
           }
 
-          // var results = {}
           var promise
 
           // for each of the updated documents, create a history revision for it

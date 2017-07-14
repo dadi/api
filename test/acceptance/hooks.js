@@ -15,26 +15,20 @@ var request = require('supertest')
 var bearerToken
 var connectionString = 'http://' + config.get('server.host') + ':' + config.get('server.port')
 
-describe.skip('Hooks', function () {
+describe('Hooks', function () {
 
   // reset database
   before(function (done) {
-    help.dropDatabase('test', function (err) {
+    app.start((err) => {
       if (err) return done(err)
-console.log('dropped')
-      app.start((err) => {
+
+      // get access token
+      help.getBearerTokenWithAccessType('admin', (err, token) => {
         if (err) return done(err)
-console.log('started')
-        // get access token
-        help.getBearerTokenWithAccessType('admin', (err, token) => {
-          if (err) return done(err)
-          bearerToken = token
-          console.log(token)
-          done()
-        })
-        })
+        bearerToken = token
+        done()
       })
-    //})
+    })
   })
 
   after(function (done) {
@@ -184,7 +178,6 @@ console.log('started')
     .set('Authorization', 'Bearer ' + bearerToken)
     .end(function (err, res) {
       if (err) return done(err)
-      console.log(res.body)
 
       var newArticle = res.body.results[0]
 
@@ -195,8 +188,6 @@ console.log('started')
       .set('Authorization', 'Bearer ' + bearerToken)
       .end(function (err, res) {
         if (err) return done(err)
-
-        console.log(res.body)
 
         should.exist(res.body.results)
         should.exist(res.body.results[0])
@@ -226,7 +217,7 @@ console.log('started')
     })
   })
 
-  it.skip('should not cause creation of duplicate records', function (done) {
+  it('should not cause creation of duplicate records', function (done) {
     config.set('query.useVersionFilter', true)
 
     var client = request(connectionString)
@@ -240,8 +231,6 @@ console.log('started')
     .end(function (err, res) {
       if (err) return done(err)
 
-      console.log(res.body)
-
       // create articles schema
       client
       .post('/vtest/testdb/articles/config')
@@ -250,8 +239,6 @@ console.log('started')
       .set('Authorization', 'Bearer ' + bearerToken)
       .end(function (err, res) {
         if (err) return done(err)
-
-        console.log(res.body)
 
         sinon.stub(hook.Hook.prototype, 'load').returns(hookFunction)
 
@@ -268,8 +255,6 @@ console.log('started')
         .end(function (err, res) {
           if (err) return done(err)
 
-          console.log(res.body)
-
           // get the new id
           var publicationId = res.body.results[0]._id
 
@@ -279,8 +264,6 @@ console.log('started')
             published: {},
             publications: [publicationId.toString()]
           }
-
-          console.log(article)
 
           client
           .post('/vtest/testdb/articles')
@@ -296,18 +279,13 @@ console.log('started')
             // update the article
             article.title = 'Updated Article Title'
 
-            console.log(article)
-            console.log('/vtest/testdb/articles/' + articleId.toString())
             client
             .put('/vtest/testdb/articles/' + articleId.toString())
             .send(article)
             .set('content-type', 'application/json')
             .set('Authorization', 'Bearer ' + bearerToken)
             .end(function (err, res) {
-              console.log(err)
               if (err) return done(err)
-
-              console.log(res.body)
 
               client
               .get('/vtest/testdb/publications')
@@ -316,8 +294,6 @@ console.log('started')
                 if (err) return done(err)
 
                 var publicationResults = res.body.results
-
-                console.log(publicationResults)
 
                 client
                 .get('/vtest/testdb/articles')
@@ -678,7 +654,7 @@ slugifyHook += '\n'
 slugifyHook += 'module.exports = function (obj, type, data) {\n'
 slugifyHook += '  // if (type === "beforeUpdate" || type === "beforeCreate") {\n'
 slugifyHook += '    var object = _.clone(obj)\n'
-slugifyHook += '    console.log(obj)\n'
+slugifyHook += '    //console.log(obj)\n'
 slugifyHook += '    var field = getFieldValue(data.options.override, object) || getFieldValue(data.options.from, object)\n'
 slugifyHook += '    if (field) {\n'
 slugifyHook += '      obj[data.options.to] = field.toLowerCase()\n'

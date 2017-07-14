@@ -1,4 +1,5 @@
 var _ = require('underscore-contrib')
+var moment = require('moment')
 var path = require('path')
 var validator = require('validator')
 
@@ -152,6 +153,31 @@ function makeCaseInsensitive (obj, schema) {
   return newObj
 }
 
+function convertDateTimeForSave (schema, obj) {
+  console.log(obj)
+  Object.keys(schema).filter(function (key) {
+    return schema[key].type === 'DateTime' && obj[key] !== null && !_.isUndefined(obj[key])
+  }).forEach(key => {
+    console.log(key, schema[key], obj[key])
+    switch (schema[key].format) {
+      case 'unix':
+        obj[key] = moment(obj[key]).valueOf()
+        break
+      case 'iso':
+        obj[key] = new Date(moment(obj[key]).toISOString())
+        break
+      default:
+        if (schema[key].format) {
+          obj[key] = moment(obj[key], schema[key].format || ['MM-DD-YYYY', 'YYYY-MM-DD', 'DD MMMM YYYY', 'DD/MM/YYYY']).format()
+        } else {
+          obj[key] = new Date(moment(obj[key])).toISOString()
+        }
+    }
+  })
+
+  return obj
+}
+
 function processFilter (query, schema) {
   var newQuery = _.clone(query)
 
@@ -202,15 +228,26 @@ function stringifyProperties (obj) {
       } else if (typeof obj[key] === 'object' && obj[key] !== null) {
         var value = obj[key].toString()
 
+        // console.log('stringifyProperties', value, typeof value, obj[key], typeof obj[key])
+
         if (Array.isArray(obj[key])) {
-          _.each(obj[key], (v, k) => {
-            if (v.toString().match(/^[a-fA-F0-9]{24}$/) && validator.isMongoId(v.toString())) {
-              obj[key][k] = v.toString()
-            }
-          })
+          // if (obj[key].length === 0) {
+          //   delete obj[key]
+          // } else {
+            _.each(obj[key], (v, k) => {
+              if (v.toString().match(/^[a-fA-F0-9]{24}$/) && validator.isMongoId(v.toString())) {
+                obj[key][k] = v.toString()
+              } else {
+                obj[key][k] = stringifyProperties(obj[key][k])
+              }
+            })
+          // }
         } else if (value.match(/^[a-fA-F0-9]{24}$/) && validator.isMongoId(value)) {
           obj[key] = obj[key].toString()
         }
+        // else if (_.isEmpty(obj[key])) {
+        //   delete obj[key]
+        // }
       }
     } catch (err) {
       console.log('stringifyProperties error', err)
@@ -222,7 +259,7 @@ function stringifyProperties (obj) {
 
 function snapshot (obj) {
   if (Array.isArray(obj)) {
-    _.each(obj, (document) => {
+    obj.forEach(document => {
       document = stringifyProperties(document)
     })
   } else {
@@ -236,6 +273,7 @@ module.exports = {
   containsNestedReferenceFields: containsNestedReferenceFields,
   getSchemaOrParent: getSchemaOrParent,
   makeCaseInsensitive: makeCaseInsensitive,
+  convertDateTimeForSave: convertDateTimeForSave,
   processReferenceFieldQuery: processReferenceFieldQuery,
   processFilter: processFilter,
   removeInternalFields: removeInternalFields,

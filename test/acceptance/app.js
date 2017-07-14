@@ -874,7 +874,7 @@ describe('Application', function () {
             .send(JSON.stringify(schema, null, 4))
             .set('content-type', 'text/plain')
             .set('Authorization', 'Bearer ' + token)
-            //.expect(200)
+            // .expect(200)
             .expect('content-type', 'application/json')
             .end(function (err, res) {
               if (err) return done(err)
@@ -884,7 +884,7 @@ describe('Application', function () {
                 .send(JSON.stringify(schema, null, 4))
                 .set('content-type', 'text/plain')
                 .set('Authorization', 'Bearer ' + token)
-                //.expect(200)
+                // .expect(200)
                 .expect('content-type', 'application/json')
                 .end(function (err, res) {
                   if (err) return done(err)
@@ -902,7 +902,7 @@ describe('Application', function () {
                           .post('/vjoin/testdb/test-schema-no-history')
                           .set('Authorization', 'Bearer ' + token)
                           .send({field1: 'doc'})
-                          //.expect(200)
+                          // .expect(200)
                           .end(function (err, res) {
                             if (err) return done(err)
 
@@ -1115,7 +1115,7 @@ describe('Application', function () {
             callback: null,
             defaultFilters: null,
             fieldLimiters: null,
-            count: 40,
+            count: 40
           }
         }
 
@@ -1133,7 +1133,7 @@ describe('Application', function () {
             callback: null,
             defaultFilters: null,
             fieldLimiters: null,
-            count: 40,
+            count: 40
           }
         }
 
@@ -1252,7 +1252,7 @@ describe('Application', function () {
             callback: null,
             defaultFilters: null,
             fieldLimiters: null,
-            count: 40,
+            count: 40
           }
         }
 
@@ -1270,7 +1270,7 @@ describe('Application', function () {
             callback: null,
             defaultFilters: null,
             fieldLimiters: null,
-            count: 40,
+            count: 40
           }
         }
 
@@ -1297,7 +1297,7 @@ describe('Application', function () {
           .end((err, res) => {
             if (err) return done(err)
 
-            setTimeout(function() {
+            setTimeout(function () {
               // create some docs
               client
               .post('/1.0/library/person')
@@ -1890,97 +1890,6 @@ describe('Application', function () {
         })
       })
 
-      it.skip('should return grouped result set when using $group in an aggregation query', function (done) {
-        // create a bunch of docs
-        var asyncControl = new EventEmitter()
-        var count = 0
-
-        for (var i = 0; i < 10; ++i) {
-          var doc = {field1: ((Math.random() * 10) | 0).toString(), field2: (Math.random() * 10) | 0}
-          help.createDocWithParams(bearerToken, doc, function (err) {
-            if (err) return asyncControl.emit('error', err)
-            count += 1
-            if (count > 9) asyncControl.emit('ready')
-          })
-        }
-
-        asyncControl.on('ready', function () {
-          // documents are loaded and test can start
-
-          var client = request(connectionString)
-
-          var query = [
-            {
-              $group: {
-                _id: null,
-                averageNumber: { $avg: '$field2' },
-                count: { $sum: 1 }
-              }
-            }
-          ]
-
-          query = encodeURIComponent(JSON.stringify(query))
-          client
-            .get('/vtest/testdb/test-schema?filter=' + query)
-            .set('Authorization', 'Bearer ' + bearerToken)
-            .expect(200)
-            .expect('content-type', 'application/json')
-            .end(function (err, res) {
-              if (err) {
-                return done(err)
-              }
-
-              res.body.should.be.Array
-              res.body.length.should.equal(1)
-              res.body[0].averageNumber.should.be.above(0)
-              done()
-            })
-        })
-      })
-
-      it.skip('should return normal result set when only using $match in an aggregation query', function (done) {
-        // create a bunch of docs
-        var asyncControl = new EventEmitter()
-        var count = 0
-
-        for (var i = 0; i < 10; ++i) {
-          var doc = {field1: ((Math.random() * 10) | 0).toString(), field2: (Math.random() * 10) | 0}
-          help.createDocWithParams(bearerToken, doc, function (err) {
-            if (err) return asyncControl.emit('error', err)
-            count += 1
-            if (count > 9) asyncControl.emit('ready')
-          })
-        }
-
-        asyncControl.on('ready', function () {
-          // documents are loaded and test can start
-
-          var client = request(connectionString)
-
-          var query = [
-            { $match: { 'field2': { '$gte': 1 } } },
-            { $limit: 2 }
-          ]
-
-          query = encodeURIComponent(JSON.stringify(query))
-          client
-            .get('/vtest/testdb/test-schema?filter=' + query)
-            .set('Authorization', 'Bearer ' + bearerToken)
-            .expect(200)
-            .expect('content-type', 'application/json')
-            .end(function (err, res) {
-              if (err) {
-                return done(err)
-              }
-
-              res.body.should.be.Array
-              res.body.length.should.equal(2)
-              res.body[0].field1.should.not.be.null
-              done()
-            })
-        })
-      })
-
       it('should add history to results when querystring param includeHistory=true', function (done) {
         var client = request(connectionString)
 
@@ -2481,7 +2390,7 @@ describe('Application', function () {
     })
 
     describe('DELETE', function () {
-      before(function (done) {
+      beforeEach(function (done) {
         help.dropDatabase('testdb', function (err) {
           if (err) return done(err)
 
@@ -2634,7 +2543,7 @@ describe('Application', function () {
         })
       })
 
-      it('should return a message if config.feedback is true', function (done) {
+      it('should return deleted count if config.feedback is true', function (done) {
         var originalFeedback = config.get('feedback')
         config.set('feedback', true)
 
@@ -2649,23 +2558,32 @@ describe('Application', function () {
             if (err) return done(err)
 
             var doc = res.body.results[0]
-            should.exist(doc)
-            doc.field1.should.equal('doc to remove 2')
 
             client
-              .delete('/vtest/testdb/test-schema/' + doc._id)
-              .set('Authorization', 'Bearer ' + bearerToken)
-              .expect(200)
-              // .expect('content-type', 'application/json')
-              .end(function (err, res) {
-                config.set('feedback', originalFeedback)
-                if (err) return done(err)
+            .post('/vtest/testdb/test-schema')
+            .set('Authorization', 'Bearer ' + bearerToken)
+            .send({field1: 'doc to remain'})
+            .expect(200)
+            .end(function (err, res) {
+              if (err) return done(err)
 
-                res.body.status.should.equal('success')
-                done()
-              })
+              client
+                .delete('/vtest/testdb/test-schema/' + doc._id)
+                .set('Authorization', 'Bearer ' + bearerToken)
+                .expect(200)
+                // .expect('content-type', 'application/json')
+                .end(function (err, res) {
+                  config.set('feedback', originalFeedback)
+                  if (err) return done(err)
+
+                  res.body.status.should.equal('success')
+                  res.body.deleted.should.equal(1)
+                  res.body.totalCount.should.equal(1)
+                  done()
+                })
+            })
           })
-      })
+        })
     })
 
     describe('Collection count', function () {
@@ -3056,8 +2974,8 @@ describe('Application', function () {
         var schema = JSON.parse(jsSchemaString)
         schema.settings.sort = 'newField'
         schema.settings.index = [{
-          "keys": {
-            "newField" : 1
+          'keys': {
+            'newField': 1
           }
         }]
 
@@ -3318,7 +3236,7 @@ describe('Application', function () {
                   }, 300)
                 })
             })
-          })
+        })
       })
     })
   })
@@ -3728,12 +3646,12 @@ describe('Application', function () {
 
             // Give it some time for the monitor to kick in
             setTimeout(() => {
-        done()
+              done()
             }, 200)
-      })
+          })
         }, 200)
+      })
     })
-  })
 
     it('should return 409 when sending a POST request to a hook that already exists', function (done) {
       const hookName = 'myHook1'

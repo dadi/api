@@ -275,13 +275,6 @@ describe('Model', function () {
       model('testModelName', help.getModelSchema(), null, { database: 'testdb' }).find({}, done)
     })
 
-    it.skip('should accept JSON array for aggregation queries and callback', function (done) {
-      var query = [
-        { $match: { status: 'A' } }
-      ]
-      model('testModelName', help.getModelSchema(), null, { database: 'testdb' }).find(query, done)
-    })
-
     it('should pass error to callback when query uses `$where` operator', function (done) {
       model('testModelName').find({$where: 'this.fieldName === "foo"'}, function (err) {
         should.exist(err)
@@ -825,10 +818,10 @@ describe('Model', function () {
         if (err) return done(err)
         result.results[0].fieldName.should.equal('foo')
 
-        mod.delete({fieldName: 'foo'}, function (err, numAffected) {
+        mod.delete({fieldName: 'foo'}, function (err, result) {
           if (err) return done(err)
 
-          numAffected.should.equal(1)
+          result.deletedCount.should.equal(1)
 
           mod.find({}, function (err, result) {
             if (err) return done(err)
@@ -848,10 +841,10 @@ describe('Model', function () {
         result.results[1].fieldName.should.equal('bar')
         result.results[2].fieldName.should.equal('baz')
 
-        mod.delete({fieldName: {$in: ['foo', 'bar', 'baz']}}, function (err, numAffected) {
+        mod.delete({fieldName: {$in: ['foo', 'bar', 'baz']}}, function (err, result) {
           if (err) return done(err)
 
-          numAffected.should.equal(3)
+          result.deletedCount.should.equal(3)
 
           mod.find({}, function (err, result) {
             if (err) return done(err)

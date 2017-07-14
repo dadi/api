@@ -62,61 +62,23 @@ describe('Token Store', function () {
     })
   })
 
-  it.skip('should use specified database when creating a connection', function (done) {
-    var dbConfig = {
-      'hosts': [
-        {
-          'host': '127.0.0.1',
-          'port': 27017
-        }
-      ],
-      'username': '',
-      'password': '',
-      'database': 'test',
-      'ssl': false,
-      'replicaSet': '',
-      'enableCollectionDatabases': false,
-      'secondary': {
-        'hosts': [
-          {
-            'host': '127.0.0.1',
-            'port': 27017
-          }
-        ],
-        'username': '',
-        'password': '',
-        'replicaSet': '',
-        'ssl': false
-      }
-    }
-
+  it('should use specified database when creating a connection', function (done) {
     var auth = {
-      'tokenUrl': '/token',
-      'tokenTtl': 1800,
-      'database': {
-        'hosts': [
-          {
-            'host': '127.0.0.1',
-            'port': 27017
-          }
-        ],
-        'username': '',
-        'password': '',
-        'database': 'separate_auth_db'
-      },
-      'clientCollection': 'clientStore',
-      'tokenCollection': 'tokenStore'
+      database: 'separate_auth_db',
+      clientCollection: 'clientStore',
+      tokenCollection: 'tokenStore',
+      datastore: '@dadi/api-mongodb'
     }
 
-    var oldConfig = config.get('auth')
-    config.set('auth', auth)
+    sinon.stub(config, 'get').withArgs('auth').returns(auth)
 
     var store = tokenStore()
 
-    should.exist(store.connection)
-    store.connection.connectionOptions.database.should.equal('separate_auth_db')
+    config.get.restore()
 
-    config.set('auth', oldConfig)
+    should.exist(store.connection)
+    store.connection.datastore.connectionOptions.database.should.equal('separate_auth_db')
+
     done()
   })
 

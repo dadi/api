@@ -15,11 +15,25 @@ var Validator = function (model) {
 }
 
 Validator.prototype.query = function (query) {
-  var valid = Object.keys(query).every(function (key) {
-    return key !== '$where'
-  })
+  var response = { success: true, errors: [] }
 
-  var response = valid ? { success: true } : { success: false, errors: [{message: 'Bad query'}] }
+  if (!Array.isArray(query) && !_.isObject(query)) {
+    response.success = false
+    response.errors.push({
+      message: 'Query must be either a JSON array or a JSON object.'
+    })
+
+    return response
+  }
+
+  Object.keys(query).every(key => {
+    if (key === '$where') {
+      response.success = false
+      response.errors.push({
+        message: 'Bad query'
+      })
+    }
+  })
 
   return response
 }

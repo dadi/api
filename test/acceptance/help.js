@@ -74,7 +74,7 @@ module.exports.dropDatabase = function (database, collectionName, done) {
   conn.datastore.dropDatabase(collectionName).then(() => {
     return done()
   }).catch((err) => {
-    done(err)
+    return done(err)
   })
 }
 

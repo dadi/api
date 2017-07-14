@@ -275,7 +275,9 @@ Controller.prototype.delete = function (req, res, next) {
         // send 200 with json message
         return help.sendBackJSON(200, res, next)(null, {
           status: 'success',
-          message: 'Documents deleted successfully'
+          message: 'Documents deleted successfully',
+          deleted: results.deletedCount,
+          totalCount: results.totalCount
         })
       }
 

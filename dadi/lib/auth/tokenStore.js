@@ -105,9 +105,11 @@ TokenStore.prototype.set = function (token, value, done) {
  *
  */
 TokenStore.prototype.connect = function () {
-  this.tokenCollection = config.get('auth.tokenCollection')
-  var dbOptions = { auth: true, database: config.get('auth.database'), collection: this.tokenCollection }
-  this.connection = Connection(dbOptions, null, config.get('auth.datastore'))
+  var authConfig = config.get('auth')
+
+  this.tokenCollection = authConfig.tokenCollection
+  var dbOptions = { auth: true, database: authConfig.database, collection: this.tokenCollection }
+  this.connection = Connection(dbOptions, null, authConfig.datastore)
 }
 
 module.exports = function () {

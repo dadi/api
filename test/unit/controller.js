@@ -333,9 +333,9 @@ describe('Controller', function (done) {
         libHelp.clearCache.restore()
         count.should.equal(1)
         args[0].field1.should.equal('foo')
-        args[1].apiVersion.should.equal('vtest')
-        args[1].createdAt.should.be.Number
-        args[1].createdBy.should.equal('clientTestId')
+        args[1]._apiVersion.should.equal('vtest')
+        args[1]._createdAt.should.be.Number
+        args[1]._createdBy.should.equal('clientTestId')
 
         done()
       })
@@ -384,10 +384,10 @@ describe('Controller', function (done) {
         stub.callCount.should.equal(1)
         var args = stub.getCall(0).args
         args[1].field1.should.equal('bar')
-        args[2].apiVersion.should.equal('vtest')
-        args[2].lastModifiedAt.should.be.Number
-        args[2].lastModifiedBy.should.equal('clientTestId')
-        should.not.exist(args[2].createdAt)
+        args[2]._apiVersion.should.equal('vtest')
+        args[2]._lastModifiedAt.should.be.Number
+        args[2]._lastModifiedBy.should.equal('clientTestId')
+        should.not.exist(args[2]._createdAt)
 
         stub.restore()
         libHelp.clearCache.restore()

@@ -123,10 +123,10 @@ describe('Model', function () {
               doc.refField.fieldName.should.equal('foo_3')
 
               // composed property
-              should.exist(doc.composed)
-              should.exist(doc.composed.refField)
+              should.exist(doc._composed)
+              should.exist(doc._composed.refField)
 
-              doc.composed.refField.toString().should.eql(doc.refField._id.toString())
+              doc._composed.refField.toString().should.eql(doc.refField._id.toString())
 
               done()
             })
@@ -153,9 +153,9 @@ describe('Model', function () {
               doc.refField.lastName.should.equal('3')
 
               // composed property
-              should.exist(doc.composed)
-              should.exist(doc.composed.refField)
-              doc.composed.refField.toString().should.eql(doc.refField._id.toString())
+              should.exist(doc._composed)
+              should.exist(doc._composed.refField)
+              doc._composed.refField.toString().should.eql(doc.refField._id.toString())
 
               done()
             })
@@ -284,9 +284,9 @@ describe('Model', function () {
               doc.refField.length.should.eql(4)
 
               // composed property
-              should.exist(doc.composed)
-              should.exist(doc.composed.refField)
-              doc.composed.refField.length.should.eql(4)
+              should.exist(doc._composed)
+              should.exist(doc._composed.refField)
+              doc._composed.refField.length.should.eql(4)
 
               done()
             })
@@ -530,8 +530,8 @@ describe('Model', function () {
                     should.exist(doc._id)
                     should.exist(doc.title)
                     should.exist(doc.author.name)
-                    should.exist(doc.composed)
-                    should.not.exist(doc.history)
+                    should.exist(doc._composed)
+                    should.not.exist(doc._history)
 
                     done()
                   })

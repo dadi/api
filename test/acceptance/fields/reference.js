@@ -56,8 +56,9 @@ describe('Reference Field', function () {
         if (err) return done(err)
         should.exist(res.body.results)
         var newDoc = res.body.results[0]
+
         should.exist(newDoc.author._id)
-        should.exist(newDoc.author.apiVersion)
+        should.exist(newDoc.author._apiVersion)
         done()
       })
     })
@@ -214,6 +215,57 @@ describe('Reference Field', function () {
 
             newDoc.author._id.should.eql(author._id)
             newDoc.author.name.should.eql(author.name)
+            done()
+          })
+        }, 800)
+      })
+    })
+
+    it('should update reference documents that already have _id fields, translating any internal fields in the referenced documents to the prefix defined in config', function (done) {
+      var originalPrefix = config.get('internalFieldsPrefix')
+
+      config.set('internalFieldsPrefix', '$')
+
+      var person = {
+        name: 'Ernest Hemingway'
+      }
+
+      var client = request(connectionString)
+      client
+      .post('/v1/library/person')
+      .set('Authorization', 'Bearer ' + bearerToken)
+      .send(person)
+      .expect(200)
+      .end(function (err, res) {
+        if (err) return done(err)
+
+        var author = res.body.results[0]
+        author.name += ', Jnr.'
+
+        var book = {
+          title: 'For Whom The Bell Tolls',
+          author: author
+        }
+
+        config.set('query.useVersionFilter', true)
+
+        setTimeout(function () {
+          var client = request(connectionString)
+          client
+          .post('/v1/library/book')
+          .set('Authorization', 'Bearer ' + bearerToken)
+          .send(book)
+          .expect(200)
+          .end(function (err, res) {
+            if (err) return done(err)
+            should.exist(res.body.results)
+            var newDoc = res.body.results[0]
+
+            newDoc.author.$id.should.eql(author.$id)
+            newDoc.author.name.should.eql(author.name)
+
+            config.set('internalFieldsPrefix', originalPrefix)
+
             done()
           })
         }, 800)
@@ -609,7 +661,7 @@ describe('Reference Field', function () {
 
                 for (var i = 0; i < bookResult.author.length; i++) {
                   var author = bookResult.author[i]
-                  author._id.toString().should.eql(bookResult.composed.author[i].toString())
+                  author._id.toString().should.eql(bookResult._composed.author[i].toString())
                 }
 
                 done()

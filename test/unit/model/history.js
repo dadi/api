@@ -53,7 +53,7 @@ describe('History', function () {
               if (err) return done(err)
 
               should.exist(doc['results'])
-              doc['results'][0].history.length.should.equal(1)
+              doc['results'][0]._history.length.should.equal(1)
               done()
             })
           })
@@ -88,8 +88,8 @@ describe('History', function () {
               mod.find({ fieldName: { '$regex' : '^foo-' } }, function (err, docs) {
                 if (err) return done(err)
 
-                docs.results[0].history.length.should.equal(1)
-                docs.results[1].history.length.should.equal(1)
+                docs.results[0]._history.length.should.equal(1)
+                docs.results[1]._history.length.should.equal(1)
                 done()
               })
             }).catch((err) => {
@@ -106,10 +106,10 @@ describe('History', function () {
       mod.create({ fieldName: 'foo-1' }, function (err, result) {
         mod.update({ fieldName: 'foo-1' }, { fieldName: 'foo-2' }, function (err, result) {
           mod.find({}, { includeHistory: true }, function (err, docs) {
-            should.exist(docs.results[0].history)
-            should.exist(docs.results[0].history[0])
-            should.exist(docs.results[0].history[0].action)
-            docs.results[0].history[0].action.should.eql('update')
+            should.exist(docs.results[0]._history)
+            should.exist(docs.results[0]._history[0])
+            should.exist(docs.results[0]._history[0]._action)
+            docs.results[0]._history[0]._action.should.eql('update')
             done()
           })
         })
@@ -126,9 +126,9 @@ describe('History', function () {
 
           mod.find({}, {}, function (err, docs) {
             should.exist(docs.results[0])
-            should.exist(docs.results[0].originalDocumentId)
-            should.exist(docs.results[0].action)
-            docs.results[0].action.should.eql('delete')
+            should.exist(docs.results[0]._originalDocumentId)
+            should.exist(docs.results[0]._action)
+            docs.results[0]._action.should.eql('delete')
             done()
           })
         })
@@ -143,11 +143,11 @@ describe('History', function () {
 
         mod.update({ fieldName: 'foo-1' }, { fieldName: 'foo-2' }, function (err, result) {
           mod.find({}, { includeHistory: true }, function (err, docs) {
-            should.exist(docs.results[0].history)
-            should.exist(docs.results[0].history[0])
-            should.exist(docs.results[0].history[0].originalDocumentId)
+            should.exist(docs.results[0]._history)
+            should.exist(docs.results[0]._history[0])
+            should.exist(docs.results[0]._history[0]._originalDocumentId)
 
-            docs.results[0].history[0].originalDocumentId.should.eql(id.toString())
+            docs.results[0]._history[0]._originalDocumentId.should.eql(id.toString())
             done()
           })
         })

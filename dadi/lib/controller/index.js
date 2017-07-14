@@ -115,6 +115,7 @@ function prepareQueryOptions (options, modelSettings) {
   if (sort && !_.isEmpty(sort)) queryOptions.sort = sort
 
   response.queryOptions = queryOptions
+
   return response
 }
 
@@ -129,7 +130,6 @@ Controller.prototype.get = function (req, res, next) {
 
   // determine if this is jsonp
   var done = options.callback ? sendBackJSONP(options.callback, res, next) : sendBackJSON(200, res, next)
-
   var query = this.prepareQuery(req)
   var queryOptions = this.prepareQueryOptions(options)
 
@@ -153,11 +153,14 @@ function prepareQuery (req, model) {
   var options = path.query
   var query = parseQuery(options.filter)
 
+  // Formatting query
+  query = model.formatQuery(query)
+
   // remove filter params that don't exist in
   // the model schema
   if (!_.isArray(query)) {
     _.each(Object.keys(query), (key) => {
-      if (!help.keyValidForSchema(model, key)) {
+      if (!model.isKeyValid(key)) {
         delete query[key]
       } else {
         if (model.schema[key]) {
@@ -176,7 +179,7 @@ function prepareQuery (req, model) {
 
   // add the apiVersion filter
   if (config.get('query.useVersionFilter')) {
-    _.extend(query, { apiVersion: apiVersion })
+    _.extend(query, { _apiVersion: apiVersion })
   }
 
   // add the model's default filters, if set
@@ -194,7 +197,7 @@ Controller.prototype.prepareQuery = function (req) {
 Controller.prototype.post = function (req, res, next) {
   // internal fields
   var internals = {
-    apiVersion: req.url.split('/')[1]
+    _apiVersion: req.url.split('/')[1]
   }
 
   var self = this
@@ -214,8 +217,8 @@ Controller.prototype.post = function (req, res, next) {
 
     // if id is present in the url, then this is an update
     if (req.params.id || req.body.update) {
-      internals.lastModifiedAt = Date.now()
-      internals.lastModifiedBy = req.client && req.client.clientId
+      internals._lastModifiedAt = Date.now()
+      internals._lastModifiedBy = req.client && req.client.clientId
 
       var query = {}
       var update = {}
@@ -230,15 +233,15 @@ Controller.prototype.post = function (req, res, next) {
 
       // add the apiVersion filter
       if (config.get('query.useVersionFilter')) {
-        query.apiVersion = internals.apiVersion
+        query._apiVersion = internals._apiVersion
       }
 
       return self.model.update(query, update, internals, sendBackJSON(200, res, next), req)
     }
 
     // if no id is present, then this is a create
-    internals.createdAt = Date.now()
-    internals.createdBy = req.client && req.client.clientId
+    internals._createdAt = Date.now()
+    internals._createdBy = req.client && req.client.clientId
 
     self.model.create(req.body, internals, sendBackJSON(200, res, next), req)
   })

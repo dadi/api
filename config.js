@@ -340,6 +340,11 @@ var conf = convict({
     doc: 'If true, responses will include headers for cross-domain resource sharing',
     format: Boolean,
     default: false
+  },
+  internalFieldsPrefix: {
+    doc: 'The character to be used for prefixing internal fields',
+    format: 'String',
+    default: '_'
   }
 })
 

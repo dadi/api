@@ -179,9 +179,9 @@ MediaController.prototype.post = function (req, res, next) {
         if (_.contains(fields, 'height')) obj.height = imageInfo.height
 
         var internals = {
-          apiVersion: req.url.split('/')[1],
-          createdAt: Date.now(),
-          createdBy: req.client && req.client.clientId
+          _apiVersion: req.url.split('/')[1],
+          _createdAt: Date.now(),
+          _createdBy: req.client && req.client.clientId
         }
 
         const callback = (err, response) => {
@@ -210,8 +210,8 @@ MediaController.prototype.post = function (req, res, next) {
     // if id is present in the url, then this is an update
     if (req.params.id || req.body.update) {
       var internals = {
-        lastModifiedAt: Date.now(),
-        lastModifiedBy: req.client && req.client.clientId
+        _lastModifiedAt: Date.now(),
+        _lastModifiedBy: req.client && req.client.clientId
       }
 
       var query = {}

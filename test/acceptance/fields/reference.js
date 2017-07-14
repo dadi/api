@@ -220,6 +220,57 @@ describe('Reference Field', function () {
         }, 800)
       })
     })
+
+    it('should update reference documents that already have _id fields, translating any internal fields in the referenced documents to the prefix defined in config', function (done) {
+      var originalPrefix = config.get('internalFieldsPrefix')
+
+      config.set('internalFieldsPrefix', '$')
+
+      var person = {
+        name: 'Ernest Hemingway'
+      }
+
+      var client = request(connectionString)
+      client
+      .post('/v1/library/person')
+      .set('Authorization', 'Bearer ' + bearerToken)
+      .send(person)
+      .expect(200)
+      .end(function (err, res) {
+        if (err) return done(err)
+
+        var author = res.body.results[0]
+        author.name += ', Jnr.'
+
+        var book = {
+          title: 'For Whom The Bell Tolls',
+          author: author
+        }
+
+        config.set('query.useVersionFilter', true)
+
+        setTimeout(function () {
+          var client = request(connectionString)
+          client
+          .post('/v1/library/book')
+          .set('Authorization', 'Bearer ' + bearerToken)
+          .send(book)
+          .expect(200)
+          .end(function (err, res) {
+            if (err) return done(err)
+            should.exist(res.body.results)
+            var newDoc = res.body.results[0]
+
+            newDoc.author.$id.should.eql(author.$id)
+            newDoc.author.name.should.eql(author.name)
+
+            config.set('internalFieldsPrefix', originalPrefix)
+
+            done()
+          })
+        }, 800)
+      })
+    })
   })
 
   describe('update', function () {

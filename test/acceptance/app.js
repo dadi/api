@@ -238,6 +238,34 @@ describe('Application', function () {
           })
       })
 
+      it('should create new documents and return its representation containing the internal fields prefixed with the character defined in config', function (done) {
+        var originalPrefix = config.get('internalFieldsPrefix')
+
+        config.set('internalFieldsPrefix', '$')
+
+        var client = request(connectionString)
+        client
+          .post('/vtest/testdb/test-schema')
+          .set('Authorization', 'Bearer ' + bearerToken)
+          .send({field1: 'foo!'})
+          .expect(200)
+          .end(function (err, res) {
+            if (err) return done(err)
+
+            res.body.results.should.be.Array
+            res.body.results.length.should.equal(1)
+            should.not.exist(res.body.results[0]._id)
+            should.exist(res.body.results[0].$id)
+            should.exist(res.body.results[0].$createdAt)
+            should.exist(res.body.results[0].$createdBy)
+            res.body.results[0].field1.should.equal('foo!')
+
+            config.set('internalFieldsPrefix', originalPrefix)
+
+            done()
+          })
+      })
+
       it('should create new documents when body is urlencoded', function (done) {
         var body = 'field1=foo!'
         var client = request(connectionString)
@@ -465,6 +493,43 @@ describe('Application', function () {
           })
       })
 
+      it('should update existing documents when passing ID, giving back the updated document with internal fields prefixed with the character defined in config', function (done) {
+        var client = request(connectionString)
+        var originalPrefix = config.get('internalFieldsPrefix')
+
+        config.set('internalFieldsPrefix', '$')
+
+        client
+          .post('/vtest/testdb/test-schema')
+          .set('Authorization', 'Bearer ' + bearerToken)
+          .send({field1: 'doc to update'})
+          .expect(200)
+          .end(function (err, res) {
+            if (err) return done(err)
+
+            var doc = res.body.results[0]
+            should.exist(doc)
+            doc.field1.should.equal('doc to update')
+
+            var puturl = '/vtest/testdb/test-schema/' + doc.$id
+
+            client
+              .put(puturl)
+              .set('Authorization', 'Bearer ' + bearerToken)
+              .send({field1: 'updated doc'})
+              .expect(200)
+              .end(function (err, res) {
+                if (err) return done(err)
+
+                res.body.results[0].$id.should.equal(doc.$id)
+
+                config.set('internalFieldsPrefix', originalPrefix)
+
+                done()
+              })
+          })
+      })
+
       it('should update existing document by ID when passing a query', function (done) {
         var client = request(connectionString)
 
@@ -509,6 +574,61 @@ describe('Application', function () {
                     res.body['results'].should.be.Array
                     res.body['results'].length.should.equal(1)
                     res.body['results'][0].field1.should.equal('updated doc')
+
+                    done()
+                  })
+              })
+          })
+      })
+
+      it('should update existing document by ID when passing a query, translating any internal field to the prefix defined in config', function (done) {
+        var client = request(connectionString)
+        var originalPrefix = config.get('internalFieldsPrefix')
+
+        config.set('internalFieldsPrefix', '$')
+
+        client
+          .post('/vtest/testdb/test-schema')
+          .set('Authorization', 'Bearer ' + bearerToken)
+          .send({field1: 'doc to update'})
+          .expect(200)
+          .end(function (err, res) {
+            if (err) return done(err)
+
+            var doc = res.body.results[0]
+            should.exist(doc)
+            doc.field1.should.equal('doc to update')
+
+            var body = {
+              query: { $id: doc.$id },
+              update: {field1: 'updated doc'}
+            }
+
+            client
+              .put('/vtest/testdb/test-schema/')
+              .set('Authorization', 'Bearer ' + bearerToken)
+              .send(body)
+              .expect(200)
+              .end(function (err, res) {
+                if (err) return done(err)
+
+                res.body.results[0].$id.should.equal(doc.$id)
+                res.body.results[0].field1.should.equal('updated doc')
+
+                client
+                  .get('/vtest/testdb/test-schema?filter={"$id": "' + doc.$id + '"}')
+                  .set('Authorization', 'Bearer ' + bearerToken)
+                  .expect(200)
+                  .expect('content-type', 'application/json')
+                  .end(function (err, res) {
+                    if (err) return done(err)
+
+                    res.body['results'].should.exist
+                    res.body['results'].should.be.Array
+                    res.body['results'].length.should.equal(1)
+                    res.body['results'][0].field1.should.equal('updated doc')
+
+                    config.set('internalFieldsPrefix', originalPrefix)
 
                     done()
                   })
@@ -570,6 +690,58 @@ describe('Application', function () {
                   })
               })
           })
+      })
+
+      it('should update documents when passing a query with a filter, translating any internal field to the prefix defined in config', function (done) {
+        var client = request(connectionString)
+        var originalPrefix = config.get('internalFieldsPrefix')
+
+        config.set('internalFieldsPrefix', '$')
+
+        help.createDoc(bearerToken, function (err, doc) {
+          if (err) return done(err)
+
+          var client = request(connectionString)
+          var body = {
+            query: {
+              $id: doc.$id
+            },
+            update: {
+              field1: 'Updated value'
+            }
+          }
+
+          client
+            .put('/vtest/testdb/test-schema')
+            .set('Authorization', 'Bearer ' + bearerToken)
+            .send(body)
+            .expect(200)
+            .expect('content-type', 'application/json')
+            .end(function (err, res) {
+              if (err) return done(err)
+
+              res.body.results.should.be.Array
+              res.body.results[0].$id.should.eql(doc.$id)
+              res.body.results[0].field1.should.eql(body.update.field1)
+
+              client
+                .get('/vtest/testdb/test-schema/' + doc.$id)
+                .set('Authorization', 'Bearer ' + bearerToken)
+                .expect(200)
+                .expect('content-type', 'application/json')
+                .end(function (err, res) {
+                  if (err) return done(err)
+
+                  res.body.results.should.be.Array
+                  res.body.results[0].$id.should.eql(doc.$id)
+                  res.body.results[0].field1.should.eql(body.update.field1)
+
+                  config.set('internalFieldsPrefix', originalPrefix)
+
+                  done()
+                })
+            })
+        })
       })
 
       it('should add internal fields to updated documents', function (done) {
@@ -889,6 +1061,35 @@ describe('Application', function () {
               res.body['results'].should.exist
               res.body['results'].should.be.Array
               res.body['results'].length.should.be.above(0)
+              done()
+            })
+        })
+      })
+
+      it('should get documents with the internal fields prefixed with the character defined in config', function (done) {
+        var originalPrefix = config.get('internalFieldsPrefix')
+
+        help.createDoc(bearerToken, function (err, doc) {
+          if (err) return done(err)
+
+          config.set('internalFieldsPrefix', '$')
+
+          var client = request(connectionString)
+
+          client
+            .get('/vtest/testdb/test-schema/' + doc._id)
+            .set('Authorization', 'Bearer ' + bearerToken)
+            .expect(200)
+            .expect('content-type', 'application/json')
+            .end(function (err, res) {
+              if (err) return done(err)
+
+              res.body.results[0].$id.should.exist
+              should.not.exist(res.body.results[0]._id)
+              res.body.results[0].$id.should.eql(doc._id)
+
+              config.set('internalFieldsPrefix', originalPrefix)
+
               done()
             })
         })
@@ -1377,6 +1578,35 @@ describe('Application', function () {
         })
       })
 
+      it('should not display fields with null values', function (done) {
+        var doc = { field1: null }
+
+        help.createDocWithParams(bearerToken, doc, function (err, doc) {
+          if (err) return done(err)
+
+          var client = request(connectionString)
+
+          client
+            .get('/vtest/testdb/test-schema/' + doc._id)
+            .set('Authorization', 'Bearer ' + bearerToken)
+            .expect(200)
+            .expect('content-type', 'application/json')
+            .end(function (err, res) {
+              if (err) return done(err)
+
+              var found = false
+
+              res.body.results.should.exist
+              res.body.results.should.be.Array
+              res.body.results[0].should.exist
+              res.body.results[0]._id.should.exist
+              should.not.exist(res.body.results[0].field1)
+
+              done()
+            })
+        })
+      })
+
       it('should return specified fields only when supplying `fields` param', function (done) {
         var doc = { field1: 'Test', field2: null }
 
@@ -1473,6 +1703,42 @@ describe('Application', function () {
                 done()
               })
           })
+        })
+      })
+
+      it('should apply configured prefix to any internal fields present in the filter param', function (done) {
+        var originalPrefix = config.get('internalFieldsPrefix')
+
+        help.createDoc(bearerToken, function (err, doc) {
+          if (err) return done(err)
+
+          config.set('internalFieldsPrefix', '$')
+
+          var client = request(connectionString)
+          var query = {
+            $id: doc._id
+          }
+
+          query = encodeURIComponent(JSON.stringify(query))
+
+          client
+            .get('/vtest/testdb/test-schema?filter=' + query)
+            .set('Authorization', 'Bearer ' + bearerToken)
+            .expect(200)
+            .expect('content-type', 'application/json')
+            .end(function (err, res) {
+              if (err) return done(err)
+
+              res.body.results.should.exist
+              res.body.results.should.be.Array
+              res.body.results.length.should.equal(1)
+              res.body.results[0].$id.should.eql(doc._id)
+              should.not.exist(res.body.results[0]._id)
+
+              config.set('internalFieldsPrefix', originalPrefix)
+
+              done()
+            })
         })
       })
 
@@ -1756,6 +2022,60 @@ describe('Application', function () {
               res.body['results'].should.be.Array
               res.body['results'][0]._history.should.exist
               res.body['results'][0]._history[0].field1.should.eql('original field content')
+              done()
+            })
+          })
+        })
+      })
+
+      it('should add history to results when querystring param includeHistory=true, translating internal fields to the prefix defined in config', function (done) {
+        var originalPrefix = config.get('internalFieldsPrefix')
+        var client = request(connectionString)
+
+        config.set('internalFieldsPrefix', '$')
+
+        client
+        .post('/vtest/testdb/test-schema')
+        .set('Authorization', 'Bearer ' + bearerToken)
+        .send({field1: 'original field content'})
+        .expect(200)
+        .end(function (err, res) {
+          if (err) return done(err)
+
+          var doc = res.body.results[0]
+
+          var body = {
+            query: { $id: doc.$id },
+            update: {field1: 'updated'}
+          }
+
+          client
+          .put('/vtest/testdb/test-schema/')
+          .set('Authorization', 'Bearer ' + bearerToken)
+          .send(body)
+          .expect(200)
+          .end(function (err, res) {
+            if (err) return done(err)
+
+            res.body.results[0].$id.should.equal(doc.$id)
+            res.body.results[0].field1.should.equal('updated')
+
+            client
+            .get('/vtest/testdb/test-schema?includeHistory=true&filter={"$id": "' + doc.$id + '"}')
+            .set('Authorization', 'Bearer ' + bearerToken)
+            .expect(200)
+            .expect('content-type', 'application/json')
+            .end(function (err, res) {
+              if (err) return done(err)
+
+              res.body.results.should.exist
+              res.body.results.should.be.Array
+              res.body.results[0].$history.should.exist
+              res.body.results[0].$history[0].$id.should.exist
+              res.body.results[0].$history[0].field1.should.eql('original field content')
+
+              config.set('internalFieldsPrefix', originalPrefix)
+
               done()
             })
           })
@@ -2156,6 +2476,8 @@ describe('Application', function () {
             })
         })
       })
+
+      it('')
     })
 
     describe('DELETE', function () {
@@ -2173,7 +2495,7 @@ describe('Application', function () {
         })
       })
 
-      it('should remove documents', function (done) {
+      it('should remove a single document by ID', function (done) {
         var client = request(connectionString)
 
         client
@@ -2231,6 +2553,84 @@ describe('Application', function () {
                   })
               })
           })
+        })
+      })
+
+      it('should remove all documents affected by the query property supplied in the request body', function (done) {
+        help.createDoc(bearerToken, function (err, doc) {
+          if (err) return done(err)
+
+          var client = request(connectionString)
+
+          client
+            .delete('/vtest/testdb/test-schema')
+            .set('Authorization', 'Bearer ' + bearerToken)
+            .send({
+              query: {
+                _id: doc._id
+              }
+            })
+            .expect(204)
+            .end(function (err) {
+              if (err) return done(err)
+
+              client
+                .get('/vtest/testdb/test-schema/' + doc._id)
+                .set('Authorization', 'Bearer ' + bearerToken)
+                .expect(200)
+                .expect('content-type', 'application/json')
+                .end(function (err, res) {
+                  if (err) return done(err)
+
+                  res.body.results.should.exist
+                  res.body.results.should.be.Array
+                  res.body.results.length.should.equal(0)
+
+                  done()
+                })
+            })
+        })
+      })
+
+      it('should remove all documents affected by the query property supplied in the request body, translating any internal fields to the prefix defined in config', function (done) {
+        var originalPrefix = config.get('internalFieldsPrefix')
+
+        config.set('internalFieldsPrefix', '$')
+
+        help.createDoc(bearerToken, function (err, doc) {
+          if (err) return done(err)
+
+          var client = request(connectionString)
+
+          client
+            .delete('/vtest/testdb/test-schema')
+            .set('Authorization', 'Bearer ' + bearerToken)
+            .send({
+              query: {
+                $id: doc.$id
+              }
+            })
+            .expect(204)
+            .end(function (err) {
+              if (err) return done(err)
+
+              client
+                .get('/vtest/testdb/test-schema/' + doc.$id)
+                .set('Authorization', 'Bearer ' + bearerToken)
+                .expect(200)
+                .expect('content-type', 'application/json')
+                .end(function (err, res) {
+                  if (err) return done(err)
+
+                  res.body.results.should.exist
+                  res.body.results.should.be.Array
+                  res.body.results.length.should.equal(0)
+
+                  config.set('internalFieldsPrefix', originalPrefix)
+
+                  done()
+                })
+            })
         })
       })
 

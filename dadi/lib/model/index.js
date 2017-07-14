@@ -1004,10 +1004,6 @@ Model.prototype.delete = function (query, done, req) {
   }
 
   var deleteDocuments = (database) => {
-    if (query._id) {
-      query._id = query._id.toString()
-    }
-
     var wait = Promise.resolve()
 
     if (this.history) {

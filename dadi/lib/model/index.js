@@ -812,29 +812,52 @@ Model.prototype.get = function (query, options, done, req) {
     options = {}
   }
 
-  this.find(query, options, (err, results) => {
-    if (this.settings.hooks && this.settings.hooks.afterGet) {
-      async.reduce(this.settings.hooks.afterGet, results, (current, hookConfig, callback) => {
-        var hook = new Hook(hookConfig, 'afterGet')
+  const databaseGet = query => {
+    this.find(query, options, (err, results) => {
+      if (this.settings.hooks && this.settings.hooks.afterGet) {
+        async.reduce(this.settings.hooks.afterGet, results, (current, hookConfig, callback) => {
+          var hook = new Hook(hookConfig, 'afterGet')
 
-        Promise.resolve(hook.apply(current, this.schema, this.name, req)).then((newResults) => {
-          callback((newResults === null) ? {} : null, newResults)
-        }).catch(err => {
-          callback(hook.formatError(err))
+          Promise.resolve(hook.apply(current, this.schema, this.name, req)).then(newResults => {
+            callback((newResults === null) ? {} : null, newResults)
+          }).catch(err => {
+            callback(hook.formatError(err))
+          })
+        }, (err, finalResult) => {
+          // Prepare result set for output
+          finalResult.results = this.formatResultSetForOutput(finalResult.results)
+
+          done(err, finalResult)
         })
-      }, (err, finalResult) => {
+      } else {
         // Prepare result set for output
-        finalResult.results = this.formatResultSetForOutput(finalResult.results)
+        results.results = this.formatResultSetForOutput(results.results)
 
-        done(err, finalResult)
+        done(err, results)
+      }
+    })
+  }
+
+  // Run any `beforeGet` hooks
+  if (this.settings.hooks && this.settings.hooks.beforeGet) {
+    async.reduce(this.settings.hooks.beforeGet, query, (current, hookConfig, callback) => {
+      var hook = new Hook(hookConfig, 'beforeGet')
+
+      Promise.resolve(hook.apply(current, this.schema, this.name, req)).then(newQuery => {
+        callback(null, newQuery)
+      }).catch(err => {
+        callback(hook.formatError(err))
       })
-    } else {
-      // Prepare result set for output
-      results.results = this.formatResultSetForOutput(results.results)
+    }, (err, finalQuery) => {
+      if (err) {
+        return done(err, null)
+      }
 
-      done(err, results)
-    }
-  })
+      databaseGet(finalQuery)
+    })
+  } else {
+    databaseGet(query)
+  }
 }
 
 /**

@@ -16,6 +16,17 @@ simpleSlugifyHook += '  return slugify(obj);\n'
 simpleSlugifyHook += '}\n'
 var simpleFunction = eval(simpleSlugifyHook)
 
+var querySlugifyHook = 'function slugify(text) {\n'
+querySlugifyHook += "  if (!text)return '';\n"
+querySlugifyHook += "  return text.toString().toLowerCase().replace(/ /g, '-')\n"
+querySlugifyHook += '}\n'
+querySlugifyHook += 'module.exports = function (obj, type, data) { \n'
+querySlugifyHook += '  console.log("----> hook:", obj);\n'
+querySlugifyHook += '  obj[data.options.field] = slugify(obj[data.options.field]);\n'
+querySlugifyHook += '  return obj;\n'
+querySlugifyHook += '}\n'
+var querySlugifyFunction = eval(querySlugifyHook)
+
 var optionsSlugifyHook = 'function slugify(text) {\n'
 optionsSlugifyHook += "  if (!text)return '';\n"
 optionsSlugifyHook += "  return text.toString().toLowerCase().replace(/ /g, '-')\n"
@@ -1220,6 +1231,106 @@ describe('Hook', function () {
               })
             })
           }, 500)
+        })
+      })
+    })
+  })
+
+  describe('`beforeGet` hook', function () {
+    beforeEach(help.cleanUpDB)
+
+    it('should receive collection name and schema', function (done) {
+
+      var schema = help.getModelSchema()
+      schema.title = {
+        type: 'String',
+        required: false
+      }
+
+      schema.slug = {
+        type: 'String',
+        required: false
+      }
+
+      var settings = {
+        database: 'testdb',
+        storeRevisions: false,
+        hooks: {
+          beforeGet: [{
+            hook: 'slug',
+            options: {
+              from: 'title',
+              to: 'slug'
+            }
+          }]
+        }
+      }
+
+      var inspectFunction = function (obj, type, data) {
+        JSON.stringify(data.schema).should.eql(JSON.stringify(schema))
+        data.collection.should.eql('testModelName')
+      }
+
+      sinon.stub(hook.Hook.prototype, 'load').returns(inspectFunction)
+
+      var mod = model('testModelName', schema, null, settings)
+
+      mod.create({fieldName: 'foo', title: 'Article One', slug: ''}, function (err, result) {
+        if (err) return done(err)
+
+        hook.Hook.prototype.load.restore()
+
+        // find the obj we just created
+        mod.find({fieldName: 'foo'}, function (err, doc) {
+          if (err) return done(err)
+
+          done()
+        })
+      })
+    })
+
+    it('should modify the query before processing the GET', function (done) {
+
+      var schema = help.getModelSchema()
+      schema.title = {
+        type: 'String',
+        required: false
+      }
+
+      schema.slug = {
+        type: 'String',
+        required: false
+      }
+
+      var settings = {
+        database: 'testdb',
+        storeRevisions: false,
+        hooks: {
+          beforeGet: [{
+            hook: 'slug',
+            options: {
+              field: 'title'
+            }
+          }]
+        }
+      }
+
+      sinon.stub(hook.Hook.prototype, 'load').returns(querySlugifyFunction)
+
+      var mod = model('testModelName', schema, null, settings)
+
+      mod.create({fieldName: 'Some field', title: 'article-one'}, function (err, result) {
+        if (err) return done(err)
+
+        // find the obj we just created
+        mod.get({title: 'Article One'},function (err, doc) {
+          if (err) return done(err)
+
+          hook.Hook.prototype.load.restore()
+
+          doc.results[0].fieldName.should.eql('Some field')
+
+          done()
         })
       })
     })

@@ -81,7 +81,7 @@ Composer.prototype.compose = function (obj, callback) {
       // populate each document's composable property with results
       _.each(obj, (document) => {
         var isArray = Array.isArray(document[field])
-        var originalValue = isArray ? document[field] : [document[field]]
+        var originalValue = isArray ? _.compact(document[field]) : _.compact([document[field]])
 
         // add the composed property indicating original values
         if (!document.composed) document.composed = {}
@@ -115,7 +115,11 @@ Composer.prototype.compose = function (obj, callback) {
                 document[field].push(id)
               } else {
                 var exists = document[field].filter(r => {
-                  return r && r._id.toString() === id.toString()
+                  if (r && r._id) {
+                    return r._id.toString() === id.toString()
+                  }
+
+                  return false
                 })
 
                 if (exists.length === 0) {

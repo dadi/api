@@ -115,7 +115,7 @@ Composer.prototype.compose = function (obj, callback) {
                 document[field].push(id)
               } else {
                 var exists = document[field].filter(r => {
-                  return r._id.toString() === id.toString()
+                  return r && r._id.toString() === id.toString()
                 })
 
                 if (exists.length === 0) {

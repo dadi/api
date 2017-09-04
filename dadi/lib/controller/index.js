@@ -58,6 +58,10 @@ function prepareQueryOptions (options, modelSettings) {
     response.errors.push(new ApiError('Bad Request', 'Invalid Parameter', 'The `page` parameter must be greater than zero', 'Invalid Page Parameter Provided'))
   }
 
+  if (options.q) {
+    queryOptions.search = options.q
+  }
+
   // specified / default number of records to return
   var limit = options.count || settings.count
   if (_.isFinite(limit)) {
@@ -120,6 +124,21 @@ function prepareQueryOptions (options, modelSettings) {
 var Controller = function (model) {
   if (!model) throw new Error('Model instance required')
   this.model = model
+}
+
+Controller.prototype.search = function (req, res, next) {
+  var path = url.parse(req.url, true)
+  var options = path.query
+
+  var queryOptions = this.prepareQueryOptions(options)
+
+  if (queryOptions.errors.length !== 0) {
+    sendBackJSON(400, res, next)(null, queryOptions)
+  } else {
+    queryOptions = queryOptions.queryOptions
+  }
+
+  this.model.search(queryOptions, sendBackJSON(200, res, next), req)
 }
 
 Controller.prototype.get = function (req, res, next) {

@@ -29,7 +29,6 @@ var log = require('@dadi/logger')
 var Model = require(path.join(__dirname, '/model'))
 var mediaModel = require(path.join(__dirname, '/model/media'))
 var monitor = require(path.join(__dirname, '/monitor'))
-var search = require(path.join(__dirname, '/search'))
 
 var config = require(path.join(__dirname, '/../../config'))
 var configPath = path.resolve(config.configPath())
@@ -201,9 +200,6 @@ Server.prototype.start = function (done) {
 
   // caching layer
   cache(self).init()
-
-  // search layer
-  search(self)
 
   // start listening
   var server = this.server = app.listen()
@@ -951,6 +947,18 @@ Server.prototype.addComponent = function (options) {
   // add controller and documentation
   this.components[options.route] = options.component
   this.docs[options.route] = options.docs
+
+  // call controller search method
+  this.app.use(options.route + '/search', function (req, res, next) {
+    var method = req.method && req.method.toLowerCase()
+
+    // call controller stats method
+    if (method === 'get') {
+      return options.component['search'](req, res, next)
+    } else {
+      next()
+    }
+  })
 
   this.app.use(options.route + '/count', function (req, res, next) {
     var method = req.method && req.method.toLowerCase()

@@ -8,6 +8,7 @@ var config = require(path.join(__dirname, '/../../../config'))
 var connection = require(path.join(__dirname, '/connection'))
 var logger = require('@dadi/logger')
 var Validator = require(path.join(__dirname, '/validator'))
+var Search = require(path.join(__dirname, '/../search'))
 var History = require(path.join(__dirname, '/history'))
 var Composer = require(path.join(__dirname, '/../composer')).Composer
 var Hook = require(path.join(__dirname, '/hook'))
@@ -54,6 +55,9 @@ var Model = function (name, schema, conn, settings, database) {
   }
 
   _models[name] = this
+
+  // setup search context
+  this.searcher = new Search(this)
 
   // setup validation context
   this.validate = new Validator(this)
@@ -475,9 +479,8 @@ Model.prototype.find = function (query, options, done) {
       if (err) {
         return callback(null, err, data)
       } else {
-        this.injectHistory(data, options).then(function (data) {
-          return callback(null, err, data)
-        })
+        this.injectHistory(data, options)
+          .then(data => callback(null, err, data))
       }
     })
 
@@ -636,6 +639,7 @@ Model.prototype.find = function (query, options, done) {
 
       // perform the actual find operation
       function runFind () {
+        // console.log(query)
         var queryOptions = _.clone(options)
         delete queryOptions.historyFilters
 
@@ -684,6 +688,40 @@ Model.prototype.find = function (query, options, done) {
 }
 
 /**
+ * Lookup documents in the database based on search query and run any associated hooks
+ *
+ * @param {Object} query
+ * @param {Function} done
+ * @return undefined
+ * @api public
+ */
+Model.prototype.search = function (options, done, req) {
+  if (typeof options === 'function') {
+    done = options
+    options = {}
+  }
+  this.searcher.find(options.q)
+    .then(query => {
+      this.find(query, options, (err, results) => {
+        if (!err && this.settings.hooks && this.settings.hooks.afterGet) {
+          async.reduce(this.settings.hooks.afterGet, results, (current, hookConfig, callback) => {
+            var hook = new Hook(hookConfig, 'afterGet')
+
+            Promise.resolve(hook.apply(current, this.schema, this.name, req))
+              .then(newResults => {
+                callback((newResults === null) ? {} : null, newResults)
+              }).catch(err => {
+                callback(hook.formatError(err))
+              })
+          }, done)
+        } else {
+          done(err, results)
+        }
+      })
+    })
+}
+
+/**
  * Lookup documents in the database and run any associated hooks
  *
  * @param {Object} query
@@ -696,20 +734,18 @@ Model.prototype.get = function (query, options, done, req) {
     done = options
     options = {}
   }
-
   this.find(query, options, (err, results) => {
-    if (this.settings.hooks && this.settings.hooks.afterGet) {
+    if (!err && this.settings.hooks && this.settings.hooks.afterGet) {
       async.reduce(this.settings.hooks.afterGet, results, (current, hookConfig, callback) => {
         var hook = new Hook(hookConfig, 'afterGet')
 
-        Promise.resolve(hook.apply(current, this.schema, this.name, req)).then((newResults) => {
-          callback((newResults === null) ? {} : null, newResults)
-        }).catch(err => {
-          callback(hook.formatError(err))
-        })
-      }, (err, finalResult) => {
-        done(err, finalResult)
-      })
+        Promise.resolve(hook.apply(current, this.schema, this.name, req))
+          .then(newResults => {
+            callback((newResults === null) ? {} : null, newResults)
+          }).catch(err => {
+            callback(hook.formatError(err))
+          })
+      }, done)
     } else {
       done(err, results)
     }

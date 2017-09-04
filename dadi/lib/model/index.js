@@ -701,22 +701,7 @@ Model.prototype.search = function (options, done, req) {
   }
   this.searcher.find(options.q)
     .then(query => {
-      this.find(query, options, (err, results) => {
-        if (!err && this.settings.hooks && this.settings.hooks.afterGet) {
-          async.reduce(this.settings.hooks.afterGet, results, (current, hookConfig, callback) => {
-            var hook = new Hook(hookConfig, 'afterGet')
-
-            Promise.resolve(hook.apply(current, this.schema, this.name, req))
-              .then(newResults => {
-                callback((newResults === null) ? {} : null, newResults)
-              }).catch(err => {
-                callback(hook.formatError(err))
-              })
-          }, done)
-        } else {
-          done(err, results)
-        }
-      })
+      this.get(query, options, done, req)
     })
 }
 

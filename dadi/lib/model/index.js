@@ -639,7 +639,6 @@ Model.prototype.find = function (query, options, done) {
 
       // perform the actual find operation
       function runFind () {
-        // console.log(query)
         var queryOptions = _.clone(options)
         delete queryOptions.historyFilters
 

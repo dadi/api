@@ -56,9 +56,6 @@ var Model = function (name, schema, conn, settings, database) {
 
   _models[name] = this
 
-  // setup search context
-  this.searcher = new Search(this)
-
   // setup validation context
   this.validate = new Validator(this)
 
@@ -73,6 +70,9 @@ var Model = function (name, schema, conn, settings, database) {
     // if no value is specified, use 'History' suffix by default
     this.revisionCollection = (this.settings.revisionCollection ? this.settings.revisionCollection : this.name + 'History')
   }
+
+  // setup search context
+  this.searcher = new Search(this)
 
 /*
 "index": [
@@ -929,6 +929,8 @@ Model.prototype.update = function (query, update, internals, done, req) {
 
               // apply any existing `afterUpdate` hooks
               triggerAfterUpdateHook(results.results)
+              // Asynchronous search index
+              this.searcher.index(results.results)
 
               return done(null, results)
             })

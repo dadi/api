@@ -193,6 +193,43 @@ var conf = convict({
       }
     }
   },
+  search: {
+    wordCollection: {
+      doc: '',
+      format: String,
+      default: 'words'
+    },
+    database: {
+      hosts: {
+        doc: '',
+        format: Array,
+        default: [
+          {
+            host: '127.0.0.1',
+            port: 27017
+          }
+        ]
+      },
+      username: {
+        doc: '',
+        format: String,
+        default: '',
+        env: 'DB_SEARCH_USERNAME'
+      },
+      password: {
+        doc: '',
+        format: String,
+        default: '',
+        env: 'DB_SEARCH_PASSWORD'
+      },
+      database: {
+        doc: '',
+        format: String,
+        default: 'test',
+        env: 'DB_SEARCH_NAME'
+      }
+    }
+  },
   caching: {
     ttl: {
       doc: '',

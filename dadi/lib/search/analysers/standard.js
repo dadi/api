@@ -52,7 +52,9 @@ module.exports = class StandardAnalyzer {
   }
 
   tokenize (query) {
-    return tokenizer.tokenize(query)
+    return tokenizer
+      .tokenize(query)
+      .map(word => word.toLowerCase())
   }
 
   unique (list) {

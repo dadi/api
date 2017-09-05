@@ -3,31 +3,30 @@
 const path = require('path')
 const config = require(path.join(__dirname, '/../../../config'))
 const connection = require(path.join(__dirname, '/../model/connection'))
+const StandardAnalyser = require('./analysers/standard')
 
-const dbOptions = config.get('search.database')
+const analysers = {
+  StandardAnalyser
+}
+
+const defaultAnalyser = StandardAnalyser
+
 const wordCollectionName = config.get('search.wordCollection')
-const ensureIndex = database => {
-  database.collection(wordCollectionName)
-    .ensureIndex({
-      word: 1
-    },
-    {
-      unique: true
-    },
-    (err, indexName) => {
-      if (err) {
-        console.log(err)
-      }
-    })
+
+const ensureIndex = (database, collection, rules, options) => {
+  database.collection(collection)
+    .ensureIndex(rules, options)
 }
 
 const Search = function (model) {
   this.model = model
-  this.collection = this.model.searchCollection || this.model.name + 'Search'
+  this.searchCollection = this.model.searchCollection || this.model.name + 'Search'
   this.indexableFields = this.getIndexableFields()
-  this.connection = connection(dbOptions)
-  // Force index on this.connection
-  this.connection.on('connect', ensureIndex)
+  this.searchConnection = connection(config.get('search.database'))
+  // Force index on this.searchConnection
+  this.searchConnection.on('connect', (database) => {
+    database.collection(wordCollectionName).ensureIndex({word: 1}, {unique: true})
+  })
 }
 
 Search.prototype.getIndexableFields = function () {
@@ -55,15 +54,59 @@ Search.prototype.index = function (docs) {
   docs.map(doc => this.indexDocument(doc))
 }
 
-Search.prototype.indexDocument = function (doc) {
-  // Group all words and insert
-  // Fix issue with incorrect database selection
-  // Build list of per-field word weights
-  // Combine weights across entire document
-  // this.insert([{word: 'bar'}, {word: 'foo'}, {word: 'baz'}, {word: 'foo'}, {word: 'qux'}], wordCollectionName)
-  Object.keys(doc)
+Search.prototype.reduceDocumentFields = function (doc) {
+  return Object.assign({}, ...Object.keys(doc)
     .filter(key => this.indexableFields[key])
-    .map(key => console.log('MAP', doc[key]))
+    .map(key => {
+      return {[key]: doc[key]}
+    }))
+}
+
+Search.prototype.indexDocument = function (doc) {
+  const fields = this.reduceDocumentFields(doc)
+  const analyser = new defaultAnalyser(this.indexableFields)
+
+  Object.keys(fields)
+    .map(key => {
+      analyser.add(key, fields[key])
+    })
+
+  const words = analyser.getAllWords()
+  
+  const wordInsert = words.map(word => {
+    return {word}
+  })
+
+
+  this.insert(wordInsert, wordCollectionName)
+    .then(res => {
+      const query = {word: {'$in': words}}
+      this.runFind(query, wordCollectionName)
+        .then(result => {
+          const instances = analyser
+            .getWordInstances()
+            .filter(instance => result.find(result => result.word === instance.word))
+            .map(instance => {
+              const word = result.find(result => result.word === instance.word)._id
+
+              return Object.assign(instance, {word, document: doc._id})
+            })
+
+          this.insert(instances, this.searchCollection)
+        })
+
+    })
+}
+
+Search.prototype.runFind = function (query, collectionName) {
+  return new Promise(resolve => {
+    this.searchConnection.db.collection(collectionName)
+      .find(query, {}, (err, cursor) => {
+        cursor.toArray((err, result) => {
+          resolve(result)
+        })
+      })
+  })
 }
 
 Search.prototype.clearDocumentInstances = function (documentId) {
@@ -71,11 +114,12 @@ Search.prototype.clearDocumentInstances = function (documentId) {
 }
 
 Search.prototype.insert = function (documents, collectionName) {
-  this.connection.db.collection(collectionName)
-    .insertMany(documents, {ordered: false, upsert: true}, (err, result) => {
-      if (err) console.log(err)
-      console.log('Skipped', result.getWriteErrorCount())
-    })
+  return new Promise(resolve => {
+    this.searchConnection.db.collection(collectionName)
+      .insertMany(documents, {ordered: false}, (err, result) => {
+        resolve(result)
+      })
+  })
 }
 
 module.exports = function (model) {

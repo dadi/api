@@ -699,7 +699,7 @@ Model.prototype.search = function (options, done, req) {
     done = options
     options = {}
   }
-  this.searcher.find(options.q)
+  this.searcher.find(options.search)
     .then(query => {
       this.get(query, options, done, req)
     })

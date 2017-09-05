@@ -4,19 +4,10 @@ const path = require('path')
 const config = require(path.join(__dirname, '/../../../config'))
 const connection = require(path.join(__dirname, '/../model/connection'))
 const StandardAnalyser = require('./analysers/standard')
+const logger = require('@dadi/logger')
 
-const analysers = {
-  StandardAnalyser
-}
-
-const defaultAnalyser = StandardAnalyser
-
-const wordCollectionName = config.get('search.wordCollection')
-
-const ensureIndex = (database, collection, rules, options) => {
-  database.collection(collection)
-    .ensureIndex(rules, options)
-}
+const DefaultAnalyser = StandardAnalyser
+const wordCollection = config.get('search.wordCollection')
 
 const Search = function (model) {
   this.model = model
@@ -25,7 +16,7 @@ const Search = function (model) {
   this.searchConnection = connection(config.get('search.database'))
   // Force index on this.searchConnection
   this.searchConnection.on('connect', (database) => {
-    database.collection(wordCollectionName).ensureIndex({word: 1}, {unique: true})
+    database.collection(wordCollection).ensureIndex({word: 1}, {unique: true})
   })
 }
 
@@ -43,11 +34,32 @@ Search.prototype.hasSearchField = function (field) {
   return field.search && !isNaN(field.search.weight)
 }
 
-Search.prototype.find = function (query) {
-  return new Promise(resolve => {
-    const query = {_id: {'$in': ['58de4f88a6bf1ead62a93071']}}
-    return resolve(query)
-  })
+Search.prototype.find = function (searchTerm) {
+  const analyser = new DefaultAnalyser(this.indexableFields)
+  const tokenized = analyser.tokenize(searchTerm)
+
+  return this.getWords(tokenized)
+    .then(words => {
+      return this.getInstancesOfWords(words)
+        .then(instances => {
+          const ids = instances.map(instance => instance.document)
+
+          return {_id: {'$in': ids}}
+        })
+    })
+}
+
+Search.prototype.getInstancesOfWords = function (words) {
+  const ids = words.map(word => word._id)
+  const query = {word: {'$in': ids}}
+
+  return this.runFind(query, this.searchCollection)
+}
+
+Search.prototype.getWords = function (tokenized) {
+  const query = {word: {'$in': tokenized}}
+
+  return this.runFind(query, wordCollection)
 }
 
 Search.prototype.index = function (docs) {
@@ -64,7 +76,7 @@ Search.prototype.reduceDocumentFields = function (doc) {
 
 Search.prototype.indexDocument = function (doc) {
   const fields = this.reduceDocumentFields(doc)
-  const analyser = new defaultAnalyser(this.indexableFields)
+  const analyser = new DefaultAnalyser(this.indexableFields)
 
   Object.keys(fields)
     .map(key => {
@@ -72,16 +84,14 @@ Search.prototype.indexDocument = function (doc) {
     })
 
   const words = analyser.getAllWords()
-  
   const wordInsert = words.map(word => {
     return {word}
   })
 
-
-  this.insert(wordInsert, wordCollectionName)
+  this.insert(wordInsert, wordCollection)
     .then(res => {
       const query = {word: {'$in': words}}
-      this.runFind(query, wordCollectionName)
+      this.runFind(query, wordCollection)
         .then(result => {
           const instances = analyser
             .getWordInstances()
@@ -91,10 +101,8 @@ Search.prototype.indexDocument = function (doc) {
 
               return Object.assign(instance, {word, document: doc._id})
             })
-
           this.insert(instances, this.searchCollection)
         })
-
     })
 }
 
@@ -102,7 +110,9 @@ Search.prototype.runFind = function (query, collectionName) {
   return new Promise(resolve => {
     this.searchConnection.db.collection(collectionName)
       .find(query, {}, (err, cursor) => {
+        if (err) logger.error(err)
         cursor.toArray((err, result) => {
+          if (err) logger.error(err)
           resolve(result)
         })
       })
@@ -117,6 +127,7 @@ Search.prototype.insert = function (documents, collectionName) {
   return new Promise(resolve => {
     this.searchConnection.db.collection(collectionName)
       .insertMany(documents, {ordered: false}, (err, result) => {
+        if (err) logger.error(err)
         resolve(result)
       })
   })

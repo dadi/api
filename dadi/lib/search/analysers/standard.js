@@ -1,8 +1,7 @@
 'use strict'
 const natural = require('natural')
-
-const TfIdf = natural.TfIdf
 const tokenizer = new natural.WordTokenizer()
+const TfIdf = natural.TfIdf
 
 module.exports = class StandardAnalyzer {
   constructor (fieldRules) {
@@ -32,7 +31,7 @@ module.exports = class StandardAnalyzer {
         .reduce((acc, val) => {
           return acc + results[val]
         }, 0)
-      }
+    }
   }
 
   getWordsInField (index) {
@@ -41,21 +40,50 @@ module.exports = class StandardAnalyzer {
   }
 
   getAllWords () {
-    const words = this.tfidf.documents.map((doc, indx) => {
+    let words = this.tfidf.documents.map((doc, indx) => {
       return this.getWordsInField(indx)
-    }).reduce((a, b) => a.concat(b))
+    })
+
+    if (words.length) {
+      words = words.reduce((a, b) => a.concat(b))
+    }
 
     return this.unique(words)
+  }
+
+  tokenize (query) {
+    return tokenizer.tokenize(query)
   }
 
   unique (list) {
     return [...new Set(list)]
   }
 
+  mergeWeights (words) {
+    return words
+      .reduce((prev, curr) => {
+        const match = prev.find(wordSearch => wordSearch.word === curr.word)
+
+        if (match) {
+          match.count = match.count ? match.count + 1 : 2
+          match.weight += curr.weight
+          return prev
+        }
+        return prev.concat(curr)
+      }, [])
+      .map(match => {
+        if (match.count) {
+          match.weight = match.weight / match.count
+          delete match.count
+        }
+        return match
+      })
+  }
+
   getWordInstances () {
     const words = this.getAllWords()
 
-    return this.tfidf.documents
+    const docWords = this.tfidf.documents
       .map((doc, index) => {
         const rules = this.fieldRules[doc.__key]
 
@@ -69,5 +97,7 @@ module.exports = class StandardAnalyzer {
             }
           })
       }).reduce((a, b) => a.concat(b))
+
+    return this.mergeWeights(docWords)
   }
 }

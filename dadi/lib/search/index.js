@@ -15,7 +15,7 @@ const Search = function (model) {
   this.indexableFields = this.getIndexableFields()
   this.searchConnection = connection(config.get('search.database'))
   // Force index on this.searchConnection
-  this.searchConnection.on('connect', (database) => {
+  this.searchConnection.once('connect', (database) => {
     database.collection(wordCollection).ensureIndex({word: 1}, {unique: true})
   })
 }
@@ -53,17 +53,17 @@ Search.prototype.getInstancesOfWords = function (words) {
   const ids = words.map(word => word._id)
   const query = {word: {'$in': ids}}
 
-  return this.runFind(query, this.searchCollection)
+  return this.runFind(this.searchConnection.db, query, this.searchCollection)
 }
 
 Search.prototype.getWords = function (tokenized) {
   const query = {word: {'$in': tokenized}}
 
-  return this.runFind(query, wordCollection)
+  return this.runFind(this.searchConnection.db, query, wordCollection)
 }
 
 Search.prototype.index = function (docs) {
-  docs.map(doc => this.indexDocument(doc))
+  return Promise.all(docs.map(doc => this.indexDocument(doc)))
 }
 
 Search.prototype.reduceDocumentFields = function (doc) {
@@ -89,15 +89,15 @@ Search.prototype.indexDocument = function (doc) {
   })
 
   // Insert unique words into word collection.
-  this.insert(wordInsert, wordCollection)
+  return this.insert(this.searchConnection.db, wordInsert, wordCollection)
     .then(res => {
       // The word index is unique, so results aren't always returned.
       // Fetch word entries again to get ids.
       const query = {word: {'$in': words}}
-      this.runFind(query, wordCollection)
+      return this.runFind(this.searchConnection.db, query, wordCollection)
         .then(result => {
           // Get all word instances from Analyser.
-          this.clearDocumentInstances(doc._id)
+          this.clearDocumentInstances(this.searchConnection.db, doc._id)
             .then(res => {
               this.insertWordInstances(analyser, result, doc._id)
             })
@@ -115,13 +115,13 @@ Search.prototype.insertWordInstances = function (analyser, result, docId) {
       return Object.assign(instance, {word, document: docId})
     })
   // Insert word instances into search collection.
-  this.insert(instances, this.searchCollection)
+  this.insert(this.searchConnection.db, instances, this.searchCollection)
 }
 
-Search.prototype.runFind = function (query, collectionName) {
+Search.prototype.runFind = function (connection, query, collectionName, options = {}) {
   return new Promise(resolve => {
-    this.searchConnection.db.collection(collectionName)
-      .find(query, {}, (err, cursor) => {
+    connection.collection(collectionName)
+      .find(query, options, (err, cursor) => {
         if (err) logger.error(err)
         cursor.toArray((err, result) => {
           if (err) logger.error(err)
@@ -131,10 +131,10 @@ Search.prototype.runFind = function (query, collectionName) {
   })
 }
 
-Search.prototype.clearDocumentInstances = function (documentId) {
+Search.prototype.clearDocumentInstances = function (connection, documentId) {
   // Remove all instance entries for a given document
   return new Promise(resolve => {
-    this.searchConnection.db
+    connection
       .collection(this.searchCollection)
       .deleteMany({document: documentId}, (err, result) => {
         if (err) logger.error(err)
@@ -143,13 +143,37 @@ Search.prototype.clearDocumentInstances = function (documentId) {
   })
 }
 
-Search.prototype.insert = function (documents, collectionName) {
+Search.prototype.insert = function (connection, documents, collectionName) {
   return new Promise(resolve => {
-    this.searchConnection.db.collection(collectionName)
+    if (!documents.length) return resolve()
+
+    connection.collection(collectionName)
       .insertMany(documents, {ordered: false}, (err, result) => {
         if (err) logger.error(err)
         resolve(result)
       })
+  })
+}
+
+Search.prototype.batchIndex = function () {
+  if (!Object.keys(this.indexableFields).length) return
+
+  const fields = Object.assign({}, ...Object.keys(this.indexableFields).map(key => {
+    return {[key]: 1}
+  }))
+
+  this.model.connection.once('connect', database => {
+    this.runFind(database, {}, this.model.name, {
+      limit: 1000,
+      fields,
+      compose: true
+    })
+    .then(res => {
+      this.index(res)
+        .then(c => {
+          console.log('DONE')
+        })
+    })
   })
 }
 

@@ -12,8 +12,9 @@ module.exports = class StandardAnalyzer {
 
   add (field, value) {
     if (Array.isArray(value)) {
-      value.forEach(val => this.tfidf.addDocument(val, field))
-    } else {
+      const filteredValues = value.filter(this.isValid)
+      value.forEach(val => this.tfidf.addDocument(filteredValues, field))
+    } else if (this.isValid(value)) {
       this.tfidf.addDocument(value, field)
     }
     this.fields.push(field)
@@ -34,14 +35,20 @@ module.exports = class StandardAnalyzer {
     }
   }
 
+  isValid (value) {
+    return typeof value === 'string'
+  }
+
   getWordsInField (index) {
+    // console.log(this.tfidf.documents[0])
     return this.tfidf.listTerms(index)
       .map(item => item.term)
   }
 
   getAllWords () {
     let words = this.tfidf.documents.map((doc, indx) => {
-      return this.getWordsInField(indx)
+      const ret = this.getWordsInField(indx)
+      return ret
     })
 
     if (words.length) {
@@ -84,6 +91,7 @@ module.exports = class StandardAnalyzer {
 
   getWordInstances () {
     const words = this.getAllWords()
+    if (!words.length) return []
 
     const docWords = this.tfidf.documents
       .map((doc, index) => {

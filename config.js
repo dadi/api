@@ -194,6 +194,11 @@ var conf = convict({
     }
   },
   search: {
+    indexOnStart: {
+      doc: 'Index all collections on app start',
+      format: Boolean,
+      default: false
+    },
     wordCollection: {
       doc: '',
       format: String,

@@ -23,6 +23,7 @@ var cache = require(path.join(__dirname, '/cache'))
 var Controller = require(path.join(__dirname, '/controller'))
 var HooksController = require(path.join(__dirname, '/controller/hooks'))
 var MediaController = require(path.join(__dirname, '/controller/media'))
+var Search = require(path.join(__dirname, '/search'))
 var dadiStatus = require('@dadi/status')
 var help = require(path.join(__dirname, '/help'))
 var log = require('@dadi/logger')
@@ -778,6 +779,11 @@ Server.prototype.addCollectionResource = function (options) {
   })
 
   var self = this
+
+  if (config.get('search.indexOnStart')) {
+    var search = new Search(model)
+    search.batchIndex()
+  }
 
   // watch the schema's file and update it in place
   this.addMonitor(options.filepath, function (filename) {

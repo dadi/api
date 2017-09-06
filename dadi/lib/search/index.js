@@ -88,22 +88,34 @@ Search.prototype.indexDocument = function (doc) {
     return {word}
   })
 
+  // Insert unique words into word collection.
   this.insert(wordInsert, wordCollection)
     .then(res => {
+      // The word index is unique, so results aren't always returned.
+      // Fetch word entries again to get ids.
       const query = {word: {'$in': words}}
       this.runFind(query, wordCollection)
         .then(result => {
-          const instances = analyser
-            .getWordInstances()
-            .filter(instance => result.find(result => result.word === instance.word))
-            .map(instance => {
-              const word = result.find(result => result.word === instance.word)._id
-
-              return Object.assign(instance, {word, document: doc._id})
+          // Get all word instances from Analyser.
+          this.clearDocumentInstances(doc._id)
+            .then(res => {
+              this.insertWordInstances(analyser, result, doc._id)
             })
-          this.insert(instances, this.searchCollection)
         })
     })
+}
+
+Search.prototype.insertWordInstances = function (analyser, result, docId) {
+  const instances = analyser
+    .getWordInstances()
+    .filter(instance => result.find(result => result.word === instance.word))
+    .map(instance => {
+      const word = result.find(result => result.word === instance.word)._id
+
+      return Object.assign(instance, {word, document: docId})
+    })
+  // Insert word instances into search collection.
+  this.insert(instances, this.searchCollection)
 }
 
 Search.prototype.runFind = function (query, collectionName) {
@@ -121,6 +133,14 @@ Search.prototype.runFind = function (query, collectionName) {
 
 Search.prototype.clearDocumentInstances = function (documentId) {
   // Remove all instance entries for a given document
+  return new Promise(resolve => {
+    this.searchConnection.db
+      .collection(this.searchCollection)
+      .deleteMany({document: documentId}, (err, result) => {
+        if (err) logger.error(err)
+        resolve(result)
+      })
+  })
 }
 
 Search.prototype.insert = function (documents, collectionName) {

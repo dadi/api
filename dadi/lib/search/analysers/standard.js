@@ -47,8 +47,7 @@ module.exports = class StandardAnalyzer {
 
   getAllWords () {
     let words = this.tfidf.documents.map((doc, indx) => {
-      const ret = this.getWordsInField(indx)
-      return ret
+      return this.getWordsInField(indx)
     })
 
     if (words.length) {

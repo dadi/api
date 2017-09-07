@@ -9,6 +9,8 @@ const logger = require('@dadi/logger')
 const DefaultAnalyser = StandardAnalyser
 const wordCollection = config.get('search.wordCollection')
 
+const pageLimit = 20
+
 const Search = function (model) {
   this.model = model
   this.searchCollection = this.model.searchCollection || this.model.name + 'Search'
@@ -17,6 +19,7 @@ const Search = function (model) {
   // Force index on this.searchConnection
   this.searchConnection.once('connect', (database) => {
     database.collection(wordCollection).ensureIndex({word: 1}, {unique: true})
+    database.collection(this.searchCollection).ensureIndex({word: 1, document: 1, weight: 1})
   })
 }
 
@@ -42,18 +45,39 @@ Search.prototype.find = function (searchTerm) {
     .then(words => {
       return this.getInstancesOfWords(words)
         .then(instances => {
-          const ids = instances.map(instance => instance.document)
-
+          const ids = instances.map(instance => instance._id.document)
           return {_id: {'$in': ids}}
         })
     })
 }
 
 Search.prototype.getInstancesOfWords = function (words) {
-  const ids = words.map(word => word._id)
-  const query = {word: {'$in': ids}}
+  const ids = words.map(word => word._id.toString())
 
-  return this.runFind(this.searchConnection.db, query, this.searchCollection)
+  const query = [
+    {
+      $match: {
+        word: {
+          $in: ids
+        }
+      }
+    },
+    {
+      $group: {
+        _id: {document: '$document'},
+        count: {$sum: 1},
+        weight: {$sum: '$weight'}
+      }
+    },
+    {
+      $sort: {
+        weight: -1
+      }
+    },
+    {$limit: pageLimit}
+  ]
+
+  return this.runAggregate(this.searchConnection.db, query, this.searchCollection)
 }
 
 Search.prototype.getWords = function (tokenized) {
@@ -97,9 +121,9 @@ Search.prototype.indexDocument = function (doc) {
       return this.runFind(this.searchConnection.db, query, wordCollection)
         .then(result => {
           // Get all word instances from Analyser.
-          this.clearDocumentInstances(this.searchConnection.db, doc._id)
+          this.clearDocumentInstances(this.searchConnection.db, doc._id.toString())
             .then(res => {
-              this.insertWordInstances(analyser, result, doc._id)
+              this.insertWordInstances(analyser, result, doc._id.toString())
             })
         })
     })
@@ -110,12 +134,23 @@ Search.prototype.insertWordInstances = function (analyser, result, docId) {
     .getWordInstances()
     .filter(instance => result.find(result => result.word === instance.word))
     .map(instance => {
-      const word = result.find(result => result.word === instance.word)._id
+      const word = result.find(result => result.word === instance.word)._id.toString()
 
       return Object.assign(instance, {word, document: docId})
     })
   // Insert word instances into search collection.
   this.insert(this.searchConnection.db, instances, this.searchCollection)
+}
+
+Search.prototype.runAggregate = function (connection, query, collectionName, options = {}) {
+  return new Promise(resolve => {
+    connection.collection(collectionName)
+      .aggregate(query, options, (err, cursor) => {
+        if (err) logger.error(err)
+
+        resolve(cursor)
+      })
+  })
 }
 
 Search.prototype.runFind = function (connection, query, collectionName, options = {}) {
@@ -149,7 +184,15 @@ Search.prototype.insert = function (connection, documents, collectionName) {
 
     connection.collection(collectionName)
       .insertMany(documents, {ordered: false}, (err, result) => {
-        if (err) logger.error(err)
+        if (err) {
+          if (!result) {
+            logger.error(err)
+          } else {
+            // Ignore errors that were caused by failed duplicate inserts.
+            const errors = result.getWriteErrors().find(err => err.code !== 11000)
+            if (errors) logger.error(err)
+          }
+        }
         resolve(result)
       })
   })
@@ -164,7 +207,7 @@ Search.prototype.batchIndex = function () {
 
   this.model.connection.once('connect', database => {
     this.runFind(database, {}, this.model.name, {
-      limit: 1000,
+      limit: 3000,
       fields,
       compose: true
     })

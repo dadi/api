@@ -13,26 +13,11 @@ module.exports = class StandardAnalyzer {
   add (field, value) {
     if (Array.isArray(value)) {
       const filteredValues = value.filter(this.isValid)
-      value.forEach(val => this.tfidf.addDocument(filteredValues, field))
+      filteredValues.forEach(val => this.tfidf.addDocument(val, field))
     } else if (this.isValid(value)) {
       this.tfidf.addDocument(value, field)
     }
     this.fields.push(field)
-  }
-
-  results (terms) {
-    let results = {}
-
-    this.tfidf.tfidfs(terms, (i, measure) => {
-      Object.assign(results, {[this.fields[i]]: measure})
-    })
-    return {
-      fields: results,
-      weight: Object.keys(results)
-        .reduce((acc, val) => {
-          return acc + results[val]
-        }, 0)
-    }
   }
 
   isValid (value) {
@@ -40,9 +25,10 @@ module.exports = class StandardAnalyzer {
   }
 
   getWordsInField (index) {
-    // console.log(this.tfidf.documents[0])
     return this.tfidf.listTerms(index)
-      .map(item => item.term)
+      .map(item => {
+        return item.term
+      })
   }
 
   getAllWords () {
@@ -90,7 +76,7 @@ module.exports = class StandardAnalyzer {
 
   getWordInstances () {
     const words = this.getAllWords()
-    if (!words.length) return []
+    if (!words || !words.length) return []
 
     const docWords = this.tfidf.documents
       .map((doc, index) => {

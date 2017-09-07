@@ -701,7 +701,18 @@ Model.prototype.search = function (options, done, req) {
   }
   this.searcher.find(options.search)
     .then(query => {
-      this.get(query, options, done, req)
+      const ids = query._id.$in.map(id => id.toString())
+      this.get(query, options, (err, results) => {
+        results.results = results.results.sort((a, b) => {
+          const aIndex = ids.indexOf(a._id.toString())
+          const bIndex = ids.indexOf(b._id.toString())
+
+          if (aIndex === bIndex) return 1
+
+          return aIndex < bIndex ? -1 : 1
+        })
+        done(err, results)
+      }, req)
     })
 }
 

@@ -699,6 +699,11 @@ Model.prototype.search = function (options, done, req) {
     done = options
     options = {}
   }
+  if (!options.search || options.search.length < config.get('search.minLength')) {
+    return done({
+      message: `Search query must be at least ${config.get('search.minLength')} characters`
+    })
+  }
   this.searcher.find(options.search)
     .then(query => {
       const ids = query._id.$in.map(id => id.toString())

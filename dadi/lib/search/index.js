@@ -4,6 +4,7 @@ const path = require('path')
 const config = require(path.join(__dirname, '/../../../config'))
 const connection = require(path.join(__dirname, '/../model/connection'))
 const StandardAnalyser = require('./analysers/standard')
+const util = require('./util')
 const logger = require('@dadi/logger')
 
 const DefaultAnalyser = StandardAnalyser
@@ -46,6 +47,7 @@ Search.prototype.find = function (searchTerm) {
       return this.getInstancesOfWords(words)
         .then(instances => {
           const ids = instances.map(instance => instance._id.document)
+
           return {_id: {'$in': ids}}
         })
     })
@@ -80,10 +82,20 @@ Search.prototype.getInstancesOfWords = function (words) {
   return this.runAggregate(this.searchConnection.db, query, this.searchCollection)
 }
 
-Search.prototype.getWords = function (tokenized) {
-  const query = {word: {'$in': tokenized}}
+Search.prototype.getWords = function (words) {
+  const query = {word: {'$in': words}}
 
   return this.runFind(this.searchConnection.db, query, wordCollection)
+    .then(response => {
+      // Try a second pass with regular expressions
+      if (!response.length) {
+        const regexWords = words.map(word => new RegExp(word))
+        const regexQuery = {word: {'$in': regexWords}}
+
+        return this.runFind(this.searchConnection.db, regexQuery, wordCollection)
+      }
+      return response
+    })
 }
 
 Search.prototype.index = function (docs) {

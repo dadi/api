@@ -199,6 +199,11 @@ var conf = convict({
       format: Boolean,
       default: false
     },
+    minLength: {
+      doc: 'Minimum search string length',
+      format: Number,
+      default: 3
+    },
     wordCollection: {
       doc: '',
       format: String,

@@ -1,6 +1,7 @@
 'use strict'
 const natural = require('natural')
 const tokenizer = new natural.WordTokenizer()
+const util = require('../util')
 const TfIdf = natural.TfIdf
 
 module.exports = class StandardAnalyzer {
@@ -37,7 +38,7 @@ module.exports = class StandardAnalyzer {
     })
 
     if (words.length) {
-      words = words.reduce((a, b) => a.concat(b))
+      words = words.reduce(util.mergeArrays)
     }
 
     return this.unique(words)

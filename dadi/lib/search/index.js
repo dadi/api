@@ -4,7 +4,6 @@ const path = require('path')
 const config = require(path.join(__dirname, '/../../../config'))
 const connection = require(path.join(__dirname, '/../model/connection'))
 const StandardAnalyser = require('./analysers/standard')
-const util = require('./util')
 const logger = require('@dadi/logger')
 
 const DefaultAnalyser = StandardAnalyser
@@ -219,14 +218,14 @@ Search.prototype.batchIndex = function () {
 
   this.model.connection.once('connect', database => {
     this.runFind(database, {}, this.model.name, {
-      limit: 3000,
+      limit: 10000,
       fields,
       compose: true
     })
     .then(res => {
       this.index(res)
         .then(c => {
-          console.log('DONE')
+          console.log(`Indexed ${res.length} records for ${this.model.name}`)
         })
     })
   })

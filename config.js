@@ -122,10 +122,15 @@ var conf = convict({
       default: '@dadi/api-mongodb'
     },
     database: {
-        doc: '',
+      doc: '',
       format: String,
-        default: 'test',
-        env: 'DB_AUTH_NAME'
+      default: 'test',
+      env: 'DB_AUTH_NAME'
+    },
+    cleanupInterval: {
+      doc: 'The interval (in seconds) at which the token store will delete expired tokens from the database',
+      format: Number,
+      default: 3600
     }
   },
   caching: {

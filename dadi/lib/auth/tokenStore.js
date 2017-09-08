@@ -1,41 +1,15 @@
-var debug = require('debug')('api:tokenStore')
-var path = require('path')
-var Connection = require(path.join(__dirname, '/../model/connection'))
-var config = require(path.join(__dirname, '/../../../config.js'))
+'use strict'
 
-var TokenStore = function () {
-  this.connect()
+const debug = require('debug')('api:tokenStore')
+const path = require('path')
+const Connection = require(path.join(__dirname, '/../model/connection'))
+const config = require(path.join(__dirname, '/../../../config.js'))
+const uuid = require('uuid')
 
-  var _done = function (database) {
-    debug('connected')
-
-    // set index on token and expiry
-    // database.collection(tokenCollection).ensureIndex(
-    //   { 'token': 1, 'tokenExpire': 1 },
-    //   { },
-    //   function (err, indexName) {
-    //     if (err) console.log(err)
-    //     console.log('Token index: "' + tokenCollection + '.' + indexName + "'")
-    //   }
-    // )
-    //
-    // // set a TTL index to remove the token documents after the tokenExpire value
-    // database.collection(tokenCollection).ensureIndex(
-    //   { 'created': 1 },
-    //   { expireAfterSeconds: config.get('auth.tokenTtl') },
-    //   function (err, indexName) {
-    //     if (err) console.log(err)
-    //     console.log('Token expiry index: "' + tokenCollection + '.' + indexName + "', with expireAfterSeconds = " + config.get('auth.tokenTtl'))
-    //   }
-    // )
-  }
-
-  if (this.connection.db) return _done(this.connection.db)
-  this.connection.once('connect', _done)
-}
-
-TokenStore.prototype.getSchema = function () {
-  return {
+const TokenStore = function () {
+  this.collection = config.get('auth.tokenCollection')
+  this.database = config.get('auth.database')
+  this.schema = {
     fields: {
       token: {
         type: 'String',
@@ -61,59 +35,131 @@ TokenStore.prototype.getSchema = function () {
 }
 
 /**
+ * Initiates a connection to the database, returning the
+ * database object once the connection has been established.
+ * It assigns the resulting Promise to `this.database`, so
+ * that any methods that require a connection to the database
+ * can wait for that Promise to resolve and only then make
+ * use of the database object.
  *
- */
-TokenStore.prototype.get = function (token, done) {
-  var _done = (database) => {
-    var query = {
-      token: token,
-      tokenExpire: { $gte: Date.now() }
-    }
-
-    database.find(query, this.tokenCollection, {}, this.getSchema()).then((result) => {
-      var tokenResult = result.results.length ? result.results[0] : null
-      return done(null, tokenResult)
-    })
-  }
-
-  if (this.connection.db) return _done(this.connection.db)
-  this.connection.once('connect', _done)
-}
-
-/**
- *
- */
-TokenStore.prototype.set = function (token, value, done) {
-  var _done = (database) => {
-    database.insert({
-      token: token,
-      tokenExpire: Date.now() + (config.get('auth.tokenTtl') * 1000),
-      created: new Date(),
-      value: value
-    }, this.tokenCollection, this.getSchema()).then(() => {
-      return done()
-    }).catch((err) => {
-      return done(err)
-    })
-  }
-
-  if (this.connection.db) return _done(this.connection.db)
-  this.connection.once('connect', _done)
-}
-
-/**
- *
+ * @return {Promise} The database object
  */
 TokenStore.prototype.connect = function () {
-  var authConfig = config.get('auth')
+  this.database = new Promise((resolve, reject) => {
+    const dbOptions = {
+      auth: true,
+      collection: this.collection,
+      database: this.database
+    }
 
-  this.tokenCollection = authConfig.tokenCollection
-  var dbOptions = { auth: true, database: authConfig.database, collection: this.tokenCollection }
-  this.connection = Connection(dbOptions, null, authConfig.datastore)
+    this.connection = Connection(dbOptions, null, config.get('auth.datastore'))
+    this.connection.once('connect', database => {
+      // Initialise cleanup agent
+      this.startCleanupAgent()
+
+      // Creating indexes
+      return database.index(this.collection, [
+        {
+          keys: {
+            token: 1,
+            tokenExpire: 1
+          }
+        }
+      ]).then(result => resolve(database))
+    })
+  })
+
+  return this.database
 }
 
-module.exports = function () {
-  return new TokenStore()
+/**
+ * Generates a new unique token.
+ *
+ * @return {Promise} A new token
+ */
+TokenStore.prototype.generateNew = function () {
+  const token = uuid.v4()
+
+  return this.get(token).then(result => {
+    // If the token already exists, get a new one.
+    if (result) {
+      return this.generateNew()
+    }
+
+    return token
+  })
+}
+
+/**
+ * Finds documents in the token store that contain the given
+ * token, provided that the expiry date for the token is in
+ * the future.
+ *
+ * @param  {String} The token
+ * @return {Promise} An object representing the document with
+ *    the given token, or `null` if no documents
+ *    have been found.
+ */
+TokenStore.prototype.get = function (token) {
+  return this.database.then(database => {
+    return database.find(
+      {token, tokenExpire: {$gte: Date.now()}},
+      this.collection,
+      {},
+      this.schema
+    )
+  }).then(data => {
+    if (data.results.length) {
+      return data.results[0]
+    }
+
+    return null
+  })
+}
+
+/**
+ * @param {String} The token
+ * @param {Object} A data object to be appended to the
+ *    token document.
+ * @return {Promise} The created document
+ */
+TokenStore.prototype.set = function (token, data) {
+  const payload = {
+    created: new Date(),
+    token,
+    tokenExpire: Date.now() + (config.get('auth.tokenTtl') * 1000),
+    value: data
+  }
+
+  return this.database.then(database => {
+    return database.insert(payload, this.collection, this.schema)
+  })
+}
+
+TokenStore.prototype.startCleanupAgent = function () {
+  this.cleanupAgent = setInterval(() => {
+    debug('Cleaning up expired tokens')
+
+    this.database.then(database => {
+      // Deleting any tokens with an expiry date in the past.
+      database.delete(
+        {tokenExpire: {$lt: Date.now()}},
+        this.collection,
+        {},
+        this.schema
+      ).catch(err => {
+        console.log('Error whilst cleaning up expired tokens:', err)
+      })
+    })
+  }, config.get('auth.cleanupInterval') * 1000)
+}
+
+module.exports = () => {
+  const tokenStore = new TokenStore()
+
+  tokenStore.connect()
+
+  return tokenStore
 }
 
 module.exports.TokenStore = TokenStore

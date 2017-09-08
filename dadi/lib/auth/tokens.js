@@ -2,7 +2,6 @@
 
 const debug = require('debug')('api:tokens')
 const path = require('path')
-const uuid = require('uuid')
 const config = require(path.join(__dirname, '/../../../config.js'))
 const Connection = require(path.join(__dirname, '/../model/connection'))
 const tokenStore = require(path.join(__dirname, '/tokenStore'))()

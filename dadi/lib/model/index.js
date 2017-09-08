@@ -260,6 +260,18 @@ Model.prototype.create = function (documents, internals, done, req) {
     }
   }
 
+  var triggerAfterCreateHook = (docs) => {
+    if (this.settings.hasOwnProperty('hooks') && (typeof this.settings.hooks.afterCreate === 'object')) {
+      documents.forEach((doc) => {
+        this.settings.hooks.afterCreate.forEach((hookConfig, index) => {
+          var hook = new Hook(this.settings.hooks.afterCreate[index], 'afterCreate')
+
+          return hook.apply(doc, this.schema, this.name)
+        })
+      })
+    }
+  }
+
   var saveDocuments = (database) => {
     database.collection(this.name).insertMany(documents, (err, result) => {
       if (err) return done(err)
@@ -272,15 +284,9 @@ Model.prototype.create = function (documents, internals, done, req) {
         results.results = obj
 
         // apply any existing `afterCreate` hooks
-        if (this.settings.hasOwnProperty('hooks') && (typeof this.settings.hooks.afterCreate === 'object')) {
-          documents.forEach((doc) => {
-            this.settings.hooks.afterCreate.forEach((hookConfig, index) => {
-              var hook = new Hook(this.settings.hooks.afterCreate[index], 'afterCreate')
-
-              return hook.apply(doc, this.schema, this.name)
-            })
-          })
-        }
+        triggerAfterCreateHook(results.results)
+        // Asynchronous search index
+        this.searcher.index(results.results)
 
         return done(null, results)
       })
@@ -1053,6 +1059,8 @@ Model.prototype.delete = function (query, done, req) {
 
           // for each of the about-to-be-deleted documents, create a revision for it
           if (deletedDocs.length > 0) {
+            this.searcher.delete(deletedDocs)
+
             this.history.createEach(deletedDocs, 'delete', this, (err, docs) => {
               if (err) return reject(err)
 

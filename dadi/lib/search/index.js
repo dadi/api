@@ -12,10 +12,12 @@ const wordCollection = config.get('search.wordCollection')
 const pageLimit = 20
 
 const Search = function (model) {
+  const options = Object.assign(config.get('search.database'), {search: true})
+
   this.model = model
   this.searchCollection = this.model.searchCollection || this.model.name + 'Search'
   this.indexableFields = this.getIndexableFields()
-  this.searchConnection = connection(config.get('search.database'))
+  this.searchConnection = connection(options)
   // Force index on this.searchConnection
   this.searchConnection.once('connect', (database) => {
     database.collection(wordCollection).ensureIndex({word: 1}, {unique: true})
@@ -97,6 +99,13 @@ Search.prototype.getWords = function (words) {
     })
 }
 
+Search.prototype.delete = function (docs) {
+  const deleteQueue = docs
+    .map(doc => this.clearDocumentInstances(this.searchConnection.db, doc._id.toString()))
+
+  return Promise.all(deleteQueue)
+}
+
 Search.prototype.index = function (docs) {
   return Promise.all(docs.map(doc => this.indexDocument(doc)))
 }
@@ -143,6 +152,10 @@ Search.prototype.indexDocument = function (doc) {
 Search.prototype.insertWordInstances = function (analyser, result, docId) {
   const instances = analyser
     .getWordInstances()
+
+  if (!instances) return
+
+  const doc = instances
     .filter(instance => result.find(result => result.word === instance.word))
     .map(instance => {
       const word = result.find(result => result.word === instance.word)._id.toString()
@@ -150,7 +163,7 @@ Search.prototype.insertWordInstances = function (analyser, result, docId) {
       return Object.assign(instance, {word, document: docId})
     })
   // Insert word instances into search collection.
-  this.insert(this.searchConnection.db, instances, this.searchCollection)
+  this.insert(this.searchConnection.db, doc, this.searchCollection)
 }
 
 Search.prototype.runAggregate = function (connection, query, collectionName, options = {}) {
@@ -218,7 +231,7 @@ Search.prototype.batchIndex = function () {
 
   this.model.connection.once('connect', database => {
     this.runFind(database, {}, this.model.name, {
-      limit: 10000,
+      limit: 3000,
       fields,
       compose: true
     })

@@ -75,7 +75,7 @@ function getConnectionOptions (options) {
 
   var dbConfig = config.get('database')
 
-  if (options.auth) {
+  if (options.auth || options.search) {
     // extend primary database config with the auth database options
     options = _.extend({}, dbConfig, options)
   } else {

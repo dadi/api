@@ -90,7 +90,7 @@ module.exports.createClient = function (client, done) {
   var conn = connection({ auth: true, database: config.get('auth.database'), collection: collectionName }, null, config.get('datastore'))
 
   setTimeout(function() {
-    conn.datastore.insert(client, collectionName, tokenStore.getSchema()).then(result => {
+    conn.datastore.insert(client, collectionName, tokenStore.schema).then(result => {
       return done()
     }).catch((err) => {
       done(err)

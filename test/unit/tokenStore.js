@@ -40,26 +40,22 @@ describe('Token Store', function () {
   it('should be able to get and set values and tokens', function (done) {
     var store = tokenStore()
 
-    store.set('test123', {id: '123'}, function (err) {
-      if (err) return done(err)
+    store.set('test123', {id: '123'}).then(doc => {
+      val.value.id.should.equal('123')
+      val.token.should.equal('test123')
 
-      store.get('test123', function (err, val) {
-        if (err) return done(err)
-
-        val.value.id.should.equal('123')
-        val.token.should.equal('test123')
-        done()
-      })
-    })
+      done()
+    }).catch(err => done(err))
   })
 
   it("should return empty object when token isn't found", function (done) {
     var store = tokenStore()
 
-    store.get('XXX', function (err, val) {
-      if (err) return done(err);(val === null).should.eql(true)
+    store.get('XXX').then(doc => {
+      (doc === null).should.eql(true)
+
       done()
-    })
+    }).catch(err => done(err))
   })
 
   it('should use specified database when creating a connection', function (done) {
@@ -90,11 +86,11 @@ describe('Token Store', function () {
       done()
     })
 
-    it('should take token as first arg and callback as second', function (done) {
+    it('should take token as arg and return Promise', function (done) {
       var store = tokenStore()
-      store.get('1234567890abcdefghi', function (err, val) {
-        done(err)
-      })
+      store.get('1234567890abcdefghi').then(doc => {
+        done()
+      }).catch(err => done(err))
     })
   })
 
@@ -106,11 +102,11 @@ describe('Token Store', function () {
       done()
     })
 
-    it('should take token as first arg, value as second, and callback as third', function (done) {
+    it('should take token as first arg and value as second, returning a Promise', function (done) {
       var store = tokenStore()
-      store.set('1234567890abcdefghi', {id: '123', secret: 'asdfghjkl'}, function (err) {
-        done(err)
-      })
+      store.set('1234567890abcdefghi', {id: '123', secret: 'asdfghjkl'}).then(doc => {
+        done()
+      }).catch(err => done(err))
     })
   })
 })

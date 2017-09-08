@@ -132,8 +132,13 @@ TokenStore.prototype.set = function (token, data) {
   }
 
   return this.database.then(database => {
-    return database.insert(payload, this.collection, this.schema)
-  })
+    return database.insert(
+      payload,
+      this.collection,
+      // {},
+      this.schema
+    )
+  }).then(docs => docs[0])
 }
 
 TokenStore.prototype.startCleanupAgent = function () {
@@ -154,10 +159,13 @@ TokenStore.prototype.startCleanupAgent = function () {
   }, config.get('auth.cleanupInterval') * 1000)
 }
 
-module.exports = () => {
-  const tokenStore = new TokenStore()
+let tokenStore
 
-  tokenStore.connect()
+module.exports = () => {
+  if (!tokenStore) {
+    tokenStore = new TokenStore()
+    tokenStore.connect()
+  }
 
   return tokenStore
 }

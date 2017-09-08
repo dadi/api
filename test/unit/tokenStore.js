@@ -41,8 +41,8 @@ describe('Token Store', function () {
     var store = tokenStore()
 
     store.set('test123', {id: '123'}).then(doc => {
-      val.value.id.should.equal('123')
-      val.token.should.equal('test123')
+      doc.value.id.should.equal('123')
+      doc.token.should.equal('test123')
 
       done()
     }).catch(err => done(err))
@@ -59,23 +59,37 @@ describe('Token Store', function () {
   })
 
   it('should use specified database when creating a connection', function (done) {
+    this.timeout(30000)
+
     var auth = {
       database: 'separate_auth_db',
       clientCollection: 'clientStore',
       tokenCollection: 'tokenStore',
       datastore: '@dadi/api-mongodb'
     }
+    var TokenStore = tokenStore.TokenStore
 
-    sinon.stub(config, 'get').withArgs('auth').returns(auth)
+    sinon.stub(config, 'get')
+      .withArgs('auth.database').returns(auth.database)
+      .withArgs('auth.datastore').returns(auth.datastore)
+      .withArgs('auth.clientCollection').returns(auth.clientCollection)
+      .withArgs('auth.tokenCollection').returns(auth.tokenCollection)
 
-    var store = tokenStore()
+    var connectCopy = Connection.Connection.prototype.connect
 
-    config.get.restore()
+    Connection.Connection.prototype.connect = function (details) {
+      Connection.Connection.prototype.connect = connectCopy
+      config.get.restore()
 
-    should.exist(store.connection)
-    store.connection.datastore.connectionOptions.database.should.equal('separate_auth_db')
+      details.database.should.eql(auth.database)
+      details.collection.should.eql(auth.tokenCollection)
 
-    done()
+      done()
+    }
+
+    var store = new TokenStore()
+    
+    store.connect()
   })
 
   describe('get method', function () {

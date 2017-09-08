@@ -1,13 +1,13 @@
+var debug = require('debug')('api:tokens')
 var path = require('path')
 var uuid = require('uuid')
 var config = require(path.join(__dirname, '/../../../config.js'))
-var connection = require(path.join(__dirname, '/../model/connection'))
+var Connection = require(path.join(__dirname, '/../model/connection'))
 var tokenStore = require(path.join(__dirname, '/tokenStore'))()
 
-var dbOptions = config.get('auth.database')
-dbOptions.auth = true
-var clientStore = connection(dbOptions)
-var clientCollectionName = config.get('auth.clientCollection') || 'clientStore'
+var clientCollectionName = config.get('auth.clientCollection')
+var dbOptions = { auth: true, database: config.get('auth.database'), collection: clientCollectionName }
+var connection = Connection(dbOptions, null, config.get('auth.datastore'))
 
 /**
  * Generate a token and test that it doesn't already exist in the token store.
@@ -29,59 +29,65 @@ function getToken (callback) {
 }
 
 module.exports.generate = function (req, res, next) {
-  // Look up the creds in clientStore
+  debug('generate')
+
+  // Look up the credentials supplied in the request body in clientStore
+  var credentials = {
+    clientId: req.body.clientId,
+    secret: req.body.secret
+  }
+
   var _done = function (database) {
-    database.collection(clientCollectionName).findOne({
-      clientId: req.body.clientId,
-      secret: req.body.secret
-    }, function (err, client) {
-      if (err) return next(err)
+    database.find(credentials, clientCollectionName, {}, tokenStore.getSchema()).then((results) => {
+      var client = results.results[0]
 
-      if (client) {
-        // Generate token
-        var token
-        getToken(function (returnedToken) {
-          token = returnedToken
-
-          // Save token
-          return tokenStore.set(token, client, function (err) {
-            if (err) return next(err)
-
-            var tok = {
-              accessToken: token,
-              tokenType: 'Bearer',
-              expiresIn: config.get('auth.tokenTtl')
-            }
-
-            var json = JSON.stringify(tok)
-            res.setHeader('Content-Type', 'application/json')
-            res.setHeader('Cache-Control', 'no-store')
-            res.setHeader('Pragma', 'no-cache')
-            res.end(json)
-          })
-        })
-      } else {
+      // no client found matchibg the credentials
+      // return 401 Unauthorized
+      if (!client) {
         var error = new Error('Invalid Credentials')
         error.statusCode = 401
         res.setHeader('WWW-Authenticate', 'Bearer, error="invalid_credentials", error_description="Invalid credentials supplied"')
         return next(error)
       }
+
+      // Generate token
+      getToken((returnedToken) => {
+        // Save token
+        return tokenStore.set(returnedToken, client, (err) => {
+          if (err) {
+            return next(err)
+          }
+
+          var token = {
+            accessToken: returnedToken,
+            tokenType: 'Bearer',
+            expiresIn: config.get('auth.tokenTtl')
+          }
+
+          var json = JSON.stringify(token)
+          res.setHeader('Content-Type', 'application/json')
+          res.setHeader('Cache-Control', 'no-store')
+          res.setHeader('Pragma', 'no-cache')
+          return res.end(json)
+        })
+      })
+    }).catch((err) => {
+      return next(err)
     })
   }
 
-  if (clientStore.db) return _done(clientStore.db)
-
-  clientStore.on('connect', _done)
+  if (connection.db) return _done(connection.db)
+  connection.once('connect', _done)
 }
 
 module.exports.validate = function (token, done) {
+  debug('validate %s', token)
+
   tokenStore.get(token, function (err, doc) {
     if (err) return done(err)
-
     if (doc) return done(null, doc.value)
-
     done()
   })
 }
 
-module.exports.store = tokenStore
+module.exports.tokenStore = tokenStore

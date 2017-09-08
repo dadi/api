@@ -71,6 +71,23 @@ describe('Application', function () {
     })
   })
 
+  it('should respond to the /hello endpoint', function (done) {
+    app.start(function (err) {
+      if (err) return done(err)
+
+      setTimeout(function () {
+        var client = request(connectionString)
+        client
+          .get('/hello')
+          .expect(200)
+          .end(function (err) {
+            if (err) done = done.bind(this, err)
+            app.stop(done)
+          })
+      }, 500)
+    })
+  })
+
   describe('collection initialisation', function () {
     var dirs = config.get('paths')
     var newSchemaPath = dirs.collections + '/vtest/testdb/collection.new-test-schema.json'
@@ -221,6 +238,34 @@ describe('Application', function () {
           })
       })
 
+      it('should create new documents and return its representation containing the internal fields prefixed with the character defined in config', function (done) {
+        var originalPrefix = config.get('internalFieldsPrefix')
+
+        config.set('internalFieldsPrefix', '$')
+
+        var client = request(connectionString)
+        client
+          .post('/vtest/testdb/test-schema')
+          .set('Authorization', 'Bearer ' + bearerToken)
+          .send({field1: 'foo!'})
+          .expect(200)
+          .end(function (err, res) {
+            if (err) return done(err)
+
+            res.body.results.should.be.Array
+            res.body.results.length.should.equal(1)
+            should.not.exist(res.body.results[0]._id)
+            should.exist(res.body.results[0].$id)
+            should.exist(res.body.results[0].$createdAt)
+            should.exist(res.body.results[0].$createdBy)
+            res.body.results[0].field1.should.equal('foo!')
+
+            config.set('internalFieldsPrefix', originalPrefix)
+
+            done()
+          })
+      })
+
       it('should create new documents when body is urlencoded', function (done) {
         var body = 'field1=foo!'
         var client = request(connectionString)
@@ -304,10 +349,10 @@ describe('Application', function () {
 
             res.body.results.should.be.Array
             res.body.results.length.should.equal(1)
-            res.body.results[0].createdBy.should.equal('test123')
-            res.body.results[0].createdAt.should.be.Number
-            res.body.results[0].createdAt.should.not.be.above(Date.now())
-            res.body.results[0].apiVersion.should.equal('vtest')
+            res.body.results[0]._createdBy.should.equal('test123')
+            res.body.results[0]._createdAt.should.be.Number
+            res.body.results[0]._createdAt.should.not.be.above(Date.now())
+            res.body.results[0]._apiVersion.should.equal('vtest')
             done()
           })
       })
@@ -376,11 +421,12 @@ describe('Application', function () {
 
         var client = request(connectionString)
 
-        client
+        help.getBearerTokenWithAccessType('admin', function (err, token) {
+          client
           .post('/vtest/testdb/test-schema/config')
           .send(JSON.stringify(schema, null, 4))
           .set('content-type', 'text/plain')
-          .set('Authorization', 'Bearer ' + bearerToken)
+          .set('Authorization', 'Bearer ' + token)
           .expect(200)
           .expect('content-type', 'application/json')
           .end(function (err, res) {
@@ -398,6 +444,7 @@ describe('Application', function () {
 
             done()
           })
+        })
       })
 
       it('should update existing documents when passing ID', function (done) {
@@ -415,8 +462,10 @@ describe('Application', function () {
             should.exist(doc)
             doc.field1.should.equal('doc to update')
 
+            var puturl = '/vtest/testdb/test-schema/' + doc._id
+
             client
-              .put('/vtest/testdb/test-schema/' + doc._id)
+              .put(puturl)
               .set('Authorization', 'Bearer ' + bearerToken)
               .send({field1: 'updated doc'})
               .expect(200)
@@ -440,6 +489,43 @@ describe('Application', function () {
 
                     done()
                   })
+              })
+          })
+      })
+
+      it('should update existing documents when passing ID, giving back the updated document with internal fields prefixed with the character defined in config', function (done) {
+        var client = request(connectionString)
+        var originalPrefix = config.get('internalFieldsPrefix')
+
+        config.set('internalFieldsPrefix', '$')
+
+        client
+          .post('/vtest/testdb/test-schema')
+          .set('Authorization', 'Bearer ' + bearerToken)
+          .send({field1: 'doc to update'})
+          .expect(200)
+          .end(function (err, res) {
+            if (err) return done(err)
+
+            var doc = res.body.results[0]
+            should.exist(doc)
+            doc.field1.should.equal('doc to update')
+
+            var puturl = '/vtest/testdb/test-schema/' + doc.$id
+
+            client
+              .put(puturl)
+              .set('Authorization', 'Bearer ' + bearerToken)
+              .send({field1: 'updated doc'})
+              .expect(200)
+              .end(function (err, res) {
+                if (err) return done(err)
+
+                res.body.results[0].$id.should.equal(doc.$id)
+
+                config.set('internalFieldsPrefix', originalPrefix)
+
+                done()
               })
           })
       })
@@ -488,6 +574,61 @@ describe('Application', function () {
                     res.body['results'].should.be.Array
                     res.body['results'].length.should.equal(1)
                     res.body['results'][0].field1.should.equal('updated doc')
+
+                    done()
+                  })
+              })
+          })
+      })
+
+      it('should update existing document by ID when passing a query, translating any internal field to the prefix defined in config', function (done) {
+        var client = request(connectionString)
+        var originalPrefix = config.get('internalFieldsPrefix')
+
+        config.set('internalFieldsPrefix', '$')
+
+        client
+          .post('/vtest/testdb/test-schema')
+          .set('Authorization', 'Bearer ' + bearerToken)
+          .send({field1: 'doc to update'})
+          .expect(200)
+          .end(function (err, res) {
+            if (err) return done(err)
+
+            var doc = res.body.results[0]
+            should.exist(doc)
+            doc.field1.should.equal('doc to update')
+
+            var body = {
+              query: { $id: doc.$id },
+              update: {field1: 'updated doc'}
+            }
+
+            client
+              .put('/vtest/testdb/test-schema/')
+              .set('Authorization', 'Bearer ' + bearerToken)
+              .send(body)
+              .expect(200)
+              .end(function (err, res) {
+                if (err) return done(err)
+
+                res.body.results[0].$id.should.equal(doc.$id)
+                res.body.results[0].field1.should.equal('updated doc')
+
+                client
+                  .get('/vtest/testdb/test-schema?filter={"$id": "' + doc.$id + '"}')
+                  .set('Authorization', 'Bearer ' + bearerToken)
+                  .expect(200)
+                  .expect('content-type', 'application/json')
+                  .end(function (err, res) {
+                    if (err) return done(err)
+
+                    res.body['results'].should.exist
+                    res.body['results'].should.be.Array
+                    res.body['results'].length.should.equal(1)
+                    res.body['results'][0].field1.should.equal('updated doc')
+
+                    config.set('internalFieldsPrefix', originalPrefix)
 
                     done()
                   })
@@ -551,6 +692,58 @@ describe('Application', function () {
           })
       })
 
+      it('should update documents when passing a query with a filter, translating any internal field to the prefix defined in config', function (done) {
+        var client = request(connectionString)
+        var originalPrefix = config.get('internalFieldsPrefix')
+
+        config.set('internalFieldsPrefix', '$')
+
+        help.createDoc(bearerToken, function (err, doc) {
+          if (err) return done(err)
+
+          var client = request(connectionString)
+          var body = {
+            query: {
+              $id: doc.$id
+            },
+            update: {
+              field1: 'Updated value'
+            }
+          }
+
+          client
+            .put('/vtest/testdb/test-schema')
+            .set('Authorization', 'Bearer ' + bearerToken)
+            .send(body)
+            .expect(200)
+            .expect('content-type', 'application/json')
+            .end(function (err, res) {
+              if (err) return done(err)
+
+              res.body.results.should.be.Array
+              res.body.results[0].$id.should.eql(doc.$id)
+              res.body.results[0].field1.should.eql(body.update.field1)
+
+              client
+                .get('/vtest/testdb/test-schema/' + doc.$id)
+                .set('Authorization', 'Bearer ' + bearerToken)
+                .expect(200)
+                .expect('content-type', 'application/json')
+                .end(function (err, res) {
+                  if (err) return done(err)
+
+                  res.body.results.should.be.Array
+                  res.body.results[0].$id.should.eql(doc.$id)
+                  res.body.results[0].field1.should.eql(body.update.field1)
+
+                  config.set('internalFieldsPrefix', originalPrefix)
+
+                  done()
+                })
+            })
+        })
+      })
+
       it('should add internal fields to updated documents', function (done) {
         var client = request(connectionString)
 
@@ -588,10 +781,10 @@ describe('Application', function () {
                     res.body['results'].should.exist
                     res.body['results'].should.be.Array
                     res.body['results'].length.should.equal(1)
-                    res.body['results'][0].lastModifiedBy.should.equal('test123')
-                    res.body['results'][0].lastModifiedAt.should.be.Number
-                    res.body['results'][0].lastModifiedAt.should.not.be.above(Date.now())
-                    res.body['results'][0].apiVersion.should.equal('vtest')
+                    res.body['results'][0]._lastModifiedBy.should.equal('test123')
+                    res.body['results'][0]._lastModifiedAt.should.be.Number
+                    res.body['results'][0]._lastModifiedAt.should.not.be.above(Date.now())
+                    res.body['results'][0]._apiVersion.should.equal('vtest')
 
                     done()
                   })
@@ -623,6 +816,7 @@ describe('Application', function () {
 
                 var doc = res.body.results[0]
                 should.exist(doc)
+
                 doc.field1.should.equal('doc')
 
                 var body = {
@@ -639,7 +833,7 @@ describe('Application', function () {
                     if (err) return done(err)
 
                     client
-                      .get('/vjoin/testdb/test-schema?filter={"field1": { "$ne" : "" } }')
+                      .get('/vjoin/testdb/test-schema')
                       .set('Authorization', 'Bearer ' + bearerToken)
                       .expect(200)
                       .expect('content-type', 'application/json')
@@ -650,7 +844,7 @@ describe('Application', function () {
                         res.body['results'].should.be.Array
                         res.body['results'].length.should.equal(1)
                         res.body['results'][0].field1.should.equal('doc') // not "updated doc"
-                        res.body['results'][0].apiVersion.should.equal('vjoin')
+                        res.body['results'][0]._apiVersion.should.equal('vjoin')
 
                         config.set('query.useVersionFilter', false)
 
@@ -680,7 +874,7 @@ describe('Application', function () {
             .send(JSON.stringify(schema, null, 4))
             .set('content-type', 'text/plain')
             .set('Authorization', 'Bearer ' + token)
-            .expect(200)
+            // .expect(200)
             .expect('content-type', 'application/json')
             .end(function (err, res) {
               if (err) return done(err)
@@ -690,7 +884,7 @@ describe('Application', function () {
                 .send(JSON.stringify(schema, null, 4))
                 .set('content-type', 'text/plain')
                 .set('Authorization', 'Bearer ' + token)
-                .expect(200)
+                // .expect(200)
                 .expect('content-type', 'application/json')
                 .end(function (err, res) {
                   if (err) return done(err)
@@ -698,7 +892,7 @@ describe('Application', function () {
                   setTimeout(function () {
                     client
                       .post('/vtest/testdb/test-schema-no-history')
-                      .set('Authorization', 'Bearer ' + bearerToken)
+                      .set('Authorization', 'Bearer ' + token)
                       .send({field1: 'doc'})
                       // .expect(200)
                       .end(function (err, res) {
@@ -706,9 +900,9 @@ describe('Application', function () {
 
                         client
                           .post('/vjoin/testdb/test-schema-no-history')
-                          .set('Authorization', 'Bearer ' + bearerToken)
+                          .set('Authorization', 'Bearer ' + token)
                           .send({field1: 'doc'})
-                          .expect(200)
+                          // .expect(200)
                           .end(function (err, res) {
                             if (err) return done(err)
 
@@ -723,7 +917,7 @@ describe('Application', function () {
 
                             client
                               .put('/vtest/testdb/test-schema-no-history/')
-                              .set('Authorization', 'Bearer ' + bearerToken)
+                              .set('Authorization', 'Bearer ' + token)
                               .send(body)
                               .expect(200)
                               .end(function (err, res) {
@@ -733,11 +927,11 @@ describe('Application', function () {
                                 res.body['results'].should.be.Array
                                 res.body['results'].length.should.equal(1)
                                 res.body['results'][0].field1.should.equal('updated doc') // not "updated doc"
-                                res.body['results'][0].apiVersion.should.equal('vtest')
+                                res.body['results'][0]._apiVersion.should.equal('vtest')
 
                                 client
                                   .get('/vjoin/testdb/test-schema-no-history?filter={"field1": { "$ne" : "" } }')
-                                  .set('Authorization', 'Bearer ' + bearerToken)
+                                  .set('Authorization', 'Bearer ' + token)
                                   .expect(200)
                                   .expect('content-type', 'application/json')
                                   .end(function (err, res) {
@@ -747,7 +941,7 @@ describe('Application', function () {
                                     res.body['results'].should.be.Array
                                     res.body['results'].length.should.equal(1)
                                     res.body['results'][0].field1.should.equal('doc') // not "updated doc"
-                                    res.body['results'][0].apiVersion.should.equal('vjoin')
+                                    res.body['results'][0]._apiVersion.should.equal('vjoin')
 
                                     config.set('query.useVersionFilter', false)
 
@@ -872,6 +1066,35 @@ describe('Application', function () {
         })
       })
 
+      it('should get documents with the internal fields prefixed with the character defined in config', function (done) {
+        var originalPrefix = config.get('internalFieldsPrefix')
+
+        help.createDoc(bearerToken, function (err, doc) {
+          if (err) return done(err)
+
+          config.set('internalFieldsPrefix', '$')
+
+          var client = request(connectionString)
+
+          client
+            .get('/vtest/testdb/test-schema/' + doc._id)
+            .set('Authorization', 'Bearer ' + bearerToken)
+            .expect(200)
+            .expect('content-type', 'application/json')
+            .end(function (err, res) {
+              if (err) return done(err)
+
+              res.body.results[0].$id.should.exist
+              should.not.exist(res.body.results[0]._id)
+              res.body.results[0].$id.should.eql(doc._id)
+
+              config.set('internalFieldsPrefix', originalPrefix)
+
+              done()
+            })
+        })
+      })
+
       it.skip('should use apiVersion when getting reference documents if useVersionFilter is set to true', function (done) {
         config.set('query.useVersionFilter', true)
 
@@ -892,7 +1115,7 @@ describe('Application', function () {
             callback: null,
             defaultFilters: null,
             fieldLimiters: null,
-            count: 40,
+            count: 40
           }
         }
 
@@ -910,7 +1133,7 @@ describe('Application', function () {
             callback: null,
             defaultFilters: null,
             fieldLimiters: null,
-            count: 40,
+            count: 40
           }
         }
 
@@ -992,7 +1215,7 @@ describe('Application', function () {
 
                       // apiVersion should be in the query passed to find
                       args.forEach((arg) => {
-                        should.exist(arg[0].apiVersion)
+                        should.exist(arg[0]._apiVersion)
                       })
 
                       var results = res.body.results
@@ -1029,7 +1252,7 @@ describe('Application', function () {
             callback: null,
             defaultFilters: null,
             fieldLimiters: null,
-            count: 40,
+            count: 40
           }
         }
 
@@ -1047,7 +1270,7 @@ describe('Application', function () {
             callback: null,
             defaultFilters: null,
             fieldLimiters: null,
-            count: 40,
+            count: 40
           }
         }
 
@@ -1074,7 +1297,7 @@ describe('Application', function () {
           .end((err, res) => {
             if (err) return done(err)
 
-            setTimeout(function() {
+            setTimeout(function () {
               // create some docs
               client
               .post('/1.0/library/person')
@@ -1131,7 +1354,7 @@ describe('Application', function () {
 
                         // apiVersion should be in the query passed to find
                         args.forEach((arg) => {
-                          should.not.exist(arg[0].apiVersion)
+                          should.not.exist(arg[0]._apiVersion)
                         })
 
                         var results = res.body.results
@@ -1157,7 +1380,7 @@ describe('Application', function () {
         help.createDoc(bearerToken, function (err, doc) {
           if (err) return done(err)
 
-          doc.apiVersion.should.equal('vtest')
+          doc._apiVersion.should.equal('vtest')
 
           // create new API endpoint
           var client = request(connectionString)
@@ -1189,7 +1412,7 @@ describe('Application', function () {
 
                         res.body['results'].should.exist
                         res.body['results'].should.be.Array
-                        res.body['results'][0].apiVersion.should.equal('vtest')
+                        res.body['results'][0]._apiVersion.should.equal('vtest')
                         done()
                       })
                   }, 300)
@@ -1207,7 +1430,7 @@ describe('Application', function () {
         help.createDoc(bearerToken, function (err, doc) {
           if (err) return done(err)
 
-          doc.apiVersion.should.equal('vtest')
+          doc._apiVersion.should.equal('vtest')
 
           // create new API endpoint
           var client = request(connectionString)
@@ -1241,7 +1464,7 @@ describe('Application', function () {
 
                         res.body['results'].should.exist
                         res.body['results'].should.be.Array
-                        res.body['results'][0].apiVersion.should.equal('v1')
+                        res.body['results'][0]._apiVersion.should.equal('v1')
                         done()
                       })
                   }, 300)
@@ -1355,6 +1578,35 @@ describe('Application', function () {
         })
       })
 
+      it('should not display fields with null values', function (done) {
+        var doc = { field1: null }
+
+        help.createDocWithParams(bearerToken, doc, function (err, doc) {
+          if (err) return done(err)
+
+          var client = request(connectionString)
+
+          client
+            .get('/vtest/testdb/test-schema/' + doc._id)
+            .set('Authorization', 'Bearer ' + bearerToken)
+            .expect(200)
+            .expect('content-type', 'application/json')
+            .end(function (err, res) {
+              if (err) return done(err)
+
+              var found = false
+
+              res.body.results.should.exist
+              res.body.results.should.be.Array
+              res.body.results[0].should.exist
+              res.body.results[0]._id.should.exist
+              should.not.exist(res.body.results[0].field1)
+
+              done()
+            })
+        })
+      })
+
       it('should return specified fields only when supplying `fields` param', function (done) {
         var doc = { field1: 'Test', field2: null }
 
@@ -1364,7 +1616,7 @@ describe('Application', function () {
           var client = request(connectionString)
 
           var fields = {
-            'field1': 1, '_id': 0
+            'field1': 1
           }
 
           query = encodeURIComponent(JSON.stringify(fields))
@@ -1379,7 +1631,10 @@ describe('Application', function () {
               res.body['results'].should.exist
               res.body['results'].should.be.Array
 
-              var obj = _.sample(_.compact(_.map(res.body['results'], function (x) { if (x.hasOwnProperty('field1')) return x })))
+              var obj = _.sample(_.compact(_.filter(res.body['results'], function (x) { return x.hasOwnProperty('field1') })))
+
+              delete obj._id
+
               Object.keys(obj).length.should.equal(1)
               Object.keys(obj)[0].should.equal('field1')
 
@@ -1448,6 +1703,42 @@ describe('Application', function () {
                 done()
               })
           })
+        })
+      })
+
+      it('should apply configured prefix to any internal fields present in the filter param', function (done) {
+        var originalPrefix = config.get('internalFieldsPrefix')
+
+        help.createDoc(bearerToken, function (err, doc) {
+          if (err) return done(err)
+
+          config.set('internalFieldsPrefix', '$')
+
+          var client = request(connectionString)
+          var query = {
+            $id: doc._id
+          }
+
+          query = encodeURIComponent(JSON.stringify(query))
+
+          client
+            .get('/vtest/testdb/test-schema?filter=' + query)
+            .set('Authorization', 'Bearer ' + bearerToken)
+            .expect(200)
+            .expect('content-type', 'application/json')
+            .end(function (err, res) {
+              if (err) return done(err)
+
+              res.body.results.should.exist
+              res.body.results.should.be.Array
+              res.body.results.length.should.equal(1)
+              res.body.results[0].$id.should.eql(doc._id)
+              should.not.exist(res.body.results[0]._id)
+
+              config.set('internalFieldsPrefix', originalPrefix)
+
+              done()
+            })
         })
       })
 
@@ -1599,97 +1890,6 @@ describe('Application', function () {
         })
       })
 
-      it('should return grouped result set when using $group in an aggregation query', function (done) {
-        // create a bunch of docs
-        var asyncControl = new EventEmitter()
-        var count = 0
-
-        for (var i = 0; i < 10; ++i) {
-          var doc = {field1: ((Math.random() * 10) | 0).toString(), field2: (Math.random() * 10) | 0}
-          help.createDocWithParams(bearerToken, doc, function (err) {
-            if (err) return asyncControl.emit('error', err)
-            count += 1
-            if (count > 9) asyncControl.emit('ready')
-          })
-        }
-
-        asyncControl.on('ready', function () {
-          // documents are loaded and test can start
-
-          var client = request(connectionString)
-
-          var query = [
-            {
-              $group: {
-                _id: null,
-                averageNumber: { $avg: '$field2' },
-                count: { $sum: 1 }
-              }
-            }
-          ]
-
-          query = encodeURIComponent(JSON.stringify(query))
-          client
-            .get('/vtest/testdb/test-schema?filter=' + query)
-            .set('Authorization', 'Bearer ' + bearerToken)
-            .expect(200)
-            .expect('content-type', 'application/json')
-            .end(function (err, res) {
-              if (err) {
-                return done(err)
-              }
-
-              res.body.should.be.Array
-              res.body.length.should.equal(1)
-              res.body[0].averageNumber.should.be.above(0)
-              done()
-            })
-        })
-      })
-
-      it('should return normal result set when only using $match in an aggregation query', function (done) {
-        // create a bunch of docs
-        var asyncControl = new EventEmitter()
-        var count = 0
-
-        for (var i = 0; i < 10; ++i) {
-          var doc = {field1: ((Math.random() * 10) | 0).toString(), field2: (Math.random() * 10) | 0}
-          help.createDocWithParams(bearerToken, doc, function (err) {
-            if (err) return asyncControl.emit('error', err)
-            count += 1
-            if (count > 9) asyncControl.emit('ready')
-          })
-        }
-
-        asyncControl.on('ready', function () {
-          // documents are loaded and test can start
-
-          var client = request(connectionString)
-
-          var query = [
-            { $match: { 'field2': { '$gte': 1 } } },
-            { $limit: 2 }
-          ]
-
-          query = encodeURIComponent(JSON.stringify(query))
-          client
-            .get('/vtest/testdb/test-schema?filter=' + query)
-            .set('Authorization', 'Bearer ' + bearerToken)
-            .expect(200)
-            .expect('content-type', 'application/json')
-            .end(function (err, res) {
-              if (err) {
-                return done(err)
-              }
-
-              res.body.should.be.Array
-              res.body.length.should.equal(2)
-              res.body[0].field1.should.not.be.null
-              done()
-            })
-        })
-      })
-
       it('should add history to results when querystring param includeHistory=true', function (done) {
         var client = request(connectionString)
 
@@ -1729,8 +1929,62 @@ describe('Application', function () {
 
               res.body['results'].should.exist
               res.body['results'].should.be.Array
-              res.body['results'][0].history.should.exist
-              res.body['results'][0].history[0].field1.should.eql('original field content')
+              res.body['results'][0]._history.should.exist
+              res.body['results'][0]._history[0].field1.should.eql('original field content')
+              done()
+            })
+          })
+        })
+      })
+
+      it('should add history to results when querystring param includeHistory=true, translating internal fields to the prefix defined in config', function (done) {
+        var originalPrefix = config.get('internalFieldsPrefix')
+        var client = request(connectionString)
+
+        config.set('internalFieldsPrefix', '$')
+
+        client
+        .post('/vtest/testdb/test-schema')
+        .set('Authorization', 'Bearer ' + bearerToken)
+        .send({field1: 'original field content'})
+        .expect(200)
+        .end(function (err, res) {
+          if (err) return done(err)
+
+          var doc = res.body.results[0]
+
+          var body = {
+            query: { $id: doc.$id },
+            update: {field1: 'updated'}
+          }
+
+          client
+          .put('/vtest/testdb/test-schema/')
+          .set('Authorization', 'Bearer ' + bearerToken)
+          .send(body)
+          .expect(200)
+          .end(function (err, res) {
+            if (err) return done(err)
+
+            res.body.results[0].$id.should.equal(doc.$id)
+            res.body.results[0].field1.should.equal('updated')
+
+            client
+            .get('/vtest/testdb/test-schema?includeHistory=true&filter={"$id": "' + doc.$id + '"}')
+            .set('Authorization', 'Bearer ' + bearerToken)
+            .expect(200)
+            .expect('content-type', 'application/json')
+            .end(function (err, res) {
+              if (err) return done(err)
+
+              res.body.results.should.exist
+              res.body.results.should.be.Array
+              res.body.results[0].$history.should.exist
+              res.body.results[0].$history[0].$id.should.exist
+              res.body.results[0].$history[0].field1.should.eql('original field content')
+
+              config.set('internalFieldsPrefix', originalPrefix)
+
               done()
             })
           })
@@ -1778,8 +2032,8 @@ describe('Application', function () {
               res.body['results'][0].field1.should.exist
               res.body['results'][0].field1.should.eql('GHIJKL')
               res.body['results'][0].field2.should.exist
-              res.body['results'][0].history.should.exist
-              res.body['results'][0].history[0].field1.should.eql('ABCDEF')
+              res.body['results'][0]._history.should.exist
+              res.body['results'][0]._history[0].field1.should.eql('ABCDEF')
               done()
             })
           })
@@ -2131,10 +2385,12 @@ describe('Application', function () {
             })
         })
       })
+
+      it('')
     })
 
     describe('DELETE', function () {
-      before(function (done) {
+      beforeEach(function (done) {
         help.dropDatabase('testdb', function (err) {
           if (err) return done(err)
 
@@ -2148,7 +2404,7 @@ describe('Application', function () {
         })
       })
 
-      it('should remove documents', function (done) {
+      it('should remove a single document by ID', function (done) {
         var client = request(connectionString)
 
         client
@@ -2209,54 +2465,85 @@ describe('Application', function () {
         })
       })
 
-      it('should delete documents matching an $in query', function (done) {
-        help.createDoc(bearerToken, function (err, doc1) {
+      it('should remove all documents affected by the query property supplied in the request body', function (done) {
+        help.createDoc(bearerToken, function (err, doc) {
           if (err) return done(err)
-          help.createDoc(bearerToken, function (err, doc2) {
-            if (err) return done(err)
 
-            var body = {
+          var client = request(connectionString)
+
+          client
+            .delete('/vtest/testdb/test-schema')
+            .set('Authorization', 'Bearer ' + bearerToken)
+            .send({
               query: {
-                _id: {
-                  '$in': [doc1._id.toString()]
-                }
+                _id: doc._id
               }
-            }
+            })
+            .expect(204)
+            .end(function (err) {
+              if (err) return done(err)
 
-            var client = request(connectionString)
+              client
+                .get('/vtest/testdb/test-schema/' + doc._id)
+                .set('Authorization', 'Bearer ' + bearerToken)
+                .expect(200)
+                .expect('content-type', 'application/json')
+                .end(function (err, res) {
+                  if (err) return done(err)
 
-            client
-              .delete('/vtest/testdb/test-schema/')
-              .send(body)
-              .set('Authorization', 'Bearer ' + bearerToken)
-              .expect(204)
-              .end(function (err) {
-                if (err) return done(err)
+                  res.body.results.should.exist
+                  res.body.results.should.be.Array
+                  res.body.results.length.should.equal(0)
 
-                var filter = encodeURIComponent(JSON.stringify({
-                  _id: doc1._id
-                }))
-
-                client
-                  .get('/vtest/testdb/test-schema?filter=' + filter)
-                  .set('Authorization', 'Bearer ' + bearerToken)
-                  .expect(200)
-                  .expect('content-type', 'application/json')
-                  .end(function (err, res) {
-                    if (err) return done(err)
-
-                    res.body['results'].should.exist
-                    res.body['results'].should.be.Array
-                    res.body['results'].length.should.equal(0)
-
-                    done()
-                  })
-              })
-          })
+                  done()
+                })
+            })
         })
       })
 
-      it('should return a message if config.feedback is true', function (done) {
+      it('should remove all documents affected by the query property supplied in the request body, translating any internal fields to the prefix defined in config', function (done) {
+        var originalPrefix = config.get('internalFieldsPrefix')
+
+        config.set('internalFieldsPrefix', '$')
+
+        help.createDoc(bearerToken, function (err, doc) {
+          if (err) return done(err)
+
+          var client = request(connectionString)
+
+          client
+            .delete('/vtest/testdb/test-schema')
+            .set('Authorization', 'Bearer ' + bearerToken)
+            .send({
+              query: {
+                $id: doc.$id
+              }
+            })
+            .expect(204)
+            .end(function (err) {
+              if (err) return done(err)
+
+              client
+                .get('/vtest/testdb/test-schema/' + doc.$id)
+                .set('Authorization', 'Bearer ' + bearerToken)
+                .expect(200)
+                .expect('content-type', 'application/json')
+                .end(function (err, res) {
+                  if (err) return done(err)
+
+                  res.body.results.should.exist
+                  res.body.results.should.be.Array
+                  res.body.results.length.should.equal(0)
+
+                  config.set('internalFieldsPrefix', originalPrefix)
+
+                  done()
+                })
+            })
+        })
+      })
+
+      it('should return deleted count if config.feedback is true', function (done) {
         var originalFeedback = config.get('feedback')
         config.set('feedback', true)
 
@@ -2271,23 +2558,32 @@ describe('Application', function () {
             if (err) return done(err)
 
             var doc = res.body.results[0]
-            should.exist(doc)
-            doc.field1.should.equal('doc to remove 2')
 
             client
-              .delete('/vtest/testdb/test-schema/' + doc._id)
-              .set('Authorization', 'Bearer ' + bearerToken)
-              .expect(200)
-              // .expect('content-type', 'application/json')
-              .end(function (err, res) {
-                config.set('feedback', originalFeedback)
-                if (err) return done(err)
+            .post('/vtest/testdb/test-schema')
+            .set('Authorization', 'Bearer ' + bearerToken)
+            .send({field1: 'doc to remain'})
+            .expect(200)
+            .end(function (err, res) {
+              if (err) return done(err)
 
-                res.body.status.should.equal('success')
-                done()
-              })
+              client
+                .delete('/vtest/testdb/test-schema/' + doc._id)
+                .set('Authorization', 'Bearer ' + bearerToken)
+                .expect(200)
+                // .expect('content-type', 'application/json')
+                .end(function (err, res) {
+                  config.set('feedback', originalFeedback)
+                  if (err) return done(err)
+
+                  res.body.status.should.equal('success')
+                  res.body.deleted.should.equal(1)
+                  res.body.totalCount.should.equal(1)
+                  done()
+                })
+            })
           })
-      })
+        })
     })
 
     describe('Collection count', function () {
@@ -2613,7 +2909,7 @@ describe('Application', function () {
         schema.settings.sort = 'newField'
         schema.settings.index = {
           "keys": {
-            "createdAt" : 1
+            "_createdAt" : 1
           }
         }
 
@@ -2646,7 +2942,7 @@ describe('Application', function () {
         schema.settings.sort = 'newField'
         schema.settings.index = [{
           "keys": {
-            "createdAt" : 1
+            "_createdAt" : 1
           }
         }]
 
@@ -2678,8 +2974,8 @@ describe('Application', function () {
         var schema = JSON.parse(jsSchemaString)
         schema.settings.sort = 'newField'
         schema.settings.index = [{
-          "keys": {
-            "newField" : 1
+          'keys': {
+            'newField': 1
           }
         }]
 
@@ -2876,9 +3172,10 @@ describe('Application', function () {
 
     describe('GET', function () {
       it('should return the schema file', function (done) {
-        request(connectionString)
+        help.getBearerTokenWithAccessType('admin', function (err, token) {
+          request(connectionString)
           .get('/vtest/testdb/test-schema/config')
-          .set('Authorization', 'Bearer ' + bearerToken)
+          .set('Authorization', 'Bearer ' + token)
           .expect(200)
           .expect('content-type', 'application/json')
           .end(function (err, res) {
@@ -2891,6 +3188,7 @@ describe('Application', function () {
 
             done()
           })
+        })
       })
 
       it('should only allow authenticated users access', function (done) {
@@ -2903,40 +3201,42 @@ describe('Application', function () {
 
     describe('DELETE', function () {
       it('should allow removing endpoints', function (done) {
-        var client = request(connectionString)
+        help.getBearerTokenWithAccessType('admin', function (err, bearerToken) {
+          var client = request(connectionString)
 
-        // make sure the api is working as expected
-        client
-          .post('/vapicreate/testdb/api-create')
-          .send({
-            updatedField: 123
-          })
-          .set('Authorization', 'Bearer ' + bearerToken)
-          .expect(200)
-          .expect('content-type', 'application/json')
-          .end(function (err) {
-            if (err) return done(err)
+          // make sure the api is working as expected
+          client
+            .post('/vapicreate/testdb/api-create')
+            .send({
+              updatedField: 123
+            })
+            .set('Authorization', 'Bearer ' + bearerToken)
+            .expect(200)
+            .expect('content-type', 'application/json')
+            .end(function (err) {
+              if (err) return done(err)
 
-            // send request to remove the endpoint
-            client
-              .delete('/vapicreate/testdb/api-create/config')
-              .set('Authorization', 'Bearer ' + bearerToken)
-              .expect(200)
-              .expect('content-type', 'application/json')
-              .end(function (err, res) {
-                if (err) return done(err)
+              // send request to remove the endpoint
+              client
+                .delete('/vapicreate/testdb/api-create/config')
+                .set('Authorization', 'Bearer ' + bearerToken)
+                .expect(200)
+                .expect('content-type', 'application/json')
+                .end(function (err, res) {
+                  if (err) return done(err)
 
-                setTimeout(function () {
-                  client
+                  setTimeout(function () {
+                    client
 
-                    // NOTE: cache invalidation is done via ttl, so this endpoint will be removed after ttl has elapsed
-                    .get('/vapicreate/testdb/api-create?cache=false')
-                    .set('Authorization', 'Bearer ' + bearerToken)
-                    .expect(404)
-                    .end(done)
-                }, 300)
-              })
-          })
+                      // NOTE: cache invalidation is done via ttl, so this endpoint will be removed after ttl has elapsed
+                      .get('/vapicreate/testdb/api-create?cache=false')
+                      .set('Authorization', 'Bearer ' + bearerToken)
+                      .expect(404)
+                      .end(done)
+                  }, 300)
+                })
+            })
+        })
       })
     })
   })
@@ -2951,9 +3251,8 @@ describe('Application', function () {
     })
 
     it('should return hello world', function (done) {
-      var client = request(connectionString)
-
-      client
+      help.getBearerTokenWithAccessType('admin', function (err, bearerToken) {
+        request(connectionString)
         .get('/v1/test-endpoint')
         .set('Authorization', 'Bearer ' + bearerToken)
         .expect(200)
@@ -2963,15 +3262,17 @@ describe('Application', function () {
           res.body.message.should.equal('Hello World')
           done()
         })
+      })
     })
 
     it('should require authentication by default', function (done) {
-      var client = request(connectionString)
-      client
+      help.getBearerTokenWithAccessType('admin', function (err, bearerToken) {
+        request(connectionString)
         .get('/v1/test-endpoint')
         // .set('Authorization', 'Bearer ' + bearerToken)
         .expect(401)
         .end(done)
+      })
     })
 
     it('should allow unauthenticated requests if configured', function (done) {
@@ -2983,9 +3284,8 @@ describe('Application', function () {
     })
 
     it('should allow custom routing via config() function', function (done) {
-      var client = request(connectionString)
-
-      client
+      help.getBearerTokenWithAccessType('admin', function (err, bearerToken) {
+        request(connectionString)
         .get('/v1/new-endpoint-routing/55bb8f0a8d76f74b1303a135')
         .set('Authorization', 'Bearer ' + bearerToken)
         .expect(200)
@@ -2995,6 +3295,7 @@ describe('Application', function () {
           res.body.message.should.equal('Endpoint with custom route provided through config() function...ID passed = 55bb8f0a8d76f74b1303a135')
           done()
         })
+      })
     })
   })
 
@@ -3045,10 +3346,10 @@ describe('Application', function () {
 
     describe('POST', function () {
       it('should allow creating a new custom endpoint', function (done) {
-        var client = request(connectionString)
-
-        // make sure the endpoint is not already there
-        client
+        help.getBearerTokenWithAccessType('admin', function (err, bearerToken) {
+          var client = request(connectionString)
+          // make sure the endpoint is not already there
+          client
           .get('/v1/new-endpoint?cache=false')
           .set('Authorization', 'Bearer ' + bearerToken)
           .expect(404)
@@ -3083,13 +3384,13 @@ describe('Application', function () {
                 }, 1500)
               })
           })
+        })
       })
 
       it('should pass inline documentation to the stack', function (done) {
         this.timeout(2000)
-        var client = request(connectionString)
-
-        client
+        help.getBearerTokenWithAccessType('admin', function (err, bearerToken) {
+          request(connectionString)
           .get('/v1/test-endpoint-with-docs?cache=false')
           .set('Authorization', 'Bearer ' + bearerToken)
           .expect(200)
@@ -3104,15 +3405,15 @@ describe('Application', function () {
 
             done()
           })
+        })
       })
 
       it('should allow updating an endpoint', function (done) {
         this.timeout(8000)
-
-        var client = request(connectionString)
-
-        // make sure the endpoint exists from last test
-        client
+        help.getBearerTokenWithAccessType('admin', function (err, bearerToken) {
+          var client = request(connectionString)
+          // make sure the endpoint exists from last test
+          client
           .get('/v1/new-endpoint?cache=false')
           .set('Authorization', 'Bearer ' + bearerToken)
           .expect(200)
@@ -3149,13 +3450,14 @@ describe('Application', function () {
                 }, 3000)
               })
           })
+        })
       })
 
       it('should allow creating a new endpoint for a new version number', function (done) {
-        var client = request(connectionString)
-
-        // make sure the endpoint is not already there
-        client
+        help.getBearerTokenWithAccessType('admin', function (err, bearerToken) {
+          var client = request(connectionString)
+          // make sure the endpoint is not already there
+          client
           .get('/v2/new-endpoint?cache=false')
           .set('Authorization', 'Bearer ' + bearerToken)
           .expect(404)
@@ -3190,20 +3492,24 @@ describe('Application', function () {
                 }, 1500)
               })
           })
+        })
       })
     })
 
     describe('GET', function () {
       it('should NOT return the Javascript file backing the endpoint', function (done) {
-        request(connectionString)
+        help.getBearerTokenWithAccessType('admin', function (err, bearerToken) {
+          request(connectionString)
           .get('/v1/test-endpoint/config?cache=false')
           .set('Authorization', 'Bearer ' + bearerToken)
           .expect(404)
           .end(done)
+        })
       })
 
       it('should return all loaded endpoints', function (done) {
-        request(connectionString)
+        help.getBearerTokenWithAccessType('admin', function (err, bearerToken) {
+          request(connectionString)
           .get('/api/endpoints')
           .set('Authorization', 'Bearer ' + bearerToken)
           .expect(200)
@@ -3228,16 +3534,19 @@ describe('Application', function () {
 
             done()
           })
+        })
       })
     })
 
     describe('DELETE', function () {
       it('should NOT remove the custom endpoint', function (done) {
-        request(connectionString)
+        help.getBearerTokenWithAccessType('admin', function (err, bearerToken) {
+          request(connectionString)
           .delete('/v1/test-endpoint/config')
           .set('Authorization', 'Bearer ' + bearerToken)
           .expect(404)
           .end(done)
+        })
       })
     })
   })
@@ -3538,7 +3847,7 @@ describe('Application', function () {
               if (err) return done(err)
 
               res.body.should.be.Object
-              should.exist(res.body.database)
+              should.exist(res.body.datastore)
               should.exist(res.body.logging)
               should.exist(res.body.server)
               should.exist(res.body.auth)

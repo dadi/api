@@ -72,7 +72,7 @@ MediaModel.prototype.formatDocuments = function (documents) {
       formattedDocument.url = this.getURLForPath(formattedDocument.path)
     }
 
-    delete formattedDocument.apiVersion
+    delete formattedDocument._apiVersion
 
     return formattedDocument
   })

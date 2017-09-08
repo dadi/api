@@ -2,13 +2,20 @@
 
 'use strict'
 
-const Connection = require('@dadi/api').Connection
-const config = require('@dadi/api').Config
+var Connection
+var config
 
-const options = config.get('auth.database')
-options.auth = true
-const connection = Connection(options)
+try {
+  Connection = require('@dadi/api').Connection
+  config = require('@dadi/api').Config
+} catch (err) {
+  Connection = require(__dirname + '/../dadi/lib/model/connection')
+  config = require(__dirname + '/../config')
+}
+
 const clientCollectionName = config.get('auth.clientCollection')
+const dbOptions = { auth: true, database: config.get('auth.database'), collection: clientCollectionName }
+const connection = Connection(dbOptions, config.get('auth.datastore'))
 
 const prompt = require('cli-prompt')
 
@@ -33,12 +40,12 @@ connection.on('connect', db => {
       {
         label: '-> Client identifier',
         key: 'clientId',
-        default: 'testClient'
+        default: 'api-client'
       },
       {
         label: '-> Secret access key',
         key: 'secret',
-        default: 'secretSquirrel'
+        default: 'client-secret'
       },
       {
         label: '-> Access type (admin, user)',
@@ -54,34 +61,56 @@ connection.on('connect', db => {
       if (options.confirm) {
         delete options.confirm
 
-        const existingClients = db.collection(clientCollectionName).find({
+        // check for an existing client account
+        db.find({
           clientId: options.clientId
-        })
-
-        existingClients.toArray((err, documents) => {
-          if (documents.length > 0) {
+        }, clientCollectionName, {}, getSchema()).then(existingClients => {
+          if (existingClients.length > 0) {
             console.log(`(x) The identifier ${options.clientId} already exists. Exiting...`)
-
-            db.close()
-
             return
           }
 
-          db.collection(clientCollectionName).insert(options, err => {
-            if (err) throw err
-
+          db.insert(options, clientCollectionName, getSchema()).then(result => {
             console.log()
             console.log('(*) Client created successfully:')
             console.log()
             console.log(options)
             console.log()
 
-            db.close()
+            process.exit(0)
+          }).catch((err) => {
+            throw err
           })
         })
       } else {
-        db.close()
+        process.exit(0)
       }
     })
   }, 1000)
 })
+
+function getSchema () {
+  return {
+    fields: {
+      token: {
+        type: 'String',
+        required: true
+      },
+      tokenExpire: {
+        type: 'Number',
+        required: true
+      },
+      created: {
+        type: 'DateTime',
+        required: true
+      },
+      value: {
+        type: 'Object',
+        required: false
+      }
+    },
+    settings: {
+      cache: false
+    }
+  }
+}

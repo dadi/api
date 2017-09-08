@@ -1,7 +1,7 @@
 <img src="https://dadi.tech/assets/products/dadi-api-full.png" alt="DADI API" height="65"/>
 
 [![npm (scoped)](https://img.shields.io/npm/v/@dadi/api.svg?maxAge=10800&style=flat-square)](https://www.npmjs.com/package/@dadi/api)
-[![coverage](https://img.shields.io/badge/coverage-88%25-yellow.svg?style=flat?style=flat-square)](https://github.com/dadi/api)
+[![coverage](https://img.shields.io/badge/coverage-87%25-yellow.svg?style=flat?style=flat-square)](https://github.com/dadi/api)
 [![Build Status](https://travis-ci.org/dadi/api.svg?branch=master)](https://travis-ci.org/dadi/api)
 [![JavaScript Style Guide](https://img.shields.io/badge/code%20style-standard-brightgreen.svg?style=flat-square)](http://standardjs.com/)
 
@@ -158,6 +158,25 @@ $ [sudo] service api restart
 
 ## Links
 * [API Documentation](http://docs.dadi.tech/api/)
+
+## Contributors
+
+DADI API is based on an original idea by Joseph Denne. It is developed and maintained by the engineering team at DADI ([https://dadi.tech](https://dadi.tech))
+
+* Adam K Dean <akd@dadi.co>
+* Arthur Mingard <am@dadi.co>
+* Dave Allen <da@dadi.co>
+* David Longworth <dl@dadi.co>
+* Derrick <dh@dadi.co>
+* Eduardo Boucas <eb@dadi.co>
+* Francesco Iannuzzelli <fi@dadi.co>
+* James Lambie <jl@dadi.co>
+* Joe Wagner
+* Joseph Denne <jd@dadi.co>
+* Kevin Sowers <kevin.sowers223@gmail.com>
+* Magnus Dahlstrand <magnus@mdahlstrand.com>
+* Robert Stanford <rs@dadi.co>
+* Viktor Fero <vf@dadi.co>
 
 ## Licence
 

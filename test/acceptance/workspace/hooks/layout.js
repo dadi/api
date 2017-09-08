@@ -18,8 +18,8 @@ module.exports = function (obj, type, data) {
             document = resolve(data.schema[layoutField].schema, layoutField, document)
 
             // Resolve layout in history
-            if (document.history) {
-              document.history.forEach((historyDocument) => {
+            if (document._history) {
+              document._history.forEach((historyDocument) => {
                 if (historyDocument[layoutField]) {
                   historyDocument = resolve(data.schema[layoutField].schema, layoutField, historyDocument)
                 }

@@ -117,7 +117,7 @@ describe('validation', function () {
 
                 doc.fieldDateTime = "abcdef"
                 delete doc.createdAt
-                delete doc.createdBy
+                delete doc._createdBy
                 delete doc._id
 
                 client
@@ -146,9 +146,10 @@ describe('validation', function () {
 
                 var date2 = new Date()
                 doc.fieldDateTime = date2
-                delete doc.createdAt
-                delete doc.createdBy
+                delete doc._createdAt
+                delete doc._createdBy
                 delete doc._id
+                delete doc._version
 
                 client
                 .put('/vtest/testdb/test-validation-schema/' + id)

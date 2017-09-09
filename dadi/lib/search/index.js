@@ -1,87 +1,287 @@
-var _ = require('underscore')
-var path = require('path')
-var url = require('url')
-var help = require(path.join(__dirname, '/../help'))
-var model = require(path.join(__dirname, '/../model'))
-/*
+'use strict'
 
-Search middleware allowing cross-collection querying
+const path = require('path')
+const config = require(path.join(__dirname, '/../../../config'))
+const Connection = require(path.join(__dirname, '/../model/connection'))
+const StandardAnalyser = require('./analysers/standard')
 
-Search query URI format:
+const DefaultAnalyser = StandardAnalyser
 
-http://host[:port]/version/search?collections=database/collection[,database2/collection2,...[,databaseN/collectionN]]&query={"title":{"$regex":"brother"}}
+const pageLimit = 20
 
-Example search query:
+const Search = function (model) {
+  const settings = Object.assign(config.get('search.database'))
 
-http://api.example.com/1.0/search?collections=library/books,library/films&query={"title":{"$regex":"brother"}}
+  this.model = model
+  this.wordCollection = config.get('search.wordCollection')
+  this.searchCollection = this.model.searchCollection || this.model.name + 'Search'
+  this.indexableFields = this.getIndexableFields()
 
-*/
-module.exports = function (server) {
-  server.app.use('/:version/search', function (req, res, next) {
-    // sorry, we only process GET requests at this endpoint
-    var method = req.method && req.method.toLowerCase()
-    if (method !== 'get') {
-      return next()
-    }
+  this.wordConnection = Connection({ database: settings.database, collection: this.wordCollection, override: true }, this.wordCollection, config.get('datastore'))
 
-    var path = url.parse(req.url, true)
-    var options = path.query
+  this.searchConnection = Connection({ database: settings.database, collection: this.searchCollection }, this.searchCollection, config.get('datastore'))
+}
 
-    // no collection and no query params
-    if (!(options.collections && options.query)) {
-      return help.sendBackJSON(400, res, next)(null, {'error': 'Bad Request'})
-    }
+Search.prototype.getIndexableFields = function () {
+  const schema = this.model.schema
 
-    // split the collections param
-    var collections = options.collections.split(',')
+  return Object.assign({}, ...Object.keys(schema)
+    .filter(key => this.hasSearchField(schema[key]))
+    .map(key => {
+      return {[key]: schema[key].search}
+    }))
+}
 
-    // extract the query from the querystring
-    var query = help.parseQuery(options.query)
+Search.prototype.hasSearchField = function (field) {
+  return field.search && !isNaN(field.search.weight)
+}
 
-    // determine API version
-    var apiVersion = path.pathname.split('/')[1]
+Search.prototype.find = function (searchTerm) {
+  const analyser = new DefaultAnalyser(this.indexableFields)
+  const tokenized = analyser.tokenize(searchTerm)
 
-    // no collections specfied
-    if (collections.length === 0) {
-      return help.sendBackJSON(400, res, next)(null, {'error': 'Bad Request'})
-    }
+  return this.getWords(tokenized)
+    .then(words => {
+      return this.getInstancesOfWords(words.results)
+        .then(instances => {
+          const ids = instances.map(instance => instance._id.document)
 
-    var results = {}
-    var idx = 0
-
-    _.each(collections, function (collection) {
-      // get the database and collection name from the
-      // collection parameter
-      var parts = collection.split('/')
-      var database, name, mod
-
-      query.apiVersion = apiVersion
-
-      if (_.isArray(parts) && parts.length > 1) {
-        database = parts[0]
-        name = parts[1]
-        mod = model(name, null, null, database)
-      }
-
-      if (mod) {
-        // query!
-        mod.find(query, function (err, docs) {
-          if (err) {
-            return help.sendBackJSON(500, res, next)(err)
-          }
-
-          // add data to final results array, keyed
-          // on collection name
-          results[name] = docs
-
-          idx++
-
-          // send back data
-          if (idx === collections.length) {
-            return help.sendBackJSON(200, res, next)(err, results)
-          }
+          return {_id: {'$in': ids}}
         })
+    })
+}
+
+Search.prototype.getInstancesOfWords = function (words) {
+  const ids = words.map(word => word._id)
+
+  const query = [
+    {
+      $match: {
+        word: {
+          $in: ids
+        }
       }
+    },
+    {
+      $group: {
+        _id: {document: '$document'},
+        count: {$sum: 1},
+        weight: {$sum: '$weight'}
+      }
+    },
+    {
+      $sort: {
+        weight: -1
+      }
+    },
+    {$limit: pageLimit}
+  ]
+
+  return this.runFind(this.searchConnection.db, query, this.searchCollection, this.getSearchSchema())
+}
+
+Search.prototype.getWords = function (words) {
+  const query = {word: {'$in': words}}
+
+  return this.runFind(this.wordConnection.db, query, this.wordCollection, this.getWordSchema())
+    .then(response => {
+      // Try a second pass with regular expressions
+      if (!response.length) {
+        const regexWords = words.map(word => new RegExp(word))
+        const regexQuery = {word: {'$in': regexWords}}
+
+        return this.runFind(this.wordConnection.db, regexQuery, this.wordCollection, this.getWordSchema())
+      }
+      return response
+    })
+}
+
+Search.prototype.getWordSchema = function () {
+  return {
+    fields: {
+      word: {
+        type: 'String',
+        required: true
+      }
+    },
+    settings: {
+      cache: false,
+      index: [{
+        keys: {
+          word: 1
+        },
+        options: {
+          unique: true
+        }
+      }]
+    }
+  }
+}
+
+Search.prototype.getSearchSchema = function () {
+  return {
+    fields: {
+      word: {
+        type: 'Reference',
+        required: true
+      },
+      document: {
+        type: 'Reference',
+        required: true
+      },
+      weight: {
+        type: 'Number',
+        required: true
+      }
+    },
+    settings: {
+      cache: false,
+      index: [
+        {
+          keys: {
+            word: 1
+          }
+        },
+        {
+          document: {
+            word: 1
+          }
+        },
+        {
+          weight: {
+            word: 1
+          }
+        }
+      ]
+    }
+  }
+}
+
+Search.prototype.delete = function (docs) {
+  const deleteQueue = docs
+    .map(doc => this.clearDocumentInstances(doc._id))
+
+  return Promise.all(deleteQueue)
+}
+
+Search.prototype.index = function (docs) {
+  return Promise.all(docs.map(doc => this.indexDocument(doc)))
+}
+
+Search.prototype.reduceDocumentFields = function (doc) {
+  return Object.assign({}, ...Object.keys(doc)
+    .filter(key => this.indexableFields[key])
+    .map(key => {
+      return {[key]: doc[key]}
+    }))
+}
+
+Search.prototype.indexDocument = function (doc) {
+  const fields = this.reduceDocumentFields(doc)
+  const analyser = new DefaultAnalyser(this.indexableFields)
+
+  Object.keys(fields)
+    .map(key => {
+      analyser.add(key, fields[key])
+    })
+
+  const words = analyser.getAllWords()
+  const wordInsert = words.map(word => {
+    return {word}
+  })
+
+  // Insert unique words into word collection.
+  return this.insert(
+    this.wordConnection.db,
+    wordInsert,
+    this.wordCollection,
+    {
+      ordered: false
+    },
+    this.getWordSchema()
+  )
+  .then(res => {
+    return this.clearAndInsertWordInstances(words, wordInsert, analyser, doc._id)
+  })
+  .catch(err => {
+    if (err.code === 11000) {
+      return this.clearAndInsertWordInstances(words, wordInsert, analyser, doc._id)
+    }
+  })
+}
+
+Search.prototype.clearAndInsertWordInstances = function (words, wordInsert, analyser, docId) {
+  // The word index is unique, so results aren't always returned.
+  // Fetch word entries again to get ids.
+  const query = {word: {'$in': words}}
+
+  return this.runFind(this.wordConnection.db, query, this.wordCollection, this.getWordSchema())
+    .then(result => {
+      // Get all word instances from Analyser.
+      this.clearDocumentInstances(docId)
+        .then(res => {
+          this.insertWordInstances(wordInsert, analyser, result, docId)
+        })
+    })
+}
+
+Search.prototype.insertWordInstances = function (wordInsert, analyser, result, docId) {
+  const instances = analyser
+    .getWordInstances()
+
+  if (!instances) return
+
+  const doc = instances
+    .filter(instance => result.results.find(result => result.word === instance.word))
+    .map(instance => {
+      const word = result.results.find(result => result.word === instance.word)._id
+
+      return Object.assign(instance, {word, document: docId})
+    })
+
+  // Insert word instances into search collection.
+  this.insert(this.searchConnection.db, doc, this.searchCollection, {}, this.getSearchSchema())
+}
+
+Search.prototype.runFind = function (database, query, collection, schema, options = {}) {
+  return database.find(query, collection, options, schema)
+}
+
+Search.prototype.clearDocumentInstances = function (documentId) {
+  // Remove all instance entries for a given document
+  return this.searchConnection.db.delete({document: documentId}, this.searchCollection, this.getSearchSchema())
+}
+
+Search.prototype.insert = function (database, documents, collection, options, schema) {
+  if (!documents.length) return Promise.resolve()
+
+  return database.insert(documents, collection, options, schema)
+}
+
+Search.prototype.batchIndex = function () {
+  if (!Object.keys(this.indexableFields).length) return
+
+  const fields = Object.assign({}, ...Object.keys(this.indexableFields).map(key => {
+    return {[key]: 1}
+  }))
+
+  this.model.connection.once('connect', database => {
+    this.runFind(database, {}, this.model.name, this.model.schema, {
+      limit: 3000,
+      fields,
+      compose: true
+    })
+    .then(res => {
+      this.index(res.results)
+        .then(c => {
+          console.log(`Indexed ${res.results.length} records for ${this.model.name}`)
+        })
     })
   })
 }
+
+module.exports = function (model) {
+  return new Search(model)
+}
+
+module.exports.Search = Search

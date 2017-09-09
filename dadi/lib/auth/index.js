@@ -12,6 +12,9 @@ function mustAuthenticate (endpoints, req) {
   // all /config requests must be authenticated
   if (parsedUrl.pathname.indexOf('config') > -1) return true
 
+  // /hello welcome route doesn't require authentication
+  if (req.url === '/hello') return false
+
   // docs requests don't need to be authenticated
   if (parsedUrl.pathname.indexOf('docs') > 0) return false
 

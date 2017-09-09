@@ -1,0 +1,27 @@
+{
+  "connectWithCollection": true,
+  "hosts": [
+    {
+      "host": "127.0.0.1",
+      "port": 27017
+    }
+  ],
+  "username": "",
+  "password": "",
+  "database": "testdb",
+  "ssl": false,
+  "replicaSet": "",
+  "enableCollectionDatabases": false,
+  "separate_auth_db": {
+    "hosts": [
+      {
+        "host": "127.0.0.1",
+        "port": 27018
+      }
+    ],
+    "username": "",
+    "password": "",
+    "replicaSet": "",
+    "ssl": false
+  }
+}

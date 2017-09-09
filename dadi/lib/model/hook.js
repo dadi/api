@@ -9,6 +9,7 @@ const config = require(path.join(__dirname, '/../../../config'))
  *
  * beforeCreate
  * afterCreate
+ * beforeGet
  * afterGet
  * beforeUpdate
  * afterUpdate
@@ -70,6 +71,14 @@ Hook.prototype.apply = function () {
         schema: arguments[1]
       })
 
+    case 'beforeGet':
+      return this.hook(arguments[0], this.type, {
+        collection: arguments[2],
+        options: this.options,
+        req: arguments[3],
+        schema: arguments[1]
+      })
+
     case 'afterGet':
       return this.hook(arguments[0], this.type, {
         collection: arguments[2],
@@ -96,18 +105,20 @@ Hook.prototype.apply = function () {
 
     case 'beforeDelete':
       return this.hook(arguments[0], this.type, {
-        collection: arguments[3],
-        error: arguments[1],
+        collection: arguments[4],
+        error: arguments[2],
         options: this.options,
-        req: arguments[4],
-        schema: arguments[2]
+        req: arguments[5],
+        schema: arguments[3],
+        deletedDocs: arguments[1]
       })
 
     case 'afterDelete':
       return this.hook(arguments[0], this.type, {
-        collection: arguments[2],
+        collection: arguments[3],
         options: this.options,
-        schema: arguments[1]
+        schema: arguments[2],
+        deletedDocs: arguments[1]
       })
   }
 

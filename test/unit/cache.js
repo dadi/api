@@ -54,28 +54,24 @@ describe('Cache', function (done) {
   });
 
   describe('Config', function(done) {
-    it('should return default config settings for directory');//, function (done) {
+    it('should return default config settings for directory', function (done) {
+      var newTestConfig = JSON.parse(testConfigString)
+      delete newTestConfig.caching
+      fs.writeFileSync(config.configPath(), JSON.stringify(newTestConfig, null, 2))
 
-      // var newTestConfig = JSON.parse(testConfigString);
-      // delete newTestConfig.caching;
-      // fs.writeFileSync(config.configPath(), JSON.stringify(newTestConfig, null, 2));
-      //
-      // delete require.cache[__dirname + '/../../config'];
-      // config = require(__dirname + '/../../config');
-      //
-      // config.loadFile(config.configPath());
-      //
+      delete require.cache[__dirname + '/../../config']
+      config = require(__dirname + '/../../config')
+
+      config.loadFile(config.configPath())
+
       // fs.readFile(config.configPath(),{},function(err, body) {
-      //   console.log(body.toString())
-      //   console.log(newTestConfig)
-      //   console.log(config.get('caching'))
-      //
       // })
-      // conf.get('caching.directory.path').should.eql('./cache/api');
-      // conf.get('caching.directory.extension').should.eql('json');
 
-      // done();
-    // });
+      config.get('caching.directory.path').should.eql('./cache/api')
+      config.get('caching.directory.extension').should.eql('json')
+
+      done()
+    })
   })
 
   it('should take a server instance as an argument', function (done) {
@@ -194,6 +190,7 @@ describe('Cache', function (done) {
         url: '/1.0/library/books'
       };
 
+      cache.reset()
       cache(server.object).cachingEnabled(req).should.eql(true);
 
       done();

@@ -4,7 +4,6 @@ var formatError = require('@dadi/format-error')
 var fs = require('fs')
 var Moment = require('moment')
 var path = require('path')
-var util = require('util')
 
 var cache = require(path.join(__dirname, '/cache'))
 var config = require(path.join(__dirname, '/../../config'))
@@ -92,26 +91,6 @@ module.exports.parseQuery = function (queryStr) {
   // handle case where queryStr is "null" or some other malicious string
   if (typeof ret !== 'object' || ret === null) ret = {}
   return ret
-}
-
-module.exports.keyValidForSchema = function (model, key) {
-  if (key !== '_id' && model.schema.hasOwnProperty(key) === false) {
-    // check for dot notation so we can determine the datatype of the first part of the key
-    if (key.indexOf('.') > 0) {
-      var keyParts = key.split('.')
-      if (model.schema.hasOwnProperty(keyParts[0])) {
-        if (/Mixed|Object|Reference/.test(model.schema[keyParts[0]].type)) {
-          return true
-        }
-      }
-    }
-
-    // field/key doesn't exist in the schema
-    return false
-  }
-
-  // key exists in the schema, or
-  return true
 }
 
 // Transforms strings from a query object into more appropriate types, based
@@ -213,7 +192,7 @@ module.exports.isJSON = function (jsonString) {
 
 module.exports.validateCollectionSchema = function (obj) {
   // `obj` must be a "hash type object", i.e. { ... }
-  if (typeof obj !== 'object' || util.isArray(obj) || obj === null) return false
+  if (typeof obj !== 'object' || Array.isArray(obj) || obj === null) return false
 
   var response = {
     success: true,

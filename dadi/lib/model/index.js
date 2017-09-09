@@ -677,7 +677,6 @@ Model.prototype.find = function (query, options, done) {
 }
 
 /**
-<<<<<<< HEAD
  * Lookup documents in the database based on search query and run any associated hooks
  *
  * @param {Object} query
@@ -713,11 +712,8 @@ Model.prototype.search = function (options, done, req) {
 }
 
 /**
- * Lookup documents in the database and run any associated hooks
-=======
  * Performs a last round of formatting to the query before it's
  * delivered to the data adapters
->>>>>>> c6af0f01b9704e2d44428e185c0d57ba08d15c4b
  *
  * @param {Object} query
  * @return An object representing the formatted query

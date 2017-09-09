@@ -123,6 +123,7 @@ module.exports = function (options, collection, storeName) {
   //   }
   // } else {
   // else create a new connection
+
   conn = new Connection(options, storeName)
 
   if (collection) {

@@ -46,7 +46,7 @@ Composer.prototype.compose = function (obj, callback) {
     }
 
     // remove any remaining null values
-    ids = _.uniq(_.compact(ids))
+    ids = _.compact(ids)
 
     var fields = this.getFields(field)
     var query = { '_id': { '$in': _.map(ids, id => { return id.toString() }) } }
@@ -86,7 +86,7 @@ Composer.prototype.compose = function (obj, callback) {
       // populate each document's composable property with results
       composeCopy.forEach(document => {
         var isArray = Array.isArray(document[field])
-        var originalValue = isArray ? _.compact(document[field]) : _.compact([document[field]])
+        var originalValue = isArray ? document[field] : [document[field]]
 
         // add the _composed property indicating original values
         if (!document._composed) document._composed = {}

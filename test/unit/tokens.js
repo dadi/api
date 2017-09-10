@@ -60,7 +60,7 @@ describe('Tokens', function () {
         conn.datastore.insert({
           clientId: 'test123',
           secret: 'superSecret'
-        }, clientCollectionName, store.getSchema()).then(() => {
+        }, clientCollectionName, store.schema).then(() => {
           done()}
         )
       }, 500)
@@ -68,36 +68,32 @@ describe('Tokens', function () {
 
     it('should check the generated token doesn\'t already exist before returning token', function (done) {
         // set new tokens
-      tokens.tokenStore.set('test123', {id: 'test123'}, function (err) {
-        if (err) return done(err)
-      })
+      tokens.tokenStore.set('test123', {id: 'test123'}).then(doc => {
+        return tokens.tokenStore.set('731a3bac-7872-481c-9069-fa223b318f6d', {id: 'test123'})
+      }).then(doc => {
+        var uuidStub = sinon.stub(uuid, 'v4')
+        uuidStub.onCall(0).returns('test123') // Call 0: token already exists
+        uuidStub.onCall(1).returns('731a3bac-7872-481c-9069-fa223b318f6d') // Call 1: token already exists
+        uuidStub.returns('731a3bac-7872-481c-9069-fa223b318f6e') // Call 2: token does not exist
 
-      tokens.tokenStore.set('731a3bac-7872-481c-9069-fa223b318f6d', {id: 'test123'}, function (err) {
-        if (err) return done(err)
-      })
+        var req = { body: { clientId: 'test123', secret: 'superSecret' } }
+        var res = {
+          setHeader: function () {},
+          end: function (data) {
+            data = JSON.parse(data)
 
-      var uuidStub = sinon.stub(uuid, 'v4')
-      uuidStub.onCall(0).returns('test123') // make v4 return an existing token
-      uuidStub.onCall(1).returns('731a3bac-7872-481c-9069-fa223b318f6d') // make v4 return a diff token
-      uuidStub.returns('731a3bac-7872-481c-9069-fa223b318f6e') // make v4 return a diff token
+            data.accessToken.should.eql('731a3bac-7872-481c-9069-fa223b318f6e')
+            uuid.v4.restore()
+            uuidStub.callCount.should.be.above(1)
 
-      var req = { body: { clientId: 'test123', secret: 'superSecret' } }
-
-      var res = {
-        setHeader: function () {},
-        end: function (data) {
-          data = JSON.parse(data)
-
-          should.exist(data.accessToken)
-          uuid.v4.restore()
-          uuidStub.callCount.should.be.above(1)
-          done()
+            done()
+          }
         }
-      }
 
-      tokens.generate(req, res, (err) => {
-        // console.log('NEXT?', err)
-      })
+        tokens.generate(req, res, err => {
+          done(err)
+        })
+      }).catch(err => done(err))
     })
   })
 
@@ -112,7 +108,7 @@ describe('Tokens', function () {
         conn.datastore.insert({
           clientId: 'test123',
           secret: 'superSecret'
-        }, clientCollectionName, store.getSchema()).then(() => {
+        }, clientCollectionName, store.schema).then(() => {
           done()}
         )
       }, 500)

@@ -56,11 +56,16 @@ describe('Tokens', function () {
 
       var store = tokenStore()
 
-      setTimeout(function () {
+      setTimeout(() => {
         conn.datastore.insert({
-          clientId: 'test123',
-          secret: 'superSecret'
-        }, clientCollectionName, store.schema).then(() => {
+          data: {
+            clientId: 'test123',
+            secret: 'superSecret'
+          },
+          collection: clientCollectionName,
+          schema: store.schema.fields,
+          settings: store.schema.settings
+        }).then(() => {
           done()}
         )
       }, 500)
@@ -106,9 +111,14 @@ describe('Tokens', function () {
 
       setTimeout(function () {
         conn.datastore.insert({
-          clientId: 'test123',
-          secret: 'superSecret'
-        }, clientCollectionName, store.schema).then(() => {
+          data: {
+            clientId: 'test123',
+            secret: 'superSecret'
+          },
+          collection: clientCollectionName,
+          schema: store.schema.fields,
+          settings: store.schema.settings
+        }).then(() => {
           done()}
         )
       }, 500)

@@ -1,3 +1,5 @@
+'use strict'
+
 // Validation should:
 //   ensure that no queries use `$` operators at top level
 //   ensure that all objects are JSON
@@ -8,7 +10,19 @@ var path = require('path')
 var datastore = require(path.join(__dirname, '../datastore'))()
 var validator = require('validator')
 
-var ignoredKeys = _.union(['_id', '_apiVersion', '_version', '_history'], datastore.nonValidatedProperties || [])
+var ignoredKeys = _.union(
+  [
+    '_id',
+    '_apiVersion',
+    '_version',
+    '_history',
+    '_createdAt',
+    '_createdBy',
+    '_lastModifiedAt',
+    '_lastModifiedBy'
+  ],
+  datastore.nonValidatedProperties || []
+)
 
 var Validator = function (model) {
   this.model = model
@@ -207,8 +221,9 @@ Validator.prototype._validate = function (field, schema, key) {
     }
   }
 
-  // allow Mixed/ObjectID/Reference/DateTime fields through
-  if (_.contains(['Mixed', 'ObjectID', 'Reference', 'DateTime'], schema.type) === false) {
+  // allow Mixed/ObjectID/Reference/DateTime fields through,
+  // but check all other types
+  if (['Mixed', 'ObjectID', 'Reference', 'DateTime'].includes(schema.type) === false) {
     // check constructor of field against primitive types and check the type of field == the specified type
     // using constructor.name as array === object in typeof comparisons
     try {

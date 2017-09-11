@@ -10,5 +10,10 @@
   "database": "apiv3",
   "ssl": false,
   "replicaSet": "",
-  "enableCollectionDatabases": true
+  "enableCollectionDatabases": true,
+  "auth": {
+    "username": "",
+    "password": "",
+    "database": "auth"
+  }
 }

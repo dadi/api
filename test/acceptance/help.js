@@ -87,20 +87,26 @@ module.exports.createClient = function (client, done) {
   }
 
   var collectionName = config.get('auth.clientCollection')
-  var conn = connection({ auth: true, database: config.get('auth.database'), collection: collectionName }, null, config.get('datastore'))
+  var conn = connection({
+    override: true,
+    database: config.get('auth.database'),
+    collection: collectionName
+  }, null, config.get('datastore'))
 
-  setTimeout(function() {
-    conn.datastore.insert(client, collectionName, tokenStore.schema).then(result => {
-      return done()
-    }).catch((err) => {
-      done(err)
-    })
-  }, 500)
+  conn.datastore.insert({
+    data: client,
+    collection: collectionName,
+    schema: tokenStore.schema
+  }).then(result => {
+    return done()
+  }).catch((err) => {
+    done(err)
+  })
 }
 
 module.exports.removeTestClients = function (done) {
   var collectionName = config.get('auth.clientCollection')
-  var conn = connection({ auth: true, database: config.get('auth.database'), collection: collectionName }, null, config.get('datastore'))
+  var conn = connection({ override: true, database: config.get('auth.database'), collection: collectionName }, null, config.get('datastore'))
 
   conn.datastore.dropDatabase(collectionName).then(() => {
     return done()

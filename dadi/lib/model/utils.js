@@ -219,11 +219,11 @@ function removeInternalFields (obj) {
   return obj
 }
 
-function removeEmptyArrayProperties (value) {
-  if (Array.isArray(value)) {
-    return value.filter(value => value !== null && typeof value !== 'undefined')
+function removeEmptyArrayProperties (inputValue) {
+  if (Array.isArray(inputValue)) {
+    return inputValue.filter(value => value !== null && typeof value !== 'undefined')
   } else {
-    return value
+    return inputValue
   }
 }
 

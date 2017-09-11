@@ -2,19 +2,21 @@
 
 'use strict'
 
-var Connection
-var config
+const path = require('path')
+
+let Connection
+let config
 
 try {
   Connection = require('@dadi/api').Connection
   config = require('@dadi/api').Config
 } catch (err) {
-  Connection = require(__dirname + '/../dadi/lib/model/connection')
-  config = require(__dirname + '/../config')
+  Connection = require(path.join(__dirname, '/../dadi/lib/model/connection'))
+  config = require(path.join(__dirname, '/../config'))
 }
 
 const clientCollectionName = config.get('auth.clientCollection')
-const dbOptions = { auth: true, database: config.get('auth.database'), collection: clientCollectionName }
+const dbOptions = { override: true, database: config.get('auth.database'), collection: clientCollectionName }
 const connection = Connection(dbOptions, config.get('auth.datastore'))
 
 const prompt = require('cli-prompt')
@@ -63,14 +65,26 @@ connection.on('connect', db => {
 
         // check for an existing client account
         db.find({
-          clientId: options.clientId
-        }, clientCollectionName, {}, getSchema()).then(existingClients => {
+          query: {
+            clientId: options.clientId
+          },
+          collection: clientCollectionName,
+          schema: getSchema().fields,
+          settings: getSchema().settings
+        }).then(existingClients => {
           if (existingClients.length > 0) {
             console.log(`(x) The identifier ${options.clientId} already exists. Exiting...`)
             return
           }
 
-          db.insert(options, clientCollectionName, getSchema()).then(result => {
+          console.log(options)
+
+          db.insert({
+            data: options,
+            collection: clientCollectionName,
+            schema: getSchema().fields,
+            settings: getSchema().settings
+          }).then(result => {
             console.log()
             console.log('(*) Client created successfully:')
             console.log()

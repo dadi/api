@@ -7,7 +7,7 @@ const Connection = require(path.join(__dirname, '/../model/connection'))
 const tokenStore = require(path.join(__dirname, '/tokenStore'))()
 
 const clientCollectionName = config.get('auth.clientCollection')
-const dbOptions = { auth: true, database: config.get('auth.database'), collection: clientCollectionName }
+const dbOptions = { override: true, database: config.get('auth.database'), collection: clientCollectionName }
 const connection = Connection(dbOptions, null, config.get('auth.datastore'))
 
 module.exports.generate = (req, res, next) => {
@@ -20,12 +20,12 @@ module.exports.generate = (req, res, next) => {
   }
 
   const connectionReady = database => {
-    database.find(
-      credentials,
-      clientCollectionName,
-      {},
-      tokenStore.schema
-    ).then(results => {
+    database.find({
+      query: credentials,
+      collection: clientCollectionName,
+      schema: tokenStore.schema.fields,
+      settings: tokenStore.schema.settings
+    }).then(results => {
       const client = results.results[0]
 
       // no client found matchibg the credentials

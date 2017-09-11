@@ -110,6 +110,9 @@ module.exports = function (options, collection, storeName) {
 
   var connectionKey = Object.keys(options).map((option) => { return options[option] }).join(':')
 
+  // console.log('connectionKey:', connectionKey)
+  // console.log(_connections)
+
   // if a connection exists for the specified database, return it
   if (_connections[connectionKey]) {
     return _connections[connectionKey]

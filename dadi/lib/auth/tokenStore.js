@@ -47,7 +47,7 @@ const TokenStore = function () {
 TokenStore.prototype.connect = function () {
   this.database = new Promise((resolve, reject) => {
     const dbOptions = {
-      auth: true,
+      override: true,
       collection: this.collection,
       database: this.database
     }
@@ -102,12 +102,12 @@ TokenStore.prototype.generateNew = function () {
  */
 TokenStore.prototype.get = function (token) {
   return this.database.then(database => {
-    return database.find(
-      {token, tokenExpire: {$gte: Date.now()}},
-      this.collection,
-      {},
-      this.schema
-    )
+    return database.find({
+      query: {token, tokenExpire: {$gte: Date.now()}},
+      collection: this.collection,
+      schema: this.schema.fields,
+      settings: this.schema.settings
+    })
   }).then(data => {
     if (data.results.length) {
       return data.results[0]
@@ -132,12 +132,12 @@ TokenStore.prototype.set = function (token, data) {
   }
 
   return this.database.then(database => {
-    return database.insert(
-      payload,
-      this.collection,
-      // {},
-      this.schema
-    )
+    return database.insert({
+      data: payload,
+      collection: this.collection,
+      schema: this.schema.fields,
+      settings: this.schema.settings
+    })
   }).then(docs => docs[0])
 }
 
@@ -147,12 +147,11 @@ TokenStore.prototype.startCleanupAgent = function () {
 
     this.database.then(database => {
       // Deleting any tokens with an expiry date in the past.
-      database.delete(
-        {tokenExpire: {$lt: Date.now()}},
-        this.collection,
-        {},
-        this.schema
-      ).catch(err => {
+      database.delete({
+        query: { tokenExpire: { $lt: Date.now() } },
+        collection: this.collection,
+        schema: this.schema
+      }).catch(err => {
         console.log('Error whilst cleaning up expired tokens:', err)
       })
     })

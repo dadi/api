@@ -1,14 +1,14 @@
-var debug = require('debug')('api:history')
-var path = require('path')
-var queryUtils = require(path.join(__dirname, '/utils'))
+const debug = require('debug')('api:history')
+const path = require('path')
+const queryUtils = require(path.join(__dirname, '/utils'))
 
-var History = function (model) {
+const History = function (model) {
   this.model = model
 }
 
 History.prototype.create = function (obj, model, done) {
   // create copy of original
-  var revisionObj = queryUtils.snapshot(obj)
+  let revisionObj = queryUtils.snapshot(obj)
   revisionObj._originalDocumentId = obj._id
 
   // TODO: use datastore plugin's internal fields
@@ -16,18 +16,22 @@ History.prototype.create = function (obj, model, done) {
   delete revisionObj.meta
   delete revisionObj.$loki
 
-  var _done = function (database) {
-    database.insert(revisionObj, model.revisionCollection, model.schema).then((doc) => {
+  const _done = function (database) {
+    database.insert({
+      data: revisionObj,
+      collection: model.revisionCollection,
+      schema: model.schema,
+      settings: model.settings
+    }).then((doc) => {
       debug('inserted %o', doc)
 
       // TODO: remove mongo options
-      database.update(
-        { _id: obj._id },
-        model.name,
-        { $push: { '_history': doc[0]._id.toString() } },
-        {},
-        model.schema
-      ).then((result) => {
+      database.update({
+        query: { _id: obj._id },
+        collection: model.name,
+        update: { $push: { '_history': doc[0]._id.toString() } },
+        schema: model.schema
+      }).then((result) => {
         return done(null, obj)
       }).catch((err) => {
         done(err)

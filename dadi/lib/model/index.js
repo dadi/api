@@ -166,6 +166,7 @@ Model.prototype.create = function (documents, internals, done, req) {
     var err = validationError('Validation Failed')
     err.success = validation.success
     err.errors = validation.errors
+    err.data = documents
     return done(err)
   }
 
@@ -229,8 +230,13 @@ Model.prototype.create = function (documents, internals, done, req) {
   }
 
   var saveDocuments = (database) => {
-    database.insert(documents, this.name, this.schema).then(results => {
-      var returnData = {
+    database.insert({
+      data: documents,
+      collection: this.name,
+      schema: this.schema,
+      settings: this.settings
+    }).then(results => {
+      let returnData = {
         results: results
       }
 
@@ -254,6 +260,7 @@ Model.prototype.create = function (documents, internals, done, req) {
         return done(null, returnData)
       })
     }).catch((err) => {
+      console.log('> API MODEL INSERT ERR')
       return done(err)
     })
   }
@@ -263,7 +270,7 @@ Model.prototype.create = function (documents, internals, done, req) {
 
   // before the primary document insert, process any Reference fields
   // that have been passed as subdocuments rather than id strings
-  _.each(documents, (doc, idx) => {
+  documents.forEach((doc, idx) => {
     this.composer.createFromComposed(doc, req, (err, result) => {
       if (err) {
         return done(err.json)
@@ -338,7 +345,11 @@ Model.prototype.delete = function (query, done, req) {
     var allDocs = []
 
     var deleteDocuments = (database) => {
-      database.delete(query, this.name, this.schema).then((result) => {
+      database.delete({
+        query: query,
+        collection: this.name,
+        schema: this.schema
+      }).then(result => {
         if (result.deletedCount > 0) {
           // apply any existing `afterDelete` hooks
           if (this.settings.hasOwnProperty('hooks') && (typeof this.settings.hooks.afterDelete === 'object')) {
@@ -480,10 +491,6 @@ Model.prototype.find = function (query, options, done) {
 
   debug('find %o %o', query, options)
 
-  if (JSON.stringify(query).indexOf('object Object') > 0) {
-    console.trace()
-  }
-
   // override the model's settings with a value from the options object
   if (options.hasOwnProperty('compose')) {
     self.compose = options.compose
@@ -515,7 +522,7 @@ Model.prototype.find = function (query, options, done) {
 
       // for each reference field key, query the specified collection
       // to obtain an _id value
-      _.each(referenceFieldKeys, (key, index) => {
+      referenceFieldKeys.forEach((key, index) => {
         queue.push((cb) => {
           var keyParts = key.split('.')
 
@@ -535,7 +542,7 @@ Model.prototype.find = function (query, options, done) {
 
           var fieldsObj = {}
           if (collectionSettings.fields) {
-            collectionSettings.fields.forEach(function (field) {
+            collectionSettings.fields.forEach(field => {
               fieldsObj[field] = 1
             })
           }
@@ -636,7 +643,13 @@ Model.prototype.find = function (query, options, done) {
       var queryOptions = _.clone(options)
       delete queryOptions.historyFilters
 
-      database.find(query, self.name, queryOptions, self.schema).then((results) => {
+      database.find({
+        query: query,
+        collection: self.name,
+        options: queryOptions,
+        schema: self.schema,
+        settings: self.settings
+      }).then((results) => {
         // NOTE: datastore returns object containing results + metadata
         //  {
         //    results: [ { _id: 590bbc9d29ccaf1cb8ab0ed1, fieldName: 'foo' } ],
@@ -767,7 +780,13 @@ Model.prototype.revisions = function (id, options, done) {
   }
 
   var _done = (database) => {
-    database.find({ '_id': id }, this.name, { history: 1, limit: 1 }, this.schema).then((results) => {
+    database.find({
+      query: { '_id': id },
+      collection: this.name,
+      options: { history: 1, limit: 1 },
+      schema: this.schema,
+      settings: this.settings
+    }).then(results => {
       debug('find in history %o', results.results)
 
       if (results && results.results && results.results.length && this.history) {
@@ -777,7 +796,13 @@ Model.prototype.revisions = function (id, options, done) {
           })
         }
 
-        database.find(historyQuery, this.revisionCollection, fields, this.schema).then((results) => {
+        database.find({
+          query: historyQuery,
+          collection: this.revisionCollection,
+          options: fields,
+          schema: this.schema,
+          settings: this.settings
+        }).then(results => {
           return done(null, results.results)
         }).catch((err) => {
           return done(err)
@@ -887,7 +912,7 @@ Model.prototype.injectHistory = function (data, options) {
       return resolve(data)
     }
 
-    _.each(data.results, (doc, idx) => {
+    data.results.forEach((doc, idx) => {
       this.revisions(doc._id, options, (err, history) => {
         if (err) console.log(err)
 
@@ -1012,7 +1037,13 @@ Model.prototype.update = function (query, update, internals, done, req, bypassOu
       var updatedDocs = queryUtils.snapshot(result.results)
 
       var saveDocuments = () => {
-        database.update(query, this.name, setUpdate, { multi: true }, this.schema).then((result) => {
+        database.update({
+          query: query,
+          collection: this.name,
+          update: setUpdate,
+          options: { multi: true },
+          schema: this.schema
+        }).then((result) => {
           // TODO: review, I don't know if sending a 404 is the right response
           // when no documents were modified
           if (result.matchedCount === 0) {

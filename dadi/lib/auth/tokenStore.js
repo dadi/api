@@ -118,6 +118,8 @@ TokenStore.prototype.get = function (token) {
 }
 
 /**
+ * Writes a token to the database.
+ *
  * @param {String} The token
  * @param {Object} A data object to be appended to the
  *    token document.
@@ -141,6 +143,12 @@ TokenStore.prototype.set = function (token, data) {
   }).then(docs => docs[0])
 }
 
+/**
+ * Starts the clean-up agent, which will regularly remove
+ * expired tokens at the interval defined in config.
+ *
+ * @return {Number} A reference to the `setInterval` call
+ */
 TokenStore.prototype.startCleanupAgent = function () {
   this.cleanupAgent = setInterval(() => {
     debug('Cleaning up expired tokens')
@@ -156,6 +164,16 @@ TokenStore.prototype.startCleanupAgent = function () {
       })
     })
   }, config.get('auth.cleanupInterval') * 1000)
+
+  return this.cleanupAgent
+}
+
+/**
+ * Stops the clean-up agent, removing any checks for expired
+ * tokens.
+ */
+TokenStore.prototype.stopCleanupAgent = function () {
+  clearInterval(this.cleanupAgent)
 }
 
 let tokenStore

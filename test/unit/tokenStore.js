@@ -123,4 +123,46 @@ describe('Token Store', function () {
       }).catch(err => done(err))
     })
   })
+
+  describe('clean-up agent', function () {
+    it('should remove expired tokens from the collection and keep valid ones', function (done) {
+      sinon.stub(config, 'get')
+        .withArgs('auth.cleanupInterval')
+        .returns(1)
+        .withArgs('auth.tokenTtl')
+        .onFirstCall().returns(1)
+        .onSecondCall().returns(10)
+
+      var store = tokenStore()
+      var payload = {
+        clientId: 'testClient',
+        secret: 'superSecret'
+      }
+      var token1 = '123456789'
+      var token2 = '987654321'
+
+      store.stopCleanupAgent()
+      store.startCleanupAgent()
+
+      store.set(token1, payload)
+        .then(doc => {
+          return store.set(token2, payload)
+        })
+        .then(doc => {
+          setTimeout(() => {
+            store.get(token1).then(doc1 => {
+              return store.get(token2).then(doc2 => {
+                should.equal(doc1, null)
+                doc2.token.should.eql(token2)
+
+                config.get.restore()
+
+                done()
+              })
+            })
+          }, 3000)
+        })
+        .catch(err => done(err))
+      })
+  })
 })

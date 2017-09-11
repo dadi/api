@@ -14,6 +14,7 @@ var jwt = require('jsonwebtoken')
 var mkdirp = require('mkdirp')
 var path = require('path')
 var pathToRegexp = require('path-to-regexp')
+var Search = require(path.join(__dirname, '/search'))
 var stackTrace = require('stack-trace')
 var url = require('url')
 var _ = require('underscore')
@@ -786,6 +787,11 @@ Server.prototype.addCollectionResource = function (options) {
     component: controller,
     filepath: options.filepath
   })
+
+  if (config.get('search.indexOnStart')) {
+    var search = new Search(model)
+    search.batchIndex()
+  }
 
   // watch the schema's file and update it in place
   this.addMonitor(options.filepath, filename => {

@@ -10,16 +10,26 @@ const DefaultAnalyser = StandardAnalyser
 const pageLimit = 20
 
 const Search = function (model) {
-  const settings = Object.assign(config.get('search.database'))
-
+  this.words = []
+  const database = config.get('search.database')
   this.model = model
   this.wordCollection = config.get('search.wordCollection')
   this.searchCollection = this.model.searchCollection || this.model.name + 'Search'
   this.indexableFields = this.getIndexableFields()
 
-  this.wordConnection = Connection({ database: settings.database, collection: this.wordCollection, override: true }, this.wordCollection, config.get('datastore'))
+  this.wordConnection = Connection({database, collection: this.wordCollection, override: true}, this.wordCollection, config.get('search.datastore'))
+  this.searchConnection = Connection({database, collection: this.searchCollection, override: true}, this.searchCollection, config.get('search.datastore'))
 
-  this.searchConnection = Connection({ database: settings.database, collection: this.searchCollection }, this.searchCollection, config.get('datastore'))
+  this.applyIndexListeners()
+}
+
+Search.prototype.applyIndexListeners = function () {
+  this.wordConnection.once('connect', database => {
+    database.index(this.wordCollection, this.getWordSchema().settings.index)
+  })
+  this.searchConnection.once('connect', database => {
+    database.index(this.searchCollection, this.getSearchSchema().settings.index)
+  })
 }
 
 Search.prototype.getIndexableFields = function () {
@@ -143,13 +153,13 @@ Search.prototype.getSearchSchema = function () {
           }
         },
         {
-          document: {
-            word: 1
+          keys: {
+            document: 1
           }
         },
         {
-          weight: {
-            word: 1
+          keys: {
+            weight: 1
           }
         }
       ]
@@ -190,6 +200,8 @@ Search.prototype.indexDocument = function (doc) {
     return {word}
   })
 
+  this.words = this.words.concat(words)
+
   // Insert unique words into word collection.
   return this.insert(
     this.wordConnection.db,
@@ -214,7 +226,6 @@ Search.prototype.clearAndInsertWordInstances = function (words, wordInsert, anal
   // The word index is unique, so results aren't always returned.
   // Fetch word entries again to get ids.
   const query = {word: {'$in': words}}
-
   return this.runFind(this.wordConnection.db, query, this.wordCollection, this.getWordSchema())
     .then(result => {
       // Get all word instances from Analyser.
@@ -222,6 +233,9 @@ Search.prototype.clearAndInsertWordInstances = function (words, wordInsert, anal
         .then(res => {
           this.insertWordInstances(wordInsert, analyser, result, docId)
         })
+    })
+    .catch(e => {
+      console.log(e)
     })
 }
 
@@ -244,18 +258,18 @@ Search.prototype.insertWordInstances = function (wordInsert, analyser, result, d
 }
 
 Search.prototype.runFind = function (database, query, collection, schema, options = {}) {
-  return database.find(query, collection, options, schema)
+  return database.find({query, collection, options, schema})
 }
 
 Search.prototype.clearDocumentInstances = function (documentId) {
   // Remove all instance entries for a given document
-  return this.searchConnection.db.delete({document: documentId}, this.searchCollection, this.getSearchSchema())
+  const query = {document: documentId}
+  return this.searchConnection.db.delete({query, collection: this.searchCollection, schema: this.getSearchSchema()})
 }
 
-Search.prototype.insert = function (database, documents, collection, options, schema) {
-  if (!documents.length) return Promise.resolve()
-
-  return database.insert(documents, collection, options, schema)
+Search.prototype.insert = function (database, data, collection, options, schema) {
+  if (!data.length) return Promise.resolve()
+  return database.insert({data, collection, options, schema})
 }
 
 Search.prototype.batchIndex = function () {
@@ -274,6 +288,8 @@ Search.prototype.batchIndex = function () {
     .then(res => {
       this.index(res.results)
         .then(c => {
+          const all = [...new Set(this.words)]
+          console.log(`Inserted ${all.length} words`)
           console.log(`Indexed ${res.results.length} records for ${this.model.name}`)
         })
     })

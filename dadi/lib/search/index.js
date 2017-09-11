@@ -21,6 +21,8 @@ const Search = function (model) {
   this.searchConnection = Connection({database, collection: this.searchCollection, override: true}, this.searchCollection, config.get('search.datastore'))
 
   this.applyIndexListeners()
+
+  return this
 }
 
 Search.prototype.applyIndexListeners = function () {
@@ -115,7 +117,7 @@ Search.prototype.getWordSchema = function () {
       }
     },
     settings: {
-      cache: false,
+      cache: true,
       index: [{
         keys: {
           word: 1
@@ -145,7 +147,7 @@ Search.prototype.getSearchSchema = function () {
       }
     },
     settings: {
-      cache: false,
+      cache: true,
       index: [
         {
           keys: {
@@ -231,6 +233,7 @@ Search.prototype.clearAndInsertWordInstances = function (words, wordInsert, anal
       // Get all word instances from Analyser.
       this.clearDocumentInstances(docId)
         .then(res => {
+          if (res.deletedCount) console.log(`Cleared ${res.deletedCount} documents`)
           this.insertWordInstances(wordInsert, analyser, result, docId)
         })
     })
@@ -272,27 +275,45 @@ Search.prototype.insert = function (database, data, collection, options, schema)
   return database.insert({data, collection, options, schema})
 }
 
-Search.prototype.batchIndex = function () {
+Search.prototype.batchIndex = function (page = 1, limit = 1000) {
+  console.log(`Start indexing page ${page} (${limit} per page)`)
+
+  const skip = (page - 1) * limit
+
   if (!Object.keys(this.indexableFields).length) return
 
   const fields = Object.assign({}, ...Object.keys(this.indexableFields).map(key => {
     return {[key]: 1}
   }))
 
-  this.model.connection.once('connect', database => {
+  const index = database => {
     this.runFind(database, {}, this.model.name, this.model.schema, {
-      limit: 3000,
-      fields,
-      compose: true
+      skip,
+      page,
+      limit,
+      fields
     })
     .then(res => {
       this.index(res.results)
         .then(c => {
-          const all = [...new Set(this.words)]
-          console.log(`Inserted ${all.length} words`)
-          console.log(`Indexed ${res.results.length} records for ${this.model.name}`)
+          console.log(`Indexed page ${page}/${res.metadata.totalPages}`)
+          if (page * limit < res.metadata.totalCount) {
+            return this.batchIndex(page + 1, limit)
+          } else {
+            const all = [...new Set(this.words)]
+            console.log(`Inserted ${all.length} words`)
+            console.log(`Indexed ${res.results.length} records for ${this.model.name}`)
+          }
         })
     })
+  }
+
+  if (this.model.connection.db) {
+    index(this.model.connection.db)
+  }
+
+  this.model.connection.once('connect', database => {
+    index(database)
   })
 }
 

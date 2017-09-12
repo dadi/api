@@ -1028,7 +1028,7 @@ Model.prototype.update = function (query, update, internals, done, req, bypassOu
   var setUpdate = { $set: update, $inc: { _version: 1 } }
 
   var startUpdate = (database) => {
-    this.find(query, {}, (err, result) => {
+    this.find(query, { compose: false }, (err, result) => {
       if (err) return done(err)
 
       // create a copy of the documents that matched the find

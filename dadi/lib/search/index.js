@@ -280,10 +280,10 @@ Search.prototype.indexDocument = function (doc) {
     this.wordConnection.db,
     wordInsert,
     this.wordCollection,
+    this.getWordSchema().fields,
     {
       ordered: false
-    },
-    this.getWordSchema().fields
+    }
   )
   .then(res => {
     return this.clearAndInsertWordInstances(words, analyser, doc._id.toString())
@@ -325,6 +325,16 @@ Search.prototype.createWordInstanceInsertQuery = function (words) {
   })
 }
 
+/**
+ * Clear and Insert Word Instances
+ * Finds all words that exist in current version of a document.
+ * Removes all instances relating to a specific document.
+ * Insert new word instances.
+ * @param  {Array} words List of words matching document word list.
+ * @param  {Class} analyser Instance of document populated analyser class.
+ * @param  {String} docId Current document ID.
+ * @return {Promise} Chained word query, document instance delete and document instance insert.
+ */
 Search.prototype.clearAndInsertWordInstances = function (words, analyser, docId) {
   // The word index is unique, so results aren't always returned.
   // Fetch word entries again to get ids.
@@ -335,7 +345,7 @@ Search.prototype.clearAndInsertWordInstances = function (words, analyser, docId)
       this.clearDocumentInstances(docId)
         .then(res => {
           if (res.deletedCount) console.log(`Cleared ${res.deletedCount} documents`)
-          this.insertWordInstances(analyser, result, docId)
+          this.insertWordInstances(analyser, result.results, docId)
         })
     })
     .catch(e => {
@@ -343,44 +353,81 @@ Search.prototype.clearAndInsertWordInstances = function (words, analyser, docId)
     })
 }
 
-Search.prototype.insertWordInstances = function (analyser, result, docId) {
+/**
+ * Insert Word Instance
+ * Insert Document word instances.
+ * @param  {Class} analyser Instance of document populated analyser class.
+ * @param  {[type]} words Results from database query for word list.
+ * @param  {String} docId Current document ID.
+ * @return {Promise} Insert query for document word instances.
+ */
+Search.prototype.insertWordInstances = function (analyser, words, docId) {
   const instances = analyser
     .getWordInstances()
 
   if (!instances) return
 
   const doc = instances
-    .filter(instance => result.results.find(result => result.word === instance.word))
+    .filter(instance => words.find(wordResult => wordResult.word === instance.word))
     .map(instance => {
-      const word = result.results.find(result => result.word === instance.word)._id.toString()
+      const word = words.find(wordResult => wordResult.word === instance.word)._id.toString()
 
       return Object.assign(instance, {word, document: docId})
     })
 
   // Insert word instances into search collection.
-  this.insert(this.searchConnection.db, doc, this.searchCollection, {}, this.getSearchSchema().fields)
+  this.insert(this.searchConnection.db, doc, this.searchCollection, this.getSearchSchema().fields)
 }
 
+/**
+ * Run Find
+ * Executes find method on database
+ * @param {Connection} database Instance of database connection.
+ * @param {Object} query Query object filter.
+ * @param {String} collection Name of collection to query.
+ * @param {Object} schema Field schema for collection.
+ * @param {Object} options Query options.
+ * @return {Promise} Database find query.
+ */
 Search.prototype.runFind = function (database, query, collection, schema, options = {}) {
   return database.find({query, collection, options, schema})
 }
 
-// Remove all instance entries for a given document
-Search.prototype.clearDocumentInstances = function (documentId) {
-  const query = {document: documentId}
+/**
+ * Clear Document Instances
+ * Remove all instance entries for a given document.
+ * @param  {String} docId Current document ID.
+ * @return {Promise} Database delete query.
+ */
+Search.prototype.clearDocumentInstances = function (docId) {
+  const query = {document: docId}
 
   return this.searchConnection.db.delete({query, collection: this.searchCollection, schema: this.getSearchSchema().fields})
 }
 
-Search.prototype.insert = function (database, data, collection, options, schema) {
+/**
+ * [insert description]
+ * @param {Connection} database Instance of database connection.
+ * @param  {Object/Array} data Insert payload.
+ * @param {String} collection Name of collection to query.
+ * @param {Object} schema Field schema for collection.
+ * @param {Object} options Query options.
+ * @return {Promise} Database insert query.
+ */
+Search.prototype.insert = function (database, data, collection, schema, options = {}) {
   if (!data.length) return Promise.resolve()
   return database.insert({data, collection, options, schema})
 }
 
+/**
+ * Batch Index
+ * Performs indexing across an entire collection.
+ * @param  {Number} page Current page offset.
+ * @param  {Number} limit Query limit.
+ */
 Search.prototype.batchIndex = function (page = 1, limit = 1000) {
-  console.log(`Start indexing page ${page} (${limit} per page)`)
-
   const skip = (page - 1) * limit
+  console.log(`Start indexing page ${page} (${limit} per page)`)
 
   if (!Object.keys(this.indexableFields).length) return
 
@@ -388,32 +435,39 @@ Search.prototype.batchIndex = function (page = 1, limit = 1000) {
     return {[key]: 1}
   }))
 
-  const index = database => {
-    this.runFind(database, {}, this.model.name, this.model.schema, {
-      skip,
-      page,
-      limit,
-      fields
-    })
-    .then(res => {
-      this.index(res.results)
-        .then(c => {
-          console.log(`Indexed page ${page}/${res.metadata.totalPages}`)
-          if (page * limit < res.metadata.totalCount) {
-            return this.batchIndex(page + 1, limit)
-          } else {
-            console.log(`Indexed ${res.results.length} records for ${this.model.name}`)
-          }
-        })
-    })
+  const options = {
+    skip,
+    page,
+    limit,
+    fields
   }
 
   if (this.model.connection.db) {
-    index(this.model.connection.db)
+    this.runBatchIndex(options)
   }
 
   this.model.connection.once('connect', database => {
-    index(database)
+    this.runBatchIndex(options)
+  })
+}
+
+/**
+ * Run Batch Index
+ * Performs indexing across an entire collection.
+ * @param  {Object} options find query options.
+ */
+Search.prototype.runBatchIndex = function (options) {
+  this.runFind(this.model.connection.db, {}, this.model.name, this.model.schema, options)
+  .then(res => {
+    this.index(res.results)
+      .then(resp => {
+        console.log(`Indexed page ${options.page}/${res.metadata.totalPages}`)
+        if (options.page * options.limit < res.metadata.totalCount) {
+          return this.batchIndex(options.page + 1, options.limit)
+        } else {
+          console.log(`Indexed ${res.results.length} records for ${this.model.name}`)
+        }
+      })
   })
 }
 

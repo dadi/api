@@ -247,6 +247,8 @@ Search.prototype.delete = function (docs) {
  * @return {Promise} Queries to index documents.
  */
 Search.prototype.index = function (docs) {
+  if (!Array.isArray(docs)) return
+
   return Promise.all(docs.map(doc => this.indexDocument(doc)))
 }
 

@@ -113,14 +113,14 @@ Search.prototype.find = function (searchTerm) {
 Search.prototype.getWords = function (words) {
   const query = {word: {'$in': words}}
 
-  return this.runFind(this.wordConnection.db, query, this.wordCollection, this.getWordSchema())
+  return this.runFind(this.wordConnection.db, query, this.wordCollection, this.getWordSchema().fields)
     .then(response => {
       // Try a second pass with regular expressions
       if (!response.length) {
         const regexWords = words.map(word => new RegExp(word))
         const regexQuery = {word: {'$in': regexWords}}
 
-        return this.runFind(this.wordConnection.db, regexQuery, this.wordCollection, this.getWordSchema())
+        return this.runFind(this.wordConnection.db, regexQuery, this.wordCollection, this.getWordSchema().fields)
       }
       return response
     })
@@ -132,7 +132,7 @@ Search.prototype.getWords = function (words) {
  * @return {Promise} Query against the search collection.
  */
 Search.prototype.getInstancesOfWords = function (words) {
-  const ids = words.map(word => word._id)
+  const ids = words.map(word => word._id.toString())
 
   const query = [
     {
@@ -157,7 +157,7 @@ Search.prototype.getInstancesOfWords = function (words) {
     {$limit: pageLimit}
   ]
 
-  return this.runFind(this.searchConnection.db, query, this.searchCollection, this.getSearchSchema())
+  return this.runFind(this.searchConnection.db, query, this.searchCollection, this.getSearchSchema().fields)
 }
 
 /**
@@ -236,7 +236,7 @@ Search.prototype.getSearchSchema = function () {
  */
 Search.prototype.delete = function (docs) {
   const deleteQueue = docs
-    .map(doc => this.clearDocumentInstances(doc._id))
+    .map(doc => this.clearDocumentInstances(doc._id.toString()))
 
   return Promise.all(deleteQueue)
 }
@@ -270,9 +270,9 @@ Search.prototype.removeNonIndexableFields = function (doc) {
  * @return {[type]}     [description]
  */
 Search.prototype.indexDocument = function (doc) {
+  const analyser = new DefaultAnalyser(this.indexableFields)
   const reducedDoc = this.removeNonIndexableFields(doc)
-
-  const words = this.analyseDocumentWords(reducedDoc)
+  const words = this.analyseDocumentWords(analyser, reducedDoc)
   const wordInsert = this.createWordInstanceInsertQuery(words)
 
   // Insert unique words into word collection.
@@ -283,16 +283,16 @@ Search.prototype.indexDocument = function (doc) {
     {
       ordered: false
     },
-    this.getWordSchema()
+    this.getWordSchema().fields
   )
   .then(res => {
-    return this.clearAndInsertWordInstances(words, wordInsert, analyser, doc._id)
+    return this.clearAndInsertWordInstances(words, analyser, doc._id.toString())
   })
   .catch(err => {
-    // Code `11000` returns if the word already exists. 
+    // Code `11000` returns if the word already exists.
     // Continue regardless.
     if (err.code === 11000) {
-      return this.clearAndInsertWordInstances(words, wordInsert, analyser, doc._id)
+      return this.clearAndInsertWordInstances(words, analyser, doc._id.toString())
     }
   })
 }
@@ -303,16 +303,14 @@ Search.prototype.indexDocument = function (doc) {
  * @param  {Object} doc A document from the database, with non-indexable fields removed.
  * @return {Array} A list of analysed words.
  */
-Search.prototype.analyseDocumentWords = function (doc) {
-  const analyser = new DefaultAnalyser(this.indexableFields)
-
+Search.prototype.analyseDocumentWords = function (analyserInstance, doc) {
   // Analyse each field
   Object.keys(doc)
     .map(key => {
-      analyser.add(key, doc[key])
+      analyserInstance.add(key, doc[key])
     })
 
-  return analyser.getAllWords()
+  return analyserInstance.getAllWords()
 }
 
 /**
@@ -327,17 +325,17 @@ Search.prototype.createWordInstanceInsertQuery = function (words) {
   })
 }
 
-Search.prototype.clearAndInsertWordInstances = function (words, wordInsert, analyser, docId) {
+Search.prototype.clearAndInsertWordInstances = function (words, analyser, docId) {
   // The word index is unique, so results aren't always returned.
   // Fetch word entries again to get ids.
   const query = {word: {'$in': words}}
-  return this.runFind(this.wordConnection.db, query, this.wordCollection, this.getWordSchema())
+  return this.runFind(this.wordConnection.db, query, this.wordCollection, this.getWordSchema().fields)
     .then(result => {
       // Get all word instances from Analyser.
       this.clearDocumentInstances(docId)
         .then(res => {
           if (res.deletedCount) console.log(`Cleared ${res.deletedCount} documents`)
-          this.insertWordInstances(wordInsert, analyser, result, docId)
+          this.insertWordInstances(analyser, result, docId)
         })
     })
     .catch(e => {
@@ -345,7 +343,7 @@ Search.prototype.clearAndInsertWordInstances = function (words, wordInsert, anal
     })
 }
 
-Search.prototype.insertWordInstances = function (wordInsert, analyser, result, docId) {
+Search.prototype.insertWordInstances = function (analyser, result, docId) {
   const instances = analyser
     .getWordInstances()
 
@@ -354,23 +352,24 @@ Search.prototype.insertWordInstances = function (wordInsert, analyser, result, d
   const doc = instances
     .filter(instance => result.results.find(result => result.word === instance.word))
     .map(instance => {
-      const word = result.results.find(result => result.word === instance.word)._id
+      const word = result.results.find(result => result.word === instance.word)._id.toString()
 
       return Object.assign(instance, {word, document: docId})
     })
 
   // Insert word instances into search collection.
-  this.insert(this.searchConnection.db, doc, this.searchCollection, {}, this.getSearchSchema())
+  this.insert(this.searchConnection.db, doc, this.searchCollection, {}, this.getSearchSchema().fields)
 }
 
 Search.prototype.runFind = function (database, query, collection, schema, options = {}) {
   return database.find({query, collection, options, schema})
 }
 
+// Remove all instance entries for a given document
 Search.prototype.clearDocumentInstances = function (documentId) {
-  // Remove all instance entries for a given document
   const query = {document: documentId}
-  return this.searchConnection.db.delete({query, collection: this.searchCollection, schema: this.getSearchSchema()})
+
+  return this.searchConnection.db.delete({query, collection: this.searchCollection, schema: this.getSearchSchema().fields})
 }
 
 Search.prototype.insert = function (database, data, collection, options, schema) {

@@ -219,14 +219,24 @@ function removeInternalFields (obj) {
   return obj
 }
 
+function removeEmptyArrayProperties (inputValue) {
+  if (Array.isArray(inputValue)) {
+    return inputValue.filter(value => value !== null && typeof value !== 'undefined')
+  } else {
+    return inputValue
+  }
+}
+
 function stringifyProperties (obj) {
   _.each(Object.keys(obj), (key) => {
     try {
+      // Remove invalid array properties
+      obj[key] = removeEmptyArrayProperties(obj[key])
+
       if (typeof obj[key] === 'string' && validator.isMongoId(obj[key].toString())) {
         obj[key] = obj[key].toString()
       } else if (typeof obj[key] === 'object' && obj[key] !== null) {
         var value = obj[key].toString()
-
         // console.log('stringifyProperties', value, typeof value, obj[key], typeof obj[key])
 
         if (Array.isArray(obj[key])) {

@@ -16,10 +16,10 @@ describe('Search', () => {
     done()
   })
 
-  it('should export a function that returns an instance', done => {
-      const mod = model('testModel', help.getModelSchema(), null, { database: 'testdb' })
-      const search = Search(mod)
-      search.should.be.an.instanceOf(search.Search)
-      done()
-  })
+  // it('should export a function that returns an instance', done => {
+  //     const mod = model('testModel', help.getModelSchema(), null, { database: 'testdb' })
+  //     const search = Search(mod)
+  //     search.should.be.an.instanceOf(search.Search)
+  //     done()
+  // })
 })

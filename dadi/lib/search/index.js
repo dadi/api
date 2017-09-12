@@ -10,6 +10,8 @@ const DefaultAnalyser = StandardAnalyser
 const pageLimit = 20
 
 const Search = function (model) {
+  if (!model || model.constructor.name !== 'Model') throw new Error('model should be an instance of Model')
+
   this.model = model
   this.wordCollection = config.get('search.wordCollection')
   this.searchCollection = this.model.searchCollection || this.model.name + 'Search'
@@ -235,6 +237,7 @@ Search.prototype.getSearchSchema = function () {
  * @return {Promise} Query to delete instances with matching document ids.
  */
 Search.prototype.delete = function (docs) {
+  if (!Array.isArray(docs)) return
   const deleteQueue = docs
     .map(doc => this.clearDocumentInstances(doc._id.toString()))
 

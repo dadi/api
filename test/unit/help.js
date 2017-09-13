@@ -22,6 +22,54 @@ module.exports.getModelSchema = function () {
   }
 }
 
+module.exports.getSearchModelSchema = function () {
+  return {
+    'fieldName': {
+      'type': 'String',
+      'label': 'Title',
+      'comments': 'The title of the entry',
+      'placement': 'Main content',
+      'validation': {},
+      'required': false,
+      'message': '',
+      'display': {
+        'index': true,
+        'edit': true
+      }
+    },
+    'invalidSearchableFieldName': {
+      'type': 'String',
+      'label': 'Title',
+      'comments': 'The title of the entry',
+      'placement': 'Main content',
+      'validation': {},
+      'required': false,
+      'search': true,
+      'message': '',
+      'display': {
+        'index': true,
+        'edit': true
+      }
+    },
+    'searchableFieldName': {
+      'type': 'String',
+      'label': 'Title',
+      'comments': 'The title of the entry',
+      'placement': 'Main content',
+      'validation': {},
+      'required': false,
+      'search': {
+        'weight': 2
+      },
+      'message': '',
+      'display': {
+        'index': true,
+        'edit': true
+      }
+    }
+  }
+}
+
 module.exports.getModelSettings = function () {
   return {
     cache: true,

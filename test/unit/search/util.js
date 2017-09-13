@@ -6,7 +6,7 @@ const model = require(__dirname + '/../../../dadi/lib/model')
 const testArray = [['foo', 'bar'], ['baz', 'qux']]
 
 describe('Utils', () => {
-  it('should export constructor', done => {
+  it('should export a function', done => {
     searchUtil.mergeArrays.should.be.Function
     done()
   })

@@ -65,31 +65,6 @@ Search.prototype.applyIndexListeners = function () {
 }
 
 /**
- * Get Indexable Field
- * @return {Object} A key value representation of the field name its search rules.
- */
-Search.prototype.getIndexableFields = function () {
-  const schema = this.model.schema
-
-  return Object.assign({}, ...Object.keys(schema)
-    .filter(key => this.hasSearchField(schema[key]))
-    .map(key => {
-      return {[key]: schema[key].search}
-    }))
-}
-
-/**
- * Has Search Fields
- * @param {Object} field schema field object.
- * @return {Boolean} The field is a valid search field.
- */
-Search.prototype.hasSearchField = function (field) {
-  return typeof field === 'object' &&
-    field.search &&
-    !isNaN(field.search.weight)
-}
-
-/**
  * Find
  * @param {String} searchTerm Search query.
  * @return {Promise} Resolves with a query to be used against document collection.
@@ -258,12 +233,39 @@ Search.prototype.index = function (docs) {
 }
 
 /**
+ * Get Indexable Field
+ * @return {Object} A key value representation of the field name its search rules.
+ */
+Search.prototype.getIndexableFields = function () {
+  const schema = this.model.schema
+
+  return Object.assign({}, ...Object.keys(schema)
+    .filter(key => this.hasSearchField(schema[key]))
+    .map(key => {
+      return {[key]: schema[key].search}
+    }))
+}
+
+/**
+ * Has Search Fields
+ * @param {Object} field schema field object.
+ * @return {Boolean} The field is a valid search field.
+ */
+Search.prototype.hasSearchField = function (field) {
+  return typeof field === 'object' &&
+    field.search &&
+    !isNaN(field.search.weight)
+}
+
+/**
  * Remove Non-Indexable Fields
  * Reduce the document to fields that exist in this controllers indexable fields Object.
  * @param  {Object} doc A document from the database.
  * @return {Object} The document with non-indexable fields removed.
  */
 Search.prototype.removeNonIndexableFields = function (doc) {
+  if (typeof doc !== 'object') return {}
+
   return Object.assign({}, ...Object.keys(doc)
     .filter(key => this.indexableFields[key])
     .map(key => {

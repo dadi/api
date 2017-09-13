@@ -70,6 +70,14 @@ module.exports.getSearchModelSchema = function () {
   }
 }
 
+module.exports.getSampleSearchDocument = () => {
+  return {
+    fieldName: 'foo',
+    invalidSearchableFieldName: 'bar',
+    searchableFieldName: 'baz'
+  }
+}
+
 module.exports.getModelSettings = function () {
   return {
     cache: true,

@@ -84,7 +84,9 @@ Search.prototype.getIndexableFields = function () {
  * @return {Boolean} The field is a valid search field.
  */
 Search.prototype.hasSearchField = function (field) {
-  return field.search && !isNaN(field.search.weight)
+  return typeof field === 'object' &&
+    field.search &&
+    !isNaN(field.search.weight)
 }
 
 /**

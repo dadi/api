@@ -36,20 +36,21 @@ describe('Search', () => {
       searchInstance.initialiseConnections()
 
       should.exist(searchInstance.wordConnection.db)
-      should.exist(searchInstance.searchConnection)
+      should.exist(searchInstance.searchConnection.db)
+      setTimeout(() => {
+        searchInstance.wordConnection.db.config.hosts[0].host.should.eql('127.0.0.1')
+        searchInstance.wordConnection.db.config.hosts[0].port.should.eql(27017)
+        searchInstance.searchConnection.db.config.hosts[0].host.should.eql('127.0.0.1')
+        searchInstance.searchConnection.db.config.hosts[0].port.should.eql(27017)
 
-      searchInstance.wordConnection.db.config.hosts[0].host.should.equal('127.0.0.1')
-      searchInstance.wordConnection.db.config.hosts[0].port.should.equal(27017)
-      searchInstance.searchConnection.db.config.hosts[0].host.should.equal('127.0.0.1')
-      searchInstance.searchConnection.db.config.hosts[0].port.should.equal(27017)
-
-      done()
+        done()
+      }, 500)
     })
   })
 
   describe('`applyIndexListeners` method', () => {
     it('should call database index method once connection is established', done => {
-      mod = model('testModelNew', help.getModelSchema(), null, { database: 'testdb' })
+      mod = model('testModelNew', help.getSearchModelSchema(), null, { database: 'testdb' })
       const dbIndexStub = sinon.spy(store.prototype, 'index')
 
       searchInstance = search(mod)
@@ -65,6 +66,22 @@ describe('Search', () => {
     })
   })
 
+  describe('`getWordSchema` method', () => {
+    it('should return an object', done => {
+      const schema = searchInstance.getWordSchema()
+      schema.should.be.Object
+      done()
+    })
+  })
+
+  describe('`getSearchSchema` method', () => {
+    it('should return an object', done => {
+      const schema = searchInstance.getSearchSchema()
+      schema.should.be.Object
+      done()
+    })
+  })
+
   describe('`getIndexableFields` method', () => {
     it('should return an object', done => {
       searchInstance.getIndexableFields().should.be.Object
@@ -75,6 +92,23 @@ describe('Search', () => {
       searchInstance.getIndexableFields().should.be.an.instanceOf(Object).and.have.property('searchableFieldName', {weight: 2})
       searchInstance.getIndexableFields().should.not.have.property('fieldName')
       searchInstance.getIndexableFields().should.not.have.property('invalidSearchableFieldName')
+      done()
+    })
+  })
+
+  describe('`removeNonIndexableFields` method', () => {
+    it('should return an object if doc is invalid', done => {
+      searchInstance.removeNonIndexableFields().should.be.Object
+      done()
+    })
+
+    it('should remove non-indexable fields from document', done => {
+      searchInstance.removeNonIndexableFields(help.getSampleSearchDocument())
+      .should.not.have.property('fieldName')
+      searchInstance.removeNonIndexableFields(help.getSampleSearchDocument())
+      .should.not.have.property('invalidSearchableFieldName')
+      searchInstance.removeNonIndexableFields(help.getSampleSearchDocument())
+      .should.have.property('searchableFieldName', 'baz')
       done()
     })
   })
@@ -95,28 +129,10 @@ describe('Search', () => {
       done()
     })
   })
-
-  describe('`getWordSchema` method', () => {
-    it('should return an object', done => {
-      const schema = searchInstance.getWordSchema()
-      schema.should.be.Object
-      done()
-    })
-  })
-
-  describe('`getSearchSchema` method', () => {
-    it('should return an object', done => {
-      const schema = searchInstance.getSearchSchema()
-      schema.should.be.Object
-      done()
-    })
-  })
 })
 
 // initialiseConnections [complete]
 // applyIndexListeners [complete]
-// getIndexableFields [complete]
-// hasSearchField [complete]
 // find
 // getWords
 // getInstancesOfWords
@@ -124,7 +140,9 @@ describe('Search', () => {
 // getSearchSchema [complete]
 // delete
 // index
-// removeNonIndexableFields
+// getIndexableFields [complete]
+// hasSearchField [complete]
+// removeNonIndexableFields [complete]
 // indexDocument
 // analyseDocumentWords
 // createWordInstanceInsertQuery

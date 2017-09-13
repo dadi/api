@@ -10,17 +10,9 @@ let mod
 let searchInstance
 
 describe('Search', () => {
-  before(done => {
-    done()
-  })
-
   beforeEach(done => {
     mod = model('testSearchModel', help.getSearchModelSchema(), null, { database: 'testdb' })
     searchInstance = search(mod)
-    done()
-  })
-
-  afterEach(done => {
     done()
   })
 

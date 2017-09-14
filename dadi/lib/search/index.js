@@ -49,6 +49,7 @@ Search.prototype.initialiseConnections = function () {
     this.wordCollection,
     config.get('search.datastore')
   )
+
   this.searchConnection = Connection(
     {
       database,
@@ -68,6 +69,7 @@ Search.prototype.applyIndexListeners = function () {
   this.wordConnection.once('connect', database => {
     database.index(this.wordCollection, this.getWordSchema().settings.index)
   })
+
   this.searchConnection.once('connect', database => {
     database.index(this.searchCollection, this.getSearchSchema().settings.index)
   })
@@ -103,17 +105,22 @@ Search.prototype.find = function (searchTerm) {
 Search.prototype.getWords = function (words) {
   const query = {word: {'$in': words}}
 
-  return this.runFind(this.wordConnection.db, query, this.wordCollection, this.getWordSchema().fields)
-    .then(response => {
-      // Try a second pass with regular expressions
-      if (!response.length) {
-        const regexWords = words.map(word => new RegExp(word))
-        const regexQuery = {word: {'$in': regexWords}}
+  return this.runFind(
+    this.wordConnection.db,
+    query,
+    this.wordCollection,
+    this.getWordSchema().fields
+  ).then(response => {
+    // Try a second pass with regular expressions
+    if (!response.length) {
+      const regexWords = words.map(word => new RegExp(word))
+      const regexQuery = {word: {'$in': regexWords}}
 
-        return this.runFind(this.wordConnection.db, regexQuery, this.wordCollection, this.getWordSchema().fields)
-      }
-      return response
-    })
+      return this.runFind(this.wordConnection.db, regexQuery, this.wordCollection, this.getWordSchema().fields)
+    }
+
+    return response
+  })
 }
 
 /**
@@ -296,6 +303,7 @@ Search.prototype.indexDocument = function (doc) {
   const reducedDoc = this.removeNonIndexableFields(doc)
   const words = this.analyseDocumentWords(analyser, reducedDoc)
   const wordInsert = this.createWordInstanceInsertQuery(words)
+
   // Insert unique words into word collection.
   return this.insert(
     this.wordConnection.db,
@@ -359,7 +367,8 @@ Search.prototype.createWordInstanceInsertQuery = function (words) {
 Search.prototype.clearAndInsertWordInstances = function (words, analyser, docId) {
   // The word index is unique, so results aren't always returned.
   // Fetch word entries again to get ids.
-  const query = {word: {'$in': words}}
+  const query = { word: { '$in': words } }
+
   return this.runFind(this.wordConnection.db, query, this.wordCollection, this.getWordSchema().fields)
     .then(result => {
       // Get all word instances from Analyser.
@@ -428,11 +437,11 @@ Search.prototype.clearDocumentInstances = function (docId) {
 
 /**
  * [insert description]
- * @param {Connection} database Instance of database connection.
- * @param  {Object/Array} data Insert payload.
- * @param {String} collection Name of collection to query.
- * @param {Object} schema Field schema for collection.
- * @param {Object} options Query options.
+ * @param {Connection} database - Instance of database connection.
+ * @param {Object|Array} data - Insert payload.
+ * @param {String} collection - Name of collection to query.
+ * @param {Object} schema - Field schema for collection.
+ * @param {Object} options - Query options.
  * @return {Promise} Database insert query.
  */
 Search.prototype.insert = function (database, data, collection, schema, options = {}) {

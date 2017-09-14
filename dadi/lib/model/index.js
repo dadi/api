@@ -260,9 +260,9 @@ Model.prototype.create = function (documents, internals, done, req) {
         returnData.results = obj
 
         // apply any existing `afterCreate` hooks
-        triggerAfterCreateHook(results.results)
+        triggerAfterCreateHook(returnData.results)
         // Asynchronous search index
-        this.searcher.index(results.results)
+        this.searcher.index(returnData.results)
 
         // Prepare result set for output
         returnData.results = this.formatResultSetForOutput(returnData.results)

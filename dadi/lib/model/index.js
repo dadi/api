@@ -235,7 +235,7 @@ Model.prototype.create = function (documents, internals, done, req) {
 
   var triggerAfterCreateHook = (docs) => {
     if (this.settings.hasOwnProperty('hooks') && (typeof this.settings.hooks.afterCreate === 'object')) {
-      documents.forEach((doc) => {
+      docs.forEach((doc) => {
         this.settings.hooks.afterCreate.forEach((hookConfig, index) => {
           var hook = new Hook(this.settings.hooks.afterCreate[index], 'afterCreate')
 

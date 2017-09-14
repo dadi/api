@@ -7,7 +7,6 @@ const TfIdf = natural.TfIdf
 module.exports = class StandardAnalyzer {
   constructor (fieldRules) {
     this.fieldRules = fieldRules
-    this.fields = []
     this.tfidf = new TfIdf()
   }
 
@@ -18,7 +17,6 @@ module.exports = class StandardAnalyzer {
     } else if (this.isValid(value)) {
       this.tfidf.addDocument(value, field)
     }
-    this.fields.push(field)
   }
 
   isValid (value) {
@@ -51,10 +49,22 @@ module.exports = class StandardAnalyzer {
   }
 
   unique (list) {
+    if (!Array.isArray(list)) return []
     return [...new Set(list)]
   }
 
+  areValidWords (words) {
+    return Array.isArray(words) &&
+    words.every(word => {
+      return typeof word === 'object' &&
+        word.hasOwnProperty('weight') &&
+        word.hasOwnProperty('word')
+    })
+  }
+
   mergeWeights (words) {
+    if (!this.areValidWords(words)) return []
+
     return words
       .reduce((prev, curr) => {
         const match = prev.find(wordSearch => wordSearch.word === curr.word)

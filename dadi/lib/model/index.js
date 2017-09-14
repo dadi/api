@@ -698,6 +698,11 @@ Model.prototype.find = function (query, options, done) {
  * @api public
  */
 Model.prototype.search = function (options, done, req) {
+  if (!this.searcher.canUse()) {
+    return done({
+      err: 'Search must be enabled and use a compatible datastore'
+    })
+  }
   if (typeof options === 'function') {
     done = options
     options = {}

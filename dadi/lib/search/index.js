@@ -7,9 +7,13 @@ const StandardAnalyser = require('./analysers/standard')
 
 const DefaultAnalyser = StandardAnalyser
 
+const allowedDatastores = ['@dadi/api-mongodb']
+
 const pageLimit = 20
 
 const Search = function (model) {
+  if (!this.canUse()) return this
+
   if (!model || model.constructor.name !== 'Model') throw new Error('model should be an instance of Model')
 
   this.model = model
@@ -21,6 +25,11 @@ const Search = function (model) {
   this.applyIndexListeners()
 
   return this
+}
+
+Search.prototype.canUse = function () {
+  return config.get('search.enabled') &&
+    allowedDatastores.includes(config.get('search.datastore'))
 }
 
 /**
@@ -70,6 +79,8 @@ Search.prototype.applyIndexListeners = function () {
  * @return {Promise} Resolves with a query to be used against document collection.
  */
 Search.prototype.find = function (searchTerm) {
+  if (!this.canUse()) return {}
+
   const analyser = new DefaultAnalyser(this.indexableFields)
   const tokenized = analyser.tokenize(searchTerm)
 
@@ -214,6 +225,8 @@ Search.prototype.getSearchSchema = function () {
  * @return {Promise} Query to delete instances with matching document ids.
  */
 Search.prototype.delete = function (docs) {
+  if (!this.canUse()) return Promise.resolve()
+
   if (!Array.isArray(docs)) return
   const deleteQueue = docs
     .map(doc => this.clearDocumentInstances(doc._id.toString()))
@@ -227,7 +240,7 @@ Search.prototype.delete = function (docs) {
  * @return {Promise} Queries to index documents.
  */
 Search.prototype.index = function (docs) {
-  if (!Array.isArray(docs)) return
+  if (!this.canUse() || !Array.isArray(docs)) return Promise.resolve()
 
   return Promise.all(docs.map(doc => this.indexDocument(doc)))
 }
@@ -283,7 +296,6 @@ Search.prototype.indexDocument = function (doc) {
   const reducedDoc = this.removeNonIndexableFields(doc)
   const words = this.analyseDocumentWords(analyser, reducedDoc)
   const wordInsert = this.createWordInstanceInsertQuery(words)
-
   // Insert unique words into word collection.
   return this.insert(
     this.wordConnection.db,

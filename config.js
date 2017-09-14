@@ -134,6 +134,11 @@ var conf = convict({
     }
   },
   search: {
+    enabled: {
+      doc: 'If enabled, search will index content',
+      format: Boolean,
+      default: true
+    },
     indexOnStart: {
       doc: 'Index all collections on app start',
       format: Boolean,

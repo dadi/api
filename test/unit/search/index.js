@@ -113,6 +113,14 @@ describe('Search', () => {
     })
   })
 
+  describe('`createWordInstanceInsertQuery` method', () => {
+    it('should convert list of words to valid insert query object', done => {
+      searchInstance.createWordInstanceInsertQuery(['foo']).should.be.an.instanceOf(Array)
+      searchInstance.createWordInstanceInsertQuery(['foo'])[0].should.have.property('word', 'foo')
+      done()
+    })
+  })
+
   describe('`hasSeachField` method', () => {
     it('should return false if a field is invalid', done => {
       searchInstance.hasSearchField().should.be.false
@@ -126,6 +134,32 @@ describe('Search', () => {
 
     it('should return true if a field has a valid search and search weight parameter', done => {
       searchInstance.hasSearchField({search: {weight: 2}}).should.be.true
+      done()
+    })
+  })
+
+  describe('`runFind` method', () => {
+    it('should search the database based on the query', done => {
+      const dbFindStub = sinon.spy(store.prototype, 'find')
+
+      searchInstance.runFind(searchInstance.model.connection.db, {foo: 'bar'}, searchInstance.model.name, searchInstance.model.schema, {})
+      dbFindStub.called.should.be.true
+      dbFindStub.lastCall.args[0].should.have.property('query', {foo: 'bar'})
+      dbFindStub.restore()
+
+      done()
+    })
+  })
+
+  describe('`clearDocumentInstances` method', () => {
+    it('should delete all search instance documents with filtered query', done => {
+      const dbDeleteStub = sinon.spy(store.prototype, 'delete')
+
+      searchInstance.clearDocumentInstances('mockDocId')
+      dbDeleteStub.called.should.be.true
+      dbDeleteStub.lastCall.args[0].should.have.property('query', {document: 'mockDocId'})
+      dbDeleteStub.restore()
+
       done()
     })
   })
@@ -145,11 +179,12 @@ describe('Search', () => {
 // removeNonIndexableFields [complete]
 // indexDocument
 // analyseDocumentWords
-// createWordInstanceInsertQuery
+// createWordInstanceInsertQuery [complete]
 // clearAndInsertWordInstances
 // insertWordInstances
-// runFind
-// clearDocumentInstances
+// runFind [complete]
+// clearDocumentInstances [complete]
 // insert
 // batchIndex
 // runBatchIndex
+// canUse

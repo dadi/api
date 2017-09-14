@@ -139,11 +139,6 @@ var conf = convict({
       format: Boolean,
       default: true
     },
-    indexOnStart: {
-      doc: 'Index all collections on app start',
-      format: Boolean,
-      default: false
-    },
     minLength: {
       doc: 'Minimum search string length',
       format: Number,

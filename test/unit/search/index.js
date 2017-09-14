@@ -35,9 +35,9 @@ describe('Search', () => {
     it('should initialise required connections', done => {
       searchInstance.initialiseConnections()
 
-      should.exist(searchInstance.wordConnection.db)
-      should.exist(searchInstance.searchConnection.db)
       setTimeout(() => {
+        should.exist(searchInstance.wordConnection.db)
+        should.exist(searchInstance.searchConnection.db)
         searchInstance.wordConnection.db.config.hosts[0].host.should.eql('127.0.0.1')
         searchInstance.wordConnection.db.config.hosts[0].port.should.eql(27017)
         searchInstance.searchConnection.db.config.hosts[0].host.should.eql('127.0.0.1')

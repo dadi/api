@@ -25,9 +25,7 @@ module.exports = class StandardAnalyzer {
 
   getWordsInField (index) {
     return this.tfidf.listTerms(index)
-      .map(item => {
-        return item.term
-      })
+      .map(item => item.term)
   }
 
   getAllWords () {

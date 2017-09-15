@@ -99,8 +99,8 @@ BatchIndex.prototype.addCollectionResource = function (options) {
 
 BatchIndex.prototype.startCollectionImport = function () {
   Object.keys(this.collections)
-    .map(name => {
-      const search = new Search(this.collections[name]).batchIndex()
+    .forEach(name => {
+      new Search(this.collections[name]).batchIndex()
     })
 }
 

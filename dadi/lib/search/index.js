@@ -58,6 +58,8 @@ Search.prototype.initialiseConnections = function () {
     this.searchCollection,
     config.get('search.datastore')
   )
+  this.wordConnection.setMaxListeners(35)
+  this.searchConnection.setMaxListeners(35)
 }
 
 /**

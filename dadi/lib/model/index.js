@@ -698,7 +698,7 @@ Model.prototype.find = function (query, options, done) {
  * @api public
  */
 Model.prototype.search = function (options, done, req) {
-  const err
+  let err
 
   if (typeof options === 'function') {
     done = options

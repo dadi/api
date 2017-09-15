@@ -59,6 +59,7 @@ function prepareQueryOptions (options, modelSettings) {
     response.errors.push(new ApiError('Bad Request', 'Invalid Parameter', 'The `page` parameter must be greater than zero', 'Invalid Page Parameter Provided'))
   }
 
+  // `q` represents a search query, e.g. `?q=foo bar baz`.
   if (options.q) {
     queryOptions.search = options.q
   }

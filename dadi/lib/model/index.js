@@ -698,20 +698,23 @@ Model.prototype.find = function (query, options, done) {
  * @api public
  */
 Model.prototype.search = function (options, done, req) {
-  if (!this.searcher.canUse()) {
-    return done({
-      err: 'Search must be enabled and use a compatible datastore'
-    })
-  }
+  let err
+
   if (typeof options === 'function') {
     done = options
     options = {}
   }
-  if (!options.search || options.search.length < config.get('search.minLength')) {
-    return done({
-      message: `Search query must be at least ${config.get('search.minLength')} characters`
-    })
+
+  if (!this.searcher.canUse()) {
+    err = new Error(`Search query must be at least ${config.get('search.minLength')} characters`)
   }
+  if (!options.search || options.search.length < config.get('search.minLength')) {
+    err = new Error(`Search query must be at least ${config.get('search.minLength')} characters`)
+  }
+  if (err) {
+    return done(err, null)
+  }
+
   this.searcher.find(options.search)
     .then(query => {
       const ids = query._id.$in.map(id => id.toString())

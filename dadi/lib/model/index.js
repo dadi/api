@@ -609,9 +609,7 @@ Model.prototype.find = function (query, options, done) {
                         return id.toString()
                       })
 
-                      for (var i = 0; i < childIds.length; i++) {
-                        ids.push(childIds[i])
-                      }
+                      ids = ids.concat(childIds)
                     }
 
                     query[collectionKey] = { '$in': ids || [] }

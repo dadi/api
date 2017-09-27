@@ -580,7 +580,7 @@ Model.prototype.find = function (query, options, done) {
               cursor.toArray(function (err, results) {
                 if (err) return done(err)
 
-                var ids
+                var ids = []
 
                 if (results && results.length) {
                   if (!linkKey) { // i.e. it's a one-level nested query
@@ -593,20 +593,25 @@ Model.prototype.find = function (query, options, done) {
                   } else {
                     // filter the results using linkKey
                     // 1. get the _id of the result matching { queryKey: queryValue }
-                    var parent = _.filter(results, function (result) {
+                    var parents = _.filter(results, function (result) {
                       return new RegExp(queryValue).test(result[queryKey]) === true
                     })
-
-                    if (parent[0]) {
+                    
+                    // check every parent category for any children that belong to them
+                    for (var p = 0; p < parents.length; p++) {
                       var children = _.filter(results, function (result) {
-                        if (result[linkKey] && result[linkKey].toString() === parent[0]._id.toString()) {
+                        if (result[linkKey] && result[linkKey].toString() === parents[p]._id.toString()) {
                           return result
                         }
                       })
-
-                      ids = _.map(_.pluck(children, '_id'), function (id) {
+                      
+                      var childIds = _.map(_.pluck(children, '_id'), function (id) {
                         return id.toString()
                       })
+                      
+                      for (var i = 0; i < childIds.length; i++) {
+                        ids.push(childIds[i])
+                      }
                     }
 
                     query[collectionKey] = { '$in': ids || [] }

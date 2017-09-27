@@ -596,7 +596,7 @@ Model.prototype.find = function (query, options, done) {
                     var parents = _.filter(results, function (result) {
                       return new RegExp(queryValue).test(result[queryKey]) === true
                     })
-                    
+
                     // check every parent category for any children that belong to them
                     for (var p = 0; p < parents.length; p++) {
                       var children = _.filter(results, function (result) {
@@ -604,11 +604,11 @@ Model.prototype.find = function (query, options, done) {
                           return result
                         }
                       })
-                      
+
                       var childIds = _.map(_.pluck(children, '_id'), function (id) {
                         return id.toString()
                       })
-                      
+
                       for (var i = 0; i < childIds.length; i++) {
                         ids.push(childIds[i])
                       }

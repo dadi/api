@@ -260,7 +260,6 @@ Model.prototype.create = function (documents, internals, done, req) {
         return done(null, returnData)
       })
     }).catch((err) => {
-      console.log('> API MODEL INSERT ERR')
       return done(err)
     })
   }
@@ -573,7 +572,7 @@ Model.prototype.find = function (query, options, done) {
           referenceModel.find(collectionQuery, { fields: fieldsObj }, (err, results) => {
             if (err) return done(err)
 
-            var ids
+            var ids = []
 
             if (results && results.results && results.results.length) {
               results = results.results
@@ -589,28 +588,31 @@ Model.prototype.find = function (query, options, done) {
               } else {
                 // filter the results using linkKey
                 // 1. get the _id of the result matching { queryKey: queryValue }
-                var parent = _.filter(results, result => {
+                var parents = _.filter(results, result => {
                   return new RegExp(queryValue).test(result[queryKey]) === true
                 })
 
-                if (parent[0]) {
+                // check every parent category for any children that belong to them
+                for (var p = 0; p < parents.length; p++) {
                   var children = _.filter(results, result => {
                     if (result[linkKey]) {
-                      if (typeof result[linkKey] === 'string' && result[linkKey].toString() === parent[0]._id.toString()) {
+                      if (typeof result[linkKey] === 'string' && result[linkKey].toString() === parents[p]._id.toString()) {
                         return result
                       } else if (typeof result[linkKey] === 'object') {
-                        if (result[linkKey].toString() === '[object Object]' && result[linkKey]._id.toString() === parent[0]._id.toString()) {
+                        if (result[linkKey].toString() === '[object Object]' && result[linkKey]._id.toString() === parents[p]._id.toString()) {
                           return result
-                        } else if (result[linkKey].toString() === parent[0]._id.toString()) {
+                        } else if (result[linkKey].toString() === parents[p]._id.toString()) {
                           return result
                         }
                       }
                     }
                   })
 
-                  ids = _.map(_.pluck(children, '_id'), id => {
+                  var childIds = _.map(_.pluck(children, '_id'), id => {
                     return id.toString()
                   })
+
+                  ids = ids.concat(childIds)
                 }
 
                 query[collectionKey] = { '$in': ids || [] }

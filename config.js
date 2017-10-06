@@ -234,12 +234,20 @@ var conf = convict({
     }
   },
   paths: {
-    doc: '',
-    format: Object,
-    default: {
-      collections: __dirname + '/workspace/collections',
-      endpoints: __dirname + '/workspace/endpoints',
-      hooks: __dirname + '/workspace/hooks'
+    collections: {
+      doc: 'The relative or absolute path to collection specification files',
+      format: String,
+      default: __dirname + '/workspace/collections'
+    },
+    endpoints: {
+      doc: 'The relative or absolute path to custom endpoint files',
+      format: String,
+      default: __dirname + '/workspace/endpoints'
+    },
+    hooks: {
+      doc: 'The relative or absolute path to hook specification files',
+      format: String,
+      default: __dirname + '/workspace/hooks'
     }
   },
   feedback: {

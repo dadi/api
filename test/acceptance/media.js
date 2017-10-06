@@ -65,25 +65,6 @@ describe('Media', function () {
       })
     })
 
-    it.skip('should return 404 if media is not enabled', function (done) {
-      var obj = {
-        fileName: 'test.jpg'
-      }
-
-      var client = request(connectionString)
-
-      client
-        .post('/media/sign')
-      .set('Authorization', 'Bearer ' + bearerToken)
-      .set('content-type', 'application/json')
-      .send(obj)
-      .expect(404)
-      .end((err, res) => {
-        if (err) return done(err)
-        done()
-      })
-    })
-
     it('should return 404 if incorrect HTTP method is used to get a signed token', function (done) {
       var client = request(connectionString)
 
@@ -142,29 +123,29 @@ describe('Media', function () {
   })
 
   describe('POST', function () {
-      it.skip('should not allow upload without using a signed token', function (done) {
-      var client = request(connectionString)
-      client
-        .post('/media')
-      .set('Authorization', 'Bearer ' + bearerToken)
-      .attach('avatar', 'test/acceptance/workspace/media/1f525.png')
-        .expect(404)
-      .end(done)
-    })
+    // it.skip('should not allow upload without using a signed token', function (done) {
+    //   var client = request(connectionString)
+    //   client
+    //   .post('/media')
+    //   .set('Authorization', 'Bearer ' + bearerToken)
+    //   .attach('avatar', 'test/acceptance/workspace/media/1f525.png')
+    //   .expect(404)
+    //   .end(done)
+    // })
 
     it('should return an error if specified token has expired', function (done) {
       var obj = {
         fileName: 'test.jpg'
       }
 
-        sinon.stub(app, '_signToken').callsFake(function (obj) {
+      sinon.stub(app, '_signToken').callsFake(function (obj) {
         return jwt.sign(obj, config.get('media.tokenSecret'), { expiresIn: 1 })
       })
 
       var client = request(connectionString)
 
       client
-        .post('/media/sign')
+      .post('/media/sign')
       .set('Authorization', 'Bearer ' + bearerToken)
       .set('content-type', 'application/json')
       .send(obj)
@@ -197,7 +178,7 @@ describe('Media', function () {
       var client = request(connectionString)
 
       client
-        .post('/media/sign')
+      .post('/media/sign')
       .set('Authorization', 'Bearer ' + bearerToken)
       .set('content-type', 'application/json')
       .send(obj)

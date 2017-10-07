@@ -10,15 +10,9 @@ See full release notes at https://github.com/dadi/api/releases/tag/v3.0.0
 
 ### Added
 
-API Version 3.0 supports multiple data connectors. In previous versions API used MongoDB as a backend; this is now configurable.
-
-#### Data connector installation
-
-API Data Connectors are available as NPM packages. To add one to your API installation, run the associated NPM install command:
+API Version 3.0 supports multiple data connectors. In previous versions API used MongoDB as a backend; this is now configurable. API Data Connectors are available as NPM packages. To add one to your API installation, run the associated NPM install command:
 
 `$ npm install @dadi/api-mongodb --save`
-
-#### Data connector configuration
 
 Each data connector has it's own configuration requirements, but API must also be configured to use the data connectors you select. Modify your API configuration as follows:
 

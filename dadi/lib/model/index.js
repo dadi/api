@@ -857,8 +857,6 @@ Model.prototype.update = function (query, update, internals, done, req) {
         return done(err.json)
       }
 
-      doc = result
-
       if (this.connection.db) {
         return startUpdate(this.connection.db)
       } else {

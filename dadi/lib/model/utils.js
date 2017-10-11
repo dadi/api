@@ -91,7 +91,7 @@ function convertApparentObjectIds (query, schema) {
       typeof query[key] === 'string' &&
       !/^Mixed|Reference|Object$/.test(type) && ObjectID.isValid(query[key]) &&
       query[key].match(/^[a-fA-F0-9]{24}$/)) {
-        query[key] = ObjectID.createFromHexString(query[key])
+      query[key] = ObjectID.createFromHexString(query[key])
     }
   })
 

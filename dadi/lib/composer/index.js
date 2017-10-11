@@ -214,7 +214,6 @@ Composer.prototype.createFromComposed = function (doc, req, callback) {
  * @param {Object} req - the original HTTP request
  */
 Composer.prototype.createOrUpdate = function (model, field, obj, req) {
-  console.log('> createOrUpdate', model.name, field, obj)
   return new Promise((resolve, reject) => {
     var internals = {
       apiVersion: this.apiVersion

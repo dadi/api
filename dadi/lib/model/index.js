@@ -844,121 +844,136 @@ Model.prototype.update = function (query, update, internals, done, req) {
     multi: true
   }
 
-  var startUpdate = (database) => {
-    // get a reference to the documents that will be updated
-    var updatedDocs = []
+  // get a reference to the documents that will be updated
+  var updatedDocs = []
 
-    this.find(query, {}, (err, result) => {
-      if (err) return done(err)
+  this.find(query, {}, (err, result) => {
+    if (err) return done(err)
 
-      updatedDocs = result.results
+    updatedDocs = result.results
 
-      this.castToBSON(query)
-
-      var saveDocuments = () => {
-        database.collection(this.name).updateMany(query, setUpdate, updateOptions, (err, result) => {
-          if (err) return done(err)
-
-          if (result.matchedCount === 0) {
-            err = new Error('Not Found')
-            err.statusCode = 404
-            return done(err)
-          }
-
-          var incrementRevisionNumber = (docs) => {
-            return new Promise((resolve, reject) => {
-              var idx = 0
-
-              _.each(docs, (doc) => {
-                database.collection(this.name).findOneAndUpdate(
-                  { _id: new ObjectID(doc._id.toString()) },
-                  { $inc: { v: 1 } },
-                  {
-                    returnOriginal: false,
-                    sort: [['_id', 'asc']],
-                    upsert: false
-                  }, (err, doc) => {
-                    if (err) return done(err)
-
-                    if (++idx === docs.length) {
-                      return resolve()
-                    }
-                  }
-                )
-              })
-            })
-          }
-
-          var triggerAfterUpdateHook = (docs) => {
-            if (this.settings.hasOwnProperty('hooks') && (typeof this.settings.hooks.afterUpdate === 'object')) {
-              this.settings.hooks.afterUpdate.forEach((hookConfig, index) => {
-                var hook = new Hook(this.settings.hooks.afterUpdate[index], 'afterUpdate')
-
-                return hook.apply(docs, this.schema, this.name)
-              })
-            }
-          }
-
-          // increment document revision number
-          incrementRevisionNumber(updatedDocs)
-
-          var getDocumentsForResponse = (done) => {
-            var query = {
-              _id: { '$in': _.map(updatedDocs, (doc) => { return doc._id.toString() }) }
-            }
-
-            return this.find(query, { compose: true }, (err, results) => {
-              if (err) return done(err)
-
-              // apply any existing `afterUpdate` hooks
-              triggerAfterUpdateHook(results.results)
-
-              return done(null, results)
-            })
-          }
-
-          // for each of the updated documents, create
-          // a history revision for it
-          if (this.history && updatedDocs.length > 0) {
-            this.history.createEach(updatedDocs, 'update', this, (err, docs) => {
-              if (err) return done(err)
-
-              return getDocumentsForResponse(done)
-            })
-          } else {
-            return getDocumentsForResponse(done)
-          }
-        })
+    this.composer.createFromComposed(update, req, (err, result) => {
+      if (err) {
+        return done(err.json)
       }
 
-      // apply any existing `beforeUpdate` hooks, otherwise save the documents straight away
-      if (this.settings.hooks && this.settings.hooks.beforeUpdate) {
-        async.reduce(this.settings.hooks.beforeUpdate, update, (current, hookConfig, callback) => {
-          var hook = new Hook(hookConfig, 'beforeUpdate')
+      doc = result
 
-          Promise.resolve(hook.apply(current, updatedDocs, this.schema, this.name, req)).then((newUpdate) => {
-            callback((newUpdate === null) ? {} : null, newUpdate)
-          }).catch(err => {
-            callback(hook.formatError(err))
-          })
-        }, (err, result) => {
-          if (err) {
-            done(err)
-          } else {
-            update = result
-            saveDocuments()
-          }
-        })
+      if (this.connection.db) {
+        return startUpdate(this.connection.db)
       } else {
-        saveDocuments()
+        // if the db is not connected queue the insert
+        this.connection.once('connect', startUpdate)
       }
     })
+  })
+
+  var startUpdate = (database) => {
+    this.castToBSON(query)
+
+    var saveDocuments = () => {
+      database.collection(this.name).updateMany(query, setUpdate, updateOptions, (err, result) => {
+        if (err) return done(err)
+
+        if (result.matchedCount === 0) {
+          err = new Error('Not Found')
+          err.statusCode = 404
+          return done(err)
+        }
+
+        var incrementRevisionNumber = (docs) => {
+          return new Promise((resolve, reject) => {
+            var idx = 0
+
+            _.each(docs, (doc) => {
+              database.collection(this.name).findOneAndUpdate(
+                { _id: new ObjectID(doc._id.toString()) },
+                { $inc: { v: 1 } },
+                {
+                  returnOriginal: false,
+                  sort: [['_id', 'asc']],
+                  upsert: false
+                }, (err, doc) => {
+                  if (err) return done(err)
+
+                  if (++idx === docs.length) {
+                    return resolve()
+                  }
+                }
+              )
+            })
+          })
+        }
+
+        var triggerAfterUpdateHook = (docs) => {
+          if (this.settings.hasOwnProperty('hooks') && (typeof this.settings.hooks.afterUpdate === 'object')) {
+            this.settings.hooks.afterUpdate.forEach((hookConfig, index) => {
+              var hook = new Hook(this.settings.hooks.afterUpdate[index], 'afterUpdate')
+
+              return hook.apply(docs, this.schema, this.name)
+            })
+          }
+        }
+
+        // increment document revision number
+        incrementRevisionNumber(updatedDocs)
+
+        var getDocumentsForResponse = (done) => {
+          var query = {
+            _id: { '$in': _.map(updatedDocs, (doc) => { return doc._id.toString() }) }
+          }
+
+          return this.find(query, { compose: true }, (err, results) => {
+            if (err) return done(err)
+
+            // apply any existing `afterUpdate` hooks
+            triggerAfterUpdateHook(results.results)
+
+            return done(null, results)
+          })
+        }
+
+        // for each of the updated documents, create
+        // a history revision for it
+        if (this.history && updatedDocs.length > 0) {
+          this.history.createEach(updatedDocs, 'update', this, (err, docs) => {
+            if (err) return done(err)
+
+            return getDocumentsForResponse(done)
+          })
+        } else {
+          return getDocumentsForResponse(done)
+        }
+      })
+    }
+
+    // apply any existing `beforeUpdate` hooks, otherwise save the documents straight away
+    if (this.settings.hooks && this.settings.hooks.beforeUpdate) {
+      async.reduce(this.settings.hooks.beforeUpdate, update, (current, hookConfig, callback) => {
+        var hook = new Hook(hookConfig, 'beforeUpdate')
+
+        Promise.resolve(hook.apply(current, updatedDocs, this.schema, this.name, req)).then((newUpdate) => {
+          callback((newUpdate === null) ? {} : null, newUpdate)
+        }).catch(err => {
+          callback(hook.formatError(err))
+        })
+      }, (err, result) => {
+        if (err) {
+          done(err)
+        } else {
+          update = result
+          saveDocuments()
+        }
+      })
+    } else {
+      saveDocuments()
+    }
   }
 
-  if (this.connection.db) return startUpdate(this.connection.db)
-
-  // if the db is not connected queue the update
-  this.connection.once('connect', startUpdate)
+  // if (this.connection.db) return startUpdate(this.connection.db)
+  //
+  // // if the db is not connected queue the update
+  // this.connection.once('connect', startUpdate)
 }
 
 /**

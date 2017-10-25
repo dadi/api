@@ -99,11 +99,24 @@ module.exports = function (options, collection, storeName) {
     options.collection = collection
   }
 
-  conn.on('error', function (err) {
+  // const Recovery = require('recovery')
+  // let recovery = new Recovery({retries: 3})
+
+  conn.on('error', err => {
     console.log('Connection Error: ' + err + '. Using connection string "' + conn.datastore.connectionString + '"')
+
+    // recovery.on('reconnect', opts => {
+    //   console.log(opts.attempt)
+    //
+    //   conn.connect(options)
+    // })
+    //
+    // recovery.reconnect()
   })
 
   _connections[connectionKey] = conn
+
+  //console.log(conn)
 
   conn.connect(options)
 

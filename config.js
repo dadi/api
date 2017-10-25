@@ -365,9 +365,6 @@ var conf = convict({
 var env = conf.get('env')
 conf.loadFile('./config/config.' + env + '.json')
 
-// Perform validation
-conf.validate()
-
 // Load domain-specific configuration
 conf.updateConfigDataForDomain = function(domain) {
   var domainConfig = './config/' + domain + '.json'
@@ -376,7 +373,6 @@ conf.updateConfigDataForDomain = function(domain) {
     var stats = fs.statSync(domainConfig)
     // no error, file exists
     conf.loadFile(domainConfig)
-    conf.validate()
   }
   catch(err) {
     if (err.code === 'ENOENT') {

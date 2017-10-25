@@ -225,7 +225,7 @@ module.exports.validateCollectionSchema = function (obj) {
   }
 
   // check that all required settings are present
-  var requiredSettings = ['cache', 'authenticate', 'callback', 'defaultFilters', 'fieldLimiters', 'count']
+  var requiredSettings = ['cache', 'authenticate']
 
   requiredSettings.forEach(function (key) {
     if (!obj.settings.hasOwnProperty(key)) {

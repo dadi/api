@@ -60,7 +60,8 @@ function prepareQueryOptions (options, modelSettings) {
   }
 
   // specified / default number of records to return
-  var limit = options.count || settings.count
+  let limit = options.count || settings.count
+
   if (_.isFinite(limit)) {
     limit = parseInt(limit)
   } else {
@@ -68,7 +69,7 @@ function prepareQueryOptions (options, modelSettings) {
   }
 
   // skip - passed or calculated from (page# x count)
-  var skip = limit * (options.page - 1)
+  let skip = limit * (options.page - 1)
   if (options.skip) {
     skip += parseInt(options.skip)
   }

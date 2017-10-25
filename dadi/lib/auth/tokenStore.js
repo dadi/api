@@ -1,14 +1,16 @@
 'use strict'
 
 const debug = require('debug')('api:tokenStore')
+const log = require('@dadi/logger')
 const path = require('path')
 const Connection = require(path.join(__dirname, '/../model/connection'))
 const config = require(path.join(__dirname, '/../../../config.js'))
 const uuid = require('uuid')
 
 const TokenStore = function () {
+  this.recoveringFromDBDisconnect = false
   this.collection = config.get('auth.tokenCollection')
-  this.database = config.get('auth.database')
+  this.databaseName = config.get('auth.database')
   this.schema = {
     fields: {
       token: {
@@ -49,11 +51,17 @@ TokenStore.prototype.connect = function () {
     const dbOptions = {
       override: true,
       collection: this.collection,
-      database: this.database
+      database: this.databaseName
     }
 
     this.connection = Connection(dbOptions, null, config.get('auth.datastore'))
     this.connection.once('connect', database => {
+      if (this.recoveringFromDBDisconnect) {
+        this.recoveringFromDBDisconnect = false
+
+        return resolve(this.connect())
+      }
+
       // Initialise cleanup agent
       this.startCleanupAgent()
 
@@ -66,6 +74,12 @@ TokenStore.prototype.connect = function () {
           }
         }
       ]).then(result => resolve(database))
+    })
+
+    this.connection.once('disconnect', err => {
+      this.recoveringFromDBDisconnect = true
+
+      return reject(new Error('DB_DISCONNECTED'))
     })
   })
 
@@ -181,7 +195,7 @@ let tokenStore
 module.exports = () => {
   if (!tokenStore) {
     tokenStore = new TokenStore()
-    tokenStore.connect()
+    tokenStore.connect().catch(err => {})
   }
 
   return tokenStore

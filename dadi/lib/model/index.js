@@ -64,13 +64,20 @@ var Model = function (name, schema, conn, settings) {
   if (conn) {
     this.connection = conn
   } else {
-    this.connection = Connection({ database: settings.database, collection: this.name }, this.name, config.get('datastore'))
+    this.connection = Connection(
+      {
+        database: settings.database,
+        collection: this.name
+      },
+      this.name,
+      config.get('datastore')
+    )
   }
 
   this.connection.setMaxListeners(35)
 
   if (config.get('env') !== 'test') {
-    this.connection.once('error', (err) => {
+    this.connection.once('disconnect', (err) => {
       logger.error(err)
     })
   }
@@ -293,25 +300,14 @@ Model.prototype.create = function (documents, internals, done, req) {
  *
  */
 Model.prototype.createIndex = function (done) {
-  var _done = (database) => {
-    database.index(this.name, this.settings.index).then(result => {
-      done(result)
-    })
+  const createIndexInDatastore = (database) => {
+    database.index(this.name, this.settings.index).then(done)
   }
 
-  if (!this.connection.db) {
-    // wait 1 second before continuing, this will
-    // stop the need to set a listener on every model
-    // as the db should have become available
-    setTimeout(() => {
-      if (!this.connection.db) {
-        this.connection.once('connect', _done)
-      } else {
-        return _done(this.connection.db)
-      }
-    }, 1000)
+  if (this.connection.db) {
+    return createIndexInDatastore(this.connection.db)
   } else {
-    return _done(this.connection.db)
+    this.connection.once('connect', createIndexInDatastore)
   }
 }
 
@@ -651,7 +647,7 @@ Model.prototype.find = function (query, options, done) {
         options: queryOptions,
         schema: self.schema,
         settings: self.settings
-      }).then((results) => {
+      }).then(results => {
         // NOTE: datastore returns object containing results + metadata
         //  {
         //    results: [ { _id: 590bbc9d29ccaf1cb8ab0ed1, fieldName: 'foo' } ],

@@ -2,9 +2,16 @@
 
 const debug = require('debug')('api:connection')
 const EventEmitter = require('events').EventEmitter
+const log = require('@dadi/logger')
+const Recovery = require('recovery')
 const util = require('util')
 
-let _connections = []
+const STATE_DISCONNECTED = 0
+const STATE_CONNECTED = 1
+const STATE_CONNECTING = 2
+const STATE_DISCONNECTING = 3
+
+let connectionPool = []
 
 /**
  * @typedef ConnectionOptions
@@ -25,12 +32,30 @@ let _connections = []
 const Connection = function (options, storeName) {
   this.datastore = require('../datastore')(storeName)
 
-  // connection readyState
-  // 0 = disconnected
-  // 1 = connected
-  // 2 = connecting
-  // 3 = disconnecting
-  this.readyState = 0
+  this.recovery = new Recovery({
+    retries: 10
+  })
+
+  // Setting up the reconnect method
+  this.recovery.on('reconnect', opts => {
+    this.connect(options).then(db => {
+      let connectionError
+
+      if (db.readyState !== 1) {
+        connectionError = new Error('Not connected')
+      }
+
+      this.recovery.reconnected(connectionError)
+    }).catch(err => {
+      this.recovery.reconnected(err)
+    })
+  })
+
+  this.recovery.on('reconnected', () => {
+    this.emit('connect', this.db)
+  })
+
+  this.readyState = STATE_DISCONNECTED
 }
 
 util.inherits(Connection, EventEmitter)
@@ -41,26 +66,53 @@ util.inherits(Connection, EventEmitter)
  *
  */
 Connection.prototype.connect = function (options) {
-  this.readyState = 2
+  this.readyState = STATE_CONNECTING
 
   if (this.db) {
-    this.readyState = 1
-    this.emit('connect', this.db)
-    return
+    this.readyState = STATE_CONNECTED
+
+    return Promise.resolve(this.db)
   }
 
   debug('connect %o', options)
 
-  this.datastore.connect(options).then(() => {
-    this.readyState = 1
+  return this.datastore.connect(options).then(() => {
+    this.readyState = STATE_CONNECTED
     this.db = this.datastore
+
+    this.emit('connect', this.db)
 
     debug('connect returned %o', this.db)
 
-    return this.emit('connect', this.db)
-  }).catch((err) => {
-    debug('connection error %o', err)
-    return this.emit('error', err)
+    this.setUpEventListeners(this.db)
+
+    return this.db
+  }).catch(err => {
+    if (!this.recovery.reconnecting()) {
+      this.recovery.reconnect()
+    }
+
+    const errorMessage = 'DB connection failed with connection string ' + this.datastore.connectionString
+
+    this.emit('disconnect', errorMessage)
+
+    return Promise.reject(new Error(errorMessage))
+  })
+}
+
+Connection.prototype.setUpEventListeners = function (db) {
+  db.on('DB_ERROR', err => {
+    this.emit('disconnect', 'DB connection failed with connection string ' + this.datastore.connectionString)
+
+    if (!this.recovery.reconnecting()) {
+      this.recovery.reconnect()
+    }
+  })
+
+  db.on('DB_RECONNECTED', () => {
+    debug('connection re-established: %s', this.datastore.connectionString)
+
+    this.recovery.reconnected()
   })
 }
 
@@ -72,8 +124,6 @@ Connection.prototype.connect = function (options) {
  * @api public
  */
 module.exports = function (options, collection, storeName) {
-  // var enableCollectionDatabases = config.get('database.enableCollectionDatabases')
-  // var database = enableCollectionDatabases ? options.database : null
   let conn
 
   try {
@@ -89,8 +139,8 @@ module.exports = function (options, collection, storeName) {
   const connectionKey = Object.keys(options).map(option => { return options[option] }).join(':')
 
   // if a connection exists for the specified database, return it
-  if (_connections[connectionKey]) {
-    return _connections[connectionKey]
+  if (connectionPool[connectionKey]) {
+    return connectionPool[connectionKey]
   }
 
   conn = new Connection(options, storeName)
@@ -99,24 +149,7 @@ module.exports = function (options, collection, storeName) {
     options.collection = collection
   }
 
-  // const Recovery = require('recovery')
-  // let recovery = new Recovery({retries: 3})
-
-  conn.on('error', err => {
-    console.log('Connection Error: ' + err + '. Using connection string "' + conn.datastore.connectionString + '"')
-
-    // recovery.on('reconnect', opts => {
-    //   console.log(opts.attempt)
-    //
-    //   conn.connect(options)
-    // })
-    //
-    // recovery.reconnect()
-  })
-
-  _connections[connectionKey] = conn
-
-  //console.log(conn)
+  connectionPool[connectionKey] = conn
 
   conn.connect(options)
 

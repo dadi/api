@@ -289,6 +289,33 @@ describe('Application', function () {
           })
       })
 
+      it('should create new documents when content-type is text/plain', function (done) {
+        var body = JSON.stringify({
+          field1: 'foo!'
+        })
+
+        var client = request(connectionString)
+
+        client
+          .post('/vtest/testdb/test-schema')
+          .set('Authorization', 'Bearer ' + bearerToken)
+          .set('content-type', 'text/plain')
+          .send(body)
+          .expect(200)
+          .end(function (err, res) {
+            if (err) return done(err)
+
+            should.exist(res.body.results)
+
+            res.body.results.should.be.Array
+            res.body.results.length.should.equal(1)
+            should.exist(res.body.results[0]._id)
+            should.exist(res.body.results[0].field1)
+            res.body.results[0].field1.should.equal('foo!')
+            done()
+          })
+      })
+
       it('should create new documents with ObjectIDs from single value', function (done) {
         var body = { field1: 'foo!', field2: 1278, field3: '55cb1658341a0a804d4dadcc' }
         var client = request(connectionString)

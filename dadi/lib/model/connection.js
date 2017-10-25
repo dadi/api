@@ -116,7 +116,7 @@ module.exports = function (options, collection, storeName) {
 
   _connections[connectionKey] = conn
 
-  //console.log(conn)
+  // console.log(conn)
 
   conn.connect(options)
 

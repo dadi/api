@@ -77,6 +77,8 @@ TokenStore.prototype.connect = function () {
     })
 
     this.connection.once('disconnect', err => {
+      log.error({module: 'tokenStore'}, err)
+
       this.recoveringFromDBDisconnect = true
 
       return reject(new Error('DB_DISCONNECTED'))
@@ -195,7 +197,9 @@ let tokenStore
 module.exports = () => {
   if (!tokenStore) {
     tokenStore = new TokenStore()
-    tokenStore.connect().catch(err => {})
+    tokenStore.connect().catch(err => {
+      log.error({module: 'tokenStore'}, err)
+    })
   }
 
   return tokenStore

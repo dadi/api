@@ -178,7 +178,28 @@ Server.prototype.start = function (done) {
     }
   })
 
-  app.use(bodyParser.json({ limit: '50mb' }))
+  app.use(bodyParser.json({ limit: '50mb',
+    type: req => {
+      if (['text/plain', 'text/plain; charset=utf-8', 'application/json'].includes(req.headers['content-type'])) {
+        let parts = req.url.split('/').filter(Boolean)
+
+        // don't allow parsing into JSON if:
+        if (
+          parts[parts.length - 1] === 'config' && // if it's a config URL
+          (parts.length === 3 || // and it's an endpoint file being posted
+          parts.includes('hooks')) // or it's a hook file being posted
+        ) {
+          return false
+        }
+
+        // else allow parsing into JSON
+        return true
+      } else {
+        // not a content-type that supports JSON
+        return false
+      }
+    }
+  }))
   app.use(bodyParser.urlencoded({ extended: true, limit: '50mb' }))
   app.use(bodyParser.text({ limit: '50mb' }))
 

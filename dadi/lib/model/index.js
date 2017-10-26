@@ -79,7 +79,7 @@ const Model = function (name, schema, conn, settings) {
 
   if (config.get('env') !== 'test') {
     this.connection.once('disconnect', (err) => {
-      logger.error(err)
+      logger.error({module: 'model'}, err)
     })
   }
 
@@ -338,98 +338,108 @@ Model.prototype.delete = function (query, done, req) {
 
   query = this.formatQuery(query)
 
-  var startDelete = (database) => {
-    // find all the documents affected by the query
-    if (query._id) {
-      query._id = query._id.toString()
-    }
+  // find all the documents affected by the query
+  if (query._id) {
+    query._id = query._id.toString()
+  }
 
-    var deletedDocs = []
-    var allDocs = []
+  var deletedDocs = []
+  var allDocs = []
 
-    var deleteDocuments = (database) => {
-      database.delete({
-        query: query,
-        collection: this.name,
-        schema: this.schema
-      }).then(result => {
-        if (result.deletedCount > 0) {
-          // apply any existing `afterDelete` hooks
-          if (this.settings.hasOwnProperty('hooks') && (typeof this.settings.hooks.afterDelete === 'object')) {
-            this.settings.hooks.afterDelete.forEach((hookConfig, index) => {
-              var hook = new Hook(this.settings.hooks.afterDelete[index], 'afterDelete')
+  var deleteDocuments = (database) => {
+    database.delete({
+      query: query,
+      collection: this.name,
+      schema: this.schema
+    }).then(result => {
+      if (result.deletedCount > 0) {
+        // apply any existing `afterDelete` hooks
+        if (this.settings.hasOwnProperty('hooks') && (typeof this.settings.hooks.afterDelete === 'object')) {
+          this.settings.hooks.afterDelete.forEach((hookConfig, index) => {
+            var hook = new Hook(this.settings.hooks.afterDelete[index], 'afterDelete')
 
-              return hook.apply(query, deletedDocs, this.schema, this.name)
-            })
-          }
-        }
-
-        result.totalCount = allDocs.metadata.totalCount - result.deletedCount
-
-        return done(null, result)
-      }).catch((err) => {
-        return done(err)
-      })
-    }
-
-    this.find({}, { compose: false }, (err, docs) => {
-      if (err) return done(err)
-
-      allDocs = docs
-
-      this.find(query, { compose: false }, (err, docs) => {
-        if (err) return done(err)
-
-        deletedDocs = docs.results
-
-        var wait = Promise.resolve()
-
-        if (this.history) {
-          wait = new Promise((resolve, reject) => {
-            // for each of the about-to-be-deleted documents, create a revision for it
-            if (deletedDocs.length > 0) {
-              this.history.createEach(deletedDocs, 'delete', this).then(() => {
-                return resolve()
-              }).catch((err) => {
-                return reject(err)
-              })
-            } else {
-              return resolve()
-            }
+            return hook.apply(query, deletedDocs, this.schema, this.name)
           })
         }
+      }
 
-        wait.then(() => {
-          // apply any existing `beforeDelete` hooks, otherwise delete the documents straight away
-          if (this.settings.hooks && this.settings.hooks.beforeDelete) {
-            async.reduce(this.settings.hooks.beforeDelete, query, (current, hookConfig, callback) => {
-              var hook = new Hook(hookConfig, 'beforeDelete')
-              var hookError = {}
+      result.totalCount = allDocs.metadata.totalCount - result.deletedCount
 
-              Promise.resolve(hook.apply(current, deletedDocs, hookError, this.schema, this.name, req)).then((newQuery) => {
-                callback((newQuery === null) ? {} : null, newQuery)
-              }).catch((err) => {
-                callback(hook.formatError(err))
-              })
-            }, (err, result) => {
-              if (err) {
-                done(err)
-              } else {
-                deleteDocuments(database)
-              }
-            })
-          } else {
-            deleteDocuments(database)
-          }
-        }).catch((err) => {
-          console.log(err)
-          done(err)
-        })
-      })
+      return done(null, result)
+    }).catch((err) => {
+      return done(err)
     })
   }
 
-  return startDelete(this.connection.db)
+  this.find({}, { compose: false }, (err, docs) => {
+    if (err) return done(err)
+
+    allDocs = docs
+
+    this.find(query, { compose: false }, (err, docs) => {
+      if (err) return done(err)
+
+      const isIdQuery = query._id &&
+        req &&
+        req.url &&
+        (req.url.indexOf(query._id) + query._id.length === req.url.length)
+
+      deletedDocs = docs.results
+
+      if (isIdQuery && (deletedDocs.length === 0)) {
+        const err = new Error('Document not found')
+
+        err.statusCode = 404
+
+        return done(err)
+      }
+
+      var wait = Promise.resolve()
+
+      if (this.history) {
+        wait = new Promise((resolve, reject) => {
+          // for each of the about-to-be-deleted documents, create a revision for it
+          if (deletedDocs.length > 0) {
+            this.history.createEach(deletedDocs, 'delete', this).then(() => {
+              return resolve()
+            }).catch((err) => {
+              return reject(err)
+            })
+          } else {
+            return resolve()
+          }
+        })
+      }
+
+      wait.then(() => {
+        // apply any existing `beforeDelete` hooks, otherwise delete the documents straight away
+        if (this.settings.hooks && this.settings.hooks.beforeDelete) {
+          async.reduce(this.settings.hooks.beforeDelete, query, (current, hookConfig, callback) => {
+            var hook = new Hook(hookConfig, 'beforeDelete')
+            var hookError = {}
+
+            Promise.resolve(hook.apply(current, deletedDocs, hookError, this.schema, this.name, req)).then((newQuery) => {
+              callback((newQuery === null) ? {} : null, newQuery)
+            }).catch((err) => {
+              callback(hook.formatError(err))
+            })
+          }, (err, result) => {
+            if (err) {
+              done(err)
+            } else {
+              deleteDocuments(this.connection.db)
+            }
+          })
+        } else {
+          deleteDocuments(this.connection.db)
+        }
+      }).catch((err) => {
+        logger.error({module: 'model'}, err)
+
+        done(err)
+      })
+    })
+  })
 }
 
 /**
@@ -633,7 +643,10 @@ Model.prototype.find = function (query, options, done) {
 
       async.series(queue,
         function (err, results) {
-          if (err) console.log(err)
+          if (err) {
+            logger.error({module: 'model'}, err)
+          }
+
           runFind()
         }
       )
@@ -924,7 +937,7 @@ Model.prototype.injectHistory = function (data, options) {
 
     data.results.forEach((doc, idx) => {
       this.revisions(doc._id, options, (err, history) => {
-        if (err) console.log(err)
+        if (err) logger.error({module: 'model'}, err)
 
         doc._history = this.formatResultSetForOutput(history)
 
@@ -1106,7 +1119,7 @@ Model.prototype.update = function (query, update, internals, done, req, bypassOu
               return done(null, results)
             })
           }).catch((err) => {
-            console.log(err)
+            logger.error({module: 'model'}, err)
           })
         }).catch((err) => {
           return done(err)

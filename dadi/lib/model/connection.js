@@ -9,7 +9,6 @@ const util = require('util')
 const STATE_DISCONNECTED = 0
 const STATE_CONNECTED = 1
 const STATE_CONNECTING = 2
-const STATE_DISCONNECTING = 3
 
 let connectionPool = []
 
@@ -79,23 +78,19 @@ Connection.prototype.connect = function (options) {
   debug('connect %o', options)
 
   return this.datastore.connect(options).then(() => {
-    console.log('')
-    console.log('*** CONNECTED')
-    console.log('')
     this.readyState = STATE_CONNECTED
     this.db = this.datastore
 
     this.emit('connect', this.db)
 
-    debug('connect returned %o', this.db)
+    debug('DB connected: %o', this.db)
 
     this.setUpEventListeners(this.db)
 
     return this.db
   }).catch(err => {
-    console.log('')
-    console.log('*** CONNECTION FAILED')
-    console.log('')
+    log.error({module: 'connection'}, err)
+
     if (!this.recovery.reconnecting()) {
       this.recovery.reconnect()
     }
@@ -110,9 +105,8 @@ Connection.prototype.connect = function (options) {
 
 Connection.prototype.setUpEventListeners = function (db) {
   db.on('DB_ERROR', err => {
-    console.log('')
-    console.log('*** DB_ERROR')
-    console.log('')
+    log.error({module: 'connection'}, err)
+
     this.emit('disconnect', 'DB connection failed with connection string ' + this.datastore.connectionString)
 
     if (!this.recovery.reconnecting()) {
@@ -121,9 +115,6 @@ Connection.prototype.setUpEventListeners = function (db) {
   })
 
   db.on('DB_RECONNECTED', () => {
-    console.log('')
-    console.log('*** DB_RECONNECTED')
-    console.log('')
     debug('connection re-established: %s', this.datastore.connectionString)
 
     this.recovery.reconnected()

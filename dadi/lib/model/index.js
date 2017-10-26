@@ -332,6 +332,10 @@ Model.prototype.delete = function (query, done, req) {
     return done(err)
   }
 
+  if (!this.connection.db) {
+    return done(createConnectionError())
+  }
+
   query = this.formatQuery(query)
 
   var startDelete = (database) => {
@@ -425,10 +429,7 @@ Model.prototype.delete = function (query, done, req) {
     })
   }
 
-  if (this.connection.db) return startDelete(this.connection.db)
-
-  // if the db is not connected queue the delete
-  this.connection.once('connect', startDelete)
+  return startDelete(this.connection.db)
 }
 
 /**
@@ -1002,6 +1003,10 @@ Model.prototype.update = function (query, update, internals, done, req, bypassOu
   // internals will not be validated, i.e. should not be user input
   if (typeof internals === 'function') {
     done = internals
+  }
+
+  if (!this.connection.db) {
+    return done(createConnectionError())
   }
 
   var err

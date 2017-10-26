@@ -1,28 +1,29 @@
 'use strict'
 
-var _ = require('underscore-contrib')
-var async = require('async')
-var debug = require('debug')('api:model')
-var path = require('path')
+const _ = require('underscore-contrib')
+const async = require('async')
+const debug = require('debug')('api:model')
+const path = require('path')
 
-var Composer = require(path.join(__dirname, '/composer')).Composer
-var config = require(path.join(__dirname, '/../../../config'))
-var Connection = require(path.join(__dirname, '/connection'))
-var History = require(path.join(__dirname, '/history'))
-var Hook = require(path.join(__dirname, '/hook'))
-var logger = require('@dadi/logger')
-var queryUtils = require(path.join(__dirname, '/utils'))
-var Validator = require(path.join(__dirname, '/validator'))
+const Composer = require(path.join(__dirname, '/composer')).Composer
+const config = require(path.join(__dirname, '/../../../config'))
+const Connection = require(path.join(__dirname, '/connection'))
+const formatError = require('@dadi/format-error')
+const History = require(path.join(__dirname, '/history'))
+const Hook = require(path.join(__dirname, '/hook'))
+const logger = require('@dadi/logger')
+const queryUtils = require(path.join(__dirname, '/utils'))
+const Validator = require(path.join(__dirname, '/validator'))
 
 // track all models that have been instantiated by this process
-var _models = {}
+let _models = {}
 
 /**
  * Creates a new Model instance
  * @constructor
  * @classdesc
  */
-var Model = function (name, schema, conn, settings) {
+const Model = function (name, schema, conn, settings) {
   // attach collection name
   this.name = name
 
@@ -124,7 +125,7 @@ Model.prototype.count = function (query, options, done) {
   var validation = this.validate.query(query)
 
   if (!validation.success) {
-    var err = validationError('Bad Query')
+    var err = createValidationError('Bad Query')
     err.json = validation
     return done(err)
   }
@@ -135,7 +136,7 @@ Model.prototype.count = function (query, options, done) {
       return done(null, { metadata: results.metadata })
     })
   } else {
-    return done(validationError('Bad Query'))
+    return done(createValidationError('Bad Query'))
   }
 }
 
@@ -160,6 +161,10 @@ Model.prototype.create = function (documents, internals, done, req) {
     done = internals
   }
 
+  if (!this.connection.db) {
+    return done(createConnectionError())
+  }
+
   // validate each doc
   var validation
 
@@ -170,7 +175,7 @@ Model.prototype.create = function (documents, internals, done, req) {
   })
 
   if (!validation.success) {
-    var err = validationError('Validation Failed')
+    var err = createValidationError('Validation Failed')
     err.success = validation.success
     err.errors = validation.errors
     err.data = documents
@@ -266,7 +271,11 @@ Model.prototype.create = function (documents, internals, done, req) {
 
         return done(null, returnData)
       })
-    }).catch((err) => {
+    }).catch(err => {
+      if (err.message === 'DB_DISCONNECTED') {
+        return done(createConnectionError())
+      }
+
       return done(err)
     })
   }
@@ -285,12 +294,7 @@ Model.prototype.create = function (documents, internals, done, req) {
       doc = result
 
       if (idx === documents.length - 1) {
-        if (this.connection.db) {
-          return startInsert(this.connection.db)
-        } else {
-          // if the db is not connected queue the insert
-          this.connection.once('connect', startInsert)
-        }
+        return startInsert(this.connection.db)
       }
     })
   })
@@ -323,7 +327,7 @@ Model.prototype.delete = function (query, done, req) {
   var validation = this.validate.query(query)
 
   if (!validation.success) {
-    var err = validationError('Bad Query')
+    var err = createValidationError('Bad Query')
     err.json = validation
     return done(err)
   }
@@ -495,7 +499,7 @@ Model.prototype.find = function (query, options, done) {
   var validation = this.validate.query(query)
 
   if (!validation.success) {
-    var err = validationError('Bad Query')
+    var err = createValidationError('Bad Query')
     err.json = validation
     return done(err)
   }
@@ -664,16 +668,21 @@ Model.prototype.find = function (query, options, done) {
         } else {
           runDoneQueue(null, results)
         }
+      }).catch(err => {
+        if (err.message === 'DB_DISCONNECTED') {
+          return done(createConnectionError())
+        }
+
+        return done(err)
       })
     }
   }
 
-  if (this.connection.db) return _done(this.connection.db)
+  if (!this.connection.db) {
+    return done(createConnectionError())
+  }
 
-  // if the db is not connected queue the find
-  this.connection.once('connect', function (database) {
-    _done(database)
-  })
+  return _done(this.connection.db)
 }
 
 /**
@@ -837,6 +846,8 @@ Model.prototype.get = function (query, options, done, req) {
 
   const databaseGet = query => {
     this.find(query, options, (err, results) => {
+      if (err) return done(err)
+
       if (this.settings.hooks && this.settings.hooks.afterGet) {
         async.reduce(this.settings.hooks.afterGet, results, (current, hookConfig, callback) => {
           var hook = new Hook(hookConfig, 'afterGet')
@@ -998,7 +1009,7 @@ Model.prototype.update = function (query, update, internals, done, req, bypassOu
   var validation = this.validate.query(query)
 
   if (!validation.success) {
-    err = validationError('Bad Query')
+    err = createValidationError('Bad Query')
     err.json = validation
     return done(err)
   }
@@ -1006,7 +1017,7 @@ Model.prototype.update = function (query, update, internals, done, req, bypassOu
   validation = this.validate.schema(update, true)
 
   if (!validation.success) {
-    err = validationError()
+    err = createValidationError()
     err.json = validation
     return done(err)
   }
@@ -1127,9 +1138,17 @@ Model.prototype.update = function (query, update, internals, done, req, bypassOu
   this.connection.once('connect', startUpdate)
 }
 
-function validationError (message) {
-  var err = new Error(message || 'Model Validation Failed')
+function createConnectionError () {
+  const err = formatError.createApiError('0004')
+  err.statusCode = 503
+
+  return err
+}
+
+function createValidationError (message) {
+  const err = new Error(message || 'Model Validation Failed')
   err.statusCode = 400
+
   return err
 }
 

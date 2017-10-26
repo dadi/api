@@ -52,6 +52,8 @@ const Connection = function (options, storeName) {
   })
 
   this.recovery.on('reconnected', () => {
+    this.readyState = STATE_CONNECTED
+
     this.emit('connect', this.db)
   })
 
@@ -77,6 +79,9 @@ Connection.prototype.connect = function (options) {
   debug('connect %o', options)
 
   return this.datastore.connect(options).then(() => {
+    console.log('')
+    console.log('*** CONNECTED')
+    console.log('')
     this.readyState = STATE_CONNECTED
     this.db = this.datastore
 
@@ -88,6 +93,9 @@ Connection.prototype.connect = function (options) {
 
     return this.db
   }).catch(err => {
+    console.log('')
+    console.log('*** CONNECTION FAILED')
+    console.log('')
     if (!this.recovery.reconnecting()) {
       this.recovery.reconnect()
     }
@@ -102,6 +110,9 @@ Connection.prototype.connect = function (options) {
 
 Connection.prototype.setUpEventListeners = function (db) {
   db.on('DB_ERROR', err => {
+    console.log('')
+    console.log('*** DB_ERROR')
+    console.log('')
     this.emit('disconnect', 'DB connection failed with connection string ' + this.datastore.connectionString)
 
     if (!this.recovery.reconnecting()) {
@@ -110,6 +121,9 @@ Connection.prototype.setUpEventListeners = function (db) {
   })
 
   db.on('DB_RECONNECTED', () => {
+    console.log('')
+    console.log('*** DB_RECONNECTED')
+    console.log('')
     debug('connection re-established: %s', this.datastore.connectionString)
 
     this.recovery.reconnected()

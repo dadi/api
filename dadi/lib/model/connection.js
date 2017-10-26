@@ -150,7 +150,6 @@ module.exports = function (options, collection, storeName) {
   }
 
   connectionPool[connectionKey] = conn
-
   conn.connect(options)
 
   return conn

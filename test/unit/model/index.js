@@ -558,10 +558,9 @@ describe('Model', function () {
 
             mod.create({field3: 'ABCDEF'}, function (err, result) {
               should.exist(err)
-              // console.log(err.code)
-              // console.log(err.message)
+              console.log(err.code)
+              console.log(err.message)
               err.message.toLowerCase().indexOf('duplicate').should.be.above(-1)
-              // err.code.should.eql('11000')
               done()
             })
           })
@@ -610,8 +609,7 @@ describe('Model', function () {
             mod.create({fieldName: 'ABCDEF'}, function (err, result) {
               should.exist(err)
               err.message.toLowerCase().indexOf('duplicate').should.be.above(-1)
-              // err.name.should.eql('MongoError')
-              // err.code.should.eql('11000')
+
               mod.create({field3: '1234'}, function (err, result) {
                 mod.create({field3: '1234'}, function (err, result) {
                   should.exist(err)

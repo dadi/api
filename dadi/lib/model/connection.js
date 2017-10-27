@@ -1,8 +1,10 @@
-var debug = require('debug')('api:connection')
-var EventEmitter = require('events').EventEmitter
-var util = require('util')
+'use strict'
 
-var _connections = []
+const debug = require('debug')('api:connection')
+const EventEmitter = require('events').EventEmitter
+const util = require('util')
+
+let _connections = []
 
 /**
  * @typedef ConnectionOptions
@@ -20,7 +22,7 @@ var _connections = []
  * @param {ConnectionOptions} options
  * @api public
  */
-var Connection = function (options, storeName) {
+const Connection = function (options, storeName) {
   this.datastore = require('../datastore')(storeName)
 
   // connection readyState
@@ -60,28 +62,6 @@ Connection.prototype.connect = function (options) {
     debug('connection error %o', err)
     return this.emit('error', err)
   })
-
-  // mongoClient.connect(this.connectionString, function (err, db) {
-  //   if (err) {
-  //     self.readyState = 0
-  //     return self.emit('error', err)
-  //   }
-
-    // self.readyState = 1
-    // self.db = db
-    // self.db = datastore
-
-    // _connections[self.connectionOptions.database] = self
-    //
-    // if (!self.connectionOptions.username || !self.connectionOptions.password) {
-    // return this.emit('connect', this.db)
-    // }
-    //
-    // self.db.authenticate(self.connectionOptions.username, self.connectionOptions.password, function (err) {
-    //   if (err) return self.emit('error', err)
-    //   self.emit('connect', self.db)
-    // })
-  // })
 }
 
 /**
@@ -94,12 +74,10 @@ Connection.prototype.connect = function (options) {
 module.exports = function (options, collection, storeName) {
   // var enableCollectionDatabases = config.get('database.enableCollectionDatabases')
   // var database = enableCollectionDatabases ? options.database : null
-  var conn
-  // var connectionOptions = getConnectionOptions(options)
-  //
+  let conn
 
   try {
-    var storeConfig = require(storeName).Config
+    const storeConfig = require(storeName).Config
 
     if (storeConfig.get('connectWithCollection') === false) {
       delete options.collection
@@ -108,24 +86,12 @@ module.exports = function (options, collection, storeName) {
     console.log(err)
   }
 
-  var connectionKey = Object.keys(options).map((option) => { return options[option] }).join(':')
-
-  // console.log('connectionKey:', connectionKey)
-  // console.log(_connections)
+  const connectionKey = Object.keys(options).map(option => { return options[option] }).join(':')
 
   // if a connection exists for the specified database, return it
   if (_connections[connectionKey]) {
     return _connections[connectionKey]
   }
-
-  //
-  //   if (conn.readyState === 2) {
-  //     setTimeout(function () {
-  //       conn.connect()
-  //     }, 5000)
-  //   }
-  // } else {
-  // else create a new connection
 
   conn = new Connection(options, storeName)
 
@@ -133,15 +99,26 @@ module.exports = function (options, collection, storeName) {
     options.collection = collection
   }
 
-  conn.on('error', function (err) {
+  // const Recovery = require('recovery')
+  // let recovery = new Recovery({retries: 3})
+
+  conn.on('error', err => {
     console.log('Connection Error: ' + err + '. Using connection string "' + conn.datastore.connectionString + '"')
+
+    // recovery.on('reconnect', opts => {
+    //   console.log(opts.attempt)
+    //
+    //   conn.connect(options)
+    // })
+    //
+    // recovery.reconnect()
   })
 
-  // _connections[JSON.stringify(options)] = conn
   _connections[connectionKey] = conn
 
+  // console.log(conn)
+
   conn.connect(options)
-//  }
 
   return conn
 }

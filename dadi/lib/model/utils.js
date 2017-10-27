@@ -157,7 +157,7 @@ function convertDateTimeForSave (schema, obj) {
   Object.keys(schema).filter(function (key) {
     return schema[key].type === 'DateTime' && obj[key] !== null && !_.isUndefined(obj[key])
   }).forEach(key => {
-    console.log(key, schema[key], obj[key])
+    // console.log(key, schema[key], obj[key])
     switch (schema[key].format) {
       case 'unix':
         obj[key] = moment(obj[key]).valueOf()

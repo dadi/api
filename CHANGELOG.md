@@ -4,6 +4,41 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## [3.0.0] (2017-10-10)
+
+See full release notes at https://github.com/dadi/api/releases/tag/v3.0.0
+
+### Added
+
+API Version 3.0 supports multiple data connectors. In previous versions API used MongoDB as a backend; this is now configurable. API Data Connectors are available as NPM packages. To add one to your API installation, run the associated NPM install command:
+
+`$ npm install @dadi/api-mongodb --save`
+
+Each data connector has it's own configuration requirements, but API must also be configured to use the data connectors you select. Modify your API configuration as follows:
+
+```json
+{
+  "datastore": "@dadi/api-mongodb",  // the NPM package name for the data connector to use for the content layer
+  "auth": {
+    "tokenUrl": "/token",
+    "tokenTtl": 1800,
+    "clientCollection": "clientStore",
+    "tokenCollection": "tokenStore",
+    "datastore": "@dadi/api-mongodb",  // the NPM package name for the data connector to use for the authentication layer
+    "database": "test"
+  }
+}
+```
+
+### Changed
+
+* [#251](https://github.com/dadi/api/issues/251): added a new `/hello` endpoint which returns HTTP 200 and a "Welcome to API" message
+* [#180](https://github.com/dadi/api/issues/180): document properties with `null` values are not returned as part of the response
+* [#141](https://github.com/dadi/api/issues/141): the internal fields will be prefixed with a special character (`_` by default) which is configurable using the configuration property `internalFieldsPrefix`
+* [#263](https://github.com/dadi/api/issues/263): all delete hooks now receive a `deletedDocs` property
+* [#314](https://github.com/dadi/api/issues/314): when configuration option `feedback` is `true` we now send a response body when deleting documents
+
+
 ## [2.2.0] (2017-07-05)
 
 ### Changed

@@ -262,12 +262,20 @@ var conf = convict({
     }
   },
   paths: {
-    doc: '',
-    format: Object,
-    default: {
-      collections: __dirname + '/workspace/collections',
-      endpoints: __dirname + '/workspace/endpoints',
-      hooks: __dirname + '/workspace/hooks'
+    collections: {
+      doc: 'The relative or absolute path to collection specification files',
+      format: String,
+      default: __dirname + '/workspace/collections'
+    },
+    endpoints: {
+      doc: 'The relative or absolute path to custom endpoint files',
+      format: String,
+      default: __dirname + '/workspace/endpoints'
+    },
+    hooks: {
+      doc: 'The relative or absolute path to hook specification files',
+      format: String,
+      default: __dirname + '/workspace/hooks'
     }
   },
   feedback: {
@@ -385,9 +393,6 @@ var conf = convict({
 var env = conf.get('env')
 conf.loadFile('./config/config.' + env + '.json')
 
-// Perform validation
-conf.validate()
-
 // Load domain-specific configuration
 conf.updateConfigDataForDomain = function(domain) {
   var domainConfig = './config/' + domain + '.json'
@@ -396,7 +401,6 @@ conf.updateConfigDataForDomain = function(domain) {
     var stats = fs.statSync(domainConfig)
     // no error, file exists
     conf.loadFile(domainConfig)
-    conf.validate()
   }
   catch(err) {
     if (err.code === 'ENOENT') {

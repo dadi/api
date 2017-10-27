@@ -18,12 +18,6 @@ var lastModifiedAt = 0
 describe('Search', function () {
   this.timeout(4000)
 
-/*
-Running an initial index
-
-To run a batch index against the entire dataset, run node node_modules/@dadi/api/utils/index-search. This may take some time, so have a ☕️ to hand.
-*/
-
   before(function (done) {
     app.start(() => {
       help.dropDatabase('testdb', function (err) {

@@ -21,6 +21,7 @@ var _ = require('underscore')
 var api = require(path.join(__dirname, '/api'))
 var auth = require(path.join(__dirname, '/auth'))
 var cache = require(path.join(__dirname, '/cache'))
+var Connection = require(path.join(__dirname, '/model/connection'))
 var Controller = require(path.join(__dirname, '/controller'))
 var HooksController = require(path.join(__dirname, '/controller/hooks'))
 var MediaController = require(path.join(__dirname, '/controller/media'))
@@ -234,6 +235,9 @@ Server.prototype.stop = function (done) {
 
   this.server.close(function (err) {
     self.readyState = 0
+
+    Connection.resetConnections()
+
     done && done(err)
   })
 }

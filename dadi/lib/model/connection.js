@@ -161,3 +161,6 @@ module.exports = function (options, collection, storeName) {
 }
 
 module.exports.Connection = Connection
+module.exports.resetConnections = () => {
+  connectionPool = []
+}

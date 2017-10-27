@@ -9,7 +9,6 @@ var _ = require('underscore')
 var path = require('path')
 var datastore = require(path.join(__dirname, '../datastore'))()
 var validator = require('validator')
-
 var ignoredKeys = _.union(
   [
     '_id',

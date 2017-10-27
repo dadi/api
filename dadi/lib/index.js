@@ -242,15 +242,14 @@ Server.prototype.start = function (done) {
 
 // this is mostly needed for tests
 Server.prototype.stop = function (done) {
-  var self = this
   this.readyState = 3
 
   Object.keys(this.monitors).forEach(this.removeMonitor.bind(this))
 
   Object.keys(this.components).forEach(this.removeComponent.bind(this))
 
-  this.server.close(function (err) {
-    self.readyState = 0
+  this.server.close(err => {
+    this.readyState = 0
     done && done(err)
   })
 }

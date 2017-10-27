@@ -95,6 +95,9 @@ var Model = function (name, schema, conn, settings) {
 
   // setup search context
   this.searcher = new Search(this)
+  if (this.searcher.canUse()) {
+    this.searcher.init()
+  }
 
   if (this.settings.index) {
     this.createIndex(() => {})
@@ -261,6 +264,7 @@ Model.prototype.create = function (documents, internals, done, req) {
 
         // apply any existing `afterCreate` hooks
         triggerAfterCreateHook(returnData.results)
+
         // Asynchronous search index
         this.searcher.index(returnData.results)
 
@@ -270,6 +274,8 @@ Model.prototype.create = function (documents, internals, done, req) {
         return done(null, returnData)
       })
     }).catch((err) => {
+      console.log(err)
+      console.log('> API MODEL INSERT ERR')
       return done(err)
     })
   }
@@ -708,18 +714,25 @@ Model.prototype.search = function (options, done, req) {
   }
 
   if (!this.searcher.canUse()) {
-    err = new Error(`Search query must be at least ${config.get('search.minLength')} characters`)
+    err = new Error('Not Implemented')
+    err.statusCode = 501
+    err.message = `Search is disabled or an invalid data connector has been specified`
+  } else if (!options.search || options.search.length < config.get('search.minQueryLength')) {
+    err = new Error('Bad Request')
+    err.statusCode = 400
+    err.message = `Search query must be at least ${config.get('search.minQueryLength')} characters`
   }
-  if (!options.search || options.search.length < config.get('search.minLength')) {
-    err = new Error(`Search query must be at least ${config.get('search.minLength')} characters`)
-  }
+
   if (err) {
     return done(err, null)
   }
 
-  this.searcher.find(options.search)
-    .then(query => {
+  this.searcher.find(options.search).then(query => {
+    console.log('<', query)
       const ids = query._id.$in.map(id => id.toString())
+
+    console.log(ids)
+
       this.get(query, options, (err, results) => {
         results.results = results.results.sort((a, b) => {
           const aIndex = ids.indexOf(a._id.toString())
@@ -731,6 +744,8 @@ Model.prototype.search = function (options, done, req) {
         })
         done(err, results)
       }, req)
+  }).catch((err) => {
+    console.log(err)
     })
 }
 

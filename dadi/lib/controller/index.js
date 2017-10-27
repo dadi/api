@@ -130,21 +130,6 @@ var Controller = function (model) {
   this.model = model
 }
 
-Controller.prototype.search = function (req, res, next) {
-  var path = url.parse(req.url, true)
-  var options = path.query
-
-  var queryOptions = this.prepareQueryOptions(options)
-
-  if (queryOptions.errors.length !== 0) {
-    sendBackJSON(400, res, next)(null, queryOptions)
-  } else {
-    queryOptions = queryOptions.queryOptions
-  }
-
-  this.model.search(queryOptions, sendBackJSON(200, res, next), req)
-}
-
 Controller.prototype.get = function (req, res, next) {
   var path = url.parse(req.url, true)
   var options = path.query
@@ -309,6 +294,29 @@ Controller.prototype.delete = function (req, res, next) {
   })
 }
 
+/**
+ * Handle collection search endpoints
+ * Example: /1.0/library/books/search?q=title
+ */
+Controller.prototype.search = function (req, res, next) {
+  var path = url.parse(req.url, true)
+  var options = path.query
+
+  var queryOptions = this.prepareQueryOptions(options)
+
+  if (queryOptions.errors.length !== 0) {
+    sendBackJSON(400, res, next)(null, queryOptions)
+  } else {
+    queryOptions = queryOptions.queryOptions
+  }
+
+  this.model.search(queryOptions, sendBackJSON(200, res, next), req)
+}
+
+/**
+ * Handle request for collection statistics
+ * Example: /1.0/library/books/stats
+ */
 Controller.prototype.stats = function (req, res, next) {
   this.model.stats({}, function (err, stats) {
     if (err) return next(err)

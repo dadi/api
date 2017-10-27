@@ -1,9 +1,5 @@
 const should = require('should')
-const sinon = require('sinon')
 const searchUtil = require(__dirname + '/../../../dadi/lib/search/util')
-const model = require(__dirname + '/../../../dadi/lib/model')
-
-const testArray = [['foo', 'bar'], ['baz', 'qux']]
 
 describe('Utils', () => {
   it('should export a function', done => {
@@ -13,6 +9,7 @@ describe('Utils', () => {
 
   describe('`mergeArrays` method', () => {
     it('should merge two arrays together', done => {
+      const testArray = [['foo', 'bar'], ['baz', 'qux']]
       testArray.reduce(searchUtil.mergeArrays).should.eql(['foo', 'bar', 'baz', 'qux'])
       done()
     })

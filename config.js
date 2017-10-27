@@ -137,9 +137,9 @@ var conf = convict({
     enabled: {
       doc: 'If enabled, search will index content',
       format: Boolean,
-      default: true
+      default: false
     },
-    minLength: {
+    minQueryLength: {
       doc: 'Minimum search string length',
       format: Number,
       default: 3

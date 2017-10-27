@@ -1,9 +1,9 @@
-const should = require('should')
-const sinon = require('sinon')
-const search = require(__dirname + '/../../../dadi/lib/search')
-const model = require(__dirname + '/../../../dadi/lib/model')
 const config = require(__dirname + '/../../../config')
 const help = require(__dirname + '/../help')
+const Model = require(__dirname + '/../../../dadi/lib/model')
+const Search = require(__dirname + '/../../../dadi/lib/search')
+const should = require('should')
+const sinon = require('sinon')
 const store = require(config.get('search.datastore'))
 
 let mod
@@ -11,24 +11,25 @@ let searchInstance
 
 describe('Search', () => {
   beforeEach(done => {
-    mod = model('testSearchModel', help.getSearchModelSchema(), null, { database: 'testdb' })
-    searchInstance = search(mod)
+    mod = Model('testSearchModel', help.getSearchModelSchema(), null, { database: 'testdb' })
+    searchInstance = new Search(mod)
+    searchInstance.init()
     done()
   })
 
   it('should export constructor', done => {
-    search.Search.should.be.Function
+    Search.should.be.Function
     done()
   })
 
   it('should export a function that returns an instance', done => {
-      searchInstance.should.be.an.instanceOf(search.Search)
+      searchInstance.should.be.an.instanceOf(Search)
       done()
   })
 
   it('should throw an error if model is incorrect type', done => {
-      search.should.throw()
-      done()
+    should.throws(function () { var x = new Search() })
+    done()
   })
 
   describe('`initialiseConnections` method', () => {
@@ -50,10 +51,10 @@ describe('Search', () => {
 
   describe('`applyIndexListeners` method', () => {
     it('should call database index method once connection is established', done => {
-      mod = model('testModelNew', help.getSearchModelSchema(), null, { database: 'testdb' })
+      mod = Model('testModelNew', help.getSearchModelSchema(), null, { database: 'testdb' })
       const dbIndexStub = sinon.spy(store.prototype, 'index')
 
-      searchInstance = search(mod)
+      searchInstance = new Search(mod)
 
       setTimeout(() => {
         dbIndexStub.called.should.be.true
@@ -163,27 +164,161 @@ describe('Search', () => {
       done()
     })
   })
+
+  describe('`delete` method', () => {
+    it('should return without firing clearDocumentInstances if an array of documents is not provided', done => {
+      const dbDeleteStub = sinon.spy(searchInstance, 'clearDocumentInstances')
+
+      searchInstance.delete({_id: 'mockDocId'})
+      dbDeleteStub.called.should.be.false
+      dbDeleteStub.restore()
+
+      done()
+    })
+
+    it('should execute clearDocumentInstances if an array of documents is provided', done => {
+      const dbDeleteStub = sinon.spy(searchInstance, 'clearDocumentInstances')
+
+      searchInstance.delete([{_id: 'mockDocId'}])
+      dbDeleteStub.called.should.be.true
+      dbDeleteStub.lastCall.args[0].should.eql('mockDocId')
+      dbDeleteStub.restore()
+
+      done()
+    })
+  })
+
+  describe('`insert` method', () => {
+    it('should not execute the database insert if no data is provided', done => {
+      const dbInsertStub = sinon.spy(store.prototype, 'insert')
+
+      searchInstance.insert({}, {}, {}, {}, {})
+      dbInsertStub.called.should.be.false
+      dbInsertStub.restore()
+
+      done()
+    })
+  })
+
+  describe('`batchIndex` method', () => {
+    it('should not execute the runBatchIndex method if no fields can be indexed', done => {
+      let schema = help.getSearchModelSchema()
+      delete schema.searchableFieldName
+
+      let mod = Model('testSearchModel', schema, null, { database: 'testdb' })
+      const unIndexable = new Search(mod)
+      unIndexable.init()
+
+      const stub = sinon.spy(unIndexable, 'runBatchIndex')
+
+      unIndexable.batchIndex(1, 100)
+      stub.called.should.be.false
+      stub.restore()
+      done()
+    })
+
+    it('should call the runBatchIndex method with correct arguments when using defaults', done => {
+      let schema = help.getSearchModelSchema()
+      let mod = Model('testSearchModel', schema, null, { database: 'testdb' })
+      const indexable = new Search(mod)
+      indexable.init()
+
+      const stub = sinon.spy(indexable, 'runBatchIndex')
+
+      indexable.batchIndex()
+      stub.called.should.be.true
+      let args = stub.lastCall.args[0]
+      args.page.should.eql(1)
+      args.limit.should.eql(1000)
+      args.skip.should.eql(0)
+      args.fields.should.eql({searchableFieldName: 1})
+      stub.restore()
+      done()
+    })
+
+    it('should call the runBatchIndex method with correct arguments when using specific params', done => {
+      let schema = help.getSearchModelSchema()
+      let mod = Model('testSearchModel', schema, null, { database: 'testdb' })
+      const indexable = new Search(mod)
+      indexable.init()
+
+      const stub = sinon.spy(indexable, 'runBatchIndex')
+
+      indexable.batchIndex(2, 500)
+      stub.called.should.be.true
+      let args = stub.lastCall.args[0]
+      args.page.should.eql(2)
+      args.limit.should.eql(500)
+      args.skip.should.eql(500)
+      args.fields.should.eql({searchableFieldName: 1})
+      stub.restore()
+      done()
+    })
+  })
+
+  describe.skip('runBatchIndex', function () {
+    it('should call batchIndex repeatedly when there are more results', done => {
+      let schema = help.getSearchModelSchema()
+      let mod = Model('testSearchModel', schema, null, { database: 'testdb' })
+      const indexable = new Search(mod)
+      indexable.init()
+
+      const spy = sinon.spy(indexable, 'batchIndex')
+
+      function guid () {
+        return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+          var r = Math.random()*16|0, v = c == 'x' ? r : (r&0x3|0x8)
+          return v.toString(16)
+        })
+      }
+
+      mod.create([
+        { searchableFieldName: guid() },
+        { searchableFieldName: guid() },
+      ], {}, (obj) => {
+        console.log(obj)
+      })
+
+      // const dbFindStub = sinon.stub(store.prototype, 'find').callsFake(() => {
+      //   return Promise.resolve({
+      //     results: [
+      //
+      //       { _id: 2, searchableFieldName: guid() }
+      //     ],
+      //     metadata: {
+      //       totalPages: 2,
+      //       totalCount: 2
+      //     }
+      //   })
+      // })
+
+      indexable.runBatchIndex({ page: 1, limit: 1 })
+
+      setTimeout(() => {
+        // console.log(spy)
+        spy.restore()
+        done()
+      }, 1000)
+//      stub.called.should.be.true
+      // console.log(stub)
+      // let args = stub.lastCall.args[0]
+      // args.page.should.eql(2)
+      // args.limit.should.eql(500)
+      // args.skip.should.eql(500)
+      // args.fields.should.eql({searchableFieldName: 1})
+    })
+  })
 })
 
-// initialiseConnections [complete]
-// applyIndexListeners [complete]
+// TODO: test the following
 // find
 // getWords
 // getInstancesOfWords
-// getWordSchema [complete]
-// getSearchSchema [complete]
-// delete
 // index
-// getIndexableFields [complete]
-// hasSearchField [complete]
-// removeNonIndexableFields [complete]
 // indexDocument
 // analyseDocumentWords
-// createWordInstanceInsertQuery [complete]
 // clearAndInsertWordInstances
 // insertWordInstances
-// runFind [complete]
-// clearDocumentInstances [complete]
 // insert
 // batchIndex
 // runBatchIndex

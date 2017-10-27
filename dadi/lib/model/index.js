@@ -728,25 +728,25 @@ Model.prototype.search = function (options, done, req) {
   }
 
   this.searcher.find(options.search).then(query => {
-    console.log('<', query)
-      const ids = query._id.$in.map(id => id.toString())
+    const ids = query._id.$in.map(id => id.toString())
 
-    console.log(ids)
+    this.get(query, options, (err, results) => {
+      // sort the results
+      results.results = results.results.sort((a, b) => {
+        const aIndex = ids.indexOf(a._id.toString())
+        const bIndex = ids.indexOf(b._id.toString())
 
-      this.get(query, options, (err, results) => {
-        results.results = results.results.sort((a, b) => {
-          const aIndex = ids.indexOf(a._id.toString())
-          const bIndex = ids.indexOf(b._id.toString())
+        if (aIndex === bIndex) return 1
 
-          if (aIndex === bIndex) return 1
+        return aIndex < bIndex ? -1 : 1
+      })
 
-          return aIndex < bIndex ? -1 : 1
-        })
-        done(err, results)
-      }, req)
-  }).catch((err) => {
+      return done(err, results)
+    }, req)
+  }).catch(err => {
     console.log(err)
-    })
+    return done(err)
+  })
 }
 
 /**

@@ -109,12 +109,13 @@ describe('Database connection', () => {
 
     it('should return 503 for GET requests when the database becomes unavailable', done => {
       mockConnector._mockSetResponse(mockResults)
-
+      console.log('*** 1:')
       client
         .get('/vtest/noauthdb/articles?cache=false')
         .set('content-type', 'application/json')
         .set('Authorization', 'Bearer ' + bearerToken)
         .end((err, res) => {
+          console.log('*** 2:', err)
           if (err) return done(err)
 
           res.statusCode.should.eql(200)
@@ -122,18 +123,21 @@ describe('Database connection', () => {
           datastore._spies.index.calledOnce.should.eql(true)
 
           datastore._mockDisconnect()
-
+          console.log('*** 3:')
           client
             .get('/vtest/noauthdb/articles?cache=false')
             .set('content-type', 'application/json')
             .set('Authorization', 'Bearer ' + bearerToken)
             .end((err, res) => {
+              console.log('*** 4:', err)
               if (err) return done(err)
 
               res.statusCode.should.eql(503)
               res.body.statusCode.should.eql(503)
               res.body.code.should.eql('API-0004')
               res.body.title.should.eql('Database unavailable')
+
+              console.log('*** 5:')
 
               done()
             })

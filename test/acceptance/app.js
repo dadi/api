@@ -356,6 +356,47 @@ describe('Application', function () {
             done()
           })
       })
+
+      it('should return 404 when updating a non-existing document by ID (RESTful)', function (done) {
+        var client = request(connectionString)
+
+        client
+          .post('/vtest/testdb/test-schema/59f1b3e038ad765e669ac47f')
+          .set('Authorization', 'Bearer ' + bearerToken)
+          .send({field1: 'updated doc'})
+          .expect(404)
+          .end(function (err, res) {
+            if (err) return done(err)
+
+            res.body.statusCode.should.eql(404)
+
+            done()
+          })
+      })
+
+      it('should return 200 when updating a non-existing document by ID, supplying the query in the request body', function (done) {
+        var client = request(connectionString)
+
+        client
+          .post('/vtest/testdb/test-schema')
+          .set('Authorization', 'Bearer ' + bearerToken)
+          .send({
+            query: {
+              _id: '59f1b3e038ad765e669ac47f',
+            },
+            update: {
+              field1: 'updated doc'
+            }
+          })
+          .expect(200)
+          .end(function (err, res) {
+            if (err) return done(err)
+
+            res.body.results.should.eql([])
+
+            done()
+          })
+      })
     })
 
     describe('PUT', function () {
@@ -490,6 +531,47 @@ describe('Application', function () {
                     done()
                   })
               })
+          })
+      })
+
+      it('should return 404 when updating a non-existing document by ID (RESTful)', function (done) {
+        var client = request(connectionString)
+
+        client
+          .put('/vtest/testdb/test-schema/59f1b3e038ad765e669ac47f')
+          .set('Authorization', 'Bearer ' + bearerToken)
+          .send({field1: 'updated doc'})
+          .expect(404)
+          .end(function (err, res) {
+            if (err) return done(err)
+
+            res.body.statusCode.should.eql(404)
+
+            done()
+          })
+      })
+
+      it('should return 200 when updating a non-existing document by ID, supplying the query in the request body', function (done) {
+        var client = request(connectionString)
+
+        client
+          .put('/vtest/testdb/test-schema')
+          .set('Authorization', 'Bearer ' + bearerToken)
+          .send({
+            query: {
+              _id: '59f1b3e038ad765e669ac47f',
+            },
+            update: {
+              field1: 'updated doc'
+            }
+          })
+          .expect(200)
+          .end(function (err, res) {
+            if (err) return done(err)
+
+            res.body.results.should.eql([])
+
+            done()
           })
       })
 
@@ -2584,6 +2666,43 @@ describe('Application', function () {
             })
           })
         })
+
+      it('should return 404 when deleting a non-existing document by ID (RESTful)', function (done) {
+        var client = request(connectionString)
+
+        client
+          .delete('/vtest/testdb/test-schema/59f1b3e038ad765e669ac47f')
+          .set('Authorization', 'Bearer ' + bearerToken)
+          .expect(404)
+          .end(function (err, res) {
+            if (err) return done(err)
+
+            res.body.statusCode.should.eql(404)
+
+            done()
+          })
+      })
+
+      it('should return 200 when deleting a non-existing document by ID, supplying the query in the request body', function (done) {
+        var client = request(connectionString)
+
+        client
+          .delete('/vtest/testdb/test-schema')
+          .set('Authorization', 'Bearer ' + bearerToken)
+          .send({
+            query: {
+              _id: '59f1b3e038ad765e669ac47f',
+            }
+          })
+          .expect(204)
+          .end(function (err, res) {
+            if (err) return done(err)
+
+            res.body.should.eql('')
+
+            done()
+          })
+      })
     })
 
     describe('Collection count', function () {

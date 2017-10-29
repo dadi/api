@@ -27,7 +27,7 @@ const mockResults = {
   }
 }
 
-describe.only('Database connection', () => {
+describe('Database connection', () => {
   let backupDatastore = config.get('datastore')
 
   before(done => {

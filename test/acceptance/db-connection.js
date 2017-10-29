@@ -14,9 +14,9 @@ const client = request(
 )
 const mockResults = {
   results: [
-    { _id: '1', name: 'Father' },
-    { _id: '2', name: 'Dad' },
-    { _id: '3', name: 'Daddy' }
+    { _id: '59d4b35cb2cf37d706b1d706', title: 'Father' },
+    { _id: '59d4b35cb2cf37d706b1d707', title: 'Dad' },
+    { _id: '59d4b35cb2cf37d706b1d708', title: 'Daddy' }
   ],
   metadata: {
     limit: 20,
@@ -28,7 +28,7 @@ const mockResults = {
   }
 }
 
-describe('Database connection', () => {
+describe.only('Database connection', () => {
   let currentDatastore = config.get('datastore')
 
   before(done => {
@@ -57,17 +57,15 @@ describe('Database connection', () => {
       app.start(err => {
         if (err) return done(err)
 
-        setTimeout(() => {
-          help.getBearerTokenWithAccessType('admin', (err, token) => {
-            if (err) return done(err)
+        help.getBearerTokenWithAccessType('admin', (err, token) => {
+          if (err) return done(err)
 
-            bearerToken = token
+          bearerToken = token
 
-            datastore = app.components['/vtest/testdb/articles/:id([a-fA-F0-9-]*)?'].model.connection.datastore
+          datastore = app.components['/vtest/testdb/articles/:id([a-fA-F0-9-]*)?'].model.connection.datastore
 
-            done()
-          })
-        }, 2000)
+          done()
+        })
       })
     })
 
@@ -77,7 +75,38 @@ describe('Database connection', () => {
       })
     })
 
-    it('should return 200 for GET requests whilst the connection is available, and 503 for subsequent requests when the database disconnects', done => {
+    it('should return 200 for GET requests whilst the connection is available', done => {
+      datastore._mockSetResponse(mockResults)
+
+      client
+        .get('/vtest/testdb/articles?cache=false')
+        .set('content-type', 'application/json')
+        .set('Authorization', 'Bearer ' + bearerToken)
+        .end((err, res) => {
+          if (err) return done(err)
+
+          res.statusCode.should.eql(200)
+          res.body.should.eql(mockResults)
+          datastore._spies.index.calledOnce.should.eql(true)
+
+          setTimeout(() => {
+            client
+              .get('/vtest/testdb/articles?cache=false')
+              .set('content-type', 'application/json')
+              .set('Authorization', 'Bearer ' + bearerToken)
+              .end((err, res) => {
+                if (err) return done(err)
+
+                res.statusCode.should.eql(200)
+                res.body.should.eql(mockResults)
+
+                done()
+              })
+            }, 1000)
+        })
+    })
+
+    it('should return 503 for GET requests when the database becomes unavailable', done => {
       datastore._mockSetResponse(mockResults)
 
       client
@@ -109,6 +138,239 @@ describe('Database connection', () => {
             })
         })
     })
+
+    it('should return 200 for PUT requests whilst the connection is available', done => {
+      datastore._mockSetResponse(mockResults)
+
+      client
+        .put('/vtest/testdb/articles/59d4b35cb2cf37d706b1d706?cache=false')
+        .send({
+          title: 'Dadi'
+        })
+        .set('content-type', 'application/json')
+        .set('Authorization', 'Bearer ' + bearerToken)
+        .end((err, res) => {
+          if (err) return done(err)
+
+          res.statusCode.should.eql(200)
+          res.body.should.eql(mockResults)
+          datastore._spies.index.calledOnce.should.eql(true)
+
+          setTimeout(() => {
+            client
+              .put('/vtest/testdb/articles/59d4b35cb2cf37d706b1d706?cache=false')
+              .send({
+                title: 'Dadi'
+              })
+              .set('content-type', 'application/json')
+              .set('Authorization', 'Bearer ' + bearerToken)
+              .end((err, res) => {
+                if (err) return done(err)
+
+                res.statusCode.should.eql(200)
+                res.body.should.eql(mockResults)
+
+                done()
+              })
+            }, 1000)
+        })
+    })
+
+    it('should return 503 for PUT requests when the database becomes unavailable', done => {
+      datastore._mockSetResponse(mockResults)
+
+      client
+        .put('/vtest/testdb/articles/59d4b35cb2cf37d706b1d706?cache=false')
+        .send({
+          title: 'Dadi'
+        })
+        .set('content-type', 'application/json')
+        .set('Authorization', 'Bearer ' + bearerToken)
+        .end((err, res) => {
+          if (err) return done(err)
+
+          res.statusCode.should.eql(200)
+          res.body.should.eql(mockResults)
+          datastore._spies.index.calledOnce.should.eql(true)
+
+          datastore._mockDisconnect()
+
+          client
+            .put('/vtest/testdb/articles/59d4b35cb2cf37d706b1d706?cache=false')
+            .send({
+              title: 'Dadi'
+            })
+            .set('content-type', 'application/json')
+            .set('Authorization', 'Bearer ' + bearerToken)
+            .end((err, res) => {
+              if (err) return done(err)
+
+              res.statusCode.should.eql(503)
+              res.body.statusCode.should.eql(503)
+              res.body.code.should.eql('API-0004')
+              res.body.title.should.eql('Database unavailable')
+
+              done()
+            })
+        })
+    })
+
+    it('should return 200 for POST requests whilst the connection is available', done => {
+      datastore._mockSetResponse(mockResults)
+
+      client
+        .post('/vtest/testdb/articles?cache=false')
+        .send({
+          published: {
+            state: 1
+          },
+          title: 'Dadi'
+        })
+        .set('content-type', 'application/json')
+        .set('Authorization', 'Bearer ' + bearerToken)
+        .end((err, res) => {
+          if (err) return done(err)
+
+          res.statusCode.should.eql(200)
+          res.body.results[0].title.should.eql('Dadi')
+          res.body.results[0].published.state.should.eql(1)
+          datastore._spies.index.calledOnce.should.eql(true)
+
+          setTimeout(() => {
+            client
+              .post('/vtest/testdb/articles?cache=false')
+              .send({
+                published: {
+                  state: 1
+                },
+                title: 'Dadi'
+              })
+              .set('content-type', 'application/json')
+              .set('Authorization', 'Bearer ' + bearerToken)
+              .end((err, res) => {
+                if (err) return done(err)
+
+                res.statusCode.should.eql(200)
+                res.body.results[0].title.should.eql('Dadi')
+                res.body.results[0].published.state.should.eql(1)
+
+                done()
+              })
+            }, 1000)
+        })
+    })
+
+    it('should return 503 for POST requests when the database becomes unavailable', done => {
+      datastore._mockSetResponse(mockResults)
+
+      client
+        .post('/vtest/testdb/articles?cache=false')
+        .send({
+          published: {
+            state: 1
+          },
+          title: 'Dadi'
+        })
+        .set('content-type', 'application/json')
+        .set('Authorization', 'Bearer ' + bearerToken)
+        .end((err, res) => {
+          if (err) return done(err)
+
+          res.statusCode.should.eql(200)
+          res.body.results[0].title.should.eql('Dadi')
+          res.body.results[0].published.state.should.eql(1)
+          datastore._spies.index.calledOnce.should.eql(true)
+
+          datastore._mockDisconnect()
+
+          setTimeout(() => {
+            client
+              .post('/vtest/testdb/articles?cache=false')
+              .send({
+                published: {
+                  state: 1
+                },
+                title: 'Dadi'
+              })
+              .set('content-type', 'application/json')
+              .set('Authorization', 'Bearer ' + bearerToken)
+              .end((err, res) => {
+                if (err) return done(err)
+
+                res.statusCode.should.eql(503)
+                res.body.statusCode.should.eql(503)
+                res.body.code.should.eql('API-0004')
+                res.body.title.should.eql('Database unavailable')
+
+                done()
+              })            
+          }, 1500)
+        })
+    })
+
+    it('should return 204 for DELETE requests whilst the connection is available', done => {
+      datastore._mockSetResponse(mockResults)
+
+      client
+        .delete('/vtest/testdb/articles/59d4b35cb2cf37d706b1d706?cache=false')
+        .set('content-type', 'application/json')
+        .set('Authorization', 'Bearer ' + bearerToken)
+        .end((err, res) => {
+          if (err) return done(err)
+
+          res.statusCode.should.eql(204)
+          res.body.should.eql('')
+          datastore._spies.index.calledOnce.should.eql(true)
+
+          setTimeout(() => {
+            client
+              .delete('/vtest/testdb/articles/59d4b35cb2cf37d706b1d707?cache=false')
+              .set('content-type', 'application/json')
+              .set('Authorization', 'Bearer ' + bearerToken)
+              .end((err, res) => {
+                if (err) return done(err)
+
+                res.statusCode.should.eql(204)
+                res.body.should.eql('')
+
+                done()
+              })
+            }, 1000)
+        })
+    })
+
+    it('should return 503 for DELETE requests when the database becomes unavailable', done => {
+      datastore._mockSetResponse(mockResults)
+
+      client
+        .delete('/vtest/testdb/articles/59d4b35cb2cf37d706b1d706?cache=false')
+        .set('content-type', 'application/json')
+        .set('Authorization', 'Bearer ' + bearerToken)
+        .end((err, res) => {
+          if (err) return done(err)
+
+          res.statusCode.should.eql(204)
+          res.body.should.eql('')
+          datastore._spies.index.calledOnce.should.eql(true)
+
+          datastore._mockDisconnect()
+
+          client
+            .delete('/vtest/testdb/articles/59d4b35cb2cf37d706b1d706?cache=false')
+            .set('content-type', 'application/json')
+            .set('Authorization', 'Bearer ' + bearerToken)
+            .end((err, res) => {
+              if (err) return done(err)
+
+              res.statusCode.should.eql(503)
+              res.body.statusCode.should.eql(503)
+              res.body.code.should.eql('API-0004')
+              res.body.title.should.eql('Database unavailable')
+
+              done()
+            })
+        })
+    })
   })
 
   describe('when not available at app boot', () => {
@@ -121,17 +383,9 @@ describe('Database connection', () => {
       app.start(err => {
         if (err) return done(err)
 
-        setTimeout(() => {
-          help.getBearerTokenWithAccessType('admin', (err, token) => {
-            if (err) return done(err)
+        datastore = app.components['/vtest/noauthdb/articles/:id([a-fA-F0-9-]*)?'].model.connection.datastore
 
-            bearerToken = token
-
-            datastore = app.components['/vtest/testdb/articles/:id([a-fA-F0-9-]*)?'].model.connection.datastore
-
-            done()
-          })
-        }, 2000)
+        done()
       })
     })
 
@@ -139,11 +393,45 @@ describe('Database connection', () => {
       app.stop(done)
     })
 
-    it('should return 503 for GET requests whilst the connection is unavailable, and 200 for subsequent requests when the database connects', done => {
+    it('should return 503 for GET requests whilst the connection is unavailable', done => {
       datastore._mockSetResponse(mockResults)
 
       client
-        .get('/vtest/testdb/articles?cache=false')
+        .get('/vtest/noauthdb/articles?cache=false')
+        .set('content-type', 'application/json')
+        .set('Authorization', 'Bearer ' + bearerToken)
+        .end((err, res) => {
+          if (err) return done(err)
+
+          datastore._spies.index.called.should.eql(false)
+
+          res.statusCode.should.eql(503)
+          res.body.statusCode.should.eql(503)
+          res.body.code.should.eql('API-0004')
+          res.body.title.should.eql('Database unavailable')
+
+          setTimeout(() => {
+            client
+              .get('/vtest/noauthdb/articles?cache=false')
+              .set('content-type', 'application/json')
+              .set('Authorization', 'Bearer ' + bearerToken)
+              .end((err, res) => {
+                res.statusCode.should.eql(503)
+                res.body.statusCode.should.eql(503)
+                res.body.code.should.eql('API-0004')
+                res.body.title.should.eql('Database unavailable')
+
+                done()
+              })
+          }, 2000)
+        })
+    }).timeout(10000)
+
+    it('should return 200 for GET requests once the database becomes available', done => {
+      datastore._mockSetResponse(mockResults)
+
+      client
+        .get('/vtest/noauthdb/articles?cache=false')
         .set('content-type', 'application/json')
         .set('Authorization', 'Bearer ' + bearerToken)
         .end((err, res) => {
@@ -160,12 +448,256 @@ describe('Database connection', () => {
 
           setTimeout(() => {
             client
-              .get('/vtest/testdb/articles?cache=false')
+              .get('/vtest/noauthdb/articles?cache=false')
               .set('content-type', 'application/json')
               .set('Authorization', 'Bearer ' + bearerToken)
               .end((err, res) => {
                 res.statusCode.should.eql(200)
                 res.body.should.eql(mockResults)
+                datastore._spies.index.calledOnce.should.eql(true)
+
+                done()
+              })
+          }, 5000)
+        })
+    }).timeout(10000)
+
+    it('should return 503 for PUT requests whilst the connection is unavailable', done => {
+      datastore._mockSetResponse(mockResults)
+
+      client
+        .put('/vtest/noauthdb/articles/59d4b35cb2cf37d706b1d706?cache=false')
+        .send({
+          title: 'Dadi'
+        })
+        .set('content-type', 'application/json')
+        .set('Authorization', 'Bearer ' + bearerToken)
+        .end((err, res) => {
+          if (err) return done(err)
+
+          datastore._spies.index.called.should.eql(false)
+
+          res.statusCode.should.eql(503)
+          res.body.statusCode.should.eql(503)
+          res.body.code.should.eql('API-0004')
+          res.body.title.should.eql('Database unavailable')
+
+          setTimeout(() => {
+            client
+              .put('/vtest/noauthdb/articles/59d4b35cb2cf37d706b1d706?cache=false')
+              .send({
+                title: 'Dadi'
+              })
+              .set('content-type', 'application/json')
+              .set('Authorization', 'Bearer ' + bearerToken)
+              .end((err, res) => {
+                res.statusCode.should.eql(503)
+                res.body.statusCode.should.eql(503)
+                res.body.code.should.eql('API-0004')
+                res.body.title.should.eql('Database unavailable')
+
+                done()
+              })
+          }, 2000)
+        })
+    }).timeout(10000)
+
+    it('should return 200 for PUT requests once the database becomes available', done => {
+      datastore._mockSetResponse(mockResults)
+
+      client
+        .put('/vtest/noauthdb/articles/59d4b35cb2cf37d706b1d706?cache=false')
+        .send({
+          title: 'Dadi'
+        })
+        .set('content-type', 'application/json')
+        .set('Authorization', 'Bearer ' + bearerToken)
+        .end((err, res) => {
+          if (err) return done(err)
+
+          datastore._spies.index.called.should.eql(false)
+
+          res.statusCode.should.eql(503)
+          res.body.statusCode.should.eql(503)
+          res.body.code.should.eql('API-0004')
+          res.body.title.should.eql('Database unavailable')
+
+          mockConnector._mockFailedConnection(false)
+
+          setTimeout(() => {
+            client
+              .put('/vtest/noauthdb/articles/59d4b35cb2cf37d706b1d706?cache=false')
+              .send({
+                title: 'Dadi'
+              })
+              .set('content-type', 'application/json')
+              .set('Authorization', 'Bearer ' + bearerToken)
+              .end((err, res) => {
+                res.statusCode.should.eql(200)
+                res.body.should.eql(mockResults)
+                datastore._spies.index.calledOnce.should.eql(true)
+
+                done()
+              })
+          }, 5000)
+        })
+    }).timeout(10000)
+
+    it('should return 503 for POST requests whilst the connection is unavailable', done => {
+      datastore._mockSetResponse(mockResults)
+
+      client
+        .post('/vtest/noauthdb/articles?cache=false')
+        .send({
+          published: {
+            state: 1
+          },
+          title: 'Dadi'
+        })
+        .set('content-type', 'application/json')
+        .set('Authorization', 'Bearer ' + bearerToken)
+        .end((err, res) => {
+          if (err) return done(err)
+
+          datastore._spies.index.called.should.eql(false)
+
+          res.statusCode.should.eql(503)
+          res.body.statusCode.should.eql(503)
+          res.body.code.should.eql('API-0004')
+          res.body.title.should.eql('Database unavailable')
+
+          setTimeout(() => {
+            client
+              .post('/vtest/noauthdb/articles?cache=false')
+              .send({
+                published: {
+                  state: 1
+                },
+                title: 'Dadi'
+              })
+              .set('content-type', 'application/json')
+              .set('Authorization', 'Bearer ' + bearerToken)
+              .end((err, res) => {
+                res.statusCode.should.eql(503)
+                res.body.statusCode.should.eql(503)
+                res.body.code.should.eql('API-0004')
+                res.body.title.should.eql('Database unavailable')
+
+                done()
+              })
+          }, 2000)
+        })
+    }).timeout(10000)
+
+    it('should return 200 for POST requests once the database becomes available', done => {
+      datastore._mockSetResponse(mockResults)
+
+      client
+        .post('/vtest/noauthdb/articles?cache=false')
+        .send({
+          published: {
+            state: 1
+          },
+          title: 'Dadi'
+        })
+        .set('content-type', 'application/json')
+        .set('Authorization', 'Bearer ' + bearerToken)
+        .end((err, res) => {
+          if (err) return done(err)
+
+          datastore._spies.index.called.should.eql(false)
+
+          res.statusCode.should.eql(503)
+          res.body.statusCode.should.eql(503)
+          res.body.code.should.eql('API-0004')
+          res.body.title.should.eql('Database unavailable')
+
+          mockConnector._mockFailedConnection(false)
+
+          setTimeout(() => {
+            client
+              .post('/vtest/noauthdb/articles?cache=false')
+              .send({
+                published: {
+                  state: 1
+                },
+                title: 'Dadi'
+              })
+              .set('content-type', 'application/json')
+              .set('Authorization', 'Bearer ' + bearerToken)
+              .end((err, res) => {
+                res.statusCode.should.eql(200)
+                res.body.results[0].title.should.eql('Dadi')
+                res.body.results[0].published.state.should.eql(1)
+                datastore._spies.index.calledOnce.should.eql(true)
+
+                done()
+              })
+          }, 5000)
+        })
+    }).timeout(10000)
+
+    it('should return 503 for DELETE requests whilst the connection is unavailable', done => {
+      datastore._mockSetResponse(mockResults)
+
+      client
+        .delete('/vtest/noauthdb/articles/59d4b35cb2cf37d706b1d706?cache=false')
+        .set('content-type', 'application/json')
+        .set('Authorization', 'Bearer ' + bearerToken)
+        .end((err, res) => {
+          if (err) return done(err)
+
+          datastore._spies.index.called.should.eql(false)
+
+          res.statusCode.should.eql(503)
+          res.body.statusCode.should.eql(503)
+          res.body.code.should.eql('API-0004')
+          res.body.title.should.eql('Database unavailable')
+
+          setTimeout(() => {
+            client
+              .delete('/vtest/noauthdb/articles/59d4b35cb2cf37d706b1d706?cache=false')
+              .set('content-type', 'application/json')
+              .set('Authorization', 'Bearer ' + bearerToken)
+              .end((err, res) => {
+                res.statusCode.should.eql(503)
+                res.body.statusCode.should.eql(503)
+                res.body.code.should.eql('API-0004')
+                res.body.title.should.eql('Database unavailable')
+
+                done()
+              })
+          }, 2000)
+        })
+    }).timeout(10000)
+
+    it('should return 204 for DELETE requests once the database becomes available', done => {
+      datastore._mockSetResponse(mockResults)
+
+      client
+        .delete('/vtest/noauthdb/articles/59d4b35cb2cf37d706b1d706?cache=false')
+        .set('content-type', 'application/json')
+        .set('Authorization', 'Bearer ' + bearerToken)
+        .end((err, res) => {
+          if (err) return done(err)
+
+          datastore._spies.index.called.should.eql(false)
+
+          res.statusCode.should.eql(503)
+          res.body.statusCode.should.eql(503)
+          res.body.code.should.eql('API-0004')
+          res.body.title.should.eql('Database unavailable')
+
+          mockConnector._mockFailedConnection(false)
+
+          setTimeout(() => {
+            client
+              .delete('/vtest/noauthdb/articles/59d4b35cb2cf37d706b1d706?cache=false')
+              .set('content-type', 'application/json')
+              .set('Authorization', 'Bearer ' + bearerToken)
+              .end((err, res) => {
+                res.statusCode.should.eql(204)
+                res.body.should.eql('')
                 datastore._spies.index.calledOnce.should.eql(true)
 
                 done()

@@ -343,6 +343,9 @@ Model.prototype.delete = function (query, done, req) {
     query._id = query._id.toString()
   }
 
+  // Is this a RESTful query by ID?
+  const isRestIDQuery = req && req.params.id
+
   var deletedDocs = []
   var allDocs = []
 
@@ -379,14 +382,9 @@ Model.prototype.delete = function (query, done, req) {
     this.find(query, { compose: false }, (err, docs) => {
       if (err) return done(err)
 
-      const isIdQuery = query._id &&
-        req &&
-        req.url &&
-        (req.url.indexOf(query._id) + query._id.length === req.url.length)
-
       deletedDocs = docs.results
 
-      if (isIdQuery && (deletedDocs.length === 0)) {
+      if (isRestIDQuery && (deletedDocs.length === 0)) {
         const err = new Error('Document not found')
 
         err.statusCode = 404
@@ -1043,6 +1041,9 @@ Model.prototype.update = function (query, update, internals, done, req, bypassOu
   // Format query
   query = this.formatQuery(query)
 
+  // Is this a RESTful query by ID?
+  const isRestIDQuery = req && req.params.id
+
   // DateTimes
   update = queryUtils.convertDateTimeForSave(this.schema, update)
 
@@ -1071,11 +1072,10 @@ Model.prototype.update = function (query, update, internals, done, req, bypassOu
           options: { multi: true },
           schema: this.schema
         }).then((result) => {
-          // TODO: review, I don't know if sending a 404 is the right response
-          // when no documents were modified
-          if (result.matchedCount === 0) {
+          if (isRestIDQuery && (result.matchedCount === 0)) {
             err = new Error('Not Found')
             err.statusCode = 404
+
             return done(err)
           }
 
@@ -1107,6 +1107,8 @@ Model.prototype.update = function (query, update, internals, done, req, bypassOu
 
             return this.find(query, { compose: true }, (err, results) => {
               if (err) return done(err)
+
+              if (result.matchedCount === 0) return done(null, results)
 
               // apply any existing `afterUpdate` hooks
               triggerAfterUpdateHook(results.results)

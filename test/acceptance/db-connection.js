@@ -46,7 +46,9 @@ describe('Database connection', () => {
     done()
   })
 
-  describe('when available at app boot', () => {
+  describe('when available at app boot', function () {
+    this.timeout(6000)
+
     let bearerToken
     let datastore
 
@@ -372,7 +374,9 @@ describe('Database connection', () => {
     })
   })
 
-  describe('when not available at app boot', () => {
+  describe('when not available at app boot', function () {
+    this.timeout(10000)
+
     let bearerToken
     let datastore
 
@@ -424,7 +428,7 @@ describe('Database connection', () => {
               })
           }, 2000)
         })
-    }).timeout(10000)
+    })
 
     it('should return 200 for GET requests once the database becomes available', done => {
       mockConnector._mockSetResponse(mockResults)
@@ -459,7 +463,7 @@ describe('Database connection', () => {
               })
           }, 5000)
         })
-    }).timeout(10000)
+    })
 
     it('should return 503 for PUT requests whilst the connection is unavailable', done => {
       mockConnector._mockSetResponse(mockResults)
@@ -499,7 +503,7 @@ describe('Database connection', () => {
               })
           }, 2000)
         })
-    }).timeout(10000)
+    })
 
     it('should return 200 for PUT requests once the database becomes available', done => {
       mockConnector._mockSetResponse(mockResults)
@@ -540,7 +544,7 @@ describe('Database connection', () => {
               })
           }, 5000)
         })
-    }).timeout(10000)
+    })
 
     it('should return 503 for POST requests whilst the connection is unavailable', done => {
       mockConnector._mockSetResponse(mockResults)
@@ -586,7 +590,7 @@ describe('Database connection', () => {
               })
           }, 2000)
         })
-    }).timeout(10000)
+    })
 
     it('should return 200 for POST requests once the database becomes available', done => {
       mockConnector._mockSetResponse(mockResults)
@@ -634,7 +638,7 @@ describe('Database connection', () => {
               })
           }, 5000)
         })
-    }).timeout(10000)
+    })
 
     it('should return 503 for DELETE requests whilst the connection is unavailable', done => {
       mockConnector._mockSetResponse(mockResults)
@@ -668,7 +672,7 @@ describe('Database connection', () => {
               })
           }, 2000)
         })
-    }).timeout(10000)
+    })
 
     it('should return 204 for DELETE requests once the database becomes available', done => {
       mockConnector._mockSetResponse(mockResults)
@@ -703,6 +707,6 @@ describe('Database connection', () => {
               })
           }, 5000)
         })
-    }).timeout(10000)
+    })
   })
 })

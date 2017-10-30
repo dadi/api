@@ -28,9 +28,6 @@ const MockConnector = function DataStore (datastoreConfig) {
 util.inherits(MockConnector, EventEmitter)
 
 MockConnector.prototype.connect = function () {
-  console.log('')
-  console.log('*** Mock Connect:', forceFailedConnection)
-  console.log('')
   if (forceFailedConnection === true) {
     this.readyState = STATE_DISCONNECTED
 
@@ -57,9 +54,6 @@ MockConnector.prototype.dropDatabase = function () {
 }
 
 MockConnector.prototype.find = function () {
-  console.log('')
-  console.log('*** Mock find:', this.readyState)
-  console.log('')
   if (this.readyState !== STATE_CONNECTED) {
     return Promise.reject(new Error('DB_DISCONNECTED'))
   }

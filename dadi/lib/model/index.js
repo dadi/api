@@ -657,10 +657,6 @@ Model.prototype.find = function (query, options, done) {
       var queryOptions = _.clone(options)
       delete queryOptions.historyFilters
 
-      console.log('')
-      console.log('*** Model: Calling find...')
-      console.log('')
-
       database.find({
         query: query,
         collection: self.name,
@@ -685,10 +681,6 @@ Model.prototype.find = function (query, options, done) {
           runDoneQueue(null, results)
         }
       }).catch(err => {
-        console.log('')
-        console.log('*** Model: Find error')
-        console.log('---->', createConnectionError())
-        console.log('')
         if (err.message === 'DB_DISCONNECTED') {
           return done(createConnectionError())
         }

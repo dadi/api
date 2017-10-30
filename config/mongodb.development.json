@@ -15,5 +15,29 @@
     "username": "",
     "password": "",
     "database": "auth"
+  },
+  "search": {
+    "hosts": [
+      {
+        "host": "127.0.0.1",
+        "port": 27017
+      }
+    ]
+  },
+  "apiv3": {
+    "hosts": [
+      {
+        "host": "127.0.0.1",
+        "port": 27017
+      }
+    ]
+  },
+  "testdb": {
+    "hosts": [
+      {
+        "host": "127.0.0.1",
+        "port": 27017
+      }
+    ]
   }
 }

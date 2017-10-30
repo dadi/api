@@ -5,22 +5,14 @@
       "label": "name",
       "comments": "This is the human name",
       "example": "John Doe",
-      "placement": "Main content",
       "validation": {},
       "required": false,
-      "message": "can't be empty",
-      "display": {
-        "index": true,
-        "edit": true
-      }
+      "message": "can't be empty"
     }
   },
   "settings": {
     "cache": false,
     "authenticate": true,
-    "callback": null,
-    "defaultFilters": null,
-    "fieldLimiters": null,
     "count": 40,
     "sort": "name",
     "sortOrder": 1,

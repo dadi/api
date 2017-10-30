@@ -110,7 +110,7 @@ describe('Status', function () {
     it('should return Green for a route that is faster than expected', function (done) {
       help.getBearerToken(function (err, token) {
         // set some routes
-        config.set('status.routes', [{route: '/vtest/testdb/test-schema', expectedResponseTime: 1}])
+        config.set('status.routes', [{ route: '/vtest/testdb/test-schema', expectedResponseTime: 10 }])
 
         var client = request('http://' + config.get('server.host') + ':' + config.get('server.port'))
 

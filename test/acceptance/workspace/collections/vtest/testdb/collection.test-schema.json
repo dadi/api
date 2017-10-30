@@ -12,6 +12,13 @@
         "index": true,
         "edit": true
       }
+    },
+    "title": {
+      "type": "String",
+      "required": false,
+      "search": {
+        "weight": 2
+      }
     }
   },
   "settings": {
@@ -25,6 +32,6 @@
     "sortOrder": 1,
     "storeRevisions": true,
     "revisionCollection": "testSchemaHistory",
-    "lastModifiedAt": 1509273875355
+    "lastModifiedAt": 1509360657885
   }
 }

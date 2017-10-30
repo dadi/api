@@ -68,9 +68,9 @@ describe('Search', function () {
     })
 
     var cleanup = function (done) {
-      try {
-        fs.unlinkSync(config.get('paths').collections + '/vtest/testdb/collection.test-schema.json')
-      } catch (e) {}
+      // try {
+      //   fs.unlinkSync(config.get('paths').collections + '/vtest/testdb/collection.test-schema.json')
+      // } catch (e) {}
 
       done()
     }

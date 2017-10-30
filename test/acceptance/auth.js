@@ -13,14 +13,18 @@ describe('Authentication', function () {
   var tokenRoute = config.get('auth.tokenUrl')
 
   before(function (done) {
-    help.createClient(null, function () {
-      app.start(function (err) {
-        if (err) return done(err)
+    help.dropDatabase('testdb', function (err) {
+      if (err) return done(err)
 
-        // give it a moment for http.Server to finish starting
-        setTimeout(function () {
-          done()
-        }, 500)
+      help.createClient(null, function () {
+        app.start(function (err) {
+          if (err) return done(err)
+
+          // give it a moment for http.Server to finish starting
+          setTimeout(function () {
+            done()
+          }, 500)
+        })
       })
     })
   })
@@ -75,10 +79,13 @@ describe('Authentication', function () {
       var client = request('http://' + config.get('server.host') + ':' + config.get('server.port'))
 
       client
-            .get('/vtest/testdb/test-schema')
-            .set('Authorization', 'Bearer ' + token)
-            .expect('content-type', 'application/json')
-            .expect(200, done)
+        .get('/vtest/testdb/test-schema')
+        .set('Authorization', 'Bearer ' + token)
+        .expect('content-type', 'application/json')
+        .expect(200)
+        .end((err, res) => {
+          done()
+        })
     })
   })
 
@@ -87,13 +94,13 @@ describe('Authentication', function () {
       var client = request('http://' + config.get('server.host') + ':' + config.get('server.port'))
 
       client
-            .get('/vtest/testdb/test-schema')
-            .set('Authorization', 'Bearer badtokenvalue')
-            .expect(401, function (err, res) {
-              res.headers['www-authenticate'].should.exist
-              res.headers['www-authenticate'].should.eql('Bearer, error="invalid_token", error_description="Invalid or expired access token"')
-              done()
-            })
+        .get('/vtest/testdb/test-schema')
+        .set('Authorization', 'Bearer badtokenvalue')
+        .expect(401, function (err, res) {
+          res.headers['www-authenticate'].should.exist
+          res.headers['www-authenticate'].should.eql('Bearer, error="invalid_token", error_description="Invalid or expired access token"')
+          done()
+        })
     })
   })
 

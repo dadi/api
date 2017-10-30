@@ -256,7 +256,7 @@ describe('Search', () => {
     })
   })
 
-  describe('batchIndex', function () {
+  describe.skip('batchIndex', function () {
     it('should call runBatchIndex repeatedly when there are more results', done => {
       let schema = help.getSearchModelSchema()
       let mod = Model('testSearchModel', schema, null, { database: 'testdb' })

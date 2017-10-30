@@ -1,5 +1,6 @@
 'use strict'
 
+const path = require('path')
 const config = require(path.join(__dirname, '/../../../config'))
 const debug = require('debug')('api:connection')
 const EventEmitter = require('events').EventEmitter

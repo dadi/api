@@ -256,14 +256,14 @@ describe('Search', () => {
     })
   })
 
-  describe.skip('runBatchIndex', function () {
-    it('should call batchIndex repeatedly when there are more results', done => {
+  describe('batchIndex', function () {
+    it('should call runBatchIndex repeatedly when there are more results', done => {
       let schema = help.getSearchModelSchema()
       let mod = Model('testSearchModel', schema, null, { database: 'testdb' })
       const indexable = new Search(mod)
       indexable.init()
 
-      const spy = sinon.spy(indexable, 'batchIndex')
+      const spy = sinon.spy(indexable, 'runBatchIndex')
 
       function guid () {
         return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
@@ -272,40 +272,45 @@ describe('Search', () => {
         })
       }
 
-      mod.create([
+      var docs = [
         { searchableFieldName: guid() },
         { searchableFieldName: guid() },
-      ], {}, (obj) => {
-        console.log(obj)
+        { searchableFieldName: guid() },
+        { searchableFieldName: guid() },
+        { searchableFieldName: guid() }
+      ]
+
+      const indexStub = sinon.stub(indexable, 'index').callsFake(() => {
+        return Promise.resolve({
+          results: docs,
+          metadata: {
+            totalPages: 5,
+            totalCount: 5
+          }
+        })
       })
 
-      // const dbFindStub = sinon.stub(store.prototype, 'find').callsFake(() => {
-      //   return Promise.resolve({
-      //     results: [
-      //
-      //       { _id: 2, searchableFieldName: guid() }
-      //     ],
-      //     metadata: {
-      //       totalPages: 2,
-      //       totalCount: 2
-      //     }
-      //   })
-      // })
+      mod.create(docs, {}, obj => {
+        indexable.batchIndex()
 
-      indexable.runBatchIndex({ page: 1, limit: 1 })
-
-      setTimeout(() => {
-        // console.log(spy)
-        spy.restore()
-        done()
-      }, 1000)
-//      stub.called.should.be.true
-      // console.log(stub)
-      // let args = stub.lastCall.args[0]
-      // args.page.should.eql(2)
-      // args.limit.should.eql(500)
-      // args.skip.should.eql(500)
-      // args.fields.should.eql({searchableFieldName: 1})
+        setTimeout(() => {
+          spy.restore()
+          indexStub.restore()
+          spy.callCount.should.be.above(1)
+          let args = spy.args
+          args[0][0].skip.should.eql(0)
+          args[0][0].page.should.eql(1)
+          args[1][0].skip.should.eql(1)
+          args[1][0].page.should.eql(2)
+          args[2][0].skip.should.eql(2)
+          args[2][0].page.should.eql(3)
+          args[3][0].skip.should.eql(3)
+          args[3][0].page.should.eql(4)
+          args[4][0].skip.should.eql(4)
+          args[4][0].page.should.eql(5)
+          done()
+        }, 3000)
+      })
     })
   })
 })

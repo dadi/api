@@ -14,11 +14,11 @@ const indexableFields = {
 let analyser
 
 describe('Standard Search Analyser', () => {
-
   beforeEach(done => {
     analyser = new standardAnalyser(indexableFields)
     done()
   })
+
   it('should export constructor', done => {
     standardAnalyser.should.be.Function
     done()
@@ -29,6 +29,7 @@ describe('Standard Search Analyser', () => {
       analyser.isValid(undefined).should.be.false
       done()
     })
+
     it('should return true if value is a valid string', done => {
       analyser.isValid('foo').should.be.true
       done()
@@ -121,11 +122,6 @@ describe('Standard Search Analyser', () => {
 })
 
 // add
-// isValid [complete]
 // getWordsInField
 // getAllWords
-// tokenize [complete]
-// unique [complete]
-// mergeWeights [complete]
 // getWordInstances
-// areValidWords [complete]

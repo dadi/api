@@ -1318,6 +1318,26 @@ function onListening (server) {
   if (env !== 'test') {
     console.log(startText)
   }
+
+  let pkg
+  try {
+    pkg = require(path.join(process.cwd(), 'package.json'))
+
+    require('@dadi/et')({
+      package: {
+        name: pkg.name
+      },
+      productPackage: {
+        name: require('../../package.json').name,
+        version: require('../../package.json').version
+      },
+      customData: {},
+      event: 'boot',
+      environment: config.get('env')
+    })
+  } catch (err) {
+    console.log(err)
+  }
 }
 
 function onError (err) {

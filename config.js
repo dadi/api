@@ -358,6 +358,13 @@ var conf = convict({
     doc: 'The character to be used for prefixing internal fields',
     format: 'String',
     default: '_'
+  },
+  databaseConnection: {
+    maxRetries: {
+      doc: "The maximum number of times to reconnection attempts after a database fails",
+      format: Number,
+      default: 10
+    }
   }
 })
 

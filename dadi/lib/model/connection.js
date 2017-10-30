@@ -1,5 +1,6 @@
 'use strict'
 
+const config = require(path.join(__dirname, '/../../../config'))
 const debug = require('debug')('api:connection')
 const EventEmitter = require('events').EventEmitter
 const log = require('@dadi/logger')
@@ -32,7 +33,7 @@ const Connection = function (options, storeName) {
   this.datastore = require('../datastore')(storeName)
 
   this.recovery = new Recovery({
-    retries: 10
+    retries: config.get('databaseConnection.maxRetries')
   })
 
   // Setting up the reconnect method
@@ -138,7 +139,7 @@ module.exports = function (options, collection, storeName) {
       delete options.collection
     }
   } catch (err) {
-    console.log(err)
+    log.error({module: 'connection'}, err)
   }
 
   const connectionKey = Object.keys(options).map(option => { return options[option] }).join(':')

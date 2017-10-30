@@ -414,6 +414,204 @@ describe('Reference Field', function () {
           })
       })
     })
+
+    it('should create reference documents that don\'t have _id fields', function (done) {
+      var book = {
+        title: 'Thérèse Raquin'
+      }
+
+      config.set('query.useVersionFilter', true)
+
+      var client = request(connectionString)
+      client
+      .post('/v1/library/book')
+      .set('Authorization', 'Bearer ' + bearerToken)
+      .send(book)
+      .expect(200)
+      .end(function (err, res) {
+        if (err) return done(err)
+        should.exist(res.body.results)
+        var newDoc = res.body.results[0]
+
+        var update = {
+          author: {
+            name: 'Émile Zola'
+          }
+        }
+
+        client
+        .put('/v1/library/book/' + newDoc._id)
+        .set('Authorization', 'Bearer ' + bearerToken)
+        .send(update)
+        .expect(200)
+        .end(function (err, res) {
+          should.exist(res.body.results)
+          var newDoc = res.body.results[0]
+
+          should.exist(newDoc.author._id)
+          should.exist(newDoc.author._apiVersion)
+          done()
+        })
+      })
+    })
+
+    it('should allow an empty array of reference documents', function (done) {
+      var book = {
+        title: 'The Sun Also Rises (2nd Edition)'
+      }
+
+      config.set('query.useVersionFilter', true)
+
+      var client = request(connectionString)
+      client
+      .post('/v1/library/book')
+      .set('Authorization', 'Bearer ' + bearerToken)
+      .send(book)
+      .expect(200)
+      .end(function (err, res) {
+        if (err) return done(err)
+        should.exist(res.body.results)
+        var newDoc = res.body.results[0]
+
+        var update = {
+          author: []
+        }
+
+        client
+        .put('/v1/library/book/' + newDoc._id)
+        .set('Authorization', 'Bearer ' + bearerToken)
+        .send(update)
+        .expect(200)
+        .end(function (err, res) {
+          should.exist(res.body.results)
+          var newDoc = res.body.results[0]
+
+          should.exist(newDoc.author)
+          newDoc.author.should.be.Array
+          newDoc.author.should.eql([])
+          done()
+        })
+      })
+    })
+
+    it('should create new reference documents that don\'t have _id fields', function (done) {
+      var person = {
+        name: 'Gustave Flaubert'
+      }
+
+      var client = request(connectionString)
+      client
+      .post('/v1/library/person')
+      .set('Authorization', 'Bearer ' + bearerToken)
+      .send(person)
+      .expect(200)
+      .end(function (err, res) {
+        if (err) return done(err)
+
+        var author = res.body.results[0]
+
+        var book = {
+          title: 'Madame Bovary',
+          author: [author._id.toString()]
+        }
+
+        config.set('query.useVersionFilter', true)
+
+        client
+        .post('/v1/library/book')
+        .set('Authorization', 'Bearer ' + bearerToken)
+        .send(book)
+        .expect(200)
+        .end(function (err, res) {
+          if (err) return done(err)
+          should.exist(res.body.results)
+          var newDoc = res.body.results[0]
+
+          should.exist(newDoc.author)
+          newDoc.author.should.be.Array
+
+          var update = {
+            author: [
+              {
+                _id: newDoc.author[0]._id
+              },
+              {
+                name: 'Gustave Flaubert II'
+              }
+            ]
+          }
+
+          client
+          .put('/v1/library/book/' + newDoc._id)
+          .set('Authorization', 'Bearer ' + bearerToken)
+          .send(update)
+          .expect(200)
+          .end(function (err, res) {
+            newDoc = res.body.results[0]
+            newDoc.author.should.be.Array
+            newDoc.author.length.should.eql(2)
+            newDoc.author[0].name.should.eql('Gustave Flaubert')
+            newDoc.author[1].name.should.eql('Gustave Flaubert II')
+          done()
+          })
+        })
+      })
+    })
+  })
+
+  describe('delete', function () {
+    it('should delete documents matching a reference field query', function (done) {
+      var book = {
+        title: 'For Whom The Bell Tolls',
+        author: {
+          name: 'Ernest Hemingway'
+        }
+      }
+
+      config.set('query.useVersionFilter', true)
+
+      var client = request(connectionString)
+      client
+      .post('/v1/library/book')
+      .set('Authorization', 'Bearer ' + bearerToken)
+      .send(book)
+      .expect(200)
+      .end(function (err, res) {
+        if (err) return done(err)
+
+        should.exist(res.body.results)
+        var newDoc = res.body.results[0]
+
+        var query = {
+          "query": {
+            "author": newDoc.author._id.toString()
+          }
+        }
+
+        client
+        .delete('/v1/library/book')
+        .set('Authorization', 'Bearer ' + bearerToken)
+        .send(query)
+        .end(function (err, res) {
+          if (err) return done(err)
+
+          client
+          .get('/v1/library/book')
+          .set('Authorization', 'Bearer ' + bearerToken)
+          .expect(200)
+          .end(function (err, res) {
+            if (err) return done(err)
+
+            should.exist(res.body.results)
+            var results = res.body.results
+
+            results.length.should.eql(0)
+
+            done()
+          })
+        })
+      })
+    })
   })
 
   describe('find', function () {

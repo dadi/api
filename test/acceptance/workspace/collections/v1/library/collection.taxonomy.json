@@ -22,13 +22,9 @@
     "compose": true,
     "cache": false,
     "authenticate": true,
-    "callback": null,
-    "defaultFilters": null,
-    "fieldLimiters": null,
     "count": 40,
     "sort": "createdAt",
     "sortOrder": 1,
-    "limit": 1,
     "storeRevisions": true,
     "description": "Taxonomy",
     "displayName": "Taxonomy"

@@ -1,25 +1,22 @@
 {
-	"fields": {
-		"title": {
-		  "type": "String",
-		  "required": true
-		},
-  	"author": {
-	    "type": "Reference",
-	    "settings": {
-	      "collection": "person"
-	    }
-  	},
-  	"booksInSeries": {
-	    "type": "Reference"
-  	}
+  "fields": {
+    "title": {
+      "type": "String",
+      "required": true
+    },
+    "author": {
+      "type": "Reference",
+      "settings": {
+        "collection": "person"
+      }
+    },
+    "booksInSeries": {
+      "type": "Reference"
+    }
   },
-	"settings": {
+  "settings": {
     "cache": true,
     "authenticate": false,
-    "callback": null,
-    "defaultFilters": null,
-    "fieldLimiters": null,
     "count": 40,
     "sort": "title",
     "sortOrder": 1,

@@ -1,27 +1,24 @@
-var path = require('path')
-var config = require(path.join(__dirname, '/../../../config.js'))
+const path = require('path')
+const config = require(path.join(__dirname, '/../../../config.js'))
 
 /**
  * Creates a new DataStore from the configuration property "datastore"
  * @constructor
  * @classdesc
  */
-var DataStore = function (storeName) {
-  var store = storeName || config.get('datastore')
-  var DataStore
+const DataStore = function (storeName) {
+  const store = storeName || config.get('datastore')
 
   try {
-    DataStore = require(store)
+    const DataStore = require(store)
+
+    return new DataStore()
   } catch (err) {
     if (err.message.indexOf('Cannot find module') > -1) {
       console.error('\n  Error: API configured to use a datastore that has not been installed: "' + store + '"\n')
       process.exit(1)
     }
   }
-
-  var DataStoreConfig = require(store).Config
-
-  return new DataStore(DataStoreConfig.get())
 }
 
 module.exports = DataStore

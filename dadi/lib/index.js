@@ -233,6 +233,7 @@ Server.prototype.start = function (done) {
   this.loadCollectionRoute()
   this.loadEndpointsRoute()
   this.loadHooksRoute(options)
+  this.loadSearchIndexRoute()
 
   this.readyState = 1
 
@@ -503,26 +504,28 @@ Server.prototype.loadConfigApi = function () {
 
 // route to retrieve list of collections
 Server.prototype.loadCollectionRoute = function () {
-  var self = this
+  this.app.use('/api/collections', (req, res, next) => {
+    const method = req.method && req.method.toLowerCase()
 
-  this.app.use('/api/collections', function (req, res, next) {
-    var method = req.method && req.method.toLowerCase()
+    if (method !== 'get') {
+      return help.sendBackJSON(405, res, next)(null, {'error': 'Invalid method'})
+    }
 
-    if (method !== 'get') return help.sendBackJSON(405, res, next)(null, {'error': 'Invalid method'})
-
-    var data = {}
-    var collections = []
+    let data = {}
+    let collections = []
 
     // Adding normal document collections
-    _.each(self.components, function (value, key) {
-      var model
-      var name = null
-      var slug
-      var parts = _.compact(key.split('/'))
+    Object.keys(this.components).forEach(key => {
+      let model
+      let name = null
+      let slug
 
-      var hasModel = _.contains(Object.keys(value), 'model') &&
+      const parts = _.compact(key.split('/'))
+      const value = this.components[key]
+
+      const hasModel = Object.keys(value).includes('model') &&
         value.model.constructor.name === 'Model'
-      var hasGetMethod = _.contains(Object.keys(value), 'get')
+      const hasGetMethod = Object.keys(value).includes('get')
 
       if (hasModel && !hasGetMethod) {
         model = value.model
@@ -532,7 +535,7 @@ Server.prototype.loadCollectionRoute = function () {
           slug = model.name
         }
 
-        var collection = {
+        const collection = {
           version: parts[0],
           database: parts[1],
           name: name,
@@ -564,7 +567,9 @@ Server.prototype.loadCollectionRoute = function () {
       }
     })
 
-    data.collections = _.sortBy(collections, 'path')
+    data.collections = collections.sort((a, b) => {
+      return a.path === b.path ? 0 : +(a.path > b.path) || -1
+    })
 
     // Adding media buckets
     const buckets = config.get('media.buckets').concat(config.get('media.defaultBucket'))
@@ -580,23 +585,24 @@ Server.prototype.loadCollectionRoute = function () {
 
 // route to retrieve list of endpoints
 Server.prototype.loadEndpointsRoute = function () {
-  var self = this
+  this.app.use('/api/endpoints', (req, res, next) => {
+    const method = req.method && req.method.toLowerCase()
 
-  this.app.use('/api/endpoints', function (req, res, next) {
-    var method = req.method && req.method.toLowerCase()
+    if (method !== 'get') {
+      return help.sendBackJSON(405, res, next)(null, {'error': 'Invalid method'})
+    }
 
-    if (method !== 'get') return help.sendBackJSON(405, res, next)(null, {'error': 'Invalid method'})
+    let data = {}
+    let endpoints = []
 
-    var data = {}
-    var endpoints = []
+    Object.keys(this.components).forEach(key => {
+      let model
+      const parts = _.compact(key.split('/'))
+      let name = parts[1]
+      const value = this.components[key]
 
-    _.each(self.components, function (value, key) {
-      var model
-      var parts = _.compact(key.split('/'))
-      var name = parts[1]
-
-      var hasModel = _.contains(Object.keys(value), 'model')
-      var hasGetMethod = _.contains(Object.keys(value), 'get')
+      const hasModel = Object.keys(value).includes('model')
+      const hasGetMethod = Object.keys(value).includes('get')
 
       if (hasModel) {
         model = value.model
@@ -607,20 +613,23 @@ Server.prototype.loadEndpointsRoute = function () {
       }
 
       if (hasGetMethod) {
-        // an endpoint
-        var endpoint = {
+        let endpoint = {
           name: name,
           version: parts[0],
           path: key
         }
 
-        if (pathToRegexp(key).keys.length > 0) endpoint.params = pathToRegexp(key).keys
+        if (pathToRegexp(key).keys.length > 0) {
+          endpoint.params = pathToRegexp(key).keys
+        }
 
         endpoints.push(endpoint)
       }
     })
 
-    data.endpoints = _.sortBy(endpoints, 'path')
+    data.endpoints = endpoints.sort((a, b) => {
+      return a.path === b.path ? 0 : +(a.path > b.path) || -1
+    })
 
     return help.sendBackJSON(200, res, next)(null, data)
   })
@@ -651,6 +660,40 @@ Server.prototype.loadHooksRoute = function (options) {
     }
 
     return help.sendBackJSON(405, res, next)(null, {'error': 'Invalid method'})
+  })
+}
+
+Server.prototype.loadSearchIndexRoute = function () {
+  this.app.use('/api/index', (req, res, next) => {
+    const method = req.method && req.method.toLowerCase()
+
+    // 404 if Search is not enabled
+    if (config.get('search.enabled') === false) {
+      return next()
+    }
+
+    // 405 if request is not POST
+    if (method !== 'post') {
+      return help.sendBackJSON(405, res, next)(null, {'error': 'Invalid method'})
+    }
+
+    res.statusCode = 204
+    res.end(JSON.stringify({'message': 'Indexing started'}))
+
+    try {
+      Object.keys(this.components).forEach(key => {
+        const value = this.components[key]
+
+        const hasModel = Object.keys(value).includes('model') &&
+          value.model.constructor.name === 'Model'
+
+        if (hasModel) {
+          value.model.searcher.batchIndex()
+        }
+      })
+    } catch (err) {
+      console.log(err)
+    }
   })
 }
 

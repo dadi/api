@@ -357,7 +357,7 @@ Search.prototype.clearAndInsertWordInstances = function (words, analyser, docId)
     // Get all word instances from Analyser
     this.clearDocumentInstances(docId).then(response => {
       if (response.deletedCount) {
-        console.log(`Cleared ${response.deletedCount} documents`)
+        // console.log(`Cleared ${response.deletedCount} documents`)
       }
 
       this.insertWordInstances(analyser, results.results, docId)
@@ -475,13 +475,14 @@ Search.prototype.runBatchIndex = function (options) {
     this.model.connection.db,
     {},
     this.model.name,
-    this.model.schema, options
+    this.model.schema,
+    options
   ).then(results => {
-    if (results.results.length > 0) {
+    if (results.results && results.results.length > 0) {
       this.index(results.results).then(response => {
-        console.log(`Indexed page ${options.page}/${response.metadata.totalPages}`)
+        console.log(`Indexed page ${options.page}/${results.metadata.totalPages}`)
 
-        if (options.page * options.limit < response.metadata.totalCount) {
+        if (options.page * options.limit < results.metadata.totalCount) {
           return this.batchIndex(options.page + 1, options.limit)
         } else {
           console.log(`Indexed ${results.results.length} records for ${this.model.name}`)

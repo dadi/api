@@ -686,7 +686,8 @@ Model.prototype.find = function (query, options, done) {
         }
       }).catch(err => {
         console.log('')
-        console.log('*** Model: Find error', err)
+        console.log('*** Model: Find error')
+        console.log('---->', createConnectionError())
         console.log('')
         if (err.message === 'DB_DISCONNECTED') {
           return done(createConnectionError())

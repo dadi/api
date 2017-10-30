@@ -24,4 +24,3 @@ addons:
 services:
   - mongodb
   - redis-server
-dist: precise

@@ -119,9 +119,6 @@ Model.prototype.count = function (query, options, done) {
     options = {}
   }
 
-  // query = queryUtils.makeCaseInsensitive(query, this.schema)
-  // query = queryUtils.convertApparentObjectIds(query, this.schema)
-
   var validation = this.validate.query(query)
 
   if (!validation.success) {
@@ -495,7 +492,6 @@ Model.prototype.find = function (query, options, done) {
   }
 
   query = queryUtils.makeCaseInsensitive(query, self.schema)
-  // query = queryUtils.convertApparentObjectIds(query, self.schema)
 
   debug('find %o %o', query, options)
 
@@ -570,7 +566,6 @@ Model.prototype.find = function (query, options, done) {
           // supplement the current query with the ids
           if (query[collectionKey]) {
             collectionQuery['_id'] = query[collectionKey]
-            // collectionQuery = queryUtils.convertApparentObjectIds(collectionQuery, self.schema)
           }
 
           // query the reference collection
@@ -1020,9 +1015,9 @@ Model.prototype.update = function (query, update, internals, done, req, bypassOu
     return done(createConnectionError())
   }
 
-  var err
+  let err
 
-  var validation = this.validate.query(query)
+  let validation = this.validate.query(query)
 
   if (!validation.success) {
     err = createValidationError('Bad Query')
@@ -1053,18 +1048,36 @@ Model.prototype.update = function (query, update, internals, done, req, bypassOu
 
   this.composer.setApiVersion(internals._apiVersion)
 
-  var setUpdate = { $set: update, $inc: { _version: 1 } }
+  const setUpdate = { $set: update, $inc: { _version: 1 } }
 
-  var startUpdate = (database) => {
+  // get a reference to the documents that will be updated
+  let updatedDocs = []
+
+  this.find(query, {}, (err, result) => {
+    if (err) return done(err)
+
+    // create a copy of the documents that matched the find
+    // query, as these will be updated and we need to send back to the
+    // client a full result set of modified documents
+    updatedDocs = queryUtils.snapshot(result.results)
+
+    this.composer.createFromComposed(update, req, (err, result) => {
+      if (err) {
+        return done(err.json)
+      }
+
+      if (this.connection.db) return startUpdate(this.connection.db)
+
+      // if the db is not connected queue the update
+      this.connection.once('connect', startUpdate)
+    })
+  })
+
+  const startUpdate = (database) => {
     this.find(query, { compose: false }, (err, result) => {
       if (err) return done(err)
 
-      // create a copy of the documents that matched the find
-      // query, as these will be updated and we need to send back to the
-      // client a full result set of modified documents
-      var updatedDocs = queryUtils.snapshot(result.results)
-
-      var saveDocuments = () => {
+      const saveDocuments = () => {
         database.update({
           query: query,
           collection: this.name,
@@ -1079,17 +1092,17 @@ Model.prototype.update = function (query, update, internals, done, req, bypassOu
             return done(err)
           }
 
-          var triggerAfterUpdateHook = (docs) => {
+          const triggerAfterUpdateHook = (docs) => {
             if (this.settings.hasOwnProperty('hooks') && (typeof this.settings.hooks.afterUpdate === 'object')) {
               this.settings.hooks.afterUpdate.forEach((hookConfig, index) => {
-                var hook = new Hook(this.settings.hooks.afterUpdate[index], 'afterUpdate')
+                const hook = new Hook(this.settings.hooks.afterUpdate[index], 'afterUpdate')
 
                 return hook.apply(docs, this.schema, this.name)
               })
             }
           }
 
-          var promise
+          let promise
 
           // for each of the updated documents, create a history revision for it
           if (this.history) {
@@ -1099,7 +1112,7 @@ Model.prototype.update = function (query, update, internals, done, req, bypassOu
           }
 
           promise.then(() => {
-            var query = {
+            const query = {
               _id: {
                 '$in': _.map(updatedDocs, (doc) => { return doc._id.toString() })
               }
@@ -1131,7 +1144,7 @@ Model.prototype.update = function (query, update, internals, done, req, bypassOu
       // apply any existing `beforeUpdate` hooks, otherwise save the documents straight away
       if (this.settings.hooks && this.settings.hooks.beforeUpdate) {
         async.reduce(this.settings.hooks.beforeUpdate, update, (current, hookConfig, callback) => {
-          var hook = new Hook(hookConfig, 'beforeUpdate')
+          const hook = new Hook(hookConfig, 'beforeUpdate')
 
           Promise.resolve(hook.apply(current, updatedDocs, this.schema, this.name, req)).then((newUpdate) => {
             callback((newUpdate === null) ? {} : null, newUpdate)
@@ -1151,11 +1164,6 @@ Model.prototype.update = function (query, update, internals, done, req, bypassOu
       }
     })
   }
-
-  if (this.connection.db) return startUpdate(this.connection.db)
-
-  // if the db is not connected queue the update
-  this.connection.once('connect', startUpdate)
 }
 
 function createConnectionError () {

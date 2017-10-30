@@ -35,7 +35,7 @@ const Model = function (name, schema, conn, settings) {
   }
 
   // attach default settings
-  this.settings = _.extend({}, settings, this.schema.settings)
+  this.settings = Object.assign({}, settings, this.schema.settings)
 
   // attach display name if supplied
   if (this.settings.hasOwnProperty('displayName')) {
@@ -181,7 +181,7 @@ Model.prototype.create = function (documents, internals, done, req) {
 
   if (typeof internals === 'object' && internals != null) { // not null and not undefined
     documents.forEach(doc => {
-      doc = _.extend(doc, internals)
+      Object.assign(doc, internals)
     })
   }
 
@@ -1043,7 +1043,7 @@ Model.prototype.update = function (query, update, internals, done, req, bypassOu
   update = queryUtils.convertDateTimeForSave(this.schema, update)
 
   if (typeof internals === 'object' && internals != null) { // not null and not undefined
-    _.extend(update, internals)
+    Object.assign(update, internals)
   }
 
   this.composer.setApiVersion(internals._apiVersion)
@@ -1066,10 +1066,7 @@ Model.prototype.update = function (query, update, internals, done, req, bypassOu
         return done(err.json)
       }
 
-      if (this.connection.db) return startUpdate(this.connection.db)
-
-      // if the db is not connected queue the update
-      this.connection.once('connect', startUpdate)
+      return startUpdate(this.connection.db)
     })
   })
 
@@ -1114,7 +1111,7 @@ Model.prototype.update = function (query, update, internals, done, req, bypassOu
           promise.then(() => {
             const query = {
               _id: {
-                '$in': _.map(updatedDocs, (doc) => { return doc._id.toString() })
+                '$in': updatedDocs.map(doc => { return doc._id.toString() })
               }
             }
 

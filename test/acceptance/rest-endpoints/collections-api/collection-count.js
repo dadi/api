@@ -13,7 +13,7 @@ let bearerToken
 let lastModifiedAt = 0
 
 describe('Collections API – Count endpoint', function () {
-  this.timeout(4000)
+  this.timeout(6000)
 
   before(done => {
     app.start(() => {

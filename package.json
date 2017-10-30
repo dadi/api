@@ -17,7 +17,7 @@
   },
   "dependencies": {
     "@dadi/cache": "1.5.x",
-    "@dadi/format-error": "~1.5.0",
+    "@dadi/format-error": "^1.0.0",
     "@dadi/logger": "latest",
     "@dadi/status": "latest",
     "async": "^2.1.4",

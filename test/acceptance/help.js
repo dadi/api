@@ -71,11 +71,19 @@ module.exports.dropDatabase = function (database, collectionName, done) {
 
   var conn = connection(options, null, config.get('datastore'))
 
-  conn.datastore.dropDatabase(collectionName).then(() => {
-    return done()
-  }).catch((err) => {
-    return done(err)
-  })
+  const dropDatabase = () => {
+    conn.datastore.dropDatabase(collectionName).then(() => {
+      return done()
+    }).catch((err) => {
+      return done(err)
+    })
+  }
+
+  if (conn.datastore.readyState === 1) {
+    dropDatabase()
+  } else {
+    conn.once('connect', dropDatabase)
+  }
 }
 
 module.exports.createClient = function (client, done) {
@@ -93,26 +101,42 @@ module.exports.createClient = function (client, done) {
     collection: collectionName
   }, null, config.get('datastore'))
 
-  conn.datastore.insert({
-    data: client,
-    collection: collectionName,
-    schema: tokenStore.schema
-  }).then(result => {
-    return done()
-  }).catch((err) => {
-    done(err)
-  })
+  const createClient = () => {
+    conn.datastore.insert({
+      data: client,
+      collection: collectionName,
+      schema: tokenStore.schema
+    }).then(result => {
+      return done()
+    }).catch((err) => {
+      done(err)
+    })
+  }
+
+  if (conn.datastore.readyState === 1) {
+    createClient()
+  } else {
+    conn.on('connect', createClient)
+  }
 }
 
 module.exports.removeTestClients = function (done) {
   var collectionName = config.get('auth.clientCollection')
   var conn = connection({ override: true, database: config.get('auth.database'), collection: collectionName }, null, config.get('datastore'))
 
-  conn.datastore.dropDatabase(collectionName).then(() => {
-    return done()
-  }).catch((err) => {
-    done(err)
-  })
+  const dropDatabase = () => {
+    conn.datastore.dropDatabase(collectionName).then(() => {
+      return done()
+    }).catch((err) => {
+      done(err)
+    })
+  }
+
+  if (conn.datastore.readyState === 1) {
+    dropDatabase()
+  } else {
+    conn.once('connect', dropDatabase)
+  }
 }
 
 module.exports.clearCache = function () {

@@ -39,22 +39,24 @@ describe('History', function () {
     it('should save model to history', function (done) {
       var mod = model('testModelName', help.getModelSchema(), null, { database: 'testdb', storeRevisions: true })
 
-      mod.create({fieldName: 'foo'}, function (err, result) {
-        if (err) return done(err)
-
-        // find the obj we just created
-        mod.find({fieldName: 'foo'}, function (err, doc) {
+      help.whenModelsConnect([mod], () => {
+        mod.create({fieldName: 'foo'}, function (err, result) {
           if (err) return done(err)
 
-          mod.history.create(doc.results[0], mod, (err, res) => {
+          // find the obj we just created
+          mod.find({fieldName: 'foo'}, function (err, doc) {
             if (err) return done(err)
 
-            mod.find({fieldName: 'foo'}, function (err, doc) {
+            mod.history.create(doc.results[0], mod, (err, res) => {
               if (err) return done(err)
 
-              should.exist(doc['results'])
-              doc['results'][0]._history.length.should.equal(1)
-              done()
+              mod.find({fieldName: 'foo'}, function (err, doc) {
+                if (err) return done(err)
+
+                should.exist(doc['results'])
+                doc['results'][0]._history.length.should.equal(1)
+                done()
+              })
             })
           })
         })
@@ -76,24 +78,26 @@ describe('History', function () {
 
       var mod = model('testModelName', help.getModelSchema(), null, { database: 'testdb', storeRevisions: true })
 
-      mod.create({fieldName: 'foo-1'}, function (err, result) {
-        if (err) return done(err)
-        mod.create({fieldName: 'foo-2'}, function (err, result) {
+      help.whenModelsConnect([mod], () => {
+        mod.create({fieldName: 'foo-1'}, function (err, result) {
           if (err) return done(err)
-          // find the objs we just created
-          mod.find({}, function (err, docs) {
+          mod.create({fieldName: 'foo-2'}, function (err, result) {
             if (err) return done(err)
+            // find the objs we just created
+            mod.find({}, function (err, docs) {
+              if (err) return done(err)
 
-            mod.history.createEach(docs['results'], 'delete', mod).then(() => {
-              mod.find({ fieldName: { '$regex' : '^foo-' } }, function (err, docs) {
-                if (err) return done(err)
+              mod.history.createEach(docs['results'], 'delete', mod).then(() => {
+                mod.find({ fieldName: { '$regex' : '^foo-' } }, function (err, docs) {
+                  if (err) return done(err)
 
-                docs.results[0]._history.length.should.equal(1)
-                docs.results[1]._history.length.should.equal(1)
-                done()
+                  docs.results[0]._history.length.should.equal(1)
+                  docs.results[1]._history.length.should.equal(1)
+                  done()
+                })
+              }).catch((err) => {
+                done(err)
               })
-            }).catch((err) => {
-              done(err)
             })
           })
         })
@@ -103,14 +107,16 @@ describe('History', function () {
     it('should add action=update to history revisions when a document is updated', function (done) {
       var mod = model('testModelName', help.getModelSchema(), null, { database: 'testdb', storeRevisions: true })
 
-      mod.create({ fieldName: 'foo-1' }, function (err, result) {
-        mod.update({ fieldName: 'foo-1' }, { fieldName: 'foo-2' }, function (err, result) {
-          mod.find({}, { includeHistory: true }, function (err, docs) {
-            should.exist(docs.results[0]._history)
-            should.exist(docs.results[0]._history[0])
-            should.exist(docs.results[0]._history[0]._action)
-            docs.results[0]._history[0]._action.should.eql('update')
-            done()
+      help.whenModelsConnect([mod], () => {
+        mod.create({ fieldName: 'foo-1' }, function (err, result) {
+          mod.update({ fieldName: 'foo-1' }, { fieldName: 'foo-2' }, function (err, result) {
+            mod.find({}, { includeHistory: true }, function (err, docs) {
+              should.exist(docs.results[0]._history)
+              should.exist(docs.results[0]._history[0])
+              should.exist(docs.results[0]._history[0]._action)
+              docs.results[0]._history[0]._action.should.eql('update')
+              done()
+            })
           })
         })
       })
@@ -119,17 +125,21 @@ describe('History', function () {
     it('should add action=delete to history revisions when a document is deleted', function (done) {
       var mod = model('testModelName', help.getModelSchema(), null, { database: 'testdb', storeRevisions: true })
 
-      mod.create({ fieldName: 'foo-1' }, function (err, result) {
-        mod.delete({ fieldName: 'foo-1' }, function (err, result) {
+      help.whenModelsConnect([mod], () => {
+        mod.create({ fieldName: 'foo-1' }, function (err, result) {
+          mod.delete({ fieldName: 'foo-1' }, function (err, result) {
 
-          mod = model('testModelNameHistory', help.getModelSchema(), null, { database: 'testdb', storeRevisions: true })
+            mod = model('testModelNameHistory', help.getModelSchema(), null, { database: 'testdb', storeRevisions: true })
 
-          mod.find({}, {}, function (err, docs) {
-            should.exist(docs.results[0])
-            should.exist(docs.results[0]._originalDocumentId)
-            should.exist(docs.results[0]._action)
-            docs.results[0]._action.should.eql('delete')
-            done()
+            help.whenModelsConnect([mod], () => {
+              mod.find({}, {}, function (err, docs) {
+                should.exist(docs.results[0])
+                should.exist(docs.results[0]._originalDocumentId)
+                should.exist(docs.results[0]._action)
+                docs.results[0]._action.should.eql('delete')
+                done()
+              })
+            })
           })
         })
       })
@@ -138,17 +148,19 @@ describe('History', function () {
     it('should add the original document id to history revisions', function (done) {
       var mod = model('testModelName', help.getModelSchema(), null, { database: 'testdb', storeRevisions: true })
 
-      mod.create({ fieldName: 'foo-1' }, function (err, result) {
-        var id = result.results[0]._id
+      help.whenModelsConnect([mod], () => {
+        mod.create({ fieldName: 'foo-1' }, function (err, result) {
+          var id = result.results[0]._id
 
-        mod.update({ fieldName: 'foo-1' }, { fieldName: 'foo-2' }, function (err, result) {
-          mod.find({}, { includeHistory: true }, function (err, docs) {
-            should.exist(docs.results[0]._history)
-            should.exist(docs.results[0]._history[0])
-            should.exist(docs.results[0]._history[0]._originalDocumentId)
+          mod.update({ fieldName: 'foo-1' }, { fieldName: 'foo-2' }, function (err, result) {
+            mod.find({}, { includeHistory: true }, function (err, docs) {
+              should.exist(docs.results[0]._history)
+              should.exist(docs.results[0]._history[0])
+              should.exist(docs.results[0]._history[0]._originalDocumentId)
 
-            docs.results[0]._history[0]._originalDocumentId.should.eql(id.toString())
-            done()
+              docs.results[0]._history[0]._originalDocumentId.should.eql(id.toString())
+              done()
+            })
           })
         })
       })

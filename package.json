@@ -6,11 +6,15 @@
     "create-client": "cd ../../.. && node ./node_modules/@dadi/api/utils/create-client.js",
     "index-search": "cd ../../.. && node ./node_modules/@dadi/api/utils/index-search",
     "docs": "jsdoc -c ./docs/conf.json -R README.md -r dadi/lib -d docs",
-    "commitmsg": "validate-commit-msg",
+    "commitmsg": "commitlint -e",
     "test": "standard 'dadi/**/*.js' | snazzy && env NODE_ENV=test ./node_modules/.bin/istanbul cover  --report cobertura --report text --report html --report lcov ./node_modules/mocha/bin/_mocha",
     "posttest": "./scripts/coverage.js",
-    "postinstall": "node ./scripts/copy-config.js && node ./scripts/copy-workspace.js",
     "start": "node start.js --node_env=development"
+  },
+  "commitlint": {
+    "extends": [
+      "@commitlint/config-angular"
+    ]
   },
   "dependencies": {
     "@dadi/cache": "1.5.x",
@@ -48,6 +52,8 @@
     "validator": "7.0.0"
   },
   "devDependencies": {
+    "@commitlint/cli": "~4.1.1",
+    "@commitlint/config-angular": "~3.1.1",
     "@dadi/api-mongodb": "3.x.x",
     "aws-sdk-mock": "1.6.1",
     "env-test": "1.0.0",
@@ -63,8 +69,7 @@
     "sinon": "2.3.2",
     "snazzy": "7.0.0",
     "standard": "8.6.0",
-    "supertest": "~0.13.0",
-    "validate-commit-msg": "^2.12.1"
+    "supertest": "~0.13.0"
   },
   "repository": {
     "type": "git",

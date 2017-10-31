@@ -59,6 +59,11 @@ function prepareQueryOptions (options, modelSettings) {
     response.errors.push(new ApiError('Bad Request', 'Invalid Parameter', 'The `page` parameter must be greater than zero', 'Invalid Page Parameter Provided'))
   }
 
+  // `q` represents a search query, e.g. `?q=foo bar baz`.
+  if (options.q) {
+    queryOptions.search = options.q
+  }
+
   // specified / default number of records to return
   let limit = options.count || settings.count
 
@@ -287,6 +292,25 @@ Controller.prototype.delete = function (req, res, next) {
       res.end()
     }, req)
   })
+}
+
+/**
+ * Handle collection search endpoints
+ * Example: /1.0/library/books/search?q=title
+ */
+Controller.prototype.search = function (req, res, next) {
+  var path = url.parse(req.url, true)
+  var options = path.query
+
+  var queryOptions = this.prepareQueryOptions(options)
+
+  if (queryOptions.errors.length !== 0) {
+    sendBackJSON(400, res, next)(null, queryOptions)
+  } else {
+    queryOptions = queryOptions.queryOptions
+  }
+
+  this.model.search(queryOptions, sendBackJSON(200, res, next), req)
 }
 
 Controller.prototype.stats = function (req, res, next) {

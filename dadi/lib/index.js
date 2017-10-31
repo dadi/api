@@ -30,7 +30,6 @@ var help = require(path.join(__dirname, '/help'))
 var Model = require(path.join(__dirname, '/model'))
 var mediaModel = require(path.join(__dirname, '/model/media'))
 var monitor = require(path.join(__dirname, '/monitor'))
-var search = require(path.join(__dirname, '/search'))
 
 var config = require(path.join(__dirname, '/../../config'))
 var configPath = path.resolve(config.configPath())
@@ -224,9 +223,6 @@ Server.prototype.start = function (done) {
   // caching layer
   cache(self).init()
 
-  // search layer
-  search(self)
-
   // start listening
   var server = this.server = app.listen()
 
@@ -238,6 +234,7 @@ Server.prototype.start = function (done) {
   this.loadCollectionRoute()
   this.loadEndpointsRoute()
   this.loadHooksRoute(options)
+  this.loadSearchIndexRoute()
 
   this.readyState = 1
 
@@ -663,6 +660,40 @@ Server.prototype.loadHooksRoute = function (options) {
   })
 }
 
+Server.prototype.loadSearchIndexRoute = function () {
+  this.app.use('/api/index', (req, res, next) => {
+    const method = req.method && req.method.toLowerCase()
+
+    // 404 if Search is not enabled
+    if (config.get('search.enabled') === false) {
+      return next()
+    }
+
+    // 405 if request is not POST
+    if (method !== 'post') {
+      return help.sendBackJSON(405, res, next)(null, {'error': 'Invalid method'})
+    }
+
+    res.statusCode = 204
+    res.end(JSON.stringify({'message': 'Indexing started'}))
+
+    try {
+      Object.keys(this.components).forEach(key => {
+        const value = this.components[key]
+
+        const hasModel = Object.keys(value).includes('model') &&
+          value.model.constructor.name === 'Model'
+
+        if (hasModel) {
+          value.model.searcher.batchIndex()
+        }
+      })
+    } catch (err) {
+      console.log(err)
+    }
+  })
+}
+
 Server.prototype.updateVersions = function (versionsPath) {
   var self = this
 
@@ -983,6 +1014,18 @@ Server.prototype.addComponent = function (options) {
   // add controller and documentation
   this.components[options.route] = options.component
   this.docs[options.route] = options.docs
+
+  // call controller search method
+  this.app.use(options.route + '/search', function (req, res, next) {
+    var method = req.method && req.method.toLowerCase()
+
+    // call controller stats method
+    if (method === 'get') {
+      return options.component['search'](req, res, next)
+    } else {
+      next()
+    }
+  })
 
   this.app.use(options.route + '/count', function (req, res, next) {
     var method = req.method && req.method.toLowerCase()

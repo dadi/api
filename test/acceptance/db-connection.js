@@ -88,7 +88,8 @@ describe('Database connection', () => {
 
           res.statusCode.should.eql(200)
           res.body.should.eql(mockResults)
-          datastore._spies.index.calledOnce.should.eql(true)
+
+          datastore._spies.index.callCount.should.be.above(0)
 
           setTimeout(() => {
             client
@@ -119,7 +120,7 @@ describe('Database connection', () => {
 
           res.statusCode.should.eql(200)
           res.body.should.eql(mockResults)
-          datastore._spies.index.calledOnce.should.eql(true)
+          datastore._spies.index.callCount.should.be.above(0)
 
           datastore._mockDisconnect()
           client
@@ -154,7 +155,7 @@ describe('Database connection', () => {
 
           res.statusCode.should.eql(200)
           res.body.should.eql(mockResults)
-          datastore._spies.index.calledOnce.should.eql(true)
+          datastore._spies.index.callCount.should.be.above(0)
 
           setTimeout(() => {
             client
@@ -191,7 +192,7 @@ describe('Database connection', () => {
 
           res.statusCode.should.eql(200)
           res.body.should.eql(mockResults)
-          datastore._spies.index.calledOnce.should.eql(true)
+          datastore._spies.index.callCount.should.be.above(0)
 
           datastore._mockDisconnect()
 
@@ -234,7 +235,7 @@ describe('Database connection', () => {
           res.statusCode.should.eql(200)
           res.body.results[0].title.should.eql('Dadi')
           res.body.results[0].published.state.should.eql(1)
-          datastore._spies.index.calledOnce.should.eql(true)
+          datastore._spies.index.callCount.should.be.above(0)
 
           setTimeout(() => {
             client
@@ -279,7 +280,7 @@ describe('Database connection', () => {
           res.statusCode.should.eql(200)
           res.body.results[0].title.should.eql('Dadi')
           res.body.results[0].published.state.should.eql(1)
-          datastore._spies.index.calledOnce.should.eql(true)
+          datastore._spies.index.callCount.should.be.above(0)
 
           datastore._mockDisconnect()
 
@@ -303,7 +304,7 @@ describe('Database connection', () => {
                 res.body.title.should.eql('Database unavailable')
 
                 done()
-              })            
+              })
           }, 1500)
         })
     })
@@ -320,7 +321,7 @@ describe('Database connection', () => {
 
           res.statusCode.should.eql(204)
           res.body.should.eql('')
-          datastore._spies.index.calledOnce.should.eql(true)
+          datastore._spies.index.callCount.should.be.above(0)
 
           setTimeout(() => {
             client
@@ -351,7 +352,7 @@ describe('Database connection', () => {
 
           res.statusCode.should.eql(204)
           res.body.should.eql('')
-          datastore._spies.index.calledOnce.should.eql(true)
+          datastore._spies.index.callCount.should.be.above(0)
 
           datastore._mockDisconnect()
 
@@ -456,7 +457,7 @@ describe('Database connection', () => {
               .end((err, res) => {
                 res.statusCode.should.eql(200)
                 res.body.should.eql(mockResults)
-                datastore._spies.index.calledOnce.should.eql(true)
+                datastore._spies.index.callCount.should.be.above(0)
 
                 done()
               })
@@ -537,7 +538,7 @@ describe('Database connection', () => {
               .end((err, res) => {
                 res.statusCode.should.eql(200)
                 res.body.should.eql(mockResults)
-                datastore._spies.index.calledOnce.should.eql(true)
+                datastore._spies.index.callCount.should.be.above(0)
 
                 done()
               })
@@ -631,7 +632,7 @@ describe('Database connection', () => {
                 res.statusCode.should.eql(200)
                 res.body.results[0].title.should.eql('Dadi')
                 res.body.results[0].published.state.should.eql(1)
-                datastore._spies.index.calledOnce.should.eql(true)
+                datastore._spies.index.callCount.should.be.above(0)
 
                 done()
               })
@@ -700,7 +701,7 @@ describe('Database connection', () => {
               .end((err, res) => {
                 res.statusCode.should.eql(204)
                 res.body.should.eql('')
-                datastore._spies.index.calledOnce.should.eql(true)
+                datastore._spies.index.callCount.should.be.above(0)
 
                 done()
               })

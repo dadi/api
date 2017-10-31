@@ -38,6 +38,7 @@
     "length-stream": "^0.1.1",
     "mkdirp": "^0.5.1",
     "moment": "2.18.1",
+    "natural": "^0.5.4",
     "parse-comments": "0.4.3",
     "path-to-regexp": "~1.7.0",
     "recovery": "^0.2.6",

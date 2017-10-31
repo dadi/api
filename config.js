@@ -133,6 +133,34 @@ var conf = convict({
       default: 3600
     }
   },
+  search: {
+    enabled: {
+      doc: 'If enabled, search will index content',
+      format: Boolean,
+      default: false
+    },
+    minQueryLength: {
+      doc: 'Minimum search string length',
+      format: Number,
+      default: 3
+    },
+    wordCollection: {
+      doc: '',
+      format: String,
+      default: 'words'
+    },
+    datastore: {
+      doc: "",
+      format: String,
+      default: '@dadi/api-mongodb'
+    },
+    database: {
+      doc: '',
+      format: String,
+      default: 'test',
+      env: 'DB_SEARCH_NAME'
+    }
+  },
   caching: {
     ttl: {
       doc: '',

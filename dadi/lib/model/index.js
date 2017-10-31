@@ -12,6 +12,7 @@ const formatError = require('@dadi/format-error')
 const History = require(path.join(__dirname, '/history'))
 const Hook = require(path.join(__dirname, '/hook'))
 const logger = require('@dadi/logger')
+const Search = require(path.join(__dirname, '/../search'))
 const queryUtils = require(path.join(__dirname, '/utils'))
 const Validator = require(path.join(__dirname, '/validator'))
 
@@ -98,6 +99,17 @@ const Model = function (name, schema, conn, settings) {
     // attach revision collection for this model.
     // if no value is specified, use 'History' suffix by default
     this.revisionCollection = (this.settings.revisionCollection ? this.settings.revisionCollection : this.name + 'History')
+  }
+
+  // setup search context
+  this.searcher = new Search(this)
+
+  if (this.searcher.canUse()) {
+    this.searcher.init()
+  }
+
+  if (this.settings.index) {
+    this.createIndex(() => {})
   }
 
   if (this.settings.index) {
@@ -252,6 +264,9 @@ Model.prototype.create = function (documents, internals, done, req) {
       this.composer.compose(returnData.results, (obj) => {
         returnData.results = obj
 
+        // Asynchronous search index
+        this.searcher.index(returnData.results)
+
         // apply any existing `afterCreate` hooks
         if (this.settings.hasOwnProperty('hooks') && (typeof this.settings.hooks.afterCreate === 'object')) {
           returnData.results.forEach((doc) => {
@@ -348,6 +363,9 @@ Model.prototype.delete = function (query, done, req) {
       schema: this.schema
     }).then(result => {
       if (result.deletedCount > 0) {
+        // clear documents from search index
+        this.searcher.delete(deletedDocs)
+
         // apply any existing `afterDelete` hooks
         if (this.settings.hasOwnProperty('hooks') && (typeof this.settings.hooks.afterDelete === 'object')) {
           this.settings.hooks.afterDelete.forEach((hookConfig, index) => {
@@ -685,6 +703,58 @@ Model.prototype.find = function (query, options, done) {
   }
 
   return _done(this.connection.db)
+}
+
+/**
+ * Lookup documents in the database based on search query and run any associated hooks
+ *
+ * @param {Object} query
+ * @param {Function} done
+ * @return undefined
+ * @api public
+ */
+Model.prototype.search = function (options, done, req) {
+  let err
+
+  if (typeof options === 'function') {
+    done = options
+    options = {}
+  }
+
+  if (!this.searcher.canUse()) {
+    err = new Error('Not Implemented')
+    err.statusCode = 501
+    err.message = `Search is disabled or an invalid data connector has been specified`
+  } else if (!options.search || options.search.length < config.get('search.minQueryLength')) {
+    err = new Error('Bad Request')
+    err.statusCode = 400
+    err.message = `Search query must be at least ${config.get('search.minQueryLength')} characters`
+  }
+
+  if (err) {
+    return done(err, null)
+  }
+
+  this.searcher.find(options.search).then(query => {
+    const ids = query._id.$in.map(id => id.toString())
+
+    this.get(query, options, (err, results) => {
+      // sort the results
+      results.results = results.results.sort((a, b) => {
+        const aIndex = ids.indexOf(a._id.toString())
+        const bIndex = ids.indexOf(b._id.toString())
+
+        if (aIndex === bIndex) return 1
+
+        return aIndex < bIndex ? -1 : 1
+      })
+
+      return done(err, results)
+    }, req)
+  }).catch(err => {
+    console.log(err)
+    return done(err)
+  })
 }
 
 /**
@@ -1117,6 +1187,9 @@ Model.prototype.update = function (query, update, internals, done, req, bypassOu
 
               // apply any existing `afterUpdate` hooks
               triggerAfterUpdateHook(results.results)
+
+              // asynchronous search index
+              this.searcher.index(results.results)
 
               // Prepare result set for output
               if (!bypassOutputFormatting) {

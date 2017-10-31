@@ -4,21 +4,8 @@
       "type": "String",
       "label": "Title",
       "comments": "The title of the entry",
-      "placement": "Main content",
       "validation": {},
-      "required": false,
-      "message": "",
-      "display": {
-        "index": true,
-        "edit": true
-      }
-    },
-    "title": {
-      "type": "String",
-      "required": false,
-      "search": {
-        "weight": 2
-      }
+      "required": false
     }
   },
   "settings": {
@@ -29,6 +16,6 @@
     "sortOrder": 1,
     "storeRevisions": true,
     "revisionCollection": "testSchemaHistory",
-    "lastModifiedAt": 1509360344054
+    "lastModifiedAt": 1509474499125
   }
 }

@@ -157,7 +157,7 @@ DADI API is based on an original idea by Joseph Denne. It is developed and maint
 * Dave Allen <da@dadi.co>
 * David Longworth <dl@dadi.co>
 * Derrick <dh@dadi.co>
-* Eduardo Boucas <eb@dadi.co>
+* Eduardo Bouças <eb@dadi.co>
 * Francesco Iannuzzelli <fi@dadi.co>
 * James Lambie <jl@dadi.co>
 * Joe Wagner

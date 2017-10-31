@@ -40,13 +40,14 @@ Composer.prototype.compose = function (obj, callback) {
   for (var i = 0; i < composable.length; i++) {
     var field = composable[i]
     var ids = _.uniq(_.compact(_.pluck(composeCopy, field)))
+    var ids = _.compact(_.pluck(composeCopy, field))
 
     if (Array.isArray(ids[0])) {
       ids = _.flatten(ids)
     }
 
     // remove any remaining null values
-    ids = _.compact(ids)
+    ids = _.uniq(_.compact(ids))
 
     var fields = this.getFields(field)
     var query = { '_id': { '$in': _.map(ids, id => { return id.toString() }) } }
@@ -119,7 +120,13 @@ Composer.prototype.compose = function (obj, callback) {
                 // no results, add the original id value to the array
                 document[field].push(id)
               } else {
-                document[field].push(model.formatResultSetForOutput(results[0]))
+                let exists = document[field].filter(r => {
+                  return r && r._id.toString() === id.toString()
+                })
+
+                if (exists.length === 0) {
+                  document[field].push(model.formatResultSetForOutput(results[0]))
+                }
               }
             } else {
               if (_.isEmpty(results)) {

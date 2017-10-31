@@ -18,7 +18,6 @@ describe('Reference Field', function () {
     help.dropDatabase('library', 'book', function (err) {
       if (err) return done(err)
       help.dropDatabase('library', 'person', function (err) {
-
         app.start(function () {
           help.getBearerToken(function (err, token) {
             if (err) return done(err)
@@ -126,28 +125,28 @@ describe('Reference Field', function () {
 
     it('should create multiple reference documents that don\'t have _id fields', function (done) {
       var data = {
-        "word": "animals",
-        "children": [
+        'word': 'animals',
+        'children': [
           {
-            "word": "dogs",
-            "children": [
+            'word': 'dogs',
+            'children': [
               {
-                "word": "guide_dogs",
-                "children": []
+                'word': 'guide_dogs',
+                'children': []
               },
               {
-                "word": "puppies",
-                "children": []
+                'word': 'puppies',
+                'children': []
               }
             ]
           },
           {
-            "word": "foxes",
-            "children": []
+            'word': 'foxes',
+            'children': []
           },
           {
-            "word": "pandas",
-            "children": []
+            'word': 'pandas',
+            'children': []
           }
         ]
       }
@@ -552,7 +551,7 @@ describe('Reference Field', function () {
             newDoc.author.length.should.eql(2)
             newDoc.author[0].name.should.eql('Gustave Flaubert')
             newDoc.author[1].name.should.eql('Gustave Flaubert II')
-          done()
+            done()
           })
         })
       })
@@ -583,8 +582,8 @@ describe('Reference Field', function () {
         var newDoc = res.body.results[0]
 
         var query = {
-          "query": {
-            "author": newDoc.author._id.toString()
+          'query': {
+            'author': newDoc.author._id.toString()
           }
         }
 
@@ -795,6 +794,58 @@ describe('Reference Field', function () {
             var bookResult = res.body.results[0]
 
             should.exist(bookResult.author)
+            should.exist(bookResult.author[0].name)
+
+            done()
+          })
+        })
+      })
+    })
+
+    it('should return unique results for a reference field containing an Array of Strings', function (done) {
+      var book = { title: 'For Whom The Bell Tolls', author: null }
+
+      config.set('query.useVersionFilter', true)
+
+      var client = request(connectionString)
+      client
+      .post('/v1/library/person')
+      .set('Authorization', 'Bearer ' + bearerToken)
+      .send({ name: 'Ernest Hemingway' })
+      .expect(200)
+      .end(function (err, res) {
+        if (err) return done(err)
+
+        should.exist(res.body.results)
+
+        var personId = res.body.results[0]._id
+
+        // add author multiple times
+        book.author = []
+        book.author.push(personId.toString())
+        book.author.push(personId.toString())
+        book.author.push(personId.toString())
+
+        client
+        .post('/v1/library/book')
+        .set('Authorization', 'Bearer ' + bearerToken)
+        .send(book)
+        .expect(200)
+        .end(function (err, res) {
+          if (err) return done(err)
+
+          client
+          .get('/v1/library/book?filter={"book.author":{"$in":' + [personId.toString()] + '}}&compose=true')
+          .set('Authorization', 'Bearer ' + bearerToken)
+          .expect(200)
+          .end(function (err, res) {
+            if (err) return done(err)
+
+            should.exist(res.body.results)
+            var bookResult = res.body.results[0]
+
+            should.exist(bookResult.author)
+            bookResult.author.length.should.eql(1)
             should.exist(bookResult.author[0].name)
 
             done()

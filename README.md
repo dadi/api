@@ -39,7 +39,7 @@ Ensure you have the required dependencies installed. See the first sections in t
 
 ### Install API
 
-The quickest way to get started with *API* is to use [DADI CLI](https://github.com/dadi/cli). If you haven't installed it already:
+The quickest way to get started with *API* is to use [DADI CLI](https://github.com/dadi/cli). To install it for the first time, run:
 
 ```bash
 npm install @dadi/cli -g

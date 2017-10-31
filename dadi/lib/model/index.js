@@ -335,11 +335,6 @@ Model.prototype.delete = function (query, done, req) {
 
   query = this.formatQuery(query)
 
-  // find all the documents affected by the query
-  if (query._id) {
-    query._id = query._id.toString()
-  }
-
   // Is this a RESTful query by ID?
   const isRestIDQuery = req && req.params.id
 

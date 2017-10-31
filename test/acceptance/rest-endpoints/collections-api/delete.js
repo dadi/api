@@ -176,6 +176,53 @@ describe('Collections API – DELETE', function () {
     })
   })
 
+  it('should delete documents matching an $in query', function (done) {
+    help.createDoc(bearerToken, function (err, doc1) {
+      if (err) return done(err)
+      help.createDoc(bearerToken, function (err, doc2) {
+        if (err) return done(err)
+
+        var body = {
+          query: {
+            _id: {
+              '$in': [doc1._id.toString()]
+            }
+          }
+        }
+
+        var client = request(connectionString)
+
+        client
+          .delete('/vtest/testdb/test-schema/')
+          .send(body)
+          .set('Authorization', 'Bearer ' + bearerToken)
+          .expect(204)
+          .end(function (err) {
+            if (err) return done(err)
+
+            var filter = encodeURIComponent(JSON.stringify({
+              _id: doc1._id
+            }))
+
+            client
+              .get('/vtest/testdb/test-schema?filter=' + filter)
+              .set('Authorization', 'Bearer ' + bearerToken)
+              .expect(200)
+              .expect('content-type', 'application/json')
+              .end(function (err, res) {
+                if (err) return done(err)
+
+                res.body['results'].should.exist
+                res.body['results'].should.be.Array
+                res.body['results'].length.should.equal(0)
+
+                done()
+              })
+          })
+      })
+    })
+  })
+
   it('should return deleted count if config.feedback is true', function (done) {
     var originalFeedback = config.get('feedback')
     config.set('feedback', true)
@@ -216,7 +263,7 @@ describe('Collections API – DELETE', function () {
             })
         })
       })
-    })
+  })
 
   it('should return 404 when deleting a non-existing document by ID (RESTful)', function (done) {
     var client = request(connectionString)
@@ -242,7 +289,7 @@ describe('Collections API – DELETE', function () {
       .set('Authorization', 'Bearer ' + bearerToken)
       .send({
         query: {
-          _id: '59f1b3e038ad765e669ac47f',
+          _id: '59f1b3e038ad765e669ac47f'
         }
       })
       .expect(204)

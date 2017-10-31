@@ -165,5 +165,28 @@ describe('History', function () {
         })
       })
     })
+
+    it('should create history revisions when a document is deleted using a nested query', function (done) {
+      var mod = model('testModelName', help.getModelSchema(), null, { database: 'testdb', storeRevisions: true })
+
+      help.whenModelsConnect([mod], () => {
+        mod.create({ fieldName: 'foo-1' }, function (err, result) {
+          var doc = result.results[0]
+          mod.delete({ _id: { '$in': [ doc._id ] } }, function (err, result) {
+            mod = model('testModelNameHistory', help.getModelSchema(), null, { database: 'testdb', storeRevisions: false })
+            help.whenModelsConnect([mod], () => {
+              return mod.find({}, {}, function (err, docs) {
+                should.exist(docs.results)
+                docs.results.length.should.be.above(0)
+                should.exist(docs.results[0]._originalDocumentId)
+                should.exist(docs.results[0]._action)
+                docs.results[0]._action.should.eql('delete')
+                done()
+              })
+            })
+          })
+        })
+      })
+    })
   })
 })

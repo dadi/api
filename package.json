@@ -1,6 +1,6 @@
 {
   "name": "@dadi/api",
-  "version": "3.0.0-alpha",
+  "version": "3.0.0-beta",
   "main": "main.js",
   "scripts": {
     "create-client": "cd ../../.. && node ./node_modules/@dadi/api/utils/create-client.js",

@@ -112,7 +112,7 @@ User accounts provide an authentication layer for API. Each user account has a *
 
 #### Creating the first user
 
-[CLI](https://github.com/dadi/api) contains an interactive "Client Record Generator" to help you create user accounts. Run the following command on the directory where you installed *API*:
+[CLI](https://github.com/dadi/api) contains an interactive "Client Record Generator" to help you create user accounts. Run the following command in the directory where you installed *API*:
 
 ```bash
 cd my-new-api

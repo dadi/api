@@ -23,9 +23,6 @@
   "settings": {
     "cache": false,
     "authenticate": true,
-    "callback": null,
-    "defaultFilters": null,
-    "fieldLimiters": null,
     "count": 40,
     "lastModifiedAt": 1496029984536
   }

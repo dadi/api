@@ -26,9 +26,6 @@
 	"settings": {
     "cache": false,
     "authenticate": false,
-    "callback": null,
-    "defaultFilters": null,
-    "fieldLimiters": null,
     "count": 40,
     "sort": "name",
     "sortOrder": 1,

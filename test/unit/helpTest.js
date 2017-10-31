@@ -48,7 +48,7 @@ describe('Help', function (done) {
     it('should inform that minimum number of fields not supplied', function (done) {
       var schema = {
         fields:{},
-        settings:{cache:true,authenticate:true,callback:null,defaultFilters:null,fieldLimiters:null,count:10,sortOrder:1}
+        settings:{cache:true,authenticate:true,count:10,sortOrder:1}
       }
 
       var val = help.validateCollectionSchema(schema);
@@ -85,7 +85,7 @@ describe('Help', function (done) {
           }
         }
       },
-      "settings":{cache:true,authenticate:true,callback:null,defaultFilters:null,fieldLimiters:null,count:10,sortOrder:1}
+      "settings":{cache:true,authenticate:true,count:10,sortOrder:1}
       };
 
       var val = help.validateCollectionSchema(schema);

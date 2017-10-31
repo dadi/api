@@ -1,27 +1,52 @@
+'use strict'
+
 // Validation should:
 //   ensure that no queries use `$` operators at top level
 //   ensure that all objects are JSON
 //   ensure that field validation passes for inserts and updates
 
 var _ = require('underscore')
-var ObjectID = require('mongodb').ObjectID
-var util = require('util')
-
-var log = require('@dadi/logger')
-log.info({module: 'validator'}, 'Model validator logging started.')
-
-var ignoredKeys = ['apiVersion', 'v', 'history', 'createdAt', 'createdBy']
+var path = require('path')
+var datastore = require(path.join(__dirname, '../datastore'))()
+var validator = require('validator')
+var ignoredKeys = _.union(
+  [
+    '_id',
+    '_apiVersion',
+    '_version',
+    '_history',
+    '_createdAt',
+    '_createdBy',
+    '_lastModifiedAt',
+    '_lastModifiedBy'
+  ],
+  datastore.nonValidatedProperties || []
+)
 
 var Validator = function (model) {
   this.model = model
 }
 
 Validator.prototype.query = function (query) {
-  var valid = Object.keys(query).every(function (key) {
-    return key !== '$where'
-  })
+  var response = { success: true, errors: [] }
 
-  var response = valid ? { success: true } : { success: false, errors: [{message: 'Bad query'}] }
+  if (!Array.isArray(query) && !_.isObject(query)) {
+    response.success = false
+    response.errors.push({
+      message: 'Query must be either a JSON array or a JSON object.'
+    })
+
+    return response
+  }
+
+  Object.keys(query).every(key => {
+    if (key === '$where') {
+      response.success = false
+      response.errors.push({
+        message: 'Bad query'
+      })
+    }
+  })
 
   return response
 }
@@ -30,7 +55,7 @@ Validator.prototype.schema = function (obj, update) {
   update = update || false
 
   // `obj` must be a "hash type object", i.e. { ... }
-  if (typeof obj !== 'object' || util.isArray(obj) || obj === null) return false
+  if (typeof obj !== 'object' || Array.isArray(obj) || obj === null) return false
 
   var response = {
     success: true,
@@ -62,7 +87,7 @@ Validator.prototype.schema = function (obj, update) {
       } else if (obj.hasOwnProperty(key) && (typeof obj[key] === 'undefined' || obj[key] === '')) {
         // if it's a required field and is blank or null, error
         response.success = false
-        response.errors.push({field: key, message: "can't be blank"})
+        response.errors.push({ field: key, message: 'can\'t be blank' })
       }
     })
 
@@ -73,9 +98,9 @@ Validator.prototype.schema = function (obj, update) {
 
 Validator.prototype._parseDocument = function (obj, schema, response) {
   var keys = _.difference(Object.keys(obj), ignoredKeys)
-  var err // eslint-disable-line
+  var err = false
 
-  keys.forEach((key) => {
+  keys.forEach(key => {
     if (!schema[key]) {
       response.success = false
       response.errors.push({
@@ -91,16 +116,16 @@ Validator.prototype._parseDocument = function (obj, schema, response) {
           // do nothing
         } else if (schema[key] && schema[key].type === 'Reference') {
           // bah!
-        } else if (obj[key] !== null && !util.isArray(obj[key])) {
+        } else if (obj[key] !== null && !Array.isArray(obj[key])) {
           this._parseDocument(obj[key], schema, response)
-        } else if (obj[key] !== null && schema[key] && schema[key].type === 'ObjectID' && util.isArray(obj[key])) {
+        } else if (obj[key] !== null && schema[key] && schema[key].type === 'ObjectID' && Array.isArray(obj[key])) {
           err = this._validate(obj[key], schema[key], key)
 
           if (err) {
             response.success = false
             response.errors.push({field: key, message: err})
           }
-        } else if (util.isArray(obj[key]) && schema[key] && (schema[key].type === 'String')) {
+        } else if (Array.isArray(obj[key]) && schema[key] && (schema[key].type === 'String')) {
           // We allow type `String` to actually be an array of Strings. When this
           // happens, we run the validation against the combination of all strings
           // glued together.
@@ -113,7 +138,7 @@ Validator.prototype._parseDocument = function (obj, schema, response) {
           }
         }
       } else {
-        var err = this._validate(obj[key], schema[key], key)
+        err = this._validate(obj[key], schema[key], key)
 
         if (err) {
           response.success = false
@@ -160,7 +185,6 @@ Validator.prototype._validate = function (field, schema, key) {
     delete newSchema[key].limit
     message = 'The use of the `limit` property in field declarations is deprecated and was removed in v1.8.0\n\nPlease use the following instead:\n\n'
     message += JSON.stringify(newSchema, null, 2)
-    log.warn(message)
     throw new Error(message)
   }
 
@@ -172,7 +196,6 @@ Validator.prototype._validate = function (field, schema, key) {
     delete newSchema[key].validationRule
     message = 'The use of the `validationRule` property in field declarations is deprecated and was removed in v1.8.0\n\nPlease use the following instead:\n\n'
     message += JSON.stringify(newSchema, null, 2)
-    log.warn(message)
     throw new Error(message)
   }
 
@@ -180,12 +203,12 @@ Validator.prototype._validate = function (field, schema, key) {
     if (typeof field === 'object' && _.isArray(field)) {
       for (var i = field.length - 1; i >= 0; i--) {
         var val = field[i]
-        if (typeof val !== 'string' || !ObjectID.isValid(val)) {
+        if (typeof val !== 'string' || !validator.isMongoId(val)) {
           return val + ' is not a valid ObjectID'
         }
       }
     } else if (typeof field === 'string') {
-      if (!ObjectID.isValid(field)) return 'is not a valid ObjectID'
+      if (!validator.isMongoId(field)) return 'is not a valid ObjectID'
     } else {
       return 'is wrong type'
     }
@@ -197,8 +220,9 @@ Validator.prototype._validate = function (field, schema, key) {
     }
   }
 
-  // allow Mixed/ObjectID/Reference/DateTime fields through
-  if (_.contains(['Mixed', 'ObjectID', 'Reference', 'DateTime'], schema.type) === false) {
+  // allow Mixed/ObjectID/Reference/DateTime fields through,
+  // but check all other types
+  if (['Mixed', 'ObjectID', 'Reference', 'DateTime'].includes(schema.type) === false) {
     // check constructor of field against primitive types and check the type of field == the specified type
     // using constructor.name as array === object in typeof comparisons
     try {
@@ -207,9 +231,6 @@ Validator.prototype._validate = function (field, schema, key) {
       return schema.message || 'is wrong type'
     }
   }
-
-  // validation passes
-  return
 }
 
 module.exports = Validator

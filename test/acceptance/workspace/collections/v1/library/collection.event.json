@@ -17,9 +17,6 @@
 	"settings": {
     "cache": true,
     "authenticate": false,
-    "callback": null,
-    "defaultFilters": null,
-    "fieldLimiters": null,
     "count": 40,
     "sort": "datetime",
     "sortOrder": 1,

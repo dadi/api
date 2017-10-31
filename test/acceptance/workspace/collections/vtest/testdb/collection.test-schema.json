@@ -12,19 +12,23 @@
         "index": true,
         "edit": true
       }
+    },
+    "title": {
+      "type": "String",
+      "required": false,
+      "search": {
+        "weight": 2
+      }
     }
   },
   "settings": {
     "cache": true,
     "cacheTTL": 300,
     "authenticate": true,
-    "callback": null,
-    "defaultFilters": null,
-    "fieldLimiters": null,
     "count": 40,
     "sortOrder": 1,
     "storeRevisions": true,
     "revisionCollection": "testSchemaHistory",
-    "lastModifiedAt": 1484287098260
+    "lastModifiedAt": 1509360344054
   }
 }

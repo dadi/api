@@ -1,35 +1,66 @@
-var _ = require('underscore')
-var EventEmitter = require('events').EventEmitter
-var mongodb = require('mongodb')
-var MongoClient = mongodb.MongoClient
-var path = require('path')
-var util = require('util')
+'use strict'
 
-var config = require(path.join(__dirname, '/../../../config.js'))
+const path = require('path')
+const config = require(path.join(__dirname, '/../../../config'))
+const debug = require('debug')('api:connection')
+const EventEmitter = require('events').EventEmitter
+const log = require('@dadi/logger')
+const Recovery = require('recovery')
+const util = require('util')
 
-// instantiate once
-var mongoClient = new MongoClient()
-var _connections = []
+const STATE_DISCONNECTED = 0
+const STATE_CONNECTED = 1
+const STATE_CONNECTING = 2
+
+let connectionPool = []
+
+/**
+ * @typedef ConnectionOptions
+ * @type {object}
+ * @property {string} database - the name of the database file to use
+ * @property {object} collection - the name of the collection to use
+ * @property {array} indexes - an array of indexes to create
+ * @property {array} indexes.keys - an array of keys to create an index on
+ * @property {object} indexes.options - options for the index
+ */
 
 /**
  * Create `new Connection` with given options
  *
- * @param {Object} options
+ * @param {ConnectionOptions} options
  * @api public
  */
-var Connection = function (options) {
-  this.connectionOptions = getConnectionOptions(options)
-  this.connectionString = constructConnectionString(this.connectionOptions)
+const Connection = function (options, storeName) {
+  this.datastore = require('../datastore')(storeName)
 
-  // connection readyState
-  // 0 = disconnected
-  // 1 = connected
-  // 2 = connecting
-  // 3 = disconnecting
-  this.readyState = 0
+  this.recovery = new Recovery({
+    retries: config.get('databaseConnection.maxRetries')
+  })
+
+  // Setting up the reconnect method
+  this.recovery.on('reconnect', opts => {
+    this.connect(options).then(db => {
+      let connectionError
+
+      if (db.readyState !== 1) {
+        connectionError = new Error('Not connected')
+      }
+
+      this.recovery.reconnected(connectionError)
+    }).catch(err => {
+      this.recovery.reconnected(err)
+    })
+  })
+
+  this.recovery.on('reconnected', () => {
+    this.readyState = STATE_CONNECTED
+
+    this.emit('connect', this.db)
+  })
+
+  this.readyState = STATE_DISCONNECTED
 }
 
-// inherits from EventEmitter
 util.inherits(Connection, EventEmitter)
 
 /**
@@ -37,200 +68,101 @@ util.inherits(Connection, EventEmitter)
  *
  *
  */
-Connection.prototype.connect = function () {
-  this.readyState = 2
+Connection.prototype.connect = function (options) {
+  this.readyState = STATE_CONNECTING
 
-  var self = this
+  if (this.db) {
+    this.readyState = STATE_CONNECTED
 
-  if (self.db) {
-    self.readyState = 1
-    self.emit('connect', self.db)
-    return
+    return Promise.resolve(this.db)
   }
 
-  mongoClient.connect(this.connectionString, function (err, db) {
-    if (err) {
-      self.readyState = 0
-      return self.emit('error', err)
+  debug('connect %o', options)
+
+  return this.datastore.connect(options).then(() => {
+    this.readyState = STATE_CONNECTED
+    this.db = this.datastore
+
+    this.emit('connect', this.db)
+
+    debug('DB connected: %o', this.db)
+
+    this.setUpEventListeners(this.db)
+
+    return this.db
+  }).catch(err => {
+    log.error({module: 'connection'}, err)
+
+    if (!this.recovery.reconnecting()) {
+      this.recovery.reconnect()
     }
 
-    self.readyState = 1
-    self.db = db
+    const errorMessage = 'DB connection failed with connection string ' + this.datastore.connectionString
 
-    _connections[self.connectionOptions.database] = self
+    this.emit('disconnect', errorMessage)
 
-    if (!self.connectionOptions.username || !self.connectionOptions.password) {
-      return self.emit('connect', self.db)
-    }
-
-    self.db.authenticate(self.connectionOptions.username, self.connectionOptions.password, function (err) {
-      if (err) return self.emit('error', err)
-      self.emit('connect', self.db)
-    })
+    return Promise.reject(new Error(errorMessage))
   })
 }
 
-function getConnectionOptions (options) {
-  options = options || {}
+Connection.prototype.setUpEventListeners = function (db) {
+  db.on('DB_ERROR', err => {
+    log.error({module: 'connection'}, err)
 
-  var dbConfig = config.get('database')
+    this.emit('disconnect', 'DB connection failed with connection string ' + this.datastore.connectionString)
 
-  if (options.auth) {
-    // extend primary database config with the auth database options
-    options = _.extend({}, dbConfig, options)
-  } else {
-    if (options.database && dbConfig.enableCollectionDatabases) {
-      if (dbConfig[options.database]) {
-        options = _.extend(dbConfig, dbConfig[options.database], options)
-      } else {
-        options = _.extend(dbConfig, options)
-      }
-    } else {
-      // use primary database config
-      options = _.extend({}, dbConfig)
+    if (!this.recovery.reconnecting()) {
+      this.recovery.reconnect()
     }
-  }
+  })
 
-  var connectionOptions = options
+  db.on('DB_RECONNECTED', () => {
+    debug('connection re-established: %s', this.datastore.connectionString)
 
-  // required config fields
-  if (!(connectionOptions.hosts && connectionOptions.hosts.length)) {
-    throw new Error('`hosts` Array is required for Connection')
-  }
-
-  if (!connectionOptions.database) throw new Error('`database` String is required for Connection')
-
-  return connectionOptions
-}
-
-function constructConnectionString (options) {
-  // mongodb://[username:password@]host1[:port1][,host2[:port2],...[,hostN[:portN]]][/[database][?options]]
-  // mongodb://myprimary.com:27017,mysecondary.com:27017/MyDatabase/?replicaset=MySet
-
-  var connectionOptions = _.extend({
-    options: {}
-  }, options)
-
-  if (options.replicaSet && options.replicaSet !== 'false') {
-    connectionOptions.options.replicaSet = options.replicaSet
-  }
-
-  if (options.ssl) connectionOptions.options['ssl'] = options.ssl
-
-  if (options.maxPoolSize) connectionOptions.options['maxPoolSize'] = options.maxPoolSize
-
-  if (options.readPreference) connectionOptions.options['readPreference'] = options.readPreference
-
-  // test specific connection pool size
-  if (config.get('env') === 'test') {
-    connectionOptions.options['maxPoolSize'] = 1
-  }
-
-  return 'mongodb://' +
-    credentials(connectionOptions) +
-    connectionOptions.hosts.map(function (host, index) {
-      return host.host + ':' + (host.port || 27017)
-    }).join(',') +
-  '/' +
-  connectionOptions.database +
-  encodeOptions(connectionOptions.options)
-
-/*
-options = {
-    "hosts": [
-        {
-            "host": "localhost",
-            "port": 27020
-        },
-        {
-            "host": "localhost",
-            "port": 27021
-        }
-    ],
-    "username": "",
-    "password": "",
-    "database": "test",
-    "ssl": false,
-    "replicaSet": "test",
-    "secondary": {
-        "hosts": [
-            {
-                "host": "127.0.0.1",
-                "port": 27018
-            }
-        ],
-        "username": "",
-        "password": "",
-        "replicaSet": false,
-        "ssl": false
-    },
-    "testdb": {
-        "hosts": [
-            {
-                "host": "127.0.0.1",
-                "port": 27017
-            }
-        ],
-        "username": "",
-        "password": ""
-    }
-}
-*/
-}
-
-function encodeOptions (options) {
-  if (!options || _.isEmpty(options)) return ''
-
-  return '?' + Object.keys(options).map(function (key) {
-    return encodeURIComponent(key) + '=' + encodeURIComponent(options[key] || '')
-  }).join('&')
-}
-
-function credentials (options) {
-  if (!options.username || !options.password) return ''
-
-  return options.username + ':' + options.password + '@'
+    this.recovery.reconnected()
+  })
 }
 
 /**
  * Creates instances and connects them automatically
  *
- * @param {Object} options
- * @returns {Object} new `Connection`
+ * @param {ConnectionOptions} options
+ * @returns {object}
  * @api public
  */
-module.exports = function (options) {
-  var conn
-  var connectionOptions = getConnectionOptions(options)
+module.exports = function (options, collection, storeName) {
+  let conn
+
+  try {
+    const storeConfig = require(storeName).Config
+
+    if (storeConfig.get('connectWithCollection') === false) {
+      delete options.collection
+    }
+  } catch (err) {
+    log.error({module: 'connection'}, err)
+  }
+
+  const connectionKey = Object.keys(options).map(option => { return options[option] }).join(':')
 
   // if a connection exists for the specified database, return it
-  if (_connections[connectionOptions.database]) {
-    conn = _connections[connectionOptions.database]
-
-    if (conn.readyState === 2) {
-      setTimeout(function () {
-        conn.connect()
-      }, 5000)
-    }
-  } else {
-    // else create a new connection
-    conn = new Connection(options)
-
-    conn.on('error', function (err) {
-      console.log('Connection Error: ' + err + '. Using connection string "' + conn.connectionString + '"')
-    })
-
-    _connections[conn.connectionOptions.database] = conn
-    conn.connect()
+  if (connectionPool[connectionKey]) {
+    return connectionPool[connectionKey]
   }
+
+  conn = new Connection(options, storeName)
+
+  if (collection) {
+    options.collection = collection
+  }
+
+  connectionPool[connectionKey] = conn
+  conn.connect(options)
 
   return conn
 }
 
-// test helper
-module.exports.resetConnections = function () {
-  _connections = []
-}
-
-// export constructor
 module.exports.Connection = Connection
+module.exports.resetConnections = () => {
+  connectionPool = []
+}

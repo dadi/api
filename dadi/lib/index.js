@@ -6,6 +6,7 @@ var bodyParser = require('body-parser')
 var chokidar = require('chokidar')
 var cluster = require('cluster')
 var colors = require('colors') // eslint-disable-line
+var debug = require('debug')('api:server')
 var parsecomments = require('parse-comments')
 var formatError = require('@dadi/format-error')
 var fs = require('fs')
@@ -20,12 +21,12 @@ var _ = require('underscore')
 var api = require(path.join(__dirname, '/api'))
 var auth = require(path.join(__dirname, '/auth'))
 var cache = require(path.join(__dirname, '/cache'))
+var Connection = require(path.join(__dirname, '/model/connection'))
 var Controller = require(path.join(__dirname, '/controller'))
 var HooksController = require(path.join(__dirname, '/controller/hooks'))
 var MediaController = require(path.join(__dirname, '/controller/media'))
 var dadiStatus = require('@dadi/status')
 var help = require(path.join(__dirname, '/help'))
-var log = require('@dadi/logger')
 var Model = require(path.join(__dirname, '/model'))
 var mediaModel = require(path.join(__dirname, '/model/media'))
 var monitor = require(path.join(__dirname, '/monitor'))
@@ -34,6 +35,7 @@ var search = require(path.join(__dirname, '/search'))
 var config = require(path.join(__dirname, '/../../config'))
 var configPath = path.resolve(config.configPath())
 
+var log = require('@dadi/logger')
 log.init(config.get('logging'), {}, process.env.NODE_ENV)
 
 if (config.get('env') !== 'test') {
@@ -42,14 +44,13 @@ if (config.get('env') !== 'test') {
 }
 
 // add an optional id component to the path, that is formatted to be matched by the `path-to-regexp` module
-var idParam = ':id([a-fA-F0-9]{24})?'
+var idParam = ':id([a-fA-F0-9-]*)?'
+// TODO: allow configurable id param?
 
 var Server = function () {
   this.components = {}
   this.monitors = {}
   this.docs = {}
-
-  log.info({module: 'server'}, 'Server logging started.')
 }
 
 Server.prototype.run = function (done) {
@@ -116,10 +117,10 @@ Server.prototype.run = function (done) {
     }
   } else {
     // Single thread start
-    log.info('Starting DADI API in single thread mode.')
+    debug('Starting DADI API in single thread mode')
 
     this.start(function () {
-      log.info('Process ' + process.pid + ' is listening for incoming requests')
+      debug('Process ' + process.pid + ' is listening for incoming requests')
     })
   }
 
@@ -178,8 +179,29 @@ Server.prototype.start = function (done) {
     }
   })
 
-  app.use(bodyParser.json({ limit: '50mb' }))
-  app.use(bodyParser.urlencoded({ extended: false, limit: '50mb' }))
+  app.use(bodyParser.json({ limit: '50mb',
+    type: req => {
+      if (['text/plain', 'text/plain; charset=utf-8', 'application/json'].includes(req.headers['content-type'])) {
+        let parts = req.url.split('/').filter(Boolean)
+
+        // don't allow parsing into JSON if:
+        if (
+          parts[parts.length - 1] === 'config' && // if it's a config URL
+          (parts.length === 3 || // and it's an endpoint file being posted
+          parts.includes('hooks')) // or it's a hook file being posted
+        ) {
+          return false
+        }
+
+        // else allow parsing into JSON
+        return true
+      } else {
+        // not a content-type that supports JSON
+        return false
+      }
+    }
+  }))
+  app.use(bodyParser.urlencoded({ extended: true, limit: '50mb' }))
   app.use(bodyParser.text({ limit: '50mb' }))
 
   // update configuration based on domain
@@ -234,6 +256,9 @@ Server.prototype.stop = function (done) {
 
   this.server.close(function (err) {
     self.readyState = 0
+
+    Connection.resetConnections()
+
     done && done(err)
   })
 }
@@ -307,6 +332,17 @@ Server.prototype.loadApi = function (options) {
         message: 'Cache flush successful'
       })
     })
+  })
+
+  this.app.use('/hello', function (req, res, next) {
+    var method = req.method && req.method.toLowerCase()
+
+    if (method !== 'get') {
+      return next()
+    }
+
+    res.statusCode = 200
+    return res.end('Welcome to API')
   })
 
   this.app.use('/api/status', function (req, res, next) {
@@ -609,7 +645,6 @@ Server.prototype.loadHooksRoute = function (options) {
 
   this.app.use('/api/hooks', (req, res, next) => {
     const method = req.method && req.method.toLowerCase()
-
     if (method === 'get') {
       return hooksController[method](req, res, next)
     }
@@ -752,22 +787,22 @@ Server.prototype.loadMediaCollections = function () {
   })
 }
 
+/**
+ * With each schema we create a model.
+ * With each model we create a controller, that acts as a component of the REST api.
+ * We then add the component to the api by adding a route to the app and mapping
+ * req.method` to component methods
+ */
 Server.prototype.addCollectionResource = function (options) {
   var fields = help.getFieldsFromSchema(options.schema)
 
-  // With each schema we create a model.
-  // With each model we create a controller, that acts as a component of the REST api.
-  // We then add the component to the api by adding a route to the app and mapping
-  // `req.method` to component methods
+  var settings = _.extend(options.schema.settings, { database: options.database })
 
-  var enableCollectionDatabases = config.get('database.enableCollectionDatabases')
-  var database = enableCollectionDatabases ? options.database : null
-
-  var settings = options.schema.settings
+  // var settings = options.schema.settings
   var model
   var controller
 
-  model = Model(options.name, JSON.parse(fields), null, settings, database)
+  model = Model(options.name, JSON.parse(fields), null, settings, settings.database)
 
   if (settings.type && settings.type === 'mediaCollection') {
     controller = MediaController(model)
@@ -781,35 +816,32 @@ Server.prototype.addCollectionResource = function (options) {
     filepath: options.filepath
   })
 
-  var self = this
-
   // watch the schema's file and update it in place
-  this.addMonitor(options.filepath, function (filename) {
+  this.addMonitor(options.filepath, filename => {
     // invalidate schema file cache then reload
     delete require.cache[options.filepath]
+
     try {
       var schemaObj = require(options.filepath)
       var fields = help.getFieldsFromSchema(schemaObj)
-      // This leverages the fact that Javscript's Object keys are references
-      self.components[options.route].model.schema = JSON.parse(fields)
-      self.components[options.route].model.settings = schemaObj.settings
+
+      this.components[options.route].model.schema = JSON.parse(fields)
+      this.components[options.route].model.settings = schemaObj.settings
     } catch (e) {
       // if file was removed "un-use" this component
       if (e && e.code === 'ENOENT') {
-        self.removeMonitor(options.filepath)
-        self.removeComponent(options.route)
+        this.removeMonitor(options.filepath)
+        this.removeComponent(options.route)
       }
     }
   })
-
-  log.info({module: 'server'}, 'Collection loaded: ' + options.name)
 }
 
 Server.prototype.addMediaCollectionResource = function (options) {
-  var enableCollectionDatabases = config.get('database.enableCollectionDatabases')
-  var database = enableCollectionDatabases ? options.database : null
+  // var enableCollectionDatabases = config.get('database.enableCollectionDatabases')
+  // var database = enableCollectionDatabases ? options.database : null
 
-  var model = Model(options.name, options.schema.fields, null, options.schema.settings, database)
+  var model = Model(options.name, options.schema.fields, null, options.schema.settings, options.database)
   var controller = MediaController(model)
 
   this.addComponent({
@@ -817,7 +849,7 @@ Server.prototype.addMediaCollectionResource = function (options) {
     component: controller
   })
 
-  log.info({module: 'server'}, 'Media collection loaded: ' + options.name)
+  if (config.get('env') !== 'test') debug('collection loaded: %s', options.name)
 }
 
 Server.prototype.updateEndpoints = function (endpointsPath) {
@@ -880,7 +912,7 @@ Server.prototype.addEndpointResource = function (options) {
     }
   })
 
-  log.info({module: 'server'}, 'Endpoint loaded: ' + name)
+  if (config.get('env') !== 'test') debug('endpoint loaded: %s', name)
 }
 
 Server.prototype.updateHooks = function (hookPath) {
@@ -931,7 +963,7 @@ Server.prototype.addHook = function (options) {
     }
   })
 
-  log.info({module: 'server'}, 'Hook loaded: ' + name)
+  if (config.get('env') !== 'test') debug('hook loaded: %s', name)
 }
 
 Server.prototype.addComponent = function (options) {
@@ -1285,6 +1317,26 @@ function onListening (server) {
 
   if (env !== 'test') {
     console.log(startText)
+
+    let pkg
+    try {
+      pkg = require(path.join(process.cwd(), 'package.json'))
+
+      require('@dadi/et')({
+        package: {
+          name: pkg.name
+        },
+        productPackage: {
+          name: require('../../package.json').name,
+          version: require('../../package.json').version
+        },
+        customData: {},
+        event: 'boot',
+        environment: config.get('env')
+      })
+    } catch (err) {
+      console.log(err)
+    }
   }
 }
 

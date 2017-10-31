@@ -1,6 +1,7 @@
-var _ = require('underscore')
-var ObjectID = require('mongodb').ObjectID
+var _ = require('underscore-contrib')
+var moment = require('moment')
 var path = require('path')
+var validator = require('validator')
 
 var help = require(path.join(__dirname, '/../help'))
 
@@ -62,61 +63,29 @@ function sortQueriesByNestedLevel (queries) {
   return keys.reduce((r, k) => (r[k] = queries[k], r), {}) // eslint-disable-line
 }
 
-function convertApparentObjectIds (query, schema) {
-  _.each(Object.keys(query), function (key) {
-    if (/apiVersion/.test(key)) {
-      return
-    }
-
-    var fieldSettings = getSchemaOrParent(key, schema)
-    var type = fieldSettings ? fieldSettings.type : undefined
-
-    if (key === '$in') {
-      if (typeof query[key] === 'object' && _.isArray(query[key])) {
-        var arr = query[key]
-        _.each(arr, function (value, key) {
-          if (typeof value === 'string' && ObjectID.isValid(value) && value.match(/^[a-fA-F0-9]{24}$/)) {
-            arr[key] = ObjectID.createFromHexString(value)
-          }
-        })
-        query[key] = arr
-      }
-    } else if (typeof query[key] === 'object' && query[key] !== null) {
-      if (typeof type !== 'undefined' && /^Mixed|Object$/.test(type)) {
-        // ignore
-      } else if (typeof type === 'undefined' || type !== 'Reference') { // Don't convert query id when it's a Reference field
-        query[key] = convertApparentObjectIds(query[key], schema)
-      }
-    } else if (typeof query[key] === 'string' && !/^Mixed|Reference|Object$/.test(type) && ObjectID.isValid(query[key]) && query[key].match(/^[a-fA-F0-9]{24}$/)) {
-      query[key] = ObjectID.createFromHexString(query[key])
-    }
-  })
-
-  return query
-}
-
 function makeCaseInsensitive (obj, schema) {
   var newObj = _.clone(obj)
 
   _.each(Object.keys(obj), function (key) {
-    if (key === 'apiVersion' || key === '_id') {
+    if (key === '_apiVersion' || key === '_id') {
       return
     }
 
-    var fieldSettings
+    var fieldSettings = {}
+
     if (key[0] !== '$') {
       fieldSettings = getSchemaOrParent(key, schema)
     }
 
     if (typeof obj[key] === 'string') {
-      if (ObjectID.isValid(obj[key]) && obj[key].match(/^[a-fA-F0-9]{24}$/)) {
+      if (validator.isMongoId(obj[key]) || validator.isUUID(obj[key])) { // && obj[key].match(/^[a-fA-F0-9]{24}$/)) {
         newObj[key] = obj[key]
       } else if (key[0] === '$' && key === '$regex') {
         newObj[key] = new RegExp(obj[key], 'i')
       } else if (key[0] === '$' && key !== '$regex') {
         newObj[key] = obj[key]
       } else {
-        if (fieldSettings && fieldSettings.matchType) {
+        if (fieldSettings.matchType) {
           switch (fieldSettings.matchType) {
             case 'exact':
               newObj[key] = obj[key]
@@ -134,6 +103,8 @@ function makeCaseInsensitive (obj, schema) {
     } else if (typeof obj[key] === 'object' && obj[key] !== null) {
       if (key[0] === '$' && key !== '$regex') {
         newObj[key] = obj[key]
+      } else if (Object.prototype.toString.call(obj[key]) === '[object RegExp]') {
+        newObj[key] = obj[key]
       } else {
         newObj[key] = makeCaseInsensitive(obj[key], schema)
       }
@@ -143,6 +114,30 @@ function makeCaseInsensitive (obj, schema) {
   })
 
   return newObj
+}
+
+function convertDateTimeForSave (schema, obj) {
+  Object.keys(schema).filter(function (key) {
+    return schema[key].type === 'DateTime' && obj[key] !== null && !_.isUndefined(obj[key])
+  }).forEach(key => {
+    // console.log(key, schema[key], obj[key])
+    switch (schema[key].format) {
+      case 'unix':
+        obj[key] = moment(obj[key]).valueOf()
+        break
+      case 'iso':
+        obj[key] = new Date(moment(obj[key]).toISOString())
+        break
+      default:
+        if (schema[key].format) {
+          obj[key] = moment(obj[key], schema[key].format || ['MM-DD-YYYY', 'YYYY-MM-DD', 'DD MMMM YYYY', 'DD/MM/YYYY']).format()
+        } else {
+          obj[key] = new Date(moment(obj[key])).toISOString()
+        }
+    }
+  })
+
+  return obj
 }
 
 function processFilter (query, schema) {
@@ -169,30 +164,90 @@ function processFilter (query, schema) {
 
 function removeInternalFields (obj) {
   delete obj._id
-  delete obj.createdAt
-  delete obj.createdBy
-  delete obj.lastModifiedAt
-  delete obj.lastModifiedBy
-  delete obj.v
-  delete obj.apiVersion
+  delete obj._createdAt
+  delete obj._createdBy
+  delete obj._lastModifiedAt
+  delete obj._lastModifiedBy
+  delete obj._version
+  delete obj._apiVersion
 
-  if (obj.composed) {
-    _.each(Object.keys(obj.composed), (key) => {
-      obj[key] = obj.composed[key]
+  if (obj._composed) {
+    _.each(Object.keys(obj._composed), (key) => {
+      obj[key] = obj._composed[key]
     })
 
-    delete obj.composed
+    delete obj._composed
   }
 
   return obj
 }
 
+function removeEmptyArrayProperties (inputValue) {
+  if (Array.isArray(inputValue)) {
+    return inputValue.filter(value => value !== null && typeof value !== 'undefined')
+  } else {
+    return inputValue
+  }
+}
+
+function stringifyProperties (obj) {
+  _.each(Object.keys(obj), (key) => {
+    try {
+      // Remove invalid array properties
+      obj[key] = removeEmptyArrayProperties(obj[key])
+
+      if (typeof obj[key] === 'string' && validator.isMongoId(obj[key].toString())) {
+        obj[key] = obj[key].toString()
+      } else if (typeof obj[key] === 'object' && obj[key] !== null) {
+        var value = obj[key].toString()
+        // console.log('stringifyProperties', value, typeof value, obj[key], typeof obj[key])
+
+        if (Array.isArray(obj[key])) {
+          // if (obj[key].length === 0) {
+          //   delete obj[key]
+          // } else {
+          _.each(obj[key], (v, k) => {
+            if (v.toString().match(/^[a-fA-F0-9]{24}$/) && validator.isMongoId(v.toString())) {
+              obj[key][k] = v.toString()
+            } else {
+              obj[key][k] = stringifyProperties(obj[key][k])
+            }
+          })
+          // }
+        } else if (value.match(/^[a-fA-F0-9]{24}$/) && validator.isMongoId(value)) {
+          obj[key] = obj[key].toString()
+        }
+        // else if (_.isEmpty(obj[key])) {
+        //   delete obj[key]
+        // }
+      }
+    } catch (err) {
+      console.log('stringifyProperties error', err)
+    }
+  })
+
+  return obj
+}
+
+function snapshot (obj) {
+  if (Array.isArray(obj)) {
+    obj.forEach(document => {
+      document = stringifyProperties(document)
+    })
+  } else {
+    obj = stringifyProperties(obj)
+  }
+
+  return _.snapshot(obj)
+}
+
 module.exports = {
   containsNestedReferenceFields: containsNestedReferenceFields,
-  convertApparentObjectIds: convertApparentObjectIds,
   getSchemaOrParent: getSchemaOrParent,
   makeCaseInsensitive: makeCaseInsensitive,
+  convertDateTimeForSave: convertDateTimeForSave,
   processReferenceFieldQuery: processReferenceFieldQuery,
   processFilter: processFilter,
-  removeInternalFields: removeInternalFields
+  removeInternalFields: removeInternalFields,
+  snapshot: snapshot
 }

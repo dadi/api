@@ -55,7 +55,7 @@ module.exports = function (server) {
       var parts = collection.split('/')
       var database, name, mod
 
-      query.apiVersion = apiVersion
+      query._apiVersion = apiVersion
 
       if (_.isArray(parts) && parts.length > 1) {
         database = parts[0]

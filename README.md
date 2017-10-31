@@ -159,6 +159,25 @@ $ [sudo] service api restart
 ## Links
 * [API Documentation](http://docs.dadi.tech/api/)
 
+## Contributors
+
+DADI API is based on an original idea by Joseph Denne. It is developed and maintained by the engineering team at DADI ([https://dadi.tech](https://dadi.tech))
+
+* Adam K Dean <akd@dadi.co>
+* Arthur Mingard <am@dadi.co>
+* Dave Allen <da@dadi.co>
+* David Longworth <dl@dadi.co>
+* Derrick <dh@dadi.co>
+* Eduardo Boucas <eb@dadi.co>
+* Francesco Iannuzzelli <fi@dadi.co>
+* James Lambie <jl@dadi.co>
+* Joe Wagner
+* Joseph Denne <jd@dadi.co>
+* Kevin Sowers <kevin.sowers223@gmail.com>
+* Magnus Dahlstrand <magnus@mdahlstrand.com>
+* Robert Stanford <rs@dadi.co>
+* Viktor Fero <vf@dadi.co>
+
 ## Licence
 
 DADI is a data centric development and delivery stack, built specifically in support of the principles of API first and COPE.
@@ -193,3 +212,4 @@ A copy can be found in the file GPL.md distributed with
 these files.
 
 This copyright notice MUST APPEAR in all copies of the product!
+

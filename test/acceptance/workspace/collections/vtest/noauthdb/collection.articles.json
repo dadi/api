@@ -166,11 +166,8 @@
     "cacheTTL": 300,
     "authenticate": false,
     "compose": true,
-    "callback": null,
     "displayName": "Articles",
     "storeRevisions": true,
-    "defaultFilters": null,
-    "fieldLimiters": null,
     "type": "article",
     "publish": {
       "group": "Content",

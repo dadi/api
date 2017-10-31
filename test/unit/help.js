@@ -27,9 +27,6 @@ module.exports.getModelSettings = function () {
     cache: true,
     cacheTTL: 300,
     authenticate: true,
-    callback: null,
-    defaultFilters: null,
-    fieldLimiters: null,
     count: 40,
     sort: 'fieldName',
     sortOrder: 1,
@@ -44,27 +41,17 @@ module.exports.getModelSchemaWithMultipleFields = function () {
       'type': 'String',
       'label': 'Title',
       'comments': 'The title of the entry',
-      'placement': 'Main content',
       'validation': {},
       'required': false,
-      'message': '',
-      'display': {
-        'index': true,
-        'edit': true
-      }
+      'message': ''
     },
     'field2': {
       'type': 'String',
       'label': 'Title',
       'comments': 'The title of the entry',
-      'placement': 'Main content',
       'validation': {},
       'required': false,
-      'message': '',
-      'display': {
-        'index': true,
-        'edit': true
-      }
+      'message': ''
     }
   }
 }

@@ -1,197 +1,117 @@
 {
-    "fields": {
-        "fieldDateTime": {
-            "type": "DateTime",
-            "label": "Article date",
-            "comments": "The date of the article",
-            "placement": "Main content",
-            "validation": {},
-            "required": false,
-            "message": "",
-            "display": {
-                "index": true,
-                "edit": true
-            }
-        },
-        "fieldString": {
-            "type": "String",
-            "label": "Title",
-            "comments": "The title of the entry",
-            "placement": "Main content",
-            "validation": {},
-            "required": false,
-            "message": "",
-            "display": {
-                "index": true,
-                "edit": true
-            }
-        },
-        "fieldNumber": {
-            "type": "Number",
-            "label": "Title",
-            "comments": "The title of the entry",
-            "placement": "Main content",
-            "validation": {},
-            "required": false,
-            "message": "",
-            "display": {
-                "index": true,
-                "edit": true
-            }
-        },
-        "fieldBool": {
-            "type": "Boolean",
-            "label": "Title",
-            "comments": "The title of the entry",
-            "placement": "Main content",
-            "validation": {},
-            "required": false,
-            "message": "",
-            "display": {
-                "index": true,
-                "edit": true
-            }
-        },
-        "fieldObject": {
-            "type": "Object",
-            "label": "Title",
-            "comments": "The title of the entry",
-            "placement": "Main content",
-            "validation": {},
-            "required": false,
-            "message": "",
-            "display": {
-                "index": true,
-                "edit": true
-            }
-        },
-        "fieldDefault": {
-            "type": "String",
-            "label": "Title",
-            "comments": "The title of the entry",
-            "placement": "Main content",
-            "validation": {},
-            "required": false,
-            "default": "FOO!",
-            "message": "",
-            "display": {
-                "index": true,
-                "edit": true
-            }
-        },
-        "fieldDefaultBoolean": {
-            "type": "Boolean",
-            "label": "Title",
-            "comments": "The title of the entry",
-            "placement": "Main content",
-            "validation": {},
-            "required": true,
-            "default": true,
-            "message": "",
-            "display": {
-                "index": true,
-                "edit": true
-            }
-        },
-        "fieldMixed": {
-            "type": "Mixed",
-            "label": "Title",
-            "comments": "The title of the entry",
-            "placement": "Main content",
-            "validation": {},
-            "required": false,
-            "message": "",
-            "display": {
-                "index": true,
-                "edit": true
-            }
-        },
-        "foo": {
-            "type": "Mixed",
-            "label": "Foo",
-            "comments": "A sub field",
-            "placement": "Main content",
-            "validation": {},
-            "required": false,
-            "message": "",
-            "display": {
-                "index": true,
-                "edit": true
-            }
-        },
-        "fieldRegex": {
-            "type": "Mixed",
-            "label": "Title",
-            "comments": "The title of the entry",
-            "placement": "Main content",
-            "validation": {
-                "regex": {
-                  "pattern": "^q+$"
-                }
-            },
-            "required": false,
-            "message": "",
-            "display": {
-                "index": true,
-                "edit": true
-            }
-        },
-        "fieldValidationRegex": {
-            "type": "Mixed",
-            "label": "Title",
-            "comments": "The title of the entry",
-            "placement": "Main content",
-            "validation": {
-                "regex": {
-                  "pattern": "^q+$"
-                }
-            },
-            "required": false,
-            "message": "",
-            "display": {
-                "index": true,
-                "edit": true
-            }
-        },
-        "fieldMaxLength": {
-            "type": "Mixed",
-            "label": "Title",
-            "comments": "The title of the entry",
-            "placement": "Main content",
-            "validation": {
-              "maxLength": 4
-            },
-            "required": false,
-            "message": "",
-            "display": {
-                "index": true,
-                "edit": true
-            }
-        },
-        "fieldMinLength": {
-            "type": "Mixed",
-            "label": "Title",
-            "comments": "The title of the entry",
-            "placement": "Main content",
-            "validation": {
-              "minLength": 4
-            },
-            "required": false,
-            "message": "",
-            "display": {
-                "index": true,
-                "edit": true
-            }
-        }
+  "fields": {
+    "fieldDateTime": {
+      "type": "DateTime",
+      "label": "Article date",
+      "comments": "The date of the article",
+      "validation": {},
+      "required": false
     },
-    "settings": {
-        "cache": true,
-        "cacheTTL": 300,
-        "authenticate": true,
-        "callback": null,
-        "defaultFilters": null,
-        "fieldLimiters": null,
-        "count": 40,
-        "sortOrder": 1
+    "fieldString": {
+      "type": "String",
+      "label": "Title",
+      "comments": "The title of the entry",
+      "validation": {},
+      "required": false
+    },
+    "fieldNumber": {
+      "type": "Number",
+      "label": "Title",
+      "comments": "The title of the entry",
+      "validation": {},
+      "required": false
+    },
+    "fieldBool": {
+      "type": "Boolean",
+      "label": "Title",
+      "comments": "The title of the entry",
+      "validation": {},
+      "required": false
+    },
+    "fieldObject": {
+      "type": "Object",
+      "label": "Title",
+      "comments": "The title of the entry",
+      "validation": {},
+      "required": false
+    },
+    "fieldDefault": {
+      "type": "String",
+      "label": "Title",
+      "comments": "The title of the entry",
+      "validation": {},
+      "required": false,
+      "default": "FOO!"
+    },
+    "fieldDefaultBoolean": {
+      "type": "Boolean",
+      "label": "Title",
+      "comments": "The title of the entry",
+      "validation": {},
+      "required": true,
+      "default": true
+    },
+    "fieldMixed": {
+      "type": "Mixed",
+      "label": "Title",
+      "comments": "The title of the entry",
+      "validation": {},
+      "required": false
+    },
+    "foo": {
+      "type": "Mixed",
+      "label": "Foo",
+      "comments": "A sub field",
+      "validation": {},
+      "required": false
+    },
+    "fieldRegex": {
+      "type": "Mixed",
+      "label": "Title",
+      "comments": "The title of the entry",
+      "validation": {
+        "regex": {
+          "pattern": "^q+$"
+        }
+      },
+      "required": false
+    },
+    "fieldValidationRegex": {
+      "type": "Mixed",
+      "label": "Title",
+      "comments": "The title of the entry",
+      "validation": {
+        "regex": {
+          "pattern": "^q+$"
+        }
+      },
+      "required": false
+    },
+    "fieldMaxLength": {
+      "type": "Mixed",
+      "label": "Title",
+      "comments": "The title of the entry",
+      "validation": {
+        "maxLength": 4
+      },
+      "required": false,
+      "message": ""
+    },
+    "fieldMinLength": {
+      "type": "Mixed",
+      "label": "Title",
+      "comments": "The title of the entry",
+      "validation": {
+        "minLength": 4
+      },
+      "required": false
     }
+  },
+  "settings": {
+    "cache": true,
+    "cacheTTL": 300,
+    "authenticate": true,
+    "count": 40,
+    "sortOrder": 1
+  }
 }

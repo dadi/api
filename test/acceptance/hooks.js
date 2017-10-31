@@ -380,9 +380,6 @@ var publicationSchema = {
   "settings": {
     "cache": true,
     "compose": true,
-    "callback": null,
-    "defaultFilters": null,
-    "fieldLimiters": null,
     "cacheTTL": 300,
     "authenticate": true,
     "publish": {
@@ -586,11 +583,8 @@ var articleSchema = {
     "cacheTTL": 300,
     "authenticate": true,
     "compose": true,
-    "callback": null,
     "displayName": "Articles",
     "storeRevisions": true,
-    "defaultFilters": null,
-    "fieldLimiters": null,
     "type": "article",
     "publish": {
       "group": "Content",

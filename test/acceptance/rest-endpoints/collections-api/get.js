@@ -81,7 +81,7 @@ describe('Collections API – GET', function () {
         })
       })
     })
-    
+
   })
 
   after(function (done) {
@@ -103,7 +103,7 @@ describe('Collections API – GET', function () {
         if (err) return done(err)
 
         app.stop(() => {
-          cleanup(done)  
+          cleanup(done)
         })
       })
   })
@@ -176,9 +176,6 @@ describe('Collections API – GET', function () {
       settings: {
         cache: false,
         authenticate: true,
-        callback: null,
-        defaultFilters: null,
-        fieldLimiters: null,
         count: 40
       }
     }
@@ -194,9 +191,6 @@ describe('Collections API – GET', function () {
       settings: {
         cache: false,
         authenticate: true,
-        callback: null,
-        defaultFilters: null,
-        fieldLimiters: null,
         count: 40
       }
     }
@@ -313,9 +307,6 @@ describe('Collections API – GET', function () {
       settings: {
         cache: false,
         authenticate: true,
-        callback: null,
-        defaultFilters: null,
-        fieldLimiters: null,
         count: 40
       }
     }
@@ -331,9 +322,6 @@ describe('Collections API – GET', function () {
       settings: {
         cache: false,
         authenticate: true,
-        callback: null,
-        defaultFilters: null,
-        fieldLimiters: null,
         count: 40
       }
     }

@@ -45,7 +45,7 @@ The quickest way to get started with *API* is to use [DADI CLI](https://github.c
 npm install @dadi/cli -g
 ```
 
-And to install *API* on a directory called `my-new-api`:
+And to install *API* in a directory called `my-new-api`:
 
 ```bash
 dadi api new my-new-api

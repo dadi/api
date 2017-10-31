@@ -39,7 +39,6 @@ Composer.prototype.compose = function (obj, callback) {
 
   for (var i = 0; i < composable.length; i++) {
     var field = composable[i]
-    var ids = _.uniq(_.compact(_.pluck(composeCopy, field)))
     var ids = _.compact(_.pluck(composeCopy, field))
 
     if (Array.isArray(ids[0])) {

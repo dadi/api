@@ -39,26 +39,16 @@ Ensure you have the required dependencies installed. See the first sections in t
 
 ### Install API
 
-All DADI platform microservices are available from [NPM](https://www.npmjs.com/). To add *API* to your project as a dependency:
+The quickest way to get started with *API* is to use [DADI CLI](https://github.com/dadi/cli). To install it for the first time, run:
 
 ```bash
-$ cd my-app
-$ npm install --save @dadi/api
+npm install @dadi/cli -g
 ```
 
-### Add an entry point
+And to install *API* in a directory called `my-new-api`:
 
-You'll need an entry point for your project. We'll create a file called `index.js` and later we will start the application with `node index.js`. Add the following to the new file:
-
-```js
-/**
- *  index.js
- */
-var app = require('@dadi/api')
-
-app.start(function() {
-  console.log('API Started')
-})
+```bash
+dadi api new my-new-api
 ```
 
 ### Configuration
@@ -85,7 +75,7 @@ The bare minimum required for running the API is a `server` block. With only a `
 API can be started from the command line simply by issuing the following command:
 
 ```bash
-$ node index.js
+$ npm start
 ```
 
 #### Test the connection
@@ -122,15 +112,14 @@ User accounts provide an authentication layer for API. Each user account has a *
 
 #### Creating the first user
 
-The NPM package contains an interactive "Client Record Generator" to help you create user accounts. Run the following command to start the tool:
+[CLI](https://github.com/dadi/api) contains an interactive "Client Record Generator" to help you create user accounts. Run the following command in the directory where you installed *API*:
 
 ```bash
-$ npm explore @dadi/api -- npm run create-client
+cd my-new-api
+dadi api clients:add
 ```
 
-You will be asked you a series of questions and API will insert the new client record into the database. The default database name is `api`, and the default collection for user accounts is `clientStore`.
-
-If you need to create user accounts in other environments (for example following a deployment to a live server), add the environment variable to the command:
+If you need to create user accounts in other environments (for example following a deployment to a live server), add the environment to the following command:
 
 ```bash
 $ NODE_ENV=production npm explore @dadi/api -- npm run create-client
@@ -168,7 +157,7 @@ DADI API is based on an original idea by Joseph Denne. It is developed and maint
 * Dave Allen <da@dadi.co>
 * David Longworth <dl@dadi.co>
 * Derrick <dh@dadi.co>
-* Eduardo Boucas <eb@dadi.co>
+* Eduardo Bouças <eb@dadi.co>
 * Francesco Iannuzzelli <fi@dadi.co>
 * James Lambie <jl@dadi.co>
 * Joe Wagner

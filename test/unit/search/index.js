@@ -1,3 +1,4 @@
+const acceptanceHelper = require(__dirname + '/../../acceptance/help')
 const config = require(__dirname + '/../../../config')
 const help = require(__dirname + '/../help')
 const Model = require(__dirname + '/../../../dadi/lib/model')
@@ -256,7 +257,13 @@ describe('Search', () => {
     })
   })
 
-  describe.skip('batchIndex', function () {
+  describe('batchIndex', function () {
+    beforeEach((done) => {
+      acceptanceHelper.dropDatabase('testdb', err => {
+        done()
+      })
+    })
+
     it('should call runBatchIndex repeatedly when there are more results', done => {
       let schema = help.getSearchModelSchema()
       let mod = Model('testSearchModel', schema, null, { database: 'testdb' })
@@ -291,7 +298,7 @@ describe('Search', () => {
       })
 
       mod.create(docs, {}, obj => {
-        indexable.batchIndex()
+        indexable.batchIndex(1, 1)
 
         setTimeout(() => {
           spy.restore()
@@ -314,17 +321,3 @@ describe('Search', () => {
     })
   })
 })
-
-// TODO: test the following
-// find
-// getWords
-// getInstancesOfWords
-// index
-// indexDocument
-// analyseDocumentWords
-// clearAndInsertWordInstances
-// insertWordInstances
-// insert
-// batchIndex
-// runBatchIndex
-// canUse

@@ -443,7 +443,7 @@ Search.prototype.batchIndex = function (page = 1, limit = 1000) {
   if (!Object.keys(this.indexableFields).length) return
 
   const skip = (page - 1) * limit
-  console.log(`Start indexing page ${page} (${limit} per page)`)
+  console.log(`Indexing page ${page} (${limit} per page)`)
 
   const fields = Object.assign({}, ...Object.keys(this.indexableFields).map(key => {
     return {[key]: 1}
@@ -478,18 +478,18 @@ Search.prototype.runBatchIndex = function (options) {
     this.model.schema,
     options
   ).then(results => {
-    if (results.results && results.results.length > 0) {
-      this.index(results.results).then(response => {
-        console.log(`Indexed page ${options.page}/${results.metadata.totalPages}`)
+    if (results.results && results.results.length) {
+      console.log(`Indexed ${results.results.length} ${results.results.length === 1 ? 'record' : 'records'} for ${this.model.name}`)
 
-        if (options.page * options.limit < results.metadata.totalCount) {
-          return this.batchIndex(options.page + 1, options.limit)
-        } else {
-          console.log(`Indexed ${results.results.length} records for ${this.model.name}`)
-        }
-      })
-    } else {
-      console.log(`Indexed ${results.results.length} records for ${this.model.name}`)
+      if (results.results.length > 0) {
+        this.index(results.results).then(response => {
+          console.log(`Indexed page ${options.page}/${results.metadata.totalPages}`)
+
+          if (options.page * options.limit < results.metadata.totalCount) {
+            return this.batchIndex(options.page + 1, options.limit)
+          }
+        })
+      }
     }
   })
 }

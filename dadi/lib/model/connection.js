@@ -134,13 +134,13 @@ module.exports = function (options, collection, storeName) {
   let conn
 
   try {
-    const storeConfig = require(storeName).Config
+    const storeSettings = require(storeName).settings
 
-    if (storeConfig.get('connectWithCollection') === false) {
+    if (storeSettings && storeSettings.connectWithCollection === false) {
       delete options.collection
     }
   } catch (err) {
-    log.error({module: 'connection'}, err)
+    log.warn({module: 'connection'}, err)
   }
 
   const connectionKey = Object.keys(options).map(option => { return options[option] }).join(':')

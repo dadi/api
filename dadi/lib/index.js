@@ -1303,28 +1303,12 @@ function buildVerbMethod (verb) {
 }
 
 function onListening (server) {
-  var env = config.get('env')
-
-  var address = server.address()
-
-  var startText = '\n\n'
-  startText += '  ----------------------------\n'
-  startText += '  ' + config.get('app.name').green + '\n'
-  startText += "  Started 'DADI API'\n"
-  startText += '  ----------------------------\n'
-  startText += '  Server:      '.green + address.address + ':' + address.port + '\n'
-  startText += '  Version:     '.green + version + '\n'
-  startText += '  Node.JS:     '.green + nodeVersion + '\n'
-  startText += '  Environment: '.green + env + '\n'
-  startText += '  ----------------------------\n'
-
-  startText += '\n\n  Copyright ' + String.fromCharCode(169) + ' 2015-' + new Date().getFullYear() + ' DADI+ Limited (https://dadi.tech)'.white + '\n'
+  const address = server.address()
+  const env = config.get('env')
 
   if (env !== 'test') {
-    // console.log(startText)
-
     dadiBoot.started({
-      server: `${config.get('server.protocol')}://${config.get('server.host')}:${config.get('server.port')}`,
+      server: `${config.get('server.protocol')}://${address.address}:${address.port}`,
       header: {
         app: config.get('app.name')
       },

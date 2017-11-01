@@ -16,6 +16,7 @@
     ]
   },
   "dependencies": {
+    "@dadi/boot": "^1.0.0",
     "@dadi/cache": "1.5.x",
     "@dadi/et": "^2.0.0",
     "@dadi/format-error": "^1.0.0",

@@ -25,6 +25,7 @@ var Connection = require(path.join(__dirname, '/model/connection'))
 var Controller = require(path.join(__dirname, '/controller'))
 var HooksController = require(path.join(__dirname, '/controller/hooks'))
 var MediaController = require(path.join(__dirname, '/controller/media'))
+var dadiBoot = require('@dadi/boot')
 var dadiStatus = require('@dadi/status')
 var help = require(path.join(__dirname, '/help'))
 var Model = require(path.join(__dirname, '/model'))
@@ -110,6 +111,8 @@ Server.prototype.run = function (done) {
           if (message.type === 'shutdown') {
             log.info('Process ' + process.pid + ' is shutting down...')
 
+            dadiBoot.stopped()
+
             process.exit(0)
           }
         })
@@ -152,6 +155,8 @@ Server.prototype.run = function (done) {
 Server.prototype.start = function (done) {
   var self = this
   this.readyState = 2
+
+  dadiBoot.start(require('../../package.json'))
 
   var defaultPaths = {
     collections: path.join(__dirname, '/../../workspace/collections'),
@@ -1316,7 +1321,21 @@ function onListening (server) {
   startText += '\n\n  Copyright ' + String.fromCharCode(169) + ' 2015-' + new Date().getFullYear() + ' DADI+ Limited (https://dadi.tech)'.white + '\n'
 
   if (env !== 'test') {
-    console.log(startText)
+    // console.log(startText)
+
+    dadiBoot.started({
+      server: `${config.get('server.protocol')}://${config.get('server.host')}:${config.get('server.port')}`,
+      header: {
+        app: config.get('app.name')
+      },
+      body: {
+        'Protocol': config.get('server.protocol'),
+        'Version': version,
+        'Node.js': nodeVersion,
+        'Environment': env
+      },
+      footer: {}
+    })
 
     let pkg
     try {

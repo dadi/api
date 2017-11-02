@@ -50,6 +50,7 @@ The maximum number of connection retries can be configured in the main configura
 
 ### Changed
 
+* New startup message displayed, with links to documentation
 * [#141](https://github.com/dadi/api/issues/141): the internal fields will be prefixed with a special character (`_` by default) which is configurable using the configuration property `internalFieldsPrefix`
 * [#180](https://github.com/dadi/api/issues/180): document properties with `null` values are not returned as part of the response
 * [#251](https://github.com/dadi/api/issues/251): added a new `/hello` endpoint which returns HTTP 200 and a "Welcome to API" message

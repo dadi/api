@@ -25,6 +25,7 @@ var Connection = require(path.join(__dirname, '/model/connection'))
 var Controller = require(path.join(__dirname, '/controller'))
 var HooksController = require(path.join(__dirname, '/controller/hooks'))
 var MediaController = require(path.join(__dirname, '/controller/media'))
+var dadiBoot = require('@dadi/boot')
 var dadiStatus = require('@dadi/status')
 var help = require(path.join(__dirname, '/help'))
 var Model = require(path.join(__dirname, '/model'))
@@ -110,6 +111,8 @@ Server.prototype.run = function (done) {
           if (message.type === 'shutdown') {
             log.info('Process ' + process.pid + ' is shutting down...')
 
+            dadiBoot.stopped()
+
             process.exit(0)
           }
         })
@@ -152,6 +155,8 @@ Server.prototype.run = function (done) {
 Server.prototype.start = function (done) {
   var self = this
   this.readyState = 2
+
+  dadiBoot.start(require('../../package.json'))
 
   var defaultPaths = {
     collections: path.join(__dirname, '/../../workspace/collections'),
@@ -1298,25 +1303,23 @@ function buildVerbMethod (verb) {
 }
 
 function onListening (server) {
-  var env = config.get('env')
-
-  var address = server.address()
-
-  var startText = '\n\n'
-  startText += '  ----------------------------\n'
-  startText += '  ' + config.get('app.name').green + '\n'
-  startText += "  Started 'DADI API'\n"
-  startText += '  ----------------------------\n'
-  startText += '  Server:      '.green + address.address + ':' + address.port + '\n'
-  startText += '  Version:     '.green + version + '\n'
-  startText += '  Node.JS:     '.green + nodeVersion + '\n'
-  startText += '  Environment: '.green + env + '\n'
-  startText += '  ----------------------------\n'
-
-  startText += '\n\n  Copyright ' + String.fromCharCode(169) + ' 2015-' + new Date().getFullYear() + ' DADI+ Limited (https://dadi.tech)'.white + '\n'
+  const address = server.address()
+  const env = config.get('env')
 
   if (env !== 'test') {
-    console.log(startText)
+    dadiBoot.started({
+      server: `${config.get('server.protocol')}://${address.address}:${address.port}`,
+      header: {
+        app: config.get('app.name')
+      },
+      body: {
+        'Protocol': config.get('server.protocol'),
+        'Version': version,
+        'Node.js': nodeVersion,
+        'Environment': env
+      },
+      footer: {}
+    })
 
     let pkg
     try {

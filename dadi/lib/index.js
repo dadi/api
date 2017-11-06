@@ -111,7 +111,9 @@ Server.prototype.run = function (done) {
           if (message.type === 'shutdown') {
             log.info('Process ' + process.pid + ' is shutting down...')
 
-            dadiBoot.stopped()
+            if (config.get('env') !== 'test') {
+              dadiBoot.stopped()
+            }
 
             process.exit(0)
           }
@@ -156,7 +158,9 @@ Server.prototype.start = function (done) {
   var self = this
   this.readyState = 2
 
-  dadiBoot.start(require('../../package.json'))
+  if (config.get('env') !== 'test') {
+    dadiBoot.start(require('../../package.json'))
+  }
 
   var defaultPaths = {
     collections: path.join(__dirname, '/../../workspace/collections'),

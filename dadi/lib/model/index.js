@@ -61,15 +61,32 @@ const Model = function (name, schema, conn, settings) {
     }
   }
 
+  // Setup history context unless requested not to
+  this.storeRevisions = this.settings.storeRevisions !== false
+
+  if (this.storeRevisions) {
+    this.history = new History(this)
+
+    // Define the name of the revision collection for this model.
+    // If no value is specified, use the name of the model with
+    // the 'History' suffix.
+    this.revisionCollection = this.settings.revisionCollection
+      ? this.settings.revisionCollection
+      : this.name + 'History'
+  }
+
   // create connection for this model
   if (conn) {
     this.connection = conn
   } else {
+    const connectionOptions = {
+      collection: this.name,
+      database: settings.database,
+      revisionCollection: this.revisionCollection
+    }
+
     this.connection = Connection(
-      {
-        database: settings.database,
-        collection: this.name
-      },
+      connectionOptions,
       this.name,
       config.get('datastore')
     )
@@ -89,16 +106,6 @@ const Model = function (name, schema, conn, settings) {
   this.validate = new Validator(this)
 
   this.composer = new Composer(this)
-
-  // setup history context unless requested not to
-  this.storeRevisions = (this.settings.storeRevisions !== false)
-
-  if (this.storeRevisions) {
-    this.history = new History(this)
-    // attach revision collection for this model.
-    // if no value is specified, use 'History' suffix by default
-    this.revisionCollection = (this.settings.revisionCollection ? this.settings.revisionCollection : this.name + 'History')
-  }
 
   if (this.settings.index) {
     this.createIndex(() => {})

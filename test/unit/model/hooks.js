@@ -286,7 +286,7 @@ describe('Hook', function () {
   })
 
   describe('`beforeCreate` hook', function () {
-    beforeEach(help.cleanUpDB)
+    // beforeEach(help.cleanUpDB)
 
     it('should receive collection name and schema', function (done) {
       var schema = help.getModelSchema()

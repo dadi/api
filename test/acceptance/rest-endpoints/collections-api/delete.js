@@ -24,7 +24,7 @@ describe('Collections API – DELETE', function () {
   })
 
   beforeEach(function (done) {
-    help.dropDatabase('testdb', function (err) {
+    help.dropDatabase('testdb', null, function (err) {
       if (err) return done(err)
 
       help.getBearerToken(function (err, token) {

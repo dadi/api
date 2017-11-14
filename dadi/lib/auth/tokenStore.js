@@ -54,7 +54,7 @@ TokenStore.prototype.connect = function () {
       database: this.databaseName
     }
 
-    this.connection = Connection(dbOptions, null, config.get('auth.datastore'))
+    this.connection = Connection(dbOptions, this.collection, config.get('auth.datastore'))
     this.connection.once('connect', database => {
       if (this.recoveringFromDBDisconnect) {
         this.recoveringFromDBDisconnect = false

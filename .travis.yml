@@ -22,5 +22,4 @@ addons:
     packages:
       - g++-4.8
 services:
-  - mongodb
   - redis-server

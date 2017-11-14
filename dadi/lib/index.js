@@ -266,9 +266,11 @@ Server.prototype.stop = function (done) {
   this.server.close(function (err) {
     self.readyState = 0
 
-    Connection.resetConnections()
-
-    done && done(err)
+    Connection.resetConnections().then(() => {
+      if (typeof done === 'function') {
+        done(err)
+      }
+    })
   })
 }
 

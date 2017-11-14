@@ -13,13 +13,8 @@ function loadConfig(done) {
   try {
     var testConfig = fs.readFileSync(testConfigPath, { encoding: 'utf-8'});
     var conf = JSON.parse(testConfig)
-    console.log('\n  Running test suite using %s'.green, conf.datastore)
 
-    if (conf.datastore === '@dadi/api-filestore') {
-      exec('rm -rf test/workspace/db', (err, stdout, stderr) => {
-
-      })
-    }
+    console.log('\n  Running test suite using the in-memory test connector'.green)
 
     return done(conf)
   }

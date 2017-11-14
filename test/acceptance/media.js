@@ -20,13 +20,14 @@ describe('Media', function () {
   describe('Default configuration', function () {
   beforeEach((done) => {
     app.start(() => {
-      help.dropDatabase('testdb', (err) => {
+      help.dropDatabase('testdb', null, (err) => {
         if (err) return done(err)
 
         help.getBearerTokenWithAccessType('admin', (err, token) => {
           if (err) return done(err)
+
           bearerToken = token
-                done()
+          done()
         })
       })
     })
@@ -34,9 +35,7 @@ describe('Media', function () {
 
   afterEach((done) => {
     app.stop(() => {
-      help.removeTestClients(() => {
-          return done()
-      })
+      help.removeTestClients(done)
     })
   })
 
@@ -413,7 +412,7 @@ describe('Media', function () {
   describe('Standard collection media', function () {
     beforeEach((done) => {
       app.start(() => {
-        help.dropDatabase('testdb', (err) => {
+        help.dropDatabase('testdb', null, (err) => {
           if (err) return done(err)
 
           help.getBearerTokenWithAccessType('admin', (err, token) => {

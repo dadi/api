@@ -3,82 +3,68 @@ const config = require(__dirname + '/../../config')
 const EventEmitter = require('events').EventEmitter
 const fs = require('fs')
 const help = require(__dirname + '/help')
-const mockConnector = require(__dirname + '/workspace/data-connectors/mock-connector1')
 const path = require('path')
 const request = require('supertest')
 const should = require('should')
+const testConnector = require(__dirname + '/../test-connector')
 
 const client = request(
   'http://' + config.get('server.host') + ':' + config.get('server.port')
 )
-const mockResults = {
-  results: [
-    { _id: '59d4b35cb2cf37d706b1d706', title: 'Father' },
-    { _id: '59d4b35cb2cf37d706b1d707', title: 'Dad' },
-    { _id: '59d4b35cb2cf37d706b1d708', title: 'Daddy' }
-  ],
-  metadata: {
-    limit: 20,
-    page: 1,
-    fields: {},
-    offset: 0,
-    totalCount: 0,
-    totalPages: 0
+
+const mockDocument = {
+  title: 'Foo was arrested at a bar',
+  published: {
+    date: 123456
   }
 }
 
 describe('Database connection', () => {
-  let backupDatastore = config.get('datastore')
-
-  before(done => {
-    const mockConnectorPath = path.resolve(
-      __dirname + '/workspace/data-connectors/mock-connector1'
-    )
-
-    config.set('datastore', mockConnectorPath)
-
-    done()
-  })
-
-  after(done => {
-    config.set('datastore', backupDatastore)
-
-    done()
-  })
-
   describe('when available at app boot', function () {
     this.timeout(6000)
 
     let bearerToken
     let datastore
+    let savedDocument
 
     beforeEach(done => {
-      mockConnector._mockFailedConnection(false)
+      testConnector._mock.setFailedConnection(false)
 
       app.start(err => {
         if (err) return done(err)
 
-        help.getBearerTokenWithAccessType('admin', (err, token) => {
-          if (err) return done(err)
+        help.dropDatabase('noauthdb', null, err => {
+          help.getBearerTokenWithAccessType('admin', (err, token) => {
+            if (err) return done(err)
 
-          bearerToken = token
+            bearerToken = token
 
-          datastore = app.components['/vtest/noauthdb/articles/:id([a-fA-F0-9-]*)?'].model.connection.datastore
+            datastore = app.components['/vtest/noauthdb/articles/:id([a-fA-F0-9-]*)?'].model.connection.datastore
 
-          done()
+            client
+              .post('/vtest/noauthdb/articles')
+              .send(mockDocument)
+              .set('content-type', 'application/json')
+              .set('Authorization', 'Bearer ' + bearerToken)
+              .expect(200)
+              .expect('content-type', 'application/json')
+              .end(function (err, res) {
+                if (err) return done(err)
+
+                savedDocument = res.body.results[0]
+
+                done()
+              })
+          })
         })
       })
     })
 
     afterEach(done => {
-      app.stop(() => {
-        done()
-      })
+      app.stop(done)
     })
 
     it('should return 200 for GET requests whilst the connection is available', done => {
-      mockConnector._mockSetResponse(mockResults)
-
       client
         .get('/vtest/noauthdb/articles?cache=false')
         .set('content-type', 'application/json')
@@ -87,7 +73,8 @@ describe('Database connection', () => {
           if (err) return done(err)
 
           res.statusCode.should.eql(200)
-          res.body.should.eql(mockResults)
+          res.body.results.length.should.eql(1)
+          res.body.results[0].title.should.eql(mockDocument.title)
           datastore._spies.index.calledOnce.should.eql(true)
 
           setTimeout(() => {
@@ -99,7 +86,8 @@ describe('Database connection', () => {
                 if (err) return done(err)
 
                 res.statusCode.should.eql(200)
-                res.body.should.eql(mockResults)
+                res.body.results.length.should.eql(1)
+                res.body.results[0].title.should.eql(mockDocument.title)
 
                 done()
               })
@@ -108,8 +96,6 @@ describe('Database connection', () => {
     })
 
     it('should return 503 for GET requests when the database becomes unavailable', done => {
-      mockConnector._mockSetResponse(mockResults)
-
       client
         .get('/vtest/noauthdb/articles?cache=false')
         .set('content-type', 'application/json')
@@ -118,10 +104,12 @@ describe('Database connection', () => {
           if (err) return done(err)
 
           res.statusCode.should.eql(200)
-          res.body.should.eql(mockResults)
+          res.body.results.length.should.eql(1)
+          res.body.results[0].title.should.eql(mockDocument.title)
           datastore._spies.index.calledOnce.should.eql(true)
 
-          datastore._mockDisconnect()
+          testConnector._mock.disconnect()
+
           client
             .get('/vtest/noauthdb/articles?cache=false')
             .set('content-type', 'application/json')
@@ -140,12 +128,10 @@ describe('Database connection', () => {
     })
 
     it('should return 200 for PUT requests whilst the connection is available', done => {
-      mockConnector._mockSetResponse(mockResults)
-
       client
-        .put('/vtest/noauthdb/articles/59d4b35cb2cf37d706b1d706?cache=false')
+        .put('/vtest/noauthdb/articles/' + savedDocument._id + '?cache=false')
         .send({
-          title: 'Dadi'
+          title: 'Some other title'
         })
         .set('content-type', 'application/json')
         .set('Authorization', 'Bearer ' + bearerToken)
@@ -153,14 +139,14 @@ describe('Database connection', () => {
           if (err) return done(err)
 
           res.statusCode.should.eql(200)
-          res.body.should.eql(mockResults)
+          res.body.results[0].title.should.eql('Some other title')
           datastore._spies.index.calledOnce.should.eql(true)
 
           setTimeout(() => {
             client
-              .put('/vtest/noauthdb/articles/59d4b35cb2cf37d706b1d706?cache=false')
+              .put('/vtest/noauthdb/articles/' + savedDocument._id + '?cache=false')
               .send({
-                title: 'Dadi'
+                title: 'Yet another title'
               })
               .set('content-type', 'application/json')
               .set('Authorization', 'Bearer ' + bearerToken)
@@ -168,7 +154,7 @@ describe('Database connection', () => {
                 if (err) return done(err)
 
                 res.statusCode.should.eql(200)
-                res.body.should.eql(mockResults)
+                res.body.results[0].title.should.eql('Yet another title')
 
                 done()
               })
@@ -177,12 +163,10 @@ describe('Database connection', () => {
     })
 
     it('should return 503 for PUT requests when the database becomes unavailable', done => {
-      mockConnector._mockSetResponse(mockResults)
-
       client
-        .put('/vtest/noauthdb/articles/59d4b35cb2cf37d706b1d706?cache=false')
+        .put('/vtest/noauthdb/articles/' + savedDocument._id + '?cache=false')
         .send({
-          title: 'Dadi'
+          title: 'Some other title'
         })
         .set('content-type', 'application/json')
         .set('Authorization', 'Bearer ' + bearerToken)
@@ -190,15 +174,15 @@ describe('Database connection', () => {
           if (err) return done(err)
 
           res.statusCode.should.eql(200)
-          res.body.should.eql(mockResults)
+          res.body.results[0].title.should.eql('Some other title')
           datastore._spies.index.calledOnce.should.eql(true)
 
-          datastore._mockDisconnect()
+          testConnector._mock.disconnect()
 
           client
             .put('/vtest/noauthdb/articles/59d4b35cb2cf37d706b1d706?cache=false')
             .send({
-              title: 'Dadi'
+              title: 'Yet another title'
             })
             .set('content-type', 'application/json')
             .set('Authorization', 'Bearer ' + bearerToken)
@@ -216,8 +200,6 @@ describe('Database connection', () => {
     })
 
     it('should return 200 for POST requests whilst the connection is available', done => {
-      mockConnector._mockSetResponse(mockResults)
-
       client
         .post('/vtest/noauthdb/articles?cache=false')
         .send({
@@ -261,8 +243,6 @@ describe('Database connection', () => {
     })
 
     it('should return 503 for POST requests when the database becomes unavailable', done => {
-      mockConnector._mockSetResponse(mockResults)
-
       client
         .post('/vtest/noauthdb/articles?cache=false')
         .send({
@@ -281,7 +261,7 @@ describe('Database connection', () => {
           res.body.results[0].published.state.should.eql(1)
           datastore._spies.index.calledOnce.should.eql(true)
 
-          datastore._mockDisconnect()
+          testConnector._mock.disconnect()
 
           setTimeout(() => {
             client
@@ -309,41 +289,50 @@ describe('Database connection', () => {
     })
 
     it('should return 204 for DELETE requests whilst the connection is available', done => {
-      mockConnector._mockSetResponse(mockResults)
-
       client
-        .delete('/vtest/noauthdb/articles/59d4b35cb2cf37d706b1d706?cache=false')
+        .post('/vtest/noauthdb/articles')
+        .send(mockDocument)
         .set('content-type', 'application/json')
         .set('Authorization', 'Bearer ' + bearerToken)
-        .end((err, res) => {
+        .expect(200)
+        .expect('content-type', 'application/json')
+        .end(function (err, res) {
           if (err) return done(err)
 
-          res.statusCode.should.eql(204)
-          res.body.should.eql('')
-          datastore._spies.index.calledOnce.should.eql(true)
+          const savedDocument2 = res.body.results[0]
+        
+          client
+            .delete('/vtest/noauthdb/articles/' + savedDocument._id + '?cache=false')
+            .set('content-type', 'application/json')
+            .set('Authorization', 'Bearer ' + bearerToken)
+            .end((err, res) => {
+              if (err) return done(err)
 
-          setTimeout(() => {
-            client
-              .delete('/vtest/noauthdb/articles/59d4b35cb2cf37d706b1d707?cache=false')
-              .set('content-type', 'application/json')
-              .set('Authorization', 'Bearer ' + bearerToken)
-              .end((err, res) => {
-                if (err) return done(err)
+              res.statusCode.should.eql(204)
+              res.body.should.eql('')
+              datastore._spies.index.calledOnce.should.eql(true)
 
-                res.statusCode.should.eql(204)
-                res.body.should.eql('')
+              setTimeout(() => {
+                client
+                  .delete('/vtest/noauthdb/articles/' + savedDocument2._id + '?cache=false')
+                  .set('content-type', 'application/json')
+                  .set('Authorization', 'Bearer ' + bearerToken)
+                  .end((err, res) => {
+                    if (err) return done(err)
 
-                done()
-              })
-            }, 1000)
+                    res.statusCode.should.eql(204)
+                    res.body.should.eql('')
+
+                    done()
+                  })
+                }, 1000)
+            })
         })
     })
 
     it('should return 503 for DELETE requests when the database becomes unavailable', done => {
-      mockConnector._mockSetResponse(mockResults)
-
       client
-        .delete('/vtest/noauthdb/articles/59d4b35cb2cf37d706b1d706?cache=false')
+        .delete('/vtest/noauthdb/articles/' + savedDocument._id + '?cache=false')
         .set('content-type', 'application/json')
         .set('Authorization', 'Bearer ' + bearerToken)
         .end((err, res) => {
@@ -353,7 +342,7 @@ describe('Database connection', () => {
           res.body.should.eql('')
           datastore._spies.index.calledOnce.should.eql(true)
 
-          datastore._mockDisconnect()
+          testConnector._mock.disconnect()
 
           client
             .delete('/vtest/noauthdb/articles/59d4b35cb2cf37d706b1d706?cache=false')
@@ -380,7 +369,7 @@ describe('Database connection', () => {
     let datastore
 
     beforeEach(done => {
-      mockConnector._mockFailedConnection(true)
+      testConnector._mock.setFailedConnection(true)
 
       app.start(err => {
         if (err) return done(err)
@@ -396,8 +385,6 @@ describe('Database connection', () => {
     })
 
     it('should return 503 for GET requests whilst the connection is unavailable', done => {
-      mockConnector._mockSetResponse(mockResults)
-
       client
         .get('/vtest/noauthdb/articles?cache=false')
         .set('content-type', 'application/json')
@@ -425,13 +412,11 @@ describe('Database connection', () => {
 
                 done()
               })
-          }, 2000)
+          }, 1000)
         })
     })
 
     it('should return 200 for GET requests once the database becomes available', done => {
-      mockConnector._mockSetResponse(mockResults)
-
       client
         .get('/vtest/noauthdb/articles?cache=false')
         .set('content-type', 'application/json')
@@ -446,7 +431,7 @@ describe('Database connection', () => {
           res.body.code.should.eql('API-0004')
           res.body.title.should.eql('Database unavailable')
 
-          mockConnector._mockFailedConnection(false)
+          testConnector._mock.setFailedConnection(false)
 
           setTimeout(() => {
             client
@@ -455,20 +440,18 @@ describe('Database connection', () => {
               .set('Authorization', 'Bearer ' + bearerToken)
               .end((err, res) => {
                 res.statusCode.should.eql(200)
-                res.body.should.eql(mockResults)
+                res.body.results.length.should.eql(0)
                 datastore._spies.index.calledOnce.should.eql(true)
 
                 done()
               })
-          }, 5000)
+          }, 1000)
         })
     })
 
     it('should return 503 for PUT requests whilst the connection is unavailable', done => {
-      mockConnector._mockSetResponse(mockResults)
-
       client
-        .put('/vtest/noauthdb/articles/59d4b35cb2cf37d706b1d706?cache=false')
+        .put('/vtest/noauthdb/articles/1q2w3e4r?cache=false')
         .send({
           title: 'Dadi'
         })
@@ -486,7 +469,7 @@ describe('Database connection', () => {
 
           setTimeout(() => {
             client
-              .put('/vtest/noauthdb/articles/59d4b35cb2cf37d706b1d706?cache=false')
+              .put('/vtest/noauthdb/articles/1q2w3e4r?cache=false')
               .send({
                 title: 'Dadi'
               })
@@ -500,15 +483,13 @@ describe('Database connection', () => {
 
                 done()
               })
-          }, 2000)
+          }, 1000)
         })
     })
 
     it('should return 200 for PUT requests once the database becomes available', done => {
-      mockConnector._mockSetResponse(mockResults)
-
       client
-        .put('/vtest/noauthdb/articles/59d4b35cb2cf37d706b1d706?cache=false')
+        .put('/vtest/noauthdb/articles/1q2w3e4r?cache=false')
         .send({
           title: 'Dadi'
         })
@@ -524,30 +505,36 @@ describe('Database connection', () => {
           res.body.code.should.eql('API-0004')
           res.body.title.should.eql('Database unavailable')
 
-          mockConnector._mockFailedConnection(false)
+          testConnector._mock.setFailedConnection(false)
 
           setTimeout(() => {
             client
-              .put('/vtest/noauthdb/articles/59d4b35cb2cf37d706b1d706?cache=false')
-              .send({
-                title: 'Dadi'
-              })
+              .post('/vtest/noauthdb/articles?cache=false')
+              .send(mockDocument)
               .set('content-type', 'application/json')
               .set('Authorization', 'Bearer ' + bearerToken)
               .end((err, res) => {
-                res.statusCode.should.eql(200)
-                res.body.should.eql(mockResults)
-                datastore._spies.index.calledOnce.should.eql(true)
+                const savedDocument = res.body.results[0]
 
-                done()
+                client
+                  .put('/vtest/noauthdb/articles/' + savedDocument._id + '?cache=false')
+                  .send({
+                    title: 'A new title'
+                  })
+                  .set('content-type', 'application/json')
+                  .set('Authorization', 'Bearer ' + bearerToken)
+                  .end((err, res) => {
+                    res.statusCode.should.eql(200)
+                    res.body.results[0].title.should.eql('A new title')
+
+                    done()
+                  })
               })
-          }, 5000)
+          }, 1000)
         })
     })
 
     it('should return 503 for POST requests whilst the connection is unavailable', done => {
-      mockConnector._mockSetResponse(mockResults)
-
       client
         .post('/vtest/noauthdb/articles?cache=false')
         .send({
@@ -587,20 +574,18 @@ describe('Database connection', () => {
 
                 done()
               })
-          }, 2000)
+          }, 1000)
         })
     })
 
     it('should return 200 for POST requests once the database becomes available', done => {
-      mockConnector._mockSetResponse(mockResults)
-
       client
         .post('/vtest/noauthdb/articles?cache=false')
         .send({
           published: {
             state: 1
           },
-          title: 'Dadi'
+          title: 'A brand new title'
         })
         .set('content-type', 'application/json')
         .set('Authorization', 'Bearer ' + bearerToken)
@@ -614,7 +599,7 @@ describe('Database connection', () => {
           res.body.code.should.eql('API-0004')
           res.body.title.should.eql('Database unavailable')
 
-          mockConnector._mockFailedConnection(false)
+          testConnector._mock.setFailedConnection(false)
 
           setTimeout(() => {
             client
@@ -623,27 +608,25 @@ describe('Database connection', () => {
                 published: {
                   state: 1
                 },
-                title: 'Dadi'
+                title: 'A brand new title'
               })
               .set('content-type', 'application/json')
               .set('Authorization', 'Bearer ' + bearerToken)
               .end((err, res) => {
                 res.statusCode.should.eql(200)
-                res.body.results[0].title.should.eql('Dadi')
+                res.body.results[0].title.should.eql('A brand new title')
                 res.body.results[0].published.state.should.eql(1)
                 datastore._spies.index.calledOnce.should.eql(true)
 
                 done()
               })
-          }, 5000)
+          }, 1000)
         })
     })
 
     it('should return 503 for DELETE requests whilst the connection is unavailable', done => {
-      mockConnector._mockSetResponse(mockResults)
-
       client
-        .delete('/vtest/noauthdb/articles/59d4b35cb2cf37d706b1d706?cache=false')
+        .delete('/vtest/noauthdb/articles/1q2w3e4r?cache=false')
         .set('content-type', 'application/json')
         .set('Authorization', 'Bearer ' + bearerToken)
         .end((err, res) => {
@@ -658,7 +641,7 @@ describe('Database connection', () => {
 
           setTimeout(() => {
             client
-              .delete('/vtest/noauthdb/articles/59d4b35cb2cf37d706b1d706?cache=false')
+              .delete('/vtest/noauthdb/articles/1q2w3e4r?cache=false')
               .set('content-type', 'application/json')
               .set('Authorization', 'Bearer ' + bearerToken)
               .end((err, res) => {
@@ -669,15 +652,13 @@ describe('Database connection', () => {
 
                 done()
               })
-          }, 2000)
+          }, 1000)
         })
     })
 
     it('should return 204 for DELETE requests once the database becomes available', done => {
-      mockConnector._mockSetResponse(mockResults)
-
       client
-        .delete('/vtest/noauthdb/articles/59d4b35cb2cf37d706b1d706?cache=false')
+        .delete('/vtest/noauthdb/articles/1q2w3e4r?cache=false')
         .set('content-type', 'application/json')
         .set('Authorization', 'Bearer ' + bearerToken)
         .end((err, res) => {
@@ -690,21 +671,30 @@ describe('Database connection', () => {
           res.body.code.should.eql('API-0004')
           res.body.title.should.eql('Database unavailable')
 
-          mockConnector._mockFailedConnection(false)
+          testConnector._mock.setFailedConnection(false)
 
           setTimeout(() => {
             client
-              .delete('/vtest/noauthdb/articles/59d4b35cb2cf37d706b1d706?cache=false')
+              .post('/vtest/noauthdb/articles?cache=false')
+              .send(mockDocument)
               .set('content-type', 'application/json')
               .set('Authorization', 'Bearer ' + bearerToken)
               .end((err, res) => {
-                res.statusCode.should.eql(204)
-                res.body.should.eql('')
-                datastore._spies.index.calledOnce.should.eql(true)
+                const savedDocument = res.body.results[0]
 
-                done()
+                client
+                  .delete('/vtest/noauthdb/articles/' + savedDocument._id + '?cache=false')
+                  .set('content-type', 'application/json')
+                  .set('Authorization', 'Bearer ' + bearerToken)
+                  .end((err, res) => {
+                    res.statusCode.should.eql(204)
+                    res.body.should.eql('')
+                    datastore._spies.index.calledOnce.should.eql(true)
+
+                    done()
+                  })
               })
-          }, 5000)
+          }, 1000)
         })
     })
   })

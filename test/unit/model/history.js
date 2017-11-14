@@ -1,11 +1,19 @@
-var should = require('should')
-var model = require(__dirname + '/../../../dadi/lib/model')
-var History = require(__dirname + '/../../../dadi/lib/model/history')
-var connection = require(__dirname + '/../../../dadi/lib/model/connection')
-var _ = require('underscore')
-var help = require(__dirname + '/../help')
+const should = require('should')
+const model = require(__dirname + '/../../../dadi/lib/model')
+const History = require(__dirname + '/../../../dadi/lib/model/history')
+const connection = require(__dirname + '/../../../dadi/lib/model/connection')
+const _ = require('underscore')
+const help = require(__dirname + '/../help')
 
 describe('History', function () {
+  afterEach(done => {
+    help.clearCollection('testModelName', err => {
+      help.clearCollection('testModelNameHistory', err => {
+        connection.resetConnections().then(() => done())
+      })
+    })
+  })
+
   it('should export a constructor', function (done) {
     History.should.be.Function
     done()
@@ -13,13 +21,13 @@ describe('History', function () {
 
   describe('initialization options', function () {
     it('should take a model name as an argument', function (done) {
-      var mod = model('testModelName', help.getModelSchema(), null, { database: 'testdb' })
-      var h = new History(mod).model.name.should.equal('testModelName')
+      const mod = model('testModelName', help.getModelSchema(), null, { database: 'testdb' })
+      const h = new History(mod).model.name.should.equal('testModelName')
       done()
     })
 
     it('should attach specified history collection if `storeRevisions` is true', function (done) {
-      var mod = model('testModelName', help.getModelSchema(), null, { database: 'testdb', storeRevisions: true, revisionCollection: 'modelHistory' })
+      const mod = model('testModelName', help.getModelSchema(), null, { database: 'testdb', storeRevisions: true, revisionCollection: 'modelHistory' })
       should.exist(mod.revisionCollection)
       mod.revisionCollection.should.equal('modelHistory')
 
@@ -28,16 +36,14 @@ describe('History', function () {
   })
 
   describe('`create` method', function () {
-    beforeEach(help.cleanUpDB)
-
     it('should be added to history', function (done) {
-      var mod = model('testModelName', help.getModelSchema(), null, { database: 'testdb', storeRevisions: true })
+      const mod = model('testModelName', help.getModelSchema(), null, { database: 'testdb', storeRevisions: true })
       var h = new History(mod).model.history.create.should.be.Function
       done()
     })
 
     it('should save model to history', function (done) {
-      var mod = model('testModelName', help.getModelSchema(), null, { database: 'testdb', storeRevisions: true })
+      const mod = model('testModelName', help.getModelSchema(), null, { database: 'testdb', storeRevisions: true })
 
       help.whenModelsConnect([mod], () => {
         mod.create({fieldName: 'foo'}, function (err, result) {
@@ -65,18 +71,16 @@ describe('History', function () {
   })
 
   describe('`createEach` method', function () {
-    beforeEach(help.cleanUpDB)
-
     it('should be added to history', function (done) {
-      var mod = model('testModelName', help.getModelSchema(), null, { database: 'testdb' })
-      var h = new History(mod).model.history.createEach.should.be.Function
+      const mod = model('testModelName', help.getModelSchema(), null, { database: 'testdb' })
+      new History(mod).model.history.createEach.should.be.Function
       done()
     })
 
     it('should save all models to history', function (done) {
       this.timeout(4000)
 
-      var mod = model('testModelName', help.getModelSchema(), null, { database: 'testdb', storeRevisions: true })
+      const mod = model('testModelName', help.getModelSchema(), null, { database: 'testdb', storeRevisions: true })
 
       help.whenModelsConnect([mod], () => {
         mod.create({fieldName: 'foo-1'}, function (err, result) {
@@ -105,7 +109,7 @@ describe('History', function () {
     })
 
     it('should add action=update to history revisions when a document is updated', function (done) {
-      var mod = model('testModelName', help.getModelSchema(), null, { database: 'testdb', storeRevisions: true })
+      const mod = model('testModelName', help.getModelSchema(), null, { database: 'testdb', storeRevisions: true })
 
       help.whenModelsConnect([mod], () => {
         mod.create({ fieldName: 'foo-1' }, function (err, result) {
@@ -123,16 +127,15 @@ describe('History', function () {
     })
 
     it('should add action=delete to history revisions when a document is deleted', function (done) {
-      var mod = model('testModelName', help.getModelSchema(), null, { database: 'testdb', storeRevisions: true })
+      const mod = model('testModelName', help.getModelSchema(), null, { database: 'testdb', storeRevisions: true })
 
       help.whenModelsConnect([mod], () => {
         mod.create({ fieldName: 'foo-1' }, function (err, result) {
           mod.delete({ fieldName: 'foo-1' }, function (err, result) {
+            const modHistory = model('testModelNameHistory', help.getModelSchema(), null, { database: 'testdb', storeRevisions: true })
 
-            mod = model('testModelNameHistory', help.getModelSchema(), null, { database: 'testdb', storeRevisions: true })
-
-            help.whenModelsConnect([mod], () => {
-              mod.find({}, {}, function (err, docs) {
+            help.whenModelsConnect([modHistory], () => {
+              modHistory.find({}, {}, function (err, docs) {
                 should.exist(docs.results[0])
                 should.exist(docs.results[0]._originalDocumentId)
                 should.exist(docs.results[0]._action)
@@ -146,11 +149,11 @@ describe('History', function () {
     })
 
     it('should add the original document id to history revisions', function (done) {
-      var mod = model('testModelName', help.getModelSchema(), null, { database: 'testdb', storeRevisions: true })
+      const mod = model('testModelName', help.getModelSchema(), null, { database: 'testdb', storeRevisions: true })
 
       help.whenModelsConnect([mod], () => {
         mod.create({ fieldName: 'foo-1' }, function (err, result) {
-          var id = result.results[0]._id
+          const id = result.results[0]._id
 
           mod.update({ fieldName: 'foo-1' }, { fieldName: 'foo-2' }, function (err, result) {
             mod.find({}, { includeHistory: true }, function (err, docs) {
@@ -167,15 +170,17 @@ describe('History', function () {
     })
 
     it('should create history revisions when a document is deleted using a nested query', function (done) {
-      var mod = model('testModelName', help.getModelSchema(), null, { database: 'testdb', storeRevisions: true })
+      const mod = model('testModelName', help.getModelSchema(), null, { database: 'testdb', storeRevisions: true })
 
       help.whenModelsConnect([mod], () => {
         mod.create({ fieldName: 'foo-1' }, function (err, result) {
-          var doc = result.results[0]
+          const doc = result.results[0]
           mod.delete({ _id: { '$in': [ doc._id ] } }, function (err, result) {
-            mod = model('testModelNameHistory', help.getModelSchema(), null, { database: 'testdb', storeRevisions: false })
-            help.whenModelsConnect([mod], () => {
-              return mod.find({}, {}, function (err, docs) {
+            
+            const modHistory = model('testModelNameHistory', help.getModelSchema(), null, { database: 'testdb', storeRevisions: false })
+            
+            help.whenModelsConnect([modHistory], () => {
+              return modHistory.find({}, {}, function (err, docs) {
                 should.exist(docs.results)
                 docs.results.length.should.be.above(0)
                 should.exist(docs.results[0]._originalDocumentId)

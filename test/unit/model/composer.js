@@ -1,14 +1,14 @@
-var should = require('should')
-var sinon = require('sinon')
-var model = require(__dirname + '/../../../dadi/lib/model')
-var queryUtils = require(__dirname + '/../../../dadi/lib/model/utils')
-var apiHelp = require(__dirname + '/../../../dadi/lib/help')
-var Validator = require(__dirname + '/../../../dadi/lib/model/validator')
-var connection = require(__dirname + '/../../../dadi/lib/model/connection')
-var _ = require('underscore')
-var help = require(__dirname + '/../help')
-var acceptanceHelper = require(__dirname + '/../../acceptance/help')
-var config = require(__dirname + '/../../../config')
+const should = require('should')
+const sinon = require('sinon')
+const model = require(__dirname + '/../../../dadi/lib/model')
+const queryUtils = require(__dirname + '/../../../dadi/lib/model/utils')
+const apiHelp = require(__dirname + '/../../../dadi/lib/help')
+const Validator = require(__dirname + '/../../../dadi/lib/model/validator')
+const connection = require(__dirname + '/../../../dadi/lib/model/connection')
+const _ = require('underscore')
+const help = require(__dirname + '/../help')
+const acceptanceHelper = require(__dirname + '/../../acceptance/help')
+const config = require(__dirname + '/../../../config')
 
 describe('Model', function () {
   describe('Composer', function () {
@@ -91,10 +91,12 @@ describe('Model', function () {
       _.extend(schema, refField)
       _.extend(schema, nameFields)
 
-      var mod = model('testModelName', schema, null, { database: 'testdb'})
+      let mod
 
       beforeEach(function (done) {
-        acceptanceHelper.dropDatabase('testdb', err => {
+        mod = model('testModelName', schema, null, { database: 'testdb'})
+
+        acceptanceHelper.dropDatabase('testdb', null, err => {
           // create some docs
           for (var i = 0; i < 5; i++) {
             mod.create({fieldName: 'foo_' + i, firstName: 'Foo', lastName: i.toString()}, (err, result) => {
@@ -118,8 +120,8 @@ describe('Model', function () {
             mod.update({ fieldName: 'foo_1' }, { refField: anotherDoc._id.toString() }, function (err, result) {
               // doc1 should now have anotherDoc == doc3
               mod.find({fieldName: 'foo_1'}, { 'compose': true }, function (err, result) {
-
                 var doc = result.results[0]
+
                 should.exist(doc.refField.fieldName)
                 doc.refField.fieldName.should.equal('foo_3')
 
@@ -240,29 +242,27 @@ describe('Model', function () {
         var book = model('book', bookSchema, null, { database: 'testdb', 'compose': true })
         var person = model('person', personSchema, null, { database: 'testdb', 'compose': true })
 
-        help.whenModelsConnect([book, person], () => {
-          person.create({name: 'Neil Murray'}, function (err, result) {
+        person.create({name: 'Neil Murray'}, function (err, result) {
+          var id = result.results[0]._id
+
+          person.create({name: 'J K Rowling', spouse: id}, function (err, result) {
             var id = result.results[0]._id
 
-            person.create({name: 'J K Rowling', spouse: id}, function (err, result) {
-              var id = result.results[0]._id
+            book.create({title: 'Harry Potter 1', author: id}, function (err, result) {
+              var bookid = result.results[0]._id
+              var books = []
+              books.push(bookid)
 
-              book.create({title: 'Harry Potter 1', author: id}, function (err, result) {
-                var bookid = result.results[0]._id
-                var books = []
-                books.push(bookid)
+              book.create({title: 'Harry Potter 2', author: id, booksInSeries: books}, function (err, result) {
+                // find a book
+                book.find({ title: 'Harry Potter 2' } , { 'compose': true }, function (err, result) {
+                  // console.log(JSON.stringify(result, null, 2))
 
-                book.create({title: 'Harry Potter 2', author: id, booksInSeries: books}, function (err, result) {
-                  // find a book
-                  book.find({ title: 'Harry Potter 2' } , { 'compose': true }, function (err, result) {
-                    // console.log(JSON.stringify(result, null, 2))
+                  var doc = result.results[0]
+                  should.exist(doc.author.name)
+                  should.exist(doc.author.spouse.name)
 
-                    var doc = result.results[0]
-                    should.exist(doc.author.name)
-                    should.exist(doc.author.spouse.name)
-
-                    done()
-                  })
+                  done()
                 })
               })
             })
@@ -271,36 +271,32 @@ describe('Model', function () {
       })
 
       it('should populate a reference field containing an array of ObjectIDs', function (done) {
-        help.whenModelsConnect([mod], () => {
-          // find a doc
-          mod.find({ fieldName: { '$regex': 'foo' } } , {}, function (err, result) {
-            // remove foo_1 from the results so we can add the remaining docs
-            // to it as a reference
-            var foo1 = _.findWhere(result.results, { fieldName: 'foo_1' })
-            result.results.splice(result.results.indexOf(foo1), 1)
+        // find a doc
+        mod.find({ fieldName: { '$regex': 'foo' } } , {}, function (err, result) {
+          // remove foo_1 from the results so we can add the remaining docs
+          // to it as a reference
+          var foo1 = _.findWhere(result.results, { fieldName: 'foo_1' })
+          result.results.splice(result.results.indexOf(foo1), 1)
 
-            var anotherDoc = _.map(_.pluck(result.results, '_id'), function(id) {
-              return id.toString()
-            })
+          var anotherDoc = _.map(_.pluck(result.results, '_id'), function(id) {
+            return id.toString()
+          })
 
-            // console.log(result)
-            // console.log(anotherDoc)
+          // add the id to another doc
+          mod.update({ fieldName: 'foo_1' }, { refField: anotherDoc }, function (err, result) {
+            // doc1 should now have refField as array of docs
+            //console.log(result)
+            mod.find({fieldName: 'foo_1'}, { 'compose': true }, function (err, result) {
+              var doc = result.results[0]
 
-            // add the id to another doc
-            mod.update({ fieldName: 'foo_1' }, { refField: anotherDoc }, function (err, result) {
-              // doc1 should now have refField as array of docs
-              //console.log(result)
-              mod.find({fieldName: 'foo_1'}, { 'compose': true }, function (err, result) {
-                var doc = result.results[0]
-                doc.refField.length.should.eql(4)
+              doc.refField.length.should.eql(4)
 
-                // composed property
-                should.exist(doc._composed)
-                should.exist(doc._composed.refField)
-                doc._composed.refField.length.should.eql(4)
+              // composed property
+              should.exist(doc._composed)
+              should.exist(doc._composed.refField)
+              doc._composed.refField.length.should.eql(4)
 
-                done()
-              })
+              done()
             })
           })
         })

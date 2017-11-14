@@ -183,20 +183,6 @@ describe('Model', function () {
       done()
     })
 
-    it('should attach `limit` definition to model', function (done) {
-      var val = 'test limit'
-
-      help.testModelProperty('limit', val)
-      done()
-    })
-
-    it('should attach `placement` definition to model', function (done) {
-      var val = 'test placement'
-
-      help.testModelProperty('placement', val)
-      done()
-    })
-
     it('should attach `validation` definition to model', function (done) {
       var val = '{ regex: { pattern: { /w+/ } } }'
 
@@ -217,24 +203,9 @@ describe('Model', function () {
       help.testModelProperty('message', val)
       done()
     })
-
-    it('should attach `display` definition to model', function (done) {
-      var val = {
-        index: true,
-        edit: true
-      }
-
-      help.testModelProperty('display', val)
-      done()
-    })
   })
 
   describe('`count` method', function () {
-    it('should be added to model', function (done) {
-      model('testModelName', help.getModelSchema(), null, { database: 'testdb' }).count.should.be.Function
-      done()
-    })
-
     it('should accept a query and an options object and callback', function (done) {
       model('testModelName', help.getModelSchema(), null, { database: 'testdb' }).count({}, {}, done)
     })
@@ -248,11 +219,6 @@ describe('Model', function () {
   })
 
   describe('`stats` method', function () {
-    it('should be added to model', function (done) {
-      model('testModelName', help.getModelSchema(), null, { database: 'testdb' }).stats.should.be.Function
-      done()
-    })
-
     it('should accept an options object and callback', function (done) {
       model('testModelName', help.getModelSchema(), null, { database: 'testdb' }).stats({}, done)
     })
@@ -266,11 +232,6 @@ describe('Model', function () {
   })
 
   describe('`find` method', function () {
-    it('should be added to model', function (done) {
-      model('testModelName', help.getModelSchema(), null, { database: 'testdb' }).find.should.be.Function
-      done()
-    })
-
     it('should accept query object and callback', function (done) {
       model('testModelName', help.getModelSchema(), null, { database: 'testdb' }).find({}, done)
     })
@@ -402,11 +363,6 @@ describe('Model', function () {
       })
     })
 
-    it('should be added to model', function (done) {
-      model('testModelName', help.getModelSchema(), null, { database: 'testdb' }).revisions.should.be.Function
-      done()
-    })
-
     it('should accept id param and return history collection', function (done) {
       var mod = model('testModelName', help.getModelSchema(), null, { database: 'testdb', storeRevisions: true })
 
@@ -439,11 +395,6 @@ describe('Model', function () {
   })
 
   describe('`createIndex` method', function () {
-    it('should be added to model', function (done) {
-      model('testModelName', help.getModelSchema(), null, { database: 'testdb' }).createIndex.should.be.Function
-      done()
-    })
-
     it('should create index if indexing settings are supplied', function (done) {
       var mod = model('testModelName',
         help.getModelSchema(),
@@ -468,7 +419,7 @@ describe('Model', function () {
       mod.create({fieldName: 'ABCDEF'}, function (err, result) {
         if (err) return done(err)
 
-        setTimeout(function() {
+        setTimeout(function () {
           mod.getIndexes(indexes => {
             var result = _.some(indexes, index => { return index.name.indexOf('fieldName') > -1 })
             result.should.eql(true)
@@ -512,7 +463,7 @@ describe('Model', function () {
         mod.create({fieldName: 'ABCDEF', field2: 2}, function (err, result) {
           if (err) return done(err)
 
-          setTimeout(function() {
+          setTimeout(function () {
             // Peform a query, with explain to show we hit the query
             mod.getIndexes(indexes => {
               // var explanationString = JSON.stringify(explanation.results[0])
@@ -552,7 +503,7 @@ describe('Model', function () {
           }
         )
 
-        setTimeout(function() {
+        setTimeout(function () {
           mod.create({field3: 'ABCDEF'}, function (err, result) {
             if (err) return done(err)
 
@@ -604,7 +555,7 @@ describe('Model', function () {
           }
         )
 
-        setTimeout(function() {
+        setTimeout(function () {
           mod.create({fieldName: 'ABCDEF'}, function (err, result) {
             mod.create({fieldName: 'ABCDEF'}, function (err, result) {
               should.exist(err)
@@ -630,11 +581,6 @@ describe('Model', function () {
       acceptanceHelper.dropDatabase('testdb', err => {
         done()
       })
-    })
-
-    it('should be added to model', function (done) {
-      model('testModelName', help.getModelSchema(), null, { database: 'testdb' }).create.should.be.Function
-      done()
     })
 
     it('should accept Object and callback', function (done) {
@@ -724,11 +670,6 @@ describe('Model', function () {
     //   })
     // })
 
-    it('should be added to model', function (done) {
-      model('testModelName').update.should.be.Function
-      done()
-    })
-
     it('should accept query, update object, and callback', function (done) {
       var mod = model('testModelName')
       mod.update({field1: 'foo'}, {field1: 'bar'}, done)
@@ -773,7 +714,7 @@ describe('Model', function () {
           result['results'][0].field1.should.equal('bar')
 
           should.exist(result['results'][0]._history)
-          result['results'][0]._history.length.should.equal(1); // one revision, from the update
+          result['results'][0]._history.length.should.equal(1) // one revision, from the update
 
           done()
         })
@@ -801,17 +742,15 @@ describe('Model', function () {
   describe('`delete` method', function () {
     beforeEach(help.cleanUpDB)
 
-    it('should be added to model', function (done) {
-      model('testModelName', help.getModelSchema(), null, { database: 'testdb' }).delete.should.be.Function
-      done()
-    })
-
     it('should accept a query object and callback', function (done) {
-      model('testModelName').delete({fieldName: 'foo'}, done)
+      var schema = help.getModelSchema()
+      var mod = model('testModelName', schema, null, {database: 'testdb'})
+      mod.delete({fieldName: 'foo'}, done)
     })
 
     it('should delete a single document', function (done) {
-      var mod = model('testModelName')
+      var schema = help.getModelSchema()
+      var mod = model('testModelName', schema, null, {database: 'testdb'})
       mod.create({fieldName: 'foo'}, function (err, result) {
         if (err) return done(err)
         result.results[0].fieldName.should.equal('foo')
@@ -832,7 +771,8 @@ describe('Model', function () {
     })
 
     it('should delete multiple documents', function (done) {
-      var mod = model('testModelName')
+      var schema = help.getModelSchema()
+      var mod = model('testModelName', schema, null, {database: 'testdb'})
       mod.create([{fieldName: 'foo'}, {fieldName: 'bar'}, {fieldName: 'baz'}], function (err, result) {
         if (err) return done(err)
         result.results[0].fieldName.should.equal('foo')

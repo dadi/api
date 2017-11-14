@@ -19,7 +19,7 @@
     "@dadi/boot": "^1.0.0",
     "@dadi/cache": "1.5.x",
     "@dadi/et": "^2.0.0",
-    "@dadi/format-error": "^1.0.0",
+    "@dadi/format-error": "^1.6.0",
     "@dadi/logger": "latest",
     "@dadi/status": "latest",
     "async": "^2.1.4",
@@ -48,13 +48,11 @@
     "streamifier": "^0.1.1",
     "underscore": "1.8.3",
     "underscore-contrib": "^0.3.0",
-    "uuid": "latest",
     "validator": "7.0.0"
   },
   "devDependencies": {
     "@commitlint/cli": "~4.1.1",
     "@commitlint/config-angular": "~3.1.1",
-    "@dadi/api-mongodb": "3.x.x",
     "aws-sdk-mock": "1.6.1",
     "env-test": "1.0.0",
     "fakeredis": "1.0.3",
@@ -62,6 +60,7 @@
     "husky": "^0.13.3",
     "istanbul": "^1.1.0-alpha.1",
     "istanbul-cobertura-badger": "^1.1.0",
+    "lokijs": "^1.5.1",
     "mocha": "~3.2.0",
     "mochawesome": "^2.1.0",
     "proxyquire": "^1.7.4",
@@ -69,7 +68,8 @@
     "sinon": "2.3.2",
     "snazzy": "7.0.0",
     "standard": "8.6.0",
-    "supertest": "~0.13.0"
+    "supertest": "~0.13.0",
+    "uuid": "^3.1.0"
   },
   "repository": {
     "type": "git",

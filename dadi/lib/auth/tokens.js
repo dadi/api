@@ -8,7 +8,12 @@ const tokenStore = require(path.join(__dirname, '/tokenStore'))()
 
 const clientCollectionName = config.get('auth.clientCollection')
 const dbOptions = { override: true, database: config.get('auth.database'), collection: clientCollectionName }
-const connection = Connection(dbOptions, null, config.get('auth.datastore'))
+
+let connection
+
+module.exports.connect = () => {
+  connection = Connection(dbOptions, null, config.get('auth.datastore'))
+}
 
 module.exports.generate = (req, res, next) => {
   debug('Generate token')

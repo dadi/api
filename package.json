@@ -53,6 +53,7 @@
   "devDependencies": {
     "@commitlint/cli": "~4.1.1",
     "@commitlint/config-angular": "~3.1.1",
+    "@dadi/metadata": "^1.0.0",
     "aws-sdk-mock": "1.6.1",
     "env-test": "1.0.0",
     "fakeredis": "1.0.3",

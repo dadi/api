@@ -16,11 +16,11 @@ const DataStore = function (storeName) {
   } catch (err) {
     if (err.message.indexOf('Cannot find module') > -1) {
       console.error('\n  Error: API configured to use a datastore that has not been installed: "' + store + '"\n')
-      process.exit(1)
     } else {
       console.error('\n  Error: Loading datastore "' + store + '" caused an error: ' + err.message + '\n')
-      process.exit(1)
     }
+
+    throw err
   }
 }
 

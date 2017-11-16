@@ -48,11 +48,6 @@ var conf = convict({
       default: 0,
       env: 'REDIRECT_PORT'
     },
-    name: {
-      doc: 'Server name',
-      format: String,
-      default: 'DADI (API)',
-    },
     protocol: {
       doc: 'The protocol the web application will use',
       format: String,

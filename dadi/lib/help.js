@@ -30,8 +30,6 @@ module.exports.sendBackJSON = function (successCode, res, next) {
       res.setHeader('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization')
     }
 
-    res.setHeader('Server', config.get('server.name'))
-
     res.setHeader('content-type', 'application/json')
     res.setHeader('content-length', Buffer.byteLength(resBody))
 
@@ -53,8 +51,6 @@ module.exports.sendBackJSONP = function (callbackName, res, next) {
     var resBody = JSON.stringify(results)
     resBody = callbackName + '(' + resBody + ');'
 
-    res.setHeader('Server', config.get('server.name'))
-
     res.setHeader('content-type', 'text/javascript')
     res.setHeader('content-length', Buffer.byteLength(resBody))
     res.end(resBody)
@@ -67,8 +63,6 @@ module.exports.sendBackText = function (successCode, res, next) {
     if (err) return next(err)
 
     var resBody = results
-
-    res.setHeader('Server', config.get('server.name'))
 
     res.setHeader('content-type', 'application/text')
     res.setHeader('content-length', Buffer.byteLength(resBody))

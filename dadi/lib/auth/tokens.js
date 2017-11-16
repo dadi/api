@@ -31,6 +31,16 @@ function getToken (callback) {
 module.exports.generate = function (req, res, next) {
   // Look up the creds in clientStore
   var _done = function (database) {
+    if (
+      typeof req.body.clientId !== 'string' ||
+      typeof req.body.secret !== 'string'
+    ) {
+      var error = new Error('Invalid Credentials')
+      error.statusCode = 401
+      res.setHeader('WWW-Authenticate', 'Bearer, error="invalid_credentials", error_description="Invalid credentials supplied"')
+      return next(error)
+    }
+
     database.collection(clientCollectionName).findOne({
       clientId: req.body.clientId,
       secret: req.body.secret

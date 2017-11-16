@@ -72,6 +72,22 @@ describe('Authentication', function () {
         });
     });
 
+    it('should not issue token if creds contain query keywords', function (done) {
+        var client = request('http://' + config.get('server.host') + ':' + config.get('server.port'));
+
+        client
+        .post(tokenRoute)
+        .send({
+            clientId: {'$ne': null},
+            secret: {'$ne': null}
+        })
+        .expect(401, function(err, res) {
+          res.headers['www-authenticate'].should.exist;
+          res.headers['www-authenticate'].should.eql('Bearer, error="invalid_credentials", error_description="Invalid credentials supplied"');
+          done();
+        });
+    });
+
     it('should allow requests containing token', function (done) {
         help.getBearerToken(function (err, token) {
 

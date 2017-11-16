@@ -18,10 +18,30 @@ module.exports.connect = () => {
 module.exports.generate = (req, res, next) => {
   debug('Generate token')
 
+  const handleInvalidCredentials = () => {
+    const error = new Error('Invalid Credentials')
+
+    error.statusCode = 401
+
+    res.setHeader(
+      'WWW-Authenticate', 'Bearer, error="invalid_credentials", error_description="Invalid credentials supplied"'
+    )
+
+    return next(error)
+  }
+
   // Look up the credentials supplied in the request body in clientStore
   const credentials = {
     clientId: req.body.clientId,
     secret: req.body.secret
+  }
+
+  // Return 401 if the clientId/secret are not plain strings.
+  if (
+    typeof credentials.clientId !== 'string' ||
+    typeof credentials.secret !== 'string'
+  ) {
+    return handleInvalidCredentials()
   }
 
   const connectionReady = database => {
@@ -36,15 +56,7 @@ module.exports.generate = (req, res, next) => {
       // no client found matchibg the credentials
       // return 401 Unauthorized
       if (!client) {
-        const error = new Error('Invalid Credentials')
-
-        error.statusCode = 401
-
-        res.setHeader(
-          'WWW-Authenticate', 'Bearer, error="invalid_credentials", error_description="Invalid credentials supplied"'
-        )
-
-        return next(error)
+        return handleInvalidCredentials()
       }
 
       return tokenStore.generateNew().then(newToken => {

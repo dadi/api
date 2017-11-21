@@ -7,7 +7,6 @@ notifications:
   email: false
 node_js:
   - '6'
-  - '5'
 before_install:
   - if [[ `npm -v` != 3* ]]; then npm i -g npm@latest; fi
 before_script:

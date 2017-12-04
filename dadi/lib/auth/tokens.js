@@ -63,6 +63,8 @@ module.exports.generate = (req, res, next) => {
         return tokenStore.set(newToken, client).then(doc => newToken)
       })
     }).then(token => {
+      if (!token) return
+
       const response = {
         accessToken: token,
         tokenType: 'Bearer',

@@ -1,4 +1,3 @@
-var _ = require('underscore')
 var crypto = require('crypto')
 var formatError = require('@dadi/format-error')
 var fs = require('fs')
@@ -159,7 +158,7 @@ module.exports.transformQuery = function (obj, type, format) {
   }
 
   if (obj) {
-    Object.keys(obj).forEach((key) => {
+    Object.keys(obj).forEach(key => {
       if ((typeof obj[key] === 'object') && (obj[key] !== null)) {
         this.transformQuery(obj[key], type)
       } else if (typeof obj[key] === 'string') {
@@ -233,7 +232,7 @@ module.exports.validateCollectionSchema = function (obj) {
     response.errors.push({section: 'settings', message: 'must be provided'})
   }
 
-  if (!_.isEmpty(response.errors)) {
+  if (response.errors.length > 0) {
     response.success = false
     return response
   }
@@ -262,13 +261,13 @@ module.exports.validateCollectionSchema = function (obj) {
     if (!obj.settings.index) {
       indexSpecified = false
     } else {
-      if (_.isArray(obj.settings.index)) {
-        _.each(obj.settings.index, (index) => {
-          if (_.contains(Object.keys(index.keys), obj.settings.sort)) {
+      if (Array.isArray(obj.settings.index)) {
+        obj.settings.index.forEach(index => {
+          if (Object.keys(index.keys).includes(obj.settings.sort)) {
             indexSpecified = true
           }
         })
-      } else if (_.contains(Object.keys(obj.settings.index.keys), obj.settings.sort)) {
+      } else if (Object.keys(obj.settings.index.keys).includes(obj.settings.sort)) {
         indexSpecified = true
       }
     }
@@ -278,7 +277,7 @@ module.exports.validateCollectionSchema = function (obj) {
     }
   }
 
-  response.success = _.isEmpty(response.errors)
+  response.success = response.errors.length === 0
 
   return response
 }

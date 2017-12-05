@@ -274,7 +274,6 @@ Model.prototype.create = function (documents, internals, done, req, bypassOutput
         if (!bypassOutputFormatting) {
           returnData.results = this.formatResultSetForOutput(returnData.results)
         }
-        // returnData.results = this.formatResultSetForOutput(returnData.results)
 
         return done(null, returnData)
       })

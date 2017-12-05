@@ -153,7 +153,7 @@ Model.prototype.count = function (query, options, done) {
  * @return undefined
  * @api public
  */
-Model.prototype.create = function (documents, internals, done, req) {
+Model.prototype.create = function (documents, internals, done, req, bypassOutputFormatting) {
   debug('create %o %o', documents, internals)
 
   if (!Array.isArray(documents)) {
@@ -271,7 +271,9 @@ Model.prototype.create = function (documents, internals, done, req) {
         }
 
         // Prepare result set for output
-        returnData.results = this.formatResultSetForOutput(returnData.results)
+        if (!bypassOutputFormatting) {
+          returnData.results = this.formatResultSetForOutput(returnData.results)
+        }
 
         return done(null, returnData)
       })

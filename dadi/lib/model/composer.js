@@ -271,7 +271,7 @@ Composer.prototype.createOrUpdate = function (model, field, obj, req) {
         result[field] = newDoc._id.toString()
 
         return resolve(result)
-      })
+      }, null, true)
     }
   })
 }

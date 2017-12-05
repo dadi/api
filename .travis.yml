@@ -5,6 +5,7 @@ cache:
 notifications:
   email: false
 node_js:
+  - '8'
   - '6'
 before_install:
   - if [[ `npm -v` != 3* ]]; then npm i -g npm@latest; fi

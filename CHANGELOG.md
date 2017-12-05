@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
-## [3.0.0] (2017-11-02)
+## [3.0.0] (2017-12-05)
 
 See full release notes at https://github.com/dadi/api/releases/tag/v3.0.0
 
@@ -67,6 +67,18 @@ DELETE requests throws a 404 (instead of 204) when deleting a non-existing docum
 POST/PUT requests throw a 404 when updating a non-existing document by ID. This applies to requests where the document ID is passed in the URL, not when in the body (e.g. PUT /v1/db/collection/DOC-ID vs PUT /v1/db/collection).
 
 Closes [#345](https://github.com/dadi/api/issues/345).
+
+## [2.2.9] (2017-12-05)
+
+### Changed
+
+Fix previous release 2.2.8: [#363](https://github.com/dadi/api/issues/363): allow OPTIONS method when calling the token route
+
+## [2.2.8] (2017-12-04)
+
+### Changed
+
+[#363](https://github.com/dadi/api/issues/363): allow OPTIONS method when calling the token route
 
 ## [2.2.0] (2017-07-05)
 

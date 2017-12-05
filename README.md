@@ -28,8 +28,8 @@ It is part of DADI, a suite of components covering the full development stack, b
 
 ## Requirements
 
-* **[MongoDB](https://docs.mongodb.com/v3.0/)** (supported versions: 2.6 - 3.2)
-* **[Node.js](https://www.nodejs.org/)** (supported versions: 6.x)
+* **[MongoDB](https://docs.mongodb.com/v3.0/)** (supported versions: 3.2, 3.4)
+* **[Node.js](https://www.nodejs.org/)** (supported versions: 6.11.x, 8.9.x)
 
 ## Your first API project
 

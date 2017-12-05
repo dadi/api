@@ -172,7 +172,7 @@ function removeInternalFields (obj) {
   delete obj._apiVersion
 
   if (obj._composed) {
-    _.each(Object.keys(obj._composed), (key) => {
+    Object.keys(obj._composed).forEach(key => {
       obj[key] = obj._composed[key]
     })
 

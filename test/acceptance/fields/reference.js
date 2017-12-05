@@ -257,6 +257,7 @@ describe('Reference Field', function () {
           .expect(200)
           .end(function (err, res) {
             if (err) return done(err)
+            // console.log(res)
             should.exist(res.body.results)
             var newDoc = res.body.results[0]
 
@@ -907,20 +908,20 @@ describe('Reference Field', function () {
     })
 
     it('should return unique results for a reference field containing an Array of Strings', function (done) {
-      var book = { title: 'For Whom The Bell Tolls', author: null };
+      var book = { title: 'For Whom The Bell Tolls', author: null }
 
       config.set('query.useVersionFilter', true)
 
-      var client = request(connectionString);
+      var client = request(connectionString)
       client
       .post('/v1/library/person')
       .set('Authorization', 'Bearer ' + bearerToken)
       .send({ name: 'Ernest Hemingway' })
       .expect(200)
       .end(function (err, res) {
-        if (err) return done(err);
+        if (err) return done(err)
 
-        should.exist(res.body.results);
+        should.exist(res.body.results)
 
         var personId = res.body.results[0]._id
 
@@ -936,14 +937,14 @@ describe('Reference Field', function () {
         .send(book)
         .expect(200)
         .end(function (err, res) {
-          if (err) return done(err);
+          if (err) return done(err)
 
           client
           .get('/v1/library/book?filter={"book.author":{"$in":' + [personId.toString()] + '}}&compose=true')
           .set('Authorization', 'Bearer ' + bearerToken)
           .expect(200)
           .end(function (err, res) {
-            if (err) return done(err);
+            if (err) return done(err)
 
             should.exist(res.body.results)
             var bookResult = res.body.results[0]
@@ -952,27 +953,27 @@ describe('Reference Field', function () {
             bookResult.author.length.should.eql(1)
             should.exist(bookResult.author[0].name)
 
-            done();
+            done()
           })
         })
-      });
-    });
+      })
+    })
 
     it('should return unique results for a reference field when it contains an Array of Strings and Nulls', function (done) {
-      var book = { title: 'For Whom The Bell Tolls', author: null };
+      var book = { title: 'For Whom The Bell Tolls', author: null }
 
       config.set('query.useVersionFilter', true)
 
-      var client = request(connectionString);
+      var client = request(connectionString)
       client
       .post('/v1/library/person')
       .set('Authorization', 'Bearer ' + bearerToken)
       .send({ name: 'Ernest Hemingway' })
       .expect(200)
       .end(function (err, res) {
-        if (err) return done(err);
+        if (err) return done(err)
 
-        should.exist(res.body.results);
+        should.exist(res.body.results)
 
         var personId = res.body.results[0]._id
 
@@ -988,14 +989,14 @@ describe('Reference Field', function () {
         .send(book)
         .expect(200)
         .end(function (err, res) {
-          if (err) return done(err);
+          if (err) return done(err)
 
           client
           .get('/v1/library/book?filter={"book.author":{"$in":' + [personId.toString()] + '}}&compose=true')
           .set('Authorization', 'Bearer ' + bearerToken)
           .expect(200)
           .end(function (err, res) {
-            if (err) return done(err);
+            if (err) return done(err)
 
             should.exist(res.body.results)
             var bookResult = res.body.results[0]
@@ -1004,11 +1005,11 @@ describe('Reference Field', function () {
             bookResult.author.length.should.eql(1)
             should.exist(bookResult.author[0].name)
 
-            done();
+            done()
           })
         })
-      });
-    });
+      })
+    })
 
     it('should return results in the same order as the original Array', function (done) {
       var book = { title: 'Death in the Afternoon', author: null }
@@ -1075,6 +1076,91 @@ describe('Reference Field', function () {
           })
         })
       })
+    })
+  })
+
+  describe('with configured prefix', function () {
+    it('should create reference documents that don\'t have identifier fields', function (done) {
+      var book = {
+        title: 'For Whom The Bell Tolls',
+        author: {
+          name: 'Ernest Hemingway'
+        }
+      }
+
+      var originalPrefix = config.get('internalFieldsPrefix')
+
+      config.set('internalFieldsPrefix', '$')
+      config.set('query.useVersionFilter', true)
+
+      var client = request(connectionString)
+      client
+      .post('/v1/library/book')
+      .set('Authorization', 'Bearer ' + bearerToken)
+      .send(book)
+      .expect(200)
+      .end(function (err, res) {
+        if (err) return done(err)
+        config.set('internalFieldsPrefix', originalPrefix)
+
+        should.exist(res.body.results)
+        var newDoc = res.body.results[0]
+
+        should.exist(newDoc.author.$id)
+        should.exist(newDoc.author.$apiVersion)
+        done()
+      })
+    })
+
+    it('should update reference documents that already have _id fields', function (done) {
+      var person = {
+        name: 'Ernest Hemingway'
+      }
+
+      var originalPrefix = config.get('internalFieldsPrefix')
+
+      config.set('internalFieldsPrefix', '$')
+      config.set('query.useVersionFilter', true)
+
+      var client = request(connectionString)
+      client
+    .post('/v1/library/person')
+    .set('Authorization', 'Bearer ' + bearerToken)
+    .send(person)
+    .expect(200)
+    .end(function (err, res) {
+      if (err) return done(err)
+
+      var author = res.body.results[0]
+      author.name += ', Jnr.'
+
+      var book = {
+        title: 'For Whom The Bell Tolls',
+        author: author
+      }
+
+      config.set('query.useVersionFilter', true)
+
+      setTimeout(function () {
+        var client = request(connectionString)
+        client
+        .post('/v1/library/book')
+        .set('Authorization', 'Bearer ' + bearerToken)
+        .send(book)
+        .expect(200)
+        .end(function (err, res) {
+          if (err) return done(err)
+          config.set('internalFieldsPrefix', originalPrefix)
+
+          should.exist(res.body.results)
+          var newDoc = res.body.results[0]
+
+          newDoc.author.$id.should.eql(author.$id)
+          newDoc.author.name.should.eql(author.name)
+          done()
+        })
+      }, 800)
+    })
     })
   })
 })

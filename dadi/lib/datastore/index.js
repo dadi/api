@@ -11,8 +11,11 @@ const DataStore = function (storeName) {
 
   try {
     const DataStore = require(store)
+    const instance = new DataStore()
 
-    return new DataStore()
+    instance.settings = DataStore.settings || {}
+
+    return instance
   } catch (err) {
     if (err.message.indexOf('Cannot find module') > -1) {
       console.error('\n  Error: API configured to use a datastore that has not been installed: "' + store + '"\n')

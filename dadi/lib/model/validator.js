@@ -20,7 +20,7 @@ var ignoredKeys = _.union(
     '_lastModifiedAt',
     '_lastModifiedBy'
   ],
-  datastore.nonValidatedProperties || []
+  datastore.settings.internalProperties || []
 )
 
 var Validator = function (model) {

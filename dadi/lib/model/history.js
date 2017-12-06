@@ -11,12 +11,13 @@ History.prototype.create = function (obj, model, done) {
   let revisionObj = queryUtils.snapshot(obj)
   revisionObj._originalDocumentId = obj._id
 
-  // TODO: use datastore plugin's internal fields
-  delete revisionObj._id
-  delete revisionObj.meta
-  delete revisionObj.$loki
-
   const _done = function (database) {
+    if (Array.isArray(database.settings.internalProperties)) {
+      database.settings.internalProperties.forEach(property => {
+        delete revisionObj[property]
+      })
+    }
+
     database.insert({
       data: revisionObj,
       collection: model.revisionCollection,

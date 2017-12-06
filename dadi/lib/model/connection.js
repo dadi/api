@@ -37,6 +37,10 @@ const Connection = function (options, storeName) {
     retries: config.get('databaseConnection.maxRetries')
   })
 
+  if (this.datastore.settings.connectWithCollection !== true) {
+    delete options.collection
+  }
+
   // Setting up the reconnect method
   this.recovery.on('reconnect', opts => {
     this.connect(options).then(db => {

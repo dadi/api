@@ -37,7 +37,10 @@ const Connection = function (options, storeName) {
     retries: config.get('databaseConnection.maxRetries')
   })
 
-  if (this.datastore.settings.connectWithCollection !== true) {
+  if (
+    options &&
+    this.datastore.settings.connectWithCollection !== true
+  ) {
     delete options.collection
   }
 

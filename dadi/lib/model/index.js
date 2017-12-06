@@ -746,6 +746,7 @@ Model.prototype.formatResultSet = function (results, formatForInput) {
   let newResultSet = []
 
   documents.forEach(document => {
+    const internalProperties = this.connection.db.settings.internalProperties || []
     let newDocument = {}
 
     Object.keys(document).sort().forEach(field => {
@@ -754,9 +755,16 @@ Model.prototype.formatResultSet = function (results, formatForInput) {
         : field
 
       // Stripping null values from the response.
-      if (document[field] !== null) {
-        newDocument[property] = document[field]
+      if (document[field] === null) {
+        return
       }
+
+      // Stripping internal properties (other than `_id`)
+      if ((field !== '_id') && internalProperties.includes(field)) {
+        return
+      }
+
+      newDocument[property] = document[field]
     })
 
     newResultSet.push(newDocument)

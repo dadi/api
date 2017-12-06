@@ -147,9 +147,7 @@ module.exports = function (options, collection, storeName) {
     if (storeSettings && storeSettings.connectWithCollection === false) {
       delete options.collection
     }
-  } catch (err) {
-    log.warn({module: 'connection'}, err)
-  }
+  } catch (err) {} // eslint-disable-line
 
   const connectionKey = Object.keys(options).map(option => { return options[option] }).join(':')
 

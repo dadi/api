@@ -28,32 +28,19 @@ It is part of DADI, a suite of components covering the full development stack, b
 
 ## Requirements
 
-* **[MongoDB](https://docs.mongodb.com/v3.0/)** (supported versions: 2.6 - 3.0)
-* **[Node.js](https://www.nodejs.org/)** (supported versions: 4.7.0, 5.12.0, 6.x.x)
+* **[MongoDB](https://docs.mongodb.com/v3.0/)** (supported versions: 3.2, 3.4)
+* **[Node.js](https://www.nodejs.org/)** (supported versions: 6.11.x, 8.9.x)
 
 ## Your first API project
 
-### Install dependencies
-
-Ensure you have the required dependencies installed. See the first sections in the API  [installation](http://docs.dadi.tech/api/getting-started/installing/) documentation.
-
 ### Install API
 
-The quickest way to get started with *API* is to use [DADI CLI](https://github.com/dadi/cli). To install it for the first time, run:
+The quickest way to get started with *API* is to use [DADI CLI](https://github.com/dadi/cli). See [Creating an API](https://docs.dadi.tech/#api/creating-an-api) for full installation details.
 
-```bash
-npm install @dadi/cli -g
-```
-
-And to install *API* in a directory called `my-new-api`:
-
-```bash
-dadi api new my-new-api
-```
 
 ### Configuration
 
-API starts with some sensible defaults, so it's not necessary to understand all the configuration options available when first running the application. Full configuration documentation can be found at http://docs.dadi.tech/api/getting-started/configuration/.
+API starts with some sensible defaults, so it's not necessary to understand all the configuration options available when first running the application.
 
 Configuration is handled using JSON files specific to the application environment. For example in the production environment a file named `config.production.json` will be used. Configuration files must be placed in a `config` folder in your application root, for example `config/config.production.json`. The default start up environment is `development`, using the configuration file at `config/config.development.json`.
 
@@ -108,7 +95,7 @@ Connection: keep-alive
 
 The HTTP 401 response received in the previous step shows that the server is running. To start using the REST endpoints you'll need a user account so you can obtain access tokens for interacting with the API.
 
-User accounts provide an authentication layer for API. Each user account has a *__clientId__* and a *__secret__*. These are used to obtain access tokens for interacting with the API. See the [Authentication](http://docs.dadi.tech/api/concepts/authentication/) section of the API documentation for full details.
+User accounts provide an authentication layer for API. Each user account has a *__clientId__* and a *__secret__*. These are used to obtain access tokens for interacting with the API. See the [Authentication](https://docs.dadi.tech/#api/authentication) section of the API documentation for full details.
 
 #### Creating the first user
 
@@ -131,7 +118,7 @@ To run your API application in the background as a service, install Forever and 
 ```bash
 $ npm install forever forever-service -g
 
-$ forever-service install -s index.js -e NODE_ENV=production api --start
+$ sudo forever-service install -s index.js -e "NODE_ENV=production" api --start
 ```
 
 You can now interact with the `api` service using the following commands:
@@ -146,7 +133,7 @@ $ [sudo] service api restart
 > Note: the environment variable `NODE_ENV=production` must be set to the required configuration version matching the configuration files available in the `config` directory.
 
 ## Links
-* [API Documentation](http://docs.dadi.tech/api/)
+* [API Documentation](https://docs.dadi.tech/#api/)
 
 ## Contributors
 

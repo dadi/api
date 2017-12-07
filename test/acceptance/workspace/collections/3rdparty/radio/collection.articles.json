@@ -942,13 +942,10 @@
     "cacheTTL": 300,
     "authenticate": true,
     "compose": true,
-    "callback": null,
     "displayName": "Articles",
     "storeRevisions": true,
     "storeSearch": true,
     "searchIndexCollection": "articlesSearch",
-    "defaultFilters": null,
-    "fieldLimiters": null,
     "type": "article",
     "publish": {
       "group": "Content",

@@ -62,9 +62,6 @@
   "settings": {
     "cache": true,
     "compose": true,
-    "callback": null,
-    "defaultFilters": null,
-    "fieldLimiters": null,
     "cacheTTL": 300,
     "authenticate": true,
     "publish": {

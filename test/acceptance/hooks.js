@@ -15,23 +15,18 @@ var request = require('supertest')
 var bearerToken
 var connectionString = 'http://' + config.get('server.host') + ':' + config.get('server.port')
 
-describe.skip('Hooks', function () {
+describe('Hooks', function () {
 
   // reset database
   before(function (done) {
-    help.dropDatabase('test', function (err) {
+    app.start((err) => {
       if (err) return done(err)
-console.log('dropped')
-      app.start((err) => {
+
+      // get access token
+      help.getBearerTokenWithAccessType('admin', (err, token) => {
         if (err) return done(err)
-console.log('started')
-        // get access token
-        help.getBearerTokenWithAccessType('admin', (err, token) => {
-          if (err) return done(err)
-          bearerToken = token
-          console.log(token)
-          done()
-        })
+        bearerToken = token
+        done()
       })
     })
   })
@@ -183,7 +178,6 @@ console.log('started')
     .set('Authorization', 'Bearer ' + bearerToken)
     .end(function (err, res) {
       if (err) return done(err)
-      console.log(res.body)
 
       var newArticle = res.body.results[0]
 
@@ -194,8 +188,6 @@ console.log('started')
       .set('Authorization', 'Bearer ' + bearerToken)
       .end(function (err, res) {
         if (err) return done(err)
-
-        console.log(res.body)
 
         should.exist(res.body.results)
         should.exist(res.body.results[0])
@@ -288,7 +280,7 @@ console.log('started')
             article.title = 'Updated Article Title'
 
             client
-            .put('/vtest/testdb/articles/' + articleId)
+            .put('/vtest/testdb/articles/' + articleId.toString())
             .send(article)
             .set('content-type', 'application/json')
             .set('Authorization', 'Bearer ' + bearerToken)
@@ -388,9 +380,6 @@ var publicationSchema = {
   "settings": {
     "cache": true,
     "compose": true,
-    "callback": null,
-    "defaultFilters": null,
-    "fieldLimiters": null,
     "cacheTTL": 300,
     "authenticate": true,
     "publish": {
@@ -594,11 +583,8 @@ var articleSchema = {
     "cacheTTL": 300,
     "authenticate": true,
     "compose": true,
-    "callback": null,
     "displayName": "Articles",
     "storeRevisions": true,
-    "defaultFilters": null,
-    "fieldLimiters": null,
     "type": "article",
     "publish": {
       "group": "Content",
@@ -609,12 +595,13 @@ var articleSchema = {
     "allowDelete": true,
     "count": 20,
     "sortOrder": 1,
-    "sort": "publicationDate",
+    //"sort": "publicationDate",
     "index": {
         "enabled": true,
         "keys": {
             "_id": 1,
-            "urls": 1
+            "urls": 1,
+            "publicationDate": 1
         }
     },
     "hooks": {
@@ -661,7 +648,7 @@ slugifyHook += '\n'
 slugifyHook += 'module.exports = function (obj, type, data) {\n'
 slugifyHook += '  // if (type === "beforeUpdate" || type === "beforeCreate") {\n'
 slugifyHook += '    var object = _.clone(obj)\n'
-slugifyHook += '    //console.log(object)\n'
+slugifyHook += '    //console.log(obj)\n'
 slugifyHook += '    var field = getFieldValue(data.options.override, object) || getFieldValue(data.options.from, object)\n'
 slugifyHook += '    if (field) {\n'
 slugifyHook += '      obj[data.options.to] = field.toLowerCase()\n'

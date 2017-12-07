@@ -1,10 +1,8 @@
-var _ = require('underscore')
 var crypto = require('crypto')
 var formatError = require('@dadi/format-error')
 var fs = require('fs')
 var Moment = require('moment')
 var path = require('path')
-var util = require('util')
 
 var cache = require(path.join(__dirname, '/cache'))
 var config = require(path.join(__dirname, '/../../config'))
@@ -31,8 +29,6 @@ module.exports.sendBackJSON = function (successCode, res, next) {
       res.setHeader('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization')
     }
 
-    res.setHeader('Server', config.get('server.name'))
-
     res.setHeader('content-type', 'application/json')
     res.setHeader('content-length', Buffer.byteLength(resBody))
 
@@ -54,8 +50,6 @@ module.exports.sendBackJSONP = function (callbackName, res, next) {
     var resBody = JSON.stringify(results)
     resBody = callbackName + '(' + resBody + ');'
 
-    res.setHeader('Server', config.get('server.name'))
-
     res.setHeader('content-type', 'text/javascript')
     res.setHeader('content-length', Buffer.byteLength(resBody))
     res.end(resBody)
@@ -68,8 +62,6 @@ module.exports.sendBackText = function (successCode, res, next) {
     if (err) return next(err)
 
     var resBody = results
-
-    res.setHeader('Server', config.get('server.name'))
 
     res.setHeader('content-type', 'application/text')
     res.setHeader('content-length', Buffer.byteLength(resBody))
@@ -92,26 +84,6 @@ module.exports.parseQuery = function (queryStr) {
   // handle case where queryStr is "null" or some other malicious string
   if (typeof ret !== 'object' || ret === null) ret = {}
   return ret
-}
-
-module.exports.keyValidForSchema = function (model, key) {
-  if (key !== '_id' && model.schema.hasOwnProperty(key) === false) {
-    // check for dot notation so we can determine the datatype of the first part of the key
-    if (key.indexOf('.') > 0) {
-      var keyParts = key.split('.')
-      if (model.schema.hasOwnProperty(keyParts[0])) {
-        if (/Mixed|Object|Reference/.test(model.schema[keyParts[0]].type)) {
-          return true
-        }
-      }
-    }
-
-    // field/key doesn't exist in the schema
-    return false
-  }
-
-  // key exists in the schema, or
-  return true
 }
 
 // Transforms strings from a query object into more appropriate types, based
@@ -159,7 +131,7 @@ module.exports.transformQuery = function (obj, type, format) {
   }
 
   if (obj) {
-    Object.keys(obj).forEach((key) => {
+    Object.keys(obj).forEach(key => {
       if ((typeof obj[key] === 'object') && (obj[key] !== null)) {
         this.transformQuery(obj[key], type)
       } else if (typeof obj[key] === 'string') {
@@ -213,7 +185,7 @@ module.exports.isJSON = function (jsonString) {
 
 module.exports.validateCollectionSchema = function (obj) {
   // `obj` must be a "hash type object", i.e. { ... }
-  if (typeof obj !== 'object' || util.isArray(obj) || obj === null) return false
+  if (typeof obj !== 'object' || Array.isArray(obj) || obj === null) return false
 
   var response = {
     success: true,
@@ -233,7 +205,7 @@ module.exports.validateCollectionSchema = function (obj) {
     response.errors.push({section: 'settings', message: 'must be provided'})
   }
 
-  if (!_.isEmpty(response.errors)) {
+  if (response.errors.length > 0) {
     response.success = false
     return response
   }
@@ -246,7 +218,7 @@ module.exports.validateCollectionSchema = function (obj) {
   }
 
   // check that all required settings are present
-  var requiredSettings = ['cache', 'authenticate', 'callback', 'defaultFilters', 'fieldLimiters', 'count']
+  var requiredSettings = ['cache', 'authenticate']
 
   requiredSettings.forEach(function (key) {
     if (!obj.settings.hasOwnProperty(key)) {
@@ -262,13 +234,13 @@ module.exports.validateCollectionSchema = function (obj) {
     if (!obj.settings.index) {
       indexSpecified = false
     } else {
-      if (_.isArray(obj.settings.index)) {
-        _.each(obj.settings.index, (index) => {
-          if (_.contains(Object.keys(index.keys), obj.settings.sort)) {
+      if (Array.isArray(obj.settings.index)) {
+        obj.settings.index.forEach(index => {
+          if (Object.keys(index.keys).includes(obj.settings.sort)) {
             indexSpecified = true
           }
         })
-      } else if (_.contains(Object.keys(obj.settings.index.keys), obj.settings.sort)) {
+      } else if (Object.keys(obj.settings.index.keys).includes(obj.settings.sort)) {
         indexSpecified = true
       }
     }
@@ -278,7 +250,7 @@ module.exports.validateCollectionSchema = function (obj) {
     }
   }
 
-  response.success = _.isEmpty(response.errors)
+  response.success = response.errors.length === 0
 
   return response
 }

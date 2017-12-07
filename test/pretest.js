@@ -1,9 +1,10 @@
-var fs = require('fs');
-var path = require('path');
-var colors = require('colors');
+var exec = require('child_process').exec
+var fs = require('fs')
+var path = require('path')
+var colors = require('colors')
 
-var testConfigPath = './config/config.test.json';
-var testConfigSamplePath = './config/config.test.json.sample';
+var testConfigPath = './config/config.test.json'
+var testConfigSamplePath = './config/config.test.json.sample'
 
 var testConfigSample = fs.readFileSync(testConfigSamplePath, { encoding: 'utf-8'}).toString();
 
@@ -11,7 +12,11 @@ function loadConfig(done) {
 
   try {
     var testConfig = fs.readFileSync(testConfigPath, { encoding: 'utf-8'});
-    return done(JSON.parse(testConfig));
+    var conf = JSON.parse(testConfig)
+
+    console.log('\n  Running test suite using the in-memory test connector'.green)
+
+    return done(conf)
   }
   catch (err) {
     if (err.code === 'ENOENT') {

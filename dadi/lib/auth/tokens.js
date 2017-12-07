@@ -1,87 +1,98 @@
-var path = require('path')
-var uuid = require('uuid')
-var config = require(path.join(__dirname, '/../../../config.js'))
-var connection = require(path.join(__dirname, '/../model/connection'))
-var tokenStore = require(path.join(__dirname, '/tokenStore'))()
+'use strict'
 
-var dbOptions = config.get('auth.database')
-dbOptions.auth = true
-var clientStore = connection(dbOptions)
-var clientCollectionName = config.get('auth.clientCollection') || 'clientStore'
+const debug = require('debug')('api:tokens')
+const path = require('path')
+const config = require(path.join(__dirname, '/../../../config.js'))
+const Connection = require(path.join(__dirname, '/../model/connection'))
+const tokenStore = require(path.join(__dirname, '/tokenStore'))()
 
-/**
- * Generate a token and test that it doesn't already exist in the token store.
- * If it does exist, keep generating tokens until we've got a unique one.
- */
-function getToken (callback) {
-  (function checkToken () {
-    var token = uuid.v4()
-    tokenStore.get(token, function (err, val) {
-      if (err) console.log(err)
+const clientCollectionName = config.get('auth.clientCollection')
+const dbOptions = { override: true, database: config.get('auth.database'), collection: clientCollectionName }
 
-      if (val) {
-        checkToken()
-      } else {
-        callback(token)
-      }
-    })
-  })()
+let connection
+
+module.exports.connect = () => {
+  connection = Connection(dbOptions, null, config.get('auth.datastore'))
 }
 
-module.exports.generate = function (req, res, next) {
-  // Look up the creds in clientStore
-  var _done = function (database) {
-    database.collection(clientCollectionName).findOne({
-      clientId: req.body.clientId,
-      secret: req.body.secret
-    }, function (err, client) {
-      if (err) return next(err)
+module.exports.generate = (req, res, next) => {
+  debug('Generate token')
 
-      if (client) {
-        // Generate token
-        var token
-        getToken(function (returnedToken) {
-          token = returnedToken
+  const handleInvalidCredentials = () => {
+    const error = new Error('Invalid Credentials')
 
-          // Save token
-          return tokenStore.set(token, client, function (err) {
-            if (err) return next(err)
+    error.statusCode = 401
 
-            var tok = {
-              accessToken: token,
-              tokenType: 'Bearer',
-              expiresIn: config.get('auth.tokenTtl')
-            }
+    res.setHeader(
+      'WWW-Authenticate', 'Bearer, error="invalid_credentials", error_description="Invalid credentials supplied"'
+    )
 
-            var json = JSON.stringify(tok)
-            res.setHeader('Content-Type', 'application/json')
-            res.setHeader('Cache-Control', 'no-store')
-            res.setHeader('Pragma', 'no-cache')
-            res.end(json)
-          })
-        })
-      } else {
-        var error = new Error('Invalid Credentials')
-        error.statusCode = 401
-        res.setHeader('WWW-Authenticate', 'Bearer, error="invalid_credentials", error_description="Invalid credentials supplied"')
-        return next(error)
-      }
-    })
+    return next(error)
   }
 
-  if (clientStore.db) return _done(clientStore.db)
+  // Look up the credentials supplied in the request body in clientStore
+  const credentials = {
+    clientId: req.body.clientId,
+    secret: req.body.secret
+  }
 
-  clientStore.on('connect', _done)
+  // Return 401 if the clientId/secret are not plain strings.
+  if (
+    typeof credentials.clientId !== 'string' ||
+    typeof credentials.secret !== 'string'
+  ) {
+    return handleInvalidCredentials()
+  }
+
+  const connectionReady = database => {
+    database.find({
+      query: credentials,
+      collection: clientCollectionName,
+      schema: tokenStore.schema.fields,
+      settings: tokenStore.schema.settings
+    }).then(results => {
+      const client = results.results[0]
+
+      // no client found matchibg the credentials
+      // return 401 Unauthorized
+      if (!client) {
+        return handleInvalidCredentials()
+      }
+
+      return tokenStore.generateNew().then(newToken => {
+        return tokenStore.set(newToken, client).then(doc => newToken)
+      })
+    }).then(token => {
+      if (!token) return
+
+      const response = {
+        accessToken: token,
+        tokenType: 'Bearer',
+        expiresIn: config.get('auth.tokenTtl')
+      }
+
+      res.setHeader('Content-Type', 'application/json')
+      res.setHeader('Cache-Control', 'no-store')
+      res.setHeader('Pragma', 'no-cache')
+
+      return res.end(JSON.stringify(response))
+    }).catch(next)
+  }
+
+  if (connection.db) return connectionReady(connection.db)
+  connection.once('connect', connectionReady)
 }
 
-module.exports.validate = function (token, done) {
-  tokenStore.get(token, function (err, doc) {
-    if (err) return done(err)
+module.exports.validate = (token, done) => {
+  debug('Validate token %s', token)
 
-    if (doc) return done(null, doc.value)
+  tokenStore.get(token).then(document => {
+    if (document) {
+      return done(null, document.value)
+    }
 
-    done()
-  })
+    return done()
+  }).catch(done)
 }
 
-module.exports.store = tokenStore
+module.exports.tokenStore = tokenStore

@@ -2,111 +2,94 @@ var sinon = require('sinon')
 var should = require('should')
 var request = require('supertest')
 var config = require(__dirname + '/../../config')
-var connection = require(__dirname + '/../../dadi/lib/model/connection')
+var Connection = require(__dirname + '/../../dadi/lib/model/connection')
 var tokens = require(__dirname + '/../../dadi/lib/auth/tokens')
 var tokenStore = require(__dirname + '/../../dadi/lib/auth/tokenStore')
+var clientCollectionName = config.get('auth.clientCollection')
 
 describe('Token Store', function () {
   before(function (done) {
-    var conn = connection(config.get('auth.database'))
+    var dbOptions = { auth: true, database: config.get('auth.database'), collection: clientCollectionName }
+    var conn = Connection(dbOptions, null, config.get('auth.datastore'))
 
     setTimeout(function () {
-      conn.db.dropDatabase(done)
+      if (conn.datastore.dropDatabase) {
+        conn.datastore.dropDatabase().then(() => {
+          done()
+        }).catch((err) => {
+          console.log(err)
+          done(err)
+        })
+      } else {
+        done()
+      }
     }, 500)
   })
 
   it('should export function that returns an instance', function (done) {
     var store = tokenStore()
-    store.should.be.an.instanceOf(tokenStore.Store)
+    store.should.be.an.instanceOf(tokenStore.TokenStore)
     done()
   })
 
   it('should export a constructor', function (done) {
-    tokenStore.Store.should.be.Function
+    tokenStore.TokenStore.should.be.Function
     done()
   })
 
   it('should be able to get and set values and tokens', function (done) {
     var store = tokenStore()
 
-    store.set('test123', {id: '123'}, function (err) {
-      if (err) return done(err)
+    store.set('test123', {id: '123'}).then(doc => {
+      doc.value.id.should.equal('123')
+      doc.token.should.equal('test123')
 
-      store.get('test123', function (err, val) {
-        if (err) return done(err)
-
-        val.value.id.should.equal('123')
-        val.token.should.equal('test123')
-        done()
-      })
-    })
+      done()
+    }).catch(err => done(err))
   })
 
   it("should return empty object when token isn't found", function (done) {
     var store = tokenStore()
 
-    store.get('XXX', function (err, val) {
-      if (err) return done(err);(val === null).should.eql(true)
+    store.get('XXX').then(doc => {
+      (doc === null).should.eql(true)
+
       done()
-    })
+    }).catch(err => done(err))
   })
 
   it('should use specified database when creating a connection', function (done) {
-    var dbConfig = {
-      'hosts': [
-        {
-          'host': '127.0.0.1',
-          'port': 27017
-        }
-      ],
-      'username': '',
-      'password': '',
-      'database': 'test',
-      'ssl': false,
-      'replicaSet': '',
-      'enableCollectionDatabases': false,
-      'secondary': {
-        'hosts': [
-          {
-            'host': '127.0.0.1',
-            'port': 27017
-          }
-        ],
-        'username': '',
-        'password': '',
-        'replicaSet': '',
-        'ssl': false
-      }
-    }
+    this.timeout(30000)
 
     var auth = {
-      'tokenUrl': '/token',
-      'tokenTtl': 1800,
-      'database': {
-        'hosts': [
-          {
-            'host': '127.0.0.1',
-            'port': 27017
-          }
-        ],
-        'username': '',
-        'password': '',
-        'database': 'separate_auth_db'
-      },
-      'clientCollection': 'clientStore',
-      'tokenCollection': 'tokenStore'
+      database: 'separate_auth_db',
+      clientCollection: 'clientStore',
+      tokenCollection: 'tokenStore',
+      datastore: './../../../test/test-connector'
+    }
+    var TokenStore = tokenStore.TokenStore
+
+    sinon.stub(config, 'get')
+      .withArgs('auth.database').returns(auth.database)
+      .withArgs('auth.datastore').returns(auth.datastore)
+      .withArgs('auth.clientCollection').returns(auth.clientCollection)
+      .withArgs('auth.tokenCollection').returns(auth.tokenCollection)
+
+    var connectCopy = Connection.Connection.prototype.connect
+
+    Connection.Connection.prototype.connect = function (details) {
+      Connection.Connection.prototype.connect = connectCopy
+      config.get.restore()
+
+      details.database.should.eql(auth.database)
+      details.collection.should.eql(auth.tokenCollection)
+
+      done()
     }
 
-    var oldConfig = config.get('auth')
-    config.set('auth', auth)
-
-    var store = tokenStore()
-
-    should.exist(store.connection)
-    store.connection.connectionOptions.database.should.equal('separate_auth_db')
-
-    config.set('auth', oldConfig)
-    done()
+    var store = new TokenStore()
+    
+    store.connect()
   })
 
   describe('get method', function () {
@@ -117,11 +100,11 @@ describe('Token Store', function () {
       done()
     })
 
-    it('should take token as first arg and callback as second', function (done) {
+    it('should take token as arg and return Promise', function (done) {
       var store = tokenStore()
-      store.get('1234567890abcdefghi', function (err, val) {
-        done(err)
-      })
+      store.get('1234567890abcdefghi').then(doc => {
+        done()
+      }).catch(err => done(err))
     })
   })
 
@@ -133,11 +116,53 @@ describe('Token Store', function () {
       done()
     })
 
-    it('should take token as first arg, value as second, and callback as third', function (done) {
+    it('should take token as first arg and value as second, returning a Promise', function (done) {
       var store = tokenStore()
-      store.set('1234567890abcdefghi', {id: '123', secret: 'asdfghjkl'}, function (err) {
-        done(err)
-      })
+      store.set('1234567890abcdefghi', {id: '123', secret: 'asdfghjkl'}).then(doc => {
+        done()
+      }).catch(err => done(err))
     })
+  })
+
+  describe('clean-up agent', function () {
+    it('should remove expired tokens from the collection and keep valid ones', function (done) {
+      sinon.stub(config, 'get')
+        .withArgs('auth.cleanupInterval')
+        .returns(1)
+        .withArgs('auth.tokenTtl')
+        .onFirstCall().returns(1)
+        .onSecondCall().returns(10)
+
+      var store = tokenStore()
+      var payload = {
+        clientId: 'testClient',
+        secret: 'superSecret'
+      }
+      var token1 = '123456789'
+      var token2 = '987654321'
+
+      store.stopCleanupAgent()
+      store.startCleanupAgent()
+
+      store.set(token1, payload)
+        .then(doc => {
+          return store.set(token2, payload)
+        })
+        .then(doc => {
+          setTimeout(() => {
+            store.get(token1).then(doc1 => {
+              return store.get(token2).then(doc2 => {
+                should.equal(doc1, null)
+                doc2.token.should.eql(token2)
+
+                config.get.restore()
+
+                done()
+              })
+            })
+          }, 3000)
+        })
+        .catch(err => done(err))
+      })
   })
 })

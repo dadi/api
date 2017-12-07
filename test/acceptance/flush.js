@@ -16,7 +16,7 @@ var c
 var cacheKeys = []
 
 describe('Cache', function (done) {
-  this.timeout(8000)
+  this.timeout(5000)
 
   describe('Invalidation API - Filesystem', function () {
     before(function (done) {
@@ -37,7 +37,7 @@ describe('Cache', function (done) {
 
     beforeEach(function (done) {
       app.start(function () {
-        help.dropDatabase('test', function (err) {
+        help.dropDatabase('testdb', function (err) {
           if (err) return done(err)
 
           help.getBearerToken(function (err, token) {
@@ -81,15 +81,13 @@ describe('Cache', function (done) {
     })
 
     it("should not flush cached items that don't match the specified path", function (done) {
-      this.timeout(4000)
-
       var client = request('http://' + config.get('server.host') + ':' + config.get('server.port'))
 
       // create a document in another collection
       client
       .post('/v1/library/book')
       .set('Authorization', 'Bearer ' + bearerToken)
-      .send({'title': 'War and Peace', 'author': 'b8b285ae-53d1-47a5-9e69-ec04' })
+      .send({'title': 'War and Peace', 'author': require('uuid').v4().toString() })
       .expect(200)
       .end(function (err, res) {
         if (err) return done(err)
@@ -228,7 +226,7 @@ describe('Cache', function (done) {
       client
         .post('/v1/library/book')
         .set('Authorization', 'Bearer ' + bearerToken)
-        .send({'title': 'War and Peace', 'author': 'b8b285ae-53d1-47a5-9e69-ec04' })
+        .send({'title': 'War and Peace', 'author': require('uuid').v4().toString() })
         .expect(200)
         .end(function (err, res) {
           if (err) return done(err)
@@ -350,7 +348,7 @@ describe('Cache', function (done) {
       }
 
       app.start(function () {
-        help.dropDatabase('test', function (err) {
+        help.dropDatabase('testdb', function (err) {
           if (err) return done(err)
 
           help.getBearerToken(function (err, token) {
@@ -400,7 +398,7 @@ describe('Cache', function (done) {
       client
       .post('/v1/library/book')
       .set('Authorization', 'Bearer ' + bearerToken)
-      .send({'title': 'War and Peace', 'author': 'b8b285ae-53d1-47a5-9e69-ec04' })
+      .send({'title': 'War and Peace', 'author': require('uuid').v4().toString() })
       .expect(200)
       .end(function (err, res) {
         if (err) return done(err)
@@ -556,7 +554,7 @@ describe('Cache', function (done) {
       client
       .post('/v1/library/book')
       .set('Authorization', 'Bearer ' + bearerToken)
-      .send({'title': 'War and Peace', 'author': 'b8b285ae-53d1-47a5-9e69-ec04' })
+      .send({'title': 'War and Peace', 'author': require('uuid').v4().toString() })
       .expect(200)
       .end(function (err, res) {
         if (err) return done(err)

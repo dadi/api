@@ -1,0 +1,47 @@
+{
+  "connectWithCollection": true,
+  "hosts": [
+    {
+      "host": "127.0.0.1",
+      "port": 27017
+    }
+  ],
+  "username": "",
+  "password": "",
+  "database": "testdb",
+  "ssl": false,
+  "replicaSet": "",
+  "enableCollectionDatabases": false,
+  "testdb": {
+    "hosts": [
+      {
+        "host": "127.0.0.1",
+        "port": 27017
+      }
+    ]
+  },
+  "test_auth_db": {
+    "hosts": [
+      {
+        "host": "127.0.0.1",
+        "port": 27017
+      }
+    ],
+    "username": "",
+    "password": "",
+    "replicaSet": "",
+    "ssl": false
+  },
+  "testdb": {
+    "hosts": [
+      {
+        "host": "127.0.0.1",
+        "port": 27017
+      }
+    ],
+    "username": "",
+    "password": "",
+    "replicaSet": "",
+    "ssl": false
+  }
+}

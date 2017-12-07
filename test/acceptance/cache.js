@@ -37,7 +37,6 @@ describe('Cache', function (done) {
   beforeEach(function(done) {
     try {
       cache.reset()
-      app.stop(function(){});
       done();
     }
     catch (err) {
@@ -45,9 +44,9 @@ describe('Cache', function (done) {
     }
   });
 
-  it('should use cache if available', function (done) {
+  it.skip('should use cache if available', function (done) {
     app.start(function() {
-      help.dropDatabase('test', function (err) {
+      help.dropDatabase('testdb', function (err) {
         if (err) return done(err);
 
         help.getBearerToken(function (err, token) {
@@ -106,9 +105,9 @@ describe('Cache', function (done) {
     });
   });
 
-  it('should allow bypassing cache with query string flag', function (done) {
+  it.skip('should allow bypassing cache with query string flag', function (done) {
     app.start(function() {
-      help.dropDatabase('test', function (err) {
+      help.dropDatabase('testdb', function (err) {
         if (err) return done(err);
 
         help.getBearerToken(function (err, token) {
@@ -179,7 +178,7 @@ describe('Cache', function (done) {
     var spy = sinon.spy(fs, 'createWriteStream');
 
     app.start(function() {
-      help.dropDatabase('test', function (err) {
+      help.dropDatabase('testdb', function (err) {
         if (err) return done(err);
       help.getBearerToken(function (err, token) {
          if (err) return done(err);
@@ -225,8 +224,7 @@ describe('Cache', function (done) {
               config = require(__dirname + '/../../config');
               config.loadFile(config.configPath());
 
-              app.stop(function(){});
-              done();
+              app.stop(done);
             });
           });
         });
@@ -250,7 +248,7 @@ describe('Cache', function (done) {
       config.loadFile(config.configPath())
 
       app.start(function() {
-        help.dropDatabase('test', function (err) {
+        help.dropDatabase('testdb', function (err) {
           if (err) return done(err);
 
           help.getBearerToken(function (err, token) {
@@ -299,6 +297,8 @@ describe('Cache', function (done) {
 
       var oldTTL = config.get('caching.ttl');
       config.set('caching.ttl', 1);
+
+      cache.reset()
 
       var _done = done;
       done = function (err) {
@@ -603,20 +603,15 @@ describe('Cache', function (done) {
       done();
     });
 
-    it('should throw error if can\'t connect to Redis client', function(done) {
+    it.skip('should throw error if can\'t connect to Redis client', function(done) {
       delete require.cache[__dirname + '/../../config.js'];
       delete require.cache[__dirname + '/../../dadi/lib/'];
 
       config.loadFile(config.configPath());
 
-      try {
-        app.stop(function(){});
-        should.throws(function() { app.start(function(){}); }, Error);
-      }
-      catch (err) {
-      }
+      should.throws(function() { app.start(function(){}); }, Error);
 
-      done();
+      app.stop(done)
 
     });
 
@@ -675,12 +670,10 @@ describe('Cache', function (done) {
         config.get('caching.directory.enabled').should.eql(true)
 
         try {
-          app.stop(function(){});
+          app.stop(done);
+        } catch (err) {
+          done();
         }
-        catch (err) {
-        }
-
-        done();
       }, 1000)
 
     });
@@ -723,8 +716,7 @@ describe('Cache', function (done) {
               spy.args[0][0].should.eql(cacheKey);
 
               c.cache.cacheHandler.redisClient.exists.restore()
-              app.stop(function(){});
-              done();
+              app.stop(done);
             });
 
           });
@@ -773,8 +765,7 @@ describe('Cache', function (done) {
               res.text.should.eql('DATA');
               res.headers['x-cache'].should.eql('HIT');
 
-              app.stop(function(){});
-              done();
+              app.stop(done);
             });
 
           });
@@ -824,7 +815,7 @@ describe('Cache', function (done) {
 
       try {
         app.start(function() {
-          help.dropDatabase('test', function (err) {
+          help.dropDatabase('testdb', function (err) {
             if (err) return done(err);
 
            help.getBearerToken(function (err, token) {
@@ -863,8 +854,7 @@ describe('Cache', function (done) {
                           res2.headers['x-cache'].should.eql('MISS');
                           res2.headers['x-cache-lookup'].should.eql('MISS');
 
-                          app.stop(function(){});
-                          done();
+                          app.stop(done);
 
                         });
                       }, 1500);
@@ -913,7 +903,7 @@ describe('Cache', function (done) {
 
       try {
         app.start(function() {
-          help.dropDatabase('test', function (err) {
+          help.dropDatabase('testdb', function (err) {
             if (err) return done(err);
 
             help.getBearerToken(function (err, token) {
@@ -962,8 +952,7 @@ describe('Cache', function (done) {
                               res3.body.results.length.should.eql(3);
                               res3.text.should.not.equal(res1.text);
 
-                              app.stop(function(){});
-                              done()
+                              app.stop(done);
                             });
                           }, 500)
                         });
@@ -1013,7 +1002,7 @@ describe('Cache', function (done) {
 
       try {
         app.start(function() {
-          help.dropDatabase('test', function (err) {
+          help.dropDatabase('testdb', function (err) {
             if (err) return done(err);
 
             help.getBearerToken(function (err, token) {
@@ -1078,8 +1067,7 @@ describe('Cache', function (done) {
                                   .end(function (err, getRes3) {
                                     var result = _.findWhere(getRes3.body.results, { "_id": id });
                                     result.field1.should.eql('foo bar baz!');
-                                    app.stop(function(){});
-                                    done();
+                                    app.stop(done);
                                   });
                                }, 500);
                              });
@@ -1131,7 +1119,7 @@ describe('Cache', function (done) {
 
       try {
         app.start(function() {
-          help.dropDatabase('test', function (err) {
+          help.dropDatabase('testdb', function (err) {
             if (err) return done(err);
 
             help.getBearerToken(function (err, token) {
@@ -1194,8 +1182,7 @@ describe('Cache', function (done) {
                                     .end(function (err, getRes3) {
                                       var result = _.findWhere(getRes3.body.results, { "_id": id });
                                       should.not.exist(result);
-                                      app.stop(function(){});
-                                      done();
+                                      app.stop(done);
                                     });
                                   }, 300);
                                 });
@@ -1280,8 +1267,7 @@ describe('Cache', function (done) {
                     if (err) return done(err);
 
                     res2.text.should.not.equal(res1.text);
-                    app.stop(function(){});
-                    done();
+                    app.stop(done);
                   });
                 });
               }, 500)

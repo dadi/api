@@ -563,5 +563,26 @@ describe('validation', function () {
                 done();
             });
         });
+
+        it('should be added to the request object if it is Boolean false', function (done) {
+            var client = request('http://' + config.get('server.host') + ':' + config.get('server.port'));
+
+            client
+            .post('/vtest/testdb/test-validation-schema')
+            .set('Authorization', 'Bearer ' + bearerToken)
+            .send({fieldString: 'string'})
+            .expect(200)
+            .expect('content-type', 'application/json')
+            .end(function (err, res) {
+                if (err) return done(err);
+
+                res.body.should.be.json;
+                res.body.results.should.be.an.Array;
+                res.body.results[0].fieldDefaultBooleanFalse.should.exist;
+                res.body.results[0].fieldDefaultBooleanFalse.should.eql(false);
+
+                done();
+            });
+        });
     });
 });

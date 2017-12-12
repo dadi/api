@@ -9,11 +9,11 @@ module.exports = function cors (server) {
       return next()
     }
 
-    const method = req.method && req.method.toUpperCase && req.method.toUpperCase()
+    const method = req.method && req.method.toLowerCase()
 
     // Preflight requests set some sensible defaults, but mostly permit anything
     // the client asks for by reflecting its headers back.
-    if (method === 'OPTIONS') {
+    if (method === 'options') {
       // Reflect the requesting `Origin` back to the client, falling back on a
       // wildcard permission.
       if (req.headers.origin) {

@@ -547,7 +547,7 @@ describe('Authentication', function () {
     })
   })
 
-  it('should allow an OPTIONS request for the token route', function (done) {
+  it.skip('should allow an OPTIONS request for the token route', function (done) {
     var oldCors = config.get('cors')
     config.set('cors', true)
 
@@ -574,7 +574,7 @@ describe('Authentication', function () {
     })
   })
 
-  it('should contain the correct CORS headers when cors = true', function (done) {
+  it.skip('should contain the correct CORS headers when cors = true', function (done) {
     var oldCors = config.get('cors')
     config.set('cors', true)
 

@@ -1,7 +1,7 @@
 const path = require('path')
+const vary = require('vary')
 
 const config = require(path.join(__dirname, '/../../../config.js'))
-const vary = require('vary')
 
 module.exports = function cors (server) {
   server.app.use((req, res, next) => {

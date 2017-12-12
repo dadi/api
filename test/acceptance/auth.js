@@ -70,22 +70,6 @@ describe('Authentication', function () {
         })
   })
 
-  it('should not issue token if creds contain query keywords', function (done) {
-    var client = request('http://' + config.get('server.host') + ':' + config.get('server.port'))
-
-    client
-        .post(tokenRoute)
-        .send({
-          clientId: {'$ne': null},
-          secret: {'$ne': null}
-        })
-        .expect(401, function (err, res) {
-          res.headers['www-authenticate'].should.exist
-          res.headers['www-authenticate'].should.eql('Bearer, error="invalid_credentials", error_description="Invalid credentials supplied"')
-          done()
-        })
-  })
-
   it('should allow requests containing token', function (done) {
     help.getBearerToken(function (err, token) {
       var client = request('http://' + config.get('server.host') + ':' + config.get('server.port'))
@@ -560,62 +544,6 @@ describe('Authentication', function () {
                   done()
                 })
       }, 300)
-    })
-  })
-
-  it('should allow an OPTIONS request for the token route', function (done) {
-    var oldCors = config.get('cors')
-    config.set('cors', true)
-
-    var _done = function (err) {
-      config.set('cors', oldCors)
-      done(err)
-    }
-
-    help.getBearerToken(function (err, token) {
-      var client = request('http://' + config.get('server.host') + ':' + config.get('server.port'))
-
-      client
-        .options('/token')
-        .set('Origin', 'http://example.com')
-        .set('Access-Control-Request-Method', 'GET')
-        .set('Access-Control-Request-Headers', 'X-Requested-With')
-        .expect('content-type', 'application/json')
-        .expect('access-control-allow-origin', '*')
-        .expect('Access-Control-Allow-Methods', 'POST, OPTIONS')
-        .expect(200)
-        .end(function (err, res) {
-          if (err) return _done(err)
-          _done()
-        })
-    })
-  })
-
-  it('should contain the correct CORS headers when cors = true', function (done) {
-    var oldCors = config.get('cors')
-    config.set('cors', true)
-
-    var _done = function (err) {
-      config.set('cors', oldCors)
-      done(err)
-    }
-
-    help.getBearerToken(function (err, token) {
-      var client = request('http://' + config.get('server.host') + ':' + config.get('server.port'))
-
-      client
-        .options('/vtest/testdb/test-schema')
-        .set('Origin', 'http://example.com')
-        .set('Access-Control-Request-Method', 'GET')
-        .set('Access-Control-Request-Headers', 'X-Requested-With')
-        .set('Authorization', 'Bearer ' + token)
-        .expect('content-type', 'application/json')
-        .expect('access-control-allow-origin', '*')
-        .expect(200)
-        .end(function (err, res) {
-          if (err) return _done(err)
-          _done()
-        })
     })
   })
 })

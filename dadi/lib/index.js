@@ -23,6 +23,7 @@ var auth = require(path.join(__dirname, '/auth'))
 var cache = require(path.join(__dirname, '/cache'))
 var Connection = require(path.join(__dirname, '/model/connection'))
 var Controller = require(path.join(__dirname, '/controller'))
+var cors = require(path.join(__dirname, '/cors'))
 var HooksController = require(path.join(__dirname, '/controller/hooks'))
 var MediaController = require(path.join(__dirname, '/controller/media'))
 var dadiBoot = require('@dadi/boot')
@@ -212,6 +213,8 @@ Server.prototype.start = function (done) {
   }))
   app.use(bodyParser.urlencoded({ extended: true, limit: '50mb' }))
   app.use(bodyParser.text({ limit: '50mb' }))
+
+  cors(self)
 
   // update configuration based on domain
   var domainConfigLoaded

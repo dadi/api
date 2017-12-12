@@ -1,6 +1,6 @@
 {
   "name": "@dadi/api",
-  "version": "3.0.0",
+  "version": "2.2.9",
   "main": "main.js",
   "scripts": {
     "create-client": "cd ../../.. && node ./node_modules/@dadi/api/utils/create-client.js",
@@ -48,7 +48,8 @@
     "streamifier": "^0.1.1",
     "underscore": "1.8.3",
     "underscore-contrib": "^0.3.0",
-    "validator": "7.0.0"
+    "validator": "7.0.0",
+    "vary": "^1.1.2"
   },
   "devDependencies": {
     "@commitlint/cli": "~4.1.1",

@@ -21,6 +21,7 @@ var api = require(path.join(__dirname, '/api'))
 var auth = require(path.join(__dirname, '/auth'))
 var cache = require(path.join(__dirname, '/cache'))
 var Controller = require(path.join(__dirname, '/controller'))
+var cors = require(path.join(__dirname, '/cors'))
 var HooksController = require(path.join(__dirname, '/controller/hooks'))
 var MediaController = require(path.join(__dirname, '/controller/media'))
 var dadiStatus = require('@dadi/status')
@@ -181,6 +182,8 @@ Server.prototype.start = function (done) {
   app.use(bodyParser.json({ limit: '50mb' }))
   app.use(bodyParser.urlencoded({ extended: false, limit: '50mb' }))
   app.use(bodyParser.text({ limit: '50mb' }))
+
+  cors(self)
 
   // update configuration based on domain
   var domainConfigLoaded

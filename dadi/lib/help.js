@@ -24,12 +24,6 @@ module.exports.sendBackJSON = function (successCode, res, next) {
       return
     }
 
-    if (config.get('cors') === true) {
-      res.setHeader('Access-Control-Allow-Origin', '*')
-      res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
-      res.setHeader('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization')
-    }
-
     res.setHeader('Server', config.get('server.name'))
 
     res.setHeader('content-type', 'application/json')

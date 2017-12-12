@@ -165,17 +165,6 @@ module.exports = function (server) {
     var method = req.method && req.method.toLowerCase()
     if (method === 'post') {
       return tokens.generate(req, res, next)
-    } else if (method === 'options') {
-      res.statusCode = 200
-      res.setHeader('content-type', 'application/json')
-
-      if (config.get('cors') === true) {
-        res.setHeader('Access-Control-Allow-Origin', '*')
-        res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS')
-        res.setHeader('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization')
-      }
-
-      return res.end(JSON.stringify({}))
     }
 
     next()

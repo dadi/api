@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## [2.2.10] (2017-12-05)
+
+### Changed
+
+[#363](https://github.com/dadi/api/issues/363): apply cross-origin headers to all incoming requests
+
 ## [2.2.9] (2017-12-05)
 
 ### Changed

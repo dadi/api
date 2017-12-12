@@ -15,33 +15,55 @@ module.exports.connect = () => {
   connection = Connection(dbOptions, null, config.get('auth.datastore'))
 }
 
-module.exports.generate = (req, res, next) => {
-  debug('Generate token')
+module.exports.generate = function (req, res, next) {
+  // Look up the creds in clientStore
+  var _done = function (database) {
+    if (
+      typeof req.body.clientId !== 'string' ||
+      typeof req.body.secret !== 'string'
+    ) {
+      var error = new Error('Invalid Credentials')
+      error.statusCode = 401
+      res.setHeader('WWW-Authenticate', 'Bearer, error="invalid_credentials", error_description="Invalid credentials supplied"')
+      return next(error)
+    }
 
-  const handleInvalidCredentials = () => {
-    const error = new Error('Invalid Credentials')
+    database.collection(clientCollectionName).findOne({
+      clientId: req.body.clientId,
+      secret: req.body.secret
+    }, function (err, client) {
+      if (err) return next(err)
 
-    error.statusCode = 401
+      if (client) {
+        // Generate token
+        var token
+        getToken(function (returnedToken) {
+          token = returnedToken
 
-    res.setHeader(
-      'WWW-Authenticate', 'Bearer, error="invalid_credentials", error_description="Invalid credentials supplied"'
-    )
+          // Save token
+          return tokenStore.set(token, client, function (err) {
+            if (err) return next(err)
 
-    return next(error)
-  }
+            var tok = {
+              accessToken: token,
+              tokenType: 'Bearer',
+              expiresIn: config.get('auth.tokenTtl')
+            }
 
-  // Look up the credentials supplied in the request body in clientStore
-  const credentials = {
-    clientId: req.body.clientId,
-    secret: req.body.secret
-  }
-
-  // Return 401 if the clientId/secret are not plain strings.
-  if (
-    typeof credentials.clientId !== 'string' ||
-    typeof credentials.secret !== 'string'
-  ) {
-    return handleInvalidCredentials()
+            var json = JSON.stringify(tok)
+            res.setHeader('Content-Type', 'application/json')
+            res.setHeader('Cache-Control', 'no-store')
+            res.setHeader('Pragma', 'no-cache')
+            res.end(json)
+          })
+        })
+      } else {
+        var error = new Error('Invalid Credentials')
+        error.statusCode = 401
+        res.setHeader('WWW-Authenticate', 'Bearer, error="invalid_credentials", error_description="Invalid credentials supplied"')
+        return next(error)
+      }
+    })
   }
 
   const connectionReady = database => {

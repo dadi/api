@@ -213,39 +213,37 @@ Controller.prototype.post = function (req, res, next) {
   debug('POST %s %o', pathname, req.params)
 
   // flush cache for POST requests
-  help.clearCache(pathname, (err) => {
-    if (err) return next(err)
+  help.clearCache(pathname, () => {})
 
-    // if id is present in the url, then this is an update
-    if (req.params.id || req.body.update) {
-      internals._lastModifiedAt = Date.now()
-      internals._lastModifiedBy = req.client && req.client.clientId
+  // if id is present in the url, then this is an update
+  if (req.params.id || req.body.update) {
+    internals._lastModifiedAt = Date.now()
+    internals._lastModifiedBy = req.client && req.client.clientId
 
-      var query = {}
-      var update = {}
+    var query = {}
+    var update = {}
 
-      if (req.params.id) {
-        query._id = req.params.id
-        update = req.body
-      } else {
-        query = req.body.query
-        update = req.body.update
-      }
-
-      // add the apiVersion filter
-      if (config.get('query.useVersionFilter')) {
-        query._apiVersion = internals._apiVersion
-      }
-
-      return self.model.update(query, update, internals, sendBackJSON(200, res, next), req)
+    if (req.params.id) {
+      query._id = req.params.id
+      update = req.body
+    } else {
+      query = req.body.query
+      update = req.body.update
     }
 
-    // if no id is present, then this is a create
-    internals._createdAt = Date.now()
-    internals._createdBy = req.client && req.client.clientId
+    // add the apiVersion filter
+    if (config.get('query.useVersionFilter')) {
+      query._apiVersion = internals._apiVersion
+    }
 
-    self.model.create(req.body, internals, sendBackJSON(200, res, next), req)
-  })
+    return self.model.update(query, update, internals, sendBackJSON(200, res, next), req)
+  }
+
+  // if no id is present, then this is a create
+  internals._createdAt = Date.now()
+  internals._createdBy = req.client && req.client.clientId
+
+  self.model.create(req.body, internals, sendBackJSON(200, res, next), req)
 }
 
 Controller.prototype.put = function (req, res, next) {
@@ -266,27 +264,25 @@ Controller.prototype.delete = function (req, res, next) {
   pathname = pathname.replace('/' + req.params.id, '')
 
   // flush cache for DELETE requests
-  help.clearCache(pathname, function (err) {
+  help.clearCache(pathname, () => {})
+
+  self.model.delete(query, function (err, results) {
     if (err) return next(err)
 
-    self.model.delete(query, function (err, results) {
-      if (err) return next(err)
+    if (config.get('feedback')) {
+      // send 200 with json message
+      return help.sendBackJSON(200, res, next)(null, {
+        status: 'success',
+        message: 'Documents deleted successfully',
+        deleted: results.deletedCount,
+        totalCount: results.totalCount
+      })
+    }
 
-      if (config.get('feedback')) {
-        // send 200 with json message
-        return help.sendBackJSON(200, res, next)(null, {
-          status: 'success',
-          message: 'Documents deleted successfully',
-          deleted: results.deletedCount,
-          totalCount: results.totalCount
-        })
-      }
-
-      // send no-content success
-      res.statusCode = 204
-      res.end()
-    }, req)
-  })
+    // send no-content success
+    res.statusCode = 204
+    res.end()
+  }, req)
 }
 
 Controller.prototype.stats = function (req, res, next) {

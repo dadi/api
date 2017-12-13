@@ -213,9 +213,7 @@ Controller.prototype.post = function (req, res, next) {
   debug('POST %s %o', pathname, req.params)
 
   // flush cache for POST requests
-  help.clearCache(pathname, (err) => {})
-
-  if (err) return next(err)
+  help.clearCache(pathname, () => {})
 
   // if id is present in the url, then this is an update
   if (req.params.id || req.body.update) {
@@ -266,9 +264,7 @@ Controller.prototype.delete = function (req, res, next) {
   pathname = pathname.replace('/' + req.params.id, '')
 
   // flush cache for DELETE requests
-  help.clearCache(pathname, (err) => {})
-
-  if (err) return next(err)
+  help.clearCache(pathname, () => {})
 
   self.model.delete(query, function (err, results) {
     if (err) return next(err)

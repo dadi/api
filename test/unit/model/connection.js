@@ -317,8 +317,7 @@ describe('Model connection', function () {
 
             conn.on('error', function (err) {
                 conn.connectionString.should.eql("mongodb://test:test123@127.0.0.1:27017/test?replicaSet=test&maxPoolSize=1");
-                err.toString().should.eql("MongoError: no primary found in replicaset");
-
+                err.message.includes("no primary found in replicaset").should.eql(true)
                 // restore config
                 config.set('database', dbConfig);
                 done();

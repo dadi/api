@@ -35,8 +35,6 @@ var search = require(path.join(__dirname, '/search'))
 var config = require(path.join(__dirname, '/../../config'))
 var configPath = path.resolve(config.configPath())
 
-log.init(config.get('logging'), {}, process.env.NODE_ENV)
-
 if (config.get('env') !== 'test') {
   // add timestamps in front of log messages
   require('console-stamp')(console, 'yyyy-mm-dd HH:MM:ss.l')
@@ -49,12 +47,19 @@ var Server = function () {
   this.components = {}
   this.monitors = {}
   this.docs = {}
-
-  log.info({module: 'server'}, 'Server logging started.')
 }
 
-Server.prototype.run = function (done) {
+Server.prototype.run = function (options, done) {
   require('console-stamp')(console, 'yyyy-mm-dd HH:MM:ss.l')
+
+  if (typeof options === 'function' && typeof done === undefined) {
+    done = options
+    options = {}
+  }
+
+  var logOptions = Object.assign({}, config.get('logging'), options && options.logging || {})
+  log.init(logOptions, {}, process.env.NODE_ENV)
+  log.info({module: 'server'}, 'Server logging started.')
 
   if (config.get('cluster')) {
     if (cluster.isMaster) {

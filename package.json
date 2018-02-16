@@ -25,6 +25,7 @@
     "concat-stream": "^1.6.0",
     "console-stamp": "^0.2.0",
     "convict": "3.0.0",
+    "deepmerge": "^2.0.1",
     "fs-extra": "^3.0.1",
     "imagesize": "^1.0.0",
     "jsonwebtoken": "^7.4.x",

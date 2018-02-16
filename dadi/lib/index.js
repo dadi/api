@@ -14,6 +14,7 @@ var mkdirp = require('mkdirp')
 var path = require('path')
 var pathToRegexp = require('path-to-regexp')
 var stackTrace = require('stack-trace')
+var deepmerge = require('deepmerge')
 var url = require('url')
 var _ = require('underscore')
 
@@ -57,7 +58,7 @@ Server.prototype.run = function (options, done) {
     options = {}
   }
 
-  var logOptions = Object.assign({}, config.get('logging'), options && options.logging || {})
+  var logOptions = deepmerge(config.get('logging'), options && options.logging || {})
   log.init(logOptions, {}, process.env.NODE_ENV)
   log.info({module: 'server'}, 'Server logging started.')
 

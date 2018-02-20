@@ -50,6 +50,12 @@ var Server = function () {
   this.docs = {}
 }
 
+Server.prototype.initialiseLog = function (options) {
+  var logOptions = deepmerge(config.get('logging'), options && options.logging || {})
+  log.init(logOptions, {}, process.env.NODE_ENV)
+  log.info({module: 'server'}, 'Server logging started.')
+}
+
 Server.prototype.run = function (options, done) {
   require('console-stamp')(console, 'yyyy-mm-dd HH:MM:ss.l')
 
@@ -58,9 +64,7 @@ Server.prototype.run = function (options, done) {
     options = {}
   }
 
-  var logOptions = deepmerge(config.get('logging'), options && options.logging || {})
-  log.init(logOptions, {}, process.env.NODE_ENV)
-  log.info({module: 'server'}, 'Server logging started.')
+  this.initialiseLog(options)
 
   if (config.get('cluster')) {
     if (cluster.isMaster) {
@@ -158,6 +162,8 @@ Server.prototype.run = function (options, done) {
 Server.prototype.start = function (done) {
   var self = this
   this.readyState = 2
+
+  this.initialiseLog()
 
   var defaultPaths = {
     collections: path.join(__dirname, '/../../workspace/collections'),

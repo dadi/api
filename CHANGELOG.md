@@ -4,6 +4,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## [2.3.1] (2018-02-21)
+
+### Changed
+
+Small fix to ensure stdout streams aren't merged with the options being passed to the logger instance.
+
+
+## [2.3.0] (2018-02-20)
+
+### Changed
+
+This release adds the ability to pass options to the instance of @dadi/logger, and works hand-in-hand with [dadi/logger#53](https://github.com/dadi/logger/pull/53).
+
+
 ## [2.2.11] (2017-12-14)
 
 ### Changed

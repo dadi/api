@@ -132,6 +132,17 @@ $ [sudo] service api restart
 
 > Note: the environment variable `NODE_ENV=production` must be set to the required configuration version matching the configuration files available in the `config` directory.
 
+## Tests
+
+To run the tests after cloning the repository, run the following command:
+
+```
+$ npm test
+```
+
+> NOTE: API installs version 4.0.1 of Mocha and uses this when calling `npm test`. If you have Mocha installed globally and want to simply run `mocha`, if using version 4 or above, add `--exit` to the command so it becomes `mocha --exit`
+
+
 ## Links
 * [API Documentation](https://docs.dadi.tech/#api/)
 

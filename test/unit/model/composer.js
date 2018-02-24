@@ -113,7 +113,7 @@ describe('Model', function () {
       it('should populate a reference field containing an ObjectID', function (done) {
         help.whenModelsConnect([mod], () => {
           // find a doc
-          mod.find({ fieldName: 'foo_3' } , {}, function (err, result) {
+          mod.find({ fieldName: 'foo_3' }, {}, function (err, result) {
             var anotherDoc = result.results[0]
 
             // add the id to another doc
@@ -143,7 +143,7 @@ describe('Model', function () {
 
         help.whenModelsConnect([mod], () => {
           // find a doc
-          mod.find({ fieldName: 'foo_3' } , {}, function (err, result) {
+          mod.find({ fieldName: 'foo_3' }, {}, function (err, result) {
             var anotherDoc = result.results[0]
 
             // add the id to another doc
@@ -188,7 +188,7 @@ describe('Model', function () {
 
                 book.create({title: 'Harry Potter 2', author: id, booksInSeries: books}, function (err, result) {
                   // find a book
-                  book.find({ title: 'Harry Potter 2' } , { 'compose': true }, function (err, result) {
+                  book.find({ title: 'Harry Potter 2' }, { 'compose': true }, function (err, result) {
                     var doc = result.results[0]
                     should.exist(doc.author.name)
                     doc.author.name.should.equal('J K Rowling')
@@ -221,7 +221,7 @@ describe('Model', function () {
 
                 book.create({title: 'Harry Potter 2', author: id, booksInSeries: books}, function (err, result) {
                   // find a book
-                  book.find({ title: 'Harry Potter 2' } , { 'compose': true }, function (err, result) {
+                  book.find({ title: 'Harry Potter 2' }, { 'compose': true }, function (err, result) {
                     // console.log(JSON.stringify(result, null, 2))
 
                     var doc = result.results[0]
@@ -255,7 +255,7 @@ describe('Model', function () {
 
               book.create({title: 'Harry Potter 2', author: id, booksInSeries: books}, function (err, result) {
                 // find a book
-                book.find({ title: 'Harry Potter 2' } , { 'compose': true }, function (err, result) {
+                book.find({ title: 'Harry Potter 2' }, { 'compose': true }, function (err, result) {
                   // console.log(JSON.stringify(result, null, 2))
 
                   var doc = result.results[0]
@@ -272,20 +272,20 @@ describe('Model', function () {
 
       it('should populate a reference field containing an array of ObjectIDs', function (done) {
         // find a doc
-        mod.find({ fieldName: { '$regex': 'foo' } } , {}, function (err, result) {
+        mod.find({ fieldName: { '$regex': 'foo' } }, {}, function (err, result) {
           // remove foo_1 from the results so we can add the remaining docs
           // to it as a reference
           var foo1 = _.findWhere(result.results, { fieldName: 'foo_1' })
           result.results.splice(result.results.indexOf(foo1), 1)
 
-          var anotherDoc = _.map(_.pluck(result.results, '_id'), function(id) {
+          var anotherDoc = _.map(_.pluck(result.results, '_id'), function (id) {
             return id.toString()
           })
 
           // add the id to another doc
           mod.update({ fieldName: 'foo_1' }, { refField: anotherDoc }, function (err, result) {
             // doc1 should now have refField as array of docs
-            //console.log(result)
+            // console.log(result)
             mod.find({fieldName: 'foo_1'}, { 'compose': true }, function (err, result) {
               var doc = result.results[0]
 
@@ -307,7 +307,7 @@ describe('Model', function () {
           // add a setting & replace "author" with "person" for this test
           bookSchema.author.settings.multiple = false
           var bookSchemaString = JSON.stringify(bookSchema)
-          bookSchemaString = bookSchemaString.replace('author','person')
+          bookSchemaString = bookSchemaString.replace('author', 'person')
 
           var book = model('book', JSON.parse(bookSchemaString), null, {database: 'testdb'})
           var person = model('person', personSchema, null, {database: 'testdb'})
@@ -350,7 +350,7 @@ describe('Model', function () {
           }
 
           var bookSchemaString = JSON.stringify(bookSchema)
-          bookSchemaString = bookSchemaString.replace('author','person')
+          bookSchemaString = bookSchemaString.replace('author', 'person')
 
           personSchema.spouse.settings = {
             compose: true
@@ -367,8 +367,7 @@ describe('Model', function () {
                 var rowling = result.results[0]._id.toString()
 
                 book.create({title: 'Harry Potter 1', person: rowling}, function (err, result) {
-
-                  book.find({ "person.spouse.name": "Neil Murray" }, { compose: true }, function (err, result) {
+                  book.find({ 'person.spouse.name': 'Neil Murray' }, { compose: true }, function (err, result) {
                     result.results.length.should.eql(1)
                     var doc = result.results[0]
                     should.exist(doc.person.spouse)
@@ -386,21 +385,21 @@ describe('Model', function () {
           var categoriesSchema = {
             fields: {
               parent: {
-                type: "Reference",
+                type: 'Reference',
                 settings: {
-                  collection: "categories",
+                  collection: 'categories',
                   compose: true
                 },
                 required: false
               },
               name: {
-                type: "String",
-                label: "Name",
+                type: 'String',
+                label: 'Name',
                 required: false
               },
               furl: {
-                type: "String",
-                label: "Friendly URL",
+                type: 'String',
+                label: 'Friendly URL',
                 required: false
               }
             },
@@ -418,7 +417,7 @@ describe('Model', function () {
               categories: {
                 type: 'Reference',
                 settings: {
-                  collection: "categories",
+                  collection: 'categories',
                   multiple: true
                 }
               }
@@ -449,14 +448,11 @@ describe('Model', function () {
                     var sportsNews = result.results[0]._id
 
                     category.create({name: 'Sports Events', furl: 'events', parent: sports.toString()}, function (err, result) {
-
                       // add an article
                       article.create({title: 'A Day at the Opera', categories: [musicNews.toString()]}, function (err, result) {
-
                         // add an article
                         article.create({title: 'A Day at the Races', categories: [sportsNews.toString()]}, function (err, result) {
-
-                          article.find({ "categories.furl": "news", "categories.parent.furl": "sports" }, { compose: true }, function (err, result) {
+                          article.find({ 'categories.furl': 'news', 'categories.parent.furl': 'sports' }, { compose: true }, function (err, result) {
                             result.results.length.should.eql(1)
                             var doc = result.results[0]
 
@@ -494,11 +490,10 @@ describe('Model', function () {
                   books.push(bookid)
 
                   book.create({title: 'Neil\'s Autobiography', author: neil}, function (err, result) {
-
                     // find book where author.name = J K Rowling
 
                     book.find({ 'author.name': 'J K Rowling' }, { compose: true }, function (err, result) {
-                      //console.log(JSON.stringify(result, null, 2))
+                      // console.log(JSON.stringify(result, null, 2))
 
                       result.results.length.should.eql(1)
                       var doc = result.results[0]
@@ -534,11 +529,9 @@ describe('Model', function () {
                   books.push(bookid)
 
                   book.create({title: 'Neil\'s Autobiography', author: neil}, function (err, result) {
-
                     // find book where author.name = J K Rowling
 
                     book.find({ 'author.name': 'J K Rowling' }, { compose: true, fields: { 'title': 1, 'author': 1 }}, function (err, result) {
-
                       result.results.length.should.eql(1)
                       var doc = result.results[0]
                       should.exist(doc._id)
@@ -571,15 +564,11 @@ describe('Model', function () {
                 var rowling = result.results[0]._id.toString()
 
                 book.create({title: 'Harry Potter 1', author: rowling}, function (err, result) {
-
                   book.create({title: 'Harry Potter 2', author: rowling}, function (err, result) {
-
                     book.create({title: 'Neil\'s Autobiography', author: neil}, function (err, result) {
-
                       // find book where author.name = J K Rowling
 
                       book.find({ title: 'Harry Potter 1', 'author.name': 'J K Rowling' }, {compose: true}, function (err, result) {
-
                         result.results.length.should.eql(1)
                         var doc = result.results[0]
                         should.exist(doc.author.name)
@@ -609,9 +598,9 @@ describe('Model', function () {
                 book.create({title: 'Harry Potter 1', author: rowling}, function (err, result) {
                   book.create({title: 'Harry Potter 2', author: rowling}, function (err, result) {
                     book.create({title: 'Neil\'s Autobiography', author: neil}, function (err, result) {
-
                       // find book where author.name = J K Rowling
                       book.find({ title: 'Harry Potter 1', 'author.name': 'A B Cowling' }, {compose: true}, function (err, result) {
+                        console.log(result)
                         result.results.length.should.eql(0)
                         done()
                       })

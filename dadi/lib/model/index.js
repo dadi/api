@@ -515,138 +515,18 @@ Model.prototype.find = function (query, options, done) {
 
   var _done = (database) => {
     if (queryUtils.containsNestedReferenceFields(query, this.schema)) {
-      var queries = queryUtils.processReferenceFieldQuery(query, this.schema)
-
-      debug('find reference %o', queries)
-
-      // processReferenceFieldQuery sends back an array of queries
-      // [0] is the query with reference field parts removed
-      // [1] contains the reference field parts
-      query = queries[0]
-
-      var referenceFieldQuery = queries[1]
-      var referenceFieldKeys = Object.keys(referenceFieldQuery)
-      var queue = []
-
-      // for each reference field key, query the specified collection
-      // to obtain an _id value
-      referenceFieldKeys.forEach((key, index) => {
-        queue.push((cb) => {
-          var keyParts = key.split('.')
-
-          var collection = ''
-          var collectionKey = keyParts[0]
-          var linkKey
-          var queryKey
-          var queryValue = referenceFieldQuery[key]
-          var collectionSettings = queryUtils.getSchemaOrParent(collectionKey, this.schema).settings || {}
-          var collectionLevelCompose = true
-
-          if (collectionKey !== collectionSettings.collection) {
-            collection = collectionSettings.collection
-          } else {
-            collection = collectionKey
-          }
-
-          var fieldsObj = {}
-          if (collectionSettings.fields) {
-            collectionSettings.fields.forEach(field => {
-              fieldsObj[field] = 1
-            })
-          }
-
-          queryKey = keyParts[1]
-          var collectionQuery = {}
-
-          if (keyParts.length === 2) {
-            collectionQuery[queryKey] = queryValue
-          } else {
-            linkKey = keyParts[1]
-            queryKey = keyParts[2]
-          }
-
-          // if we already have a value for this field inserted
-          // into the final query object (e.g. a parent nested query has been done first),
-          // supplement the current query with the ids
-          if (query[collectionKey]) {
-            collectionQuery['_id'] = query[collectionKey]
-          }
-
-          // query the reference collection
-          debug('find reference in %s with %o', collection, collectionQuery)
-
-          var referenceModel = new Model(collection, {}, null, { database: collectionSettings.database || self.settings.database, compose: collectionLevelCompose })
-
-          referenceModel.find(collectionQuery, { fields: fieldsObj }, (err, results) => {
-            if (err) return done(err)
-
-            var ids = []
-
-            if (results && results.results && results.results.length) {
-              results = results.results
-
-              if (!linkKey) { // i.e. it's a one-level nested query
-                ids = _.map(_.pluck(results, '_id'), (id) => { return id.toString() })
-
-                // update the original query with a query for the obtained _id
-                // using the appropriate query type for whether the reference settings
-                // allows storing as arrays or not
-                query[collectionKey] = collectionSettings.multiple ? { '$containsAny': ids } : ids[0]
-                // query[collectionKey] = collectionSettings.multiple ? { '$in': ids } : ids[0]
-              } else {
-                // filter the results using linkKey
-                // 1. get the _id of the result matching { queryKey: queryValue }
-                var parents = _.filter(results, result => {
-                  return new RegExp(queryValue).test(result[queryKey]) === true
-                })
-
-                // check every parent category for any children that belong to them
-                for (var p = 0; p < parents.length; p++) {
-                  var children = _.filter(results, result => {
-                    if (result[linkKey]) {
-                      if (typeof result[linkKey] === 'string' && result[linkKey].toString() === parents[p]._id.toString()) {
-                        return result
-                      } else if (typeof result[linkKey] === 'object') {
-                        if (result[linkKey].toString() === '[object Object]' && result[linkKey]._id.toString() === parents[p]._id.toString()) {
-                          return result
-                        } else if (result[linkKey].toString() === parents[p]._id.toString()) {
-                          return result
-                        }
-                      }
-                    }
-                  })
-
-                  var childIds = _.map(_.pluck(children, '_id'), id => {
-                    return id.toString()
-                  })
-
-                  ids = ids.concat(childIds)
-                }
-
-                query[collectionKey] = { '$in': ids || [] }
-              }
-            } else {
-              // Nothing found in the reference collection, add empty criteria to the main query
-              query[collectionKey] = collectionSettings.multiple
-                ? { '$in': [] }
-                : ''
-            }
-
-            cb(null, query)
-          })
-        })
-      })
-      // })
-
-      async.series(queue,
-        function (err, results) {
-          if (err) {
-            logger.error({module: 'model'}, err)
-          }
-
+      try {
+        const ref = require(path.join(__dirname, '/reference'))
+        new ref.Reference(query, this.schema, this.settings).deconstructQuery().then(newQuery => {
+          console.log('newQuery', newQuery)
+          query = newQuery
           runFind()
-        }
-      )
+        })
+      } catch (err) {
+        console.log(err)
+      }
+
+      runFind()
     } else {
       runFind()
     }

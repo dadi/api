@@ -102,7 +102,7 @@ Composer.prototype.compose = function (obj, callback) {
 
         // handles empty array
         if (originalValue.length === 0 && fieldNum === fields.length && docIdx === obj.length) {
-          return callback(obj)
+          return callback(composeCopy)
         } else {
           _.each(originalValue, (id) => {
             var results = _.filter(fieldData, r => { return id && r._id.toString() === id.toString() })

@@ -6,7 +6,7 @@ var conf = convict({
     name: {
       doc: 'The applicaton name',
       format: String,
-      default: 'DADI API Repo Default',
+      default: 'DADI API Repo Default'
     }
   },
   publicUrl: {
@@ -86,7 +86,7 @@ var conf = convict({
     }
   },
   datastore: {
-    doc: "",
+    doc: '',
     format: String,
     default: '@dadi/api-mongodb'
   },
@@ -109,10 +109,10 @@ var conf = convict({
     tokenCollection: {
       doc: '',
       format: String,
-      default: "tokenStore"
+      default: 'tokenStore'
     },
     datastore: {
-      doc: "",
+      doc: '',
       format: String,
       default: '@dadi/api-mongodb'
     },
@@ -132,7 +132,7 @@ var conf = convict({
     ttl: {
       doc: '',
       format: Number,
-      default: 300,
+      default: 300
     },
     directory: {
       enabled: {
@@ -151,12 +151,12 @@ var conf = convict({
         default: 'json'
       },
       autoFlush: {
-        doc: "",
+        doc: '',
         format: Boolean,
         default: true
       },
       autoFlushInterval: {
-        doc: "",
+        doc: '',
         format: Number,
         default: 60
       }
@@ -196,7 +196,7 @@ var conf = convict({
     },
     level: {
       doc: 'Sets the logging level.',
-      format: ['debug','info','warn','error','trace'],
+      format: ['debug', 'info', 'warn', 'error', 'trace'],
       default: 'info'
     },
     path: {
@@ -248,13 +248,13 @@ var conf = convict({
   feedback: {
     doc: '',
     format: Boolean,
-    default: false,
+    default: false
   },
   status: {
     enabled: {
       doc: 'If true, status endpoint is enabled.',
       format: Boolean,
-      default: false,
+      default: false
     },
     routes: {
       doc: 'An array of routes to test. Each route object must contain properties `route` and `expectedResponseTime`.',
@@ -356,7 +356,7 @@ var conf = convict({
   },
   databaseConnection: {
     maxRetries: {
-      doc: "The maximum number of times to reconnection attempts after a database fails",
+      doc: 'The maximum number of times to reconnection attempts after a database fails',
       format: Number,
       default: 10
     }
@@ -368,25 +368,23 @@ var env = conf.get('env')
 conf.loadFile('./config/config.' + env + '.json')
 
 // Load domain-specific configuration
-conf.updateConfigDataForDomain = function(domain) {
+conf.updateConfigDataForDomain = function (domain) {
   var domainConfig = './config/' + domain + '.json'
 
   try {
     var stats = fs.statSync(domainConfig)
     // no error, file exists
     conf.loadFile(domainConfig)
-  }
-  catch(err) {
+  } catch (err) {
     if (err.code === 'ENOENT') {
-      //console.log('No domain-specific configuration file: ' + domainConfig)
-    }
-    else {
+      // console.log('No domain-specific configuration file: ' + domainConfig)
+    } else {
       console.log(err)
     }
   }
 }
 
 module.exports = conf
-module.exports.configPath = function() {
+module.exports.configPath = function () {
   return './config/config.' + conf.get('env') + '.json'
 }

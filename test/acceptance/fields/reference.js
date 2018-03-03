@@ -776,7 +776,7 @@ describe('Reference Field', function () {
         var ernest = {
           name: 'Ernest Hemingway',
           friend: personId.toString(),
-          agent: personId.toString()
+          agent: []
         }
 
         client
@@ -789,7 +789,7 @@ describe('Reference Field', function () {
 
           ernest.name = 'Half Brother'
           ernest.spouse = ernest.friend
-          ernest.allFriends = [ernest.friend]
+          ernest.allFriends = []
 
           client
           .post('/v1/library/person')
@@ -798,8 +798,6 @@ describe('Reference Field', function () {
           .expect(200)
           .end(function (err, res) {
             if (err) return done(err)
-
-            // console.log(res)
 
             client
             .get('/v1/library/person?compose=true&filter={"name":"Half Brother"}')
@@ -811,8 +809,8 @@ describe('Reference Field', function () {
               should.exist(res.body.results)
               var result = res.body.results[0]
 
-              should.exist(result.allFriends)
-              result.allFriends[0].name.should.eql('Gertrude Stein')
+              should.exist(result.friend)
+              result.friend.name.should.eql('Gertrude Stein')
 
               done()
             })

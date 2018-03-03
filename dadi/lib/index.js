@@ -1111,8 +1111,13 @@ Server.prototype.addComponent = function (options) {
         var token = this._signToken(req.body)
       } catch (err) {
         if (err) {
-          err.statusCode = 400
-          return next(err)
+          let error = {
+            name: 'ValidationError',
+            message: err.message,
+            statusCode: 400
+          }
+
+          return next(error)
         }
       }
 

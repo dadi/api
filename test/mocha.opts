@@ -1,8 +1,8 @@
 --bail
---growl
 --full-trace
 --timeout=4000
 --ui bdd
 --recursive
 --require=env-test
 --require test/pretest.js
+--exit

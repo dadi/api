@@ -143,7 +143,7 @@ var conf = convict({
       path: {
         doc: 'The relative path to the cache directory',
         format: String,
-        default: './cache/web'
+        default: './cache/api'
       },
       extension: {
         doc: 'The extension to use for cache files',

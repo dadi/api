@@ -23,7 +23,6 @@
     "ttl": 300,
     "directory": {
       "enabled": false,
-      "path": "./cache/api",
       "extension": "json"
     },
     "redis": {

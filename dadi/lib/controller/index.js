@@ -120,34 +120,6 @@ function prepareQueryOptions (options, modelSettings) {
   return response
 }
 
-var Controller = function (model) {
-  if (!model) throw new Error('Model instance required')
-  this.model = model
-}
-
-Controller.prototype.get = function (req, res, next) {
-  var path = url.parse(req.url, true)
-  var options = path.query
-
-  // determine if this is jsonp
-  var done = options.callback ? sendBackJSONP(options.callback, res, next) : sendBackJSON(200, res, next)
-  var query = this.prepareQuery(req)
-  var queryOptions = this.prepareQueryOptions(options)
-
-  if (queryOptions.errors.length !== 0) {
-    done = sendBackJSON(400, res, next)
-    return done(null, queryOptions)
-  } else {
-    queryOptions = queryOptions.queryOptions
-  }
-
-  this.model.get(query, queryOptions, done, req)
-}
-
-Controller.prototype.prepareQueryOptions = function (options) {
-  return prepareQueryOptions(options, this.model.settings)
-}
-
 function prepareQuery (req, model) {
   var path = url.parse(req.url, true)
   var apiVersion = path.pathname.split('/')[1]
@@ -191,38 +163,74 @@ function prepareQuery (req, model) {
   return query
 }
 
+const Controller = function (model) {
+  if (!model) throw new Error('Model instance required')
+
+  this.model = model
+}
+
+Controller.prototype.get = function (req, res, next) {
+  let path = url.parse(req.url, true)
+  let options = path.query
+
+  // determine if this is jsonp
+  let done = options.callback
+    ? sendBackJSONP(options.callback, res, next)
+    : sendBackJSON(200, res, next)
+  let query = this.prepareQuery(req)
+  let queryOptions = this.prepareQueryOptions(options)
+
+  if (queryOptions.errors.length !== 0) {
+    done = sendBackJSON(400, res, next)
+
+    return done(null, queryOptions)
+  } else {
+    queryOptions = queryOptions.queryOptions
+  }
+
+  this.model.get({
+    query,
+    options: queryOptions
+  }).then(results => {
+    return done(null, results)
+  }).catch(error => {
+    return done(error)
+  })
+}
+
+Controller.prototype.prepareQueryOptions = function (options) {
+  return prepareQueryOptions(options, this.model.settings)
+}
+
 Controller.prototype.prepareQuery = function (req) {
   return prepareQuery(req, this.model)
 }
 
 Controller.prototype.post = function (req, res, next) {
-  // internal fields
-  var internals = {
+  // Add internal fields.
+  let internals = {
     _apiVersion: req.url.split('/')[1]
   }
+  let pathname = url.parse(req.url).pathname
 
-  var self = this
-
-  var pathname = url.parse(req.url).pathname
-
-  // remove id param if it's an update, so
-  // we still get a valid handle on the model name
-  // for clearing the cache
+  // Remove id param if it's an update, so we still
+  // get a valid handle on the model name for clearing
+  // the cache.
   pathname = pathname.replace('/' + req.params.id, '')
 
   debug('POST %s %o', pathname, req.params)
 
-  // flush cache for POST requests
-  help.clearCache(pathname, (err) => {
+  // Flush cache for POST requests.
+  help.clearCache(pathname, err => {
     if (err) return next(err)
 
-    // if id is present in the url, then this is an update
+    // If id is present in the url, then this is an update.
     if (req.params.id || req.body.update) {
       internals._lastModifiedAt = Date.now()
       internals._lastModifiedBy = req.client && req.client.clientId
 
-      var query = {}
-      var update = {}
+      let query = {}
+      let update = {}
 
       if (req.params.id) {
         query._id = req.params.id
@@ -232,19 +240,35 @@ Controller.prototype.post = function (req, res, next) {
         update = req.body.update
       }
 
-      // add the apiVersion filter
+      // Add the apiVersion filter.
       if (config.get('query.useVersionFilter')) {
         query._apiVersion = internals._apiVersion
       }
 
-      return self.model.update(query, update, internals, sendBackJSON(200, res, next), req)
+      return this.model.update({
+        internals,
+        query,
+        req,
+        update
+      }).then(result => {
+        return sendBackJSON(200, res, next)(null, result)
+      }).catch(error => {
+        return sendBackJSON(500, res, next)(error)
+      })
     }
 
     // if no id is present, then this is a create
     internals._createdAt = Date.now()
     internals._createdBy = req.client && req.client.clientId
 
-    self.model.create(req.body, internals, sendBackJSON(200, res, next), req)
+    return this.model.create({
+      documents: req.body,
+      internals
+    }).then(result => {
+      return sendBackJSON(200, res, next)(null, result)
+    }).catch(error => {
+      return sendBackJSON(200, res, next)(error)
+    })
   })
 }
 
@@ -253,54 +277,55 @@ Controller.prototype.put = function (req, res, next) {
 }
 
 Controller.prototype.delete = function (req, res, next) {
-  var query = req.params.id ? { _id: req.params.id } : req.body.query
+  let query = req.params.id ? { _id: req.params.id } : req.body.query
 
   if (!query) return next()
 
-  var self = this
+  let pathname = url.parse(req.url).pathname
 
-  var pathname = url.parse(req.url).pathname
-
-  // remove id param so we still get a valid handle
-  // on the model name for clearing the cache
+  // Remove id param so we still get a valid handle
+  // on the model name for clearing the cache.
   pathname = pathname.replace('/' + req.params.id, '')
 
   // flush cache for DELETE requests
-  help.clearCache(pathname, function (err) {
+  help.clearCache(pathname, err => {
     if (err) return next(err)
 
-    self.model.delete(query, function (err, results) {
-      if (err) return next(err)
-
+    this.model.delete({
+      query,
+      req
+    }).then(({deletedCount, totalCount}) => {
       if (config.get('feedback')) {
-        // send 200 with json message
+        // Send 200 with JSON payload.
         return help.sendBackJSON(200, res, next)(null, {
           status: 'success',
           message: 'Documents deleted successfully',
-          deleted: results.deletedCount,
-          totalCount: results.totalCount
+          deleted: deletedCount,
+          totalCount
         })
       }
 
-      // send no-content success
+      // Send 200 with no content.
       res.statusCode = 204
       res.end()
-    }, req)
+    }).catch(error => {
+      return help.sendBackJSON(200, res, next)(error)
+    })
   })
 }
 
 Controller.prototype.stats = function (req, res, next) {
-  this.model.stats({}, function (err, stats) {
+  this.model.getStats({}, function (err, stats) {
     if (err) return next(err)
     return help.sendBackJSON(200, res, next)(null, stats)
   })
 }
 
 Controller.prototype.count = function (req, res, next) {
-  var options = url.parse(req.url, true).query
+  let options = url.parse(req.url, true).query
 
-  var query = this.prepareQuery(req)
-  var queryOptions = this.prepareQueryOptions(options)
+  let query = this.prepareQuery(req)
+  let queryOptions = this.prepareQueryOptions(options)
 
   if (queryOptions.errors.length !== 0) {
     return sendBackJSON(400, res, next)(null, queryOptions)

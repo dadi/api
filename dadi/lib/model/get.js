@@ -1,0 +1,120 @@
+const async = require('async')
+const Hook = require('./hook')
+const logger = require('@dadi/logger')
+
+/**
+ * Block with metadata pertaining to an API collection.
+ *
+ * @typedef {Object} Metadata
+ * @property {Number} page - current page
+ * @property {Number} offset - offset from start of collection
+ * @property {Number} totalCount - total number of documents
+ * @property {Number} totalPages - total number of pages
+ * @property {Number} nextPage - number of next available page
+ * @property {Number} prevPage - number of previous available page
+ */
+
+/**
+ * @typedef {Object} ResultSet
+ * @property {Metadata} metadata - object with collection metadata
+ * @property {Array} results - list of documents
+ */
+
+/**
+ * Finds documents in the database, running any configured hooks
+ * and formatting the result set for final output.
+ *
+ * @param  {Object} query - query to match documents against
+ * @param  {Object} options
+ * @param  {Object} req - request object to pass to hooks
+ * @return {Promise<ResultSet>}
+ */
+function get ({
+  query = {},
+  options = {},
+  req
+}) {
+  return new Promise((resolve, reject) => {
+    // Run any `beforeGet` hooks.
+    if (this.settings.hooks && this.settings.hooks.beforeGet) {
+      async.reduce(this.settings.hooks.beforeGet, query, (current, hookConfig, callback) => {
+        let hook = new Hook(hookConfig, 'beforeGet')
+
+        Promise.resolve(hook.apply(current, this.schema, this.name, req))
+          .then(newQuery => {
+            callback(null, newQuery)
+          }).catch(error => {
+            callback(hook.formatError(error))
+          })
+      }, (error, finalQuery) => {
+        if (error) {
+          return reject(error)
+        }
+
+        resolve(finalQuery)
+      })
+    } else {
+      resolve(query)
+    }
+  }).then(query => {
+    return this.find({
+      query,
+      options
+    })
+  }).then(results => {
+    if (this.settings.hooks && this.settings.hooks.afterGet) {
+      return new Promise((resolve, reject) => {
+        async.reduce(this.settings.hooks.afterGet, results, (current, hookConfig, callback) => {
+          let hook = new Hook(hookConfig, 'afterGet')
+
+          Promise.resolve(hook.apply(current, this.schema, this.name, req))
+            .then(newResults => {
+              callback((newResults === null) ? {} : null, newResults)
+            }).catch(error => {
+              callback(hook.formatError(error))
+            })
+        }, (error, resultsAfterHooks) => {
+          if (error) {
+            logger.error({ module: 'model' }, error)
+          }
+
+          resolve(resultsAfterHooks)
+        })
+      })
+    }
+
+    return results
+  }).then(results => {
+    return Object.assign({}, results, {
+      results: this.formatResultSetForOutput(results.results)
+    })
+  })
+}
+
+module.exports = function () {
+  // Compatibility with legacy model API.
+  // Signature: query, options, done, req
+  if (arguments.length > 1) {
+    let callback
+    let legacyArguments = {
+      query: arguments[0],
+      req: arguments[3]
+    }
+
+    if (typeof arguments[1] === 'function') {
+      callback = arguments[1]
+      legacyArguments.options = {}
+    } else {
+      callback = arguments[2]
+      legacyArguments.options = arguments[1]
+    }
+
+    get.call(this, legacyArguments)
+      .then(response => callback && callback(null, response))
+      .catch(error => callback && callback(error))
+
+    return
+  }
+
+  return get.apply(this, arguments)
+}

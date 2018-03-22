@@ -338,25 +338,23 @@ describe('Model', function () {
   })
 
   describe('`stats` method', function () {
-    it('should accept an options object and callback', function (done) {
-      model(
+    it('should accept an options object', () => {
+      return model(
         'testModelName',
         help.getModelSchema(),
         null,
         { database: 'testdb' }
-      ).getStats({}, done)
+      ).getStats({})
     })
 
-    it('should return an object', function (done) {
-      model(
+    it('should return an object', () => {
+      return model(
         'testModelName',
         help.getModelSchema(),
         null,
         { database: 'testdb' }
-      ).getStats({}, (err, stats) => {
+      ).getStats({}).then(stats => {
         stats.should.exist
-
-        done()
       })
     })
   })

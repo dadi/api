@@ -552,7 +552,7 @@ describe('Controller', () => {
           null,
           { database: 'testdb' }
         )
-        let stub = sinon.stub(mod, 'getStats')
+        let stub = sinon.stub(mod, 'getStats').resolves({})
         let req = {
           url: '/foo/bar'
         }

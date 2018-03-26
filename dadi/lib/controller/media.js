@@ -1,6 +1,5 @@
 'use strict'
 
-var _ = require('underscore')
 var Busboy = require('busboy')
 var imagesize = require('imagesize')
 var PassThrough = require('stream').PassThrough
@@ -174,9 +173,20 @@ MediaController.prototype.post = function (req, res, next) {
           fileName: this.fileName
         }
 
-        if (_.contains(fields, 'mimetype')) obj.mimetype = this.mimetype
-        if (_.contains(fields, 'width')) obj.width = imageInfo.width
-        if (_.contains(fields, 'height')) obj.height = imageInfo.height
+        if (fields.includes('mimetype')) {
+          obj.mimetype = this.mimetype
+        }
+
+        // Is `imageInfo` available?
+        if (!err) {
+          if (fields.includes('width')) {
+            obj.width = imageInfo.width
+          }
+
+          if (fields.includes('height')) {
+            obj.height = imageInfo.height
+          }
+        }
 
         var internals = {
           _apiVersion: req.url.split('/')[1],
@@ -193,7 +203,7 @@ MediaController.prototype.post = function (req, res, next) {
         }
 
         return this.writeFile(req, this.fileName, this.mimetype, dataStream).then(result => {
-          if (_.contains(fields, 'contentLength')) {
+          if (fields.includes('contentLength')) {
             obj.contentLength = result.contentLength
           }
 

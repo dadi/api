@@ -1096,7 +1096,7 @@ Server.prototype.addComponent = function (options) {
 
     this.components[mediaRoute] = options.component
     this.components[mediaRoute + '/:token?'] = options.component
-    this.components[mediaRoute + '/:filename(.*png|.*jpg|.*gif|.*bmp|.*tiff)'] = options.component
+    this.components[mediaRoute + '/:filename(.*png|.*jpg|.*jpeg|.*gif|.*bmp|.*tiff|.*pdf)'] = options.component
 
     if (options.component.setRoute) {
       options.component.setRoute(mediaRoute)
@@ -1174,7 +1174,7 @@ Server.prototype.addComponent = function (options) {
     })
 
     // GET media/filename
-    this.app.use(mediaRoute + '/:filename(.*png|.*jpg|.*gif|.*bmp|.*tiff)', (req, res, next) => {
+    this.app.use(mediaRoute + '/:filename(.*png|.*jpg|.*jpeg|.*gif|.*bmp|.*tiff|.*pdf)', (req, res, next) => {
       if (options.component.getFile) {
         return options.component.getFile(req, res, next, mediaRoute)
       }

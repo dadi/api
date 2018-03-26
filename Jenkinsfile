@@ -3,7 +3,7 @@ pipeline {
   stages {
     stage('Unit Tests') {
       steps {
-        sh 'npm test'
+        sh '/usr/local/lib/node_modules/npm test'
       }
     }
   }

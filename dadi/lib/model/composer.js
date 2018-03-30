@@ -128,7 +128,7 @@ Composer.prototype.compose = function (obj, callback) {
                 })
 
                 if (exists.length === 0) {
-                  document[field].push(model.formatResultSetForOutput(results[0]))
+                  document[field].push(model.formatForOutput(results[0]))
                 }
               }
             } else {
@@ -136,7 +136,7 @@ Composer.prototype.compose = function (obj, callback) {
                 // no results, assign the original id value to the property
                 document[field] = id
               } else {
-                document[field] = model.formatResultSetForOutput(results[0])
+                document[field] = model.formatForOutput(results[0])
               }
             }
 
@@ -174,13 +174,13 @@ Composer.prototype.createFromComposed = function (doc, req, callback) {
     if (Array.isArray(value)) {
       _.each(value, (val) => {
         if (val && val.constructor === Object) {
-          const formattedValue = model.formatResultSetForInput(val)
+          const formattedValue = model.formatForInput(val)
 
           queue.push(this.createOrUpdate(model, key, formattedValue, req))
         }
       })
     } else if (value && value.constructor === Object) {
-      const formattedValue = model.formatResultSetForInput(value)
+      const formattedValue = model.formatForInput(value)
 
       queue.push(this.createOrUpdate(model, key, formattedValue, req))
     }

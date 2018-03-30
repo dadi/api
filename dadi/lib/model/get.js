@@ -34,59 +34,89 @@ function get ({
   options = {},
   req
 }) {
+  let queryFields
+
+  if (options.fields) {
+    queryFields = Object.keys(options.fields).reduce((fields, field) => {
+      let baseField = field.split('.')[0]
+
+      fields[baseField] = options.fields[field]
+
+      return fields
+    }, {})
+  }
+
   return new Promise((resolve, reject) => {
     // Run any `beforeGet` hooks.
     if (this.settings.hooks && this.settings.hooks.beforeGet) {
-      async.reduce(this.settings.hooks.beforeGet, query, (current, hookConfig, callback) => {
-        let hook = new Hook(hookConfig, 'beforeGet')
+      async.reduce(
+        this.settings.hooks.beforeGet,
+        query,
+        (current, hookConfig, callback) => {
+          let hook = new Hook(hookConfig, 'beforeGet')
 
-        Promise.resolve(hook.apply(current, this.schema, this.name, req))
-          .then(newQuery => {
-            callback(null, newQuery)
-          }).catch(error => {
-            callback(hook.formatError(error))
-          })
-      }, (error, finalQuery) => {
-        if (error) {
-          return reject(error)
+          Promise.resolve(hook.apply(current, this.schema, this.name, req))
+            .then(newQuery => {
+              callback(null, newQuery)
+            }).catch(error => {
+              callback(hook.formatError(error))
+            })
+        },
+        (error, finalQuery) => {
+          if (error) {
+            return reject(error)
+          }
+
+          resolve(finalQuery)
         }
-
-        resolve(finalQuery)
-      })
+      )
     } else {
       resolve(query)
     }
   }).then(query => {
     return this.find({
       query,
-      options
+      options: Object.assign({}, options, {
+        fields: queryFields
+      })
     })
-  }).then(results => {
+  }).then(response => {
     if (this.settings.hooks && this.settings.hooks.afterGet) {
       return new Promise((resolve, reject) => {
-        async.reduce(this.settings.hooks.afterGet, results, (current, hookConfig, callback) => {
-          let hook = new Hook(hookConfig, 'afterGet')
+        async.reduce(
+          this.settings.hooks.afterGet,
+          response,
+          (current, hookConfig, callback) => {
+            let hook = new Hook(hookConfig, 'afterGet')
 
-          Promise.resolve(hook.apply(current, this.schema, this.name, req))
-            .then(newResults => {
-              callback((newResults === null) ? {} : null, newResults)
-            }).catch(error => {
-              callback(hook.formatError(error))
-            })
-        }, (error, resultsAfterHooks) => {
-          if (error) {
-            logger.error({ module: 'model' }, error)
+            Promise.resolve(hook.apply(current, this.schema, this.name, req))
+              .then(newResults => {
+                callback((newResults === null) ? {} : null, newResults)
+              }).catch(error => {
+                callback(hook.formatError(error))
+              })
+          },
+          (error, resultsAfterHooks) => {
+            if (error) {
+              logger.error({ module: 'model' }, error)
+            }
+
+            resolve(resultsAfterHooks)
           }
-
-          resolve(resultsAfterHooks)
-        })
+        )
       })
     }
 
-    return results
-  }).then(results => {
-    return Object.assign({}, results, {
-      results: this.formatResultSetForOutput(results.results)
+    return response
+  }).then(({metadata, results}) => {
+    return this.formatForOutput(
+      results,
+      {
+        composeOverride: options.compose,
+        urlFields: options.fields
+      }
+    ).then(results => {
+      return {results, metadata}
     })
   })
 }

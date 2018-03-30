@@ -92,36 +92,44 @@ function update ({
   // Is this a RESTful query by ID?
   const isRestIDQuery = req && req.params.id
 
-  // Convert DateTimes.
-  update = queryUtils.convertDateTimeForSave(this.schema, update)
-
   // Add any internal fields to the update.
   Object.assign(update, internals)
-
-  // Set API version.
-  this.composer.setApiVersion(internals._apiVersion)
 
   // Get a reference to the documents that will be updated.
   let updatedDocuments = []
 
-  return this.find({
-    query
+  // Run `beforeSave` hooks on update fields.
+  return Object.keys(update).reduce((result, field) => {
+    if (field === '_id') {
+      return result
+    }
+
+    return result.then(transformedUpdate => {
+      return this.runFieldHooks({
+        data: {
+          internals
+        },
+        field,
+        input: {
+          [field]: update[field]
+        },
+        name: 'beforeSave'
+      }).then(subDocument => {
+        return Object.assign({}, transformedUpdate, subDocument)
+      })
+    })
+  }, Promise.resolve({})).then(transformedUpdate => {
+    update = transformedUpdate
+
+    return this.find({
+      query
+    })
   }).then(result => {
     // Create a copy of the documents that matched the find
     // query, as these will be updated and we need to send back
     // to the client a full result set of modified documents.
     updatedDocuments = queryUtils.snapshot(result.results)
 
-    return new Promise((resolve, reject) => {
-      this.composer.createFromComposed(update, req, (error, result) => {
-        if (error) {
-          return reject(error.json)
-        }
-
-        resolve()
-      })
-    })
-  }).then(() => {
     // Run any `beforeUpdate` hooks.
     if (this.settings.hooks && this.settings.hooks.beforeUpdate) {
       return new Promise((resolve, reject) => {
@@ -204,7 +212,13 @@ function update ({
 
     // Format result set for output.
     if (!rawOutput) {
-      data.results = this.formatResultSetForOutput(data.results)
+      return this.formatForOutput(data.results, {
+        composeOverride: 'all'
+      }).then(results => {
+        return Object.assign({}, data, {
+          results
+        })
+      })
     }
 
     return data

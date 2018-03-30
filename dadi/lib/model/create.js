@@ -1,7 +1,6 @@
 const async = require('async')
 const debug = require('debug')('api:model')
 const Hook = require('./hook')
-const queryUtils = require('./utils')
 
 /**
  * Creates one or multiple documents.
@@ -52,7 +51,7 @@ function create ({
     return Promise.reject(error)
   }
 
-  documents.forEach(document => {
+  let transformQueue = Promise.all(documents.map(document => {
     // Add internal properties to documents
     if (typeof internals === 'object' && internals !== null) {
       Object.assign(document, internals)
@@ -66,24 +65,39 @@ function create ({
     // Add initial revision number.
     document._version = 1
 
-    // DateTime conversion.
-    document = queryUtils.convertDateTimeForSave(this.schema, document)
-  })
+    return Object.keys(document).reduce((documentTransform, field) => {
+      if (field === '_id') {
+        return documentTransform
+      }
 
-  // Pre-composed references.
-  this.composer.setApiVersion(internals._apiVersion)
+      return documentTransform.then(transformedDocument => {
+        return this.runFieldHooks({
+          data: {
+            internals
+          },
+          field,
+          input: {
+            [field]: document[field]
+          },
+          name: 'beforeSave'
+        }).then(subDocument => {
+          return Object.assign({}, transformedDocument, subDocument)
+        }).catch(error => {
+          error.success = false
+          error.errors = [
+            {
+              field,
+              message: error.message
+            }
+          ]
 
-  const composeQueue = documents.map(document => {
-    return new Promise((resolve, reject) => {
-      this.composer.createFromComposed(document, req, (err, result) => {
-        if (err) return reject(err)
-
-        resolve(result)
+          return Promise.reject(error)
+        })
       })
-    })
-  })
+    }, Promise.resolve({}))
+  }))
 
-  return Promise.all(composeQueue).then(documents => {
+  return transformQueue.then(documents => {
     // Run any `beforeCreate` hooks.
     if (this.settings.hooks && this.settings.hooks.beforeCreate) {
       return new Promise((resolve, reject) => {
@@ -127,29 +141,27 @@ function create ({
         results
       }
 
-      return new Promise((resolve, reject) => {
-        this.composer.compose(returnData.results, composedResults => {
-          returnData.results = composedResults
+      // Run any `afterCreate` hooks.
+      if (this.settings.hooks && (typeof this.settings.hooks.afterCreate === 'object')) {
+        returnData.results.forEach(document => {
+          this.settings.hooks.afterCreate.forEach((hookConfig, index) => {
+            let hook = new Hook(this.settings.hooks.afterCreate[index], 'afterCreate')
 
-          // Run any `afterCreate` hooks.
-          if (this.settings.hooks && (typeof this.settings.hooks.afterCreate === 'object')) {
-            returnData.results.forEach(document => {
-              this.settings.hooks.afterCreate.forEach((hookConfig, index) => {
-                let hook = new Hook(this.settings.hooks.afterCreate[index], 'afterCreate')
-
-                return hook.apply(document, this.schema, this.name)
-              })
-            })
-          }
-
-          // Prepare result set for output.
-          if (!rawOutput) {
-            returnData.results = this.formatResultSetForOutput(returnData.results)
-          }
-
-          resolve(returnData)
+            return hook.apply(document, this.schema, this.name)
+          })
         })
-      })
+      }
+
+      // Prepare result set for output.
+      if (!rawOutput) {
+        return this.formatForOutput(
+          returnData.results,
+          {
+            composeOverride: 'all'
+          }).then(results => ({results}))
+      }
+
+      return returnData
     })
   })
 }

@@ -1,7 +1,6 @@
 'use strict'
 
 const debug = require('debug')('api:model')
-const queryUtils = require('./utils')
 
 /**
  * Block with metadata pertaining to an API collection.
@@ -38,15 +37,7 @@ function find ({
     )
   }
 
-  // Sanitise query.
-  query = queryUtils.makeCaseInsensitive(query, this.schema)
-
   debug('Model find: %o %o', query, options)
-
-  // Override the model's settings with a value from the options object.
-  if (options.compose) {
-    this.compose = options.compose
-  }
 
   // Run validation.
   const validation = this.validate.query(query)
@@ -59,31 +50,17 @@ function find ({
     return Promise.reject(err)
   }
 
-  return this.connection.db.find({
-    query,
-    collection: this.name,
-    options: Object.assign({}, options, {
-      compose: undefined,
-      historyFilters: undefined
-    }),
-    schema: this.schema,
-    settings: this.settings
-  }).then(response => {
-    if (this.compose) {
-      this.composer.setApiVersion(query._apiVersion)
-
-      return new Promise((resolve, reject) => {
-        this.composer.compose(response.results, obj => {
-          resolve(
-            Object.assign({}, response, {
-              results: obj
-            })
-          )
-        })
-      })
-    }
-
-    return response
+  return this._transformQuery(query).then(query => {
+    return this.connection.db.find({
+      query,
+      collection: this.name,
+      options: Object.assign({}, options, {
+        compose: undefined,
+        historyFilters: undefined
+      }),
+      schema: this.schema,
+      settings: this.settings
+    })
   }).then(response => {
     if (options.includeHistory) {
       options.includeHistory = undefined

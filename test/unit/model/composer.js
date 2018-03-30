@@ -90,21 +90,23 @@ describe('Model composer', function () {
       { database: 'testdb'}
     )
 
-    acceptanceHelper.dropDatabase('testdb', null, err => {
-      // create some docs
-      for (var i = 0; i <= 4; i++) {
-        mod.create({
-          documents: {
-            fieldName: 'foo_' + i,
-            firstName: 'Foo',
-            lastName: i.toString()
-          }
-        }).then(response => {
-          if (++insertedDocuments === 5) {
-            return done()  
-          }          
-        }).catch(done)
-      }
+    help.whenModelsConnect([mod]).then(() => {
+      acceptanceHelper.dropDatabase('testdb', null, err => {
+        // create some docs
+        for (var i = 0; i <= 4; i++) {
+          mod.create({
+            documents: {
+              fieldName: 'foo_' + i,
+              firstName: 'Foo',
+              lastName: i.toString()
+            }
+          }).then(response => {
+            if (++insertedDocuments === 5) {
+              return done()  
+            }          
+          }).catch(done)
+        }
+      })
     })
   })
 

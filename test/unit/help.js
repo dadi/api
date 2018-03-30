@@ -69,17 +69,17 @@ module.exports.testModelProperty = function (key, val) {
 
 module.exports.cleanUpDB = function (done) {
   module.exports.clearCollection('testModelName', (err) => {
-    // module.exports.clearCollection('testModelNameHistory', (err) => {
-    //   module.exports.clearCollection('articles', (err) => {
-    //     module.exports.clearCollection('categories', (err) => {
-    //       module.exports.clearCollection('book', (err) => {
-    //         module.exports.clearCollection('person', (err) => {
+    module.exports.clearCollection('testModelNameHistory', (err) => {
+      module.exports.clearCollection('articles', (err) => {
+        module.exports.clearCollection('categories', (err) => {
+          module.exports.clearCollection('book', (err) => {
+            module.exports.clearCollection('person', (err) => {
                done()
-      //       })
-      //     })
-      //   })
-      // })
-    // })
+            })
+          })
+        })
+      })
+    })
   })
   //
   // if (conn.datastore.dropDatabase) {

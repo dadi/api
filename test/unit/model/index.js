@@ -12,13 +12,10 @@ var config = require(__dirname + '/../../../config')
 
 describe('Model', function () {
   beforeEach((done) => {
-    // help.clearCollection('testModelName', function() {
-    //   help.clearCollection('testModelNameHistory', function() {
-    //      done()
-    //   })
-    // })
-    acceptanceHelper.dropDatabase('testdb', err => {
-      done()
+    help.clearCollection('testModelName', function() {
+      help.clearCollection('testModelNameHistory', function() {
+         done()
+      })
     })
   })
 
@@ -328,7 +325,6 @@ describe('Model', function () {
         null,
         { database: 'testdb' }
       ).count().then(response => {
-        console.log('----> RESP:', response)
         response.metadata.page.should.be.Number
         response.metadata.offset.should.be.Number
         response.metadata.totalCount.should.be.Number
@@ -530,10 +526,6 @@ describe('Model', function () {
 
             mod.find({}, { includeHistory: true }, function (err, results) {
               if (err) return done(err)
-
-              console.log('')
-              console.log('----> RES:', JSON.stringify(results, null, 2))
-              console.log('')
 
               results.results.should.exist
               results.results.should.be.Array

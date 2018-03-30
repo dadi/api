@@ -1,9 +1,9 @@
 'use strict'
 
 const path = require('path')
-const Composer = require(path.join(__dirname, '/composer')).Composer
 const config = require(path.join(__dirname, '/../../../config'))
 const Connection = require(path.join(__dirname, '/connection'))
+const fields = require('./../fields')
 const History = require(path.join(__dirname, '/history'))
 const logger = require('@dadi/logger')
 const Validator = require(path.join(__dirname, '/validator'))
@@ -26,7 +26,7 @@ const Validator = require(path.join(__dirname, '/validator'))
  * @property {Array} results - list of documents
  */
 
-// track all models that have been instantiated by this process
+// Pool of initialised models.
 let _models = {}
 
 /**
@@ -35,6 +35,18 @@ let _models = {}
  * @classdesc
  */
 const Model = function (name, schema, connection, settings) {
+  this.internalProperties = [
+    '_apiVersion',
+    '_composed',
+    '_createdAt',
+    '_createdBy',
+    '_history',
+    '_id',
+    '_lastModifiedAt',
+    '_lastModifiedBy',
+    '_version'
+  ]
+
   // Attach collection name.
   this.name = name
 
@@ -88,7 +100,7 @@ const Model = function (name, schema, connection, settings) {
   } else {
     let connectionOptions = {
       collection: this.name,
-      database: settings.database,
+      database: this.settings.database,
       revisionCollection: this.revisionCollection
     }
 
@@ -113,13 +125,44 @@ const Model = function (name, schema, connection, settings) {
   // Setup validatior.
   this.validate = new Validator(this)
 
-  // Setup composer.
-  this.composer = new Composer(this)
-
   // Create indexes.
   if (this.settings.index) {
     this.createIndex()
   }
+
+  // Compile a list of hooks by field type.
+  this.hooks = this._compileFieldHooks()
+}
+
+/**
+ * Creates an object containing an array of field hooks grouped
+ * by field type.
+ *
+ * @return {Object}
+ */
+Model.prototype._compileFieldHooks = function () {
+  let hooks = {}
+
+  Object.keys(fields).forEach(key => {
+    let type = fields[key].type
+
+    // Exit if the field doesn't export a `type` property.
+    if (!type) return
+
+    // Ensure `type` is an array.
+    if (!Array.isArray(type)) {
+      type = [type]
+    }
+
+    type.forEach(item => {
+      let sanitisedItem = item.toString().toLowerCase()
+
+      hooks[sanitisedItem] = hooks[sanitisedItem] || []
+      hooks[sanitisedItem].push(fields[key])
+    })
+  })
+
+  return hooks
 }
 
 /**
@@ -142,10 +185,15 @@ Model.prototype._createValidationError = function (message, data) {
  *
  * @param {Object} results
  * @param {Boolean} formatForInput
- * @return {ResultSet}
+ * @param {Object} data - data object for hooks
+ * @return {Promise<ResultSet>}
  * @api private
  */
-Model.prototype._formatResultSet = function (results, formatForInput) {
+Model.prototype._formatResultSet = function (
+  results,
+  formatForInput,
+  data = {}
+) {
   const multiple = Array.isArray(results)
   const documents = multiple ? results : [results]
   const prefixes = {
@@ -157,34 +205,79 @@ Model.prototype._formatResultSet = function (results, formatForInput) {
       : config.get('internalFieldsPrefix')
   }
 
-  let newResultSet = []
-
-  documents.forEach(document => {
-    const internalProperties = this.connection.db.settings.internalProperties || []
-    let newDocument = {}
-
-    Object.keys(document).sort().forEach(field => {
-      const property = field.indexOf(prefixes.from) === 0
-        ? prefixes.to + field.slice(1)
-        : field
-
-      // Stripping null values from the response.
-      if (document[field] === null) {
-        return
+  return Promise.all(
+    documents.map(document => {
+      if (!document) return null
+      if (typeof document === 'string') {
+        return document
       }
 
-      // Stripping internal properties (other than `_id`)
-      if ((field !== '_id') && internalProperties.includes(field)) {
-        return
-      }
+      return Object.keys(document).sort().reduce((result, field) => {
+        return result.then(newDocument => {
+          let hookName = formatForInput
+            ? 'beforeSave'
+            : 'beforeOutput'
 
-      newDocument[property] = document[field]
+          return this.runFieldHooks({
+            config,
+            data,
+            input: {
+              [field]: document[field]
+            },
+            field,
+            name: hookName
+          }).then(subDocument => {
+            return Object.assign({}, newDocument, subDocument)
+          })
+        })
+      }, Promise.resolve({})).then(document => {
+        let internals = this.connection.db.settings.internalProperties || []
+
+        return Object.keys(document).sort().reduce((sanitisedDocument, field) => {
+          const property = field.indexOf(prefixes.from) === 0
+            ? prefixes.to + field.slice(1)
+            : field
+
+          // Stripping null values from the response.
+          if (document[field] === null) {
+            return sanitisedDocument
+          }
+
+          // Stripping internal properties (other than `_id`)
+          if ((field !== '_id') && internals.includes(field)) {
+            return sanitisedDocument
+          }
+
+          sanitisedDocument[property] = document[field]
+
+          return sanitisedDocument
+        }, {})
+      })
     })
-
-    newResultSet.push(newDocument)
+  ).then(newResultSet => {
+    return multiple ? newResultSet : newResultSet[0]
   })
+}
 
-  return multiple ? newResultSet : newResultSet[0]
+/**
+ * Merges the value of `compose` in the schema settings
+ * with a URL override and returns the computed value.
+ *
+ * @param  {Boolean} override
+ * @return {Boolean}
+ */
+Model.prototype._getComposeValue = function (override) {
+  let rawValue = override !== undefined
+    ? override
+    : this.settings.compose
+
+  if (!rawValue) return 0
+
+  switch (rawValue.toString()) {
+    case 'true': return 1
+    case 'all': return Infinity
+    default: return parseInt(rawValue)
+  }
 }
 
 /**
@@ -204,14 +297,73 @@ Model.prototype._injectHistory = function (data, options) {
       this.revisions(doc._id, options, (err, history) => {
         if (err) logger.error({module: 'model'}, err)
 
-        doc._history = this.formatResultSetForOutput(history)
+        this.formatForOutput(history).then(formattedHistory => {
+          doc._history = formattedHistory
 
-        if (idx === data.results.length - 1) {
-          return resolve(data)
-        }
+          if (idx === data.results.length - 1) {
+            return resolve(data)
+          }
+        })
       })
     })
   })
+}
+
+/**
+ * Transforms a query for execution, running all field hooks.
+ *
+ * @param  {Object} query
+ * @return {Promise<Object>} transformed query
+ */
+Model.prototype._transformQuery = function (query) {
+  let result = Promise.resolve({})
+  let canonicalQuery = Object.keys(query).reduce((canonical, key) => {
+    let rootNode = key.split('.')[0]
+
+    canonical[rootNode] = canonical[rootNode] || {}
+    canonical[rootNode][key] = query[key]
+
+    return canonical
+  }, {})
+
+  Object.keys(canonicalQuery).forEach(rootField => {
+    result = result.then(transformedQuery => {
+      return this.runFieldHooks({
+        data: { config },
+        field: rootField,
+        input: canonicalQuery[rootField],
+        name: 'beforeQuery'
+      }).then(subQuery => {
+        return Object.assign({}, transformedQuery, subQuery)
+      })
+    })
+  })
+
+  return result
+}
+
+/**
+ * Formats a result set before it's fed into the model for insertion/update.
+ *
+ * @param {Object} results
+ * @param {Object} data - data object for hooks
+ * @return {ResultSet}
+ * @api public
+ */
+Model.prototype.formatForInput = function (results, data = {}) {
+  return this._formatResultSet(results, true, data)
+}
+
+/**
+ * Formats a result set before it's sent to the client.
+ *
+ * @param {Object} results
+ * @param {Object} data - data object for hooks
+ * @return {ResultSet}
+ * @api public
+ */
+Model.prototype.formatForOutput = function (results, data = {}) {
+  return this._formatResultSet(results, false, data)
 }
 
 /**
@@ -223,7 +375,7 @@ Model.prototype._injectHistory = function (data, options) {
  * @api public
  */
 Model.prototype.formatQuery = function (query) {
-  const internalFieldsPrefix = config.get('internalFieldsPrefix')
+  let internalFieldsPrefix = config.get('internalFieldsPrefix')
   let newQuery = {}
 
   Object.keys(query).forEach(key => {
@@ -241,25 +393,43 @@ Model.prototype.formatQuery = function (query) {
 }
 
 /**
- * Formats a result set before it's fed into the model for insertion/update.
+ * Returns the field with a given name, if it exists.
  *
- * @param {Object} results
- * @return {ResultSet}
- * @api public
+ * @param  {String} name
+ * @return {Object} the field schema
  */
-Model.prototype.formatResultSetForInput = function (results) {
-  return this._formatResultSet(results, true)
+Model.prototype.getField = function (name) {
+  return this.schema[name]
 }
 
 /**
- * Formats a result set before it's sent to the client.
+ * Returns the lower-cased type of a field if it exists in the
+ * collection, or `undefined` if it doesn't.
  *
- * @param {Object} results
- * @return {ResultSet}
- * @api public
+ * @param  {String} field - name of the field
+ * @param  {Object} schema - collection schema
+ * @return {String} the field type
  */
-Model.prototype.formatResultSetForOutput = function (results) {
-  return this._formatResultSet(results, false)
+Model.prototype.getFieldType = function (field) {
+  if (
+    !this.getField(field) ||
+    !this.getField(field).type ||
+    !this.getField(field).type.length
+  ) {
+    return undefined
+  }
+
+  return this.getField(field).type.toLowerCase()
+}
+
+/**
+ * Returns a reference to the model of another collection.
+ *
+ * @param  {String} name - name of the collection
+ * @return {Model}
+ */
+Model.prototype.getForeignModel = function (name) {
+  return _models[name]
 }
 
 /**
@@ -275,17 +445,117 @@ Model.prototype.isKeyValid = function (key) {
     return true
   }
 
-  // Check for dot notation so we can determine the datatype
-  // of the first part of the key.
-  if (key.indexOf('.') > 0) {
-    const keyParts = key.split('.')
+  // Check for dot-notation, verifying the existence of the
+  // root node.
+  let rootNode = key.split('.')[0]
 
-    if (this.schema[keyParts[0]] !== undefined) {
-      if (/Mixed|Object|Reference/.test(this.schema[keyParts[0]].type)) {
-        return true
-      }
+  return Boolean(this.schema[rootNode])
+}
+
+/**
+ * Strips all the internal properties from a document.
+ *
+ * @param  {Object} document
+ * @return {Object} sanitised document
+ */
+Model.prototype.removeInternalProperties = function (document) {
+  return Object.keys(document).reduce((output, field) => {
+    if (!this.internalProperties.includes(field)) {
+      output[field] = document[field]
     }
+
+    return output
+  }, {})
+}
+
+/**
+ * Runs all hooks with a given name associated with a field,
+ * returning a Promise with the result.
+ *
+ * @param  {Object} data - optional data object
+ * @param  {String} field - field name
+ * @param  {Object} input - hook input
+ * @param  {String} name - hook name
+ * @return {Promise<Object>} input after hooks
+ */
+Model.prototype.runFieldHooks = function ({
+  data = {},
+  field,
+  input,
+  name
+}) {
+  let fieldType = this.getFieldType(field)
+  let queue = Promise.resolve(input)
+
+  if (!this.hooks[fieldType]) {
+    return Promise.resolve(input)
   }
+
+  this.hooks[fieldType].forEach(hook => {
+    if (typeof hook[name] === 'function') {
+      queue = queue.then(query => {
+        return hook[name].call(
+          this,
+          Object.assign({}, data, {
+            field,
+            input,
+            schema: this.getField(field)
+          })
+        )
+      })
+    }
+  })
+
+  return queue.catch(error => {
+    console.log('---->', error)
+    let hookError = new Error('BAD_REQUEST')
+
+    hookError.errors = [
+      {
+        field,
+        message: error.message
+      }
+    ]
+
+    return Promise.reject(hookError)
+  })
+}
+
+/**
+ * Returns whether the current level of nested reference fields
+ * should be composed, based on the collection settings, the level
+ * of nesting and an override value of `compose`, coming from the URL.
+ *
+ * @param  {Number}  options.level
+ * @param  {Boolean} options.composeOverride
+ * @return {Boolean}
+ */
+Model.prototype.shouldCompose = function ({
+  level = 1,
+  composeOverride = false
+}) {
+  // A value of 'all' enables composition on every level.
+  if (composeOverride === 'all') return true
+
+  // If `compose` is `false`, we disable composition.
+  if (composeOverride === 'false') return false
+
+  let overrideString = composeOverride.toString()
+  let overrideNumber = parseInt(composeOverride)
+
+  // If the value is a number, we compose up to that level.
+  if (overrideNumber.toString() === overrideString) {
+    return level <= overrideNumber
+  }
+
+  // If `compose` is `true`, we compose on the first level
+  // and then rely on the collection-wide settings for the
+  // remaining levels.
+  if (overrideString === 'true' && level === 1) {
+    return true
+  }
+
+  return Boolean(this.settings.compose)
 }
 
 Model.prototype.count = require('./count')

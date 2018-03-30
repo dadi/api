@@ -1,7 +1,6 @@
 const should = require('should')
 const sinon = require('sinon')
 const model = require(__dirname + '/../../../dadi/lib/model')
-const queryUtils = require(__dirname + '/../../../dadi/lib/model/utils')
 const apiHelp = require(__dirname + '/../../../dadi/lib/help')
 const Validator = require(__dirname + '/../../../dadi/lib/model/validator')
 const connection = require(__dirname + '/../../../dadi/lib/model/connection')

@@ -1,7 +1,6 @@
 var should = require('should')
 var sinon = require('sinon')
 var model = require(__dirname + '/../../../dadi/lib/model')
-var queryUtils = require(__dirname + '/../../../dadi/lib/model/utils')
 var apiHelp = require(__dirname + '/../../../dadi/lib/help')
 var Validator = require(__dirname + '/../../../dadi/lib/model/validator')
 var connection = require(__dirname + '/../../../dadi/lib/model/connection')

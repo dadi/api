@@ -2,7 +2,6 @@ const async = require('async')
 const debug = require('debug')('api:model')
 const Hook = require('./hook')
 const logger = require('@dadi/logger')
-const queryUtils = require('./utils')
 
 /**
  * Block with metadata pertaining to an API collection.
@@ -128,7 +127,7 @@ function update ({
     // Create a copy of the documents that matched the find
     // query, as these will be updated and we need to send back
     // to the client a full result set of modified documents.
-    updatedDocuments = queryUtils.snapshot(result.results)
+    updatedDocuments = result.results
 
     // Run any `beforeUpdate` hooks.
     if (this.settings.hooks && this.settings.hooks.beforeUpdate) {

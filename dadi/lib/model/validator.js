@@ -214,11 +214,11 @@ Validator.prototype._validate = function (field, schema, key) {
     }
   }
 
-  if (schema.type === 'DateTime') {
-    if (new Date(field).toString() === 'Invalid Date') {
-      return 'is not a valid DateTime'
-    }
-  }
+  // if (schema.type === 'DateTime') {
+  //   if (new Date(field).toString() === 'Invalid Date') {
+  //     return 'is not a valid DateTime'
+  //   }
+  // }
 
   // allow Mixed/ObjectID/Reference/DateTime fields through,
   // but check all other types

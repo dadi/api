@@ -283,7 +283,6 @@ Controller.prototype.post = function (req, res, next) {
 
     // If id is present in the url, then this is an update.
     if (req.params.id || req.body.update) {
-      internals._lastModifiedAt = Date.now()
       internals._lastModifiedBy = req.client && req.client.clientId
 
       let query = {}
@@ -315,7 +314,6 @@ Controller.prototype.post = function (req, res, next) {
     }
 
     // if no id is present, then this is a create
-    internals._createdAt = Date.now()
     internals._createdBy = req.client && req.client.clientId
 
     return this.model.create({

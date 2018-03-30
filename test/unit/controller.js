@@ -418,7 +418,6 @@ describe('Controller', () => {
         count.should.equal(1)
         args.documents.field1.should.equal('foo')
         args.internals._apiVersion.should.equal('vtest')
-        args.internals._createdAt.should.be.Number
         args.internals._createdBy.should.equal('clientTestId')
       })
     })
@@ -486,7 +485,6 @@ describe('Controller', () => {
         args.query._id.should.equal('1234567890')
         args.update.field1.should.equal('bar')
         args.internals._apiVersion.should.equal('vtest')
-        args.internals._lastModifiedAt.should.be.Number
         args.internals._lastModifiedBy.should.equal('clientTestId')
 
         stub.restore()

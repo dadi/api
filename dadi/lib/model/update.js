@@ -61,6 +61,9 @@ function update ({
     )
   }
 
+  // Add `lastModifiedAt` internal field.
+  internals._lastModifiedAt = internals._lastModifiedAt || Date.now()
+
   // Validate the query.
   let validation = this.validate.query(query)
 

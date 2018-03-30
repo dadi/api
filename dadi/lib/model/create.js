@@ -26,6 +26,9 @@ function create ({
     )
   }
 
+  // Add `createdAt` internal field.
+  internals._createdAt = internals._createdAt || Date.now()
+
   if (!Array.isArray(documents)) {
     documents = [documents]
   }

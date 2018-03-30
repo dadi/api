@@ -226,7 +226,7 @@ DataStore.prototype.find = function ({ query, collection, options = {}, schema, 
     this.getCollection(collection).then(collection => {
       if (DEBUG) {
         console.log('')
-        console.log('* (Test connector) Find: ', this.database.___id, collName, query)
+        console.log('* (Test connector) Find: ', this.database.___id, collName, JSON.stringify(query))
         console.log('---> Results:', collection.chain().find(query).data())
         console.log('')
       }
@@ -481,8 +481,19 @@ DataStore.prototype.prepareQuery = function (query, schema) {
       if (typeof query[key] === 'object' && query[key]) {
         Object.keys(query[key]).forEach(k => {
           // change $ne: null to $ne: undefined, as per https://github.com/techfort/LokiJS/issues/285
-          if (k === '$ne' && typeof query[key][k] === 'object' && query[key][k] === null) {
+          if (
+            k === '$ne' &&
+            typeof query[key][k] === 'object' &&
+            query[key][k] === null
+          ) {
             query[key] = { '$ne': undefined }
+          }
+
+          // Loki's `$in` can't search in arrays, unlike Mongo's implementation.
+          // We can use `$containsAny` instead, which searches in both strings
+          // and arrays.
+          if (k === '$in') {
+            query[key] = { '$containsAny': query[key].$in }
           }
         })
       }

@@ -17,13 +17,27 @@ module.exports.sendBackJSON = function (successCode, res, next) {
     let statusCode = successCode
 
     if (err) {
-      if (err.message === 'DB_DISCONNECTED') {
-        body = formatError.createApiError('0004')
+      switch (err.message) {
+        case 'DB_DISCONNECTED':
+          body = Object.assign(formatError.createApiError('0004'), {
+            statusCode: 503
+          })
+          statusCode = body.statusCode
 
-        statusCode = 503
-        body.statusCode = statusCode
-      } else {
-        return next(err)
+          break
+
+        case 'BAD_REQUEST':
+          body = {
+            success: false,
+            errors: err.errors,
+            statusCode: 400
+          }
+          statusCode = body.statusCode
+
+          break
+
+        default:
+          return next(err)
       }
     }
 

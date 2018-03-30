@@ -30,24 +30,22 @@ Controller.prototype._prepareQuery = function (req) {
     Object.keys(query).forEach(key => {
       if (!this.model.isKeyValid(key)) {
         delete query[key]
-      } else {
-        if (this.model.schema[key]) {
-          let fieldType = this.model.schema[key].type
-
-          help.transformQuery(query[key], fieldType)
-        }
       }
     })
   }
 
   // If id is present in the url, add to the query.
   if (req.params && req.params.id) {
-    Object.assign(query, { _id: req.params.id })
+    Object.assign(query, {
+      _id: req.params.id
+    })
   }
 
   // Add the apiVersion filter.
   if (config.get('query.useVersionFilter')) {
-    Object.assign(query, { _apiVersion: apiVersion })
+    Object.assign(query, {
+      _apiVersion: apiVersion
+    })
   }
 
   // add the model's default filters, if set
@@ -143,7 +141,7 @@ Controller.prototype._prepareQueryOptions = function (options) {
 
   // Compose / reference fields.
   if (options.compose) {
-    queryOptions.compose = options.compose === 'true'
+    queryOptions.compose = options.compose
   }
 
   // History.

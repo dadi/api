@@ -521,22 +521,28 @@ describe('Model', function () {
     it('should add history to results if options.includeHistory = true', function (done) {
       var mod = model('testModelName', help.getModelSchema(), null, { database: 'testdb', storeRevisions: true })
 
-      mod.create({fieldName: 'foo'}, function (err, result) {
-        if (err) return done(err)
-
-        mod.update({fieldName: 'foo'}, {fieldName: 'bar'}, function (err, result) {
+      help.whenModelsConnect([mod]).then(() => {
+        mod.create({fieldName: 'foo'}, function (err, result) {
           if (err) return done(err)
 
-          mod.find({}, { includeHistory: true }, function (err, results) {
+          mod.update({fieldName: 'foo'}, {fieldName: 'bar'}, function (err, result) {
             if (err) return done(err)
 
-            results.results.should.exist
-            results.results.should.be.Array
-            results.results[0]._history.should.exist
-            results.results[0]._history[0].fieldName.should.eql('foo')
-            done()
+            mod.find({}, { includeHistory: true }, function (err, results) {
+              if (err) return done(err)
+
+              console.log('')
+              console.log('----> RES:', JSON.stringify(results, null, 2))
+              console.log('')
+
+              results.results.should.exist
+              results.results.should.be.Array
+              results.results[0]._history.should.exist
+              results.results[0]._history[0].fieldName.should.eql('foo')
+              done()
+            })
           })
-        })
+        })    
       })
     })
 

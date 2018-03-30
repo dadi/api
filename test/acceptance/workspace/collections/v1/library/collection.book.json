@@ -10,6 +10,13 @@
 	      "collection": "person"
 	    }
   	},
+    "authorStrict": {
+      "type": "Reference",
+      "settings": {
+        "collection": "person",
+        "strictCompose": true
+      }
+    },
   	"booksInSeries": {
 	    "type": "Reference"
   	}

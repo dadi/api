@@ -220,7 +220,7 @@ Model.prototype._formatResultSet = function (
 
           return this.runFieldHooks({
             config,
-            data,
+            data: Object.assign({}, data, { document }),
             input: {
               [field]: document[field]
             },
@@ -281,6 +281,17 @@ Model.prototype._getComposeValue = function (override) {
 }
 
 /**
+ * Returns the name of the id-collection mapping field
+ * for a given reference field.
+ *
+ * @param  {String} fieldName - name of the reference field
+ * @return {String}
+ */
+Model.prototype._getIdMappingName = function (fieldName) {
+  return `_ref${fieldName[0].toUpperCase()}${fieldName.slice(1)}`
+}
+
+/**
  * Attaches the full history of each document and returns
  * the modified result set.
  *
@@ -315,10 +326,10 @@ Model.prototype._injectHistory = function (data, options) {
  * @param  {Object} query
  * @return {Promise<Object>} transformed query
  */
-Model.prototype._transformQuery = function (query) {
+Model.prototype._transformQuery = function (query, options) {
   let result = Promise.resolve({})
   let canonicalQuery = Object.keys(query).reduce((canonical, key) => {
-    let rootNode = key.split('.')[0]
+    let rootNode = key.split('.')[0].split('@')[0]
 
     canonical[rootNode] = canonical[rootNode] || {}
     canonical[rootNode][key] = query[key]
@@ -329,7 +340,7 @@ Model.prototype._transformQuery = function (query) {
   Object.keys(canonicalQuery).forEach(rootField => {
     result = result.then(transformedQuery => {
       return this.runFieldHooks({
-        data: { config },
+        data: { options },
         field: rootField,
         input: canonicalQuery[rootField],
         name: 'beforeQuery'
@@ -497,6 +508,7 @@ Model.prototype.runFieldHooks = function ({
         return hook[name].call(
           this,
           Object.assign({}, data, {
+            config,
             field,
             input,
             schema: this.getField(field)
@@ -507,7 +519,6 @@ Model.prototype.runFieldHooks = function ({
   })
 
   return queue.catch(error => {
-    console.log('---->', error)
     let hookError = new Error('BAD_REQUEST')
 
     hookError.errors = [

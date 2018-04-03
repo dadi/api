@@ -160,7 +160,7 @@ module.exports.beforeOutput = function ({
         options: queryOptions,
         query: {
           _id: {
-            $in: referenceCollections[collection]
+            $containsAny: referenceCollections[collection]
           }
         }
       }).then(({metadata, results}) => {
@@ -299,9 +299,9 @@ module.exports.beforeQuery = function ({config, field, input, options}) {
       // any results, there's no point in processing any nodes to the left
       // because the result will always be an empty array.
       Object.keys(query).forEach(field => {
-        if (query[field].$in && query[field].$in.length === 0) {
+        if (query[field].$containsAny && query[field].$containsAny.length === 0) {
           return {
-            $in: []
+            $containsAny: []
           }
         }
       })
@@ -310,7 +310,7 @@ module.exports.beforeQuery = function ({config, field, input, options}) {
         query
       }).then(({results}) => {
         return {
-          $in: results.map(item => item._id.toString())
+          $containsAny: results.map(item => item._id.toString())
         }
       })
     })

@@ -488,13 +488,6 @@ DataStore.prototype.prepareQuery = function (query, schema) {
           ) {
             query[key] = { '$ne': undefined }
           }
-
-          // Loki's `$in` can't search in arrays, unlike Mongo's implementation.
-          // We can use `$containsAny` instead, which searches in both strings
-          // and arrays.
-          if (k === '$in') {
-            query[key] = { '$containsAny': query[key].$in }
-          }
         })
       }
     }

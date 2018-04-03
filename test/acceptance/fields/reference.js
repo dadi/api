@@ -1091,6 +1091,70 @@ describe('Reference Field', () => {
       })
     })
 
+    it('should populate all reference fields when optional ones aren\'t defined', done => {
+      // first person
+      let gertrude = { name: 'Gertrude Stein' }
+
+      config.set('query.useVersionFilter', true)
+
+      let client = request(connectionString)
+      client
+      .post('/v1/library/person')
+      .set('Authorization', 'Bearer ' + bearerToken)
+      .send(gertrude)
+      .expect(200)
+      .end(function (err, res) {
+        if (err) return done(err)
+
+        let personId = res.body.results[0]._id
+
+        let ernest = {
+          name: 'Ernest Hemingway',
+          friend: personId.toString(),
+          agent: []
+        }
+
+        client
+        .post('/v1/library/person')
+        .set('Authorization', 'Bearer ' + bearerToken)
+        .send(ernest)
+        .expect(200)
+        .end(function (err, res) {
+          if (err) return done(err)
+
+          ernest.name = 'Half Brother'
+          ernest.spouse = ernest.friend
+          ernest.allFriends = []
+
+          client
+          .post('/v1/library/person')
+          .set('Authorization', 'Bearer ' + bearerToken)
+          .send(ernest)
+          .expect(200)
+          .end(function (err, res) {
+            if (err) return done(err)
+
+            client
+            .get('/v1/library/person?compose=true&filter={"name":"Half Brother"}')
+            .set('Authorization', 'Bearer ' + bearerToken)
+            .expect(200)
+            .end(function (err, res) {
+              if (err) return done(err)
+
+              should.exist(res.body.results)
+
+              let result = res.body.results[0]
+
+              should.exist(result.friend)
+              result.friend.name.should.eql('Gertrude Stein')
+
+              done()
+            })
+          })
+        })
+      })
+    })
+
     it('should return results for a reference field containing an Array of Strings', done => {
       let person = { name: 'Ernest Hemingway' }
       let book = { title: 'For Whom The Bell Tolls', author: null }

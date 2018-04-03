@@ -46,14 +46,19 @@ function find ({
   if (options.fields && Object.keys(options.fields).length) {
     Object.keys(options.fields).forEach(field => {
       let baseField = field.split('.')[0]
+      let [name, collection] = baseField.split('@')
 
-      queryFields[baseField] = options.fields[field]
+      if (collection && (collection !== this.name)) {
+        return
+      }
+
+      queryFields[name] = options.fields[field]
 
       // If we're limiting the fields we're requesting, we need to
       // ensure that any reference fields are accompanied by their
       // auxiliary collection mapping field.
-      if (this.getFieldType(baseField) === 'reference') {
-        let mappingField = this._getIdMappingName(baseField)
+      if (this.getFieldType(name) === 'reference') {
+        let mappingField = this._getIdMappingName(name)
 
         queryFields[mappingField] = 1
       }

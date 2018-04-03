@@ -1138,7 +1138,7 @@ describe('Reference Field', () => {
       })
     })
 
-    it('should allow filtering documents by nested properties', done => {
+    it('should filter documents by nested properties', done => {
       let event = {
         type: 'Book release',
         book: {
@@ -1185,7 +1185,7 @@ describe('Reference Field', () => {
       })
     })
 
-    it('should allow filtering documents by nested properties in multi-collection references', done => {
+    it('should filter documents by nested properties in multi-collection references', done => {
       let miscItem = {
         string: 'Some string',
         multiReference: [
@@ -1312,6 +1312,116 @@ describe('Reference Field', () => {
 
           item.multiReference[0].name.should.eql(person.name)
           item.multiReference[1].title.should.eql(book.title)
+
+          done()
+        })
+      })
+    })
+
+    it('should return referenced documents with the specified fields only', done => {
+      let event = {
+        type: 'Book release',
+        datetime: 1522791512197,
+        book: {
+          title: 'For Whom The Bell Tolls',
+          author: {
+            name: 'Ernest Hemingway',
+            spouse: {
+              name: 'Mary Welsh Hemingway'
+            }
+          }
+        }
+      }
+
+      config.set('query.useVersionFilter', true)
+
+      let client = request(connectionString)
+      client
+      .post('/v1/library/event')
+      .set('Authorization', 'Bearer ' + bearerToken)
+      .send(event)
+      .expect(200)
+      .end((err, res) => {
+        if (err) return done(err)
+
+        client
+        .get('/v1/library/event?filter={"book.author.name":"Ernest Hemingway"}&fields={"type":1,"book.author.spouse":1}&compose=all')
+        .set('Authorization', 'Bearer ' + bearerToken)
+        .expect(200)
+        .end((err, res) => {
+          if (err) return done(err)
+
+          let eventResult = res.body.results[0]
+
+          eventResult.type.should.eql(event.type)
+          should.not.exist(eventResult.datetime)
+          should.not.exist(eventResult.book.title)
+          should.not.exist(eventResult.book.author.name)
+          eventResult.book.author.spouse.name.should.eql(
+            event.book.author.spouse.name
+          )
+
+          done()
+        })
+      })
+    })
+
+    it('should return multi-collection referenced documents with the specified fields only', done => {
+      let item = {
+        string: 'Some string',
+        mixed: 1234,
+        multiReference: [
+          {
+            _collection: 'person',
+            _data: {
+              name: 'Ernest Hemingway',
+              spouse: {
+                name: 'Mary Welsh Hemingway'
+              }  
+            }
+          },
+          {
+            _collection: 'book',
+            _data: {
+              title: 'War and Peace',
+              author: {
+                name: 'Leo Tolstoy'
+              }  
+            }
+          }
+        ]
+      }
+
+      config.set('query.useVersionFilter', true)
+
+      let client = request(connectionString)
+      client
+      .post('/v1/library/misc')
+      .set('Authorization', 'Bearer ' + bearerToken)
+      .send(item)
+      .expect(200)
+      .end((err, res) => {
+        if (err) return done(err)
+
+        client
+        .get('/v1/library/misc?filter={"string":"Some string"}&fields={"mixed":1,"multiReference.spouse@person":1,"multiReference.author@book":1}&compose=all')
+        .set('Authorization', 'Bearer ' + bearerToken)
+        .expect(200)
+        .end((err, res) => {
+          if (err) return done(err)
+
+          let itemResult = res.body.results[0]
+
+          should.not.exist(itemResult.string)
+          itemResult.mixed.should.eql(item.mixed)
+          should.not.exist(itemResult.multiReference[0].name)
+          itemResult.multiReference[0].spouse.name.should.eql(
+            item.multiReference[0]._data.spouse.name
+          )
+          should.not.exist(itemResult.multiReference[1].title)
+          itemResult.multiReference[1].author.name.should.eql(
+            item.multiReference[1]._data.author.name
+          )
 
           done()
         })

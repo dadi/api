@@ -39,6 +39,27 @@ function find ({
 
   debug('Model find: %o %o', query, options)
 
+  let queryFields = {}
+
+  // Transforming elements of the `fields` parameter that contain
+  // dot-notation paths so that the base field is requested.
+  if (options.fields && Object.keys(options.fields).length) {
+    Object.keys(options.fields).forEach(field => {
+      let baseField = field.split('.')[0]
+
+      queryFields[baseField] = options.fields[field]
+
+      // If we're limiting the fields we're requesting, we need to
+      // ensure that any reference fields are accompanied by their
+      // auxiliary collection mapping field.
+      if (this.getFieldType(baseField) === 'reference') {
+        let mappingField = this._getIdMappingName(baseField)
+
+        queryFields[mappingField] = 1
+      }
+    })
+  }
+
   // Run validation.
   const validation = this.validate.query(query)
 
@@ -50,12 +71,13 @@ function find ({
     return Promise.reject(err)
   }
 
-  return this._transformQuery(query).then(query => {
+  return this._transformQuery(query, options).then(query => {
     return this.connection.db.find({
       query,
       collection: this.name,
       options: Object.assign({}, options, {
         compose: undefined,
+        fields: queryFields,
         historyFilters: undefined
       }),
       schema: this.schema,

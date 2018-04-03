@@ -34,18 +34,6 @@ function get ({
   options = {},
   req
 }) {
-  let queryFields
-
-  if (options.fields) {
-    queryFields = Object.keys(options.fields).reduce((fields, field) => {
-      let baseField = field.split('.')[0]
-
-      fields[baseField] = options.fields[field]
-
-      return fields
-    }, {})
-  }
-
   return new Promise((resolve, reject) => {
     // Run any `beforeGet` hooks.
     if (this.settings.hooks && this.settings.hooks.beforeGet) {
@@ -76,9 +64,7 @@ function get ({
   }).then(query => {
     return this.find({
       query,
-      options: Object.assign({}, options, {
-        fields: queryFields
-      })
+      options
     })
   }).then(response => {
     if (this.settings.hooks && this.settings.hooks.afterGet) {

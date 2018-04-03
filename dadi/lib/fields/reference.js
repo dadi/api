@@ -21,7 +21,7 @@ function createModelChain (rootModel, fields) {
 
     let nodeModel = chain[chain.length - 1]
     let referenceField = nodeModel.getField(
-      fields[index - 1]
+      fields[index - 1].split('@')[0]
     )
 
     // Validating the node and flagging an error if invalid.
@@ -33,8 +33,8 @@ function createModelChain (rootModel, fields) {
       return null
     }
 
-    let referenceCollection = referenceField.settings &&
-      referenceField.settings.collection
+    let referenceCollection = field.split('@')[1] ||
+      (referenceField.settings && referenceField.settings.collection)
 
     // If there isn't a `settings.collection` property, we're
     // dealing with a self-reference.
@@ -52,6 +52,7 @@ function createModelChain (rootModel, fields) {
 
 module.exports.beforeOutput = function ({
   composeOverride,
+  document,
   dotNotationPath = [],
   field,
   input,
@@ -79,35 +80,40 @@ module.exports.beforeOutput = function ({
 
   let newDotNotationPath = dotNotationPath.concat(field)
   let schema = this.getField(field)
-  let referenceCollection = schema.settings &&
-    schema.settings.collection
-  let strictCompose = schema.settings &&
+  let isStrictCompose = schema.settings &&
     Boolean(schema.settings.strictCompose)
-  let ids = Array.isArray(input[field])
+  let values = Array.isArray(input[field])
     ? input[field]
     : [input[field]]
-  let uniqueIds = strictCompose
-    ? ids
-    : ids.filter((id, index) => {
+  let ids = values
+  let idMappingField = this._getIdMappingName(field)
+
+  // If strict compose is not enabled, we want to resolve duplicates.
+  if (!isStrictCompose) {
+    ids = ids.filter((id, index) => {
       return id && ids.lastIndexOf(id) === index
     })
-  let referenceModel = referenceCollection
-    ? this.getForeignModel(referenceCollection)
-    : this
-
-  if (!referenceModel) {
-    return {
-      [field]: input[field]
-    }
   }
 
-  let query = {
-    _id: {
-      '$in': uniqueIds
-    }
-  }
+  // This generates an object mapping document IDs to collections, so
+  // that we can batch requests instead of making one per ID.
+  let referenceCollections = ids.reduce((collections, id) => {
+    let idMapping = document[idMappingField] || {}
+    let referenceCollection = idMapping[id] ||
+      (schema.settings && schema.settings.collection) ||
+      this.name
+
+    collections[referenceCollection] = collections[referenceCollection] || []
+    collections[referenceCollection].push(id)
+
+    return collections
+  }, {})
+
+  let documents = {}
   let queryOptions = {}
 
+  // Looking at the `settings.fields` array to determine which fields
+  // will be requested from the composed document.
   if (schema.settings && Array.isArray(schema.settings.fields)) {
     // Transforming something like:
     //
@@ -123,86 +129,93 @@ module.exports.beforeOutput = function ({
     }, {})
   }
 
-  let fieldsFromUrl = Object.keys(urlFields).reduce((fields, fieldPath) => {
+  // Looking at the `fields` URL parameter to determine which fields
+  // will be requested from the composed document.
+  Object.keys(urlFields).forEach(fieldPath => {
     let fieldPathNodes = fieldPath.split('.')
 
     if (fieldPath.indexOf(newDotNotationPath.join('.')) === 0) {
       let field = fieldPathNodes[level]
 
       if (field) {
-        fields = fields || {}
-        fields[field] = urlFields[fieldPath]
+        queryOptions.fields = queryOptions.fields || {}
+        queryOptions.fields[field] = urlFields[fieldPath]
       }
     }
+  })
 
-    return fields
-  }, null)
-
-  if (fieldsFromUrl) {
-    queryOptions.fields = Object.assign(
-      {},
-      queryOptions.fields,
-      fieldsFromUrl
-    )
+  if (queryOptions.fields) {
+    queryOptions.fields[idMappingField] = 1
   }
 
-  return referenceModel.find({
-    options: queryOptions,
-    query
-  }).then(({metadata, results}) => {
-    if (results.length === 0) {
-      if (strictCompose) {
-        return {
-          [field]: isArray ? uniqueIds.map(id => null) : null,
-          _composed: {
-            [field]: ids
+  return Promise.all(
+    Object.keys(referenceCollections).map(collection => {
+      let model = collection === this.name
+        ? this
+        : this.getForeignModel(collection)
+
+      if (!model) return
+
+      return model.find({
+        options: queryOptions,
+        query: {
+          _id: {
+            $in: referenceCollections[collection]
           }
         }
-      }
-
-      return {
-        [field]: isArray ? ids : ids[0]
-      }
-    }
-
-    // The order of the IDs in the query wasn't preserved,
-    // so we need to sort `results` according to the original
-    // array.
-    let sortedResults = uniqueIds.map(id => {
-      if (!id) return null
-
-      let result = results.find(result => {
-        return result._id.toString() === id.toString()
+      }).then(({metadata, results}) => {
+        return Promise.all(
+          results.map(result => {
+            return model.formatForOutput(result, {
+              composeOverride,
+              dotNotationPath: newDotNotationPath,
+              level: level + 1,
+              urlFields
+            }).then(formattedResult => {
+              documents[result._id] = formattedResult
+            })
+          })
+        )
       })
+    })
+  ).then(() => {
+    let composedIds = []
+    let resolvedDocuments = ids.map(id => {
+      if (documents[id]) {
+        composedIds.push(ids)
 
-      if (result === undefined) {
-        return strictCompose ? null : id
+        return documents[id]
       }
 
-      return result
+      return isStrictCompose ? null : id
     })
 
-    if (!strictCompose) {
-      sortedResults = sortedResults.filter(Boolean)
+    // If strict compose is not enabled, we remove falsy values.
+    if (!isStrictCompose) {
+      resolvedDocuments = resolvedDocuments.filter(Boolean)
     }
 
-    return referenceModel.formatForOutput(sortedResults, {
-      composeOverride,
-      dotNotationPath: newDotNotationPath,
-      level: level + 1,
-      urlFields
-    }).then(composed => {
-      return {
-        [field]: isArray ? composed : composed[0],
-        _composed: {
-          [field]: input[field]
-        }
+    // Returning a single object if that's how it's represented
+    // in the database.
+    if (!isArray) {
+      resolvedDocuments = resolvedDocuments[0]
+    }
+
+    let output = {
+      [field]: resolvedDocuments
+    }
+
+    if (composedIds.length > 0) {
+      output._composed = {
+        [field]: input[field]
       }
-    })
+    }
+
+    return output
   })
 }
 
-module.exports.beforeQuery = function ({config, field, input}) {
+module.exports.beforeQuery = function ({config, field, input, options}) {
   let isOperatorQuery = tree => {
     return Boolean(
       tree &&
@@ -249,6 +262,8 @@ module.exports.beforeQuery = function ({config, field, input}) {
     let queue = Promise.resolve({})
 
     Object.keys(tree).forEach(key => {
+      let canonicalKey = key.split('@')[0]
+
       queue = queue.then(query => {
         if (
           tree[key] &&
@@ -260,13 +275,13 @@ module.exports.beforeQuery = function ({config, field, input}) {
             path.concat(key)
           ).then(result => {
             return Object.assign({}, query, {
-              [key]: result
+              [canonicalKey]: result
             })
           })
         }
 
         return Object.assign({}, query, {
-          [key]: tree[key]
+          [canonicalKey]: tree[key]
         })
       })
     })
@@ -304,27 +319,55 @@ module.exports.beforeQuery = function ({config, field, input}) {
   return processTree(inputTree)
 }
 
-module.exports.beforeSave = function ({field, internals, input, schema}) {
+module.exports.beforeSave = function ({
+  config,
+  field,
+  internals,
+  input,
+  schema
+}) {
   let isArray = Array.isArray(input[field])
   let values = isArray
     ? input[field]
     : [input[field]]
+  let idMapping = {}
   let insertions = values.map(value => {
-    if (!value) return value
+    // This is an ID or it's falsy, there's nothing left to do.
+    if (!value || typeof value === 'string') {
+      return value
+    }
 
-    let referenceCollection = schema.settings &&
-      schema.settings.collection
+    let needsMapping = false
+    let collectionField = `${config.get('internalFieldsPrefix')}collection`
+    let dataField = `${config.get('internalFieldsPrefix')}data`
+    let referenceCollection
+
+    // Are we looking at the multi-collection reference format?
+    if (value[collectionField] && value[dataField]) {
+      referenceCollection = value[collectionField]
+      value = value[dataField]
+
+      // If the value of `_data` is a string, we assume it's an
+      // ID and therefore we just need to add the collection name
+      // to the mapping and we're done.
+      if (typeof value === 'string') {
+        idMapping[value] = referenceCollection
+
+        return value
+      }
+
+      needsMapping = true
+    } else {
+      referenceCollection = schema.settings &&
+        schema.settings.collection
+    }
+
     let model = referenceCollection
       ? this.getForeignModel(referenceCollection)
       : this
 
     // Augment the value with the internal properties from the parent.
     Object.assign(value, internals)
-
-    // This is an ID, there's nothing else to do.
-    if (typeof value === 'string') {
-      return value
-    }
 
     return model.formatForInput(
       value,
@@ -351,11 +394,18 @@ module.exports.beforeSave = function ({field, internals, input, schema}) {
       }).then(({results}) => {
         return results[0]._id.toString()
       })
+    }).then(id => {
+      if (needsMapping) {
+        idMapping[id] = referenceCollection
+      }
+
+      return id
     })
   })
 
   return Promise.all(insertions).then(value => {
     return {
+      [this._getIdMappingName(field)]: idMapping,
       [field]: isArray ? value : value[0]
     }
   })

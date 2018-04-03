@@ -18,11 +18,14 @@ describe('Reference Field', () => {
       help.dropDatabase('library', 'person', err => {
         if (err) return done(err)
         help.dropDatabase('library', 'event', err => {
-          app.start(() => {
-            help.getBearerToken(function (err, token) {
-              if (err) return done(err)
-              bearerToken = token
-              done()
+          if (err) return done(err)
+          help.dropDatabase('library', 'misc', err => {
+            app.start(() => {
+              help.getBearerToken(function (err, token) {
+                if (err) return done(err)
+                bearerToken = token
+                done()
+              })
             })
           })
         })
@@ -36,6 +39,169 @@ describe('Reference Field', () => {
   })
 
   describe('insert', () => {
+    it('should accept reference documents as an ID string', done => {
+      let author = {
+        name: 'Author one'
+      }
+
+      config.set('query.useVersionFilter', true)
+
+      let client = request(connectionString)
+      client
+      .post('/v1/library/person')
+      .set('Authorization', 'Bearer ' + bearerToken)
+      .send(author)
+      .expect(200)
+      .end((err, res) => {
+        if (err) return done(err)
+
+        let book = {
+          title: 'Book one',
+          author: res.body.results[0]._id
+        }
+
+        client
+        .post('/v1/library/book')
+        .set('Authorization', 'Bearer ' + bearerToken)
+        .send(book)
+        .expect(200)
+        .end((err, res) => {        
+          res.body.results[0].author.name.should.eql(author.name)
+
+          done()
+        })
+      })
+    })
+
+    it('should accept reference documents as an array of IDs', done => {
+      let authors = [
+        {name: 'Author one'},
+        {name: 'Author two'},
+        {name: 'Author three'}
+      ]
+
+      config.set('query.useVersionFilter', true)
+
+      let client = request(connectionString)
+      client
+      .post('/v1/library/person')
+      .set('Authorization', 'Bearer ' + bearerToken)
+      .send(authors)
+      .expect(200)
+      .end((err, res) => {
+        if (err) return done(err)
+
+        let book = {
+          title: 'Book one',
+          author: res.body.results.map(result => result._id)
+        }
+
+        client
+        .post('/v1/library/book')
+        .set('Authorization', 'Bearer ' + bearerToken)
+        .send(book)
+        .expect(200)
+        .end((err, res) => {        
+          res.body.results[0].author.length.should.eql(3)
+          res.body.results[0].author[0].name.should.eql(authors[0].name)
+          res.body.results[0].author[1].name.should.eql(authors[1].name)
+          res.body.results[0].author[2].name.should.eql(authors[2].name)
+
+          done()
+        })
+      })
+    })
+
+    it('should accept reference documents as an array of _collection/_data objects containing document IDs in the _data property', done => {
+      let authors = [
+        { name: 'Author one' },
+        { name: 'Author two' }
+      ]
+      let books = [
+        { title: 'Book one' },
+        { title: 'Book two' }
+      ]
+
+      config.set('query.useVersionFilter', true)
+
+      let client = request(connectionString)
+      client
+      .post('/v1/library/person')
+      .set('Authorization', 'Bearer ' + bearerToken)
+      .send(authors)
+      .expect(200)
+      .end((err, res) => {
+        if (err) return done(err)
+
+        let authorIds = res.body.results.map(result => result._id)
+
+        client
+        .post('/v1/library/book')
+        .set('Authorization', 'Bearer ' + bearerToken)
+        .send(books)
+        .expect(200)
+        .end((err, res) => {
+          if (err) return done(err)
+
+          let bookIds = res.body.results.map(result => result._id)
+          let multiReference = [
+            {
+              _collection: 'person',
+              _data: authorIds[0]
+            },
+            {
+              _collection: 'book',
+              _data: bookIds[0]
+            },
+            {
+              _collection: 'book',
+              _data: bookIds[1]
+            },
+            {
+              _collection: 'person',
+              _data: authorIds[1]
+            }
+          ]
+
+          client
+          .post('/v1/library/misc')
+          .set('Authorization', 'Bearer ' + bearerToken)
+          .send({multiReference})
+          .expect(200)
+          .end((err, res) => {
+            if (err) return done(err)
+
+            let doc = res.body.results[0]
+
+            doc.multiReference.length.should.eql(4)
+            doc.multiReference[0].name.should.eql(
+              authors[0].name
+            )
+            doc.multiReference[1].title.should.eql(
+              books[0].title
+            )
+            doc.multiReference[2].title.should.eql(
+              books[1].title
+            )
+            doc.multiReference[3].name.should.eql(
+              authors[1].name
+            )
+
+            doc._composed.should.eql({
+              multiReference: multiReference.map(item => item._data)
+            })
+
+            doc._refMultiReference[authorIds[0]].should.eql('person')
+            doc._refMultiReference[authorIds[1]].should.eql('person')
+            doc._refMultiReference[bookIds[0]].should.eql('book')
+            doc._refMultiReference[bookIds[1]].should.eql('book')
+
+            done()
+          })   
+        })
+      })
+    })
+
     it('should create reference documents that don\'t have _id fields', done => {
       let book = {
         title: 'For Whom The Bell Tolls',
@@ -65,7 +231,7 @@ describe('Reference Field', () => {
 
     it('should create reference documents recursively', done => {
       let event = {
-        type: 'Book signing',
+        type: 'Book release',
         book: {
           title: 'For Whom The Bell Tolls',
           author: {
@@ -118,6 +284,99 @@ describe('Reference Field', () => {
           res.body.results[0].name.should.eql(event.book.author.name)
 
           if (++doneIndex === 3) done()
+        })
+      })
+    })
+
+    it('should create reference documents recursively in the collections specified by the `_collection` field', done => {
+      let item = {
+        string: 'Item one',
+        multiReference: [
+          {
+            _collection: 'book',
+            _data: {
+              title: 'Book one',
+              author: {
+                name: 'Person one'
+              }
+            }
+          },
+          {
+            _collection: 'person',
+            _data: {
+              name: 'Person two'
+            }
+          }
+        ]
+      }
+
+      config.set('query.useVersionFilter', true)
+
+      let client = request(connectionString)
+      client
+      .post('/v1/library/misc')
+      .set('Authorization', 'Bearer ' + bearerToken)
+      .send(item)
+      .expect(200)
+      .end((err, res) => {
+        if (err) return done(err)
+
+        let result = res.body.results[0]
+
+        result.string.should.eql(item.string)
+        result.multiReference.length.should.eql(2)
+        result.multiReference[0].title.should.eql(
+          item.multiReference[0]._data.title
+        )
+        result.multiReference[1].name.should.eql(
+          item.multiReference[1]._data.name
+        )
+        result._refMultiReference[result.multiReference[0]._id].should.eql(
+          item.multiReference[0]._collection
+        )
+        result._refMultiReference[result.multiReference[1]._id].should.eql(
+          item.multiReference[1]._collection
+        )
+
+        client
+        .get('/v1/library/book/' + result.multiReference[0]._id)
+        .set('Authorization', 'Bearer ' + bearerToken)
+        .expect(200)
+        .end((err, res) => {
+          if (err) return done(err)
+
+          res.body.results.length.should.eql(1)
+          res.body.results[0].title.should.eql(
+            item.multiReference[0]._data.title
+          )
+
+          client
+          .get('/v1/library/person/' + result.multiReference[1]._id)
+          .set('Authorization', 'Bearer ' + bearerToken)
+          .expect(200)
+          .end((err, res) => {
+            if (err) return done(err)
+
+            res.body.results.length.should.eql(1)
+            res.body.results[0].name.should.eql(
+              item.multiReference[1]._data.name
+            )
+
+            client
+            .get('/v1/library/person/?filter={"name": "' + item.multiReference[0]._data.author.name + '"}')
+            .set('Authorization', 'Bearer ' + bearerToken)
+            .expect(200)
+            .end((err, res) => {
+              if (err) return done(err)
+
+              res.body.results.length.should.eql(1)
+              res.body.results[0].name.should.eql(
+                item.multiReference[0]._data.author.name
+              )
+
+              done()
+            })
+          })          
         })
       })
     })
@@ -277,6 +536,66 @@ describe('Reference Field', () => {
             done()
           })
         }, 800)
+      })
+    })
+
+    it('should update reference documents that already have _id fields when supplied using the _collection/_data format', done => {
+      let person = {
+        name: 'John Doe'
+      }
+
+      let client = request(connectionString)
+      client
+      .post('/v1/library/person')
+      .set('Authorization', 'Bearer ' + bearerToken)
+      .send(person)
+      .expect(200)
+      .end((err, res) => {
+        if (err) return done(err)
+
+        let authorId = res.body.results[0]._id
+
+        let book = {
+          title: 'For Whom The Bell Tolls',
+          author: {
+            _collection: 'person',
+            _data: {
+              _id: authorId,
+              name: 'Ernest Hemingway'
+            }
+          }
+        }
+
+        config.set('query.useVersionFilter', true)
+
+        let client = request(connectionString)
+        client
+        .post('/v1/library/book')
+        .set('Authorization', 'Bearer ' + bearerToken)
+        .send(book)
+        .expect(200)
+        .end((err, res) => {
+          if (err) return done(err)
+          should.exist(res.body.results)
+          let newDoc = res.body.results[0]
+
+          newDoc.author._id.should.eql(authorId)
+          newDoc.author.name.should.eql('Ernest Hemingway')
+          
+          client
+          .get('/v1/library/person/' + authorId)
+          .set('Authorization', 'Bearer ' + bearerToken)
+          .send(book)
+          .expect(200)
+          .end((err, res) => {
+            if (err) return done(err)
+
+            res.body.results.length.should.eql(1)
+            res.body.results[0].name.should.eql('Ernest Hemingway')
+
+            done()
+          })          
+        })
       })
     })
 
@@ -675,50 +994,6 @@ describe('Reference Field', () => {
   })
 
   describe('find', () => {
-    it('should populate a reference field containing an ObjectID', done => {
-      let person = { name: 'Ernest Hemingway' }
-      let book = { title: 'For Whom The Bell Tolls', author: null }
-
-      config.set('query.useVersionFilter', true)
-
-      let client = request(connectionString)
-      client
-      .post('/v1/library/person')
-      .set('Authorization', 'Bearer ' + bearerToken)
-      .send(person)
-      .expect(200)
-      .end((err, res) => {
-        if (err) return done(err)
-        should.exist(res.body.results)
-
-        let personId = res.body.results[0]._id
-        book.author = personId
-
-        client
-        .post('/v1/library/book')
-        .set('Authorization', 'Bearer ' + bearerToken)
-        .send(book)
-        .expect(200)
-        .end((err, res) => {
-          if (err) return done(err)
-
-          client
-          .get('/v1/library/book?filter={"title":"For Whom The Bell Tolls"}&compose=true')
-          .set('Authorization', 'Bearer ' + bearerToken)
-          .expect(200)
-          .end((err, res) => {
-            if (err) return done(err)
-            should.exist(res.body.results)
-            let bookResult = res.body.results[0]
-            should.exist(bookResult.author)
-            should.exist(bookResult.author.name)
-
-            done()
-          })
-        })
-      })
-    })
-
     it('should populate a reference field containing a String', done => {
       let person = { name: 'Ernest Hemingway' }
       let book = { title: 'For Whom The Bell Tolls', author: null }
@@ -859,6 +1134,186 @@ describe('Reference Field', () => {
 
             done()
           })
+        })
+      })
+    })
+
+    it('should allow filtering documents by nested properties', done => {
+      let event = {
+        type: 'Book release',
+        book: {
+          title: 'For Whom The Bell Tolls',
+          author: {
+            name: 'Ernest Hemingway'
+          }
+        }
+      }
+
+      config.set('query.useVersionFilter', true)
+
+      let client = request(connectionString)
+      client
+      .post('/v1/library/event')
+      .set('Authorization', 'Bearer ' + bearerToken)
+      .send(event)
+      .expect(200)
+      .end((err, res) => {
+        if (err) return done(err)
+
+        client
+        .get('/v1/library/event?filter={"book.author.name":"Some dude"}')
+        .set('Authorization', 'Bearer ' + bearerToken)
+        .expect(200)
+        .end((err, res) => {
+          if (err) return done(err)
+
+          res.body.results.length.should.eql(0)
+
+          client
+          .get('/v1/library/event?filter={"book.author.name":"Ernest Hemingway"}')
+          .set('Authorization', 'Bearer ' + bearerToken)
+          .expect(200)
+          .end((err, res) => {
+            if (err) return done(err)
+
+            res.body.results.length.should.eql(1)
+            res.body.results[0].type.should.eql(event.type)
+
+            done()
+          })
+        })          
+      })
+    })
+
+    it('should allow filtering documents by nested properties in multi-collection references', done => {
+      let miscItem = {
+        string: 'Some string',
+        multiReference: [
+          {
+            _collection: 'book',
+            _data: {
+              title: 'Book one',
+              author: {
+                name: 'Author one'
+              }
+            }
+          },
+          {
+            _collection: 'person',
+            _data: {
+              name: 'Author two'
+            }
+          }
+        ]
+      }
+
+      config.set('query.useVersionFilter', true)
+
+      let client = request(connectionString)
+      
+      client
+      .post('/v1/library/misc')
+      .set('Authorization', 'Bearer ' + bearerToken)
+      .send(miscItem)
+      .expect(200)
+      .end((err, res) => {
+        client
+        .get('/v1/library/misc?filter={"multiReference.title@book":"Book one"}')
+        .set('Authorization', 'Bearer ' + bearerToken)
+        .expect(200)
+        .end((err, res) => {
+          res.body.results.length.should.eql(1)
+          res.body.results[0].string.should.eql(miscItem.string)
+
+          client
+          .get('/v1/library/misc?filter={"multiReference.title@book":"Book seven"}')
+          .set('Authorization', 'Bearer ' + bearerToken)
+          .expect(200)
+          .end((err, res) => {
+            res.body.results.length.should.eql(0)
+
+            client
+            .get('/v1/library/misc?filter={"multiReference.name@person":"Author two"}')
+            .set('Authorization', 'Bearer ' + bearerToken)
+            .expect(200)
+            .end((err, res) => {
+              res.body.results.length.should.eql(1)
+              res.body.results[0].string.should.eql(miscItem.string)
+
+              client
+              .get('/v1/library/misc?filter={"multiReference.name@person":"Author seven"}')
+              .set('Authorization', 'Bearer ' + bearerToken)
+              .expect(200)
+              .end((err, res) => {
+                res.body.results.length.should.eql(0)
+
+                client
+                .get('/v1/library/misc?filter={"multiReference.author@book.name":"Author seven"}')
+                .set('Authorization', 'Bearer ' + bearerToken)
+                .expect(200)
+                .end((err, res) => {
+                  res.body.results.length.should.eql(0)
+
+                  client
+                  .get('/v1/library/misc?filter={"multiReference.author@book.name":"Author one"}')
+                  .set('Authorization', 'Bearer ' + bearerToken)
+                  .expect(200)
+                  .end((err, res) => {
+                    res.body.results.length.should.eql(1)
+                    res.body.results[0].string.should.eql(miscItem.string)
+
+                    done()
+                  })
+                })
+              })
+            })
+          })
+        })
+      })
+    })
+
+    it('should return results for a reference field containing an Array of multi-collection references', done => {
+      let person = { name: 'Ernest Hemingway' }
+      let book = { title: 'For Whom The Bell Tolls' }
+      let multiReference = [
+        {
+          _collection: 'person',
+          _data: person
+        },
+        {
+          _collection: 'book',
+          _data: book
+        }
+      ]
+
+      config.set('query.useVersionFilter', true)
+
+      let client = request(connectionString)
+      client
+      .post('/v1/library/misc')
+      .set('Authorization', 'Bearer ' + bearerToken)
+      .send({multiReference})
+      .expect(200)
+      .end((err, res) => {
+        if (err) return done(err)
+
+        should.exist(res.body.results)
+
+        client
+        .get(`/v1/library/misc/${res.body.results[0]._id}?compose=all`)
+        .set('Authorization', 'Bearer ' + bearerToken)
+        .expect(200)
+        .end((err, res) => {
+          if (err) return done(err)
+
+          res.body.results.length.should.eql(1)
+
+          let item = res.body.results[0]
+
+          item.multiReference[0].name.should.eql(person.name)
+          item.multiReference[1].title.should.eql(book.title)
+
+          done()
         })
       })
     })
@@ -1386,7 +1841,7 @@ describe('Reference Field', () => {
 
     it('should compose as many levels of references as the value of `compose`, with `true` being 1 and `all` being infinite', done => {
       let event = {
-        type: 'Book signing',
+        type: 'Book release',
         book: {
           title: 'For Whom The Bell Tolls',
           author: {

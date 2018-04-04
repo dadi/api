@@ -216,6 +216,8 @@ function stringifyProperties (obj) {
           // }
         } else if (value.match(/^[a-fA-F0-9]{24}$/) && validator.isMongoId(value)) {
           obj[key] = obj[key].toString()
+        } else if (typeof obj[key] === 'object') {
+          obj[key] = stringifyProperties(obj[key])
         }
         // else if (_.isEmpty(obj[key])) {
         //   delete obj[key]

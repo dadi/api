@@ -5,6 +5,7 @@ const Hook = require('./hook')
 /**
  * Creates one or multiple documents.
  *
+ * @param {Boolean|Number} compose - the composition settings for the result
  * @param {Object|Array} documents - the document(s) to insert
  * @param {Object} internals - internal properties to attach to documents
  * @param {Boolean} rawOutput - whether to bypass formatting routine
@@ -12,6 +13,7 @@ const Hook = require('./hook')
  * @returns {Promise<Array>} array of created documents
  */
 function create ({
+  compose = true,
   documents,
   internals = {},
   rawOutput = false,
@@ -157,7 +159,7 @@ function create ({
         return this.formatForOutput(
           returnData.results,
           {
-            composeOverride: 'all'
+            composeOverride: compose
           }).then(results => ({results}))
       }
 

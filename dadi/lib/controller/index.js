@@ -267,6 +267,8 @@ Controller.prototype.post = function (req, res, next) {
     _apiVersion: req.url.split('/')[1]
   }
   let pathname = url.parse(req.url).pathname
+  let path = url.parse(req.url, true)
+  let options = path.query
 
   // Remove id param if it's an update, so we still
   // get a valid handle on the model name for clearing
@@ -300,6 +302,7 @@ Controller.prototype.post = function (req, res, next) {
       }
 
       return this.model.update({
+        compose: options.compose,
         internals,
         query,
         req,
@@ -315,6 +318,7 @@ Controller.prototype.post = function (req, res, next) {
     internals._createdBy = req.client && req.client.clientId
 
     return this.model.create({
+      compose: options.compose,
       documents: req.body,
       internals
     }).then(result => {

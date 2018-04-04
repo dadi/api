@@ -253,7 +253,7 @@ describe('Reference Field', () => {
 
         let eventId = res.body.results[0]._id
         let bookId = res.body.results[0].book._id
-        let authorId = res.body.results[0].book.author._id
+        let authorId = res.body.results[0].book.author
         let doneIndex = 0
 
         client
@@ -287,6 +287,64 @@ describe('Reference Field', () => {
         })
       })
     })
+
+    it('should respect the value of the `compose` URL parameter when returning results after insertion', done => {
+      let event = {
+        type: 'Book release',
+        book: {
+          title: 'For Whom The Bell Tolls',
+          author: {
+            name: 'Ernest Hemingway'
+          }
+        }
+      }
+
+      config.set('query.useVersionFilter', true)
+
+      let client = request(connectionString)
+      client
+      .post('/v1/library/event')
+      .set('Authorization', 'Bearer ' + bearerToken)
+      .send(event)
+      .expect(200)
+      .end((err, res) => {
+        if (err) return done(err)
+
+        res.body.results[0]._id.should.be.String
+        res.body.results[0].type.should.eql(event.type)
+        res.body.results[0].book.title.should.eql(event.book.title)
+        res.body.results[0].book.author.should.be.String
+
+        client
+        .post('/v1/library/event?compose=false')
+        .set('Authorization', 'Bearer ' + bearerToken)
+        .send(event)
+        .expect(200)
+        .end((err, res) => {
+          if (err) return done(err)
+
+          res.body.results[0]._id.should.be.String
+          res.body.results[0].type.should.eql(event.type)
+          res.body.results[0].book.should.be.String
+
+          client
+          .post('/v1/library/event?compose=all')
+          .set('Authorization', 'Bearer ' + bearerToken)
+          .send(event)
+          .expect(200)
+          .end((err, res) => {
+            if (err) return done(err)
+
+            res.body.results[0]._id.should.be.String
+            res.body.results[0].type.should.eql(event.type)
+            res.body.results[0].book.title.should.eql(event.book.title)
+            res.body.results[0].book.author.name.should.eql(event.book.author.name)
+
+            done()
+          })          
+        })
+      })
+    })    
 
     it('should create reference documents recursively in the collections specified by the `_collection` field', done => {
       let item = {
@@ -935,6 +993,75 @@ describe('Reference Field', () => {
           })
         })
       })
+    })
+
+    it('should respect the value of the `compose` URL parameter when returning results after update', done => {
+      let event = {
+        type: 'Book release',
+        book: {
+          title: 'For Whom The Bell Tolls',
+          author: {
+            name: 'Ernest Hemingway'
+          }
+        }
+      }
+
+      config.set('query.useVersionFilter', true)
+
+      let client = request(connectionString)
+      client
+      .post('/v1/library/event')
+      .set('Authorization', 'Bearer ' + bearerToken)
+      .send(event)
+      .expect(200)
+      .end((err, res) => {
+        if (err) return done(err)
+
+        let eventId = res.body.results[0]._id
+
+        client
+        .put(`/v1/library/event/${eventId}`)
+        .set('Authorization', 'Bearer ' + bearerToken)
+        .send(event)
+        .expect(200)
+        .end((err, res) => {
+          if (err) return done(err)
+
+          res.body.results[0]._id.should.be.String
+          res.body.results[0].type.should.eql(event.type)
+          res.body.results[0].book.title.should.eql(event.book.title)
+          res.body.results[0].book.author.should.be.String
+
+          client
+          .put(`/v1/library/event/${eventId}?compose=false`)
+          .set('Authorization', 'Bearer ' + bearerToken)
+          .send(event)
+          .expect(200)
+          .end((err, res) => {
+            if (err) return done(err)
+
+            res.body.results[0]._id.should.be.String
+            res.body.results[0].type.should.eql(event.type)
+            res.body.results[0].book.should.be.String
+
+            client
+            .put(`/v1/library/event/${eventId}?compose=all`)
+            .set('Authorization', 'Bearer ' + bearerToken)
+            .send(event)
+            .expect(200)
+            .end((err, res) => {
+              if (err) return done(err)
+
+              res.body.results[0]._id.should.be.String
+              res.body.results[0].type.should.eql(event.type)
+              res.body.results[0].book.title.should.eql(event.book.title)
+              res.body.results[0].book.author.name.should.eql(event.book.author.name)
+
+              done()
+            })
+          })            
+        })
+      })       
     })
   })
 

@@ -32,6 +32,7 @@ const logger = require('@dadi/logger')
  */
 
 /**
+ * @param  {Boolean|Number} compose - the composition settings for the result
  * @param  {Object}  query - query to match documents against
  * @param  {Object}  update - properties to update documents with
  * @param  {Object}  internals - internal properties to inject in documents
@@ -40,6 +41,7 @@ const logger = require('@dadi/logger')
  * @return {Promise<Array.ResultSet>} set of updated documents
  */
 function update ({
+  compose = true,
   query = {},
   update,
   internals = {},
@@ -212,7 +214,7 @@ function update ({
     // Format result set for output.
     if (!rawOutput) {
       return this.formatForOutput(data.results, {
-        composeOverride: 'all'
+        composeOverride: compose
       }).then(results => {
         return Object.assign({}, data, {
           results

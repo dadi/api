@@ -62,6 +62,10 @@ S3Storage.prototype.put = function (stream, folderPath) {
       return reject(err)
     }
 
+    if (requestData.Key.indexOf('.pdf') > 0) {
+      requestData.ContentType = 'application/pdf'
+    }
+
     var contentLength = 0
 
     function lengthListener (length) {

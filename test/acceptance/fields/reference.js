@@ -756,6 +756,69 @@ describe('Reference Field', function () {
       })
     })
 
+    it('should populate all reference fields when optional ones aren\'t defined', function (done) {
+      // first person
+      var gertrude = { name: 'Gertrude Stein' }
+
+      config.set('query.useVersionFilter', true)
+
+      var client = request(connectionString)
+      client
+      .post('/v1/library/person')
+      .set('Authorization', 'Bearer ' + bearerToken)
+      .send(gertrude)
+      .expect(200)
+      .end(function (err, res) {
+        if (err) return done(err)
+
+        var personId = res.body.results[0]._id
+
+        var ernest = {
+          name: 'Ernest Hemingway',
+          friend: personId.toString(),
+          agent: []
+        }
+
+        client
+        .post('/v1/library/person')
+        .set('Authorization', 'Bearer ' + bearerToken)
+        .send(ernest)
+        .expect(200)
+        .end(function (err, res) {
+          if (err) return done(err)
+
+          ernest.name = 'Half Brother'
+          ernest.spouse = ernest.friend
+          ernest.allFriends = []
+
+          client
+          .post('/v1/library/person')
+          .set('Authorization', 'Bearer ' + bearerToken)
+          .send(ernest)
+          .expect(200)
+          .end(function (err, res) {
+            if (err) return done(err)
+
+            client
+            .get('/v1/library/person?compose=true&filter={"name":"Half Brother"}')
+            .set('Authorization', 'Bearer ' + bearerToken)
+            .expect(200)
+            .end(function (err, res) {
+              if (err) return done(err)
+
+              should.exist(res.body.results)
+              var result = res.body.results[0]
+
+              should.exist(result.friend)
+              result.friend.name.should.eql('Gertrude Stein')
+
+              done()
+            })
+          })
+        })
+      })
+    })
+
     it('should return results for a reference field containing an Array of Strings', function (done) {
       var person = { name: 'Ernest Hemingway' }
       var book = { title: 'For Whom The Bell Tolls', author: null }

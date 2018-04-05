@@ -13,9 +13,11 @@ let bearerToken
 let connectionString = 'http://' + config.get('server.host') + ':' + config.get('server.port')
 
 describe('DateTime Field', function () {
-  before(done => {
+  before(() => {
     config.set('paths.collections', 'test/acceptance/workspace/collections')
+  })
 
+  beforeEach(done => {
     help.dropDatabase('testdb', err => {
       if (err) return done(err)
 
@@ -31,10 +33,12 @@ describe('DateTime Field', function () {
     })
   })
 
-  after(done => {
-    //fakeClock.restore()
-    config.set('paths.collections', 'workspace/collections')
+  afterEach(done => {
     app.stop(done)
+  })
+
+  after(() => {
+    config.set('paths.collections', 'workspace/collections')
   })
 
   it('should format a DateTime field as ISO when no format is specified', done => {
@@ -296,8 +300,8 @@ describe('DateTime Field', function () {
             if (err) return done(err)
 
             should.exist(res.body.results)
-            res.body.results.length.should.eql(2)
-            res.body.results[1].datetime.should.eql(date)
+            res.body.results.length.should.eql(1)
+            res.body.results[0].datetime.should.eql(date)
 
             done()
           })
@@ -346,5 +350,115 @@ describe('DateTime Field', function () {
         done()
       })
     })
-  })  
+  })
+
+  it('should allow query filters with Unix timestamps', done => {
+    let baseDate = 588985200000
+    let documents = [
+      {
+        type: 'one',
+        datetime: baseDate - 3600000
+      },
+      {
+        type: 'two',
+        datetime: baseDate
+      },
+      {
+        type: 'three',
+        datetime: baseDate + 3600000
+      }
+    ]
+
+    config.set('query.useVersionFilter', true)
+
+    let client = request(connectionString)
+    client
+    .post('/v1/library/event')
+    .set('Authorization', 'Bearer ' + bearerToken)
+    .send(documents)
+    .expect(200)
+    .end((err, res) => {
+      if (err) return done(err)
+
+      client
+      .get(`/v1/library/event?filter={"datetime":{"$gte":${baseDate}}}`)
+      .set('Authorization', 'Bearer ' + bearerToken)
+      .expect(200)
+      .end((err, res) => {
+        if (err) return done(err)
+
+        res.body.results.length.should.equal(2)
+        res.body.results[0].type.should.equal('two')
+        res.body.results[1].type.should.equal('three')
+
+        done()
+      })
+    })
+  })
+
+  it('should allow query filters with ISO strings', done => {
+    let documents = [
+      {
+        type: 'one',
+        datetime: 588985200000
+      },
+      {
+        type: 'two',
+        datetime: 588988800000
+      },
+      {
+        type: 'three',
+        datetime: 588992400000
+      }
+    ]
+
+    config.set('query.useVersionFilter', true)
+
+    let client = request(connectionString)
+    client
+    .post('/v1/library/event')
+    .set('Authorization', 'Bearer ' + bearerToken)
+    .send(documents)
+    .expect(200)
+    .end((err, res) => {
+      if (err) return done(err)
+
+      client
+      .get(`/v1/library/event?filter={"datetime":{"$lt":"1988-08-31T00:00:00.000Z"}}`)
+      .set('Authorization', 'Bearer ' + bearerToken)
+      .expect(200)
+      .end((err, res) => {
+        if (err) return done(err)
+
+        res.body.results.length.should.equal(1)
+        res.body.results[0].type.should.equal('one')
+
+        client
+        .get(`/v1/library/event?filter={"datetime":{"$gt":"1988-07-30T23:00:00.000Z"}}`)
+        .set('Authorization', 'Bearer ' + bearerToken)
+        .expect(200)
+        .end((err, res) => {
+          if (err) return done(err)
+
+          res.body.results.length.should.equal(3)
+          res.body.results[0].type.should.equal('one')
+          res.body.results[1].type.should.equal('two')
+          res.body.results[2].type.should.equal('three')
+
+          client
+          .get(`/v1/library/event?filter={"datetime":{"$gt":"1988-08-30T23:30:00.000Z","$lt":"1988-08-31T00:30:00.000Z"}}`)
+          .set('Authorization', 'Bearer ' + bearerToken)
+          .expect(200)
+          .end((err, res) => {
+            if (err) return done(err)
+
+            res.body.results.length.should.equal(1)
+            res.body.results[0].type.should.equal('two')
+
+            done()
+          })
+        })
+      })
+    })
+  })
 })

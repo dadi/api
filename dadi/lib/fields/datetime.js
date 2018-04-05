@@ -19,7 +19,7 @@ function convertDateTimeInQuery (input, schema, recursive) {
       format = schema.format
     }
 
-    let dateTime = moment(input, format)
+    let dateTime = moment.utc(input, format)
     let timestamp = dateTime.valueOf()
 
     if (Number.isNaN(timestamp)) {
@@ -43,7 +43,7 @@ function convertDateTimeInQuery (input, schema, recursive) {
 }
 
 module.exports.beforeOutput = function ({field, input, schema}) {
-  let dateTime = moment(input[field])
+  let dateTime = moment.utc(input[field])
   let value
 
   switch (schema.format) {

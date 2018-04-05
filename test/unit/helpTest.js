@@ -10,37 +10,9 @@ describe('Help', function (done) {
 
       var val = help.validateCollectionSchema(schema);
       val.success.should.be.false;
-      val.errors.length.should.equal(2);
+      val.errors.length.should.equal(1);
       val.errors[0].section.should.equal('fields');
       val.errors[0].message.should.startWith('must be provided at least once');
-
-      done();
-    });
-
-    it('should inform of missing settings', function (done) {
-      var schema = {
-           fields: {
-            "field1": {
-              "type": "String",
-              "label": "Title",
-              "comments": "The title of the entry",
-              "placement": "Main content",
-              "validation": {},
-              "required": false,
-              "message": "",
-              "display": {
-                "index": true,
-                "edit": true
-              }
-            }
-           },
-           settings:{cache:true}
-      };
-
-      var val = help.validateCollectionSchema(schema);
-      val.success.should.be.false;
-      val.errors[0].setting.should.equal('authenticate');
-      val.errors[0].message.should.equal('must be provided');
 
       done();
     });

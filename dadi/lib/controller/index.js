@@ -205,30 +205,28 @@ Controller.prototype.delete = function (req, res, next) {
   // on the model name for clearing the cache.
   pathname = pathname.replace('/' + req.params.id, '')
 
-  // flush cache for DELETE requests
-  help.clearCache(pathname, err => {
-    if (err) return next(err)
+  // Flush cache for DELETE requests.
+  help.clearCache(pathname)
 
-    this.model.delete({
-      query,
-      req
-    }).then(({deletedCount, totalCount}) => {
-      if (config.get('feedback')) {
-        // Send 200 with JSON payload.
-        return help.sendBackJSON(200, res, next)(null, {
-          status: 'success',
-          message: 'Documents deleted successfully',
-          deleted: deletedCount,
-          totalCount
-        })
-      }
+  this.model.delete({
+    query,
+    req
+  }).then(({deletedCount, totalCount}) => {
+    if (config.get('feedback')) {
+      // Send 200 with JSON payload.
+      return help.sendBackJSON(200, res, next)(null, {
+        status: 'success',
+        message: 'Documents deleted successfully',
+        deleted: deletedCount,
+        totalCount
+      })
+    }
 
-      // Send 200 with no content.
-      res.statusCode = 204
-      res.end()
-    }).catch(error => {
-      return help.sendBackJSON(200, res, next)(error)
-    })
+    // Send 200 with no content.
+    res.statusCode = 204
+    res.end()
+  }).catch(error => {
+    return help.sendBackJSON(200, res, next)(error)
   })
 }
 
@@ -278,54 +276,52 @@ Controller.prototype.post = function (req, res, next) {
   debug('POST %s %o', pathname, req.params)
 
   // Flush cache for POST requests.
-  help.clearCache(pathname, err => {
-    if (err) return next(err)
+  help.clearCache(pathname)
 
-    // If id is present in the url, then this is an update.
-    if (req.params.id || req.body.update) {
-      internals._lastModifiedBy = req.client && req.client.clientId
+  // If id is present in the url, then this is an update.
+  if (req.params.id || req.body.update) {
+    internals._lastModifiedBy = req.client && req.client.clientId
 
-      let query = {}
-      let update = {}
+    let query = {}
+    let update = {}
 
-      if (req.params.id) {
-        query._id = req.params.id
-        update = req.body
-      } else {
-        query = req.body.query
-        update = req.body.update
-      }
-
-      // Add the apiVersion filter.
-      if (config.get('query.useVersionFilter')) {
-        query._apiVersion = internals._apiVersion
-      }
-
-      return this.model.update({
-        compose: options.compose,
-        internals,
-        query,
-        req,
-        update
-      }).then(result => {
-        return sendBackJSON(200, res, next)(null, result)
-      }).catch(error => {
-        return sendBackJSON(500, res, next)(error)
-      })
+    if (req.params.id) {
+      query._id = req.params.id
+      update = req.body
+    } else {
+      query = req.body.query
+      update = req.body.update
     }
 
-    // if no id is present, then this is a create
-    internals._createdBy = req.client && req.client.clientId
+    // Add the apiVersion filter.
+    if (config.get('query.useVersionFilter')) {
+      query._apiVersion = internals._apiVersion
+    }
 
-    return this.model.create({
+    return this.model.update({
       compose: options.compose,
-      documents: req.body,
-      internals
+      internals,
+      query,
+      req,
+      update
     }).then(result => {
       return sendBackJSON(200, res, next)(null, result)
     }).catch(error => {
-      return sendBackJSON(200, res, next)(error)
+      return sendBackJSON(500, res, next)(error)
     })
+  }
+
+  // if no id is present, then this is a create
+  internals._createdBy = req.client && req.client.clientId
+
+  return this.model.create({
+    compose: options.compose,
+    documents: req.body,
+    internals
+  }).then(result => {
+    return sendBackJSON(200, res, next)(null, result)
+  }).catch(error => {
+    return sendBackJSON(200, res, next)(error)
   })
 }
 

@@ -1,5 +1,6 @@
 'use strict'
 
+const deepMerge = require('deepmerge')
 const path = require('path')
 const config = require(path.join(__dirname, '/../../../config'))
 const Connection = require(path.join(__dirname, '/connection'))
@@ -227,7 +228,10 @@ Model.prototype._formatResultSet = function (
             field,
             name: hookName
           }).then(subDocument => {
-            return Object.assign({}, newDocument, subDocument)
+            // Doing a shallow merge (i.e. `Object.assign`) isn't enough here,
+            // because several fields might need to write to the same property
+            // in the document (e.g. `_composed`). We need a deep merge.
+            return deepMerge(newDocument, subDocument)
           })
         })
       }, Promise.resolve({})).then(document => {

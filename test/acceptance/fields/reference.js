@@ -1619,6 +1619,145 @@ describe('Reference Field', () => {
       })
     })
 
+    it('should populate a `_composed` field with IDs for the composed fields only', done => {
+      let books = [
+        {
+          title: 'For Whom The Bell Tolls',
+          author: {
+            name: 'Ernest Hemingway'
+          }
+        },
+        {
+          title: 'War and Peace',
+          author: {
+            name: 'Leo Tolstoy'
+          }
+        },
+        {
+          title: 'A Tale of Two APIs',
+          author: 'id-that-does-not-exist'
+        }
+      ]
+
+      config.set('query.useVersionFilter', true)
+
+      let client = request(connectionString)
+      client
+      .post('/v1/library/book')
+      .set('Authorization', 'Bearer ' + bearerToken)
+      .send(books)
+      .expect(200)
+      .end((err, res) => {
+        if (err) return done(err)
+
+        should.exist(res.body.results)
+
+        client
+        .get('/v1/library/book?compose=false')
+        .set('Authorization', 'Bearer ' + bearerToken)
+        .expect(200)
+        .end((err, res) => {
+          if (err) return done(err)
+
+          res.body.results.length.should.eql(3)
+          res.body.results[0]._id.should.be.String
+          should.not.exist(res.body.results[0]._composed)
+          res.body.results[1]._id.should.be.String
+          should.not.exist(res.body.results[1]._composed)
+          res.body.results[2]._id.should.be.String
+          should.not.exist(res.body.results[2]._composed)
+
+          client
+          .get(`/v1/library/book?filter={"title":"${books[0].title}"}&compose=true`)
+          .set('Authorization', 'Bearer ' + bearerToken)
+          .expect(200)
+          .end((err, res) => {
+            if (err) return done(err)
+
+            res.body.results[0]._composed.author.should.eql(
+              res.body.results[0].author._id
+            )
+            res.body.results[0].author.name.should.eql(
+              books[0].author.name
+            )
+
+            client
+            .get(`/v1/library/book?filter={"title":"${books[1].title}"}&compose=true`)
+            .set('Authorization', 'Bearer ' + bearerToken)
+            .expect(200)
+            .end((err, res) => {
+              if (err) return done(err)
+
+              res.body.results[0]._composed.author.should.eql(
+                res.body.results[0].author._id
+              )
+              res.body.results[0].author.name.should.eql(
+                books[1].author.name
+              )
+
+              client
+              .get(`/v1/library/book?filter={"title":"${books[2].title}"}&compose=true`)
+              .set('Authorization', 'Bearer ' + bearerToken)
+              .expect(200)
+              .end((err, res) => {
+                if (err) return done(err)
+
+                should.not.exist(res.body.results[0]._composed)
+                res.body.results[0].author.should.eql(
+                  books[2].author
+                )
+
+                done()
+              })
+            })
+          })
+        })
+      })
+    })
+
+    it('should populate a `_composed` field with IDs for composed documents of multiple fields', done => {
+      let event = {
+        type: 'Book release',
+        book: {
+          title: 'For Whom The Bell Tolls'
+        },
+        organiser: {
+          name: 'Justin Case'
+        }
+      }
+
+      config.set('query.useVersionFilter', true)
+
+      let client = request(connectionString)
+      client
+      .post('/v1/library/event')
+      .set('Authorization', 'Bearer ' + bearerToken)
+      .send(event)
+      .expect(200)
+      .end((err, res) => {
+        if (err) return done(err)
+
+        should.exist(res.body.results)
+
+        client
+        .get(`/v1/library/event/${res.body.results[0]._id}?compose=true`)
+        .set('Authorization', 'Bearer ' + bearerToken)
+        .expect(200)
+        .end((err, res) => {
+          if (err) return done(err)
+
+          res.body.results[0]._composed.book.should.eql(
+            res.body.results[0].book._id
+          )
+          res.body.results[0]._composed.organiser.should.eql(
+            res.body.results[0].organiser._id
+          )
+
+          done()
+        })
+      })
+    })    
+
     describe('when `settings.strictCompose` is not enabled', () => {
       it('should return unique results for a reference field containing an Array of Strings', done => {
         let book = { title: 'For Whom The Bell Tolls', author: null }

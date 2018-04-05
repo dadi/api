@@ -215,7 +215,7 @@ describe('Application', function () {
       it('should validate schema', function (done) {
         var client = request(connectionString)
         var schema = JSON.parse(jsSchemaString)
-        delete schema.settings
+        delete schema.fields
         var newString = JSON.stringify(schema)
 
         client
@@ -382,6 +382,49 @@ describe('Application', function () {
             }, 300)
           })
       })
+
+      it('should allow creating a new collection without a settings block', function (done) {
+        let client = request(connectionString)
+        let schemaWithoutSettings = JSON.parse(jsSchemaString)
+
+        delete schemaWithoutSettings.settings
+
+        schemaWithoutSettings = JSON.stringify(schemaWithoutSettings)
+
+        client
+          .post('/vapicreate/testdb/api-create/config')
+          .send(schemaWithoutSettings)
+          .set('content-type', 'text/plain')
+          .set('Authorization', 'Bearer ' + bearerToken)
+          .expect(200)
+          .expect('content-type', 'application/json')
+          .end((err, res) => {
+            if (err) return done(err)
+
+            // Wait for a few seconds then make request to test that the new endpoint is working
+            setTimeout(function () {
+              client
+              .post('/vapicreate/testdb/api-create')
+              .send({newField: 'hello'})
+              .set('Authorization', 'Bearer ' + bearerToken)
+              .expect(200)
+              .expect('content-type', 'application/json')
+              .end((err, res) => {
+                client
+                .get('/vapicreate/testdb/api-create')
+                .set('Authorization', 'Bearer ' + bearerToken)
+                .expect(200)
+                .expect('content-type', 'application/json')
+                .end((err, res) => {
+                  res.body.results.length.should.eql(1)
+                  res.body.results[0].newField.should.eql('hello')
+
+                  done()
+                })                
+              })
+            }, 300)
+          })
+      })      
 
       it('should use collection schema filename as model name', function (done) {
         var client = request(connectionString)

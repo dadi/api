@@ -207,22 +207,15 @@ module.exports.validateCollectionSchema = function (obj) {
   // `obj` must be a "hash type object", i.e. { ... }
   if (typeof obj !== 'object' || Array.isArray(obj) || obj === null) return false
 
-  var response = {
+  let response = {
     success: true,
     errors: []
   }
-
-  var fields = []
-  var settings = []
+  let fields = []
 
   getKeys(obj, 'fields', fields)
   if (fields.length === 0) {
     response.errors.push({section: 'fields', message: 'must be provided at least once'})
-  }
-
-  getKeys(obj, 'settings', settings)
-  if (settings.length === 0) {
-    response.errors.push({section: 'settings', message: 'must be provided'})
   }
 
   if (response.errors.length > 0) {
@@ -237,19 +230,10 @@ module.exports.validateCollectionSchema = function (obj) {
     return response
   }
 
-  // check that all required settings are present
-  var requiredSettings = ['cache', 'authenticate']
-
-  requiredSettings.forEach(function (key) {
-    if (!obj.settings.hasOwnProperty(key)) {
-      response.errors.push({setting: key, message: 'must be provided'})
-    }
-  })
-
   // check that an index exists for the field
   // specified as the sort field
   if (obj.settings && obj.settings.sort) {
-    var indexSpecified = false
+    let indexSpecified = false
 
     if (!obj.settings.index) {
       indexSpecified = false

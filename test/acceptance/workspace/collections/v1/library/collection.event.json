@@ -10,6 +10,12 @@
 	      "collection": "book"
 	    }
   	},
+    "organiser": {
+      "type": "Reference",
+      "settings": {
+        "collection": "person"
+      }
+    },
   	"datetime": {
 	    "type": "DateTime"
   	}

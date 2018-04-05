@@ -1,7 +1,6 @@
 var should = require('should')
 var sinon = require('sinon')
 var model = require(__dirname + '/../../../dadi/lib/model')
-var queryUtils = require(__dirname + '/../../../dadi/lib/model/utils')
 var apiHelp = require(__dirname + '/../../../dadi/lib/help')
 var Validator = require(__dirname + '/../../../dadi/lib/model/validator')
 var connection = require(__dirname + '/../../../dadi/lib/model/connection')
@@ -11,16 +10,13 @@ var acceptanceHelper = require(__dirname + '/../../acceptance/help')
 var config = require(__dirname + '/../../../config')
 
 describe('Model', function () {
-  // beforeEach((done) => {
-  //   // help.clearCollection('testModelName', function() {
-  //   //   help.clearCollection('testModelNameHistory', function() {
-  //   //      done()
-  //   //   })
-  //   // })
-  //   acceptanceHelper.dropDatabase('testdb', err => {
-  //     done()
-  //   })
-  // })
+  beforeEach((done) => {
+    help.clearCollection('testModelName', function() {
+      help.clearCollection('testModelNameHistory', function() {
+         done()
+      })
+    })
+  })
 
   it('should export a function', function (done) {
     model.should.be.Function
@@ -33,30 +29,57 @@ describe('Model', function () {
   })
 
   it('should export function that creates an instance of Model when passed schema', function (done) {
-    model('testModelName', help.getModelSchema(), null, {database: 'testdb'}).should.be.an.instanceOf(model.Model)
+    model(
+      'testModelName',
+      help.getModelSchema(),
+      null,
+      { database: 'testdb' }
+    ).should.be.an.instanceOf(model.Model)
+
     done()
   })
 
   it('should export function that gets instance of Model when not passed schema', function (done) {
     model('testModelName').should.be.an.instanceOf(model.Model)
+
     done()
   })
 
   it.skip('should only create one instance of Model for a specific name', function (done) {
-    model('testModelName', help.getModelSchema(), null, {database: 'testdb'}).should.equal(model('testModelName', help.getModelSchema(), null, {database: 'testdb'}))
+    model(
+      'testModelName',
+      help.getModelSchema(),
+      null,
+      { database: 'testdb' }
+    ).should.equal(
+      model(
+        'testModelName',
+        help.getModelSchema(),
+        null,
+        { database: 'testdb' }
+      )
+    )
+
     done()
   })
 
   describe('initialization options', function () {
     it('should take model name and schema as arguments', function (done) {
-      model('testModelName', help.getModelSchema(), null, {database: 'testdb'}).name.should.equal('testModelName')
+      model(
+        'testModelName',
+        help.getModelSchema(),
+        null,
+        { database: 'testdb' }
+      ).name.should.equal('testModelName')
+
       done()
     })
 
     it.skip('should accept database connection as third argument', function (done) {
       config.set('database.enableCollectionDatabases', true)
       connection.resetConnections()
-      var conn = connection({
+
+      const conn = connection({
         'username': '',
         'password': '',
         'database': 'test',
@@ -71,7 +94,7 @@ describe('Model', function () {
 
       // TODO: stub the connect method so this doesn't cause a connection attempt
 
-      var mod = model('testModelName', help.getModelSchema(), conn)
+      const mod = model('testModelName', help.getModelSchema(), conn)
       should.exist(mod.connection)
       mod.connection.connectionOptions.hosts[0].host.should.equal('localhost')
       mod.connection.connectionOptions.hosts[0].port.should.equal(27020)
@@ -83,11 +106,16 @@ describe('Model', function () {
     })
 
     it('should accept model settings as fourth argument', function (done) {
-      var mod = model('testModelName', help.getModelSchema(), null, {
-        database: 'testdb',
-        cache: true,
-        count: 25
-      })
+      const mod = model(
+        'testModelName',
+        help.getModelSchema(),
+        null,
+        {
+          database: 'testdb',
+          cache: true,
+          count: 25
+        }
+      )
 
       should.exist(mod.settings)
 
@@ -98,7 +126,13 @@ describe('Model', function () {
     })
 
     it('should attach history collection by default if not specified and `storeRevisions` is not false', function (done) {
-      var mod = model('testModelName', help.getModelSchema(), null, { database: 'testdb' })
+      var mod = model(
+        'testModelName',
+        help.getModelSchema(),
+        null,
+        { database: 'testdb' }
+      )
+
       should.exist(mod.settings)
       mod.revisionCollection.should.equal('testModelNameHistory')
 
@@ -106,14 +140,30 @@ describe('Model', function () {
     })
 
     it('should attach history collection if specified', function (done) {
-      var mod = model('testModelName', help.getModelSchema(), null, { database: 'testdb', revisionCollection: 'modelHistory' })
+      var mod = model(
+        'testModelName',
+        help.getModelSchema(),
+        null,
+        {
+          database: 'testdb',
+          revisionCollection: 'modelHistory'
+        }
+      )
       mod.revisionCollection.should.equal('modelHistory')
 
       done()
     })
 
     it('should attach history collection if `storeRevisions` is true', function (done) {
-      var mod = model('testModelName', help.getModelSchema(), null, { database: 'testdb', storeRevisions: true })
+      var mod = model(
+        'testModelName',
+        help.getModelSchema(),
+        null,
+        {
+          database: 'testdb',
+          storeRevisions: true
+        }
+      )
       should.exist(mod.revisionCollection)
       mod.revisionCollection.should.equal('testModelNameHistory')
 
@@ -121,7 +171,16 @@ describe('Model', function () {
     })
 
     it('should attach specified history collection if `storeRevisions` is true', function (done) {
-      var mod = model('testModelName', help.getModelSchema(), null, { database: 'testdb', storeRevisions: true, revisionCollection: 'modelHistory' })
+      const mod = model(
+        'testModelName',
+        help.getModelSchema(),
+        null,
+        {
+          database: 'testdb',
+          storeRevisions: true,
+          revisionCollection: 'modelHistory'
+        }
+      )
       should.exist(mod.revisionCollection)
       mod.revisionCollection.should.equal('modelHistory')
 
@@ -129,32 +188,62 @@ describe('Model', function () {
     })
 
     it('should accept collection indexing settings', function (done) {
-      var mod1 = model('testModelName', help.getModelSchema(), null, {
-        index: {
-          enabled: true,
-          keys: { orderDate: 1 }
+      const mod1 = model(
+        'testModelName',
+        help.getModelSchema(),
+        null,
+        {
+          index: {
+            enabled: true,
+            keys: { orderDate: 1 }
+          }
         }
-      })
+      )
 
       setTimeout(function() {
         should.exist(mod1.settings)
         should.exist(mod1.settings.index)
 
-        JSON.stringify(mod1.settings.index[0].keys).should.eql(JSON.stringify({ orderDate: 1 }))
-      done()
+        JSON.stringify(
+          mod1.settings.index[0].keys
+        ).should.eql(
+          JSON.stringify({ orderDate: 1 })
+        )
+
+        done()
       }, 300)
     })
 
     it('should accept collection indexing settings for v1.14.0 and above', function (done) {
-      var mod = model('testModelName', help.getModelSchema(), null, { index: [ { keys: { orderDate: 1 } } ] })
+      const mod = model(
+        'testModelName',
+        help.getModelSchema(),
+        null,
+        {
+          index: [
+            { keys: { orderDate: 1 } }
+          ]
+        }
+      )
 
       should.exist(mod.settings)
-      JSON.stringify(mod.settings.index[0].keys).should.equal(JSON.stringify({ orderDate: 1 }))
+
+      JSON.stringify(
+        mod.settings.index[0].keys
+      ).should.equal(
+        JSON.stringify({ orderDate: 1 })
+      )
+
       done()
     })
 
     it('should accept collection displayName setting', function (done) {
-      var mod = model('testModelName', help.getModelSchema(), null, { database: 'testdb', displayName: 'TEST MODEL' })
+      const mod = model(
+        'testModelName',
+        help.getModelSchema(),
+        null,
+        { database: 'testdb', displayName: 'TEST MODEL' }
+      )
 
       should.exist(mod.settings)
       mod.settings.displayName.should.equal('TEST MODEL')
@@ -163,82 +252,233 @@ describe('Model', function () {
     })
 
     it('should attach `type` definition to model', function (done) {
-      var val = 'test type'
+      const val = 'test type'
 
       help.testModelProperty('type', val)
+
       done()
     })
 
     it('should attach `label` definition to model', function (done) {
-      var val = 'test label'
+      const val = 'test label'
 
       help.testModelProperty('label', val)
+
       done()
     })
 
     it('should attach `comments` definition to model', function (done) {
-      var val = 'test comments'
+      const val = 'test comments'
 
       help.testModelProperty('comments', val)
+
       done()
     })
 
     it('should attach `validation` definition to model', function (done) {
-      var val = '{ regex: { pattern: { /w+/ } } }'
+      const val = '{ regex: { pattern: { /w+/ } } }'
 
       help.testModelProperty('validation', val)
+
       done()
     })
 
     it('should attach `required` definition to model', function (done) {
-      var val = true
+      const val = true
 
       help.testModelProperty('required', val)
+
       done()
     })
 
     it('should attach `message` definition to model', function (done) {
-      var val = 'test message'
+      const val = 'test message'
 
       help.testModelProperty('message', val)
+
       done()
     })
   })
 
   describe('`count` method', function () {
-    it('should accept a query and an options object and callback', function (done) {
-      model('testModelName', help.getModelSchema(), null, { database: 'testdb' }).count({}, {}, done)
+    it('should accept a query, an options object and a callback and return a metadata object', function (done) {
+      model(
+        'testModelName',
+        help.getModelSchema(),
+        null,
+        { database: 'testdb' }
+      ).count({}, {}, (err, response) => {
+        response.metadata.page.should.be.Number
+        response.metadata.offset.should.be.Number
+        response.metadata.totalCount.should.be.Number
+        response.metadata.totalPages.should.be.Number
+
+        done()
+      })
     })
 
-    it('should return a metadata object', function (done) {
-      model('testModelName', help.getModelSchema(), null, { database: 'testdb' }).count({}, function (err, result) {
-        result.should.exist
-        done()
+    it('should accept a query and an options object as named arguments and return a Promise with a metadata object', () => {
+      return model(
+        'testModelName',
+        help.getModelSchema(),
+        null,
+        { database: 'testdb' }
+      ).count().then(response => {
+        response.metadata.page.should.be.Number
+        response.metadata.offset.should.be.Number
+        response.metadata.totalCount.should.be.Number
+        response.metadata.totalPages.should.be.Number
       })
     })
   })
 
   describe('`stats` method', function () {
-    it('should accept an options object and callback', function (done) {
-      model('testModelName', help.getModelSchema(), null, { database: 'testdb' }).stats({}, done)
+    it('should accept an options object', () => {
+      return model(
+        'testModelName',
+        help.getModelSchema(),
+        null,
+        { database: 'testdb' }
+      ).getStats({})
     })
 
-    it('should return an object', function (done) {
-      model('testModelName', help.getModelSchema(), null, { database: 'testdb' }).stats({}, function (err, stats) {
+    it('should return an object', () => {
+      return model(
+        'testModelName',
+        help.getModelSchema(),
+        null,
+        { database: 'testdb' }
+      ).getStats({}).then(stats => {
         stats.should.exist
-        done()
       })
     })
   })
 
   describe('`find` method', function () {
-    it('should accept query object and callback', function (done) {
-      model('testModelName', help.getModelSchema(), null, { database: 'testdb' }).find({}, done)
+    describe('legacy syntax', () => {
+      it('should accept query object and callback', done => {
+        model(
+          'testModelName',
+          help.getModelSchema(),
+          null,
+          { database: 'testdb' }
+        ).find({}, (err, response) => {
+          response.results.should.be.Array
+
+          done()
+        })
+      })
+
+      it('should accept query object, options object and callback', done => {
+        model(
+          'testModelName',
+          help.getModelSchema(),
+          null,
+          { database: 'testdb' }
+        ).find({}, {}, (err, response) => {
+          response.results.should.be.Array
+
+          done()
+        })
+      })
+
+      it('should pass error to callback when query uses `$where` operator', function (done) {
+        model('testModelName').find({
+          $where: 'this.fieldName === "foo"'
+        }, err => {
+          should.exist(err)
+
+          done()
+        })
+      })      
     })
 
-    it('should pass error to callback when query uses `$where` operator', function (done) {
-      model('testModelName').find({$where: 'this.fieldName === "foo"'}, function (err) {
-        should.exist(err)
+    it('should accept named parameters', () => {
+      model(
+        'testModelName',
+        help.getModelSchema(),
+        null,
+        { database: 'testdb' }
+      ).find({
+        query: {}
+      }).then(response => {
+        response.results.should.be.Array
+      })
+    })
+
+    it('should reject with error when query uses `$where` operator', done => {
+      model('testModelName').find({
+        query: {
+          $where: 'this.fieldName === "foo"'
+        }
+      }).catch(error => {
+        should.exist(error)
+
+        done()
+      })
+    })
+  })
+
+  describe('`get` method', function () {
+    describe('legacy syntax', () => {
+      it('should accept query object and callback', done => {
+        model(
+          'testModelName',
+          help.getModelSchema(),
+          null,
+          { database: 'testdb' }
+        ).get({}, (err, response) => {
+          response.results.should.be.Array
+
+          done()
+        })
+      })
+
+      it('should accept query object, options object and callback', done => {
+        model(
+          'testModelName',
+          help.getModelSchema(),
+          null,
+          { database: 'testdb' }
+        ).get({}, {}, (err, response) => {
+          response.results.should.be.Array
+
+          done()
+        })
+      })
+
+      it('should pass error to callback when query uses `$where` operator', function (done) {
+        model('testModelName').get({
+          $where: 'this.fieldName === "foo"'
+        }, err => {
+          should.exist(err)
+
+          done()
+        })
+      })      
+    })
+
+    it('should accept named parameters', () => {
+      model(
+        'testModelName',
+        help.getModelSchema(),
+        null,
+        { database: 'testdb' }
+      ).get({
+        query: {}
+      }).then(response => {
+        response.results.should.be.Array
+      })
+    })
+
+    it('should reject with error when query uses `$where` operator', done => {
+      model('testModelName').get({
+        query: {
+          $where: 'this.fieldName === "foo"'
+        }
+      }).catch(error => {
+        should.exist(error)
+
         done()
       })
     })
@@ -254,7 +494,7 @@ describe('Model', function () {
     it('should override `done` method if options.includeHistory = true', function (done) {
       var mod = model('testModelName', help.getModelSchema(), null, { database: 'testdb', storeRevisions: true })
 
-      var method = sinon.spy(model.Model.prototype, 'injectHistory')
+      var method = sinon.spy(model.Model.prototype, '_injectHistory')
 
       mod.create({fieldName: 'foo'}, function (err, result) {
         if (err) return done(err)
@@ -276,22 +516,24 @@ describe('Model', function () {
     it('should add history to results if options.includeHistory = true', function (done) {
       var mod = model('testModelName', help.getModelSchema(), null, { database: 'testdb', storeRevisions: true })
 
-      mod.create({fieldName: 'foo'}, function (err, result) {
-        if (err) return done(err)
-
-        mod.update({fieldName: 'foo'}, {fieldName: 'bar'}, function (err, result) {
+      help.whenModelsConnect([mod]).then(() => {
+        mod.create({fieldName: 'foo'}, function (err, result) {
           if (err) return done(err)
 
-          mod.find({}, { includeHistory: true }, function (err, results) {
+          mod.update({fieldName: 'foo'}, {fieldName: 'bar'}, function (err, result) {
             if (err) return done(err)
 
-            results.results.should.exist
-            results.results.should.be.Array
-            results.results[0]._history.should.exist
-            results.results[0]._history[0].fieldName.should.eql('foo')
-            done()
+            mod.find({}, { includeHistory: true }, function (err, results) {
+              if (err) return done(err)
+
+              results.results.should.exist
+              results.results.should.be.Array
+              results.results[0]._history.should.exist
+              results.results[0]._history[0].fieldName.should.eql('foo')
+              done()
+            })
           })
-        })
+        })    
       })
     })
 
@@ -509,8 +751,6 @@ describe('Model', function () {
 
             mod.create({field3: 'ABCDEF'}, function (err, result) {
               should.exist(err)
-              console.log(err.code)
-              console.log(err.message)
               err.message.toLowerCase().indexOf('duplicate').should.be.above(-1)
               done()
             })
@@ -576,164 +816,406 @@ describe('Model', function () {
   })
 
   describe('`create` method', function () {
-    // beforeEach(help.cleanUpDB)
     beforeEach((done) => {
       acceptanceHelper.dropDatabase('testdb', err => {
         done()
       })
     })
 
-    it('should accept Object and callback', function (done) {
-      var mod = model('testModelName', help.getModelSchema(), null, { database: 'testdb' })
-      mod.create({fieldName: 'foo'}, done)
-    })
+    describe('legacy syntax', () => {
+      it('should accept Object and callback', function (done) {
+        let mod = model(
+          'testModelName',
+          help.getModelSchema(),
+          null,
+          { database: 'testdb' }
+        )
 
-    it('should accept Array and callback', function (done) {
-      var mod = model('testModelName', help.getModelSchema(), null, { database: 'testdb' })
-      mod.create([{fieldName: 'foo'}, {fieldName: 'bar'}], done)
-    })
+        mod.create({fieldName: 'foo'}, done)
+      })
 
-    it('should save model to database', function (done) {
-      var mod = model('testModelName', help.getModelSchema(), null, { database: 'testdb' })
-      mod.create({fieldName: 'foo'}, function (err) {
-        if (err) return done(err)
+      it('should accept Array and callback', function (done) {
+        let mod = model(
+          'testModelName',
+          help.getModelSchema(),
+          null,
+          { database: 'testdb' }
+        )
 
-        mod.find({fieldName: 'foo'}, function (err, doc) {
+        mod.create([{fieldName: 'foo'}, {fieldName: 'bar'}], done)
+      })
+
+      it('should save model to database', function (done) {
+        let mod = model(
+          'testModelName',
+          help.getModelSchema(),
+          null,
+          { database: 'testdb' }
+        )
+
+        mod.create({fieldName: 'foo'}, err => {
           if (err) return done(err)
 
-          should.exist(doc['results'])
-          doc['results'][0].fieldName.should.equal('foo')
+          mod.find({fieldName: 'foo'}, (err, doc) => {
+            if (err) return done(err)
+
+            should.exist(doc['results'])
+            doc['results'][0].fieldName.should.equal('foo')
+
+            done()
+          })
+        })
+      })
+
+      it('should save model to history collection', function (done) {
+        let mod = model(
+          'testModelName',
+          help.getModelSchema(),
+          null,
+          { database: 'testdb' }
+        )
+
+        mod.create({fieldName: 'foo'}, err => {
+          if (err) return done(err)
+
+          mod.find({fieldName: 'foo'}, (err, doc) => {
+            if (err) return done(err)
+
+            should.exist(doc['results'])
+            doc['results'][0]._history.should.be.Array
+            doc['results'][0]._history.length.should.equal(0) // no updates yet
+
+            done()
+          })
+        })
+      })
+
+      it('should pass error to callback if validation fails', function (done) {
+        let schema = help.getModelSchema()
+        let mod = model(
+          'testModelName',
+          Object.assign({}, schema, {
+            fieldName: Object.assign({}, schema.fieldName, {
+              validation: { maxLength: 5 }
+            })
+          }),
+          null,
+          { database: 'testdb' }
+        )
+
+        mod.create({fieldName: '123456'}, err => {
+          should.exist(err)
+
           done()
         })
       })
     })
 
-    it('should save model to history collection', function (done) {
-      var mod = model('testModelName', help.getModelSchema(), null, { database: 'testdb' })
-      mod.create({fieldName: 'foo'}, function (err) {
-        if (err) return done(err)
+    it('should accept Object', () => {
+      let mod = model(
+        'testModelName',
+        help.getModelSchema(),
+        null,
+        { database: 'testdb' }
+      )
 
-        mod.find({fieldName: 'foo'}, function (err, doc) {
-          if (err) return done(err)
-          should.exist(doc['results'])
-          doc['results'][0]._history.should.be.Array
-          doc['results'][0]._history.length.should.equal(0) // no updates yet
-          done()
-        })
+      return mod.create({
+        documents: { fieldName: 'foo' }
       })
     })
 
-    it('should pass error to callback if validation fails', function (done) {
-      var schema = help.getModelSchema()
-      _.extend(schema.fieldName, {validation: { maxLength: 5}})
-      var mod = model('testModelName', schema, null, { database: 'testdb' })
-      mod.create({fieldName: '123456'}, function (err) {
+    it('should accept Array', () => {
+      let mod = model(
+        'testModelName',
+        help.getModelSchema(),
+        null,
+        { database: 'testdb' }
+      )
+
+      return mod.create({
+        documents: [
+          { fieldName: 'foo' }, { fieldName: 'bar' }
+        ]
+      })
+    })
+
+    it('should save model to database', () => {
+      let mod = model(
+        'testModelName',
+        help.getModelSchema(),
+        null,
+        { database: 'testdb' }
+      )
+
+      return mod.create({
+        documents: { fieldName: 'foo' }
+      }).then(documents => {
+        return mod.find({
+          query: { fieldName: 'foo'}
+        })
+      }).then(({metadata, results}) => {
+        should.exist(metadata)
+        should.exist(results)
+
+        results[0].fieldName.should.equal('foo')
+      })
+    })
+
+    it('should save model to history collection', () => {
+      let mod = model(
+        'testModelName',
+        help.getModelSchema(),
+        null,
+        { database: 'testdb' }
+      )
+
+      return mod.create({
+        documents: { fieldName: 'foo' }
+      }).then(documents => {
+        return mod.find({
+          query: { fieldName: 'foo' }
+        })
+      }).then(({metadata, results}) => {
+        should.exist(metadata)
+        should.exist(results)
+
+        results[0]._history.should.be.Array
+        results[0]._history.length.should.equal(0) // no updates yet
+      })
+    })
+
+    it('should reject with error if validation fails', done => {
+      let schema = help.getModelSchema()
+      let mod = model(
+        'testModelName',
+        Object.assign({}, schema, {
+          fieldName: Object.assign({}, schema.fieldName, {
+            validation: { maxLength: 5 }
+          })
+        }),
+        null,
+        { database: 'testdb' }
+      )
+
+      mod.create({
+        documents: { fieldName: '123456' }
+      }).catch(err => {
         should.exist(err)
+
         done()
       })
     })
   })
 
   describe('`update` method', function () {
-    beforeEach((done) => {
+    beforeEach(done => {
       acceptanceHelper.dropDatabase('testdb', err => {
-        var mod = model('testModelName', help.getModelSchemaWithMultipleFields(), null, { database: 'testdb' })
+        let mod = model(
+          'testModelName',
+          help.getModelSchemaWithMultipleFields(),
+          null,
+          { database: 'testdb' }
+        )
 
-        // create model to be updated by tests
+        // Create model to be updated by tests.
         mod.create({
-          field1: 'foo', field2: 'bar'
-        }, function (err, result) {
-          if (err) return done(err)
-
+          documents: {
+            field1: 'foo', field2: 'bar'
+          }
+        }).then(result => {
           should.exist(result && result.results)
           result.results[0].field1.should.equal('foo')
-          done()
-        })
+
+          done()          
+        }).catch(done)
       })
     })
 
-    // beforeEach(function (done) {
-    //   help.cleanUpDB(function (err) {
-    //     if (err) return done(err)
-        // var mod = model('testModelName', help.getModelSchemaWithMultipleFields(), null, { database: 'testdb' })
-        //
-        // // create model to be updated by tests
-        // mod.create({
-        //   field1: 'foo', field2: 'bar'
-        // }, function (err, result) {
-        //   if (err) return done(err)
-        //
-        //   should.exist(result && result.results)
-        //   result.results[0].field1.should.equal('foo')
-        //   done()
-        // })
-    //   })
-    // })
+    describe('legacy syntax', () => {
+      it('should accept query, update object, and callback', done => {
+        let mod = model('testModelName')
 
-    it('should accept query, update object, and callback', function (done) {
-      var mod = model('testModelName')
-      mod.update({field1: 'foo'}, {field1: 'bar'}, done)
+        mod.update({field1: 'foo'}, {field1: 'bar'}, done)
+      })
+
+      it('should update an existing document', done => {
+        let mod = model('testModelName')
+        let updateDoc = {field1: 'bar'}
+
+        mod.update({field1: 'foo'}, updateDoc, (err, result) => {
+          if (err) return done(err)
+
+          result.results.should.exist
+          result.results[0].field1.should.equal('bar')
+
+          // make sure document was updated
+          mod.find({field1: 'bar'}, (err, result) => {
+            if (err) return done(err)
+
+            should.exist(result['results'] && result['results'][0])
+            result['results'][0].field1.should.equal('bar')
+
+            done()
+          })
+        })
+      })
+
+      it('should create new history revision when updating an existing document and `storeRevisions` is true', done => {
+        let mod = model(
+          'testModelName',
+          help.getModelSchemaWithMultipleFields(),
+          null,
+          {
+            database: 'testdb',
+            storeRevisions: true
+          }
+        )
+        let updateDoc = {field1: 'bar'}
+
+        mod.update({field1: 'foo'}, updateDoc, (err, result) => {
+          if (err) return done(err)
+
+          result.results.should.exist
+          result.results[0].field1.should.equal('bar')
+
+          // make sure document was updated
+          mod.find({field1: 'bar'}, (err, result) => {
+            if (err) return done(err)
+
+            should.exist(result['results'] && result['results'][0])
+            result['results'][0].field1.should.equal('bar')
+
+            should.exist(result['results'][0]._history)
+            result['results'][0]._history.length.should.equal(1) // one revision, from the update
+
+            done()
+          })
+        })
+      })
+
+      it('should pass error to callback if schema validation fails', done => {
+        let schema = help.getModelSchema()
+        let mod = model(
+          'testModelName',
+          Object.assign({}, schema, {
+            fieldName: Object.assign({}, schema.fieldName, {
+              validation: {maxLength: 5}
+            })
+          }),
+          null,
+          {database: 'testdb'}
+        )
+        
+        mod.update({fieldName: 'foo'}, {fieldName: '123456'}, err => {
+          should.exist(err)
+
+          done()
+        })
+      })
+
+      it('should pass error to callback when query uses `$where` operator', done => {
+        model('testModelName').update(
+          {$where: 'this.fieldName === "foo"'},
+          {fieldName: 'bar'},
+          err => {
+            should.exist(err)
+
+            done()
+          }
+        )
+      })      
     })
 
-    it('should update an existing document', function (done) {
-      var mod = model('testModelName')
-      var updateDoc = {field1: 'bar'}
+    it('should accept query and update object', () => {
+      let mod = model('testModelName')
 
-      mod.update({field1: 'foo'}, updateDoc, function (err, result) {
-        if (err) return done(err)
+      return mod.update({
+        query: {field1: 'foo'},
+        update: {field1: 'bar'}
+      })
+    })
 
+    it('should update an existing document', () => {
+      let mod = model('testModelName')
+      let updateDoc = {field1: 'bar'}
+
+      return mod.update({
+        query: {field1: 'foo'},
+        update: updateDoc
+      }).then(result => {
         result.results.should.exist
         result.results[0].field1.should.equal('bar')
 
-        // make sure document was updated
-        mod.find({field1: 'bar'}, function (err, result) {
-          if (err) return done(err)
-
-          should.exist(result['results'] && result['results'][0])
-          result['results'][0].field1.should.equal('bar')
-          done()
-        })
+        return mod.find({
+          query: {field1: 'bar'}
+        })        
+      }).then(({metadata, results}) => {
+        should.exist(results && results[0])
+        results[0].field1.should.equal('bar')
       })
     })
 
-    it('should create new history revision when updating an existing document and `storeRevisions` is true', function (done) {
-      var mod = model('testModelName', help.getModelSchemaWithMultipleFields(), null, { database: 'testdb', storeRevisions: true })
-      var updateDoc = {field1: 'bar'}
+    it('should create new history revision when updating an existing document and `storeRevisions` is true', () => {
+      let mod = model(
+        'testModelName',
+        help.getModelSchemaWithMultipleFields(),
+        null,
+        {
+          database: 'testdb',
+          storeRevisions: true
+        }
+      )
+      let updateDoc = {field1: 'bar'}
 
-      mod.update({field1: 'foo'}, updateDoc, function (err, result) {
-        if (err) return done(err)
+      return mod.update({
+        query: {field1: 'foo'},
+        update: updateDoc
+      }).then(({results}) => {
+        results.should.exist
+        results[0].field1.should.equal('bar')
 
-        result.results.should.exist
-        result.results[0].field1.should.equal('bar')
-
-        // make sure document was updated
-        mod.find({field1: 'bar'}, function (err, result) {
-          if (err) return done(err)
-
-          should.exist(result['results'] && result['results'][0])
-          result['results'][0].field1.should.equal('bar')
-
-          should.exist(result['results'][0]._history)
-          result['results'][0]._history.length.should.equal(1) // one revision, from the update
-
-          done()
+        return mod.find({
+          query: {field1: 'bar'}
         })
+      }).then(({results}) => {
+        should.exist(results && results[0])
+        results[0].field1.should.equal('bar')
+
+        should.exist(results[0]._history)
+        results[0]._history.length.should.equal(1) // one revision, from the update
       })
     })
 
-    it('should pass error to callback if schema validation fails', function (done) {
-      var schema = help.getModelSchema()
-      _.extend(schema.fieldName, {validation: { maxLength: 5 }})
-      var mod = model('testModelName', schema, null, {database: 'testdb'})
-      mod.update({fieldName: 'foo'}, {fieldName: '123456'}, function (err) {
-        should.exist(err)
+    it('should reject with error if schema validation fails', done => {
+      let schema = help.getModelSchema()
+      let mod = model(
+        'testModelName',
+        Object.assign({}, schema, {
+          fieldName: Object.assign({}, schema.fieldName, {
+            validation: {maxLength: 5}
+          })
+        }),
+        null,
+        {database: 'testdb'}
+      )
+
+      mod.update({
+        query: {fieldName: 'foo'},
+        update: {fieldName: '123456'}
+      }).catch(error => {
+        should.exist(error)
+
         done()
       })
     })
 
-    it('should pass error to callback when query uses `$where` operator', function (done) {
-      model('testModelName').update({$where: 'this.fieldName === "foo"'}, {fieldName: 'bar'}, function (err) {
+    it('should reject with error when query uses `$where` operator', done => {
+      model('testModelName').update({
+        query: {$where: 'this.fieldName === "foo"'},
+        update: {fieldName: 'bar'}
+      }).catch(err => {
         should.exist(err)
+
         done()
       })
     })
@@ -742,62 +1224,185 @@ describe('Model', function () {
   describe('`delete` method', function () {
     beforeEach(help.cleanUpDB)
 
-    it('should accept a query object and callback', function (done) {
-      var schema = help.getModelSchema()
-      var mod = model('testModelName', schema, null, {database: 'testdb'})
-      mod.delete({fieldName: 'foo'}, done)
-    })
+    describe('legacy syntax', () => {
+      it('should accept a query object and callback', done => {
+        let schema = help.getModelSchema()
+        let mod = model(
+          'testModelName',
+          schema,
+          null,
+          { database: 'testdb' }
+        )
 
-    it('should delete a single document', function (done) {
-      var schema = help.getModelSchema()
-      var mod = model('testModelName', schema, null, {database: 'testdb'})
-      mod.create({fieldName: 'foo'}, function (err, result) {
-        if (err) return done(err)
-        result.results[0].fieldName.should.equal('foo')
+        mod.delete({fieldName: 'foo'}, done)
+      })
 
-        mod.delete({fieldName: 'foo'}, function (err, result) {
+      it('should delete a single document', done => {
+        let schema = help.getModelSchema()
+        let mod = model(
+          'testModelName',
+          schema,
+          null,
+          { database: 'testdb' }
+        )
+
+        mod.create({fieldName: 'foo'}, (err, result) => {
           if (err) return done(err)
 
-          result.deletedCount.should.equal(1)
+          result.results[0].fieldName.should.equal('foo')
 
-          mod.find({}, function (err, result) {
+          mod.delete({fieldName: 'foo'}, (err, result) => {
             if (err) return done(err)
 
-            result['results'].length.should.equal(0)
-            done()
+            result.deletedCount.should.equal(1)
+
+            mod.find({}, (err, result) => {
+              if (err) return done(err)
+
+              result['results'].length.should.equal(0)
+
+              done()
+            })
           })
+        })
+      })
+
+      it('should delete multiple documents', done => {
+        let schema = help.getModelSchema()
+        let mod = model(
+          'testModelName',
+          schema,
+          null,
+          { database: 'testdb' }
+        )
+
+        mod.create(
+          [
+            {fieldName: 'foo'},
+            {fieldName: 'bar'},
+            {fieldName: 'baz'}
+          ],
+          (err, result) => {
+            if (err) return done(err)
+
+            result.results[0].fieldName.should.equal('foo')
+            result.results[1].fieldName.should.equal('bar')
+            result.results[2].fieldName.should.equal('baz')
+
+            mod.delete({
+              fieldName: {
+                $in: ['foo', 'bar', 'baz']
+              }
+            }, (err, result) => {
+              if (err) return done(err)
+
+              result.deletedCount.should.equal(3)
+
+              mod.find({}, (err, result) => {
+                if (err) return done(err)
+
+                result['results'].length.should.equal(0)
+
+                done()
+              })
+            })
+          }
+        )
+      })
+
+      it('should pass error to callback when query uses `$where` operator', done => {
+        model('testModelName').delete({
+          $where: 'this.fieldName === "foo"'
+        }, err => {
+          should.exist(err)
+          done()
         })
       })
     })
 
-    it('should delete multiple documents', function (done) {
-      var schema = help.getModelSchema()
-      var mod = model('testModelName', schema, null, {database: 'testdb'})
-      mod.create([{fieldName: 'foo'}, {fieldName: 'bar'}, {fieldName: 'baz'}], function (err, result) {
-        if (err) return done(err)
-        result.results[0].fieldName.should.equal('foo')
-        result.results[1].fieldName.should.equal('bar')
-        result.results[2].fieldName.should.equal('baz')
+    it('should accept a query object', () => {
+      let schema = help.getModelSchema()
+      let mod = model(
+        'testModelName',
+        schema,
+        null,
+        { database: 'testdb' }
+      )
 
-        mod.delete({fieldName: {$in: ['foo', 'bar', 'baz']}}, function (err, result) {
-          if (err) return done(err)
-
-          result.deletedCount.should.equal(3)
-
-          mod.find({}, function (err, result) {
-            if (err) return done(err)
-
-            result['results'].length.should.equal(0)
-            done()
-          })
-        })
+      return mod.delete({
+        query: { fieldName: 'foo' }
       })
     })
 
-    it('should pass error to callback when query uses `$where` operator', function (done) {
-      model('testModelName').delete({$where: 'this.fieldName === "foo"'}, function (err) {
-        should.exist(err)
-        done()
+    it('should delete a single document', () => {
+      let schema = help.getModelSchema()
+      let mod = model(
+        'testModelName',
+        schema,
+        null,
+        { database: 'testdb' }
+      )
+
+      return mod.create({
+        documents: { fieldName: 'foo' }
+      }).then(({metadata, results}) => {
+        results[0].fieldName.should.equal('foo')
+
+        return mod.delete({
+          query: { fieldName: 'foo' }
+        })
+      }).then(result => {
+        result.deletedCount.should.equal(1)
+
+        return mod.find({})
+      }).then(({metadata, results}) => {
+        results.length.should.equal(0)
+      })
+    })
+
+    it('should delete multiple documents', () => {
+      let schema = help.getModelSchema()
+      let mod = model(
+        'testModelName',
+        schema,
+        null,
+        { database: 'testdb' }
+      )
+
+      return mod.create({
+        documents: [
+          { fieldName: 'foo' },
+          { fieldName: 'bar' },
+          { fieldName: 'baz' }
+        ]
+      }).then(({results}) => {
+        results[0].fieldName.should.equal('foo')
+        results[1].fieldName.should.equal('bar')
+        results[2].fieldName.should.equal('baz')
+
+        return mod.delete({
+          query: {
+            fieldName: {
+              $in: ['foo', 'bar', 'baz']
+            }
+          }
+        })
+      }).then(result => {
+        result.deletedCount.should.equal(3)
+
+        return mod.find({})
+      }).then(({metadata, results}) => {
+        results.length.should.equal(0)
+      })
+    })
+
+    it('should pass error to callback when query uses `$where` operator', () => {
+      return model('testModelName').delete({
+        query: {
+          $where: 'this.fieldName === "foo"'
+        }
+      }).catch(error => {
+        should.exist(error)
       })
     })
   })

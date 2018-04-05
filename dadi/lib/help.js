@@ -13,9 +13,35 @@ var self = this
 // helper that sends json response
 module.exports.sendBackJSON = function (successCode, res, next) {
   return function (err, results) {
-    if (err) return next(err)
+    let body = results
+    let statusCode = successCode
 
-    var resBody = JSON.stringify(results)
+    if (err) {
+      switch (err.message) {
+        case 'DB_DISCONNECTED':
+          body = Object.assign(formatError.createApiError('0004'), {
+            statusCode: 503
+          })
+          statusCode = body.statusCode
+
+          break
+
+        case 'BAD_REQUEST':
+          body = {
+            success: false,
+            errors: err.errors,
+            statusCode: 400
+          }
+          statusCode = body.statusCode
+
+          break
+
+        default:
+          return next(err)
+      }
+    }
+
+    let resBody = JSON.stringify(body)
 
     // log response if it's already been sent
     if (res.finished) {
@@ -26,7 +52,7 @@ module.exports.sendBackJSON = function (successCode, res, next) {
     res.setHeader('content-type', 'application/json')
     res.setHeader('content-length', Buffer.byteLength(resBody))
 
-    res.statusCode = successCode
+    res.statusCode = statusCode
 
     res.end(resBody)
   }

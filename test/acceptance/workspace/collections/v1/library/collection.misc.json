@@ -1,0 +1,24 @@
+{
+  "fields": {
+    "string": {
+      "type": "String"
+    },
+    "mixed": {
+      "type": "Mixed"
+    },
+    "object": {
+      "type": "Object"
+    },
+    "multiReference": {
+      "type": "Reference"
+    }
+  },
+  "settings": {
+    "cache": false,
+    "authenticate": false,
+    "count": 40,
+    "sort": "string",
+    "sortOrder": 1,
+    "storeRevisions": false
+  }
+}

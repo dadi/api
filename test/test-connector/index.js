@@ -226,7 +226,7 @@ DataStore.prototype.find = function ({ query, collection, options = {}, schema, 
     this.getCollection(collection).then(collection => {
       if (DEBUG) {
         console.log('')
-        console.log('* (Test connector) Find: ', this.database.___id, collName, query)
+        console.log('* (Test connector) Find: ', this.database.___id, collName, JSON.stringify(query))
         console.log('---> Results:', collection.chain().find(query).data())
         console.log('')
       }
@@ -481,7 +481,11 @@ DataStore.prototype.prepareQuery = function (query, schema) {
       if (typeof query[key] === 'object' && query[key]) {
         Object.keys(query[key]).forEach(k => {
           // change $ne: null to $ne: undefined, as per https://github.com/techfort/LokiJS/issues/285
-          if (k === '$ne' && typeof query[key][k] === 'object' && query[key][k] === null) {
+          if (
+            k === '$ne' &&
+            typeof query[key][k] === 'object' &&
+            query[key][k] === null
+          ) {
             query[key] = { '$ne': undefined }
           }
         })
@@ -489,14 +493,39 @@ DataStore.prototype.prepareQuery = function (query, schema) {
     }
   })
 
-  // construct an $and query when more than one expression is given
-  if (Object.keys(query).length > 1) {
-    query = {
-      '$and': Object.keys(query).map((key) => {
-        let expression = {}
-        expression[key] = query[key]
-        return expression
+  // Transform a query like this:
+  //
+  // {"fieldOne": 1, "fieldTwo": {"$gt": 1, "$lt": 10}}
+  //
+  // ... into:
+  //
+  // [
+  //   {"fieldOne": 1},
+  //   {"fieldTwo": {"$gt": 1}},
+  //   {"fieldTwo": {"$lt": 10}}
+  // ]
+  let expressions = Object.keys(query).reduce((expressions, field) => {
+    if (Boolean(query[field]) && typeof query[field] === 'object') {
+      Object.keys(query[field]).forEach(operator => {
+        expressions.push({
+          [field]: {
+            [operator]: query[field][operator]
+          }
+        })
       })
+    } else {
+      expressions.push({
+        [field]: query[field]
+      })
+    }
+
+    return expressions
+  }, [])
+
+  // Construct an $and query when more than one expression is given.
+  if (expressions.length > 1) {
+    query = {
+      '$and': expressions
     }
   }
 

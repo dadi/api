@@ -4,10 +4,15 @@ const debug = require('debug')('api:tokens')
 const path = require('path')
 const config = require(path.join(__dirname, '/../../../config.js'))
 const Connection = require(path.join(__dirname, '/../model/connection'))
+const formatError = require('@dadi/format-error')
 const tokenStore = require(path.join(__dirname, '/tokenStore'))()
 
 const clientCollectionName = config.get('auth.clientCollection')
-const dbOptions = { override: true, database: config.get('auth.database'), collection: clientCollectionName }
+const dbOptions = {
+  collection: clientCollectionName,
+  database: config.get('auth.database'),
+  override: true
+}
 
 let connection
 
@@ -79,8 +84,15 @@ module.exports.generate = (req, res, next) => {
     }).catch(next)
   }
 
-  if (connection.db) return connectionReady(connection.db)
-  connection.once('connect', connectionReady)
+  if (!connection.db) {
+    let error = formatError.createApiError('0004')
+
+    error.statusCode = 503
+
+    return next(JSON.stringify(error))
+  }
+
+  return connectionReady(connection.db)
 }
 
 module.exports.validate = (token, done) => {

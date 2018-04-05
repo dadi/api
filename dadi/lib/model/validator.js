@@ -101,6 +101,9 @@ Validator.prototype._parseDocument = function (obj, schema, response) {
   var err = false
 
   keys.forEach(key => {
+    // Ignore internal fields.
+    if (key.indexOf('_') === 0) return
+
     if (!schema[key]) {
       response.success = false
       response.errors.push({

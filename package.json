@@ -20,7 +20,7 @@
     "@dadi/cache": "1.5.x",
     "@dadi/et": "^2.0.0",
     "@dadi/format-error": "^1.6.0",
-    "@dadi/logger": "latest",
+    "@dadi/logger": "^1.3.0",
     "@dadi/status": "latest",
     "async": "^2.6.0",
     "aws-sdk": "^2.219.1",

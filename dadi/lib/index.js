@@ -50,6 +50,10 @@ var Server = function () {
 }
 
 Server.prototype.initialiseLog = function (options) {
+  if (log.options.level) {
+    return
+  }
+
   var logOptions = Object.assign({}, config.get('logging'), options && options.logging || {})
   log.init(logOptions, {}, process.env.NODE_ENV)
   log.info({module: 'server'}, 'Server logging started.')
@@ -161,6 +165,8 @@ Server.prototype.run = function (options, done) {
 Server.prototype.start = function (done) {
   var self = this
   this.readyState = 2
+
+  this.initialiseLog()
 
   var defaultPaths = {
     collections: path.join(__dirname, '/../../workspace/collections'),

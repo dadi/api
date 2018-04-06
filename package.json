@@ -46,6 +46,7 @@
     "path-to-regexp": "~1.7.0",
     "recovery": "^0.2.6",
     "require-directory": "^2.1.1",
+    "semver": "^5.5.0",
     "serve-static": "^1.13.2",
     "sha1": "latest",
     "stack-trace": "latest",
@@ -69,6 +70,7 @@
     "lokijs": "^1.5.3",
     "mocha": "~4.0.1",
     "mochawesome": "^2.1.0",
+    "mock-require": "^3.0.2",
     "proxyquire": "^1.7.4",
     "should": "4.0.4",
     "sinon": "2.3.2",
@@ -76,6 +78,9 @@
     "standard": "8.6.0",
     "supertest": "~0.13.0",
     "uuid": "^3.2.1"
+  },
+  "dataConnectorDependencies": {
+    "@dadi/api-mongodb": "4.1.0"
   },
   "greenkeeper": {
     "ignore": [

@@ -50,6 +50,10 @@ var Server = function () {
 }
 
 Server.prototype.initialiseLog = function (options) {
+  if (log.options.level) {
+    return
+  }
+
   var logOptions = Object.assign({}, config.get('logging'), options && options.logging || {})
   log.init(logOptions, {}, process.env.NODE_ENV)
   log.info({module: 'server'}, 'Server logging started.')

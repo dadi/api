@@ -162,8 +162,6 @@ Server.prototype.start = function (done) {
   var self = this
   this.readyState = 2
 
-  this.initialiseLog()
-
   var defaultPaths = {
     collections: path.join(__dirname, '/../../workspace/collections'),
     endpoints: path.join(__dirname, '/../../workspace/endpoints')

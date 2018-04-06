@@ -232,17 +232,17 @@ var conf = convict({
     collections: {
       doc: 'The relative or absolute path to collection specification files',
       format: String,
-      default: __dirname + '/workspace/collections'
+      default: 'workspace/collections'
     },
     endpoints: {
       doc: 'The relative or absolute path to custom endpoint files',
       format: String,
-      default: __dirname + '/workspace/endpoints'
+      default: 'workspace/endpoints'
     },
     hooks: {
       doc: 'The relative or absolute path to hook specification files',
       format: String,
-      default: __dirname + '/workspace/hooks'
+      default: 'workspace/hooks'
     }
   },
   feedback: {

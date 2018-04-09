@@ -205,7 +205,7 @@ module.exports.validateCollectionSchema = function (obj) {
  * Remove each file in the specified cache folder.
  */
 module.exports.clearCache = function (pathname, callback) {
-  var pattern = ''
+  let pattern = ''
 
   pattern = crypto.createHash('sha1').update(pathname).digest('hex')
 
@@ -221,8 +221,11 @@ module.exports.clearCache = function (pathname, callback) {
     }
   }
 
-  cache.delete(pattern, function (err) {
+  cache.delete(pattern, err => {
     if (err) console.log(err)
-    return callback(null)
+
+    if (typeof callback === 'function') {
+      callback(null)
+    }
   })
 }

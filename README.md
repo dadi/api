@@ -1,7 +1,7 @@
 <img src="https://dadi.tech/assets/products/dadi-api-full.png" alt="DADI API" height="65"/>
 
 [![npm (scoped)](https://img.shields.io/npm/v/@dadi/api.svg?maxAge=10800&style=flat-square)](https://www.npmjs.com/package/@dadi/api)
-[![coverage](https://img.shields.io/badge/coverage-87%25-yellow.svg?style=flat?style=flat-square)](https://github.com/dadi/api)
+[![coverage](https://img.shields.io/badge/coverage-88%25-yellow.svg?style=flat)](https://github.com/dadi/api)
 [![Build Status](https://travis-ci.org/dadi/api.svg?branch=master)](https://travis-ci.org/dadi/api)
 [![JavaScript Style Guide](https://img.shields.io/badge/code%20style-standard-brightgreen.svg?style=flat-square)](http://standardjs.com/)
 
@@ -14,7 +14,7 @@
 
 ## Overview
 
-DADI API is built on Node.JS and MongoDB. It is a high performance RESTful API layer designed in support of [API-first development and the principle of COPE](https://dadi.tech/platform/concepts/api-first-and-cope/).
+DADI API is built on Node.JS. It is a high performance RESTful API layer designed in support of [API-first development and the principle of COPE](https://dadi.tech/platform/concepts/api-first-and-cope/). It can use virtually any database engine, such as [MongoDB](https://github.com/dadi/api-mongodb), [CouchDB](https://github.com/dadi/api-couchdb), [RethinkDB](https://github.com/dadi/api-rethinkdb) or simply a [JSON filestore](https://github.com/dadi/api-filestore).
 
 You can consider it as the data layer within a platform (including the data model). It is designed to be plugged into a templating layer (such as [DADI Web](https://dadi.tech/platform/web)), a mobile application or to be used with any other data consumer.
 
@@ -28,8 +28,8 @@ It is part of DADI, a suite of components covering the full development stack, b
 
 ## Requirements
 
-* **[MongoDB](https://docs.mongodb.com/v3.0/)** (supported versions: 3.2, 3.4)
 * **[Node.js](https://www.nodejs.org/)** (supported versions: 6.11.x, 8.9.x)
+* A [data connector module](https://www.npmjs.com/search?q=keywords:dadi-api-connector)
 
 ## Your first API project
 
@@ -167,7 +167,7 @@ DADI API is based on an original idea by Joseph Denne. It is developed and maint
 DADI is a data centric development and delivery stack, built specifically in support of the principles of API first and COPE.
 
 Copyright notice<br />
-(C) 2017 DADI+ Limited <support@dadi.tech><br />
+(C) 2018 DADI+ Limited <support@dadi.tech><br />
 All rights reserved
 
 This product is part of DADI.<br />

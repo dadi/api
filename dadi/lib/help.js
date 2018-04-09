@@ -1,14 +1,10 @@
-var crypto = require('crypto')
-var formatError = require('@dadi/format-error')
-var fs = require('fs')
-var Moment = require('moment')
-var path = require('path')
+const crypto = require('crypto')
+const formatError = require('@dadi/format-error')
+const path = require('path')
 
-var cache = require(path.join(__dirname, '/cache'))
-var config = require(path.join(__dirname, '/../../config'))
-var log = require('@dadi/logger')
-
-var self = this
+const cache = require(path.join(__dirname, '/cache'))
+const config = require(path.join(__dirname, '/../../config'))
+const log = require('@dadi/logger')
 
 // helper that sends json response
 module.exports.sendBackJSON = function (successCode, res, next) {
@@ -104,61 +100,6 @@ module.exports.parseQuery = function (queryStr) {
   // handle case where queryStr is "null" or some other malicious string
   if (typeof ret !== 'object' || ret === null) ret = {}
   return ret
-}
-
-// Transforms strings from a query object into more appropriate types, based
-// on the field type
-module.exports.transformQuery = function (obj, type, format) {
-  var transformFunction
-
-  switch (type) {
-    case 'DateTime':
-      transformFunction = function (obj) {
-        if (!format) {
-          format = 'YYYY-MM-DD'
-        }
-
-        var parsedDate = new Moment(obj, format)
-
-        if (!parsedDate.isValid()) return obj
-
-        return parsedDate.toDate()
-      }
-
-      break
-
-    case 'String':
-      transformFunction = function (obj) {
-        var regexParts = obj.match(/\/([^/]*)\/([i]{0,1})$/)
-
-        if (regexParts) {
-          try {
-            var regex = new RegExp(regexParts[1], regexParts[2])
-
-            return regex
-          } catch (e) {
-            return obj
-          }
-        } else {
-          return obj
-        }
-      }
-
-      break
-
-    default:
-      return obj
-  }
-
-  if (obj) {
-    Object.keys(obj).forEach(key => {
-      if ((typeof obj[key] === 'object') && (obj[key] !== null)) {
-        this.transformQuery(obj[key], type)
-      } else if (typeof obj[key] === 'string') {
-        obj[key] = transformFunction(obj[key])
-      }
-    })
-  }
 }
 
 module.exports.regExpEscape = function (str) {
@@ -284,36 +225,4 @@ module.exports.clearCache = function (pathname, callback) {
     if (err) console.log(err)
     return callback(null)
   })
-}
-
-/**
- * Recursively create directories.
- */
-module.exports.mkdirParent = function (dirPath, mode, callback) {
-  if (fs.existsSync(path.resolve(dirPath))) return
-
-  fs.mkdir(dirPath, mode, function (error) {
-    // When it fails because the parent doesn't exist, call it again
-    if (error && error.errno === 34) {
-      // Create all the parents recursively
-      self.mkdirParent(path.dirname(dirPath), mode, callback)
-      // And then finally the directory
-      self.mkdirParent(dirPath, mode, callback)
-    }
-
-    // Manually run the callback
-    callback && callback(error)
-  })
-}
-
-module.exports.getFromObj = function (obj, path, def) {
-  var i, len
-
-  for (i = 0, path = path.split('.'), len = path.length; i < len; i++) {
-    if (!obj || typeof obj !== 'object') return def
-    obj = obj[path[i]]
-  }
-
-  if (obj === undefined) return def
-  return obj
 }

@@ -16,19 +16,13 @@
  * @return {Promise<Stats>}
  */
 function getStats ({options = {}} = {}) {
-  const getStatsFromDatabase = database => {
-    return database.stats(this.name, options)
-  }
-
   if (!this.connection.db) {
-    return new Promise((resolve, reject) => {
-      this.connection.once('connect', database => {
-        resolve(getStatsFromDatabase(database))
-      })
-    })
+    return Promise.reject(
+      new Error('DB_DISCONNECTED')
+    )
   }
 
-  return getStatsFromDatabase(this.connection.db)
+  return this.connection.db.stats(this.name, options)
 }
 
 module.exports = getStats

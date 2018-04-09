@@ -26,18 +26,4 @@ function createIndex () {
   return createIndexInDatastore(this.connection.db)
 }
 
-module.exports = function () {
-  // Compatibility with legacy model API.
-  // Signature: done
-  if (arguments.length > 0) {
-    let callback = arguments[0]
-
-    createIndex.call(this)
-      .then(response => callback && callback(null, response))
-      .catch(error => callback && callback(error))
-
-    return
-  }
-
-  return createIndex.call(this)
-}
+module.exports = createIndex

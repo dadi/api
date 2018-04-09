@@ -65,6 +65,20 @@ describe('Help', function (done) {
 
       done();
     });
+
+    it('should return false if the schema isn\'t an object', function (done) {
+      var schema1 = 1337
+      var schema2 = 'some string'
+      var schema3 = null
+      var schema4 = ['some', 'array']
+
+      var val1 = help.validateCollectionSchema(schema1);
+      var val2 = help.validateCollectionSchema(schema2);
+      var val3 = help.validateCollectionSchema(schema3);
+      var val4 = help.validateCollectionSchema(schema4);
+
+      done();
+    });    
   });
 
   describe('parseQuery', function () {
@@ -145,73 +159,5 @@ describe('Help', function (done) {
 
     //   done();
     // });
-  })
-
-  describe('transformQuery', function () {
-    it('should export method', function (done) {
-      help.transformQuery.should.be.Function;
-      done();
-    })
-
-    describe('null value query', function () {
-      it('should allow a query for null in String fields', function (done) {
-        var obj = { 'name': null }
-        help.transformQuery(obj, 'String');
-        obj.should.eql({ 'name': null });
-        done();
-      })
-    })
-
-    describe('Other fields', function () {
-      it('should return original query object if it is not a String or DateTime', function (done) {
-        var obj = { 'name': 'John' }
-        help.transformQuery(obj, 'Mixed');
-        obj.should.eql({ 'name': 'John' });
-        done();
-      })
-    })
-
-    describe('DateTime fields', function () {
-      it('should return original query object if it cannot be parsed as a Date', function (done) {
-        var obj = { 'created': 'abcedfg' }
-        help.transformQuery(obj, 'DateTime');
-        obj.should.eql({ 'created': 'abcedfg' });
-        done();
-      })
-
-      it('should return parsed Date if query object can be parsed as a Date', function (done) {
-        var obj = { 'created': '2013-02-08' }
-        help.transformQuery(obj, 'DateTime');
-        (typeof obj.created).should.eql('object')
-        done();
-      })
-    })
-
-    describe('String fields', function () {
-      it('should return original query object if it cannot be parsed as a RegExp', function (done) {
-        var obj = { 'name': 'John' }
-        help.transformQuery(obj, 'String');
-        obj.should.eql({ 'name': 'John' });
-        done();
-      })
-
-      it('should return parsed RegExp if query object can be parsed as a RegExp', function (done) {
-        var obj = { 'name': '/^john/' }
-        help.transformQuery(obj, 'String');
-        (typeof obj.name).should.eql('object')
-        obj.name.should.eql(/^john/)
-        done();
-      })
-
-      it('should return parsed RegExp if query object contains subqueries that can be parsed as a RegExp', function (done) {
-        var obj = { 'name': { '$not': '/^john/'} }
-        help.transformQuery(obj, 'String');
-        (typeof obj.name).should.eql('object')
-
-        obj.name.should.eql({ '$not': /^john/ })
-
-        done();
-      })
-    })
   })
 })

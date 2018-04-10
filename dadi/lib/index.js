@@ -23,6 +23,7 @@ var auth = require(path.join(__dirname, '/auth'))
 var cache = require(path.join(__dirname, '/cache'))
 var Connection = require(path.join(__dirname, '/model/connection'))
 var Controller = require(path.join(__dirname, '/controller'))
+var cors = require(path.join(__dirname, '/cors'))
 var HooksController = require(path.join(__dirname, '/controller/hooks'))
 var MediaController = require(path.join(__dirname, '/controller/media'))
 var dadiBoot = require('@dadi/boot')
@@ -212,6 +213,8 @@ Server.prototype.start = function (done) {
   }))
   app.use(bodyParser.urlencoded({ extended: true, limit: '50mb' }))
   app.use(bodyParser.text({ limit: '50mb' }))
+
+  cors(self)
 
   // update configuration based on domain
   var domainConfigLoaded
@@ -460,6 +463,7 @@ Server.prototype.loadConfigApi = function () {
     var name = params.collectionName
     if (schema.hasOwnProperty('model')) name = schema.model
 
+    schema.settings = schema.settings || {}
     schema.settings.lastModifiedAt = Date.now()
 
     var route = ['', params.version, params.database, name, idParam].join('/')
@@ -805,21 +809,12 @@ Server.prototype.loadMediaCollections = function () {
  * req.method` to component methods
  */
 Server.prototype.addCollectionResource = function (options) {
-  var fields = help.getFieldsFromSchema(options.schema)
-
-  var settings = _.extend(options.schema.settings, { database: options.database })
-
-  // var settings = options.schema.settings
-  var model
-  var controller
-
-  model = Model(options.name, JSON.parse(fields), null, settings, settings.database)
-
-  if (settings.type && settings.type === 'mediaCollection') {
-    controller = MediaController(model)
-  } else {
-    controller = Controller(model)
-  }
+  let fields = help.getFieldsFromSchema(options.schema)
+  let settings = Object.assign({}, options.schema.settings, { database: options.database })
+  let model = Model(options.name, JSON.parse(fields), null, settings, settings.database)
+  let controller = (settings.type && settings.type === 'mediaCollection')
+    ? MediaController(model)
+    : Controller(model)
 
   this.addComponent({
     route: options.route,
@@ -827,19 +822,19 @@ Server.prototype.addCollectionResource = function (options) {
     filepath: options.filepath
   })
 
-  // watch the schema's file and update it in place
+  // Watch the schema's file and update it in place.
   this.addMonitor(options.filepath, filename => {
-    // invalidate schema file cache then reload
+    // Invalidate schema file cache then reload.
     delete require.cache[options.filepath]
 
     try {
-      var schemaObj = require(options.filepath)
-      var fields = help.getFieldsFromSchema(schemaObj)
+      let schemaObj = require(options.filepath)
+      let fields = help.getFieldsFromSchema(schemaObj)
 
       this.components[options.route].model.schema = JSON.parse(fields)
       this.components[options.route].model.settings = schemaObj.settings
     } catch (e) {
-      // if file was removed "un-use" this component
+      // If file was removed, "un-use" this component.
       if (e && e.code === 'ENOENT') {
         this.removeMonitor(options.filepath)
         this.removeComponent(options.route)
@@ -1093,7 +1088,7 @@ Server.prototype.addComponent = function (options) {
 
     this.components[mediaRoute] = options.component
     this.components[mediaRoute + '/:token?'] = options.component
-    this.components[mediaRoute + '/:filename(.*png|.*jpg|.*gif|.*bmp|.*tiff)'] = options.component
+    this.components[mediaRoute + '/:filename(.*png|.*jpg|.*jpeg|.*gif|.*bmp|.*tiff|.*pdf)'] = options.component
 
     if (options.component.setRoute) {
       options.component.setRoute(mediaRoute)
@@ -1108,8 +1103,13 @@ Server.prototype.addComponent = function (options) {
         var token = this._signToken(req.body)
       } catch (err) {
         if (err) {
-          err.statusCode = 400
-          return next(err)
+          let error = {
+            name: 'ValidationError',
+            message: err.message,
+            statusCode: 400
+          }
+
+          return next(error)
         }
       }
 
@@ -1166,7 +1166,7 @@ Server.prototype.addComponent = function (options) {
     })
 
     // GET media/filename
-    this.app.use(mediaRoute + '/:filename(.*png|.*jpg|.*gif|.*bmp|.*tiff)', (req, res, next) => {
+    this.app.use(mediaRoute + '/:filename(.*png|.*jpg|.*jpeg|.*gif|.*bmp|.*tiff|.*pdf)', (req, res, next) => {
       if (options.component.getFile) {
         return options.component.getFile(req, res, next, mediaRoute)
       }

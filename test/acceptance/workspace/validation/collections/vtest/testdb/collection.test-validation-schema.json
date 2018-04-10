@@ -51,6 +51,14 @@
       "required": true,
       "default": true
     },
+    "fieldDefaultBooleanFalse": {
+      "type": "Boolean",
+      "label": "Title",
+      "comments": "The title of the entry",
+      "validation": {},
+      "required": false,
+      "default": false
+    },
     "fieldMixed": {
       "type": "Mixed",
       "label": "Title",

@@ -69,17 +69,17 @@ module.exports.testModelProperty = function (key, val) {
 
 module.exports.cleanUpDB = function (done) {
   module.exports.clearCollection('testModelName', (err) => {
-    // module.exports.clearCollection('testModelNameHistory', (err) => {
-    //   module.exports.clearCollection('articles', (err) => {
-    //     module.exports.clearCollection('categories', (err) => {
-    //       module.exports.clearCollection('book', (err) => {
-    //         module.exports.clearCollection('person', (err) => {
+    module.exports.clearCollection('testModelNameHistory', (err) => {
+      module.exports.clearCollection('articles', (err) => {
+        module.exports.clearCollection('categories', (err) => {
+          module.exports.clearCollection('book', (err) => {
+            module.exports.clearCollection('person', (err) => {
                done()
-      //       })
-      //     })
-      //   })
-      // })
-    // })
+            })
+          })
+        })
+      })
+    })
   })
   //
   // if (conn.datastore.dropDatabase) {
@@ -165,18 +165,24 @@ module.exports.clearCollection = function (collectionName, done) {
 // Listens for the `connect` event on each of the models supplied
 // and fires `callback` when all of them have fired.
 module.exports.whenModelsConnect = function (models, callback) {
-  var modelsConnected = 0
-  var processModel = function () {
-    if (++modelsConnected === models.length) {
-      callback()
-    }
-  }
+  return new Promise((resolve, reject) => {
+    let modelsConnected = 0
+    let processModel = () => {
+      if (++modelsConnected === models.length) {
+        if (typeof callback === 'function') {
+          callback()
+        }
 
-  models.forEach(model => {
-    if (model.connection.readyState === 1) {
-      processModel()
-    } else {
-      model.connection.once('connect', processModel)
+        resolve()
+      }
     }
+
+    models.forEach(model => {
+      if (model.connection.readyState === 1) {
+        processModel()
+      } else {
+        model.connection.once('connect', processModel)
+      }
+    })    
   })
 }

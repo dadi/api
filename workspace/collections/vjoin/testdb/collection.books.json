@@ -13,22 +13,21 @@
         "edit": false
       }
     },
-    "authorId": {
-      "type": "String",
+    "author": {
+      "type": "Reference",
       "label": "author",
       "example": "b8b285ae-53d1-47a5-9e69-ec04",
       "comments": "This is the _id of the book's author",
       "placement": "Main content",
-      "validation": {
-        "regex": {
-          "pattern": "^[0-9a-fA-F]{24}$"
-        }
-      },
       "required": true,
       "message": "",
       "display": {
         "index": true,
         "edit": true
+      },
+      "settings": {
+        "collection": "users",
+        "strictCompose": true
       }
     }
   },

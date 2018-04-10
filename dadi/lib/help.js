@@ -1,21 +1,43 @@
-var crypto = require('crypto')
-var formatError = require('@dadi/format-error')
-var fs = require('fs')
-var Moment = require('moment')
-var path = require('path')
+const crypto = require('crypto')
+const formatError = require('@dadi/format-error')
+const path = require('path')
 
-var cache = require(path.join(__dirname, '/cache'))
-var config = require(path.join(__dirname, '/../../config'))
-var log = require('@dadi/logger')
-
-var self = this
+const cache = require(path.join(__dirname, '/cache'))
+const config = require(path.join(__dirname, '/../../config'))
+const log = require('@dadi/logger')
 
 // helper that sends json response
 module.exports.sendBackJSON = function (successCode, res, next) {
   return function (err, results) {
-    if (err) return next(err)
+    let body = results
+    let statusCode = successCode
 
-    var resBody = JSON.stringify(results)
+    if (err) {
+      switch (err.message) {
+        case 'DB_DISCONNECTED':
+          body = Object.assign(formatError.createApiError('0004'), {
+            statusCode: 503
+          })
+          statusCode = body.statusCode
+
+          break
+
+        case 'BAD_REQUEST':
+          body = {
+            success: false,
+            errors: err.errors,
+            statusCode: 400
+          }
+          statusCode = body.statusCode
+
+          break
+
+        default:
+          return next(err)
+      }
+    }
+
+    let resBody = JSON.stringify(body)
 
     // log response if it's already been sent
     if (res.finished) {
@@ -23,16 +45,10 @@ module.exports.sendBackJSON = function (successCode, res, next) {
       return
     }
 
-    if (config.get('cors') === true) {
-      res.setHeader('Access-Control-Allow-Origin', '*')
-      res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
-      res.setHeader('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization')
-    }
-
     res.setHeader('content-type', 'application/json')
     res.setHeader('content-length', Buffer.byteLength(resBody))
 
-    res.statusCode = successCode
+    res.statusCode = statusCode
 
     res.end(resBody)
   }
@@ -86,61 +102,6 @@ module.exports.parseQuery = function (queryStr) {
   return ret
 }
 
-// Transforms strings from a query object into more appropriate types, based
-// on the field type
-module.exports.transformQuery = function (obj, type, format) {
-  var transformFunction
-
-  switch (type) {
-    case 'DateTime':
-      transformFunction = function (obj) {
-        if (!format) {
-          format = 'YYYY-MM-DD'
-        }
-
-        var parsedDate = new Moment(obj, format)
-
-        if (!parsedDate.isValid()) return obj
-
-        return parsedDate.toDate()
-      }
-
-      break
-
-    case 'String':
-      transformFunction = function (obj) {
-        var regexParts = obj.match(/\/([^/]*)\/([i]{0,1})$/)
-
-        if (regexParts) {
-          try {
-            var regex = new RegExp(regexParts[1], regexParts[2])
-
-            return regex
-          } catch (e) {
-            return obj
-          }
-        } else {
-          return obj
-        }
-      }
-
-      break
-
-    default:
-      return obj
-  }
-
-  if (obj) {
-    Object.keys(obj).forEach(key => {
-      if ((typeof obj[key] === 'object') && (obj[key] !== null)) {
-        this.transformQuery(obj[key], type)
-      } else if (typeof obj[key] === 'string') {
-        obj[key] = transformFunction(obj[key])
-      }
-    })
-  }
-}
-
 module.exports.regExpEscape = function (str) {
   return str.replace(/([.?*+^$[\]\\(){}|-])/g, '\\$1')
 }
@@ -187,22 +148,15 @@ module.exports.validateCollectionSchema = function (obj) {
   // `obj` must be a "hash type object", i.e. { ... }
   if (typeof obj !== 'object' || Array.isArray(obj) || obj === null) return false
 
-  var response = {
+  let response = {
     success: true,
     errors: []
   }
-
-  var fields = []
-  var settings = []
+  let fields = []
 
   getKeys(obj, 'fields', fields)
   if (fields.length === 0) {
     response.errors.push({section: 'fields', message: 'must be provided at least once'})
-  }
-
-  getKeys(obj, 'settings', settings)
-  if (settings.length === 0) {
-    response.errors.push({section: 'settings', message: 'must be provided'})
   }
 
   if (response.errors.length > 0) {
@@ -217,19 +171,10 @@ module.exports.validateCollectionSchema = function (obj) {
     return response
   }
 
-  // check that all required settings are present
-  var requiredSettings = ['cache', 'authenticate']
-
-  requiredSettings.forEach(function (key) {
-    if (!obj.settings.hasOwnProperty(key)) {
-      response.errors.push({setting: key, message: 'must be provided'})
-    }
-  })
-
   // check that an index exists for the field
   // specified as the sort field
   if (obj.settings && obj.settings.sort) {
-    var indexSpecified = false
+    let indexSpecified = false
 
     if (!obj.settings.index) {
       indexSpecified = false
@@ -280,36 +225,4 @@ module.exports.clearCache = function (pathname, callback) {
     if (err) console.log(err)
     return callback(null)
   })
-}
-
-/**
- * Recursively create directories.
- */
-module.exports.mkdirParent = function (dirPath, mode, callback) {
-  if (fs.existsSync(path.resolve(dirPath))) return
-
-  fs.mkdir(dirPath, mode, function (error) {
-    // When it fails because the parent doesn't exist, call it again
-    if (error && error.errno === 34) {
-      // Create all the parents recursively
-      self.mkdirParent(path.dirname(dirPath), mode, callback)
-      // And then finally the directory
-      self.mkdirParent(dirPath, mode, callback)
-    }
-
-    // Manually run the callback
-    callback && callback(error)
-  })
-}
-
-module.exports.getFromObj = function (obj, path, def) {
-  var i, len
-
-  for (i = 0, path = path.split('.'), len = path.length; i < len; i++) {
-    if (!obj || typeof obj !== 'object') return def
-    obj = obj[path[i]]
-  }
-
-  if (obj === undefined) return def
-  return obj
 }

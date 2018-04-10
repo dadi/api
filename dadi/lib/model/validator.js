@@ -68,7 +68,7 @@ Validator.prototype.schema = function (obj, update) {
   // provide a value (unless we're updating a document)
   if (!update) {
     Object.keys(schema)
-      .filter(function (key) { return schema[key].default })
+      .filter(function (key) { return schema[key].default || (schema[key].default === false) })
       .forEach(function (key) {
         if (!obj.hasOwnProperty(key)) {
           obj[key] = schema[key].default
@@ -101,6 +101,9 @@ Validator.prototype._parseDocument = function (obj, schema, response) {
   var err = false
 
   keys.forEach(key => {
+    // Ignore internal fields.
+    if (key.indexOf('_') === 0) return
+
     if (!schema[key]) {
       response.success = false
       response.errors.push({

@@ -4,6 +4,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## [3.1.0-rc1] (2018-04-06)
+
+### Added
+
+* [#157](https://github.com/dadi/api/issues/157): Documents in Reference fields are now resolved multiple times if `settings.strictCompose` is set to `true`
+* [#177](https://github.com/dadi/api/issues/177): Model API now supports Promises and named parameters. old syntax is retained for backward-compatibility.
+* [#329](https://github.com/dadi/api/issues/329): Fields in referenced documents can now be specified using dot-notation in the existing `fields` parameter.
+* [#336](https://github.com/dadi/api/issues/336): A Reference field can now reference documents from multiple collections.
+* [#406](https://github.com/dadi/api/pull/406): Introduced handshake function to ensure compatibility of versions between API core and data connectors.
+
+### Changed
+
+* [#196](https://github.com/dadi/api/issues/196) and [#323](https://github.com/dadi/api/issues/323): Added field modules to encapsulate field-specific logic.
+* [#300](https://github.com/dadi/api/issues/300): `_createdAt` and `_lastModifiedAt` internal fields are now appended to documents in the Model class.
+* [#371](https://github.com/dadi/api/issues/371) and [#384](https://github.com/dadi/api/issues/384): Make defaults paths relative to the parent app, not the module.
+* [#390](https://github.com/dadi/api/issues/390): Falsy values of Reference fields are now ignored, preserving the behavior of any other Reference fields in the document.
+* [#394](https://github.com/dadi/api/issues/394): New DateTime field module now stores values as Unix timestamps and allows queries to be performed using any date format.
+* [#405](https://github.com/dadi/api/pull/405): Lock down major version of `@dadi/logger`.
+
 ## [3.0.0] (2017-12-05)
 
 See full release notes at https://github.com/dadi/api/releases/tag/v3.0.0

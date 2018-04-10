@@ -21,7 +21,13 @@
   	},
     "friend": {
 	    "type": "Reference"
-  	}
+  	},
+    "agent": {
+      "type": "Reference"
+    },
+    "allFriends": {
+      "type": "Reference"
+    }
   },
 	"settings": {
     "cache": false,

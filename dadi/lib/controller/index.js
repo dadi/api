@@ -253,7 +253,8 @@ Controller.prototype.get = function (req, res, next) {
 
   this.model.get({
     query,
-    options: queryOptions
+    options: queryOptions,
+    req
   }).then(results => {
     return done(null, results)
   }).catch(error => {
@@ -320,7 +321,8 @@ Controller.prototype.post = function (req, res, next) {
     return this.model.create({
       compose: options.compose,
       documents: req.body,
-      internals
+      internals,
+      req
     }).then(result => {
       return sendBackJSON(200, res, next)(null, result)
     }).catch(error => {

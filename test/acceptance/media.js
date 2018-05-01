@@ -299,6 +299,60 @@ describe('Media', function () {
             })
           })
         })
+
+        it('should format Reference fields containing media documents', function (done) {
+          var obj = {
+            fileName: '1f525.png',
+            mimetype: 'image/png'
+          }
+
+          var client = request(connectionString)
+
+          client
+          .post('/media/sign')
+          .set('Authorization', 'Bearer ' + bearerToken)
+          .set('content-type', 'application/json')
+          .send(obj)
+          .end((err, res) => {
+            if (err) return done(err)
+
+            var url = res.body.url
+
+            client
+            .post(url)
+            .set('content-type', 'application/json')
+            .attach('avatar', 'test/acceptance/workspace/media/1f525.png')
+            .end((err, res) => {
+              if (err) return done(err)
+
+              client
+              .post('/v1/library/person')
+              .send({
+                name: 'John Doe',
+                picture: res.body.results[0]._id
+              })
+              .end((err, res) => {
+                should.exist(res.body.results)
+                res.body.results.should.be.Array
+                res.body.results.length.should.eql(1)
+                res.body.results[0].picture.fileName.should.eql('1f525.png')
+                res.body.results[0].picture.url.indexOf('api.somedomain.tech').should.be.above(0)
+
+                client
+                .get(`/v1/library/person/${res.body.results[0]._id}?compose=true`)
+                .end((err, res) => {
+                  should.exist(res.body.results)
+                  res.body.results.should.be.Array
+                  res.body.results.length.should.eql(1)
+                  res.body.results[0].picture.fileName.should.eql('1f525.png')
+                  res.body.results[0].picture.url.indexOf('api.somedomain.tech').should.be.above(0)
+
+                  done()
+                })
+              })
+            })
+          })
+        })        
       })
 
       describe('Named bucket', function () {

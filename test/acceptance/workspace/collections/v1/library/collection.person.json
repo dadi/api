@@ -27,6 +27,12 @@
     },
     "allFriends": {
       "type": "Reference"
+    },
+    "picture": {
+      "type": "Reference",
+      "settings": {
+        "collection": "mediaStore"
+      }
     }
   },
 	"settings": {

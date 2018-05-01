@@ -1,4 +1,5 @@
 const objectPath = require('object-path')
+const path = require('path')
 
 module.exports.type = 'reference'
 
@@ -166,6 +167,15 @@ module.exports.beforeOutput = function ({
       }).then(({metadata, results}) => {
         return Promise.all(
           results.map(result => {
+            // This isn't great. I'd like to move away from the
+            // `mediaStore` magic string in favour of an `Image`
+            // field type (https://github.com/dadi/api/issues/415).
+            if (collection === 'mediaStore') {
+              result = require(
+                path.join(__dirname, '/../model/media')
+              ).formatDocuments(result)
+            }
+
             return model.formatForOutput(result, {
               composeOverride,
               dotNotationPath: newDotNotationPath,

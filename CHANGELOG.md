@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## [3.1.2] (2018-05-01)
+
+### Changed
+
+* [#417](https://github.com/dadi/api/pull/417): Fix issue where `Reference` fields pointing to the media collection were not fully resolved.
+
 ## [3.1.1] (2018-04-13)
 
 ### Changed

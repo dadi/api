@@ -239,7 +239,7 @@ describe('DateTime Field', function () {
           if (err) return done(err)
 
           client
-          .get('/v1/library/event_unix_date?compose=true')
+          .get('/v1/library/event_unix_date?compose=true&cache=false')
           .set('Authorization', 'Bearer ' + bearerToken)
           .expect(200)
           .end((err, res) => {
@@ -293,12 +293,11 @@ describe('DateTime Field', function () {
           if (err) return done(err)
 
           client
-          .get('/v1/library/event_unix_date?compose=true')
+          .get('/v1/library/event_unix_date?compose=true&cache=false')
           .set('Authorization', 'Bearer ' + bearerToken)
           .expect(200)
           .end((err, res) => {
             if (err) return done(err)
-
             should.exist(res.body.results)
             res.body.results.length.should.eql(1)
             res.body.results[0].datetime.should.eql(date)

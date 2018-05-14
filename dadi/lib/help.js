@@ -1,6 +1,8 @@
 const crypto = require('crypto')
 const formatError = require('@dadi/format-error')
 const path = require('path')
+const Readable = require('stream').Readable
+const utils = require(path.join(__dirname, '/utils'))
 
 const cache = require(path.join(__dirname, '/cache'))
 const config = require(path.join(__dirname, '/../../config'))
@@ -8,7 +10,7 @@ const log = require('@dadi/logger')
 
 // helper that sends json response
 module.exports.sendBackJSON = function (successCode, res, next) {
-  return function (err, results) {
+  return function (err, results, originalRequest) {
     let body = results
     let statusCode = successCode
 
@@ -40,17 +42,25 @@ module.exports.sendBackJSON = function (successCode, res, next) {
     let resBody = JSON.stringify(body)
 
     // log response if it's already been sent
-    if (res.finished) {
-      log.info({res: res}, 'Response already sent. Attempting to send results: ' + resBody)
-      return
+    // if (res.finished) {
+    //   log.info({res: res}, 'Response already sent. Attempting to send results: ' + resBody)
+    //   return
+    // }
+    let compress = false
+    let acceptEncoding = originalRequest && originalRequest.headers['accept-encoding'] ? originalRequest.headers['accept-encoding'] : ''
+
+    if (acceptEncoding !== 'gzip, deflate') {
+      compress = acceptEncoding.match(/\bgzip\b/)
     }
 
-    res.setHeader('content-type', 'application/json')
-    res.setHeader('content-length', Buffer.byteLength(resBody))
+    let stream = new Readable()
+    stream.push(resBody)
+    stream.push(null)
 
+    res.setHeader('Content-Type', 'application/json')
     res.statusCode = statusCode
 
-    res.end(resBody)
+    return utils.pipeStream(stream, compress, compress, res)
   }
 }
 
@@ -205,7 +215,7 @@ module.exports.validateCollectionSchema = function (obj) {
  * Remove each file in the specified cache folder.
  */
 module.exports.clearCache = function (pathname, callback) {
-  var pattern = ''
+  let pattern = ''
 
   pattern = crypto.createHash('sha1').update(pathname).digest('hex')
 

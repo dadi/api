@@ -256,7 +256,7 @@ Controller.prototype.get = function (req, res, next) {
     options: queryOptions,
     req
   }).then(results => {
-    return done(null, results)
+    return done(null, results, req)
   }).catch(error => {
     return done(error)
   })

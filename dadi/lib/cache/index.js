@@ -1,24 +1,23 @@
-var _ = require('underscore')
-var crypto = require('crypto')
-var path = require('path')
-var pathToRegexp = require('path-to-regexp')
-var url = require('url')
+const crypto = require('crypto')
+const path = require('path')
+const pathToRegexp = require('path-to-regexp')
+const url = require('url')
 
-var config = require(path.join(__dirname, '/../../../config'))
-var log = require('@dadi/logger')
-var DadiCache = require('@dadi/cache')
-var cache
+const config = require(path.join(__dirname, '/../../../config'))
+const utils = require('../utils')
+const log = require('@dadi/logger')
+const DadiCache = require('@dadi/cache')
+let cache
 
-var Cache = function (server) {
+const Cache = function (server) {
   this.cache = cache = new DadiCache(config.get('caching'))
 
   this.server = server
   this.enabled = config.get('caching.directory.enabled') || config.get('caching.redis.enabled')
-  this.encoding = 'utf8'
   this.options = {}
 }
 
-var instance
+let instance
 module.exports = function (server) {
   if (!instance) {
     instance = new Cache(server)
@@ -26,12 +25,19 @@ module.exports = function (server) {
   return instance
 }
 
+/**
+ * Locate the endpoint relating to the current request in the loaded
+ * system components (collection models and custom endpoints) to determine
+ * if caching is enabled.
+ *
+ * @param {http.IncomingMessage} req - the current HTTP request
+ */
 Cache.prototype.cachingEnabled = function (req) {
-  var options = {}
-  var endpoints = this.server.components
-  var requestPath = url.parse(req.url, true).pathname
+  let options = {}
+  let endpoints = this.server.components
+  let requestPath = url.parse(req.url, true).pathname
 
-  var endpointKey = _.find(_.keys(endpoints), function (k) { return pathToRegexp(k).exec(requestPath) })
+  let endpointKey = Object.keys(endpoints).find(key => pathToRegexp(key).exec(requestPath))
 
   if (!endpointKey) return false
 
@@ -42,9 +48,13 @@ Cache.prototype.cachingEnabled = function (req) {
   return (this.enabled && (options.cache || false))
 }
 
+/**
+ * Return the content type for the current endpoint. Only two possible types: JavaScript or JSON.
+ *
+ * @param {http.IncomingMessage} req - the current HTTP request
+ */
 Cache.prototype.getEndpointContentType = function (req) {
-  // there are only two possible types javascript or json
-  var query = url.parse(req.url, true).query
+  let query = url.parse(req.url, true).query
   return query.callback ? 'text/javascript' : 'application/json'
 }
 
@@ -52,84 +62,98 @@ Cache.prototype.getEndpointContentType = function (req) {
  * Adds the Cache middleware to the stack
  */
 Cache.prototype.init = function () {
-  var self = this
-
   this.server.app.use((req, res, next) => {
-    var enabled = self.cachingEnabled(req)
+    let enabled = this.cachingEnabled(req)
     if (!enabled) return next()
 
-    // only cache GET requests
+    // Only cache GET requests.
     if (req.method && req.method.toLowerCase() !== 'get') return next()
 
-    var query = url.parse(req.url, true).query
+    let query = url.parse(req.url, true).query
 
-    // allow query string param to bypass cache
-    var noCache = query.cache && query.cache.toString().toLowerCase() === 'false'
+    // Allow query string param to bypass cache.
+    let noCache = query.cache && query.cache.toString().toLowerCase() === 'false'
     delete query.cache
 
-    // we build the filename with a hashed hex string so we can be unique
-    // and avoid using file system reserved characters in the name.
-    var modelDir = crypto.createHash('sha1').update(url.parse(req.url).pathname).digest('hex')
-    var filename = crypto.createHash('sha1').update(url.parse(req.url).pathname + JSON.stringify(query)).digest('hex')
+    // Build the filename with a hashed hex string so it is unique
+    // and avoids using file system reserved characters in the name.
+    let modelDir = crypto.createHash('sha1').update(url.parse(req.url).pathname).digest('hex')
+    let filename = crypto.createHash('sha1').update(url.parse(req.url).pathname + JSON.stringify(query)).digest('hex')
 
     // Prepend the model's name/folder hierarchy to the filename so it can be used
     // later to flush the cache for this model
-    var cacheKey = modelDir + '_' + filename
+    let cacheKey = `${modelDir}_${filename}`
 
-    // get contentType that current endpoint requires
-    var contentType = self.getEndpointContentType(req)
+    let acceptEncoding = req.headers['accept-encoding']
 
-    // attempt to get from the cache
-    cache.get(cacheKey).then((stream) => {
-      res.setHeader('X-Cache-Lookup', 'HIT')
+    if (acceptEncoding && acceptEncoding !== 'gzip, deflate' && /\bgzip\b/.test(acceptEncoding)) {
+      acceptEncoding = 'gzip'
+      cacheKey += '.gz'
+    }
 
+    // Get contentType that current endpoint requires.
+    let contentType = this.getEndpointContentType(req)
+
+    // Attempt to get from the cache.
+    cache.get(cacheKey).then(stream => {
+      cache.getMetadata(cacheKey).then(metadata => {
+        res.setHeader('X-Cache-Lookup', 'HIT')
+
+        let compressed = false
+        if (metadata && metadata.compression === 'gzip') {
+          compressed = true
+        }
+
+        if (noCache) {
+          res.setHeader('X-Cache', 'MISS')
+          return next()
+        }
+
+        log.info({module: 'cache'}, 'Serving ' + req.url + ' from cache')
+
+        res.statusCode = 200
+        res.setHeader('X-Cache', 'HIT')
+        res.setHeader('Content-Type', contentType)
+
+        return utils.pipeStream(stream, false, compressed, res)
+      })
+    }).catch(() => {
       if (noCache) {
-        res.setHeader('X-Cache', 'MISS')
         return next()
       }
 
-      log.info({module: 'cache'}, 'Serving ' + req.url + ' from cache')
-
-      res.statusCode = 200
-      res.setHeader('X-Cache', 'HIT')
-      res.setHeader('Content-Type', contentType)
-      // res.setHeader('Content-Length', stats.size)
-
-      stream.pipe(res)
-    }).catch(() => {
       // not found in cache
       res.setHeader('X-Cache', 'MISS')
       res.setHeader('X-Cache-Lookup', 'MISS')
+
       return cacheResponse()
     })
 
     /**
-     * cacheResponse
-     * Writes the current response body to either the filesystem or a Redis server,
-     * depending on the configuration settings
+     * Write the current response body to either the filesystem or a Redis server,
+     * depending on the configuration settings.
      */
     function cacheResponse () {
       // file is expired or does not exist, wrap res.end and res.write to save to cache
-      var _end = res.end
-      var _write = res.write
-
-      var data = ''
+      let _end = res.end
+      let _write = res.write
 
       res.write = function (chunk) {
         _write.apply(res, arguments)
       }
 
-      res.end = function (chunk) {
-        // respond before attempting to cache
+      res.end = function (data) {
+        // Respond before attempting to cache.
         _end.apply(res, arguments)
 
-        if (chunk) data += chunk
-
-        // if response is not 200 don't cache
         if (res.statusCode !== 200) return
 
-        // cache the content
-        cache.set(cacheKey, data).then(() => {
+        // Cache the content.
+        cache.set(cacheKey, data, {
+          metadata: {
+            compression: !acceptEncoding ? 'none' : acceptEncoding
+          }
+        }).then(() => {
 
         })
       }
@@ -144,14 +168,17 @@ module.exports.reset = function () {
 }
 
 /**
+ * Passes the specified pattern to the cache module to delete
+ * cached items with matching keys.
  *
+ * @param {string} pattern - the cache key pattern to match
  */
 module.exports.delete = function (pattern, callback) {
   if (!cache) return callback(null)
 
   cache.flush(pattern).then(() => {
     return callback(null)
-  }).catch((err) => {
+  }).catch(err => {
     console.log(err)
     return callback(null)
   })

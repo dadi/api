@@ -1,5 +1,5 @@
 const async = require('async')
-const Hook = require('./hook')
+const Hook = require('./../hook')
 const logger = require('@dadi/logger')
 
 /**

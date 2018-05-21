@@ -573,18 +573,18 @@ Model.prototype.shouldCompose = function ({
   return Boolean(this.settings.compose)
 }
 
-Model.prototype.count = require('./count')
-Model.prototype.create = require('./create')
-Model.prototype.createIndex = require('./createIndex')
-Model.prototype.delete = require('./delete')
-Model.prototype.find = require('./find')
-Model.prototype.get = require('./get')
-Model.prototype.getIndexes = require('./getIndexes')
-Model.prototype.getRevisions = require('./getRevisions')
-Model.prototype.getStats = require('./getStats')
-Model.prototype.revisions = require('./getRevisions') // (!) Deprecated in favour of `getRevisions`
-Model.prototype.stats = require('./getStats') // (!) Deprecated in favour of `getStats`
-Model.prototype.update = require('./update')
+Model.prototype.count = require(path.join(__dirname, 'collections', 'count'))
+Model.prototype.create = require(path.join(__dirname, 'collections', 'create'))
+Model.prototype.createIndex = require(path.join(__dirname, 'collections', 'createIndex'))
+Model.prototype.delete = require(path.join(__dirname, 'collections', 'delete'))
+Model.prototype.find = require(path.join(__dirname, 'collections', 'find'))
+Model.prototype.get = require(path.join(__dirname, 'collections', 'get'))
+Model.prototype.getIndexes = require(path.join(__dirname, 'collections', 'getIndexes'))
+Model.prototype.getRevisions = require(path.join(__dirname, 'collections', 'getRevisions'))
+Model.prototype.getStats = require(path.join(__dirname, 'collections', 'getStats'))
+Model.prototype.revisions = require(path.join(__dirname, 'collections', 'getRevisions')) // (!) Deprecated in favour of `getRevisions`
+Model.prototype.stats = require(path.join(__dirname, 'collections', 'getStats')) // (!) Deprecated in favour of `getStats`
+Model.prototype.update = require(path.join(__dirname, 'collections', 'update'))
 
 module.exports = function (name, schema, connection, settings) {
   if (schema) {

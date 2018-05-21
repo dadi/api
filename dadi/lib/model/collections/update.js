@@ -1,6 +1,6 @@
 const async = require('async')
 const debug = require('debug')('api:model')
-const Hook = require('./hook')
+const Hook = require('./../hook')
 const logger = require('@dadi/logger')
 
 /**

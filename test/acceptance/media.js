@@ -14,6 +14,24 @@ var sinon = require('sinon')
 var bearerToken
 var connectionString = 'http://' + config.get('server.host') + ':' + config.get('server.port')
 
+function signAndUpload (data, callback) {
+  let client = request(connectionString)
+  return client
+  .post('/media/sign')
+  .set('Authorization', 'Bearer ' + bearerToken)
+  .set('content-type', 'application/json')
+  .send(data)
+  .end((err, res) => {
+    return client
+    .post(res.body.url)
+    .set('content-type', 'application/json')
+    .attach('avatar', 'test/acceptance/workspace/media/1f525.png')
+    .end((err, res) => {
+      return callback(err, res)
+    })
+  })
+}
+
 describe('Media', function () {
   this.timeout(5000)
 
@@ -260,42 +278,25 @@ describe('Media', function () {
 
           var client = request(connectionString)
 
-          client
-          .post('/media/sign')
-          .set('Authorization', 'Bearer ' + bearerToken)
-          .set('content-type', 'application/json')
-          .send(obj)
-          .end((err, res) => {
-            if (err) return done(err)
-
-            var url = res.body.url
+          signAndUpload(obj, (err, res) => {
+            should.exist(res.body.results)
+            res.body.results.should.be.Array
+            res.body.results.length.should.eql(1)
+            res.body.results[0].fileName.should.eql('1f525.png')
 
             client
-            .post(url)
+            .get('/media')
+            .set('Authorization', 'Bearer ' + bearerToken)
             .set('content-type', 'application/json')
-            .attach('avatar', 'test/acceptance/workspace/media/1f525.png')
+            .expect(200)
             .end((err, res) => {
               if (err) return done(err)
-
               should.exist(res.body.results)
               res.body.results.should.be.Array
               res.body.results.length.should.eql(1)
               res.body.results[0].fileName.should.eql('1f525.png')
-
-              client
-              .get('/media')
-              .set('Authorization', 'Bearer ' + bearerToken)
-              .set('content-type', 'application/json')
-              .expect(200)
-              .end((err, res) => {
-                if (err) return done(err)
-                should.exist(res.body.results)
-                res.body.results.should.be.Array
-                res.body.results.length.should.eql(1)
-                res.body.results[0].fileName.should.eql('1f525.png')
-                res.body.results[0].url.indexOf('somedomain').should.be.above(0)
-                done()
-              })
+              res.body.results[0].url.indexOf('somedomain').should.be.above(0)
+              done()
             })
           })
         })
@@ -308,29 +309,24 @@ describe('Media', function () {
 
           var client = request(connectionString)
 
-          client
-          .post('/media/sign')
-          .set('Authorization', 'Bearer ' + bearerToken)
-          .set('content-type', 'application/json')
-          .send(obj)
-          .end((err, res) => {
+          signAndUpload(obj, (err, res) => {
             if (err) return done(err)
 
-            var url = res.body.url
-
             client
-            .post(url)
-            .set('content-type', 'application/json')
-            .attach('avatar', 'test/acceptance/workspace/media/1f525.png')
+            .post('/v1/library/person')
+            .send({
+              name: 'John Doe',
+              picture: res.body.results[0]._id
+            })
             .end((err, res) => {
-              if (err) return done(err)
+              should.exist(res.body.results)
+              res.body.results.should.be.Array
+              res.body.results.length.should.eql(1)
+              res.body.results[0].picture.fileName.should.eql('1f525.png')
+              res.body.results[0].picture.url.indexOf('api.somedomain.tech').should.be.above(0)
 
               client
-              .post('/v1/library/person')
-              .send({
-                name: 'John Doe',
-                picture: res.body.results[0]._id
-              })
+              .get(`/v1/library/person/${res.body.results[0]._id}?compose=true`)
               .end((err, res) => {
                 should.exist(res.body.results)
                 res.body.results.should.be.Array
@@ -338,21 +334,59 @@ describe('Media', function () {
                 res.body.results[0].picture.fileName.should.eql('1f525.png')
                 res.body.results[0].picture.url.indexOf('api.somedomain.tech').should.be.above(0)
 
-                client
-                .get(`/v1/library/person/${res.body.results[0]._id}?compose=true`)
-                .end((err, res) => {
-                  should.exist(res.body.results)
-                  res.body.results.should.be.Array
-                  res.body.results.length.should.eql(1)
-                  res.body.results[0].picture.fileName.should.eql('1f525.png')
-                  res.body.results[0].picture.url.indexOf('api.somedomain.tech').should.be.above(0)
-
-                  done()
-                })
+                done()
               })
             })
           })
-        })        
+        })
+
+        it('should allow standard filtering on media collection', function (done) {
+          var obj = {
+            fileName: '1f525.png',
+            mimetype: 'image/png'
+          }
+
+          var client = request(connectionString)
+
+          signAndUpload(obj, (err, res) => {
+            if (err) return done(err)
+
+            client
+            .get(`/media/?filter={"fileName":"1f525.png"}`)
+            .end((err, res) => {
+              should.exist(res.body.results)
+              res.body.results.should.be.Array
+              res.body.results.length.should.eql(1)
+              res.body.results[0].fileName.should.eql('1f525.png')
+
+              done()
+            })
+          })
+        })
+
+        it('should allow limiting fields returned', function (done) {
+          var obj = {
+            fileName: '1f525.png',
+            mimetype: 'image/png'
+          }
+
+          var client = request(connectionString)
+
+          signAndUpload(obj, (err, res) => {
+            if (err) return done(err)
+
+            client
+            .get(`/media/?filter={"fileName":"1f525.png"}&fields={"fileName":1}`)
+            .end((err, res) => {
+              should.exist(res.body.results)
+              res.body.results.should.be.Array
+              res.body.results.length.should.eql(1)
+              res.body.results[0].fileName.should.eql('1f525.png')
+
+              done()
+            })
+          })
+        })
       })
 
       describe('Named bucket', function () {

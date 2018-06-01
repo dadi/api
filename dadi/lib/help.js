@@ -1,10 +1,39 @@
+const cache = require('./cache')
+const config = require('./../../config')
 const crypto = require('crypto')
 const formatError = require('@dadi/format-error')
-const path = require('path')
-
-const cache = require(path.join(__dirname, '/cache'))
-const config = require(path.join(__dirname, '/../../config'))
 const log = require('@dadi/logger')
+const stackTrace = require('stack-trace')
+
+module.exports.sendBackErrorTrace = function (res, next) {
+  return err => {
+    let body = {
+      success: false
+    }
+    let trace = stackTrace.parse(err)
+
+    if (trace) {
+      let stack = 'Error "' + err + '"\n'
+
+      for (var i = 0; i < trace.length; i++) {
+        stack += `  at ${trace[i].methodName} (${trace[i].fileName}:${trace[i].lineNumber}:${trace[i].columnNumber})\n`
+      }
+
+      body.error = stack
+
+      console.log(stack)
+    }
+
+    let resBody = JSON.stringify(body)
+
+    res.setHeader('content-type', 'application/json')
+    res.setHeader('content-length', Buffer.byteLength(resBody))
+
+    res.statusCode = 500
+
+    res.end(resBody)
+  }
+}
 
 // helper that sends json response
 module.exports.sendBackJSON = function (successCode, res, next) {
@@ -14,14 +43,6 @@ module.exports.sendBackJSON = function (successCode, res, next) {
 
     if (err) {
       switch (err.message) {
-        case 'DB_DISCONNECTED':
-          body = Object.assign(formatError.createApiError('0004'), {
-            statusCode: 503
-          })
-          statusCode = body.statusCode
-
-          break
-
         case 'BAD_REQUEST':
           body = {
             success: false,
@@ -32,12 +53,28 @@ module.exports.sendBackJSON = function (successCode, res, next) {
 
           break
 
+        case 'DB_DISCONNECTED':
+          body = Object.assign(formatError.createApiError('0004'), {
+            statusCode: 503
+          })
+          statusCode = body.statusCode
+
+          break
+
+        case 'UNAUTHORISED':
+          body = Object.assign(formatError.createApiError('0005'), {
+            statusCode: 403
+          })
+          statusCode = body.statusCode
+
+          break
+
         default:
           return next(err)
       }
     }
 
-    let resBody = JSON.stringify(body)
+    let resBody = body ? JSON.stringify(body) : null
 
     // log response if it's already been sent
     if (res.finished) {
@@ -46,7 +83,7 @@ module.exports.sendBackJSON = function (successCode, res, next) {
     }
 
     res.setHeader('content-type', 'application/json')
-    res.setHeader('content-length', Buffer.byteLength(resBody))
+    res.setHeader('content-length', resBody ? Buffer.byteLength(resBody) : 0)
 
     res.statusCode = statusCode
 

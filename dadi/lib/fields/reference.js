@@ -52,6 +52,7 @@ function createModelChain (rootModel, fields) {
 }
 
 module.exports.beforeOutput = function ({
+  client,
   composeOverride,
   document,
   dotNotationPath = [],
@@ -158,6 +159,7 @@ module.exports.beforeOutput = function ({
       if (!model) return
 
       return model.find({
+        client,
         options: queryOptions,
         query: {
           _id: {
@@ -177,6 +179,7 @@ module.exports.beforeOutput = function ({
             }
 
             return model.formatForOutput(result, {
+              client,
               composeOverride,
               dotNotationPath: newDotNotationPath,
               level: level + 1,
@@ -330,6 +333,7 @@ module.exports.beforeQuery = function ({config, field, input, options}) {
 }
 
 module.exports.beforeSave = function ({
+  client,
   config,
   field,
   internals,
@@ -386,6 +390,7 @@ module.exports.beforeSave = function ({
       // The document has an ID, so it's an update.
       if (document._id) {
         return model.update({
+          client,
           internals: Object.assign({}, internals, {
             _lastModifiedBy: internals._createdBy
           }),
@@ -398,6 +403,7 @@ module.exports.beforeSave = function ({
       }
 
       return model.create({
+        client,
         documents: document,
         internals,
         rawOutput: true

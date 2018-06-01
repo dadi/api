@@ -2,6 +2,7 @@ const fs = require('fs')
 const lengthStream = require('length-stream')
 const mkdirp = require('mkdirp')
 const path = require('path')
+const serveStatic = require('serve-static')
 
 const config = require(path.join(__dirname, '/../../../config'))
 
@@ -27,6 +28,18 @@ DiskStorage.prototype.setFullPath = function (folderPath) {
  */
 DiskStorage.prototype.getFullUrl = function () {
   return path.join(this.path, this.fileName)
+}
+
+DiskStorage.prototype.get = function (filePath, route, req, res, next) {
+  // `serveStatic` will look at the entire URL to find the file it needs to
+  // serve, but we're not serving files from the root. To get around this, we
+  // pass it a modified version of the URL, where the root URL becomes just the
+  // filename parameter.
+  let modifiedReq = Object.assign({}, req, {
+    url: `${route}/${req.params.filename}`
+  })
+
+  return serveStatic(config.get('media.basePath'))(modifiedReq, res, next)
 }
 
 /**
@@ -83,12 +96,13 @@ DiskStorage.prototype.delete = function (fileDocument) {
   return new Promise((resolve, reject) => {
     let filePath = path.join(this.basePath, fileDocument.path)
 
-    try {
-      fs.unlinkSync(filePath)
+    fs.unlink(filePath, err => {
+      if (err) {
+        return reject(err)
+      }
+
       return resolve()
-    } catch (err) {
-      return reject(err)
-    }
+    })
   })
 }
 

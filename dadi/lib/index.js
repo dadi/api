@@ -1174,7 +1174,7 @@ Server.prototype.addComponent = function (options) {
     })
 
     // DELETE media
-    this.app.use(mediaRoute + '/' + idParam, (req, res, next) => {
+    this.app.use(`${mediaRoute}/${idParam}`, (req, res, next) => {
       let method = req.method && req.method.toLowerCase()
       if (method !== 'delete') return next()
 

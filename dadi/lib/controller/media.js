@@ -4,7 +4,6 @@ const Busboy = require('busboy')
 const imagesize = require('imagesize')
 const PassThrough = require('stream').PassThrough
 const path = require('path')
-const serveStatic = require('serve-static')
 const sha1 = require('sha1')
 const url = require('url')
 
@@ -78,18 +77,12 @@ MediaController.prototype.count = function (req, res, next) {
 }
 
 /**
- * Serve a media file from its location on disk.
+ * Serve a media file from its location.
  */
 MediaController.prototype.getFile = function (req, res, next, route) {
-  // `serveStatic` will look at the entire URL to find the file it needs to
-  // serve, but we're not serving files from the root. To get around this, we
-  // pass it a modified version of the URL, where the root URL becomes just the
-  // filename parameter.
-  const modifiedReq = Object.assign({}, req, {
-    url: `${route}/${req.params.filename}`
-  })
+  let storageHandler = StorageFactory.create(req.params.filename)
 
-  return serveStatic(config.get('media.basePath'))(modifiedReq, res, next)
+  return storageHandler.get(req.params.filename, route, req, res, next)
 }
 
 /**
@@ -211,14 +204,6 @@ MediaController.prototype.post = function (req, res, next) {
           _createdBy: req.client && req.client.clientId
         }
 
-        const callback = (err, response) => {
-          response.results = response.results.map(document => {
-            return mediaModel.formatDocuments(document)
-          })
-
-          help.sendBackJSON(201, res, next)(err, response)
-        }
-
         return this.writeFile(req, this.fileName, this.mimetype, dataStream).then(result => {
           if (fields.includes('contentLength')) {
             obj.contentLength = result.contentLength
@@ -226,7 +211,17 @@ MediaController.prototype.post = function (req, res, next) {
 
           obj.path = result.path
 
-          this.model.create(obj, internals, callback, req)
+          return this.model.create({
+            documents: obj,
+            internals,
+            req
+          }).then(response => {
+            response.results = response.results.map(document => {
+              return mediaModel.formatDocuments(document)
+            })
+
+            help.sendBackJSON(201, res, next)(err, response)
+          })
         })
       })
     })
@@ -261,8 +256,9 @@ MediaController.prototype.delete = function (req, res, next) {
 
   if (!query) return next()
 
-  let callback = (err, results) => {
-    if (err) return next(err)
+  this.model.get({
+    query, req
+  }).then(results => {
     if (!results.results[0]) return next()
 
     let file = results.results[0]
@@ -270,8 +266,7 @@ MediaController.prototype.delete = function (req, res, next) {
     // remove physical file
     let storageHandler = StorageFactory.create(file.fileName)
 
-    storageHandler
-      .delete(file)
+    storageHandler.delete(file)
       .then(result => {
         this.model.delete({
           query,
@@ -293,12 +288,12 @@ MediaController.prototype.delete = function (req, res, next) {
         }).catch(error => {
           return help.sendBackJSON(200, res, next)(error)
         })
-      }).catch((err) => {
+      }).catch(err => {
         return next(err)
       })
-  }
-
-  this.model.get(query, {}, callback, req)
+  }).catch(err => {
+    return next(err)
+  })
 }
 
 /**

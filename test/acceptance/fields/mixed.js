@@ -292,7 +292,7 @@ describe('Mixed Field', () => {
           done()
         })
       })
-    })    
+    })
 
     it('should update by id', done => {
       let client = request(connectionString)

@@ -16,7 +16,6 @@ if (~currentPath.indexOf('node_modules')) {
 
         fs.move(destinationDir + '/collections/vjoin', destinationDir + '/collections/1.0', { overwrite: false }, (err) => {
           fs.move(destinationDir + '/collections/1.0/testdb', destinationDir + '/collections/1.0/library', { overwrite: false }, (err) => {
-
             fs.remove(destinationDir + '/collections/vtest', err => {
               fs.remove(destinationDir + '/endpoints/v1', err => {
                 fs.remove(destinationDir + '/media', err => {

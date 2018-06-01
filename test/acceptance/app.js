@@ -268,8 +268,8 @@ describe('Application', function () {
         var schema = JSON.parse(jsSchemaString)
         schema.settings.sort = 'newField'
         schema.settings.index = {
-          "keys": {
-            "_createdAt" : 1
+          'keys': {
+            '_createdAt': 1
           }
         }
 
@@ -301,8 +301,8 @@ describe('Application', function () {
         var schema = JSON.parse(jsSchemaString)
         schema.settings.sort = 'newField'
         schema.settings.index = [{
-          "keys": {
-            "_createdAt" : 1
+          'keys': {
+            '_createdAt': 1
           }
         }]
 

@@ -16,7 +16,6 @@ var bearerToken
 var connectionString = 'http://' + config.get('server.host') + ':' + config.get('server.port')
 
 describe('Hooks', function () {
-
   // reset database
   before(function (done) {
     app.start((err) => {
@@ -44,124 +43,124 @@ describe('Hooks', function () {
 
   it('testing failure when specifying _layout as a field in a GET request', function (done) {
     var article = {
-    	"originalId" : 79343,
-    	"publicationDate" : 1469162676000,
-    	"isLegacy" : true,
-    	"title" : "Cyclist in hospital following crash on the banks of Loch Ness",
-    	"mobileTitle" : "",
-    	"metaTitle" : "",
-    	"metaDescription" : "",
-    	"tagLine" : "",
-    	"subtitle" : "A motorcyclist is being treated at Raigmore Hospital this morning after being thrown from his bike on the banks of Loch Ness.",
-    	"content" : [
-    		"**A motorcyclist is being treated at Raigmore Hospital this morning after being thrown from his bike on the banks of Loch Ness.**",
-    		"He was travelling along the A82 near Glenmoriston when the accident happened at around 1.40pm yesterday afternoon.",
-    		"Emergency services helped rescue the man from the edge of the loch, with the help of lifeboat volunteers from RNLI.",
-    		"A spokesman for Loch Ness RNLI said: “We were asked to assist because he had been thrown onto the lochside and was in a difficult to access, steep area.",
+    	'originalId': 79343,
+    	'publicationDate': 1469162676000,
+    	'isLegacy': true,
+    	'title': 'Cyclist in hospital following crash on the banks of Loch Ness',
+    	'mobileTitle': '',
+    	'metaTitle': '',
+    	'metaDescription': '',
+    	'tagLine': '',
+    	'subtitle': 'A motorcyclist is being treated at Raigmore Hospital this morning after being thrown from his bike on the banks of Loch Ness.',
+    	'content': [
+    		'**A motorcyclist is being treated at Raigmore Hospital this morning after being thrown from his bike on the banks of Loch Ness.**',
+    		'He was travelling along the A82 near Glenmoriston when the accident happened at around 1.40pm yesterday afternoon.',
+    		'Emergency services helped rescue the man from the edge of the loch, with the help of lifeboat volunteers from RNLI.',
+    		'A spokesman for Loch Ness RNLI said: “We were asked to assist because he had been thrown onto the lochside and was in a difficult to access, steep area.',
     		"“He had tried to scramble up to the roadside and couldn't make it.",
-    		"“We helped him back up with the assistance of the fire service and he was taken to hospital.”",
+    		'“We helped him back up with the assistance of the fire service and he was taken to hospital.”',
     		"It's understood the man is being treated for suspected leg injuries."
     	],
-    	"author" : "57a476c6a510df48125da1c3",
-    	"heroImage" : [
-    		"57a47713a510df48125e052e"
+    	'author': '57a476c6a510df48125da1c3',
+    	'heroImage': [
+    		'57a47713a510df48125e052e'
     	],
-    	"heroImageLandscape" : [
+    	'heroImageLandscape': [
     		{
-    			"width" : 778,
-    			"height" : 436,
-    			"x" : 0,
-    			"y" : 161
+    			'width': 778,
+    			'height': 436,
+    			'x': 0,
+    			'y': 161
     		}
     	],
-    	"heroImageThumbLandscape" : [
+    	'heroImageThumbLandscape': [
     		{
-    			"width" : 380,
-    			"height" : 285,
-    			"x" : 0,
-    			"y" : 243
+    			'width': 380,
+    			'height': 285,
+    			'x': 0,
+    			'y': 243
     		}
     	],
-    	"images" : [ ],
-    	"tags" : [
-    		"57a476d5a510df48125dacd9"
+    	'images': [ ],
+    	'tags': [
+    		'57a476d5a510df48125dacd9'
     	],
-    	"publications" : [
-    		"57aa2fd9c57f5ce6369aa33a",
-    		"57aa2fdbc57f5ce6369aa35b",
-    		"57aa2fd9c57f5ce6369aa33a",
-    		"57aa2fd8c57f5ce6369aa315"
+    	'publications': [
+    		'57aa2fd9c57f5ce6369aa33a',
+    		'57aa2fdbc57f5ce6369aa35b',
+    		'57aa2fd9c57f5ce6369aa33a',
+    		'57aa2fd8c57f5ce6369aa315'
     	],
-    	"categories" : [
-    		"57aa2fbfc57f5ce6369a9f2c",
-    		"57aa2fbfc57f5ce6369a9f2c",
-    		"57aa2fbfc57f5ce6369a9f2c",
-    		"57aa2fbfc57f5ce6369a9f2c"
+    	'categories': [
+    		'57aa2fbfc57f5ce6369a9f2c',
+    		'57aa2fbfc57f5ce6369a9f2c',
+    		'57aa2fbfc57f5ce6369a9f2c',
+    		'57aa2fbfc57f5ce6369a9f2c'
     	],
-    	"primarySyndicatePosition" : 0,
-    	"published" : {
-    		"state" : "published",
-    		"scheduledStart" : 1471503540,
-    		"scheduledEnd" : null
+    	'primarySyndicatePosition': 0,
+    	'published': {
+    		'state': 'published',
+    		'scheduledStart': 1471503540,
+    		'scheduledEnd': null
     	},
-    	"embeds" : [ ],
-    	"_layout" : {
-    		"hero" : [
+    	'embeds': [ ],
+    	'_layout': {
+    		'hero': [
     			{
-    				"index" : 0,
-    				"source" : "heroImage"
+    				'index': 0,
+    				'source': 'heroImage'
     			}
     		],
-    		"body" : [
+    		'body': [
     			{
-    				"index" : 0,
-    				"source" : "content"
+    				'index': 0,
+    				'source': 'content'
     			},
     			{
-    				"index" : 1,
-    				"source" : "content"
+    				'index': 1,
+    				'source': 'content'
     			},
     			{
-    				"index" : 2,
-    				"source" : "content"
+    				'index': 2,
+    				'source': 'content'
     			},
     			{
-    				"index" : 3,
-    				"source" : "content"
+    				'index': 3,
+    				'source': 'content'
     			},
     			{
-    				"index" : 4,
-    				"source" : "content"
+    				'index': 4,
+    				'source': 'content'
     			},
     			{
-    				"index" : 5,
-    				"source" : "content"
+    				'index': 5,
+    				'source': 'content'
     			},
     			{
-    				"index" : 6,
-    				"source" : "content"
+    				'index': 6,
+    				'source': 'content'
     			}
     		]
     	},
-    	"pageTemplate" : "article",
-    	"furl" : "cyclist-in-hospital-following-crash-on-the-banks-of-loch-ness",
-    	"urls" : [
-    		"mfr-2/local/news/cyclist-in-hospital-following-crash-on-the-banks-of-loch-ness",
-    		"mfr/local/news/cyclist-in-hospital-following-crash-on-the-banks-of-loch-ness",
-    		"mfr-2/local/news/cyclist-in-hospital-following-crash-on-the-banks-of-loch-ness",
-    		"mfr-3/local/news/cyclist-in-hospital-following-crash-on-the-banks-of-loch-ness"
+    	'pageTemplate': 'article',
+    	'furl': 'cyclist-in-hospital-following-crash-on-the-banks-of-loch-ness',
+    	'urls': [
+    		'mfr-2/local/news/cyclist-in-hospital-following-crash-on-the-banks-of-loch-ness',
+    		'mfr/local/news/cyclist-in-hospital-following-crash-on-the-banks-of-loch-ness',
+    		'mfr-2/local/news/cyclist-in-hospital-following-crash-on-the-banks-of-loch-ness',
+    		'mfr-3/local/news/cyclist-in-hospital-following-crash-on-the-banks-of-loch-ness'
     	],
-    	"heroImagePortrait" : null,
-    	"heroImageThumb" : null,
-    	"hidePublicationDate" : false,
-    	"excerpt" : "",
-    	"urlOverride" : "",
-    	"canonical" : "",
-    	"toplistFeature" : false,
-    	"isAdvertorial" : false,
-    	"campaign_name" : "",
-    	"trackingPixel" : "57b550451afba38e182619dc",
-    	"sponsor" : "57b550451afba38e182619dd"
+    	'heroImagePortrait': null,
+    	'heroImageThumb': null,
+    	'hidePublicationDate': false,
+    	'excerpt': '',
+    	'urlOverride': '',
+    	'canonical': '',
+    	'toplistFeature': false,
+    	'isAdvertorial': false,
+    	'campaign_name': '',
+    	'trackingPixel': '57b550451afba38e182619dc',
+    	'sponsor': '57b550451afba38e182619dd'
     }
 
   //  config.set('query.useVersionFilter', true)
@@ -317,315 +316,315 @@ describe('Hooks', function () {
 })
 
 var publicationSchema = {
-  "fields": {
-    "name": {
-      "type": "String",
-      "label": "Name",
-      "validation": {
-        "maxLength": 250
+  'fields': {
+    'name': {
+      'type': 'String',
+      'label': 'Name',
+      'validation': {
+        'maxLength': 250
       },
-      "publish": {
-        "section": "Editorial",
-        "subSection": "Content"
+      'publish': {
+        'section': 'Editorial',
+        'subSection': 'Content'
       },
-      "required": false,
-      "display": {
-        "index": true,
-        "edit": true
+      'required': false,
+      'display': {
+        'index': true,
+        'edit': true
       }
     },
-    "furl": {
-      "type": "String",
-      "label": "URL Formatted Name",
-      "validation": {
-        "maxLength": 250
+    'furl': {
+      'type': 'String',
+      'label': 'URL Formatted Name',
+      'validation': {
+        'maxLength': 250
       },
-      "publish": {
-        "section": "Meta",
-        "subSection": "Url"
+      'publish': {
+        'section': 'Meta',
+        'subSection': 'Url'
       },
-      "required": false,
-      "display": {
-        "index": true,
-        "edit": true
+      'required': false,
+      'display': {
+        'index': true,
+        'edit': true
       }
     },
-    "url": {
-      "type": "String",
-      "label": "URL",
-      "publish": {
-        "section": "Meta",
-        "subSection": "Url"
+    'url': {
+      'type': 'String',
+      'label': 'URL',
+      'publish': {
+        'section': 'Meta',
+        'subSection': 'Url'
       },
-      "required": false,
-      "display": {
-        "index": true,
-        "edit": false
+      'required': false,
+      'display': {
+        'index': true,
+        'edit': false
       }
     },
-    "urlOverride": {
-      "type": "String",
-      "label": "URL Override",
-      "publish": {
-        "section": "Meta",
-        "subSection": "Url"
+    'urlOverride': {
+      'type': 'String',
+      'label': 'URL Override',
+      'publish': {
+        'section': 'Meta',
+        'subSection': 'Url'
       },
-      "required": false,
-      "display": {
-        "index": true,
-        "edit": false
+      'required': false,
+      'display': {
+        'index': true,
+        'edit': false
       }
     }
   },
-  "settings": {
-    "cache": true,
-    "compose": true,
-    "cacheTTL": 300,
-    "authenticate": true,
-    "publish": {
-      "group": "Taxonomy"
+  'settings': {
+    'cache': true,
+    'compose': true,
+    'cacheTTL': 300,
+    'authenticate': true,
+    'publish': {
+      'group': 'Taxonomy'
     },
-    "allowExtension": true,
-    "displayName": "Publications",
-    "count": 100,
-    "sortOrder": 1,
-    "hooks": {
-      "beforeCreate": [
+    'allowExtension': true,
+    'displayName': 'Publications',
+    'count': 100,
+    'sortOrder': 1,
+    'hooks': {
+      'beforeCreate': [
         {
-          "hook": "slugify",
-          "options": {
-            "from": "name",
-            "override": "urlOverride",
-            "to": "furl"
+          'hook': 'slugify',
+          'options': {
+            'from': 'name',
+            'override': 'urlOverride',
+            'to': 'furl'
           }
         }
       ],
-      "beforeUpdate": [
+      'beforeUpdate': [
         {
-          "hook": "slugify",
-          "options": {
-            "from": "name",
-            "override": "urlOverride",
-            "to": "furl"
+          'hook': 'slugify',
+          'options': {
+            'from': 'name',
+            'override': 'urlOverride',
+            'to': 'furl'
           }
         }
       ]
     },
-    "lastModifiedAt": 1467082904736
+    'lastModifiedAt': 1467082904736
   }
 }
 
 var articleSchema = {
-  "fields": {
-    "published": {
-      "type": "Object",
-      "label": "Published State",
-      "required": true,
-      "publish": {
-        "section": "Syndication",
-        "subSection": "Placement",
-        "subType": "PublishedState"
+  'fields': {
+    'published': {
+      'type': 'Object',
+      'label': 'Published State',
+      'required': true,
+      'publish': {
+        'section': 'Syndication',
+        'subSection': 'Placement',
+        'subType': 'PublishedState'
       },
-      "search": {
-        "indexed": false,
-        "store": true
+      'search': {
+        'indexed': false,
+        'store': true
       },
-      "display": {
-        "filter": false,
-        "index": true,
-        "edit": true
+      'display': {
+        'filter': false,
+        'index': true,
+        'edit': true
       }
     },
-    "syndicates": {
-      "type": "Object",
-      "label": "Syndicates",
-      "required": false,
-      "publish": {
-        "section": "Syndication",
-        "subSection": "Placement",
-        "subType": "Syndicates"
+    'syndicates': {
+      'type': 'Object',
+      'label': 'Syndicates',
+      'required': false,
+      'publish': {
+        'section': 'Syndication',
+        'subSection': 'Placement',
+        'subType': 'Syndicates'
       },
-      "search": {
-        "indexed": false,
-        "store": true
+      'search': {
+        'indexed': false,
+        'store': true
       },
-      "display": {
-        "index": true,
-        "edit": true
+      'display': {
+        'index': true,
+        'edit': true
       }
     },
-    "publications": {
-      "type": "Reference",
-      "settings": {
-        "collection": "publications",
-        "multiple": true,
-        "fields": [
-          "name",
-          "furl"
+    'publications': {
+      'type': 'Reference',
+      'settings': {
+        'collection': 'publications',
+        'multiple': true,
+        'fields': [
+          'name',
+          'furl'
         ]
       },
-      "publish": {
-        "section": "Taxonomy",
-        "subSection": "Syndicates",
-        "displayField": "name",
-        "limit": 0
+      'publish': {
+        'section': 'Taxonomy',
+        'subSection': 'Syndicates',
+        'displayField': 'name',
+        'limit': 0
       },
-      "search": {
-        "indexed": false,
-        "store": true
+      'search': {
+        'indexed': false,
+        'store': true
       },
-      "label": "Publications",
-      "required": false,
-      "display": {
-        "filter": true,
-        "index": false,
-        "edit": false
+      'label': 'Publications',
+      'required': false,
+      'display': {
+        'filter': true,
+        'index': false,
+        'edit': false
       }
     },
-    "categories": {
-      "type": "Reference",
-      "settings": {
-        "collection": "categories",
-        "multiple": true,
-        "fields": [
-          "name",
-          "furl",
-          "parent"
+    'categories': {
+      'type': 'Reference',
+      'settings': {
+        'collection': 'categories',
+        'multiple': true,
+        'fields': [
+          'name',
+          'furl',
+          'parent'
         ]
       },
-      "search": {
-        "indexed": false,
-        "store": true
+      'search': {
+        'indexed': false,
+        'store': true
       },
-      "publish": {
-        "section": "Taxonomy",
-        "subSection": "Syndicates",
-        "displayField": "name",
-        "limit": 0
+      'publish': {
+        'section': 'Taxonomy',
+        'subSection': 'Syndicates',
+        'displayField': 'name',
+        'limit': 0
       },
-      "label": "Categories",
-      "required": false,
-      "display": {
-        "filter": true,
-        "index": false,
-        "edit": false
+      'label': 'Categories',
+      'required': false,
+      'display': {
+        'filter': true,
+        'index': false,
+        'edit': false
       }
     },
-    "primarySyndicatePosition": {
-      "type": "Number",
-      "label": "Primary Syndicate",
-      "required": false,
-      "publish": {
-        "section": "Taxonomy",
-        "subSection": "Syndicates"
+    'primarySyndicatePosition': {
+      'type': 'Number',
+      'label': 'Primary Syndicate',
+      'required': false,
+      'publish': {
+        'section': 'Taxonomy',
+        'subSection': 'Syndicates'
       },
-      "search": {
-        "indexed": false,
-        "store": true
+      'search': {
+        'indexed': false,
+        'store': true
       },
-      "display": {
-        "index": false,
-        "edit": false
+      'display': {
+        'index': false,
+        'edit': false
       }
     },
-    "title": {
-      "type": "String",
-      "label": "Title",
-      "validation": {
-        "maxLength": 500
+    'title': {
+      'type': 'String',
+      'label': 'Title',
+      'validation': {
+        'maxLength': 500
       },
-      "required": true,
-      "publish": {
-        "displaySize": "kilo",
-        "section": "Editorial",
-        "subSection": "Text"
+      'required': true,
+      'publish': {
+        'displaySize': 'kilo',
+        'section': 'Editorial',
+        'subSection': 'Text'
       },
-      "search": {
-        "indexed": true,
-        "store": true,
-        "weight": 2
+      'search': {
+        'indexed': true,
+        'store': true,
+        'weight': 2
       },
-      "display": {
-        "filter": true,
-        "index": true,
-        "edit": true
+      'display': {
+        'filter': true,
+        'index': true,
+        'edit': true
       }
     },
-    "furl": {
-      "type": "String",
-      "label": "Friendly URL",
-      "publish": {
-        "section": "Meta",
-        "subSection": "Url"
+    'furl': {
+      'type': 'String',
+      'label': 'Friendly URL',
+      'publish': {
+        'section': 'Meta',
+        'subSection': 'Url'
       },
-      "required": false,
-      "display": {
-        "index": false,
-        "edit": true
+      'required': false,
+      'display': {
+        'index': false,
+        'edit': true
       }
     },
-    "urlOverride": {
-      "type": "String",
-      "label": "URL Override",
-      "publish": {
-        "section": "Meta",
-        "subSection": "Url"
+    'urlOverride': {
+      'type': 'String',
+      'label': 'URL Override',
+      'publish': {
+        'section': 'Meta',
+        'subSection': 'Url'
       },
-      "required": false,
-      "display": {
-        "index": false,
-        "edit": true
+      'required': false,
+      'display': {
+        'index': false,
+        'edit': true
       }
     }
   },
-  "settings": {
-    "cache": true,
-    "cacheTTL": 300,
-    "authenticate": true,
-    "compose": true,
-    "displayName": "Articles",
-    "storeRevisions": true,
-    "type": "article",
-    "publish": {
-      "group": "Content",
-      "messageCollection": "messages"
+  'settings': {
+    'cache': true,
+    'cacheTTL': 300,
+    'authenticate': true,
+    'compose': true,
+    'displayName': 'Articles',
+    'storeRevisions': true,
+    'type': 'article',
+    'publish': {
+      'group': 'Content',
+      'messageCollection': 'messages'
     },
-    "allowExtension": true,
-    "standardEditPage": true,
-    "allowDelete": true,
-    "count": 20,
-    "sortOrder": 1,
-    //"sort": "publicationDate",
-    "index": {
-        "enabled": true,
-        "keys": {
-            "_id": 1,
-            "urls": 1,
-            "publicationDate": 1
-        }
+    'allowExtension': true,
+    'standardEditPage': true,
+    'allowDelete': true,
+    'count': 20,
+    'sortOrder': 1,
+    // "sort": "publicationDate",
+    'index': {
+      'enabled': true,
+      'keys': {
+        '_id': 1,
+        'urls': 1,
+        'publicationDate': 1
+      }
     },
-    "hooks": {
-      "afterGet": [],
-      "beforeCreate": [{
-        "hook": "slugify",
-        "options": {
-          "from": "title",
-          "override": "urlOverride",
-          "to": "furl"
-        }
-      }],
-      "afterCreate": [],
-      "beforeUpdate": [{
-        "hook": "slugify",
-        "options": {
-          "from": "title",
-          "override": "urlOverride",
-          "to": "furl"
+    'hooks': {
+      'afterGet': [],
+      'beforeCreate': [{
+        'hook': 'slugify',
+        'options': {
+          'from': 'title',
+          'override': 'urlOverride',
+          'to': 'furl'
         }
       }],
-      "afterUpdate": []
+      'afterCreate': [],
+      'beforeUpdate': [{
+        'hook': 'slugify',
+        'options': {
+          'from': 'title',
+          'override': 'urlOverride',
+          'to': 'furl'
+        }
+      }],
+      'afterUpdate': []
     },
-    "lastModifiedAt": 1466596322579
+    'lastModifiedAt': 1466596322579
   }
 }
 

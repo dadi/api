@@ -10,22 +10,27 @@ var debug = require('debug')('api:server')
 var parsecomments = require('parse-comments')
 var formatError = require('@dadi/format-error')
 var fs = require('fs')
-var jwt = require('jsonwebtoken')
 var mkdirp = require('mkdirp')
 var path = require('path')
 var pathToRegexp = require('path-to-regexp')
-var stackTrace = require('stack-trace')
-var url = require('url')
 var _ = require('underscore')
 
+var acl = require(path.join(__dirname, '/model/acl'))
 var api = require(path.join(__dirname, '/api'))
-var auth = require(path.join(__dirname, '/auth'))
+var AuthMiddleware = require(path.join(__dirname, '/auth'))
 var cache = require(path.join(__dirname, '/cache'))
 var Connection = require(path.join(__dirname, '/model/connection'))
-var Controller = require(path.join(__dirname, '/controller'))
+var CollectionController = require(path.join(__dirname, '/controller/collection'))
 var cors = require(path.join(__dirname, '/cors'))
+var ApiConfigController = require(path.join(__dirname, '/controller/apiConfig'))
+var ClientsController = require(path.join(__dirname, '/controller/clients'))
+var CreateCollectionController = require(path.join(__dirname, '/controller/createCollection'))
+var CreateEndpointController = require(path.join(__dirname, '/controller/createEndpoint'))
+var EndpointController = require(path.join(__dirname, '/controller/endpoint'))
 var HooksController = require(path.join(__dirname, '/controller/hooks'))
 var MediaController = require(path.join(__dirname, '/controller/media'))
+var ResourcesController = require(path.join(__dirname, '/controller/resources'))
+var RolesController = require(path.join(__dirname, '/controller/roles'))
 var dadiBoot = require('@dadi/boot')
 var dadiStatus = require('@dadi/status')
 var help = require(path.join(__dirname, '/help'))
@@ -35,7 +40,6 @@ var monitor = require(path.join(__dirname, '/monitor'))
 var search = require(path.join(__dirname, '/search'))
 
 var config = require(path.join(__dirname, '/../../config'))
-var configPath = path.resolve(config.configPath())
 
 var log = require('@dadi/logger')
 log.init(config.get('logging'), {}, process.env.NODE_ENV)
@@ -46,10 +50,16 @@ if (config.get('env') !== 'test') {
 }
 
 // add an optional id component to the path, that is formatted to be matched by the `path-to-regexp` module
-var idParam = ':id([a-fA-F0-9-]*)?'
+// var idParam = ':id([a-fA-F0-9-]*)?'
 // TODO: allow configurable id param?
 
 var Server = function () {
+  this.COMPONENT_TYPE = {
+    COLLECTION: 1,
+    CUSTOM_ENDPOINT: 2,
+    MEDIA_COLLECTION: 3
+  }
+
   this.components = {}
   this.monitors = {}
   this.docs = {}
@@ -156,8 +166,10 @@ Server.prototype.run = function (done) {
 }
 
 Server.prototype.start = function (done) {
-  var self = this
   this.readyState = 2
+
+  // Initialise the ACL.
+  acl.connect()
 
   if (config.get('env') !== 'test') {
     dadiBoot.start(require('../../package.json'))
@@ -214,7 +226,7 @@ Server.prototype.start = function (done) {
   app.use(bodyParser.urlencoded({ extended: true, limit: '50mb' }))
   app.use(bodyParser.text({ limit: '50mb' }))
 
-  cors(self)
+  cors(this)
 
   // update configuration based on domain
   var domainConfigLoaded
@@ -226,7 +238,7 @@ Server.prototype.start = function (done) {
   })
 
   // configure authentication middleware
-  auth(self)
+  AuthMiddleware(app)
 
   // request logging middleware
   app.use(log.requestLogger)
@@ -234,10 +246,10 @@ Server.prototype.start = function (done) {
   this.loadConfigApi()
 
   // caching layer
-  cache(self).init()
+  cache(this).init()
 
   // search layer
-  search(self)
+  search(this)
 
   // start listening
   var server = this.server = app.listen()
@@ -246,6 +258,10 @@ Server.prototype.start = function (done) {
   server.on('error', onError)
 
   this.loadApi(options)
+
+  ClientsController(this)
+  ResourcesController(this)
+  RolesController(this)
 
   this.loadCollectionRoute()
   this.loadEndpointsRoute()
@@ -264,7 +280,9 @@ Server.prototype.stop = function (done) {
 
   Object.keys(this.monitors).forEach(this.removeMonitor.bind(this))
 
-  Object.keys(this.components).forEach(this.removeComponent.bind(this))
+  Object.keys(this.components).forEach(route => {
+    this.removeComponent(route, this.components[route])
+  })
 
   this.server.close(function (err) {
     self.readyState = 0
@@ -401,128 +419,9 @@ Server.prototype.loadApi = function (options) {
 }
 
 Server.prototype.loadConfigApi = function () {
-  var self = this
-
-  // allow getting main config from API
-  this.app.use('/api/config', function (req, res, next) {
-    var method = req.method && req.method.toLowerCase()
-
-    if (method === 'get') return help.sendBackJSON(200, res, next)(null, config.getProperties())
-
-    if (method === 'post') {
-      // update the config file
-      var newConfig = _.extend({}, config.getProperties(), req.body)
-
-      return fs.writeFile(configPath, JSON.stringify(newConfig, null, 4), function (err) {
-        help.sendBackJSON(200, res, next)(err, {
-          result: 'success',
-          message: 'server restart required'
-        })
-      })
-    }
-
-    next()
-  })
-
-  // listen for requests to add to the API
-  this.app.use('/:version/:database/:collectionName/config', function (req, res, next) {
-    // collection and endpoint paths now have the same structure
-    // i.e. /version/database/collection and /endpoints/version/endpoint
-    // so test here for `endpoints` in the request url, processing the next
-    // handler if required.
-    if (url.parse(req.url).pathname.indexOf('endpoints') > 0) return next()
-
-    // the hooks config endpoint also shares this structure, so if the
-    // URL starts with /api, we move on to the next handler.
-    if (req.params.version === 'api') return next()
-
-    var method = req.method && req.method.toLowerCase()
-    if (method !== 'post') return next()
-
-    try {
-      var schema = typeof req.body === 'object' ? req.body : JSON.parse(req.body)
-    } catch (err) {
-      var error = new Error('Bad Syntax')
-      error.statusCode = 400
-      return next(error)
-    }
-
-    var validation = help.validateCollectionSchema(schema)
-
-    if (!validation.success) {
-      var err = new Error('Collection schema validation failed')
-      err.statusCode = 400
-      err.success = validation.success
-      err.errors = validation.errors
-      return next(err)
-    }
-
-    var params = req.params
-
-    // use params.collectionName as default, override if the schema supplies a 'model' property
-    var name = params.collectionName
-    if (schema.hasOwnProperty('model')) name = schema.model
-
-    schema.settings = schema.settings || {}
-    schema.settings.lastModifiedAt = Date.now()
-
-    var route = ['', params.version, params.database, name, idParam].join('/')
-
-    // create schema
-    if (!self.components[route]) {
-      self.createDirectoryStructure(path.join(params.version, params.database))
-
-      var schemaPath = path.join(
-        self.collectionPath,
-        params.version,
-        params.database,
-        'collection.' + name + '.json'
-      )
-
-      try {
-        fs.writeFileSync(schemaPath, JSON.stringify(schema, null, 2))
-
-        res.statusCode = 200
-        res.setHeader('content-type', 'application/json')
-        res.end(JSON.stringify({
-          result: 'success',
-          message: name + ' collection created'
-        }))
-      } catch (err) {
-        return next(err)
-      }
-    } else {
-      next()
-    }
-  })
-
-  this.app.use('/:version/:endpointName/config', function (req, res, next) {
-    var method = req.method && req.method.toLowerCase()
-    if (method !== 'post') return next()
-
-    var version = req.params.version
-    var name = req.params.endpointName
-
-    var dir = path.join(self.endpointPath, version)
-    var filepath = path.join(dir, 'endpoint.' + name + '.js')
-
-    mkdirp(dir, {}, function (err, made) {
-      if (err) console.log(err)
-
-      return fs.writeFile(filepath, req.body, function (err) {
-        if (err) return next(err)
-
-        var message = 'Endpoint "' + version + ':' + name + '" created'
-
-        res.statusCode = 200
-        res.setHeader('content-type', 'application/json')
-        res.end(JSON.stringify({
-          result: 'success',
-          message: message
-        }))
-      })
-    })
-  })
+  ApiConfigController(this)
+  CreateCollectionController(this)
+  CreateEndpointController(this)
 }
 
 // route to retrieve list of collections
@@ -602,51 +501,49 @@ Server.prototype.loadCollectionRoute = function () {
   })
 }
 
-// route to retrieve list of endpoints
+// Route to retrieve list of endpoints.
 Server.prototype.loadEndpointsRoute = function () {
-  var self = this
+  this.app.use('/api/endpoints', (req, res, next) => {
+    let method = req.method && req.method.toLowerCase()
 
-  this.app.use('/api/endpoints', function (req, res, next) {
-    var method = req.method && req.method.toLowerCase()
+    if (method !== 'get') {
+      return help.sendBackJSON(405, res, next)(null, {
+        success: false,
+        errors: ['Invalid method']
+      })
+    }
 
-    if (method !== 'get') return help.sendBackJSON(405, res, next)(null, {'error': 'Invalid method'})
+    let endpoints = Object.keys(this.components).filter(key => {
+      return this.components[key]._type === this.COMPONENT_TYPE.CUSTOM_ENDPOINT
+    }).map(key => {
+      let parts = key.split('/')
+      let endpoint = {
+        name: this.components[key].getDisplayName() || parts[2],
+        path: key,
+        version: parts[1]
+      }
+      let regexp = pathToRegexp(key)
 
-    var data = {}
-    var endpoints = []
-
-    _.each(self.components, function (value, key) {
-      var model
-      var parts = _.compact(key.split('/'))
-      var name = parts[1]
-
-      var hasModel = _.contains(Object.keys(value), 'model')
-      var hasGetMethod = _.contains(Object.keys(value), 'get')
-
-      if (hasModel) {
-        model = value.model
-
-        if (model.hasOwnProperty('settings') && model.settings.hasOwnProperty('displayName')) {
-          name = model.settings.displayName
-        }
+      if (regexp.keys.length > 0) {
+        endpoint.params = regexp.keys
       }
 
-      if (hasGetMethod) {
-        // an endpoint
-        var endpoint = {
-          name: name,
-          version: parts[0],
-          path: key
-        }
-
-        if (pathToRegexp(key).keys.length > 0) endpoint.params = pathToRegexp(key).keys
-
-        endpoints.push(endpoint)
+      return endpoint
+    }).sort((a, b) => {
+      if (a < b) {
+        return -1
       }
+
+      if (a > b) {
+        return 1
+      }
+
+      return 0
     })
 
-    data.endpoints = _.sortBy(endpoints, 'path')
-
-    return help.sendBackJSON(200, res, next)(null, data)
+    return help.sendBackJSON(200, res, next)(null, {
+      endpoints
+    })
   })
 }
 
@@ -760,7 +657,7 @@ Server.prototype.updateCollections = function (collectionsPath) {
     if (schema.hasOwnProperty('model')) name = schema.model
 
     this.addCollectionResource({
-      route: ['', version, database, name, idParam].join('/'),
+      route: `/${version}/${database}/${name}`,
       filepath: cpath,
       name: name,
       schema: schema,
@@ -812,15 +709,24 @@ Server.prototype.addCollectionResource = function (options) {
   let fields = help.getFieldsFromSchema(options.schema)
   let settings = Object.assign({}, options.schema.settings, { database: options.database })
   let model = Model(options.name, JSON.parse(fields), null, settings, settings.database)
-  let controller = (settings.type && settings.type === 'mediaCollection')
-    ? MediaController(model)
-    : Controller(model)
+  let isMediaCollection = settings.type && settings.type === 'mediaCollection'
+  let controller = isMediaCollection
+    ? MediaController(model, this)
+    : CollectionController(model, this)
+  let componentType = isMediaCollection
+    ? this.COMPONENT_TYPE.MEDIA_COLLECTION
+    : this.COMPONENT_TYPE.COLLECTION
 
   this.addComponent({
     route: options.route,
     component: controller,
     filepath: options.filepath
-  })
+  }, componentType)
+
+  acl.registerResource(
+    model.getAclKey(),
+    `${options.database}/${options.name} collection`
+  )
 
   // Watch the schema's file and update it in place.
   this.addMonitor(options.filepath, filename => {
@@ -837,88 +743,109 @@ Server.prototype.addCollectionResource = function (options) {
       // If file was removed, "un-use" this component.
       if (e && e.code === 'ENOENT') {
         this.removeMonitor(options.filepath)
-        this.removeComponent(options.route)
+        this.removeComponent(options.route, controller)
       }
     }
   })
 }
 
 Server.prototype.addMediaCollectionResource = function (options) {
-  // var enableCollectionDatabases = config.get('database.enableCollectionDatabases')
-  // var database = enableCollectionDatabases ? options.database : null
-
-  var model = Model(options.name, options.schema.fields, null, options.schema.settings, options.database)
-  var controller = MediaController(model)
+  let model = Model(
+    options.name,
+    options.schema.fields,
+    null,
+    options.schema.settings
+  )
+  let controller = MediaController(model, this)
 
   this.addComponent({
     route: options.route,
     component: controller
-  })
+  }, this.COMPONENT_TYPE.MEDIA_COLLECTION)
 
-  if (config.get('env') !== 'test') debug('collection loaded: %s', options.name)
+  if (config.get('env') !== 'test') {
+    debug('collection loaded: %s', options.name)
+  }
 }
 
 Server.prototype.updateEndpoints = function (endpointsPath) {
-  var self = this
-  var endpoints = fs.readdirSync(endpointsPath)
+  let endpoints = fs.readdirSync(endpointsPath)
 
-  endpoints.forEach(function (endpoint) {
-    // parse the url out of the directory structure
-    var cpath = path.join(endpointsPath, endpoint)
-    var dirs = cpath.split(path.sep)
-    var version = dirs[dirs.length - 2]
+  endpoints.forEach(endpoint => {
+    // Parse the url out of the directory structure.
+    let filePath = path.join(endpointsPath, endpoint)
+    let directories = filePath.split(path.sep)
+    let version = directories[directories.length - 2]
 
-    self.addEndpointResource({
-      version: version,
-      endpoint: endpoint,
-      filepath: path.join(endpointsPath, endpoint)
+    this.addEndpointResource({
+      version,
+      endpoint,
+      filepath: filePath
     })
   })
 }
 
 Server.prototype.addEndpointResource = function (options) {
-  var endpoint = options.endpoint
-  if (endpoint.indexOf('.') === 0 || endpoint.indexOf('endpoint.') !== 0) return
+  let endpoint = options.endpoint
 
-  var self = this
-  var name = endpoint.slice(endpoint.indexOf('.') + 1, endpoint.indexOf('.js'))
-  var filepath = options.filepath
+  if ((endpoint.indexOf('.') === 0 || endpoint.indexOf('endpoint.') !== 0)) {
+    return
+  }
+
+  let name = endpoint.slice(endpoint.indexOf('.') + 1, endpoint.indexOf('.js'))
+  let aclKey = `endpoint:${options.version}_${name}`
+  let filepath = options.filepath
+  let route = `/${options.version}/${name}`
+  let component
+
   delete require.cache[filepath]
 
   try {
-    // keep reference to component so hot loading component can be
-    // done by changing reference value
+    fs.readFile(filepath, 'utf8', (err, content) => {
+      if (err) {
+        return console.log(err)
+      }
 
-    var content = fs.readFileSync(filepath).toString()
+      acl.registerResource(
+        aclKey,
+        `${options.version}/${name} custom endpoint`
+      )
 
-    var opts = {
-      route: '/' + options.version + '/' + name,
-      component: require(filepath),
-      docs: parsecomments(content),
-      filepath: filepath
-    }
+      component = EndpointController(
+        require(filepath),
+        this,
+        aclKey
+      )
 
-    self.addComponent(opts)
+      this.addComponent({
+        aclKey,
+        docs: parsecomments(content),
+        component,
+        filepath,
+        route
+      }, this.COMPONENT_TYPE.CUSTOM_ENDPOINT)
+    })
   } catch (e) {
     console.log(e)
   }
 
-  // if this endpoint's file is changed hot update the api
-  self.addMonitor(filepath, function (filename) {
+  this.addMonitor(filepath, filename => {
     delete require.cache[filepath]
 
     try {
-      opts.component = require(filepath)
+      require(filepath)
     } catch (e) {
-      // if file was removed "un-use" this component
+      // If file was removed, "un-use" this component.
       if (e && e.code === 'ENOENT') {
-        self.removeMonitor(filepath)
-        self.removeComponent(opts.route)
+        this.removeMonitor(filepath)
+        this.removeComponent(route, component)
       }
     }
   })
 
-  if (config.get('env') !== 'test') debug('endpoint loaded: %s', name)
+  if (config.get('env') !== 'test') {
+    debug('endpoint loaded: %s', name)
+  }
 }
 
 Server.prototype.updateHooks = function (hookPath) {

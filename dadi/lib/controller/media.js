@@ -1,26 +1,26 @@
 'use strict'
 
 const Busboy = require('busboy')
+const config = require('./../../../config')
+const Controller = require('./index')
+const help = require('./../help')
 const imagesize = require('imagesize')
+const jwt = require('jsonwebtoken')
+const mediaModel = require('./../model/media')
 const PassThrough = require('stream').PassThrough
 const path = require('path')
 const serveStatic = require('serve-static')
 const sha1 = require('sha1')
+const StorageFactory = require('./../storage/factory')
+const streamifier = require('streamifier')
 const url = require('url')
 
-const config = require(path.join(__dirname, '/../../../config'))
-const help = require(path.join(__dirname, '/../help'))
-const streamifier = require('streamifier')
-
-const Controller = require('./index')
-const mediaModel = require(path.join(__dirname, '/../model/media'))
-const StorageFactory = require(path.join(__dirname, '/../storage/factory'))
-
-const MediaController = function (model) {
+const MediaController = function (model, server) {
   this.model = model
+  this.server = server
 }
 
-MediaController.prototype = new Controller({})
+MediaController.prototype = new Controller()
 
 MediaController.prototype._formatDate = function (includeTime) {
   let d = new Date()
@@ -37,6 +37,42 @@ MediaController.prototype._formatDate = function (includeTime) {
   }
 
   return dateParts.join('/')
+}
+
+/**
+ * Generates a JSON Web Token representing the specified object
+ *
+ * @param {Object} obj - a JSON object containing key:value pairs to be encoded into a token
+ * @returns {string} JSON Web Token
+ */
+MediaController.prototype._signToken = function (obj) {
+  return jwt.sign(
+    obj,
+    config.get('media.tokenSecret'),
+    {
+      expiresIn: obj.expiresIn || config.get('media.tokenExpiresIn')
+    }
+  )
+}
+
+/**
+ *
+ */
+MediaController.prototype.count = function (req, res, next) {
+  let path = url.parse(req.url, true)
+  let query = this._prepareQuery(req, this.model)
+  let parsedOptions = this._prepareQueryOptions(path.query, this.model.settings)
+
+  if (parsedOptions.errors.length > 0) {
+    return help.sendBackJSON(400, res, next)(null, parsedOptions)
+  }
+
+  this.model.count(
+    query,
+    parsedOptions.queryOptions,
+    help.sendBackJSON(200, res, next),
+    req
+  )
 }
 
 /**
@@ -60,21 +96,6 @@ MediaController.prototype.get = function (req, res, next) {
   }
 
   this.model.get(query, parsedOptions.queryOptions, callback, req)
-}
-
-/**
- *
- */
-MediaController.prototype.count = function (req, res, next) {
-  let path = url.parse(req.url, true)
-  let query = this._prepareQuery(req, this.model)
-  let parsedOptions = this._prepareQueryOptions(path.query, this.model.settings)
-
-  if (parsedOptions.errors.length > 0) {
-    return help.sendBackJSON(400, res, next)(null, parsedOptions)
-  }
-
-  this.model.count(query, parsedOptions.queryOptions, help.sendBackJSON(200, res, next), req)
 }
 
 /**
@@ -208,7 +229,7 @@ MediaController.prototype.post = function (req, res, next) {
         let internals = {
           _apiVersion: req.url.split('/')[1],
           _createdAt: Date.now(),
-          _createdBy: req.client && req.client.clientId
+          _createdBy: req.dadiApiClient && req.dadiApiClient.clientId
         }
 
         const callback = (err, response) => {
@@ -238,7 +259,7 @@ MediaController.prototype.post = function (req, res, next) {
     if (req.params.id || req.body.update) {
       let internals = {
         _lastModifiedAt: Date.now(),
-        _lastModifiedBy: req.client && req.client.clientId
+        _lastModifiedBy: req.dadiApiClient && req.dadiApiClient.clientId
       }
       let query = {}
       let update = {}
@@ -256,20 +277,99 @@ MediaController.prototype.post = function (req, res, next) {
   }
 }
 
-/**
- *
- */
-MediaController.prototype.setPayload = function (payload) {
-  this.tokenPayload = payload
-}
-
-/**
- * Sets the route that this controller instance is resonsible for handling
- *
- * @param {string} route - a route in the format /apiVersion/database/collection. For example /1.0/library/images
- */
-MediaController.prototype.setRoute = function (route) {
+MediaController.prototype.registerRoutes = function (route) {
   this.route = route
+
+  // POST media/sign
+  this.server.app.use(route + '/sign', (req, res, next) => {
+    if (req.method && req.method.toLowerCase() !== 'post') {
+      return next()
+    }
+
+    let token
+
+    try {
+      token = this._signToken(req.body)
+    } catch (err) {
+      let error = {
+        name: 'ValidationError',
+        message: err.message,
+        statusCode: 400
+      }
+
+      return next(error)
+    }
+
+    help.sendBackJSON(200, res, next)(null, {
+      url: `${route}/${token}`
+    })
+  })
+
+  this.server.app.use(route + '/count', (req, res, next) => {
+    let method = req.method && req.method.toLowerCase()
+
+    if (method !== 'get') {
+      return next()
+    }
+
+    return this.count(req, res, next)
+  })
+
+  // POST media (upload)
+  this.server.app.use(route + '/:token?', (req, res, next) => {
+    let method = req.method && req.method.toLowerCase()
+
+    if (method !== 'post' && method !== 'put') return next()
+
+    let settings = this.model.settings
+
+    if (settings.signUploads && !req.params.token) {
+      let err = {
+        name: 'NoTokenError',
+        statusCode: 400
+      }
+
+      return next(err)
+    }
+
+    if (req.params.token) {
+      jwt.verify(req.params.token, config.get('media.tokenSecret'), (err, payload) => {
+        if (err) {
+          if (err.name === 'TokenExpiredError') {
+            err.statusCode = 400
+          }
+
+          return next(err)
+        }
+
+        this.tokenPayload = payload
+
+        return this[method](req, res, next)
+      })
+    } else {
+      return this[method](req, res, next)
+    }
+  })
+
+  // GET media
+  this.server.app.use(route, (req, res, next) => {
+    let method = req.method && req.method.toLowerCase()
+
+    if (method !== 'get') {
+      return next()
+    }
+
+    if (!this[method]) {
+      return next()
+    }
+
+    return this[method](req, res, next)
+  })
+
+  // GET media/filename
+  this.server.app.use(route + '/:filename(.*png|.*jpg|.*jpeg|.*gif|.*bmp|.*tiff|.*pdf)', (req, res, next) => {
+    return this.getFile(req, res, next, route)
+  })
 }
 
 /**
@@ -293,8 +393,8 @@ MediaController.prototype.writeFile = function (req, fileName, mimetype, stream)
   })
 }
 
-module.exports = function (model) {
-  return new MediaController(model)
+module.exports = function (model, server) {
+  return new MediaController(model, server)
 }
 
 module.exports.MediaController = MediaController

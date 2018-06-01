@@ -972,224 +972,48 @@ Server.prototype.addHook = function (options) {
   if (config.get('env') !== 'test') debug('hook loaded: %s', name)
 }
 
-Server.prototype.addComponent = function (options) {
-  // check if the endpoint is supplying a custom config block
-  if (options.component.config && typeof options.component.config === 'function') {
-    var componentConfig = options.component.config()
+Server.prototype.addComponent = function (options, type) {
+  // Check if the endpoint is supplying a custom config block.
+  if (typeof options.component.getConfig === 'function') {
+    let componentConfig = options.component.getConfig()
+
     if (componentConfig && componentConfig.route) {
       options.route = componentConfig.route
     }
   }
 
-  // remove it before reloading
+  // Remove it before reloading.
   if (this.components[options.route]) {
-    this.removeComponent(options.route)
+    this.removeComponent(options.route, options.component)
   }
 
-  // add controller and documentation
+  options.component._type = type
+
+  // Add controller.
   this.components[options.route] = options.component
+
+  // Add documentation.
   this.docs[options.route] = options.docs
 
-  this.app.use(options.route + '/count', function (req, res, next) {
-    var method = req.method && req.method.toLowerCase()
-
-    // call controller stats method
-    if (method === 'get') {
-      return options.component['count'](req, res, next)
-    } else {
-      next()
-    }
-  })
-
-  this.app.use(options.route + '/stats', function (req, res, next) {
-    var method = req.method && req.method.toLowerCase()
-
-    // call controller stats method
-    if (method === 'get') {
-      return options.component['stats'](req, res, next)
-    } else {
-      next()
-    }
-  })
-
-  var isMedia = options.component.model &&
-    options.component.model.settings &&
-    options.component.model.settings.type &&
-    options.component.model.settings.type === 'mediaCollection'
-
-  if (!isMedia) {
-    this.app.use(options.route + '/config', function (req, res, next) {
-      var method = req.method && req.method.toLowerCase()
-
-      // send schema
-      if (method === 'get' && options.filepath) {
-        // only allow getting collection endpoints
-        if (options.filepath.slice(-5) === '.json') {
-          return help.sendBackJSON(200, res, next)(null, require(options.filepath))
-        }
-      }
-
-      // set schema
-      if (method === 'post' && options.filepath) {
-        var schema = typeof req.body === 'object' ? req.body : JSON.parse(req.body)
-        schema.settings.lastModifiedAt = Date.now()
-
-        return fs.writeFile(options.filepath, JSON.stringify(schema, null, 2), function (err) {
-          help.sendBackJSON(200, res, next)(err, {result: 'success'})
-        })
-      }
-
-      // delete schema
-      if (method === 'delete' && options.filepath) {
-        // only allow removing collection type endpoints
-        if (options.filepath.slice(-5) === '.json') {
-          return fs.unlink(options.filepath, function (err) {
-            help.sendBackJSON(200, res, next)(err, {result: 'success'})
-          })
-        }
-      }
-
-      next()
-    })
-
-    this.app.use(options.route, function (req, res, next) {
-      try {
-        // map request method to controller method
-        var method = req.method && req.method.toLowerCase()
-
-        if (method && options.component[method]) return options.component[method](req, res, next)
-
-        if (method && (method === 'options')) return help.sendBackJSON(200, res, next)(null, null)
-      } catch (err) {
-        var trace = stackTrace.parse(err)
-
-        if (trace) {
-          var stack = 'Error "' + err + '"\n'
-          for (var i = 0; i < trace.length; i++) {
-            stack += '  at ' + trace[i].methodName + ' (' + trace[i].fileName + ':' + trace[i].lineNumber + ':' + trace[i].columnNumber + ')\n'
-          }
-          var error = new Error()
-          error.statusCode = 500
-          error.json = { 'error': stack }
-
-          console.log(stack)
-          return next(error)
-        } else {
-          return next(err)
-        }
-      }
-
-      next()
-    })
-  }
-
-  if (isMedia) {
-    var mediaRoute = options.route.replace('/' + idParam, '')
-
-    this.components[mediaRoute] = options.component
-    this.components[mediaRoute + '/:token?'] = options.component
-    this.components[mediaRoute + '/:filename(.*png|.*jpg|.*jpeg|.*gif|.*bmp|.*tiff|.*pdf)'] = options.component
-
-    if (options.component.setRoute) {
-      options.component.setRoute(mediaRoute)
-    }
-
-    // POST media/sign
-    this.app.use(mediaRoute + '/sign', (req, res, next) => {
-      var method = req.method && req.method.toLowerCase()
-      if (method !== 'post') return next()
-
-      try {
-        var token = this._signToken(req.body)
-      } catch (err) {
-        if (err) {
-          let error = {
-            name: 'ValidationError',
-            message: err.message,
-            statusCode: 400
-          }
-
-          return next(error)
-        }
-      }
-
-      help.sendBackJSON(200, res, next)(null, {
-        url: `${mediaRoute}/${token}`
-      })
-    })
-
-    // POST media (upload)
-    this.app.use(mediaRoute + '/:token?', (req, res, next) => {
-      var method = req.method && req.method.toLowerCase()
-      if (method !== 'post' && method !== 'put') return next()
-
-      var settings = options.component.model.settings
-
-      if (settings.signUploads && !req.params.token) {
-        var err = {
-          name: 'NoTokenError',
-          statusCode: 400
-        }
-
-        return next(err)
-      }
-
-      if (req.params.token) {
-        jwt.verify(req.params.token, config.get('media.tokenSecret'), (err, payload) => {
-          if (err) {
-            if (err.name === 'TokenExpiredError') {
-              err.statusCode = 400
-            }
-
-            return next(err)
-          }
-
-          if (options.component.setPayload) {
-            options.component.setPayload(payload)
-          }
-
-          return options.component[method](req, res, next)
-        })
-      } else {
-        return options.component[method](req, res, next)
-      }
-    })
-
-    // GET media
-    this.app.use(mediaRoute, (req, res, next) => {
-      var method = req.method && req.method.toLowerCase()
-      if (method !== 'get') return next()
-
-      if (options.component[method]) {
-        return options.component[method](req, res, next)
-      }
-    })
-
-    // GET media/filename
-    this.app.use(mediaRoute + '/:filename(.*png|.*jpg|.*jpeg|.*gif|.*bmp|.*tiff|.*pdf)', (req, res, next) => {
-      if (options.component.getFile) {
-        return options.component.getFile(req, res, next, mediaRoute)
-      }
-    })
+  // Let the controller register the routes it needs.
+  if (typeof options.component.registerRoutes === 'function') {
+    options.component.registerRoutes(options.route, options.filepath)
   }
 }
 
-Server.prototype.removeComponent = function (route) {
-  this.app.unuse(route)
+Server.prototype.removeComponent = function (route, component) {
+  if (this.app.paths[route]) {
+    this.app.unuse(route)
+  }
+
+  if (component && (typeof component.unregisterRoutes === 'function')) {
+    component.unregisterRoutes(route)
+  }
+
   delete this.components[route]
 
   // remove documentation by path
   delete this.docs[route]
-}
-
-/**
- * Generates a JSON Web Token representing the specified object
- *
- * @param {Object} obj - a JSON object containing key:value pairs to be encoded into a token
- * @returns {string} JSON Web Token
- */
-Server.prototype._signToken = function (obj) {
-  return jwt.sign(obj, config.get('media.tokenSecret'), { expiresIn: obj.expiresIn || config.get('media.tokenExpiresIn') })
 }
 
 Server.prototype.addMonitor = function (filepath, callback) {

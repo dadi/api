@@ -305,7 +305,7 @@ describe('Controller', () => {
 
         controller(mod).get(req)
         stub.callCount.should.equal(1)
-        
+
         let queryParameters = stub.returnsArg(0).args[0][0].query
         queryParameters.field1.should.equal('xxx')
 

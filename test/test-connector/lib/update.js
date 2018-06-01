@@ -43,16 +43,16 @@ Update.prototype.update = function (docs) {
         case '$push':
           for (p = 0; p < properties.length; p++) {
             prop = properties[p]
-        
+
             if (!doc[prop]) {
               doc[prop] = []
             }
-        
+
             if (Array.isArray(doc[prop])) {
               doc[prop].push(this.updateQuery[key][prop])
             }
           }
-        
+
           break
         default:
           break

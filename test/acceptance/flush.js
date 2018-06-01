@@ -1,6 +1,6 @@
 var _ = require('underscore')
 var assert = require('assert')
-var fakeredis = require('fakeredis');
+var fakeredis = require('fakeredis')
 var fs = require('fs')
 var should = require('should')
 var request = require('supertest')
@@ -143,7 +143,6 @@ describe('Cache', function (done) {
                     res.body.result.should.equal('success')
 
                     setTimeout(function () {
-
                       // test that cache documents still exist for /v1/library/book
                       client
                       .get('/v1/library/book')
@@ -274,7 +273,6 @@ describe('Cache', function (done) {
                           res.body.result.should.equal('success')
 
                           setTimeout(function () {
-
                             // test that cache has been flushed for /v1/library/book
                             client
                               .get('/v1/library/book')
@@ -286,7 +284,6 @@ describe('Cache', function (done) {
                                 assert(res.headers['x-cache'] === 'MISS', 'Expected /v1/library/book to have no cached documents')
 
                                 setTimeout(function () {
-
                                   // test that cache has been flushed for /vtest/testdb/test-schema
                                   client
                                     .get('/vtest/testdb/test-schema')
@@ -336,7 +333,7 @@ describe('Cache', function (done) {
         var stream = new Readable({objectMode: true})
 
         for (var i = 0; i < cacheKeys.length; i++) {
-          if (pattern.match === '*' || cacheKeys[i].indexOf(pattern.match.substring(0, pattern.match.length-1)) === 0) {
+          if (pattern.match === '*' || cacheKeys[i].indexOf(pattern.match.substring(0, pattern.match.length - 1)) === 0) {
             stream.push([cacheKeys[i]])
           } else {
             // console.log('rejected key: ', cacheKeys[i])
@@ -569,7 +566,7 @@ describe('Cache', function (done) {
           res.headers['x-cache'].should.exist
           res.headers['x-cache'].should.eql('MISS')
 
-          setTimeout(function() {
+          setTimeout(function () {
             // get cached version of /v1/library/book
             client
             .get('/v1/library/book')
@@ -580,7 +577,7 @@ describe('Cache', function (done) {
               res.headers['x-cache'].should.exist
               res.headers['x-cache'].should.eql('HIT')
 
-              setTimeout(function() {
+              setTimeout(function () {
                 // get cached version of /vtest/testdb/test-schema
                 client
                 .get('/vtest/testdb/test-schema')

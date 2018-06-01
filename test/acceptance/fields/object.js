@@ -95,7 +95,7 @@ describe('Object Field', () => {
         done()
       })
     })
-  })    
+  })
 
   it('should update by id', done => {
     let client = request(connectionString)
@@ -242,5 +242,5 @@ describe('Object Field', () => {
         })
       })
     })
-  })  
+  })
 })

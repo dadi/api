@@ -39,7 +39,7 @@ describe('DataStore', function () {
       spy.called.should.eql(true)
 
       setTimeout(() => {
-        app.stop(done)  
+        app.stop(done)
       }, 250)
     })
   })
@@ -62,7 +62,7 @@ describe('DataStore', function () {
       MockConnector.prototype.handshake.called.should.eql(true)
 
       setTimeout(() => {
-        app.stop(done)  
+        app.stop(done)
       }, 250)
     })
   })
@@ -86,7 +86,7 @@ describe('DataStore', function () {
       if (err) return done(err)
 
       setTimeout(() => {
-        app.stop(done)  
+        app.stop(done)
       }, 250)
     })
   })
@@ -143,7 +143,7 @@ describe('DataStore', function () {
         if (err) return done(err)
 
         setTimeout(() => {
-          app.stop(done)  
+          app.stop(done)
         }, 250)
       })
     })
@@ -170,7 +170,7 @@ describe('DataStore', function () {
         if (err) return done(err)
 
         setTimeout(() => {
-          app.stop(done)  
+          app.stop(done)
         }, 250)
       })
     })
@@ -231,7 +231,7 @@ describe('DataStore', function () {
         if (err) return done(err)
 
         setTimeout(() => {
-          app.stop(done)  
+          app.stop(done)
         }, 250)
       })
     })
@@ -258,7 +258,7 @@ describe('DataStore', function () {
         if (err) return done(err)
 
         setTimeout(() => {
-          app.stop(done)  
+          app.stop(done)
         }, 250)
       })
     })

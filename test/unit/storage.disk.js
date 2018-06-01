@@ -71,7 +71,7 @@ describe('Storage', function (done) {
       // mock the call to fs.stat, returning no error so we can
       // test the file renaming sequence
       sinon.stub(fs, 'stat').yields(null, {
-        isDirectory: function(path) { return true }
+        isDirectory: function (path) { return true }
       })
 
       // dummy stream

@@ -11,9 +11,9 @@ var config = require(__dirname + '/../../../config')
 
 describe('Model', function () {
   beforeEach((done) => {
-    help.clearCollection('testModelName', function() {
-      help.clearCollection('testModelNameHistory', function() {
-         done()
+    help.clearCollection('testModelName', function () {
+      help.clearCollection('testModelNameHistory', function () {
+        done()
       })
     })
   })
@@ -200,7 +200,7 @@ describe('Model', function () {
         }
       )
 
-      setTimeout(function() {
+      setTimeout(function () {
         should.exist(mod1.settings)
         should.exist(mod1.settings.index)
 
@@ -390,7 +390,7 @@ describe('Model', function () {
 
           done()
         })
-      })      
+      })
     })
 
     it('should accept named parameters', () => {
@@ -455,7 +455,7 @@ describe('Model', function () {
 
           done()
         })
-      })      
+      })
     })
 
     it('should accept named parameters', () => {
@@ -533,7 +533,7 @@ describe('Model', function () {
               done()
             })
           })
-        })    
+        })
       })
     })
 
@@ -1026,7 +1026,7 @@ describe('Model', function () {
           should.exist(result && result.results)
           result.results[0].field1.should.equal('foo')
 
-          done()          
+          done()
         }).catch(done)
       })
     })
@@ -1105,7 +1105,7 @@ describe('Model', function () {
           null,
           {database: 'testdb'}
         )
-        
+
         mod.update({fieldName: 'foo'}, {fieldName: '123456'}, err => {
           should.exist(err)
 
@@ -1123,7 +1123,7 @@ describe('Model', function () {
             done()
           }
         )
-      })      
+      })
     })
 
     it('should accept query and update object', () => {
@@ -1148,7 +1148,7 @@ describe('Model', function () {
 
         return mod.find({
           query: {field1: 'bar'}
-        })        
+        })
       }).then(({metadata, results}) => {
         should.exist(results && results[0])
         results[0].field1.should.equal('bar')

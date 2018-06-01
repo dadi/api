@@ -119,7 +119,7 @@ describe('File system watching', function () {
           fs.writeFileSync(testEndpointPath, lines.join('\n'))
 
           setTimeout(function () {
-            //console.log(app.components['/v1/monitor-test-endpoint'])
+            // console.log(app.components['/v1/monitor-test-endpoint'])
             client
               .get('/v1/monitor-test-endpoint?cache=false')
               .set('Authorization', 'Bearer ' + bearerToken)
@@ -161,7 +161,6 @@ describe('File system watching', function () {
     })
 
     it('should add to collections api when file is added', function (done) {
-
       // make a copy of the test schema in a new collections dir
       var testSchema = fs.readFileSync(originalSchemaPath)
 
@@ -183,7 +182,6 @@ describe('File system watching', function () {
     })
 
     it('should add to endpoints api when file is added', function (done) {
-
       // Change the endpoint file's content
       var endpoint = fs.readFileSync(testEndpointPath).toString()
 
@@ -215,7 +213,7 @@ describe('File system watching', function () {
 
       var client = request('http://' + config.get('server.host') + ':' + config.get('server.port'))
 
-      setTimeout(function() {
+      setTimeout(function () {
         client
           .get('/v1/monitor-test-endpoint?cache=false')
           .set('Authorization', 'Bearer ' + bearerToken)
@@ -229,7 +227,7 @@ describe('File system watching', function () {
 
       var client = request('http://' + config.get('server.host') + ':' + config.get('server.port'))
 
-      setTimeout(function() {
+      setTimeout(function () {
         client
           .get('/vtest/testdb/monitor-test-schema')
           .set('Authorization', 'Bearer ' + bearerToken)

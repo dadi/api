@@ -61,7 +61,6 @@ describe('Collections API – POST', function () {
         })
       })
     })
-    
   })
 
   after(function (done) {
@@ -276,7 +275,7 @@ describe('Collections API – POST', function () {
       .set('Authorization', 'Bearer ' + bearerToken)
       .send({
         query: {
-          _id: '59f1b3e038ad765e669ac47f',
+          _id: '59f1b3e038ad765e669ac47f'
         },
         update: {
           field1: 'updated doc'

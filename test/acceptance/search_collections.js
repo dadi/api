@@ -56,7 +56,7 @@ describe('Search', function () {
               .end(function (err, res) {
                 if (err) return done(err)
 
-                setTimeout(function() {
+                setTimeout(function () {
                   done()
                 }, 1000)
               })

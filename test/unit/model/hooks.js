@@ -375,9 +375,9 @@ describe('Hook', function () {
         mod.create({fieldName: 'foo', title: 'Article One', slug: ''}, function (err, result) {
           if (err) return done(err)
 
-            console.log('***')
-            console.log('result:', result)
-            console.log('***')
+          console.log('***')
+          console.log('result:', result)
+          console.log('***')
 
           hook.Hook.prototype.load.restore()
 
@@ -385,9 +385,9 @@ describe('Hook', function () {
           mod.find({}, function (err, doc) {
             if (err) return done(err)
 
-              console.log('***')
-              console.log('doc:', doc)
-              console.log('***')
+            console.log('***')
+            console.log('doc:', doc)
+            console.log('***')
 
             doc.results[0].slug.should.eql('article-one')
             done()
@@ -792,7 +792,6 @@ describe('Hook', function () {
     beforeEach(help.cleanUpDB)
 
     it('should receive collection name and schema', function (done) {
-
       var schema = help.getModelSchema()
       schema.title = {
         type: 'String',
@@ -1021,7 +1020,6 @@ describe('Hook', function () {
     // this one writes to a log file before deleting the document
     // see the logFunction declared at the top of this file
     it('should fire delete hook for documents before delete', function (done) {
-
       var schema = help.getModelSchema()
       schema.title = {
         type: 'String',
@@ -1194,7 +1192,6 @@ describe('Hook', function () {
     // this one writes to a log file before deleting the document
     // see the logFunction declared at the top of this file
     it('should fire delete hook for documents after delete', function (done) {
-
       var schema = help.getModelSchema()
       schema.title = {
         type: 'String',
@@ -1258,7 +1255,6 @@ describe('Hook', function () {
     beforeEach(help.cleanUpDB)
 
     it('should receive collection name and schema', function (done) {
-
       var schema = help.getModelSchema()
       schema.title = {
         type: 'String',
@@ -1308,7 +1304,6 @@ describe('Hook', function () {
     })
 
     it('should modify the query before processing the GET', function (done) {
-
       var schema = help.getModelSchema()
       schema.title = {
         type: 'String',
@@ -1341,7 +1336,7 @@ describe('Hook', function () {
         if (err) return done(err)
 
         // find the obj we just created
-        mod.get({title: 'Article One'},function (err, doc) {
+        mod.get({title: 'Article One'}, function (err, doc) {
           if (err) return done(err)
 
           hook.Hook.prototype.load.restore()
@@ -1358,7 +1353,6 @@ describe('Hook', function () {
     beforeEach(help.cleanUpDB)
 
     it('should receive collection name and schema', function (done) {
-
       var schema = help.getModelSchema()
       schema.title = {
         type: 'String',
@@ -1408,7 +1402,6 @@ describe('Hook', function () {
     })
 
     it('should modify documents before responding to a GET', function (done) {
-
       var schema = help.getModelSchema()
       schema.title = {
         type: 'String',
@@ -1436,7 +1429,7 @@ describe('Hook', function () {
         if (err) return done(err)
 
         // find the obj we just created
-        mod.get({fieldName: 'foo'},function (err, doc) {
+        mod.get({fieldName: 'foo'}, function (err, doc) {
           if (err) return done(err)
 
           hook.Hook.prototype.load.restore()

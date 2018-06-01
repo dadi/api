@@ -446,6 +446,7 @@ describe('Media', function () {
               .expect(200)
               .end((err, res) => {
                 if (err) return done(err)
+
                 should.exist(res.body.results)
                 res.body.results.should.be.Array
                 res.body.results.length.should.eql(1)

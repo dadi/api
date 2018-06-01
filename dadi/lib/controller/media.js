@@ -261,7 +261,7 @@ MediaController.prototype.delete = function (req, res, next) {
 
   if (!query) return next()
 
-  this.model.get(query, {}, (err, results) => {
+  let callback = (err, results) => {
     if (err) return next(err)
     if (!results.results[0]) return next()
 
@@ -296,7 +296,9 @@ MediaController.prototype.delete = function (req, res, next) {
       }).catch((err) => {
         return next(err)
       })
-  }, req)
+  }
+
+  this.model.get(query, {}, callback, req)
 }
 
 /**

@@ -23,7 +23,7 @@ describe('Media', function () {
         help.dropDatabase('testdb', null, (err) => {
           if (err) return done(err)
 
-          help.getBearerTokenWithAccessType('admin', (err, token) => {
+          help.getBearerToken((err, token) => {
             if (err) return done(err)
 
             bearerToken = token
@@ -101,7 +101,7 @@ describe('Media', function () {
           expiresIn: '60'
         }
 
-        var spy = sinon.spy(app, '_signToken')
+        var spy = sinon.spy(MediaController.MediaController.prototype, '_signToken')
 
         var expected = jwt.sign(obj, config.get('media.tokenSecret'), { expiresIn: '60' })
 
@@ -114,7 +114,7 @@ describe('Media', function () {
         .send(obj)
         .end((err, res) => {
           if (err) return done(err)
-          app._signToken.restore()
+          MediaController.MediaController.prototype._signToken.restore()
           spy.firstCall.returnValue.should.eql(expected)
           done()
         })
@@ -137,7 +137,7 @@ describe('Media', function () {
           fileName: 'test.jpg'
         }
 
-        sinon.stub(app, '_signToken').callsFake(function (obj) {
+        sinon.stub(MediaController.MediaController.prototype, '_signToken').callsFake(function (obj) {
           return jwt.sign(obj, config.get('media.tokenSecret'), { expiresIn: 1 })
         })
 
@@ -151,7 +151,7 @@ describe('Media', function () {
         .end((err, res) => {
           if (err) return done(err)
 
-          app._signToken.restore()
+          MediaController.MediaController.prototype._signToken.restore()
           var url = res.body.url
 
           setTimeout(function () {
@@ -321,6 +321,7 @@ describe('Media', function () {
             client
             .post(url)
             .set('content-type', 'application/json')
+            .set('Authorization', 'Bearer ' + bearerToken)
             .attach('avatar', 'test/acceptance/workspace/media/1f525.png')
             .end((err, res) => {
               if (err) return done(err)
@@ -352,7 +353,7 @@ describe('Media', function () {
               })
             })
           })
-        })        
+        })
       })
 
       describe('Named bucket', function () {
@@ -469,18 +470,19 @@ describe('Media', function () {
         help.dropDatabase('testdb', null, (err) => {
           if (err) return done(err)
 
-          help.getBearerTokenWithAccessType('admin', (err, token) => {
+          help.getBearerToken((err, token) => {
             if (err) return done(err)
             bearerToken = token
 
             // mimic a file that could be sent to the server
             var mediaSchema = fs.readFileSync(__dirname + '/../media-schema.json', {encoding: 'utf8'})
+
             request(connectionString)
             .post('/1.0/testdb/media/config')
             .send(mediaSchema)
             .set('content-type', 'text/plain')
             .set('Authorization', 'Bearer ' + bearerToken)
-            .expect(200)
+            .expect(201)
             .expect('content-type', 'application/json')
             .end(function (err, res) {
               if (err) return done(err)
@@ -494,7 +496,7 @@ describe('Media', function () {
               .send(mediaSchema)
               .set('content-type', 'text/plain')
               .set('Authorization', 'Bearer ' + bearerToken)
-              .expect(200)
+              .expect(201)
               .expect('content-type', 'application/json')
               .end(function (err, res) {
                 if (err) return done(err)
@@ -587,7 +589,7 @@ describe('Media', function () {
           expiresIn: '60'
         }
 
-        var spy = sinon.spy(app, '_signToken')
+        var spy = sinon.spy(MediaController.MediaController.prototype, '_signToken')
 
         var expected = jwt.sign(obj, config.get('media.tokenSecret'), { expiresIn: '60' })
 
@@ -600,7 +602,7 @@ describe('Media', function () {
         .send(obj)
         .end((err, res) => {
           if (err) return done(err)
-          app._signToken.restore()
+          MediaController.MediaController.prototype._signToken.restore()
           spy.firstCall.returnValue.should.eql(expected)
           done()
         })
@@ -637,7 +639,7 @@ describe('Media', function () {
           fileName: 'test.jpg'
         }
 
-        sinon.stub(app, '_signToken').callsFake(function (obj) {
+        sinon.stub(MediaController.MediaController.prototype, '_signToken').callsFake(function (obj) {
           return jwt.sign(obj, config.get('media.tokenSecret'), { expiresIn: 1 })
         })
 
@@ -651,7 +653,7 @@ describe('Media', function () {
         .end((err, res) => {
           if (err) return done(err)
 
-          app._signToken.restore()
+          MediaController.MediaController.prototype._signToken.restore()
           var url = res.body.url
 
           setTimeout(function () {

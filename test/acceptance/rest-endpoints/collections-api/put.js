@@ -36,35 +36,30 @@ describe('Collections API – PUT', function () {
             required: false
           })
 
-          schema.fields.field3 = _.extend({}, schema.fields.newField, {
-            type: 'ObjectID',
-            required: false
-          })
-
           var client = request(connectionString)
 
           client
-            .post('/vtest/testdb/test-schema/config')
+            .post('/vtest/testdb/put-test-schema/config')
             .send(JSON.stringify(schema, null, 4))
             .set('content-type', 'text/plain')
             .set('Authorization', 'Bearer ' + bearerToken)
-            .expect(200)
+            .expect(201)
             .expect('content-type', 'application/json')
             .end(function (err, res) {
               if (err) return done(err)
 
               // add another apiversion with the same collection
               client
-                .post('/vjoin/testdb/test-schema/config')
+                .post('/vjoin/testdb/put-test-schema/config')
                 .send(JSON.stringify(schema, null, 4))
                 .set('content-type', 'text/plain')
                 .set('Authorization', 'Bearer ' + bearerToken)
-                .expect(200)
+                .expect(201)
                 .expect('content-type', 'application/json')
                 .end(function (err, res) {
                   if (err) return done(err)
 
-                  done()
+                  setTimeout(done, 500)
                 })
             })
         })
@@ -73,38 +68,26 @@ describe('Collections API – PUT', function () {
   })
 
   after(function (done) {
-    // reset the schema
-    var jsSchemaString = fs.readFileSync(__dirname + '/../../../new-schema.json', {encoding: 'utf8'})
-    jsSchemaString = jsSchemaString.replace('newField', 'field1')
-    var schema = JSON.parse(jsSchemaString)
+    app.stop(() => {
+      var dirs = config.get('paths')
 
-    var client = request(connectionString)
+      try {
+        fs.unlinkSync(dirs.collections + '/vjoin/testdb/collection.put-test-schema.json')
+      } catch (e) {}
 
-    help.getBearerTokenWithAccessType('admin', function (err, token) {
-      client
-      .post('/vtest/testdb/test-schema/config')
-      .send(JSON.stringify(schema, null, 4))
-      .set('content-type', 'text/plain')
-      .set('Authorization', 'Bearer ' + token)
-      .expect(200)
-      .expect('content-type', 'application/json')
-      .end(function (err, res) {
-        if (err) return done(err)
+      try {
+        fs.unlinkSync(dirs.collections + '/vjoin/testdb/collection.put-test-schema-no-history.json')
+      } catch (e) {}
 
-        app.stop(() => {
-          var dirs = config.get('paths')
+      try {
+        fs.unlinkSync(dirs.collections + '/vtest/testdb/collection.put-test-schema.json')
+      } catch (e) {}
 
-          try {
-            fs.unlinkSync(dirs.collections + '/vjoin/testdb/collection.test-schema.json')
-            fs.unlinkSync(dirs.collections + '/vjoin/testdb/collection.test-schema-no-history.json')
-            fs.unlinkSync(dirs.collections + '/vtest/testdb/collection.test-schema-no-history.json')
+      try {
+        fs.unlinkSync(dirs.collections + '/vtest/testdb/collection.put-test-schema-no-history.json')
+      } catch (e) {}
 
-            return done()
-          } catch (e) {}
-
-          done()
-        })
-      })
+      done()
     })
   })
 
@@ -112,7 +95,7 @@ describe('Collections API – PUT', function () {
     var client = request(connectionString)
 
     client
-      .post('/vtest/testdb/test-schema')
+      .post('/vtest/testdb/put-test-schema')
       .set('Authorization', 'Bearer ' + bearerToken)
       .send({field1: 'doc to update'})
       .expect(200)
@@ -123,7 +106,7 @@ describe('Collections API – PUT', function () {
         should.exist(doc)
         doc.field1.should.equal('doc to update')
 
-        var puturl = '/vtest/testdb/test-schema/' + doc._id
+        var puturl = '/vtest/testdb/put-test-schema/' + doc._id
 
         client
           .put(puturl)
@@ -136,7 +119,7 @@ describe('Collections API – PUT', function () {
             res.body.results[0].field1.should.equal('updated doc')
 
             client
-              .get('/vtest/testdb/test-schema?filter={"_id": "' + doc._id + '"}')
+              .get('/vtest/testdb/put-test-schema?filter={"_id": "' + doc._id + '"}')
               .set('Authorization', 'Bearer ' + bearerToken)
               .expect(200)
               .expect('content-type', 'application/json')
@@ -158,7 +141,7 @@ describe('Collections API – PUT', function () {
     var client = request(connectionString)
 
     client
-      .put('/vtest/testdb/test-schema/59f1b3e038ad765e669ac47f')
+      .put('/vtest/testdb/put-test-schema/59f1b3e038ad765e669ac47f')
       .set('Authorization', 'Bearer ' + bearerToken)
       .send({field1: 'updated doc'})
       .expect(404)
@@ -175,11 +158,11 @@ describe('Collections API – PUT', function () {
     var client = request(connectionString)
 
     client
-      .put('/vtest/testdb/test-schema')
+      .put('/vtest/testdb/put-test-schema')
       .set('Authorization', 'Bearer ' + bearerToken)
       .send({
         query: {
-          _id: '59f1b3e038ad765e669ac47f',
+          _id: '59f1b3e038ad765e669ac47f'
         },
         update: {
           field1: 'updated doc'
@@ -202,7 +185,7 @@ describe('Collections API – PUT', function () {
     config.set('internalFieldsPrefix', '$')
 
     client
-      .post('/vtest/testdb/test-schema')
+      .post('/vtest/testdb/put-test-schema')
       .set('Authorization', 'Bearer ' + bearerToken)
       .send({field1: 'doc to update'})
       .expect(200)
@@ -213,7 +196,7 @@ describe('Collections API – PUT', function () {
         should.exist(doc)
         doc.field1.should.equal('doc to update')
 
-        var puturl = '/vtest/testdb/test-schema/' + doc.$id
+        var puturl = '/vtest/testdb/put-test-schema/' + doc.$id
 
         client
           .put(puturl)
@@ -236,7 +219,7 @@ describe('Collections API – PUT', function () {
     var client = request(connectionString)
 
     client
-      .post('/vtest/testdb/test-schema')
+      .post('/vtest/testdb/put-test-schema')
       .set('Authorization', 'Bearer ' + bearerToken)
       .send({field1: 'doc to update'})
       .expect(200)
@@ -253,7 +236,7 @@ describe('Collections API – PUT', function () {
         }
 
         client
-          .put('/vtest/testdb/test-schema/')
+          .put('/vtest/testdb/put-test-schema/')
           .set('Authorization', 'Bearer ' + bearerToken)
           .send(body)
           .expect(200)
@@ -265,7 +248,7 @@ describe('Collections API – PUT', function () {
             res.body.results[0].field1.should.equal('updated doc')
 
             client
-              .get('/vtest/testdb/test-schema?filter={"_id": "' + doc._id + '"}')
+              .get('/vtest/testdb/put-test-schema?filter={"_id": "' + doc._id + '"}')
               .set('Authorization', 'Bearer ' + bearerToken)
               .expect(200)
               .expect('content-type', 'application/json')
@@ -290,7 +273,7 @@ describe('Collections API – PUT', function () {
     config.set('internalFieldsPrefix', '$')
 
     client
-      .post('/vtest/testdb/test-schema')
+      .post('/vtest/testdb/put-test-schema')
       .set('Authorization', 'Bearer ' + bearerToken)
       .send({field1: 'doc to update'})
       .expect(200)
@@ -307,7 +290,7 @@ describe('Collections API – PUT', function () {
         }
 
         client
-          .put('/vtest/testdb/test-schema/')
+          .put('/vtest/testdb/put-test-schema/')
           .set('Authorization', 'Bearer ' + bearerToken)
           .send(body)
           .expect(200)
@@ -318,7 +301,7 @@ describe('Collections API – PUT', function () {
             res.body.results[0].field1.should.equal('updated doc')
 
             client
-              .get('/vtest/testdb/test-schema?filter={"$id": "' + doc.$id + '"}')
+              .get('/vtest/testdb/put-test-schema?filter={"$id": "' + doc.$id + '"}')
               .set('Authorization', 'Bearer ' + bearerToken)
               .expect(200)
               .expect('content-type', 'application/json')
@@ -343,7 +326,7 @@ describe('Collections API – PUT', function () {
 
     // add three docs
     client
-      .post('/vtest/testdb/test-schema')
+      .post('/vtest/testdb/put-test-schema')
       .set('Authorization', 'Bearer ' + bearerToken)
       .send({field1: 'draft'})
       .expect(200)
@@ -351,7 +334,7 @@ describe('Collections API – PUT', function () {
         if (err) return done(err)
 
         client
-          .post('/vtest/testdb/test-schema')
+          .post('/vtest/testdb/put-test-schema')
           .set('Authorization', 'Bearer ' + bearerToken)
           .send({field1: 'draft'})
           .expect(200)
@@ -359,7 +342,7 @@ describe('Collections API – PUT', function () {
             if (err) return done(err)
 
             client
-              .post('/vtest/testdb/test-schema')
+              .post('/vtest/testdb/put-test-schema')
               .set('Authorization', 'Bearer ' + bearerToken)
               .send({field1: 'draft'})
               .expect(200)
@@ -373,7 +356,7 @@ describe('Collections API – PUT', function () {
                 }
 
                 client
-                  .put('/vtest/testdb/test-schema/')
+                  .put('/vtest/testdb/put-test-schema/')
                   .set('Authorization', 'Bearer ' + bearerToken)
                   .send(body)
                   .expect(200)
@@ -400,57 +383,62 @@ describe('Collections API – PUT', function () {
 
     config.set('internalFieldsPrefix', '$')
 
-    help.createDoc(bearerToken, function (err, doc) {
-      if (err) return done(err)
+    client
+      .post('/vtest/testdb/put-test-schema')
+      .set('Authorization', 'Bearer ' + bearerToken)
+      .send({field1: 'some value'})
+      .expect(200)
+      .end(function (err, res) {
+        if (err) return done(err)
 
-      var client = request(connectionString)
-      var body = {
-        query: {
-          $id: doc.$id
-        },
-        update: {
-          field1: 'Updated value'
+        var doc = res.body.results[0]
+        var body = {
+          query: {
+            $id: doc.$id
+          },
+          update: {
+            field1: 'Updated value'
+          }
         }
-      }
 
-      client
-        .put('/vtest/testdb/test-schema')
-        .set('Authorization', 'Bearer ' + bearerToken)
-        .send(body)
-        .expect(200)
-        .expect('content-type', 'application/json')
-        .end(function (err, res) {
-          if (err) return done(err)
+        client
+          .put('/vtest/testdb/put-test-schema')
+          .set('Authorization', 'Bearer ' + bearerToken)
+          .send(body)
+          .expect(200)
+          .expect('content-type', 'application/json')
+          .end(function (err, res) {
+            if (err) return done(err)
 
-          res.body.results.should.be.Array
-          res.body.results[0].$id.should.eql(doc.$id)
-          res.body.results[0].field1.should.eql(body.update.field1)
+            res.body.results.should.be.Array
+            res.body.results[0].$id.should.eql(doc.$id)
+            res.body.results[0].field1.should.eql(body.update.field1)
 
-          client
-            .get('/vtest/testdb/test-schema/' + doc.$id)
-            .set('Authorization', 'Bearer ' + bearerToken)
-            .expect(200)
-            .expect('content-type', 'application/json')
-            .end(function (err, res) {
-              if (err) return done(err)
+            client
+              .get('/vtest/testdb/put-test-schema/' + doc.$id)
+              .set('Authorization', 'Bearer ' + bearerToken)
+              .expect(200)
+              .expect('content-type', 'application/json')
+              .end(function (err, res) {
+                if (err) return done(err)
 
-              res.body.results.should.be.Array
-              res.body.results[0].$id.should.eql(doc.$id)
-              res.body.results[0].field1.should.eql(body.update.field1)
+                res.body.results.should.be.Array
+                res.body.results[0].$id.should.eql(doc.$id)
+                res.body.results[0].field1.should.eql(body.update.field1)
 
-              config.set('internalFieldsPrefix', originalPrefix)
+                config.set('internalFieldsPrefix', originalPrefix)
 
-              done()
-            })
-        })
-    })
+                done()
+              })
+          })
+      })
   })
 
   it('should add internal fields to updated documents', function (done) {
     var client = request(connectionString)
 
     client
-      .post('/vtest/testdb/test-schema')
+      .post('/vtest/testdb/put-test-schema')
       .set('Authorization', 'Bearer ' + bearerToken)
       .send({field1: 'doc to update'})
       .expect(200)
@@ -462,7 +450,7 @@ describe('Collections API – PUT', function () {
         doc.field1.should.equal('doc to update')
 
         client
-          .put('/vtest/testdb/test-schema/' + doc._id)
+          .put('/vtest/testdb/put-test-schema/' + doc._id)
           .set('Authorization', 'Bearer ' + bearerToken)
           .send({field1: 'updated doc'})
           .expect(200)
@@ -473,7 +461,7 @@ describe('Collections API – PUT', function () {
             res.body.results[0].field1.should.equal('updated doc')
 
             client
-              .get('/vtest/testdb/test-schema?filter={"_id": "' + doc._id + '"}')
+              .get('/vtest/testdb/put-test-schema?filter={"_id": "' + doc._id + '"}')
               .set('Authorization', 'Bearer ' + bearerToken)
               .expect(200)
               .expect('content-type', 'application/json')
@@ -501,7 +489,7 @@ describe('Collections API – PUT', function () {
     config.set('query.useVersionFilter', true)
 
     client
-      .post('/vtest/testdb/test-schema')
+      .post('/vtest/testdb/put-test-schema')
       .set('Authorization', 'Bearer ' + bearerToken)
       .send({field1: 'doc'})
       .expect(200)
@@ -509,7 +497,7 @@ describe('Collections API – PUT', function () {
         if (err) return done(err)
 
         client
-          .post('/vjoin/testdb/test-schema')
+          .post('/vjoin/testdb/put-test-schema')
           .set('Authorization', 'Bearer ' + bearerToken)
           .send({field1: 'doc'})
           .expect(200)
@@ -527,7 +515,7 @@ describe('Collections API – PUT', function () {
             }
 
             client
-              .put('/vtest/testdb/test-schema/')
+              .put('/vtest/testdb/put-test-schema/')
               .set('Authorization', 'Bearer ' + bearerToken)
               .send(body)
               .expect(200)
@@ -535,7 +523,7 @@ describe('Collections API – PUT', function () {
                 if (err) return done(err)
 
                 client
-                  .get('/vjoin/testdb/test-schema')
+                  .get('/vjoin/testdb/put-test-schema')
                   .set('Authorization', 'Bearer ' + bearerToken)
                   .expect(200)
                   .expect('content-type', 'application/json')
@@ -572,7 +560,7 @@ describe('Collections API – PUT', function () {
       var client = request(connectionString)
 
       client
-        .post('/vtest/testdb/test-schema-no-history/config')
+        .post('/vtest/testdb/put-test-schema-no-history/config')
         .send(JSON.stringify(schema, null, 4))
         .set('content-type', 'text/plain')
         .set('Authorization', 'Bearer ' + token)
@@ -582,7 +570,7 @@ describe('Collections API – PUT', function () {
           if (err) return done(err)
 
           client
-            .post('/vjoin/testdb/test-schema-no-history/config')
+            .post('/vjoin/testdb/put-test-schema-no-history/config')
             .send(JSON.stringify(schema, null, 4))
             .set('content-type', 'text/plain')
             .set('Authorization', 'Bearer ' + token)
@@ -593,7 +581,7 @@ describe('Collections API – PUT', function () {
 
               setTimeout(function () {
                 client
-                  .post('/vtest/testdb/test-schema-no-history')
+                  .post('/vtest/testdb/put-test-schema-no-history')
                   .set('Authorization', 'Bearer ' + token)
                   .send({field1: 'doc'})
                   // .expect(200)
@@ -601,7 +589,7 @@ describe('Collections API – PUT', function () {
                     if (err) return done(err)
 
                     client
-                      .post('/vjoin/testdb/test-schema-no-history')
+                      .post('/vjoin/testdb/put-test-schema-no-history')
                       .set('Authorization', 'Bearer ' + token)
                       .send({field1: 'doc'})
                       // .expect(200)
@@ -618,7 +606,7 @@ describe('Collections API – PUT', function () {
                         }
 
                         client
-                          .put('/vtest/testdb/test-schema-no-history/')
+                          .put('/vtest/testdb/put-test-schema-no-history/')
                           .set('Authorization', 'Bearer ' + token)
                           .send(body)
                           .expect(200)
@@ -632,7 +620,7 @@ describe('Collections API – PUT', function () {
                             res.body['results'][0]._apiVersion.should.equal('vtest')
 
                             client
-                              .get('/vjoin/testdb/test-schema-no-history?filter={"field1": { "$ne" : "" } }')
+                              .get('/vjoin/testdb/put-test-schema-no-history?filter={"field1": { "$ne" : "" } }')
                               .set('Authorization', 'Bearer ' + token)
                               .expect(200)
                               .expect('content-type', 'application/json')

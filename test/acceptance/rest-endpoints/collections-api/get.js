@@ -30,7 +30,7 @@ describe('Collections API – GET', function () {
       fs.rmdirSync(dirs.collections + '/v1/testdb')
     } catch (e) {}
 
-    done()
+    setTimeout(done, 300)
   }
 
   before(function (done) {
@@ -82,7 +82,10 @@ describe('Collections API – GET', function () {
         })
       })
     })
+  })
 
+  beforeEach(done => {
+    cleanup(done)
   })
 
   after(function (done) {
@@ -443,7 +446,7 @@ describe('Collections API – GET', function () {
         .send(jsSchemaString)
         .set('content-type', 'text/plain')
         .set('Authorization', 'Bearer ' + bearerToken)
-        .expect(200)
+        .expect(201)
         .expect('content-type', 'application/json')
         .end(function (err, res) {
           if (err) return done(err)
@@ -493,7 +496,7 @@ describe('Collections API – GET', function () {
         .send(jsSchemaString)
         .set('content-type', 'text/plain')
         .set('Authorization', 'Bearer ' + bearerToken)
-        .expect(200)
+        .expect(201)
         .expect('content-type', 'application/json')
         .end(function (err, res) {
           if (err) return done(err)
@@ -955,7 +958,6 @@ describe('Collections API – GET', function () {
       if (err) return done(err)
 
       var doc = res.body.results[0]
-
       var body = {
         query: { _id: doc._id },
         update: {field1: 'updated'}
@@ -1023,7 +1025,7 @@ describe('Collections API – GET', function () {
         res.body.results[0].field1.should.equal('updated')
 
         client
-        .get('/vtest/testdb/test-schema?includeHistory=true&filter={"$id": "' + doc.$id + '"}')
+        .get('/vtest/testdb/test-schema/' +  doc.$id + '?includeHistory=true')
         .set('Authorization', 'Bearer ' + bearerToken)
         .expect(200)
         .expect('content-type', 'application/json')

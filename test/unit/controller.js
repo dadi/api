@@ -1,6 +1,6 @@
 const should = require('should')
 const sinon = require('sinon')
-const controller = require(__dirname + '/../../dadi/lib/controller')
+const controller = require(__dirname + '/../../dadi/lib/controller/collection')
 const model = require(__dirname + '/../../dadi/lib/model')
 const cache = require(__dirname + '/../../dadi/lib/cache')
 const help = require(__dirname + '/help')
@@ -404,7 +404,7 @@ describe('Controller', () => {
 
         controller(mod).post({
           params: {},
-          client: {clientId: 'clientTestId'},
+          dadiApiClient: {clientId: 'clientTestId'},
           body: { field1: 'foo' },
           url: '/vtest/testdb/testcoll'
         })
@@ -473,13 +473,13 @@ describe('Controller', () => {
 
         controller(mod).put({
           params: {id: '1234567890'},
-          client: {clientId: 'clientTestId'},
+          dadiApiClient: {clientId: 'clientTestId'},
           body: { field1: 'bar' },
           url: '/vtest/testdb/testcoll/1234567890'
         })
 
         stub.callCount.should.equal(1)
-        
+
         let args = stub.getCall(0).args[0]
 
         args.query._id.should.equal('1234567890')
@@ -552,6 +552,7 @@ describe('Controller', () => {
         )
         let stub = sinon.stub(mod, 'getStats').resolves({})
         let req = {
+          method: 'get',
           url: '/foo/bar'
         }
 

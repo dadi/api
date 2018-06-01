@@ -2,7 +2,6 @@ var fs = require('fs')
 var path = require('path')
 var should = require('should')
 var connection = require(__dirname + '/../../dadi/lib/model/connection')
-var tokenStore = require(__dirname + '/../../dadi/lib/auth/tokenStore')()
 var config = require(__dirname + '/../../config')
 var request = require('supertest')
 var _ = require('underscore')
@@ -89,6 +88,7 @@ module.exports.dropDatabase = function (database, collectionName, done) {
 module.exports.createClient = function (client, done) {
   if (!client) {
     client = {
+      accessType: 'admin',
       clientId: 'test123',
       secret: 'superSecret'
     }
@@ -105,9 +105,20 @@ module.exports.createClient = function (client, done) {
     conn.datastore.insert({
       data: client,
       collection: collectionName,
-      schema: tokenStore.schema
+      schema: {}
     }).then(result => {
-      return done()
+      return conn.datastore.find({
+        query: {
+          clientId: client.clientId,
+          secret: client.secret
+        },
+        collection: collectionName,
+        schema: {}
+      }).then(res => {
+        res.body.results.should.eql(1)
+
+        done()
+      })
     }).catch((err) => {
       done(err)
     })
@@ -180,7 +191,7 @@ module.exports.getBearerToken = function (done) {
         secret: 'superSecret'
       })
       .expect(200)
-      // .expect('content-type', 'application/json')
+      //.expect('content-type', 'application/json')
       .end(function (err, res) {
         if (err) return done(err)
         var bearerToken = res.body.accessToken

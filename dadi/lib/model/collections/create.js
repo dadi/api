@@ -5,6 +5,7 @@ const Hook = require('./../hook')
 /**
  * Creates one or multiple documents.
  *
+ * @param {Object} client - client to check permissions for
  * @param {Boolean|Number} compose - the composition settings for the result
  * @param {Object|Array} documents - the document(s) to insert
  * @param {Object} internals - internal properties to attach to documents
@@ -13,11 +14,13 @@ const Hook = require('./../hook')
  * @returns {Promise<Array>} array of created documents
  */
 function create ({
+  client,
   compose = true,
   documents,
   internals = {},
   rawOutput = false,
-  req
+  req,
+  validate = true
 }) {
   debug('Model create: %o %o', documents, internals)
 
@@ -34,72 +37,82 @@ function create ({
     documents = [documents]
   }
 
-  // Validate each document.
-  let validation
+  return this.validateAccess({
+    client,
+    type: 'create'
+  }).then(({schema}) => {
+    if (validate) {
+      // Validate each document.
+      let validation
 
-  documents.forEach(document => {
-    if (validation === undefined || validation.success) {
-      validation = this.validate.schema(document)
-    }
-  })
+      documents.forEach(document => {
+        if (validation === undefined || validation.success) {
+          // We validate the document against the schema returned by
+          // `validateAccess`, which may be the original schema or a
+          // subset of it determined by ACL restrictions.
+          validation = this.validate.schema(document, null, schema)
+        }
+      })
 
-  if (!validation.success) {
-    let error = this._createValidationError('Validation Failed')
+      if (!validation.success) {
+        let error = this._createValidationError('Validation Failed')
 
-    error.success = validation.success
-    error.errors = validation.errors
-    error.data = documents
+        error.success = validation.success
+        error.errors = validation.errors
 
-    return Promise.reject(error)
-  }
-
-  let transformQueue = Promise.all(documents.map(document => {
-    // Add internal properties to documents
-    if (typeof internals === 'object' && internals !== null) {
-      Object.assign(document, internals)
-    }
-
-    // Add placeholder for document history.
-    if (this.history) {
-      document._history = []
+        return Promise.reject(error)
+      }
     }
 
-    // Add initial revision number.
-    document._version = 1
-
-    return Object.keys(document).reduce((documentTransform, field) => {
-      if (field === '_id') {
-        return documentTransform
+    let transformQueue = Promise.all(documents.map(document => {
+      // Add internal properties to documents
+      if (typeof internals === 'object' && internals !== null) {
+        Object.assign(document, internals)
       }
 
-      return documentTransform.then(transformedDocument => {
-        return this.runFieldHooks({
-          data: {
-            internals
-          },
-          field,
-          input: {
-            [field]: document[field]
-          },
-          name: 'beforeSave'
-        }).then(subDocument => {
-          return Object.assign({}, transformedDocument, subDocument)
-        }).catch(error => {
-          error.success = false
-          error.errors = [
-            {
-              field,
-              message: error.message
-            }
-          ]
+      // Add placeholder for document history.
+      if (this.history) {
+        document._history = []
+      }
 
-          return Promise.reject(error)
+      // Add initial revision number.
+      document._version = 1
+
+      return Object.keys(document).reduce((documentTransform, field) => {
+        if (field === '_id') {
+          return documentTransform
+        }
+
+        return documentTransform.then(transformedDocument => {
+          return this.runFieldHooks({
+            data: {
+              client,
+              internals
+            },
+            field,
+            input: {
+              [field]: document[field]
+            },
+            name: 'beforeSave'
+          }).then(subDocument => {
+            return Object.assign({}, transformedDocument, subDocument)
+          }).catch(error => {
+            error.success = false
+            error.errors = [
+              {
+                field,
+                message: error.message
+              }
+            ]
+
+            return Promise.reject(error)
+          })
         })
-      })
-    }, Promise.resolve({}))
-  }))
+      }, Promise.resolve({}))
+    }))
 
-  return transformQueue.then(documents => {
+    return transformQueue
+  }).then(documents => {
     // Run any `beforeCreate` hooks.
     if (this.settings.hooks && this.settings.hooks.beforeCreate) {
       return new Promise((resolve, reject) => {

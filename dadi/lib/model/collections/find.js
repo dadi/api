@@ -23,11 +23,13 @@ const debug = require('debug')('api:model')
 /**
  * Finds documents in the database.
  *
+ * @param  {Object} client - client to check permissions for
  * @param  {Object} query - query to match documents against
  * @param  {Object} options
  * @return {Promise<ResultSet>}
  */
 function find ({
+  client,
   query = {},
   options = {}
 } = {}) {
@@ -76,7 +78,16 @@ function find ({
     return Promise.reject(err)
   }
 
-  return this._transformQuery(query, options).then(query => {
+  return this.validateAccess({
+    client,
+    fields: queryFields,
+    query,
+    type: 'read'
+  }).then(({fields, query}) => {
+    queryFields = fields
+
+    return this._transformQuery(query, options)
+  }).then(query => {
     return this.connection.db.find({
       query,
       collection: this.name,

@@ -1,13 +1,12 @@
 'use strict'
 
+const config = require('./../../../config')
+const Connection = require('./connection')
 const deepMerge = require('deepmerge')
-const path = require('path')
-const config = require(path.join(__dirname, '/../../../config'))
-const Connection = require(path.join(__dirname, '/connection'))
 const fields = require('./../fields')
-const History = require(path.join(__dirname, '/history'))
+const History = require('./history')
 const logger = require('@dadi/logger')
-const Validator = require(path.join(__dirname, '/validator'))
+const Validator = require('./validator')
 
 /**
  * Block with metadata pertaining to an API collection.
@@ -47,6 +46,8 @@ const Model = function (name, schema, connection, settings) {
     '_lastModifiedBy',
     '_version'
   ]
+
+  this.acl = require('./acl/access')
 
   // Attach collection name.
   this.name = name
@@ -325,6 +326,77 @@ Model.prototype._injectHistory = function (data, options) {
 }
 
 /**
+ * Takes two sets of field projection fields, one from a query and the
+ * other from an ACL rule that will affect the query, and combines them
+ * into one.
+ *
+ * @param  {Object} query
+ * @param  {Object} acl
+ * @return {Object}
+ */
+Model.prototype._mergeQueryAndAclFields = function (query, acl) {
+  if (!query || !Object.keys(query).length) {
+    return acl
+  }
+
+  if (!acl || !Object.keys(acl).length) {
+    return query
+  }
+
+  const isExclusion = fields => {
+    return Object.keys(fields).some(field => {
+      return field !== '_id' && fields[field] === 0
+    })
+  }
+
+  let result
+  let queryIsExclusion = isExclusion(query)
+  let aclIsExclusion = isExclusion(acl)
+
+  if (queryIsExclusion) {
+    if (aclIsExclusion) {
+      result = Object.assign({}, query)
+
+      Object.keys(acl).forEach(field => {
+        result[field] = acl[field]
+      })
+    } else {
+      result = {}
+
+      Object.keys(acl).forEach(field => {
+        if (query[field] === undefined) {
+          result[field] = acl[field]
+        }
+      })
+    }
+  } else {
+    if (aclIsExclusion) {
+      result = {}
+
+      Object.keys(query).forEach(field => {
+        if (acl[field] === undefined) {
+          result[field] = query[field]
+        }
+      })
+    } else {
+      result = {}
+
+      Object.keys(query).forEach(field => {
+        if (acl[field]) {
+          result[field] = query[field]
+        }
+      })
+
+      if (Object.keys(result).length === 0) {
+        throw new Error('Empty field set')
+      }
+    }
+  }
+
+  return result
+}
+
+/**
  * Transforms a query for execution, running all field hooks.
  *
  * @param  {Object} query
@@ -405,6 +477,10 @@ Model.prototype.formatQuery = function (query) {
   })
 
   return newQuery
+}
+
+Model.prototype.getAclKey = function () {
+  return `collection:${this.settings.database}_${this.name}`
 }
 
 /**
@@ -522,18 +598,7 @@ Model.prototype.runFieldHooks = function ({
     }
   })
 
-  return queue.catch(error => {
-    let hookError = new Error('BAD_REQUEST')
-
-    hookError.errors = [
-      {
-        field,
-        message: error.message
-      }
-    ]
-
-    return Promise.reject(hookError)
-  })
+  return queue
 }
 
 /**
@@ -573,18 +638,80 @@ Model.prototype.shouldCompose = function ({
   return Boolean(this.settings.compose)
 }
 
-Model.prototype.count = require(path.join(__dirname, 'collections', 'count'))
-Model.prototype.create = require(path.join(__dirname, 'collections', 'create'))
-Model.prototype.createIndex = require(path.join(__dirname, 'collections', 'createIndex'))
-Model.prototype.delete = require(path.join(__dirname, 'collections', 'delete'))
-Model.prototype.find = require(path.join(__dirname, 'collections', 'find'))
-Model.prototype.get = require(path.join(__dirname, 'collections', 'get'))
-Model.prototype.getIndexes = require(path.join(__dirname, 'collections', 'getIndexes'))
-Model.prototype.getRevisions = require(path.join(__dirname, 'collections', 'getRevisions'))
-Model.prototype.getStats = require(path.join(__dirname, 'collections', 'getStats'))
-Model.prototype.revisions = require(path.join(__dirname, 'collections', 'getRevisions')) // (!) Deprecated in favour of `getRevisions`
-Model.prototype.stats = require(path.join(__dirname, 'collections', 'getStats')) // (!) Deprecated in favour of `getStats`
-Model.prototype.update = require(path.join(__dirname, 'collections', 'update'))
+/**
+ * This is a convenience method for determining whether a client has
+ * access to a client resource, as well as creating or augmenting the
+ * a series of variables useful for processing a query with ACL.
+ *
+ * It receives a client object ({clientId, accessType}), a fields and
+ * query objects, and an access type (e.g. 'read'). If the client
+ * does not have permission to access the resource, the resulting
+ * Promise is rejected with an 'UNAUTHORISED' error; otherwise, the
+ * Promise is resolved with a {fields, query} object, with the
+ * augmented fields and query objects.
+ *
+ * @param  {Object}   options.client
+ * @param  {Object}   options.fields
+ * @param  {Object}   options.query
+ * @param  {Object}   options.schema
+ * @param  {String}   options.type
+ * @return {Promise}
+ */
+Model.prototype.validateAccess = function ({
+  client,
+  fields = {},
+  query = {},
+  schema = this.schema,
+  type
+}) {
+  if (!client) {
+    return Promise.resolve({fields, query})
+  }
+
+  let aclKey = this.getAclKey()
+
+  return this.acl.get(client, aclKey).then(access => {
+    let value = access[type]
+
+    if (!value) {
+      return Promise.reject(
+        new Error('UNAUTHORISED')
+      )
+    }
+
+    if (value.filter) {
+      query = Object.assign({}, query, value.filter)
+    }
+
+    if (value.fields) {
+      try {
+        fields = this._mergeQueryAndAclFields(
+          fields,
+          value.fields
+        )
+      } catch (err) {
+        return Promise.reject(err)
+      }
+    }
+
+    let newSchema = this.acl.filterFields(access, schema)
+
+    return {fields, query, schema: newSchema}
+  })
+}
+
+Model.prototype.count = require('./collections/count')
+Model.prototype.create = require('./collections/create')
+Model.prototype.createIndex = require('./collections/createIndex')
+Model.prototype.delete = require('./collections/delete')
+Model.prototype.find = require('./collections/find')
+Model.prototype.get = require('./collections/get')
+Model.prototype.getIndexes = require('./collections/getIndexes')
+Model.prototype.getRevisions = require('./collections/getRevisions')
+Model.prototype.getStats = require('./collections/getStats')
+Model.prototype.revisions = require('./collections/getRevisions') // (!) Deprecated in favour of `getRevisions`
+Model.prototype.stats = require('./collections/getStats') // (!) Deprecated in favour of `getStats`
+Model.prototype.update = require('./collections/update')
 
 module.exports = function (name, schema, connection, settings) {
   if (schema) {

@@ -11,49 +11,72 @@ const logger = require('@dadi/logger')
 /**
  * Deletes documents from the database.
  *
+ * @param  {Object} client - client to check permissions for
  * @param  {Object} query - query to find documents to delete
  * @param  {Object} req - request to be passed to hooks
+ * @param  {Boolean} validate - whether to run validation
  * @return {Promise<DeleteResult>}
  */
-function deleteFn ({query, req}) {
+function deleteFn ({
+  client,
+  query,
+  req,
+  validate = true
+}) {
   if (!this.connection.db) {
     return Promise.reject(
       new Error('DB_DISCONNECTED')
     )
   }
 
-  let validation = this.validate.query(query)
-
-  if (!validation.success) {
-    let error = this._createValidationError('Validation Failed')
-
-    error.json = validation
-
-    return Promise.reject(error)
-  }
-
-  query = this.formatQuery(query)
-
   // Is this a RESTful query by ID?
-  const isRestIDQuery = req && req.params.id
+  let isRestIDQuery = req && req.params.id
 
+  // A reference to all documents in the collection, so that we
+  // know how many are left after the operation.
   let allDocuments = []
+
+  // A reference to the documents affected by the query.
   let deletedDocuments = []
 
-  // Op 1: Finding all documents
-  return this.find({
-    options: {
-      compose: false
+  // A reference to the query that will find documents for deletion.
+  let deleteQuery = query
+
+  return this.validateAccess({
+    client,
+    query: deleteQuery,
+    type: 'delete'
+  }).then(({query}) => {
+    let validation = this.validate.query(query)
+
+    if (!validation.success) {
+      let error = this._createValidationError('Validation Failed')
+
+      error.json = validation
+
+      return Promise.reject(error)
     }
+
+    deleteQuery = this.formatQuery(query)
+
+    // Op 1: Finding all documents
+    return this.find({
+      options: {
+        compose: false,
+        fields: {
+          _id: 1
+        }
+      }
+    })
   }).then(documents => {
     allDocuments = documents
 
     // Op 2: Finding documents matching query
     return this.find({
-      query,
       options: {
         compose: false
-      }
+      },
+      query: deleteQuery
     })
   }).then(({metadata, results}) => {
     deletedDocuments = results
@@ -78,33 +101,38 @@ function deleteFn ({query, req}) {
     // Run any `beforeDelete` hooks.
     if (this.settings.hooks && this.settings.hooks.beforeDelete) {
       return new Promise((resolve, reject) => {
-        async.reduce(this.settings.hooks.beforeDelete, query, (current, hookConfig, callback) => {
-          let hook = new Hook(hookConfig, 'beforeDelete')
-          let hookError = {}
+        async.reduce(
+          this.settings.hooks.beforeDelete,
+          deleteQuery,
+          (current, hookConfig, callback) => {
+            let hook = new Hook(hookConfig, 'beforeDelete')
+            let hookError = {}
 
-          Promise.resolve(
-            hook.apply(
-              current,
-              deletedDocuments,
-              hookError,
-              this.schema,
-              this.name,
-              req
-            )
-          ).then(newQuery => {
-            callback((newQuery === null) ? {} : null, newQuery || query)
-          }).catch(error => {
-            callback(hook.formatError(error))
-          })
-        }, (error, result) => {
-          if (error) return reject(error)
+            Promise.resolve(
+              hook.apply(
+                current,
+                deletedDocuments,
+                hookError,
+                this.schema,
+                this.name,
+                req
+              )
+            ).then(newQuery => {
+              callback((newQuery === null) ? {} : null, newQuery || deleteQuery)
+            }).catch(error => {
+              callback(hook.formatError(error))
+            })
+          },
+          (error, result) => {
+            if (error) return reject(error)
 
-          resolve(result)
-        })
+            resolve(result)
+          }
+        )
       })
     }
 
-    return query
+    return deleteQuery
   }).then(query => {
     return this.connection.db.delete({
       collection: this.name,

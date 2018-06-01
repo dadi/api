@@ -30,6 +30,7 @@ const logger = require('@dadi/logger')
  * @return {Promise<ResultSet>}
  */
 function get ({
+  client,
   query = {},
   options = {},
   req
@@ -63,6 +64,7 @@ function get ({
     }
   }).then(query => {
     return this.find({
+      client,
       query,
       options
     })
@@ -98,6 +100,7 @@ function get ({
     return this.formatForOutput(
       results,
       {
+        client,
         composeOverride: options.compose,
         urlFields: options.fields
       }

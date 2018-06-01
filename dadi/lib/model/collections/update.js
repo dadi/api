@@ -32,21 +32,25 @@ const logger = require('@dadi/logger')
  */
 
 /**
+ * @param  {Object} client - client to check permissions for
  * @param  {Boolean|Number} compose - the composition settings for the result
  * @param  {Object}  query - query to match documents against
  * @param  {Object}  update - properties to update documents with
  * @param  {Object}  internals - internal properties to inject in documents
  * @param  {Boolean} rawOutput - whether to bypass output formatting
  * @param  {Object}  req - request object to pass to hooks
+ * @param  {Boolean} validate - whether to run validation
  * @return {Promise<Array.ResultSet>} set of updated documents
  */
 function update ({
+  client,
   compose = true,
   query = {},
   update,
   internals = {},
   rawOutput = false,
-  req
+  req,
+  validate = true
 }) {
   debug(
     'Model update: %s %o %o %o',
@@ -65,65 +69,73 @@ function update ({
   // Add `lastModifiedAt` internal field.
   internals._lastModifiedAt = internals._lastModifiedAt || Date.now()
 
-  // Validate the query.
-  let validation = this.validate.query(query)
-
-  if (!validation.success) {
-    let error = this._createValidationError('Bad Query')
-
-    error.json = validation
-
-    return Promise.reject(error)
-  }
-
-  // Validate the update.
-  validation = this.validate.schema(update, true)
-
-  if (!validation.success) {
-    let error = this._createValidationError()
-
-    error.json = validation
-
-    return Promise.reject(error)
-  }
-
-  // Format the query.
-  query = this.formatQuery(query)
-
   // Is this a RESTful query by ID?
-  const isRestIDQuery = req && req.params.id
-
-  // Add any internal fields to the update.
-  Object.assign(update, internals)
+  let isRestIDQuery = req && req.params.id
 
   // Get a reference to the documents that will be updated.
   let updatedDocuments = []
 
-  // Run `beforeSave` hooks on update fields.
-  return Object.keys(update).reduce((result, field) => {
-    if (field === '_id') {
-      return result
+  return this.validateAccess({
+    client,
+    query,
+    type: 'update'
+  }).then(({query: aclQuery, schema}) => {
+    if (validate) {
+      // Validate the query.
+      let validation = this.validate.query(aclQuery)
+
+      if (!validation.success) {
+        let error = this._createValidationError('Bad Query')
+
+        error.json = validation
+
+        return Promise.reject(error)
+      }
+
+      // Validate the update.
+      validation = this.validate.schema(update, true, schema)
+
+      if (!validation.success) {
+        let error = this._createValidationError()
+
+        error.json = validation
+
+        return Promise.reject(error)
+      }
     }
 
-    return result.then(transformedUpdate => {
-      return this.runFieldHooks({
-        data: {
-          internals
-        },
-        field,
-        input: {
-          [field]: update[field]
-        },
-        name: 'beforeSave'
-      }).then(subDocument => {
-        return Object.assign({}, transformedUpdate, subDocument)
-      })
-    })
-  }, Promise.resolve({})).then(transformedUpdate => {
-    update = transformedUpdate
+    // Format the query.
+    query = this.formatQuery(aclQuery)
 
-    return this.find({
-      query
+    // Add any internal fields to the update.
+    Object.assign(update, internals)
+
+    // Run `beforeSave` hooks on update fields.
+    return Object.keys(update).reduce((result, field) => {
+      if (field === '_id') {
+        return result
+      }
+
+      return result.then(transformedUpdate => {
+        return this.runFieldHooks({
+          data: {
+            internals
+          },
+          field,
+          input: {
+            [field]: update[field]
+          },
+          name: 'beforeSave'
+        }).then(subDocument => {
+          return Object.assign({}, transformedUpdate, subDocument)
+        })
+      })
+    }, Promise.resolve({})).then(transformedUpdate => {
+      update = transformedUpdate
+
+      return this.find({
+        query
+      })
     })
   }).then(result => {
     // Create a copy of the documents that matched the find
@@ -192,6 +204,7 @@ function update ({
     }
 
     return this.find({
+      client,
       query: updatedDocumentsQuery,
       options: {
         compose: true
@@ -214,6 +227,7 @@ function update ({
     // Format result set for output.
     if (!rawOutput) {
       return this.formatForOutput(data.results, {
+        client,
         composeOverride: compose
       }).then(results => {
         return Object.assign({}, data, {

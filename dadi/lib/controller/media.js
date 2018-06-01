@@ -256,6 +256,49 @@ MediaController.prototype.post = function (req, res, next) {
   }
 }
 
+MediaController.prototype.delete = function (req, res, next) {
+  let query = req.params.id ? { _id: req.params.id } : req.body.query
+
+  if (!query) return next()
+
+  this.model.get(query, {}, (err, results) => {
+    if (err) return next(err)
+    if (!results.results[0]) return next()
+
+    let file = results.results[0]
+
+    // remove physical file
+    let storageHandler = StorageFactory.create(file.fileName)
+
+    storageHandler
+      .delete(file)
+      .then(result => {
+        this.model.delete({
+          query,
+          req
+        }).then(({deletedCount, totalCount}) => {
+          if (config.get('feedback')) {
+            // Send 200 with JSON payload.
+            return help.sendBackJSON(200, res, next)(null, {
+              status: 'success',
+              message: 'Documents deleted successfully',
+              deleted: deletedCount,
+              totalCount
+            })
+          }
+
+          // Send 204 with no content.
+          res.statusCode = 204
+          res.end()
+        }).catch(error => {
+          return help.sendBackJSON(200, res, next)(error)
+        })
+      }).catch((err) => {
+        return next(err)
+      })
+  }, req)
+}
+
 /**
  *
  */

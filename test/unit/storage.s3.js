@@ -44,12 +44,11 @@ describe('Storage', function (done) {
       return s3Storage.getBucket().should.eql(settings.s3.bucketName)
     })
 
-    it('should call AWS with the correct parameters', function (done) {
+    it('should call S3 API with the correct parameters when uploading media', function (done) {
       config.set('media.enabled', true)
       config.set('media.s3.bucketName', 'testbucket')
 
       var settings = config.get('media')
-      var s3Storage = new S3Storage('test.jpg')
 
       // set expected key value
       var expected = settings.basePath + '/test.jpg'
@@ -59,6 +58,7 @@ describe('Storage', function (done) {
         AWS.restore()
         // here's the test
         // "data" contains the parameters passed to putObject
+        data.Bucket.should.eql(config.get('media.s3.bucketName'))
         data.Key.should.eql(expected)
         done()
       })
@@ -71,6 +71,71 @@ describe('Storage', function (done) {
       readable.push(null)
 
       storage.put(readable, '').then(() => {
+        // nothing
+      })
+    })
+
+    it('should call S3 API with the correct parameters when deleting media', function (done) {
+      config.set('media.enabled', true)
+      config.set('media.s3.bucketName', 'testbucket')
+
+      var settings = config.get('media')
+
+      // set expected key value
+      var expected = settings.basePath + '/test.jpg'
+
+      var file = {
+        fileName: 'test.jpg',
+        path: expected
+      }
+
+      // mock the s3 request
+      AWS.mock('S3', 'deleteObject', (data) => {
+        AWS.restore()
+        // here's the test
+        // "data" contains the parameters passed to deleteObject
+        data.Bucket.should.eql(config.get('media.s3.bucketName'))
+        data.Key.should.eql(expected)
+        done()
+      })
+
+      // create the s3 handler
+      var storage = StorageFactory.create('test.jpg')
+
+      storage.delete(file).then(() => {
+        // nothing
+      })
+    })
+
+    it('should call S3 API with the correct parameters when requesting media', function (done) {
+      config.set('media.enabled', true)
+      config.set('media.s3.bucketName', 'testbucket')
+
+      var settings = config.get('media')
+
+      // set expected key value
+      var expected = 'test.jpg'
+
+      var file = {
+        fileName: 'test.jpg',
+        path: expected
+      }
+
+      // mock the s3 request
+      AWS.mock('S3', 'getObject', (data) => {
+        AWS.restore()
+
+        // here's the test
+        // "data" contains the parameters passed to getObject
+        data.Bucket.should.eql(config.get('media.s3.bucketName'))
+        data.Key.should.eql(expected)
+        done()
+      })
+
+      // create the s3 handler
+      var storage = StorageFactory.create('test.jpg')
+
+      storage.get(file.fileName, 'media', {}, {}, function () {}).then(() => {
         // nothing
       })
     })

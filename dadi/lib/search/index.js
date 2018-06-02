@@ -1,8 +1,8 @@
-var _ = require('underscore')
-var path = require('path')
-var url = require('url')
-var help = require(path.join(__dirname, '/../help'))
-var model = require(path.join(__dirname, '/../model'))
+const _ = require('underscore')
+const path = require('path')
+const url = require('url')
+const help = require(path.join(__dirname, '/../help'))
+const model = require(path.join(__dirname, '/../model'))
 /*
 
 Search middleware allowing cross-collection querying
@@ -17,15 +17,13 @@ http://api.example.com/1.0/search?collections=library/books,library/films&query=
 
 */
 module.exports = function (server) {
-  server.app.use('/:version/search', function (req, res, next) {
-    // sorry, we only process GET requests at this endpoint
-    var method = req.method && req.method.toLowerCase()
-    if (method !== 'get') {
+  server.app.use('/:version/search', (req, res, next) => {
+    if (req.method && req.method.toLowerCase() !== 'get') {
       return next()
     }
 
-    var path = url.parse(req.url, true)
-    var options = path.query
+    let parsedUrl = url.parse(req.url, true)
+    let options = parsedUrl.query
 
     // no collection and no query params
     if (!(options.collections && options.query)) {
@@ -33,39 +31,38 @@ module.exports = function (server) {
     }
 
     // split the collections param
-    var collections = options.collections.split(',')
+    let collections = options.collections.split(',')
 
     // extract the query from the querystring
-    var query = help.parseQuery(options.query)
+    let query = help.parseQuery(options.query)
 
     // determine API version
-    var apiVersion = path.pathname.split('/')[1]
+    let apiVersion = parsedUrl.pathname.split('/')[1]
 
     // no collections specfied
     if (collections.length === 0) {
       return help.sendBackJSON(400, res, next)(null, {'error': 'Bad Request'})
     }
 
-    var results = {}
-    var idx = 0
+    let results = {}
+    let idx = 0
 
-    _.each(collections, function (collection) {
+    _.each(collections, collection => {
       // get the database and collection name from the
       // collection parameter
-      var parts = collection.split('/')
-      var database, name, mod
+      let parts = collection.split('/')
+      let database, name, mod
 
       query._apiVersion = apiVersion
 
-      if (_.isArray(parts) && parts.length > 1) {
+      if (Array.isArray(parts) && parts.length > 1) {
         database = parts[0]
         name = parts[1]
         mod = model(name, null, null, database)
       }
 
       if (mod) {
-        // query!
-        mod.find(query, function (err, docs) {
+        mod.find(query, (err, docs) => {
           if (err) {
             return help.sendBackJSON(500, res, next)(err)
           }

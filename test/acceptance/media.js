@@ -152,38 +152,18 @@ describe('Media', function () {
 
       it('should return an error if specified token has expired', function (done) {
         var obj = {
-          fileName: 'test.jpg'
+          fileName: '1f525.png'
         }
 
         sinon.stub(app, '_signToken').callsFake(function (obj) {
-          return jwt.sign(obj, config.get('media.tokenSecret'), { expiresIn: 1 })
+          return jwt.sign(obj, config.get('media.tokenSecret'), { expiresIn: 0 })
         })
 
-        var client = request(connectionString)
-
-        client
-        .post('/media/sign')
-        .set('Authorization', 'Bearer ' + bearerToken)
-        .set('content-type', 'application/json')
-        .send(obj)
-        .end((err, res) => {
-          if (err) return done(err)
-
+        signAndUpload(obj, (err, res) => {
           app._signToken.restore()
-          var url = res.body.url
-
-          setTimeout(function () {
-            client
-            .post(url)
-            .set('content-type', 'application/json')
-            .send(obj)
-            .expect(400)
-            .end((err, res) => {
-              if (err) return done(err)
-              res.body.name.should.eql('TokenExpiredError')
-              done()
-            })
-          }, 1500)
+          res.statusCode.should.eql(400)
+          res.body.name.should.eql('TokenExpiredError')
+          done()
         })
       })
 
@@ -194,27 +174,10 @@ describe('Media', function () {
 
         var client = request(connectionString)
 
-        client
-        .post('/media/sign')
-        .set('Authorization', 'Bearer ' + bearerToken)
-        .set('content-type', 'application/json')
-        .send(obj)
-        .end((err, res) => {
-          if (err) return done(err)
-
-          var url = res.body.url
-
-          client
-          .post(url)
-            // .set('content-type', 'application/json')
-          .attach('avatar', 'test/acceptance/workspace/media/1f525.png')
-          .expect(400)
-          .end((err, res) => {
-            if (err) return done(err)
-
-            res.body.name.should.eql('Unexpected filename')
-            done()
-          })
+        signAndUpload(obj, (err, res) => {
+          res.statusCode.should.eql(400)
+          res.body.name.should.eql('Unexpected filename')
+          done()
         })
       })
 
@@ -224,29 +187,10 @@ describe('Media', function () {
           mimetype: 'image/jpeg'
         }
 
-        var client = request(connectionString)
-
-        client
-        .post('/media/sign')
-        .set('Authorization', 'Bearer ' + bearerToken)
-        .set('content-type', 'application/json')
-        .send(obj)
-        .end((err, res) => {
-          if (err) return done(err)
-
-          var url = res.body.url
-
-          client
-          .post(url)
-          .set('content-type', 'application/json')
-          .attach('avatar', 'test/acceptance/workspace/media/1f525.png')
-          .expect(400)
-          .end((err, res) => {
-            if (err) return done(err)
-
-            res.body.name.should.eql('Unexpected mimetype')
-            done()
-          })
+        signAndUpload(obj, (err, res) => {
+          res.statusCode.should.eql(400)
+          res.body.name.should.eql('Unexpected mimetype')
+          done()
         })
       })
     })
@@ -472,33 +416,95 @@ describe('Media', function () {
 
         client
         .get('/api/collections')
+        .set('Authorization', 'Bearer ' + bearerToken)
+        .set('content-type', 'application/json')
+        .expect(200)
+        .end((err, res) => {
+          if (err) return done(err)
+
+          should.exist(res.body.media)
+
+          res.body.media.defaultBucket.should.be.String
+          res.body.media.defaultBucket.should.eql(defaultBucket)
+
+          res.body.media.buckets.should.be.Array
+          res.body.media.buckets.length.should.eql(allBuckets.length)
+          res.body.media.buckets.forEach(bucket => {
+            allBuckets.indexOf(bucket).should.not.eql(-1)
+          })
+
+        // Restore original list of buckets
+          config.set('media.buckets', originalBuckets)
+
+          done()
+        })
+      })
+    })
+
+    describe('DELETE', function () {
+      it('should allow deleting media by ID', function (done) {
+        var obj = {
+          fileName: '1f525.png',
+          mimetype: 'image/png'
+        }
+
+        var client = request(connectionString)
+
+        config.set('feedback', true)
+
+        signAndUpload(obj, (err, res) => {
+          should.exist(res.body.results)
+          res.body.results.should.be.Array
+          res.body.results.length.should.eql(1)
+          res.body.results[0].fileName.should.eql('1f525.png')
+
+          client
+          .delete('/media/' + res.body.results[0]._id)
           .set('Authorization', 'Bearer ' + bearerToken)
           .set('content-type', 'application/json')
           .expect(200)
           .end((err, res) => {
             if (err) return done(err)
-
-            should.exist(res.body.media)
-
-            res.body.media.defaultBucket.should.be.String
-            res.body.media.defaultBucket.should.eql(defaultBucket)
-
-            res.body.media.buckets.should.be.Array
-            res.body.media.buckets.length.should.eql(allBuckets.length)
-            res.body.media.buckets.forEach(bucket => {
-              allBuckets.indexOf(bucket).should.not.eql(-1)
-            })
-
-          // Restore original list of buckets
-            config.set('media.buckets', originalBuckets)
-
+            should.exist(res.body.status)
+            res.body.status.should.eql('success')
+            res.body.deleted.should.eql(1)
             done()
           })
+        })
+      })
+
+      it('should return 204 when deleting media and feedback == false', function (done) {
+        var obj = {
+          fileName: '1f525.png',
+          mimetype: 'image/png'
+        }
+
+        var client = request(connectionString)
+
+        config.set('feedback', false)
+
+        signAndUpload(obj, (err, res) => {
+          should.exist(res.body.results)
+          res.body.results.should.be.Array
+          res.body.results.length.should.eql(1)
+          res.body.results[0].fileName.should.eql('1f525.png')
+
+          client
+          .delete('/media/' + res.body.results[0]._id)
+          .set('Authorization', 'Bearer ' + bearerToken)
+          .set('content-type', 'application/json')
+          .expect(204)
+          .end((err, res) => {
+            if (err) return done(err)
+            res.body.should.eql({})
+            done()
+          })
+        })
       })
     })
   })
 
-  describe('Standard collection media', function () {
+  describe.skip('Standard collection media', function () {
     beforeEach((done) => {
       app.start(() => {
         help.dropDatabase('testdb', null, (err) => {

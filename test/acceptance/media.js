@@ -59,12 +59,24 @@ describe('Media', function () {
       done()
     })
 
+    it('should generate a folder hierarchy for a file using the current date', function (done) {
+      config.set('media.pathFormat', 'date')
+      let mediaController = new MediaController()
+      mediaController.getPath('test.jpg').split('/').length.should.eql(3)
+      done()
+    })
+
     it('should generate a folder hierarchy for a file using the current datetime', function (done) {
       config.set('media.pathFormat', 'datetime')
       let mediaController = new MediaController()
       mediaController.getPath('test.jpg').split('/').length.should.eql(6)
+      done()
+    })
 
-      config.set('media.pathFormat', 'date')
+    it('should not generate a folder hierarchy for a file when not configured', function (done) {
+      config.set('media.pathFormat', '')
+      let mediaController = new MediaController()
+      mediaController.getPath('test.jpg').should.eql('')
       done()
     })
   })

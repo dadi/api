@@ -26,9 +26,6 @@ describe('Storage', function (done) {
       config.set('media.storage', 's3')
       config.set('media.s3.bucketName', 'testbucket')
 
-      var settings = config.get('media')
-      var s3Storage = new S3Storage('test.jpg')
-
       // create the s3 handler
       var storage = StorageFactory.create('test.jpg')
       return should.exist(storage.s3)
@@ -138,6 +135,29 @@ describe('Storage', function (done) {
       storage.get(file.fileName, 'media', {}, {}, function () {}).then(() => {
         // nothing
       })
+    })
+
+    it('should set the provierType to "DigitalOcean" when an endpoint is specified', function (done) {
+      config.set('media.enabled', true)
+      config.set('media.s3.bucketName', 'testbucket')
+      config.set('media.s3.endpoint', 'nyc3.digitalocean.com')
+
+      // set expected key value
+      var expected = 'test.jpg'
+
+      var file = {
+        fileName: 'test.jpg',
+        path: expected
+      }
+
+      // create the s3 handler
+      let storage = StorageFactory.create('test.jpg')
+
+      config.set('media.s3.endpoint', '')
+
+      storage.providerType.should.eql('DigitalOcean')
+
+      done()
     })
   })
 })

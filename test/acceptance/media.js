@@ -1,18 +1,20 @@
-var _ = require('underscore')
-var app = require(__dirname + '/../../dadi/lib/')
-var config = require(__dirname + '/../../config')
-var help = require(__dirname + '/help')
-var fs = require('fs')
-var jwt = require('jsonwebtoken')
-var MediaController = require(__dirname + '/../../dadi/lib/controller/media')
-var path = require('path')
-var request = require('supertest')
-var should = require('should')
-var sinon = require('sinon')
+const AWS = require('aws-sdk-mock')
+const path = require('path')
+const app = require(path.join(__dirname, '/../../dadi/lib/'))
+const config = require(path.join(__dirname, '/../../config'))
+const help = require(path.join(__dirname, '/help'))
+const fs = require('fs')
+const jwt = require('jsonwebtoken')
+const MediaController = require(path.join(__dirname, '/../../dadi/lib/controller/media'))
+const request = require('supertest')
+const should = require('should')
+const sinon = require('sinon')
 
 // variables scoped for use throughout tests
-var bearerToken
-var connectionString = 'http://' + config.get('server.host') + ':' + config.get('server.port')
+let bearerToken
+let connectionString = 'http://' + config.get('server.host') + ':' + config.get('server.port')
+
+let configBackup = config.get()
 
 function signAndUpload (data, callback) {
   let client = request(connectionString)
@@ -34,6 +36,38 @@ function signAndUpload (data, callback) {
 
 describe('Media', function () {
   this.timeout(5000)
+
+  describe('Path format', function () {
+    it('should generate a folder hierarchy for a file with 4 character chunks', function (done) {
+      config.set('media.pathFormat', 'sha1/4')
+      let mediaController = new MediaController()
+      mediaController.getPath('test.jpg').split('/')[0].length.should.eql(4)
+      done()
+    })
+
+    it('should generate a folder hierarchy for a file with 5 character chunks', function (done) {
+      config.set('media.pathFormat', 'sha1/5')
+      let mediaController = new MediaController()
+      mediaController.getPath('test.jpg').split('/')[0].length.should.eql(5)
+      done()
+    })
+
+    it('should generate a folder hierarchy for a file with 8 character chunks', function (done) {
+      config.set('media.pathFormat', 'sha1/8')
+      let mediaController = new MediaController()
+      mediaController.getPath('test.jpg').split('/')[0].length.should.eql(8)
+      done()
+    })
+
+    it('should generate a folder hierarchy for a file using the current datetime', function (done) {
+      config.set('media.pathFormat', 'datetime')
+      let mediaController = new MediaController()
+      mediaController.getPath('test.jpg').split('/').length.should.eql(6)
+
+      config.set('media.pathFormat', 'date')
+      done()
+    })
+  })
 
   describe('Default configuration', function () {
     beforeEach((done) => {
@@ -140,16 +174,6 @@ describe('Media', function () {
     })
 
     describe('POST', function () {
-    // it.skip('should not allow upload without using a signed token', function (done) {
-    //   var client = request(connectionString)
-    //   client
-    //   .post('/media')
-    //   .set('Authorization', 'Bearer ' + bearerToken)
-    //   .attach('avatar', 'test/acceptance/workspace/media/1f525.png')
-    //   .expect(404)
-    //   .end(done)
-    // })
-
       it('should return an error if specified token has expired', function (done) {
         var obj = {
           fileName: '1f525.png'
@@ -191,6 +215,36 @@ describe('Media', function () {
           res.statusCode.should.eql(400)
           res.body.name.should.eql('Unexpected mimetype')
           done()
+        })
+      })
+    })
+
+    describe('COUNT', function () {
+      it('should return count of uploaded media', function (done) {
+        var obj = {
+          fileName: '1f525.png',
+          mimetype: 'image/png'
+        }
+
+        var client = request(connectionString)
+
+        signAndUpload(obj, (err, res) => {
+          should.exist(res.body.results)
+          res.body.results.should.be.Array
+          res.body.results.length.should.eql(1)
+          res.body.results[0].fileName.should.eql('1f525.png')
+
+          client
+            .get('/media/count')
+            .set('Authorization', 'Bearer ' + bearerToken)
+            .set('content-type', 'application/json')
+            .expect(200)
+            .end((err, res) => {
+              if (err) return done(err)
+              should.exist(res.body.metadata)
+              res.body.metadata.totalCount.should.eql(1)
+              done()
+            })
         })
       })
     })
@@ -502,9 +556,58 @@ describe('Media', function () {
         })
       })
     })
+
+    describe('S3 Storage', () => {
+      beforeEach(() => {
+        config.set('media.storage', 's3')
+      })
+
+      afterEach(() => {
+        config.set('media.storage', configBackup.media.storage)
+        config.set('media.s3.bucketName', configBackup.media.s3.bucketName)
+        config.set('media.s3.accessKey', configBackup.media.s3.accessKey)
+        config.set('media.s3.secretKey', configBackup.media.s3.secretKey)
+      })
+
+      it('should return 200 when image is returned', function (done) {
+        // return a buffer from the S3 request
+        let stream = fs.createReadStream('./test/acceptance/workspace/media/1f525.png')
+        let buffers = []
+
+        stream
+          .on('data', function (data) { buffers.push(data) })
+          .on('end', function () {
+            let buffer = Buffer.concat(buffers)
+
+            AWS.mock('S3', 'getObject', Promise.resolve({
+              LastModified: Date.now(),
+              Body: buffer
+            }))
+
+            config.set('media.s3.bucketName', 'test-bucket')
+            config.set('media.s3.accessKey', 'xxx')
+            config.set('media.s3.secretKey', 'xyz')
+
+            let client = request(connectionString)
+            client
+            .get('/media/mock/logo.png')
+            .set('Authorization', 'Bearer ' + bearerToken)
+            .expect(200)
+            .end((err, res) => {
+              AWS.restore()
+
+              // res.text.should.be.instanceof(Buffer)
+              // res.headers['content-type'].should.eql('image/png')
+              res.statusCode.should.eql(200)
+
+              done()
+            })
+          })
+      })
+    })
   })
 
-  describe.skip('Standard collection media', function () {
+  describe('Standard collection media', function () {
     beforeEach((done) => {
       app.start(() => {
         help.dropDatabase('testdb', null, (err) => {

@@ -80,7 +80,6 @@ S3Storage.prototype.get = function (filePath, route, req, res, next) {
       let bufferStream = new stream.PassThrough()
       bufferStream.push(data.Body)
       bufferStream.push(null)
-      // return resolve(bufferStream)
       bufferStream.pipe(res)
     }).catch(error => {
       return reject(error)

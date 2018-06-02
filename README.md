@@ -1,7 +1,7 @@
-<img src="https://dadi.tech/assets/products/dadi-api-full.png" alt="DADI API" height="65"/>
+<img src="https://dadi.cloud/assets/products/dadi-api-full.png" alt="DADI API" height="65"/>
 
 [![npm (scoped)](https://img.shields.io/npm/v/@dadi/api.svg?maxAge=10800&style=flat-square)](https://www.npmjs.com/package/@dadi/api)
-[![coverage](https://img.shields.io/badge/coverage-88%25-yellow.svg?style=flat)](https://github.com/dadi/api)
+[![coverage](https://img.shields.io/badge/coverage-86%25-yellow.svg?style=flat)](https://github.com/dadi/api)
 [![Build Status](https://travis-ci.org/dadi/api.svg?branch=master)](https://travis-ci.org/dadi/api)
 [![JavaScript Style Guide](https://img.shields.io/badge/code%20style-standard-brightgreen.svg?style=flat-square)](http://standardjs.com/)
 
@@ -14,9 +14,9 @@
 
 ## Overview
 
-DADI API is built on Node.JS. It is a high performance RESTful API layer designed in support of [API-first development and the principle of COPE](https://dadi.tech/platform/concepts/api-first-and-cope/). It can use virtually any database engine, such as [MongoDB](https://github.com/dadi/api-mongodb), [CouchDB](https://github.com/dadi/api-couchdb), [RethinkDB](https://github.com/dadi/api-rethinkdb) or simply a [JSON filestore](https://github.com/dadi/api-filestore).
+DADI API is built on Node.JS. It is a high performance RESTful API layer designed in support of API-first development and the principle of COPE. It can use virtually any database engine, such as [MongoDB](https://github.com/dadi/api-mongodb), [CouchDB](https://github.com/dadi/api-couchdb), [RethinkDB](https://github.com/dadi/api-rethinkdb) or simply a [JSON filestore](https://github.com/dadi/api-filestore).
 
-You can consider it as the data layer within a platform (including the data model). It is designed to be plugged into a templating layer (such as [DADI Web](https://dadi.tech/platform/web)), a mobile application or to be used with any other data consumer.
+You can consider it as the data layer within a platform (including the data model). It is designed to be plugged into a templating layer (such as [DADI Web](https://dadi.cloud/en/web)), a mobile application or to be used with any other data consumer.
 
 Calls to a DADI API can contain your business/domain logic (the part of a platform that encodes the real-world business rules that determine how data is created, displayed, stored and changed). It has full support for searching, filtering, limiting, sorting, offsetting, input validation and data aggregation (through support for MongoDB's aggregation pipeline).
 
@@ -35,7 +35,7 @@ It is part of DADI, a suite of components covering the full development stack, b
 
 ### Install API
 
-The quickest way to get started with *API* is to use [DADI CLI](https://github.com/dadi/cli). See [Creating an API](https://docs.dadi.tech/#api/creating-an-api) for full installation details.
+The quickest way to get started with *API* is to use [DADI CLI](https://github.com/dadi/cli). See [Creating an API](https://docs.dadicloud/api) for full installation details.
 
 
 ### Configuration
@@ -95,7 +95,7 @@ Connection: keep-alive
 
 The HTTP 401 response received in the previous step shows that the server is running. To start using the REST endpoints you'll need a user account so you can obtain access tokens for interacting with the API.
 
-User accounts provide an authentication layer for API. Each user account has a *__clientId__* and a *__secret__*. These are used to obtain access tokens for interacting with the API. See the [Authentication](https://docs.dadi.tech/#api/authentication) section of the API documentation for full details.
+User accounts provide an authentication layer for API. Each user account has a *__clientId__* and a *__secret__*. These are used to obtain access tokens for interacting with the API. See the [Authentication](https://docs.dadi.cloud/api#authentication) section of the API documentation for full details.
 
 #### Creating the first user
 
@@ -144,11 +144,11 @@ $ npm test
 
 
 ## Links
-* [API Documentation](https://docs.dadi.tech/#api/)
+* [API Documentation](https://docs.dadi.cloud/api/)
 
 ## Contributors
 
-DADI API is based on an original idea by Joseph Denne. It is developed and maintained by the engineering team at DADI ([https://dadi.tech](https://dadi.tech))
+DADI API is based on an original idea by Joseph Denne. It is developed and maintained by the engineering team at DADI ([https://dadi.cloud](https://dadi.cloud))
 
 * Adam K Dean <akd@dadi.co>
 * Arthur Mingard <am@dadi.co>
@@ -167,7 +167,7 @@ DADI API is based on an original idea by Joseph Denne. It is developed and maint
 DADI is a data centric development and delivery stack, built specifically in support of the principles of API first and COPE.
 
 Copyright notice<br />
-(C) 2018 DADI+ Limited <support@dadi.tech><br />
+(C) 2018 DADI+ Limited <support@dadi.cloud><br />
 All rights reserved
 
 This product is part of DADI.<br />

@@ -1,4 +1,3 @@
-const _ = require('underscore')
 const path = require('path')
 const url = require('url')
 const help = require(path.join(__dirname, '/../help'))
@@ -47,7 +46,7 @@ module.exports = function (server) {
     let results = {}
     let idx = 0
 
-    _.each(collections, collection => {
+    collections.forEach(collection => {
       // get the database and collection name from the
       // collection parameter
       let parts = collection.split('/')

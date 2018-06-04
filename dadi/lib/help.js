@@ -61,11 +61,19 @@ module.exports.sendBackJSON = function (successCode, res, next) {
 
           break
 
-        case 'UNAUTHORISED':
-          body = Object.assign(formatError.createApiError('0005'), {
+        case 'FORBIDDEN':
+          body = Object.assign(formatError.createApiError('0006'), {
             statusCode: 403
           })
-          statusCode = body.statusCode
+          statusCode = 403
+
+          break
+
+        case 'UNAUTHORISED':
+          body = Object.assign(formatError.createApiError('0005'), {
+            statusCode: 401
+          })
+          statusCode = 401
 
           break
 

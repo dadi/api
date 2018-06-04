@@ -79,6 +79,19 @@ ACL.prototype.connect = function () {
   role.setModel(roleModel)
 }
 
+ACL.prototype.createError = function (client) {
+  // If the client exists and there is no error associated with it, it
+  // means that a valid bearer token was supplied, but it doesn't have the
+  // right permissions to perform the operation - i.e. the request is
+  // authenticated, just not authorised. That is a 403. In any other case,
+  // the request is unauthorised, so a 401 is returned.
+  if (client && client.clientId && !client.error) {
+    return new Error('FORBIDDEN')
+  }
+
+  return new Error('UNAUTHORISED')
+}
+
 ACL.prototype.getResources = function () {
   return this.resources
 }

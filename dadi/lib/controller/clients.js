@@ -31,7 +31,15 @@ const Clients = function (server) {
 }
 
 Clients.prototype.delete = function (req, res, next) {
-  return model.get(req.params.clientId).then(clients => {
+  return acl.access.get(req.dadiApiClient, 'clients').then(access => {
+    if (access.delete !== true) {
+      return help.sendBackJSON(null, res, next)(
+        acl.createError(req.dadiApiClient)
+      )
+    }
+
+    return model.get(req.params.clientId)
+  }).then(clients => {
     if (clients.results.length === 0) {
       return help.sendBackJSON(404, res, next)(null)
     }

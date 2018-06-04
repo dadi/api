@@ -1,3 +1,4 @@
+var acl = require('./../../dadi/lib/model/acl')
 var fs = require('fs')
 var path = require('path')
 var should = require('should')
@@ -115,7 +116,7 @@ module.exports.createClient = function (client, done) {
         collection: collectionName,
         schema: {}
       }).then(res => {
-        res.body.results.should.eql(1)
+        res.results.length.should.eql(1)
 
         done()
       })
@@ -129,6 +130,110 @@ module.exports.createClient = function (client, done) {
   } else {
     conn.on('connect', createClient)
   }
+}
+
+module.exports.createACLClient = function (client, callback) {
+  let clientsConnection = connection(
+    {
+      override: true,
+      database: config.get('auth.database'),
+      collection: config.get('auth.clientCollection')
+    },
+    null,
+    config.get('datastore')
+  )
+
+  return clientsConnection.datastore.insert({
+    data: client,
+    collection: config.get('auth.clientCollection'),
+    schema: {}
+  }).then(result => {  
+    return acl.access.write()
+  }).then(() => {
+    if (typeof callback === 'function') {
+      done()  
+    }
+  }).catch(err => {
+    if (typeof callback === 'function') {
+      done(err)
+    }
+
+    return Promise.reject(err)
+  })
+}
+
+module.exports.createACLRole = function (role, callback) {
+  let rolesConnection = connection(
+    {
+      override: true,
+      database: config.get('auth.database'),
+      collection: config.get('auth.roleCollection')
+    },
+    null,
+    config.get('datastore')
+  )
+
+  return rolesConnection.datastore.insert({
+    data: role,
+    collection: config.get('auth.roleCollection'),
+    schema: {}
+  }).then(result => {  
+    return acl.access.write()
+  }).then(() => {
+    if (typeof callback === 'function') {
+      done()  
+    }
+  }).catch(err => {
+    if (typeof callback === 'function') {
+      done(err)
+    }
+
+    return Promise.reject(err)
+  })
+}
+
+module.exports.removeACLData = function (done) {
+  let accessConnection = connection(
+    {
+      override: true,
+      database: config.get('auth.database'),
+      collection: config.get('auth.accessCollection')
+    },
+    null,
+    config.get('datastore')
+  )
+
+  let clientsConnection = connection(
+    {
+      override: true,
+      database: config.get('auth.database'),
+      collection: config.get('auth.clientCollection')
+    },
+    null,
+    config.get('datastore')
+  )
+
+  let rolesConnection = connection(
+    {
+      override: true,
+      database: config.get('auth.database'),
+      collection: config.get('auth.roleCollection')
+    },
+    null,
+    config.get('datastore')
+  )
+
+  return accessConnection.datastore.dropDatabase(
+    config.get('auth.accessCollection')
+  ).then(() => {
+    return clientsConnection.datastore.dropDatabase(
+      config.get('auth.clientCollection')
+    )
+  }).then(() => {
+    return rolesConnection.datastore.dropDatabase(
+      config.get('auth.roleCollection')
+    )
+  }).then(() => done()).catch(err => done(err))
 }
 
 module.exports.removeTestClients = function (done) {

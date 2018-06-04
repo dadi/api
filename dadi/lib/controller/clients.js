@@ -2,6 +2,11 @@ const acl = require('./../model/acl')
 const model = require('./../model/acl/client')
 const help = require('./../help')
 
+acl.registerResource(
+  'clients',
+  'API clients'
+)
+
 const Clients = function (server) {
   server.app.routeMethods('/api/clients', {
     post: this.post.bind(this)
@@ -64,13 +69,20 @@ Clients.prototype.deleteRole = function (req, res, next) {
     req.params.clientId,
     [req.params.role]
   ).then(({results}) => {
-    help.sendBackJSON(201, res, next)(null, results)
+    help.sendBackJSON(200, res, next)(null, results)
   }).catch(this.handleError(res, next))
 }
 
 Clients.prototype.get = function (req, res, next) {
-  return model.get(req.params.clientId).then(clients => {
-    console.log('---> CLIENTS:', clients)
+  return acl.access.get(req.dadiApiClient, 'clients').then(access => {
+    if (access.read !== true) {
+      return help.sendBackJSON(null, res, next)(
+        acl.createError(req.dadiApiClient)
+      )
+    }
+
+    return model.get(req.params.clientId)
+  }).then(clients => {
     if (req.params.clientId && (clients.results.length === 0)) {
       return help.sendBackJSON(404, res, next)(null)
     }
@@ -87,8 +99,6 @@ Clients.prototype.get = function (req, res, next) {
 
 Clients.prototype.handleError = function (res, next) {
   return err => {
-    console.log('---> ERROR:', err)
-
     switch (err.message) {
       case 'ACCESS_MATRIX_VALIDATION_FAILED':
         return help.sendBackJSON(400, res, next)(null, {
@@ -136,63 +146,79 @@ Clients.prototype.handleError = function (res, next) {
 }
 
 Clients.prototype.post = function (req, res, next) {
-  let clientId = req.body && req.body.clientId
+  let {clientId, secret} = req.body || {}
 
-  if (typeof clientId !== 'string') {
+  if (typeof clientId !== 'string' || typeof secret !== 'string') {
     return help.sendBackJSON(400, res, next)(null, {
       success: false,
-      message: 'Invalid input. No client ID.'
+      errors: ['Invalid input. Expected: {"clientId": String, "secret": String}']
     })
   }
 
-  if (typeof req.body.resources === 'object') {
-    let errors = Object.keys(req.body.resources).filter(resource => {
-      return !acl.hasResource(resource)
-    })
-
-    if (errors.length > 0) {
-      let messages = errors.map(resource => `Invalid resource: ${resource}`)
-
-      return help.sendBackJSON(400, res, next)(null, {
-        success: false,
-        errors: messages
-      })
+  return acl.access.get(req.dadiApiClient, 'clients').then(access => {
+    if (access.create !== true) {
+      return help.sendBackJSON(null, res, next)(
+        acl.createError(req.dadiApiClient)
+      )
     }
-  }
 
-  return model.create(req.body).then(({results}) => {
+    return model.create(req.body).catch(this.handleError(res, next))
+  }).then(({results}) => {
     help.sendBackJSON(201, res, next)(null, {
       results: [
         model.sanitise(results[0])
       ]
     })
-  }).catch(this.handleError(res, next))
+  })
 }
 
 Clients.prototype.postResource = function (req, res, next) {
   if (
-    typeof req.body.resource !== 'string' ||
+    typeof req.body.name !== 'string' ||
     typeof req.body.access !== 'object'
   ) {
     return help.sendBackJSON(400, res, next)(null, {
       success: false,
-      errors: ['Invalid input']
+      errors: ['Invalid input. Expected: {"name": String, "access": Object}']
     })
   }
 
-  if (!acl.hasResource(req.body.resource)) {
+  if (!acl.hasResource(req.body.name)) {
     return help.sendBackJSON(400, res, next)(null, {
       success: false,
-      errors: [`Invalid resource: ${req.body.resource}`]
+      errors: [`Invalid resource: ${req.body.name}`]
     })
   }
 
-  return model.resourceAdd(
-    req.params.clientId,
-    req.body.resource,
-    req.body.access
-  ).then(({results}) => {
-    help.sendBackJSON(201, res, next)(null, results)
+  // To add a resource to a client, the requesting client needs to have
+  // "update" access to the "clients" resource, as well as access to the
+  // resource in question themselves.
+  return acl.access.get(req.dadiApiClient, 'clients').then(access => {
+    if (access.update !== true) {
+      return help.sendBackJSON(null, res, next)(
+        acl.createError(req.dadiApiClient)
+      )
+    }
+
+    return acl.access.get(req.dadiApiClient, req.body.name)
+  }).then(access => {
+    let forbiddenType = Object.keys(req.body.access).find(type => {
+      return access[type] !== true
+    })
+
+    if (forbiddenType) {
+      return help.sendBackJSON(null, res, next)(
+        acl.createError(req.dadiApiClient)
+      )
+    }
+
+    return model.resourceAdd(
+      req.params.clientId,
+      req.body.name,
+      req.body.access
+    )
+  }).then(({results}) => {
+    help.sendBackJSON(201, res, next)(null, {results})
   }).catch(this.handleError(res, next))
 }
 

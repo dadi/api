@@ -31,17 +31,19 @@ AuthMiddleware.prototype.authenticateRequest = function (req, res, next) {
   let header = req.headers && req.headers.authorization
   let match = header && header.match(/^Bearer (.*)$/)
 
-  if (!match) return next()
+  if (!match) {
+    req.dadiApiClient = {}
+
+    return next()
+  }
 
   jwt.verify(
     match[1],
     config.get('auth.tokenKey'),
     (err, decoded) => {
-      if (err) {
-        req.dadiApiClientError = err
-      } else {
-        req.dadiApiClient = decoded
-      }
+      req.dadiApiClient = err
+        ? { error: err }
+        : decoded
 
       next()
     }

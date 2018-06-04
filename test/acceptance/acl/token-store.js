@@ -7,7 +7,7 @@ const path = require('path')
 const request = require('supertest')
 const should = require('should')
 
-describe.only('Token store', () => {
+describe('Token store', () => {
   let configBackup = config.get()
   let client = request(`http://${config.get('server.host')}:${config.get('server.port')}`)
   let testClient = {
@@ -257,7 +257,7 @@ describe.only('Token store', () => {
         module.exports.get = function (req, res, next) {
           res.setHeader('content-type', 'application/json')
           res.statusCode = 200
-          res.end(JSON.stringify(req.dadiApiClientError || req.dadiApiClient))        
+          res.end(JSON.stringify(req.dadiApiClient))        
         }
 
         module.exports.model = {
@@ -318,8 +318,8 @@ describe.only('Token store', () => {
         .set('Authorization', `Bearer not-a-valid-token`)
         .expect('content-type', 'application/json')
         .expect(200, (err, res) => {
-          res.body.name.should.eql('JsonWebTokenError')
-          res.body.message.should.eql('jwt malformed')
+          res.body.error.name.should.eql('JsonWebTokenError')
+          res.body.error.message.should.eql('jwt malformed')
 
           done()
         })

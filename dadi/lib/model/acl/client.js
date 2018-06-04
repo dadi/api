@@ -7,14 +7,17 @@ const Client = function () {
       type: 'string'
     },
     accessType: {
+      allowedInInput: false,
       default: 'user',
       type: 'string'
     },
     resources: {
+      allowedInInput: false,
       default: {},
       type: 'object'
     },
     roles: {
+      allowedInInput: false,
       default: [],
       type: 'object'
     },
@@ -147,6 +150,8 @@ Client.prototype.resourceAdd = function (clientId, resource, access) {
     let resources = new ACLMatrix(
       results[0].resources
     )
+
+    resources.validate(access)
 
     if (resources.get(resource)) {
       return Promise.reject(
@@ -449,6 +454,13 @@ Client.prototype.validate = function (role, {partial = false} = {}) {
   }
 
   let invalidFields = Object.keys(this.schema).filter(field => {
+    if (
+      role[field] !== undefined &&
+      this.schema[field].allowedInInput === false
+    ) {
+      return true
+    }
+
     return (
       role[field] !== undefined &&
       role[field] !== null &&

@@ -47,7 +47,7 @@ const Model = function (name, schema, connection, settings) {
     '_version'
   ]
 
-  this.acl = require('./acl/access')
+  this.acl = require('./acl')
 
   // Attach collection name.
   this.name = name
@@ -670,12 +670,12 @@ Model.prototype.validateAccess = function ({
 
   let aclKey = this.getAclKey()
 
-  return this.acl.get(client, aclKey).then(access => {
+  return this.acl.access.get(client, aclKey).then(access => {
     let value = access[type]
 
     if (!value) {
       return Promise.reject(
-        new Error('UNAUTHORISED')
+        this.acl.createError(client)
       )
     }
 
@@ -694,7 +694,7 @@ Model.prototype.validateAccess = function ({
       }
     }
 
-    let newSchema = this.acl.filterFields(access, schema)
+    let newSchema = this.acl.access.filterFields(access, schema)
 
     return {fields, query, schema: newSchema}
   })

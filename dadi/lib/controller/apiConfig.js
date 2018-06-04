@@ -1,4 +1,4 @@
-const acl = require('./../model/acl/access')
+const acl = require('./../model/acl')
 const config = require('./../../../config')
 const fs = require('fs-extra')
 const help = require('./../help')
@@ -12,7 +12,7 @@ const ApiConfig = function (server) {
 }
 
 ApiConfig.prototype.get = function (req, res, next) {
-  return acl.get(req.dadiApiClient).then(access => {
+  return acl.access.get(req.dadiApiClient).then(access => {
     if (!access.read) {
       return help.sendBackJSON(401, res, next)(
         new Error('UNAUTHORISED')
@@ -24,7 +24,7 @@ ApiConfig.prototype.get = function (req, res, next) {
 }
 
 ApiConfig.prototype.post = function (req, res, next) {
-  return acl.get(req.dadiApiClient).then(access => {
+  return acl.access.get(req.dadiApiClient).then(access => {
     if (!access.update) {
       return help.sendBackJSON(401, res, next)(
         new Error('UNAUTHORISED')

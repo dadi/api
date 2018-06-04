@@ -1,4 +1,4 @@
-const acl = require('./../model/acl/access')
+const acl = require('./../model/acl')
 const fs = require('fs')
 const help = require('./../help')
 
@@ -63,7 +63,7 @@ Endpoint.prototype.registerRoutes = function (route, filePath) {
       return next()
     }
 
-    return acl.get(req.dadiApiClient).then(access => {
+    return acl.access.get(req.dadiApiClient).then(access => {
       if (!access.update) {
         return help.sendBackJSON(401, res, next)(
           new Error('UNAUTHORISED')
@@ -96,7 +96,7 @@ Endpoint.prototype.registerRoutes = function (route, filePath) {
         if ((method === 'options') || this.isAuthenticated()) {
           aclCheck = Promise.resolve()
         } else {
-          aclCheck = acl.get(req.dadiApiClient, this.aclKey).then(access => {
+          aclCheck = acl.access.get(req.dadiApiClient, this.aclKey).then(access => {
             if (!access[accessTypeForMethod]) {
               return help.sendBackJSON(401, res, next)(
                 new Error('UNAUTHORISED')

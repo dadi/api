@@ -1,4 +1,4 @@
-const acl = require('./../model/acl/access')
+const acl = require('./../model/acl')
 const config = require('./../../../config')
 const Controller = require('./index')
 const debug = require('debug')('api:controller')
@@ -205,7 +205,7 @@ Collection.prototype.registerRoutes = function (route, filePath) {
         // delete, read or update) to the collection resource.
         let aclKey = this.model.getAclKey()
 
-        return acl.get(req.dadiApiClient, aclKey).then(access => {
+        return acl.access.get(req.dadiApiClient, aclKey).then(access => {
           if (!access.create || !access.delete || !access.read || !access.update) {
             return help.sendBackJSON(401, res, next)(
               new Error('UNAUTHORISED')
@@ -217,7 +217,7 @@ Collection.prototype.registerRoutes = function (route, filePath) {
 
       case 'delete':
         // A client can delete the collection schema if they have root access.
-        return acl.get(req.dadiApiClient).then(access => {
+        return acl.access.get(req.dadiApiClient).then(access => {
           if (!access.delete) {
             return help.sendBackJSON(401, res, next)(
               new Error('UNAUTHORISED')
@@ -237,7 +237,7 @@ Collection.prototype.registerRoutes = function (route, filePath) {
 
       case 'post':
         // A client can update the collection schema if they have root access.
-        return acl.get(req.dadiApiClient).then(access => {
+        return acl.access.get(req.dadiApiClient).then(access => {
           if (!access.update) {
             return help.sendBackJSON(401, res, next)(
               new Error('UNAUTHORISED')

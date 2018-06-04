@@ -1,4 +1,4 @@
-const acl = require('./../model/acl/access')
+const acl = require('./../model/acl')
 const fs = require('fs-extra')
 const help = require('./../help')
 const path = require('path')
@@ -17,7 +17,7 @@ CreateCollection.prototype.post = function (req, res, next) {
   if (req.params.version === 'api') return next()
 
   // Accessible to root users only.
-  return acl.get(req.dadiApiClient).then(access => {
+  return acl.access.get(req.dadiApiClient).then(access => {
     if (!access.create) {
       return help.sendBackJSON(401, res, next)(
          new Error('UNAUTHORISED')

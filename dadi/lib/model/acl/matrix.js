@@ -95,7 +95,7 @@ Matrix.prototype.validate = function (matrix) {
             }
           } else {
             errors.push(
-              `Invalid key in access matrix: ${matrix[type]}.${key}`
+              `Invalid key in access matrix: ${key}`
             )
           }
         })
@@ -104,7 +104,7 @@ Matrix.prototype.validate = function (matrix) {
 
       default:
         errors.push(
-          `Invalid value for ${type} (expected boolean or object)`
+          `Invalid value for ${type}. Expected Boolean or Object`
         )
     }
   })

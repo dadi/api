@@ -75,12 +75,49 @@ Clients.prototype.deleteResource = function (req, res, next) {
 }
 
 Clients.prototype.deleteRole = function (req, res, next) {
-  return model.roleRemove(
-    req.params.clientId,
-    [req.params.role]
-  ).then(({results}) => {
-    help.sendBackJSON(200, res, next)(null, results)
-  }).catch(this.handleError(res, next))
+  let role = req.params.role
+
+  // To remove a role from a client, the requesting client needs to have
+  // "update" access to the "clients" resource, and have themselves the
+  // role they're trying to remove.
+  return acl.access.get(req.dadiApiClient, 'clients').then(access => {
+    if (access.update !== true) {
+      return help.sendBackJSON(null, res, next)(
+        acl.createError(req.dadiApiClient)
+      )
+    }
+
+    // If the client does not have admin access, we need to ensure that
+    // they have the role they are trying to remove.
+    if (!model.isAdmin(req.dadiApiClient)) {
+      return model.get(req.dadiApiClient.clientId).then(({results}) => {
+        let requestingClientHasRole = Boolean(
+          results.find(dbRole => dbRole.name === role)
+        )
+
+        return requestingClientHasRole
+      })
+    }
+
+    return true
+  }).then(requestingClientHasRole => {
+    if (!requestingClientHasRole) {
+      return help.sendBackJSON(null, res, next)(
+        acl.createError(req.dadiApiClient)
+      )
+    }
+
+    return model.roleRemove(
+      req.params.clientId,
+      [role]
+    ).then(({removed, results}) => {
+      if (removed.length === 0) {
+        return help.sendBackJSON(404, res, next)(null)
+      }
+
+      help.sendBackJSON(200, res, next)(null, {results})
+    }).catch(this.handleError(res, next))
+  })
 }
 
 Clients.prototype.get = function (req, res, next) {
@@ -94,7 +131,7 @@ Clients.prototype.get = function (req, res, next) {
     return model.get(req.params.clientId)
   }).then(clients => {
     if (req.params.clientId && (clients.results.length === 0)) {
-      return help.sendBackJSON(404, res, next)(null)
+      return help.sendBackJSON(404, res, next)(null, null)
     }
 
     let sanitisedClients = clients.results.map(client => {
@@ -138,6 +175,12 @@ Clients.prototype.handleError = function (res, next) {
         return help.sendBackJSON(400, res, next)(null, {
           success: false,
           errors: err.data.map(field => `Invalid field: ${field}`)
+        })
+
+      case 'INVALID_ROLE':
+        return help.sendBackJSON(400, res, next)(null, {
+          success: false,
+          errors: err.data.map(role => `Invalid role: ${role}`)
         })
 
       case 'MISSING_FIELDS':
@@ -242,9 +285,43 @@ Clients.prototype.postRole = function (req, res, next) {
     })
   }
 
-  return model.roleAdd(req.params.clientId, roles).then(({results}) => {
-    help.sendBackJSON(201, res, next)(null, results)
-  }).catch(this.handleError(res, next))
+  // To add a role to a client, the requesting client needs to have
+  // "update" access to the "clients" resource, and have themselves the
+  // role they're trying to assign.
+  return acl.access.get(req.dadiApiClient, 'clients').then(access => {
+    // console.log({client: req.dadiApiClient, access, roles})
+    if (access.update !== true) {
+      return help.sendBackJSON(null, res, next)(
+        acl.createError(req.dadiApiClient)
+      )
+    }
+
+    // If the client does not have admin access, we need to ensure that
+    // they have each of the roles they are trying to assign.
+    if (!model.isAdmin(req.dadiApiClient)) {
+      return model.get(req.dadiApiClient.clientId).then(({results}) => {
+        let user = results[0]
+        let forbiddenRoles = roles.filter(role => {
+          return !user.roles || !user.roles.includes(role)
+        })
+
+        return forbiddenRoles
+      })
+    }
+
+    return []
+  }).then(forbiddenRoles => {
+    // console.log('--->', {forbiddenRoles})
+    if (forbiddenRoles.length > 0) {
+      return help.sendBackJSON(null, res, next)(
+        acl.createError(req.dadiApiClient)
+      )
+    }
+
+    return model.roleAdd(req.params.clientId, roles).then(({results}) => {
+      help.sendBackJSON(200, res, next)(null, {results})
+    }).catch(this.handleError(res, next))
+  })
 }
 
 Clients.prototype.putResource = function (req, res, next) {

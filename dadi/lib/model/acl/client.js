@@ -1,4 +1,5 @@
 const ACLMatrix = require('./matrix')
+const roleModel = require('./role')
 
 const Client = function () {
   this.schema = {
@@ -120,6 +121,16 @@ Client.prototype.get = function (clientId, secret) {
   }).then(response => ({
     results: response.results
   }))
+}
+
+/**
+ * Determines whether a client has admin access.
+ *
+ * @param  {Object}  client
+ * @return {Boolean}
+ */
+Client.prototype.isAdmin = function (client) {
+  return client && (client.accessType === 'admin')
 }
 
 /**
@@ -318,6 +329,23 @@ Client.prototype.roleAdd = function (clientId, roles) {
     }
 
     let existingRoles = results[0].roles || []
+
+    return roleModel.get(roles).then(({results}) => {
+      let invalidRoles = roles.filter(role => {
+        return !results.find(dbRole => dbRole.name === role)
+      })
+
+      if (invalidRoles.length > 0) {
+        let error = new Error('INVALID_ROLE')
+
+        error.data = invalidRoles
+
+        return Promise.reject(error)
+      }
+
+      return existingRoles
+    })
+  }).then(existingRoles => {
     let newRoles = [...new Set(existingRoles.concat(roles).sort())]
 
     return this.model.update({
@@ -347,6 +375,8 @@ Client.prototype.roleAdd = function (clientId, roles) {
  * @return {Promise<Object>}
  */
 Client.prototype.roleRemove = function (clientId, roles) {
+  let rolesRemoved = []
+
   return this.model.find({
     options: {
       fields: {
@@ -367,7 +397,13 @@ Client.prototype.roleRemove = function (clientId, roles) {
     let existingRoles = results[0].roles || []
     let newRoles = [...new Set(
       existingRoles.filter(role => {
-        return !roles.includes(role)
+        if (roles.includes(role)) {
+          rolesRemoved.push(role)
+
+          return false
+        }
+
+        return true
       }).sort()
     )]
 
@@ -385,6 +421,7 @@ Client.prototype.roleRemove = function (clientId, roles) {
     return this.broadcastWrite(result)
   }).then(({results}) => {
     return {
+      removed: rolesRemoved,
       results: results.map(client => this.sanitise(client))
     }
   })

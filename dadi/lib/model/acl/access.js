@@ -182,7 +182,7 @@ Access.prototype.getRoleChain = function (roles = [], cache, chain) {
     let parentRoles = new Set()
 
     results.forEach(role => {
-      cache[role.name] = role.resources
+      cache[role.name] = role.resources || {}
 
       if (role.extends) {
         parentRoles.add(role.extends)
@@ -280,10 +280,10 @@ Access.prototype.write = function () {
 
   // Getting all the clients.
   return clientModel.get().then(({results}) => {
-    // An entry is a tuple of <client, resource, access>. This
+    // An entry is an object with {client, resource, access}. This
     // array will serve as a buffer, where we'll store all the
     // entries we need to push and then make a single call to
-    // the database, as opposed to write every time we process
+    // the database, as opposed to writing every time we process
     // a client or a resource.
     let entries = []
     let queue = Promise.resolve()
@@ -323,7 +323,7 @@ Access.prototype.write = function () {
       })
     })
 
-    return entries
+    return queue.then(() => entries)
   }).then(entries => {
     // Before we write anything to the access collection, we need
     // to delete all existing records.

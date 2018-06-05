@@ -116,12 +116,6 @@ Role.prototype.get = function (names) {
   }
 
   return this.model.find({
-    options: {
-      fields: {
-        _id: 0,
-        secret: 0
-      }
-    },
     query
   }).then(response => ({
     results: response.results

@@ -56,12 +56,22 @@ Clients.prototype.delete = function (req, res, next) {
 }
 
 Clients.prototype.deleteResource = function (req, res, next) {
-  return model.resourceRemove(
-    req.params.clientId,
-    req.params.resource
-  ).then(({results}) => {
-    help.sendBackJSON(204, res, next)(null, null)
-  }).catch(this.handleError(res, next))
+  // To remove a resource from a client, the requesting client
+  // needs to have "update" access to the "clients" resource.
+  return acl.access.get(req.dadiApiClient, 'clients').then(access => {
+    if (access.update !== true) {
+      return help.sendBackJSON(null, res, next)(
+        acl.createError(req.dadiApiClient)
+      )
+    }
+
+    return model.resourceRemove(
+      req.params.clientId,
+      req.params.resource
+    ).then(({results}) => {
+      help.sendBackJSON(204, res, next)(null, null)
+    }).catch(this.handleError(res, next))
+  })
 }
 
 Clients.prototype.deleteRole = function (req, res, next) {
@@ -192,7 +202,7 @@ Clients.prototype.postResource = function (req, res, next) {
 
   // To add a resource to a client, the requesting client needs to have
   // "update" access to the "clients" resource, as well as access to the
-  // resource in question themselves.
+  // resource in question.
   return acl.access.get(req.dadiApiClient, 'clients').then(access => {
     if (access.update !== true) {
       return help.sendBackJSON(null, res, next)(
@@ -200,26 +210,26 @@ Clients.prototype.postResource = function (req, res, next) {
       )
     }
 
-    return acl.access.get(req.dadiApiClient, req.body.name)
-  }).then(access => {
-    let forbiddenType = Object.keys(req.body.access).find(type => {
-      return access[type] !== true
+    return acl.access.get(req.dadiApiClient, req.body.name).then(access => {
+      let forbiddenType = Object.keys(req.body.access).find(type => {
+        return access[type] !== true
+      })
+
+      if (forbiddenType) {
+        return help.sendBackJSON(null, res, next)(
+          acl.createError(req.dadiApiClient)
+        )
+      }
+
+      return model.resourceAdd(
+        req.params.clientId,
+        req.body.name,
+        req.body.access
+      ).then(({results}) => {
+        help.sendBackJSON(201, res, next)(null, {results})
+      }).catch(this.handleError(res, next))
     })
-
-    if (forbiddenType) {
-      return help.sendBackJSON(null, res, next)(
-        acl.createError(req.dadiApiClient)
-      )
-    }
-
-    return model.resourceAdd(
-      req.params.clientId,
-      req.body.name,
-      req.body.access
-    )
-  }).then(({results}) => {
-    help.sendBackJSON(201, res, next)(null, {results})
-  }).catch(this.handleError(res, next))
+  })
 }
 
 Clients.prototype.postRole = function (req, res, next) {
@@ -245,17 +255,40 @@ Clients.prototype.putResource = function (req, res, next) {
   ) {
     return help.sendBackJSON(400, res, next)(null, {
       success: false,
-      errors: ['Invalid input']
+      errors: ['Invalid input. Expected Object with access types (e.g. {"read": true, "update": false}']
     })
   }
 
-  return model.resourceUpdate(
-    req.params.clientId,
-    req.params.resource,
-    req.body
-  ).then(({results}) => {
-    help.sendBackJSON(200, res, next)(null, results)
-  }).catch(this.handleError(res, next))
+  // To modify a resource in a client, the requesting client needs to have
+  // "update" access to the "clients" resource, as well as access to the
+  // resource in question.
+  return acl.access.get(req.dadiApiClient, 'clients').then(access => {
+    if (access.update !== true) {
+      return help.sendBackJSON(null, res, next)(
+        acl.createError(req.dadiApiClient)
+      )
+    }
+
+    return acl.access.get(req.dadiApiClient, req.params.resource).then(access => {
+      let forbiddenType = Object.keys(req.body).find(type => {
+        return access[type] !== true
+      })
+
+      if (forbiddenType) {
+        return help.sendBackJSON(null, res, next)(
+          acl.createError(req.dadiApiClient)
+        )
+      }
+
+      return model.resourceUpdate(
+        req.params.clientId,
+        req.params.resource,
+        req.body
+      ).then(({results}) => {
+        help.sendBackJSON(200, res, next)(null, {results})
+      }).catch(this.handleError(res, next))
+    })
+  })
 }
 
 module.exports = server => new Clients(server)

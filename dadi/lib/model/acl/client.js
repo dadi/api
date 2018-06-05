@@ -270,6 +270,7 @@ Client.prototype.resourceUpdate = function (clientId, resource, access) {
       )
     }
 
+    resources.validate(access)
     resources.set(resource, access)
 
     return this.model.update({

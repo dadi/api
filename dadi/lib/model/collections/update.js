@@ -204,7 +204,6 @@ function update ({
     }
 
     return this.find({
-      client,
       query: updatedDocumentsQuery,
       options: {
         compose: true

@@ -4,7 +4,7 @@ const help = require('./../../help')
 const request = require('supertest')
 const should = require('should')
 
-describe.only('Clients API', () => {
+describe('Clients API', () => {
   let configBackup = config.get()
   let client = request(`http://${config.get('server.host')}:${config.get('server.port')}`)
 
@@ -34,5 +34,10 @@ describe.only('Clients API', () => {
     describe('DELETE', require('./resources-delete'))
     describe('POST', require('./resources-post'))
     describe('PUT', require('./resources-put'))
+  })
+
+  describe('Roles', () => {
+    describe('DELETE', require('./roles-delete'))
+    describe('POST', require('./roles-post'))
   })
 })

@@ -147,11 +147,11 @@ module.exports.createACLClient = function (client, callback) {
     data: client,
     collection: config.get('auth.clientCollection'),
     schema: {}
-  }).then(result => {  
+  }).then(result => {
     return acl.access.write()
   }).then(() => {
     if (typeof callback === 'function') {
-      done()  
+      done()
     }
   }).catch(err => {
     if (typeof callback === 'function') {
@@ -177,11 +177,11 @@ module.exports.createACLRole = function (role, callback) {
     data: role,
     collection: config.get('auth.roleCollection'),
     schema: {}
-  }).then(result => {  
+  }).then(result => {
     return acl.access.write()
   }).then(() => {
     if (typeof callback === 'function') {
-      done()  
+      done()
     }
   }).catch(err => {
     if (typeof callback === 'function') {
@@ -296,7 +296,7 @@ module.exports.getBearerToken = function (done) {
         secret: 'superSecret'
       })
       .expect(200)
-      //.expect('content-type', 'application/json')
+      // .expect('content-type', 'application/json')
       .end(function (err, res) {
         if (err) return done(err)
         var bearerToken = res.body.accessToken

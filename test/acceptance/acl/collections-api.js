@@ -4,9 +4,19 @@ const help = require('./../help')
 const request = require('supertest')
 const should = require('should')
 
+const PERMISSIONS = {
+  ALL: { create: true, read: true, update: true, delete: true },
+  NO_READ: { read: false },
+  CREATE: { create: true, read: false, update: false, delete: false },
+  READ: { create: false, read: true, update: false, delete: false },
+  UPDATE: { create: false, read: false, update: true, delete: false },
+  DELETE: { create: false, read: false, update: false, delete: true },
+  READ_EXCLUDE_FIELDS: { read: { fields: { title: 0 } } }
+}
+
 let client = request(`http://${config.get('server.host')}:${config.get('server.port')}`)
 
-describe.only('Collections API', () => {
+describe('Collections API', () => {
   before(done => {
     app.start(err => {
       if (err) return done(err)
@@ -43,16 +53,6 @@ describe.only('Collections API', () => {
       app.stop(done)
     })
   })
-
-  let PERMISSIONS = {
-    ALL: { create: true, read: true, update: true, delete: true },
-    NO_READ: { read: false },
-    CREATE: { create: true, read: false, update: false, delete: false },
-    READ: { create: false, read: true, update: false, delete: false },
-    UPDATE: { create: false, read: false, update: true, delete: false },
-    DELETE: { create: false, read: false, update: false, delete: true },
-    READ_EXCLUDE_FIELDS: { read: { fields: { title: 0 } } }
-  }
 
   describe('GET', function () {
     it('should return 403 with no permissions', function (done) {

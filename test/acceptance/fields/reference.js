@@ -11,7 +11,7 @@ let connectionString = 'http://' + config.get('server.host') + ':' + config.get(
 
 describe('Reference Field', () => {
   beforeEach(done => {
-    config.set('paths.collections', 'test/acceptance/workspace/collections')
+    config.set('paths.collections', 'test/acceptance/temp-workspace/collections')
 
     help.dropDatabase('library', 'book', err => {
       if (err) return done(err)

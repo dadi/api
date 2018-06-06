@@ -11,7 +11,7 @@ let connectionString = 'http://' + config.get('server.host') + ':' + config.get(
 
 describe('Mixed Field', () => {
   beforeEach(done => {
-    config.set('paths.collections', 'test/acceptance/workspace/collections')
+    config.set('paths.collections', 'test/acceptance/temp-workspace/collections')
 
     help.dropDatabase('library', 'misc', err => {
       app.start(() => {

@@ -14,7 +14,7 @@ let connectionString = 'http://' + config.get('server.host') + ':' + config.get(
 
 describe('DateTime Field', function () {
   before(() => {
-    config.set('paths.collections', 'test/acceptance/workspace/collections')
+    config.set('paths.collections', 'test/acceptance/temp-workspace/collections')
   })
 
   beforeEach(done => {

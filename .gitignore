@@ -15,4 +15,6 @@ config/config.production.json
 
 workspace/media/*
 
+test/acceptance/temp-workspace
+
 scripts/coverage.svg

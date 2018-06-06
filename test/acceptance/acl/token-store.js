@@ -249,7 +249,7 @@ describe('Token store', () => {
   describe('Validating requests', () => {
     let endpointPath = path.resolve(
       __dirname,
-      './../../acceptance/workspace/endpoints/v1/endpoint.intercept-client.js'
+      './../../acceptance/temp-workspace/endpoints/v1/endpoint.intercept-client.js'
     )
 
     before(done => {

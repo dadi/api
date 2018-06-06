@@ -127,7 +127,7 @@ describe('Media', function () {
     //   client
     //   .post('/media')
     //   .set('Authorization', 'Bearer ' + bearerToken)
-    //   .attach('avatar', 'test/acceptance/workspace/media/1f525.png')
+    //   .attach('avatar', 'test/acceptance/temp-workspace/media/1f525.png')
     //   .expect(404)
     //   .end(done)
     // })
@@ -189,7 +189,7 @@ describe('Media', function () {
           client
           .post(url)
             // .set('content-type', 'application/json')
-          .attach('avatar', 'test/acceptance/workspace/media/1f525.png')
+          .attach('avatar', 'test/acceptance/temp-workspace/media/1f525.png')
           .expect(400)
           .end((err, res) => {
             if (err) return done(err)
@@ -221,7 +221,7 @@ describe('Media', function () {
           client
           .post(url)
           .set('content-type', 'application/json')
-          .attach('avatar', 'test/acceptance/workspace/media/1f525.png')
+          .attach('avatar', 'test/acceptance/temp-workspace/media/1f525.png')
           .expect(400)
           .end((err, res) => {
             if (err) return done(err)
@@ -273,7 +273,7 @@ describe('Media', function () {
             client
             .post(url)
             .set('content-type', 'application/json')
-            .attach('avatar', 'test/acceptance/workspace/media/1f525.png')
+            .attach('avatar', 'test/acceptance/temp-workspace/media/1f525.png')
             .end((err, res) => {
               if (err) return done(err)
 
@@ -322,7 +322,7 @@ describe('Media', function () {
             .post(url)
             .set('content-type', 'application/json')
             .set('Authorization', 'Bearer ' + bearerToken)
-            .attach('avatar', 'test/acceptance/workspace/media/1f525.png')
+            .attach('avatar', 'test/acceptance/temp-workspace/media/1f525.png')
             .end((err, res) => {
               if (err) return done(err)
 
@@ -397,7 +397,7 @@ describe('Media', function () {
             client
             .post(url)
             .set('content-type', 'application/json')
-            .attach('avatar', 'test/acceptance/workspace/media/1f525.png')
+            .attach('avatar', 'test/acceptance/temp-workspace/media/1f525.png')
             .end((err, res) => {
               if (err) return done(err)
 
@@ -615,7 +615,7 @@ describe('Media', function () {
       //   client
       //   .post('/1.0/testdb/media')
       //   .set('Authorization', 'Bearer ' + bearerToken)
-      //   .attach('avatar', 'test/acceptance/workspace/media/1f525.png')
+      //   .attach('avatar', 'test/acceptance/temp-workspace/media/1f525.png')
       //   .expect(201)
       //   .end((err, res) => {
       //     if (err) return done(err)
@@ -629,7 +629,7 @@ describe('Media', function () {
       //   client
       //   .post('/1.0/testdb/media2')
       //   .set('Authorization', 'Bearer ' + bearerToken)
-      //   .attach('avatar', 'test/acceptance/workspace/media/1f525.png')
+      //   .attach('avatar', 'test/acceptance/temp-workspace/media/1f525.png')
       //   .expect(400)
       //   .end(done)
       // })
@@ -691,7 +691,7 @@ describe('Media', function () {
           client
           .post(url)
           .set('content-type', 'application/json')
-          .attach('avatar', 'test/acceptance/workspace/media/1f525.png')
+          .attach('avatar', 'test/acceptance/temp-workspace/media/1f525.png')
           .expect(400)
           .end((err, res) => {
             if (err) return done(err)
@@ -723,7 +723,7 @@ describe('Media', function () {
           client
           .post(url)
           .set('content-type', 'application/json')
-          .attach('avatar', 'test/acceptance/workspace/media/1f525.png')
+          .attach('avatar', 'test/acceptance/temp-workspace/media/1f525.png')
           .expect(400)
           .end((err, res) => {
             if (err) return done(err)
@@ -741,7 +741,7 @@ describe('Media', function () {
         client
       .post('/1.0/testdb/media')
       .set('Authorization', 'Bearer ' + bearerToken)
-      .attach('avatar', 'test/acceptance/workspace/media/1f525.png')
+      .attach('avatar', 'test/acceptance/temp-workspace/media/1f525.png')
       .expect(201)
       .end((err, res) => {
         if (err) return done(err)
@@ -809,7 +809,7 @@ describe('Media', function () {
           client
           .post(url)
           .set('content-type', 'application/json')
-          .attach('avatar', 'test/acceptance/workspace/media/1f525.png')
+          .attach('avatar', 'test/acceptance/temp-workspace/media/1f525.png')
           .end((err, res) => {
             if (err) return done(err)
 
@@ -857,7 +857,7 @@ describe('Media', function () {
         client
         .post(url)
         .set('content-type', 'application/json')
-        .attach('avatar', 'test/acceptance/workspace/media/1f525.png')
+        .attach('avatar', 'test/acceptance/temp-workspace/media/1f525.png')
         .end((err, res) => {
           if (err) return done(err)
 

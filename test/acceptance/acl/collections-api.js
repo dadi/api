@@ -4,15 +4,9 @@ const help = require('./../help')
 const request = require('supertest')
 const should = require('should')
 
-require('it-each')({ testPerIteration: true })
-
-function getClient () {
-  return request(`http://${config.get('server.host')}:${config.get('server.port')}`)
-}
+let client = request(`http://${config.get('server.host')}:${config.get('server.port')}`)
 
 describe('Collections API', () => {
-  let configBackup = config.get()
-
   before(done => {
     app.start(err => {
       if (err) return done(err)
@@ -31,7 +25,6 @@ describe('Collections API', () => {
       }
 
       help.createACLClient(creatingClient).then(() => {
-        let client = getClient()
         client
         .post(config.get('auth.tokenUrl'))
         .set('content-type', 'application/json')
@@ -61,170 +54,469 @@ describe('Collections API', () => {
     READ_EXCLUDE_FIELDS: { read: { fields: { title: 0 } } }
   }
 
-  let tests = [
-    {
-      method: 'GET',
-      description: 'should return 403 with no permissions',
-      expectedStatusCode: 403,
-      resources: { 'collection:testdb_test-schema': {} }
-    },
-    {
-      method: 'GET',
-      description: 'should return 403 with no read permission',
-      expectedStatusCode: 403,
-      resources: { 'collection:testdb_test-schema': PERMISSIONS.NO_READ }
-    },
-    {
-      method: 'GET',
-      description: 'should return 200 with read permission',
-      expectedStatusCode: 200,
-      resources: { 'collection:testdb_test-schema': PERMISSIONS.READ }
-    },
-    {
-      method: 'GET',
-      description: 'should return 200 with create,read,update,delete permission',
-      expectedStatusCode: 200,
-      resources: { 'collection:testdb_test-schema': PERMISSIONS.ALL }
-    },
-    {
-      method: 'GET',
-      description: 'should return 200 with read permission and a field excluded',
-      expectedStatusCode: 200,
-      params: {
-        fields: JSON.stringify({ field1: 1, title: 1 })
-      },
-      resources: {
-        'collection:testdb_test-schema': PERMISSIONS.READ_EXCLUDE_FIELDS
-      },
-      testFn: function (data) {
-        return typeof data[0].title === 'undefined'
-      }
-    },
-    {
-      method: 'POST',
-      description: 'should return 400 with invalid payload',
-      payload: { fieldOne: 'fieldValue', title: 'title' },
-      expectedStatusCode: 400,
-      resources: { 'collection:testdb_test-schema': PERMISSIONS.CREATE }
-    },
-    {
-      method: 'POST',
-      description: 'should return 403 with no create permission',
-      payload: { field1: 'fieldValue', title: 'title' },
-      expectedStatusCode: 403,
-      resources: { 'collection:testdb_test-schema': PERMISSIONS.READ }
-    },
-    {
-      method: 'POST',
-      description: 'should return 200 with create permission',
-      payload: { field1: 'fieldValue', title: 'title' },
-      expectedStatusCode: 200,
-      resources: { 'collection:testdb_test-schema': PERMISSIONS.CREATE }
-    },
-    {
-      method: 'PUT',
-      description: 'should return 403 with no update permission',
-      payload: { field1: 'fieldValue', title: 'title' },
-      expectedStatusCode: 403,
-      resources: { 'collection:testdb_test-schema': PERMISSIONS.READ }
-    },
-    {
-      method: 'PUT',
-      description: 'should return 200 with all permissions',
-      payload: { query: { field1: '7' }, update: { title: 'updated title' } },
-      expectedStatusCode: 200,
-      resources: { 'collection:testdb_test-schema': PERMISSIONS.ALL }
-    },
-    {
-      method: 'PUT',
-      description: 'should return 200 with update permissions',
-      payload: { query: { field1: '7' }, update: { title: 'updated title' } },
-      expectedStatusCode: 200,
-      resources: { 'collection:testdb_test-schema': PERMISSIONS.UPDATE }
-    },
-    {
-      method: 'DELETE',
-      description: 'should return 403 with no delete permission',
-      payload: { query: { field1: 'fieldValue' } },
-      expectedStatusCode: 403,
-      resources: { 'collection:testdb_test-schema': PERMISSIONS.READ }
-    },
-    {
-      method: 'DELETE',
-      description: 'should return 204 with delete permission',
-      payload: { query: { field1: '7' } },
-      expectedStatusCode: 204,
-      resources: { 'collection:testdb_test-schema': PERMISSIONS.DELETE }
-    }
-  ]
-
-  it.each(tests, '', ['method', 'description'], function (element, next) {
-    performTest(element)
-    .then(() => {
-      next()
-    })
-    .catch(err => {
-      next(err)
-    })
-  })
-
-  function performTest (test) {
-    return new Promise((resolve, reject) => {
+  describe('GET', function () {
+    it('should return 403 with no permissions', function (done) {
       let testClient = {
         clientId: 'apiClient',
         secret: 'someSecret',
-        resources: test.resources
+        resources: { 'collection:testdb_test-schema': {} }
       }
 
-      return help.createACLClient(testClient).then(() => {
-        let client = getClient()
+      let params
 
+      help.createACLClient(testClient).then(() => {
         client
         .post(config.get('auth.tokenUrl'))
         .set('content-type', 'application/json')
         .send(testClient)
         .expect(200)
         .end((err, res) => {
-          if (err) return reject(err)
+          if (err) return done(err)
 
           let bearerToken = res.body.accessToken
 
-          if (test.method === 'GET') {
-            let params = Object.assign({}, { cache: false }, test.params ? test.params : {})
-            params = require('querystring').stringify(params)
-
-            client = getClient().get(`${(test.endpoint || '/vtest/testdb/test-schema/')}?${params}`)
-          } else if (test.method === 'POST') {
-            client = getClient()
-            .post((test.endpoint || '/vtest/testdb/test-schema/'))
-            .send(test.payload)
-          } else if (test.method === 'PUT') {
-            client = getClient()
-            .put((test.endpoint || '/vtest/testdb/test-schema/'))
-            .send(test.payload)
-          } else if (test.method === 'DELETE') {
-            client = getClient()
-            .delete((test.endpoint || '/vtest/testdb/test-schema/'))
-            .send(test.payload)
-          }
+          let query = Object.assign({}, { cache: false }, params ? params : {})
+          query = require('querystring').stringify(params)
 
           client
+          .get(`/vtest/testdb/test-schema/?${query}`)
           .set('content-type', 'application/json')
           .set('Authorization', `Bearer ${bearerToken}`)
           .end((err, res) => {
-            if (err) return reject(err)
-
-            res.statusCode.should.eql(test.expectedStatusCode)
-
-            if (test.testFn) {
-              let result = test.testFn(res.body.results)
-              result.should.eql(true)
-            }
-
-            return resolve()
+            if (err) return done(err)
+            res.statusCode.should.eql(403)
+            done()
           })
         })
       })
     })
-  }
+
+    it('should return 403 with no read permission', function (done) {
+      let testClient = {
+        clientId: 'apiClient',
+        secret: 'someSecret',
+        resources: { 'collection:testdb_test-schema': PERMISSIONS.NO_READ }
+      }
+
+      let params
+
+      help.createACLClient(testClient).then(() => {
+        client
+        .post(config.get('auth.tokenUrl'))
+        .set('content-type', 'application/json')
+        .send(testClient)
+        .expect(200)
+        .end((err, res) => {
+          if (err) return done(err)
+
+          let bearerToken = res.body.accessToken
+
+          let query = Object.assign({}, { cache: false }, params ? params : {})
+          query = require('querystring').stringify(params)
+
+          client
+          .get(`/vtest/testdb/test-schema/?${query}`)
+          .set('content-type', 'application/json')
+          .set('Authorization', `Bearer ${bearerToken}`)
+          .end((err, res) => {
+            if (err) return done(err)
+            res.statusCode.should.eql(403)
+            done()
+          })
+        })
+      })
+    })
+
+    it('should return 200 with read permission', function (done) {
+      let testClient = {
+        clientId: 'apiClient',
+        secret: 'someSecret',
+        resources: { 'collection:testdb_test-schema': PERMISSIONS.READ }
+      }
+
+      let params
+
+      help.createACLClient(testClient).then(() => {
+        client
+        .post(config.get('auth.tokenUrl'))
+        .set('content-type', 'application/json')
+        .send(testClient)
+        .expect(200)
+        .end((err, res) => {
+          if (err) return done(err)
+
+          let bearerToken = res.body.accessToken
+
+          let query = Object.assign({}, { cache: false }, params ? params : {})
+          query = require('querystring').stringify(params)
+
+          client
+          .get(`/vtest/testdb/test-schema/?${query}`)
+          .set('content-type', 'application/json')
+          .set('Authorization', `Bearer ${bearerToken}`)
+          .end((err, res) => {
+            if (err) return done(err)
+            res.statusCode.should.eql(200)
+            done()
+          })
+        })
+      })
+    })
+
+    it('should return 200 with create,read,update,delete permission', function (done) {
+      let testClient = {
+        clientId: 'apiClient',
+        secret: 'someSecret',
+        resources: { 'collection:testdb_test-schema': PERMISSIONS.ALL }
+      }
+
+      let params
+
+      help.createACLClient(testClient).then(() => {
+        client
+        .post(config.get('auth.tokenUrl'))
+        .set('content-type', 'application/json')
+        .send(testClient)
+        .expect(200)
+        .end((err, res) => {
+          if (err) return done(err)
+
+          let bearerToken = res.body.accessToken
+
+          let query = Object.assign({}, { cache: false }, params ? params : {})
+          query = require('querystring').stringify(params)
+
+          client
+          .get(`/vtest/testdb/test-schema/?${query}`)
+          .set('content-type', 'application/json')
+          .set('Authorization', `Bearer ${bearerToken}`)
+          .end((err, res) => {
+            if (err) return done(err)
+            res.statusCode.should.eql(200)
+            done()
+          })
+        })
+      })
+    })
+
+    it('should return 200 with read permission and a field excluded', function (done) {
+      let testClient = {
+        clientId: 'apiClient',
+        secret: 'someSecret',
+        resources: { 'collection:testdb_test-schema': PERMISSIONS.READ_EXCLUDE_FIELDS }
+      }
+
+      let params = {
+        fields: JSON.stringify({ field1: 1, title: 1 })
+      }
+
+      help.createACLClient(testClient).then(() => {
+        client
+        .post(config.get('auth.tokenUrl'))
+        .set('content-type', 'application/json')
+        .send(testClient)
+        .expect(200)
+        .end((err, res) => {
+          if (err) return done(err)
+
+          let bearerToken = res.body.accessToken
+
+          let query = Object.assign({}, { cache: false }, params ? params : {})
+          query = require('querystring').stringify(params)
+
+          client
+          .get(`/vtest/testdb/test-schema/?${query}`)
+          .set('content-type', 'application/json')
+          .set('Authorization', `Bearer ${bearerToken}`)
+          .end((err, res) => {
+            if (err) return done(err)
+            res.statusCode.should.eql(200)
+
+            let type = typeof res.body.results[0].title
+            type.should.eql('undefined')
+
+            done()
+          })
+        })
+      })
+    })
+  })
+
+  describe('POST', function () {
+    it('should return 400 with invalid payload', function (done) {
+      let testClient = {
+        clientId: 'apiClient',
+        secret: 'someSecret',
+        resources: { 'collection:testdb_test-schema': PERMISSIONS.CREATE }
+      }
+
+      let payload = { fieldOne: 'fieldValue', title: 'title' }
+
+      help.createACLClient(testClient).then(() => {
+        client
+        .post(config.get('auth.tokenUrl'))
+        .set('content-type', 'application/json')
+        .send(testClient)
+        .expect(200)
+        .end((err, res) => {
+          if (err) return done(err)
+
+          let bearerToken = res.body.accessToken
+
+          client
+          .post(`/vtest/testdb/test-schema/`)
+          .send(payload)
+          .set('content-type', 'application/json')
+          .set('Authorization', `Bearer ${bearerToken}`)
+          .end((err, res) => {
+            if (err) return done(err)
+            res.statusCode.should.eql(400)
+            done()
+          })
+        })
+      })
+    })
+
+    it('should return 403 with no create permission', function (done) {
+      let testClient = {
+        clientId: 'apiClient',
+        secret: 'someSecret',
+        resources: { 'collection:testdb_test-schema': PERMISSIONS.READ }
+      }
+
+      let payload = { field1: 'fieldValue', title: 'title' }
+
+      help.createACLClient(testClient).then(() => {
+        client
+        .post(config.get('auth.tokenUrl'))
+        .set('content-type', 'application/json')
+        .send(testClient)
+        .expect(200)
+        .end((err, res) => {
+          if (err) return done(err)
+
+          let bearerToken = res.body.accessToken
+
+          client
+          .post(`/vtest/testdb/test-schema/`)
+          .send(payload)
+          .set('content-type', 'application/json')
+          .set('Authorization', `Bearer ${bearerToken}`)
+          .end((err, res) => {
+            if (err) return done(err)
+            res.statusCode.should.eql(403)
+            done()
+          })
+        })
+      })
+    })
+
+    it('should return 200 with create permission', function (done) {
+      let testClient = {
+        clientId: 'apiClient',
+        secret: 'someSecret',
+        resources: { 'collection:testdb_test-schema': PERMISSIONS.CREATE }
+      }
+
+      let payload = { field1: 'fieldValue', title: 'title' }
+
+      help.createACLClient(testClient).then(() => {
+        client
+        .post(config.get('auth.tokenUrl'))
+        .set('content-type', 'application/json')
+        .send(testClient)
+        .expect(200)
+        .end((err, res) => {
+          if (err) return done(err)
+
+          let bearerToken = res.body.accessToken
+
+          client
+          .post(`/vtest/testdb/test-schema/`)
+          .send(payload)
+          .set('content-type', 'application/json')
+          .set('Authorization', `Bearer ${bearerToken}`)
+          .end((err, res) => {
+            if (err) return done(err)
+            res.statusCode.should.eql(200)
+            done()
+          })
+        })
+      })
+    })
+  })
+
+  describe('PUT', function () {
+    it('should return 403 with no update permission', function (done) {
+      let testClient = {
+        clientId: 'apiClient',
+        secret: 'someSecret',
+        resources: { 'collection:testdb_test-schema': PERMISSIONS.READ }
+      }
+
+      let payload = { query: { field1: '7' }, update: { title: 'updated title' } }
+
+      help.createACLClient(testClient).then(() => {
+        client
+        .post(config.get('auth.tokenUrl'))
+        .set('content-type', 'application/json')
+        .send(testClient)
+        .expect(200)
+        .end((err, res) => {
+          if (err) return done(err)
+
+          let bearerToken = res.body.accessToken
+
+          client
+          .put(`/vtest/testdb/test-schema/`)
+          .send(payload)
+          .set('content-type', 'application/json')
+          .set('Authorization', `Bearer ${bearerToken}`)
+          .end((err, res) => {
+            if (err) return done(err)
+            res.statusCode.should.eql(403)
+            done()
+          })
+        })
+      })
+    })
+
+    it('should return 200 with all permissions', function (done) {
+      let testClient = {
+        clientId: 'apiClient',
+        secret: 'someSecret',
+        resources: { 'collection:testdb_test-schema': PERMISSIONS.ALL }
+      }
+
+      let payload = { query: { field1: '7' }, update: { title: 'updated title' } }
+
+      help.createACLClient(testClient).then(() => {
+        client
+        .post(config.get('auth.tokenUrl'))
+        .set('content-type', 'application/json')
+        .send(testClient)
+        .expect(200)
+        .end((err, res) => {
+          if (err) return done(err)
+
+          let bearerToken = res.body.accessToken
+
+          client
+          .put(`/vtest/testdb/test-schema/`)
+          .send(payload)
+          .set('content-type', 'application/json')
+          .set('Authorization', `Bearer ${bearerToken}`)
+          .end((err, res) => {
+            if (err) return done(err)
+            res.statusCode.should.eql(200)
+            done()
+          })
+        })
+      })
+    })
+
+    it('should return 200 with update permissions', function (done) {
+      let testClient = {
+        clientId: 'apiClient',
+        secret: 'someSecret',
+        resources: { 'collection:testdb_test-schema': PERMISSIONS.UPDATE }
+      }
+
+      let payload = { query: { field1: '7' }, update: { title: 'updated title' } }
+
+      help.createACLClient(testClient).then(() => {
+        client
+        .post(config.get('auth.tokenUrl'))
+        .set('content-type', 'application/json')
+        .send(testClient)
+        .expect(200)
+        .end((err, res) => {
+          if (err) return done(err)
+
+          let bearerToken = res.body.accessToken
+
+          client
+          .put(`/vtest/testdb/test-schema/`)
+          .send(payload)
+          .set('content-type', 'application/json')
+          .set('Authorization', `Bearer ${bearerToken}`)
+          .end((err, res) => {
+            if (err) return done(err)
+            res.statusCode.should.eql(200)
+            done()
+          })
+        })
+      })
+    })
+  })
+
+  describe('DELETE', function () {
+    it('should return 403 with no delete permission', function (done) {
+      let testClient = {
+        clientId: 'apiClient',
+        secret: 'someSecret',
+        resources: { 'collection:testdb_test-schema': PERMISSIONS.READ }
+      }
+
+      let payload = { query: { field1: 'fieldValue' } }
+
+      help.createACLClient(testClient).then(() => {
+        client
+        .post(config.get('auth.tokenUrl'))
+        .set('content-type', 'application/json')
+        .send(testClient)
+        .expect(200)
+        .end((err, res) => {
+          if (err) return done(err)
+
+          let bearerToken = res.body.accessToken
+
+          client
+          .delete(`/vtest/testdb/test-schema/`)
+          .send(payload)
+          .set('content-type', 'application/json')
+          .set('Authorization', `Bearer ${bearerToken}`)
+          .end((err, res) => {
+            if (err) return done(err)
+            res.statusCode.should.eql(403)
+            done()
+          })
+        })
+      })
+    })
+
+    it('should return 204 with delete permission', function (done) {
+      let testClient = {
+        clientId: 'apiClient',
+        secret: 'someSecret',
+        resources: { 'collection:testdb_test-schema': PERMISSIONS.DELETE }
+      }
+
+      let payload = { query: { field1: 'fieldValue' } }
+
+      help.createACLClient(testClient).then(() => {
+        client
+        .post(config.get('auth.tokenUrl'))
+        .set('content-type', 'application/json')
+        .send(testClient)
+        .expect(200)
+        .end((err, res) => {
+          if (err) return done(err)
+
+          let bearerToken = res.body.accessToken
+
+          client
+          .delete(`/vtest/testdb/test-schema/`)
+          .send(payload)
+          .set('content-type', 'application/json')
+          .set('Authorization', `Bearer ${bearerToken}`)
+          .end((err, res) => {
+            if (err) return done(err)
+            res.statusCode.should.eql(204)
+            done()
+          })
+        })
+      })
+    })
+  })
 })

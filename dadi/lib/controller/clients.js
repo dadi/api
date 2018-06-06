@@ -289,7 +289,6 @@ Clients.prototype.postRole = function (req, res, next) {
   // "update" access to the "clients" resource, and have themselves the
   // role they're trying to assign.
   return acl.access.get(req.dadiApiClient, 'clients').then(access => {
-    // console.log({client: req.dadiApiClient, access, roles})
     if (access.update !== true) {
       return help.sendBackJSON(null, res, next)(
         acl.createError(req.dadiApiClient)
@@ -311,7 +310,6 @@ Clients.prototype.postRole = function (req, res, next) {
 
     return []
   }).then(forbiddenRoles => {
-    // console.log('--->', {forbiddenRoles})
     if (forbiddenRoles.length > 0) {
       return help.sendBackJSON(null, res, next)(
         acl.createError(req.dadiApiClient)

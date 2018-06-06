@@ -116,7 +116,9 @@ Access.prototype.filterFields = function (access, input) {
   }, {})
 }
 
-Access.prototype.get = function ({clientId = null, accessType = null} = {}, resource) {
+Access.prototype.get = function ({clientId = null, accessType = null} = {}, resource, {
+  resolveOwnTypes = true
+} = {}) {
   if (typeof clientId !== 'string') {
     return Promise.resolve({})
   }
@@ -145,7 +147,11 @@ Access.prototype.get = function ({clientId = null, accessType = null} = {}, reso
       results.length > 0 &&
       typeof results[0].access === 'object'
     ) {
-      return this.resolveOwnTypes(results[0].access, clientId)
+      if (resolveOwnTypes) {
+        return this.resolveOwnTypes(results[0].access, clientId)
+      }
+
+      return results[0].access
     }
 
     return {}
@@ -163,7 +169,7 @@ Access.prototype.get = function ({clientId = null, accessType = null} = {}, reso
  * @param  {Array}  chain Array with roles found
  * @return {Array}  full list of roles
  */
-Access.prototype.getRoleChain = function (roles = [], cache, chain) {
+Access.prototype.getRoleChain = function (roles = [], cache = {}, chain) {
   chain = chain || roles
 
   // We only need to fetch from the database the roles that
@@ -194,6 +200,22 @@ Access.prototype.getRoleChain = function (roles = [], cache, chain) {
       cache,
       chain.concat(Array.from(parentRoles))
     )
+  })
+}
+
+Access.prototype.getClientRoles = function (clientId) {
+  return clientModel.get(clientId).then(({results}) => {
+    if (results.length === 0) {
+      return []
+    }
+
+    let roles = results[0].roles
+
+    if (roles.length === 0) {
+      return []
+    }
+
+    return this.getRoleChain(roles)
   })
 }
 

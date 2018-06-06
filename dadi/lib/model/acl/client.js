@@ -470,17 +470,17 @@ Client.prototype.setWriteCallback = function (callback) {
 }
 
 /**
- * Performs validation on a candidate role. It returns a Promise
+ * Performs validation on a candidate client. It returns a Promise
  * that is rejected with an error object if validation fails, or
  * resolved with `undefined` otherwise.
  *
- * @param  {String}   role
+ * @param  {String}   client
  * @param  {Boolean}  options.partial Whether this is a partial value
  * @return {Promise}
  */
-Client.prototype.validate = function (role, {partial = false} = {}) {
+Client.prototype.validate = function (client, {partial = false} = {}) {
   let missingFields = Object.keys(this.schema).filter(field => {
-    return this.schema[field].required && role[field] === undefined
+    return this.schema[field].required && client[field] === undefined
   })
 
   if (!partial && missingFields.length > 0) {
@@ -493,16 +493,16 @@ Client.prototype.validate = function (role, {partial = false} = {}) {
 
   let invalidFields = Object.keys(this.schema).filter(field => {
     if (
-      role[field] !== undefined &&
+      client[field] !== undefined &&
       this.schema[field].allowedInInput === false
     ) {
       return true
     }
 
     return (
-      role[field] !== undefined &&
-      role[field] !== null &&
-      typeof role[field] !== this.schema[field].type
+      client[field] !== undefined &&
+      client[field] !== null &&
+      typeof client[field] !== this.schema[field].type
     )
   })
 

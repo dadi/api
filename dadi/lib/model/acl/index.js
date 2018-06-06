@@ -108,3 +108,5 @@ ACL.prototype.registerResource = function (name, description = null) {
 
 module.exports = new ACL()
 module.exports.access = access
+module.exports.client = client
+module.exports.role = role

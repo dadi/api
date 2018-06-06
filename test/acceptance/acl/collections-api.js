@@ -6,7 +6,7 @@ const should = require('should')
 
 let client = request(`http://${config.get('server.host')}:${config.get('server.port')}`)
 
-describe('Collections API', () => {
+describe.only('Collections API', () => {
   before(done => {
     app.start(err => {
       if (err) return done(err)
@@ -62,8 +62,6 @@ describe('Collections API', () => {
         resources: { 'collection:testdb_test-schema': {} }
       }
 
-      let params
-
       help.createACLClient(testClient).then(() => {
         client
         .post(config.get('auth.tokenUrl'))
@@ -75,11 +73,8 @@ describe('Collections API', () => {
 
           let bearerToken = res.body.accessToken
 
-          let query = Object.assign({}, { cache: false }, params ? params : {})
-          query = require('querystring').stringify(params)
-
           client
-          .get(`/vtest/testdb/test-schema/?${query}`)
+          .get(`/vtest/testdb/test-schema`)
           .set('content-type', 'application/json')
           .set('Authorization', `Bearer ${bearerToken}`)
           .end((err, res) => {
@@ -98,8 +93,6 @@ describe('Collections API', () => {
         resources: { 'collection:testdb_test-schema': PERMISSIONS.NO_READ }
       }
 
-      let params
-
       help.createACLClient(testClient).then(() => {
         client
         .post(config.get('auth.tokenUrl'))
@@ -111,11 +104,8 @@ describe('Collections API', () => {
 
           let bearerToken = res.body.accessToken
 
-          let query = Object.assign({}, { cache: false }, params ? params : {})
-          query = require('querystring').stringify(params)
-
           client
-          .get(`/vtest/testdb/test-schema/?${query}`)
+          .get(`/vtest/testdb/test-schema`)
           .set('content-type', 'application/json')
           .set('Authorization', `Bearer ${bearerToken}`)
           .end((err, res) => {
@@ -134,8 +124,6 @@ describe('Collections API', () => {
         resources: { 'collection:testdb_test-schema': PERMISSIONS.READ }
       }
 
-      let params
-
       help.createACLClient(testClient).then(() => {
         client
         .post(config.get('auth.tokenUrl'))
@@ -147,11 +135,8 @@ describe('Collections API', () => {
 
           let bearerToken = res.body.accessToken
 
-          let query = Object.assign({}, { cache: false }, params ? params : {})
-          query = require('querystring').stringify(params)
-
           client
-          .get(`/vtest/testdb/test-schema/?${query}`)
+          .get(`/vtest/testdb/test-schema`)
           .set('content-type', 'application/json')
           .set('Authorization', `Bearer ${bearerToken}`)
           .end((err, res) => {
@@ -170,8 +155,6 @@ describe('Collections API', () => {
         resources: { 'collection:testdb_test-schema': PERMISSIONS.ALL }
       }
 
-      let params
-
       help.createACLClient(testClient).then(() => {
         client
         .post(config.get('auth.tokenUrl'))
@@ -183,11 +166,8 @@ describe('Collections API', () => {
 
           let bearerToken = res.body.accessToken
 
-          let query = Object.assign({}, { cache: false }, params ? params : {})
-          query = require('querystring').stringify(params)
-
           client
-          .get(`/vtest/testdb/test-schema/?${query}`)
+          .get(`/vtest/testdb/test-schema`)
           .set('content-type', 'application/json')
           .set('Authorization', `Bearer ${bearerToken}`)
           .end((err, res) => {
@@ -220,9 +200,7 @@ describe('Collections API', () => {
           if (err) return done(err)
 
           let bearerToken = res.body.accessToken
-
-          let query = Object.assign({}, { cache: false }, params ? params : {})
-          query = require('querystring').stringify(params)
+          let query = require('querystring').stringify(params)
 
           client
           .get(`/vtest/testdb/test-schema/?${query}`)

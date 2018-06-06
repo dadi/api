@@ -35,15 +35,22 @@ Matrix.prototype.format = function () {
 }
 
 /**
- * Returns the access matrix for a particular resource if `name`
- * is defined. If not, the entire resource map is returned, i.e.
- * an object mapping resource names to access matrices.
+ * Returns the access matrix for a particular resource.
  *
  * @param  {String} name
  * @return {Object}
  */
 Matrix.prototype.get = function (name) {
-  return name ? this.map[name] : this.map
+  return this.map[name]
+}
+
+/**
+ * Returns the entire resource map.
+ *
+ * @return {Object}
+ */
+Matrix.prototype.getAll = function () {
+  return this.map
 }
 
 /**

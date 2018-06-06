@@ -11,6 +11,7 @@ const Role = function () {
       type: 'string'
     },
     resources: {
+      allowedInInput: false,
       default: {},
       type: 'object'
     }
@@ -43,12 +44,6 @@ Role.prototype.broadcastWrite = function (input) {
 Role.prototype.create = function (role) {
   return this.validate(role).then(() => {
     return this.model.find({
-      options: {
-        fields: {
-          _id: 0,
-          secret: 0
-        }
-      },
       query: {
         name: role.name
       }
@@ -103,7 +98,7 @@ Role.prototype.delete = function (name) {
  * Retrieves the roles that match `name` if it is
  * supplied; otherwise, all roles are returned.
  *
- * @param  {Array<String>} names
+ * @param  {String|Array<String>} names
  * @return {Promise<Object>}
  */
 Role.prototype.get = function (names) {
@@ -113,6 +108,8 @@ Role.prototype.get = function (names) {
     query.name = {
       $in: names
     }
+  } else if (typeof names === 'string') {
+    query.name = names
   }
 
   return this.model.find({
@@ -165,7 +162,7 @@ Role.prototype.resourceAdd = function (role, resource, access) {
       },
       rawOutput: true,
       update: {
-        resources: resources.get()
+        resources: resources.getAll()
       },
       validate: false
     })
@@ -220,7 +217,7 @@ Role.prototype.resourceRemove = function (role, resource) {
       },
       rawOutput: true,
       update: {
-        resources: resources.get()
+        resources: resources.getAll()
       },
       validate: false
     })
@@ -276,7 +273,7 @@ Role.prototype.resourceUpdate = function (role, resource, access) {
       },
       rawOutput: true,
       update: {
-        resources: resources.get()
+        resources: resources.getAll()
       },
       validate: false
     })
@@ -392,6 +389,13 @@ Role.prototype.validate = function (role, {partial = false} = {}) {
   }
 
   let invalidFields = Object.keys(this.schema).filter(field => {
+    if (
+      role[field] !== undefined &&
+      this.schema[field].allowedInInput === false
+    ) {
+      return true
+    }
+
     return (
       role[field] !== undefined &&
       role[field] !== null &&

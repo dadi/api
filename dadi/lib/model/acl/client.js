@@ -178,7 +178,7 @@ Client.prototype.resourceAdd = function (clientId, resource, access) {
       },
       rawOutput: true,
       update: {
-        resources: resources.get()
+        resources: resources.getAll()
       },
       validate: false
     })
@@ -233,7 +233,7 @@ Client.prototype.resourceRemove = function (clientId, resource) {
       },
       rawOutput: true,
       update: {
-        resources: resources.get()
+        resources: resources.getAll()
       },
       validate: false
     })
@@ -290,7 +290,7 @@ Client.prototype.resourceUpdate = function (clientId, resource, access) {
       },
       rawOutput: true,
       update: {
-        resources: resources.get()
+        resources: resources.getAll()
       },
       validate: false
     })

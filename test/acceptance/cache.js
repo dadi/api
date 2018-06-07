@@ -348,38 +348,40 @@ describe('Cache', function (done) {
 
           var client = request('http://' + config.get('server.host') + ':' + config.get('server.port'))
 
-          client
-          .get('/vtest/testdb/test-schema')
-          .set('Authorization', 'Bearer ' + bearerToken)
-          .expect(200)
-          .end(function (err, res1) {
-            if (err) return done(err)
-
+          setTimeout(() => {
             client
-            .post('/vtest/testdb/test-schema')
+            .get('/vtest/testdb/test-schema')
             .set('Authorization', 'Bearer ' + bearerToken)
-            .send({field1: 'foo!'})
             .expect(200)
-            .end(function (err, res2) {
+            .end(function (err, res1) {
               if (err) return done(err)
 
-              setTimeout(function () {
-                client
-                .get('/vtest/testdb/test-schema')
-                .set('Authorization', 'Bearer ' + bearerToken)
-                .expect(200)
-                .end(function (err, res3) {
-                  if (err) return done(err)
+              client
+              .post('/vtest/testdb/test-schema')
+              .set('Authorization', 'Bearer ' + bearerToken)
+              .send({field1: 'foo!'})
+              .expect(200)
+              .end(function (err, res2) {
+                if (err) return done(err)
 
-                  res1.body.results.length.should.eql(2)
-                  res3.body.results.length.should.eql(3)
-                  res3.text.should.not.equal(res1.text)
+                setTimeout(function () {
+                  client
+                  .get('/vtest/testdb/test-schema')
+                  .set('Authorization', 'Bearer ' + bearerToken)
+                  .expect(200)
+                  .end(function (err, res3) {
+                    if (err) return done(err)
 
-                  done()
-                })
-              }, 300)
+                    res1.body.results.length.should.eql(2)
+                    res3.body.results.length.should.eql(3)
+                    res3.text.should.not.equal(res1.text)
+
+                    done()
+                  })
+                }, 300)
+              })
             })
-          })
+          }, 300)
         })
       })
     })
@@ -395,65 +397,69 @@ describe('Cache', function (done) {
 
           var client = request('http://' + config.get('server.host') + ':' + config.get('server.port'))
 
-          // GET
-          client
-          .get('/vtest/testdb/test-schema')
-          .set('Authorization', 'Bearer ' + bearerToken)
-          .expect(200)
-          .end(function (err, getRes1) {
-            if (err) return done(err)
-
-            // CREATE
+          setTimeout(() => {
+            // GET
             client
-            .post('/vtest/testdb/test-schema')
+            .get('/vtest/testdb/test-schema')
             .set('Authorization', 'Bearer ' + bearerToken)
-            .send({field1: 'foo!'})
             .expect(200)
-            .end(function (err, postRes1) {
+            .end(function (err, getRes1) {
               if (err) return done(err)
 
-              // save id for updating
-              var id = postRes1.body.results[0]._id
-
-              // GET AGAIN - should cache new results
+              // CREATE
               client
-              .get('/vtest/testdb/test-schema')
+              .post('/vtest/testdb/test-schema')
               .set('Authorization', 'Bearer ' + bearerToken)
+              .send({field1: 'foo!'})
               .expect(200)
-              .end(function (err, getRes2) {
+              .end(function (err, postRes1) {
                 if (err) return done(err)
 
-                setTimeout(function () {
-                  // UPDATE again
+                // save id for updating
+                var id = postRes1.body.results[0]._id
+
+                setTimeout(() => {
+                  // GET AGAIN - should cache new results
                   client
-                  .put('/vtest/testdb/test-schema/' + id)
+                  .get('/vtest/testdb/test-schema')
                   .set('Authorization', 'Bearer ' + bearerToken)
-                  .send({field1: 'foo bar baz!'})
                   .expect(200)
-                  .end(function (err, postRes2) {
+                  .end(function (err, getRes2) {
                     if (err) return done(err)
 
-                    // WAIT, then GET again
                     setTimeout(function () {
+                      // UPDATE again
                       client
-                      .get('/vtest/testdb/test-schema')
+                      .put('/vtest/testdb/test-schema/' + id)
                       .set('Authorization', 'Bearer ' + bearerToken)
+                      .send({field1: 'foo bar baz!'})
                       .expect(200)
-                      .end(function (err, getRes3) {
+                      .end(function (err, postRes2) {
                         if (err) return done(err)
 
-                        var result = _.findWhere(getRes3.body.results, { '_id': id })
+                        // WAIT, then GET again
+                        setTimeout(function () {
+                          client
+                          .get('/vtest/testdb/test-schema')
+                          .set('Authorization', 'Bearer ' + bearerToken)
+                          .expect(200)
+                          .end(function (err, getRes3) {
+                            if (err) return done(err)
 
-                        result.field1.should.eql('foo bar baz!')
+                            var result = _.findWhere(getRes3.body.results, { '_id': id })
 
-                        done()
+                            result.field1.should.eql('foo bar baz!')
+
+                            done()
+                          })
+                        }, 200)
                       })
-                    }, 200)
+                    }, 300)
                   })
                 }, 300)
               })
             })
-          })
+          }, 300)
         })
       })
     })
@@ -468,64 +474,68 @@ describe('Cache', function (done) {
 
           var client = request('http://' + config.get('server.host') + ':' + config.get('server.port'))
 
-          // GET
-          client
-          .get('/vtest/testdb/test-schema')
-          .set('Authorization', 'Bearer ' + bearerToken)
-          .expect(200)
-          .end(function (err, getRes1) {
-            if (err) return done(err)
-
-            // CREATE
+          setTimeout(() => {
+            // GET
             client
-            .post('/vtest/testdb/test-schema')
+            .get('/vtest/testdb/test-schema')
             .set('Authorization', 'Bearer ' + bearerToken)
-            .send({field1: 'foo!'})
             .expect(200)
-            .end(function (err, postRes1) {
+            .end(function (err, getRes1) {
               if (err) return done(err)
 
-              // save id for deleting
-              var id = postRes1.body.results[0]._id
-
-              // GET AGAIN - should cache new results
+              // CREATE
               client
-              .get('/vtest/testdb/test-schema')
+              .post('/vtest/testdb/test-schema')
               .set('Authorization', 'Bearer ' + bearerToken)
+              .send({field1: 'foo!'})
               .expect(200)
-              .end(function (err, getRes2) {
+              .end(function (err, postRes1) {
                 if (err) return done(err)
 
-                setTimeout(function () {
-                  // DELETE
+                // save id for deleting
+                var id = postRes1.body.results[0]._id
+
+                setTimeout(() => {
+                  // GET AGAIN - should cache new results
                   client
-                  .delete('/vtest/testdb/test-schema/' + id)
+                  .get('/vtest/testdb/test-schema')
                   .set('Authorization', 'Bearer ' + bearerToken)
-                  .expect(204)
-                  .end(function (err, postRes2) {
+                  .expect(200)
+                  .end(function (err, getRes2) {
                     if (err) return done(err)
 
-                    // WAIT, then GET again
                     setTimeout(function () {
+                      // DELETE
                       client
-                      .get('/vtest/testdb/test-schema')
+                      .delete('/vtest/testdb/test-schema/' + id)
                       .set('Authorization', 'Bearer ' + bearerToken)
-                      .expect(200)
-                      .end(function (err, getRes3) {
+                      .expect(204)
+                      .end(function (err, postRes2) {
                         if (err) return done(err)
 
-                        var result = _.findWhere(getRes3.body.results, { '_id': id })
+                        // WAIT, then GET again
+                        setTimeout(function () {
+                          client
+                          .get('/vtest/testdb/test-schema')
+                          .set('Authorization', 'Bearer ' + bearerToken)
+                          .expect(200)
+                          .end(function (err, getRes3) {
+                            if (err) return done(err)
 
-                        should.not.exist(result)
+                            var result = _.findWhere(getRes3.body.results, { '_id': id })
 
-                        done()
+                            should.not.exist(result)
+
+                            done()
+                          })
+                        }, 300)
                       })
-                    }, 300)
+                    }, 700)
                   })
-                }, 700)
+                }, 300)
               })
             })
-          })
+          }, 300)
         })
       })
     })
@@ -549,17 +559,19 @@ describe('Cache', function (done) {
         .end(function (err, res) {
           if (err) return done(err)
 
-          client
-          .get('/vtest/testdb/test-schema?callback=myCallback')
-          .set('Authorization', 'Bearer ' + bearerToken)
-          .expect(200)
-          .expect('content-type', 'text/javascript')
-          .end(function (err, res2) {
-            if (err) return done(err)
+          setTimeout(() => {
+            client
+            .get('/vtest/testdb/test-schema?callback=myCallback')
+            .set('Authorization', 'Bearer ' + bearerToken)
+            .expect(200)
+            .expect('content-type', 'text/javascript')
+            .end(function (err, res2) {
+              if (err) return done(err)
 
-            res2.text.should.not.equal(res1.text)
-            done()
-          })
+              res2.text.should.not.equal(res1.text)
+              done()
+            })
+          }, 300)
         })
       })
     })

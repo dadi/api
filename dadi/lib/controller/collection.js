@@ -56,30 +56,28 @@ Collection.prototype.delete = function (req, res, next) {
   pathname = pathname.replace('/' + req.params.id, '')
 
   // flush cache for DELETE requests
-  help.clearCache(pathname, err => {
-    if (err) return next(err)
+  help.clearCache(pathname)
 
-    this.model.delete({
-      client: req.dadiApiClient,
-      query,
-      req
-    }).then(({deletedCount, totalCount}) => {
-      if (config.get('feedback')) {
-        // Send 200 with JSON payload.
-        return help.sendBackJSON(200, res, next)(null, {
-          status: 'success',
-          message: 'Documents deleted successfully',
-          deleted: deletedCount,
-          totalCount
-        })
-      }
+  this.model.delete({
+    client: req.dadiApiClient,
+    query,
+    req
+  }).then(({deletedCount, totalCount}) => {
+    if (config.get('feedback')) {
+      // Send 200 with JSON payload.
+      return help.sendBackJSON(200, res, next)(null, {
+        status: 'success',
+        message: 'Documents deleted successfully',
+        deleted: deletedCount,
+        totalCount
+      })
+    }
 
-      // Send 200 with no content.
-      res.statusCode = 204
-      res.end()
-    }).catch(error => {
-      return help.sendBackJSON(200, res, next)(error)
-    })
+    // Send 200 with no content.
+    res.statusCode = 204
+    res.end()
+  }).catch(error => {
+    return help.sendBackJSON(200, res, next)(error)
   })
 }
 
@@ -131,57 +129,55 @@ Collection.prototype.post = function (req, res, next) {
   debug('POST %s %o', pathname, req.params)
 
   // Flush cache for POST requests.
-  help.clearCache(pathname, err => {
-    if (err) return next(err)
+  help.clearCache(pathname)
 
-    // If id is present in the url, then this is an update.
-    if (req.params.id || req.body.update) {
-      internals._lastModifiedBy = req.dadiApiClient && req.dadiApiClient.clientId
+  // If id is present in the url, then this is an update.
+  if (req.params.id || req.body.update) {
+    internals._lastModifiedBy = req.dadiApiClient && req.dadiApiClient.clientId
 
-      let query = {}
-      let update = {}
+    let query = {}
+    let update = {}
 
-      if (req.params.id) {
-        query._id = req.params.id
-        update = req.body
-      } else {
-        query = req.body.query
-        update = req.body.update
-      }
-
-      // Add the apiVersion filter.
-      if (config.get('query.useVersionFilter')) {
-        query._apiVersion = internals._apiVersion
-      }
-
-      return this.model.update({
-        client: req.dadiApiClient,
-        compose: options.compose,
-        internals,
-        query,
-        req,
-        update
-      }).then(result => {
-        return help.sendBackJSON(200, res, next)(null, result)
-      }).catch(error => {
-        return help.sendBackJSON(500, res, next)(error)
-      })
+    if (req.params.id) {
+      query._id = req.params.id
+      update = req.body
+    } else {
+      query = req.body.query
+      update = req.body.update
     }
 
-    // if no id is present, then this is a create
-    internals._createdBy = req.dadiApiClient && req.dadiApiClient.clientId
+    // Add the apiVersion filter.
+    if (config.get('query.useVersionFilter')) {
+      query._apiVersion = internals._apiVersion
+    }
 
-    return this.model.create({
+    return this.model.update({
       client: req.dadiApiClient,
       compose: options.compose,
-      documents: req.body,
       internals,
-      req
+      query,
+      req,
+      update
     }).then(result => {
       return help.sendBackJSON(200, res, next)(null, result)
     }).catch(error => {
-      return help.sendBackJSON(200, res, next)(error)
+      return help.sendBackJSON(500, res, next)(error)
     })
+  }
+
+  // if no id is present, then this is a create
+  internals._createdBy = req.dadiApiClient && req.dadiApiClient.clientId
+
+  return this.model.create({
+    client: req.dadiApiClient,
+    compose: options.compose,
+    documents: req.body,
+    internals,
+    req
+  }).then(result => {
+    return help.sendBackJSON(200, res, next)(null, result)
+  }).catch(error => {
+    return help.sendBackJSON(200, res, next)(error)
   })
 }
 

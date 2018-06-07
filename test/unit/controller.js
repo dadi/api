@@ -374,8 +374,8 @@ describe('Controller', () => {
           { database: 'testdb' }
         )
         let stub = sinon.stub(mod, 'create').resolves({})
-        sinon.stub(libHelp, 'clearCache').callsFake((pathname, callback) => {
-          return callback(null)
+        sinon.stub(libHelp, 'clearCache').callsFake(pathname => {
+          pathname.should.be.String
         })
 
         controller(mod).post({
@@ -398,8 +398,8 @@ describe('Controller', () => {
           { database: 'testdb' }
         )
         let stub = sinon.stub(mod, 'create').resolves({})
-        sinon.stub(libHelp, 'clearCache').callsFake((pathname, callback) => {
-          return callback(null)
+        sinon.stub(libHelp, 'clearCache').callsFake(pathname => {
+          pathname.should.be.String
         })
 
         controller(mod).post({
@@ -442,8 +442,8 @@ describe('Controller', () => {
           { database: 'testdb' }
         )
         let stub = sinon.stub(mod, 'update').resolves({})
-        sinon.stub(libHelp, 'clearCache').callsFake((pathname, callback) => {
-          return callback(null)
+        sinon.stub(libHelp, 'clearCache').callsFake(pathname => {
+          pathname.should.be.String
         })
 
         controller(mod).put({
@@ -467,8 +467,8 @@ describe('Controller', () => {
           { database: 'testdb' }
         )
         let stub = sinon.stub(mod, 'update').resolves({})
-        sinon.stub(libHelp, 'clearCache').callsFake((pathname, callback) => {
-          return callback(null)
+        sinon.stub(libHelp, 'clearCache').callsFake(pathname => {
+          pathname.should.be.String
         })
 
         controller(mod).put({
@@ -513,14 +513,14 @@ describe('Controller', () => {
         )
         let stub = sinon.stub(mod, 'delete').resolves({})
 
-        sinon.stub(libHelp, 'clearCache').callsFake((pathname, callback) => {
-          return callback(null)
-        })
-
         let req = {
           url: '/vtest/testdb/testModel',
           params: { id: 'test123' }
         }
+
+        sinon.stub(libHelp, 'clearCache').callsFake(pathname => {
+          pathname.should.eql(req.url)
+        })        
 
         controller(mod).delete(req)
 

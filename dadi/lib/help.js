@@ -268,6 +268,9 @@ module.exports.clearCache = function (pathname, callback) {
 
   cache.delete(pattern, function (err) {
     if (err) console.log(err)
-    return callback(null)
+
+    if (typeof callback === 'function') {
+      callback(err)
+    }
   })
 }

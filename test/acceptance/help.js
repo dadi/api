@@ -308,30 +308,29 @@ module.exports.getBearerToken = function (done) {
 }
 
 module.exports.getBearerTokenWithPermissions = function (permissions, done) {
-  var client = {
+  let client = Object.assign({}, {
     clientId: 'test123',
     secret: 'superSecret'
-  }
+  }, permissions)
 
-  var clientWithPermissions = _.extend(client, permissions)
-
-  module.exports.removeTestClients(function (err) {
+  module.exports.removeTestClients(err => {
     if (err) return done(err)
 
-    module.exports.createClient(clientWithPermissions, function (err) {
+    module.exports.createClient(client, err => {
       if (err) return done(err)
 
-      request('http://' + config.get('server.host') + ':' + config.get('server.port'))
+      request(`http://${config.get('server.host')}:${config.get('server.port')}`)
       .post(config.get('auth.tokenUrl'))
       .send(client)
       .expect(200)
-      // .expect('content-type', 'application/json')
-      .end(function (err, res) {
+      .expect('content-type', 'application/json')
+      .end((err, res) => {
         if (err) return done(err)
 
-        var bearerToken = res.body.accessToken
+        let bearerToken = res.body.accessToken
 
         should.exist(bearerToken)
+
         done(null, bearerToken)
       })
     })

@@ -14,8 +14,6 @@ const StorageFactory = require(path.join(__dirname, '/../storage/factory'))
 const streamifier = require('streamifier')
 const url = require('url')
 
-const ID_PATTERN = '[a-fA-F0-9-]*'
-
 const MediaController = function (model, server) {
   this.model = model
   this.server = server
@@ -412,7 +410,7 @@ MediaController.prototype.registerRoutes = function (route) {
   })
 
   // DELETE media
-  this.server.app.use(`${route}/:id(${ID_PATTERN})`, (req, res, next) => {
+  this.server.app.use(`${route}/:id(${this.ID_PATTERN})`, (req, res, next) => {
     let method = req.method && req.method.toLowerCase()
 
     if (method !== 'delete') {

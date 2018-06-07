@@ -2,6 +2,8 @@ const config = require('./../../../config')
 const help = require('./../help')
 const url = require('url')
 
+const ID_PATTERN = '[a-fA-F0-9-]*'
+
 const Controller = function () {}
 
 Controller.prototype._prepareQuery = function (req) {
@@ -161,8 +163,11 @@ Controller.prototype._prepareQueryOptions = function (options) {
   return response
 }
 
+Controller.prototype.ID_PATTERN = ID_PATTERN
+
 module.exports = function (model) {
   return new Controller(model)
 }
 
 module.exports.Controller = Controller
+module.exports.ID_PATTERN = ID_PATTERN

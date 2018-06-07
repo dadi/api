@@ -6,8 +6,6 @@ const fs = require('fs')
 const help = require('./../help')
 const url = require('url')
 
-const ID_PATTERN = '[a-fA-F0-9-]*'
-
 const Collection = function (model, server) {
   if (!model) throw new Error('Model instance required')
 
@@ -266,7 +264,7 @@ Collection.prototype.registerRoutes = function (route, filePath) {
   })
 
   // Creating generic route.
-  this.server.app.use(`${route}/:id(${ID_PATTERN})?/:action(count|stats)?`, (req, res, next) => {
+  this.server.app.use(`${route}/:id(${this.ID_PATTERN})?/:action(count|stats)?`, (req, res, next) => {
     try {
       // Map request method to controller method.
       let method = req.params.action || (req.method && req.method.toLowerCase())
@@ -302,7 +300,7 @@ Collection.prototype.stats = function (req, res, next) {
 
 Collection.prototype.unregisterRoutes = function (route) {
   this.server.app.unuse(`${route}/config`)
-  this.server.app.unuse(`${route}/:id(${ID_PATTERN})?/:action(count|stats)?`)
+  this.server.app.unuse(`${route}/:id(${this.ID_PATTERN})?/:action(count|stats)?`)
 }
 
 module.exports = function (model, server) {
@@ -310,4 +308,3 @@ module.exports = function (model, server) {
 }
 
 module.exports.Controller = Collection
-module.exports.ID_PATTERN = ID_PATTERN

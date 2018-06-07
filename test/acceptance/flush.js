@@ -14,7 +14,7 @@ let adminBearerToken
 let c
 let cacheKeys = []
 
-describe.only('Cache', function (done) {
+describe('Cache', function (done) {
   this.timeout(5000)
 
   describe('Invalidation API - Filesystem', function () {

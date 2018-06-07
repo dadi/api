@@ -1,6 +1,6 @@
 const should = require('should')
 const sinon = require('sinon')
-const controller = require(__dirname + '/../../dadi/lib/controller/collection')
+const controller = require(__dirname + '/../../dadi/lib/controller/documents')
 const model = require(__dirname + '/../../dadi/lib/model')
 const cache = require(__dirname + '/../../dadi/lib/cache')
 const help = require(__dirname + '/help')

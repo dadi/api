@@ -19,13 +19,13 @@ var api = require(path.join(__dirname, '/api'))
 var AuthMiddleware = require(path.join(__dirname, '/auth'))
 var cache = require(path.join(__dirname, '/cache'))
 var Connection = require(path.join(__dirname, '/model/connection'))
-var CollectionController = require(path.join(__dirname, '/controller/collection'))
 var cors = require(path.join(__dirname, '/cors'))
 var ApiConfigController = require(path.join(__dirname, '/controller/apiConfig'))
 var CacheFlushController = require(path.join(__dirname, '/controller/cacheFlush'))
 var ClientsController = require(path.join(__dirname, '/controller/clients'))
 var CreateCollectionController = require(path.join(__dirname, '/controller/createCollection'))
 var CreateEndpointController = require(path.join(__dirname, '/controller/createEndpoint'))
+var DocumentController = require(path.join(__dirname, '/controller/documents'))
 var EndpointController = require(path.join(__dirname, '/controller/endpoint'))
 var HooksController = require(path.join(__dirname, '/controller/hooks'))
 var MediaController = require(path.join(__dirname, '/controller/media'))
@@ -670,7 +670,7 @@ Server.prototype.addCollectionResource = function (options) {
   let isMediaCollection = settings.type && settings.type === 'mediaCollection'
   let controller = isMediaCollection
     ? MediaController(model, this)
-    : CollectionController(model, this)
+    : DocumentController(model, this)
   let componentType = isMediaCollection
     ? this.COMPONENT_TYPE.MEDIA_COLLECTION
     : this.COMPONENT_TYPE.COLLECTION

@@ -1,16 +1,17 @@
 'use strict'
-const path = require('path')
 
+const acl = require('./../model/acl')
 const Busboy = require('busboy')
-const config = require(path.join(__dirname, '/../../../config'))
+const config = require('./../../../config')
 const Controller = require('./index')
-const help = require(path.join(__dirname, '/../help'))
+const help = require('./../help')
 const imagesize = require('imagesize')
 const jwt = require('jsonwebtoken')
 const mediaModel = require('./../model/media')
 const PassThrough = require('stream').PassThrough
+const path = require('path')
 const sha1 = require('sha1')
-const StorageFactory = require(path.join(__dirname, '/../storage/factory'))
+const StorageFactory = require('./../storage/factory')
 const streamifier = require('streamifier')
 const url = require('url')
 
@@ -66,12 +67,15 @@ MediaController.prototype.count = function (req, res, next) {
     return help.sendBackJSON(400, res, next)(null, parsedOptions)
   }
 
-  this.model.count(
-    query,
-    parsedOptions.queryOptions,
-    help.sendBackJSON(200, res, next),
-    req
-  )
+  this.model.count({
+    client: req.dadiApiClient,
+    options: parsedOptions.queryOptions,
+    query
+  }).then(response => {
+    help.sendBackJSON(200, res, next)(null, response)
+  }).catch(err => {
+    help.sendBackJSON(200, res, next)(err)
+  })
 }
 
 /**
@@ -86,15 +90,20 @@ MediaController.prototype.get = function (req, res, next) {
     return help.sendBackJSON(400, res, next)(null, parsedOptions)
   }
 
-  const callback = (err, response) => {
+  return this.model.get({
+    client: req.dadiApiClient,
+    options: parsedOptions.queryOptions,
+    query,
+    req
+  }).then(response => {
     response.results = response.results.map(document => {
       return mediaModel.formatDocuments(document)
     })
 
-    help.sendBackJSON(200, res, next)(err, response)
-  }
-
-  this.model.get(query, parsedOptions.queryOptions, callback, req)
+    help.sendBackJSON(200, res, next)(null, response)
+  }).catch(err => {
+    help.sendBackJSON(500, res, next)(err)
+  })
 }
 
 /**
@@ -288,6 +297,7 @@ MediaController.prototype.delete = function (req, res, next) {
     storageHandler.delete(file)
       .then(result => {
         this.model.delete({
+          client: req.dadiApiClient,
           query,
           req
         }).then(({deletedCount, totalCount}) => {
@@ -324,22 +334,30 @@ MediaController.prototype.registerRoutes = function (route) {
       return next()
     }
 
-    let token
-
-    try {
-      token = this._signToken(req.body)
-    } catch (err) {
-      let error = {
-        name: 'ValidationError',
-        message: err.message,
-        statusCode: 400
+    return acl.access.get(req.dadiApiClient, this.model.aclKey).then(access => {
+      if (access.create !== true) {
+        return help.sendBackJSON(null, res, next)(
+          acl.createError(req.dadiApiClient)
+        )
       }
 
-      return next(error)
-    }
+      let token
 
-    help.sendBackJSON(200, res, next)(null, {
-      url: `${route}/${token}`
+      try {
+        token = this._signToken(req.body)
+      } catch (err) {
+        let error = {
+          name: 'ValidationError',
+          message: err.message,
+          statusCode: 400
+        }
+
+        return next(error)
+      }
+
+      help.sendBackJSON(200, res, next)(null, {
+        url: `${route}/${token}`
+      })
     })
   })
 

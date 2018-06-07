@@ -260,12 +260,12 @@ Server.prototype.start = function (done) {
   this.loadApi(options)
 
   ClientsController(this)
+  HooksController(this, options.hookPath)
   ResourcesController(this)
   RolesController(this)
 
   this.loadCollectionRoute()
   this.loadEndpointsRoute()
-  this.loadHooksRoute(options)
 
   this.readyState = 1
 
@@ -544,34 +544,6 @@ Server.prototype.loadEndpointsRoute = function () {
     return help.sendBackJSON(200, res, next)(null, {
       endpoints
     })
-  })
-}
-
-// route to retrieve list of available hooks
-Server.prototype.loadHooksRoute = function (options) {
-  const hooksController = new HooksController({
-    components: this.components,
-    docs: this.docs,
-    path: options.hookPath
-  })
-
-  this.app.use('/api/hooks', (req, res, next) => {
-    const method = req.method && req.method.toLowerCase()
-    if (method === 'get') {
-      return hooksController[method](req, res, next)
-    }
-
-    return help.sendBackJSON(405, res, next)(null, {'error': 'Invalid method'})
-  })
-
-  this.app.use('/api/hooks/:hookName/config', (req, res, next) => {
-    const method = req.method && req.method.toLowerCase()
-
-    if (typeof hooksController[method] === 'function') {
-      return hooksController[method](req, res, next)
-    }
-
-    return help.sendBackJSON(405, res, next)(null, {'error': 'Invalid method'})
   })
 }
 

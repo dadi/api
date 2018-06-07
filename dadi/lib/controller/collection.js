@@ -198,7 +198,7 @@ Collection.prototype.registerRoutes = function (route, filePath) {
       case 'get':
         // The client can read the schema if they have any type of access (i.e. create,
         // delete, read or update) to the collection resource.
-        let aclKey = this.model.getAclKey()
+        let aclKey = this.model.aclKey
 
         return acl.access.get(req.dadiApiClient, aclKey).then(access => {
           if (!access.create || !access.delete || !access.read || !access.update) {

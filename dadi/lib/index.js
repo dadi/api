@@ -682,7 +682,7 @@ Server.prototype.addCollectionResource = function (options) {
   }, componentType)
 
   acl.registerResource(
-    model.getAclKey(),
+    model.aclKey,
     `${options.database}/${options.name} collection`
   )
 
@@ -708,13 +708,21 @@ Server.prototype.addCollectionResource = function (options) {
 }
 
 Server.prototype.addMediaCollectionResource = function (options) {
+  let aclKey = `media:${options.name}`
   let model = Model(
     options.name,
     options.schema.fields,
     null,
-    options.schema.settings
+    Object.assign({}, options.schema.settings, {
+      aclKey
+    })
   )
   let controller = MediaController(model, this)
+
+  acl.registerResource(
+    aclKey,
+    `${options.name} media bucket`
+  )
 
   this.addComponent({
     route: options.route,

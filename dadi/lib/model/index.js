@@ -62,6 +62,9 @@ const Model = function (name, schema, connection, settings) {
   // Attach default settings.
   this.settings = Object.assign({}, settings, this.schema.settings)
 
+  // Set ACL key
+  this.aclKey = settings.aclKey || `collection:${settings.database}_${name}`
+
   // Attach display name if supplied.
   if (this.settings.displayName) {
     this.displayName = this.settings.displayName
@@ -479,10 +482,6 @@ Model.prototype.formatQuery = function (query) {
   return newQuery
 }
 
-Model.prototype.getAclKey = function () {
-  return `collection:${this.settings.database}_${this.name}`
-}
-
 /**
  * Returns the field with a given name, if it exists.
  *
@@ -668,9 +667,7 @@ Model.prototype.validateAccess = function ({
     return Promise.resolve({fields, query})
   }
 
-  let aclKey = this.getAclKey()
-
-  return this.acl.access.get(client, aclKey).then(access => {
+  return this.acl.access.get(client, this.aclKey).then(access => {
     let value = access[type]
 
     if (!value) {

@@ -92,7 +92,7 @@ Endpoint.prototype.registerRoutes = function (route, filePath) {
         let aclCheck
 
         // If the method is OPTIONS *or* the custom endpoint has explicitly
-        // said this is an unauthenticated endpoint, we'll run an ACL check.
+        // said this is an unauthenticated endpoint, we'll skip the ACL check.
         if ((method === 'options') || this.isAuthenticated()) {
           aclCheck = Promise.resolve()
         } else {

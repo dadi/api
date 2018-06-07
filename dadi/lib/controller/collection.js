@@ -34,12 +34,13 @@ Collection.prototype.count = function (req, res, next) {
   queryOptions = queryOptions.queryOptions
 
   this.model.count({
-    query,
-    options: queryOptions
+    client: req.dadiApiClient,
+    options: queryOptions,
+    query
   }).then(stats => {
     return help.sendBackJSON(200, res, next)(null, stats)
   }).catch(error => {
-    return next(error)
+    return help.sendBackJSON(null, res, next)(error)
   })
 }
 
@@ -291,10 +292,12 @@ Collection.prototype.stats = function (req, res, next) {
     return next()
   }
 
-  this.model.getStats().then(stats => {
+  this.model.getStats({
+    client: req.dadiApiClient
+  }).then(stats => {
     return help.sendBackJSON(200, res, next)(null, stats)
   }).catch(error => {
-    return next(error)
+    return help.sendBackJSON(null, res, next)(error)
   })
 }
 

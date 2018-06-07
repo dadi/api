@@ -14,38 +14,45 @@
  * Searchs for documents in the datbase and returns a
  * metadata object.
  *
- * @param {Object} query - the search query
+ * @param {Object} client - client to check permissions for
  * @param {Object} options - an options object
+ * @param {Object} query - the search query
  * @returns {Promise<Metadata>}
  */
 function count ({
-  query = {},
-  options = {}
+  client,
+  options = {},
+  query = {}
 } = {}) {
-  const validation = this.validate.query(query)
+  return this.validateAccess({
+    client,
+    type: 'read'
+  }).then(() => {
+    let validation = this.validate.query(query)
 
-  if (!validation.success) {
-    const err = this._createValidationError('Bad Query')
+    if (!validation.success) {
+      let err = this._createValidationError('Bad Query')
 
-    err.json = validation
+      err.json = validation
 
-    return Promise.reject(err)
-  }
-
-  if (typeof query !== 'object') {
-    return Promise.reject(
-      this._createValidationError('Bad Query')
-    )
-  }
-
-  return this.find({
-    query,
-    options
-  }).then(response => {
-    return {
-      metadata: response.metadata
+      return Promise.reject(err)
     }
-  })
+
+    if (typeof query !== 'object') {
+      return Promise.reject(
+        this._createValidationError('Bad Query')
+      )
+    }
+
+    return this.find({
+      query,
+      options
+    }).then(response => {
+      return {
+        metadata: response.metadata
+      }
+    })
+  })  
 }
 
 module.exports = function () {

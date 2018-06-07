@@ -12,17 +12,24 @@
 /**
  * Returns stats relating to the collection.
  *
- * @param  {Object} options
+ * @param  {Object} client - client to check permissions for
  * @return {Promise<Stats>}
  */
-function getStats ({options = {}} = {}) {
+function getStats ({
+  client
+} = {}) {
   if (!this.connection.db) {
     return Promise.reject(
       new Error('DB_DISCONNECTED')
     )
   }
 
-  return this.connection.db.stats(this.name, options)
+  return this.validateAccess({
+    client,
+    type: 'read'
+  }).then(() => {
+    return this.connection.db.stats(this.name)
+  })
 }
 
 module.exports = getStats

@@ -38,7 +38,7 @@ const Clients = function (server) {
 Clients.prototype.delete = function (req, res, next) {
   return acl.access.get(req.dadiApiClient, 'clients').then(access => {
     if (access.delete !== true) {
-      return help.sendBackJSON(null, res, next)(
+      return Promise.reject(
         acl.createError(req.dadiApiClient)
       )
     }
@@ -49,10 +49,10 @@ Clients.prototype.delete = function (req, res, next) {
       return help.sendBackJSON(404, res, next)(null)
     }
 
-    return model.delete(req.params.clientId).then(response => {
-      help.sendBackJSON(204, res, next)(null, null)
-    })
-  })
+    return model.delete(req.params.clientId)
+  }).then(response => {
+    help.sendBackJSON(204, res, next)(null, null)
+  }).catch(this.handleError(res, next))
 }
 
 Clients.prototype.deleteResource = function (req, res, next) {
@@ -60,7 +60,7 @@ Clients.prototype.deleteResource = function (req, res, next) {
   // needs to have "update" access to the "clients" resource.
   return acl.access.get(req.dadiApiClient, 'clients').then(access => {
     if (access.update !== true) {
-      return help.sendBackJSON(null, res, next)(
+      return Promise.reject(
         acl.createError(req.dadiApiClient)
       )
     }
@@ -68,10 +68,10 @@ Clients.prototype.deleteResource = function (req, res, next) {
     return model.resourceRemove(
       req.params.clientId,
       req.params.resource
-    ).then(({results}) => {
-      help.sendBackJSON(204, res, next)(null, null)
-    }).catch(this.handleError(res, next))
-  })
+    )
+  }).then(({results}) => {
+    help.sendBackJSON(204, res, next)(null, null)
+  }).catch(this.handleError(res, next))
 }
 
 Clients.prototype.deleteRole = function (req, res, next) {
@@ -82,7 +82,7 @@ Clients.prototype.deleteRole = function (req, res, next) {
   // role they're trying to remove.
   return acl.access.get(req.dadiApiClient, 'clients').then(access => {
     if (access.update !== true) {
-      return help.sendBackJSON(null, res, next)(
+      return Promise.reject(
         acl.createError(req.dadiApiClient)
       )
     }
@@ -102,7 +102,7 @@ Clients.prototype.deleteRole = function (req, res, next) {
     return true
   }).then(requestingClientHasRole => {
     if (!requestingClientHasRole) {
-      return help.sendBackJSON(null, res, next)(
+      return Promise.reject(
         acl.createError(req.dadiApiClient)
       )
     }
@@ -110,20 +110,20 @@ Clients.prototype.deleteRole = function (req, res, next) {
     return model.roleRemove(
       req.params.clientId,
       [role]
-    ).then(({removed, results}) => {
-      if (removed.length === 0) {
-        return help.sendBackJSON(404, res, next)(null)
-      }
+    )
+  }).then(({removed, results}) => {
+    if (removed.length === 0) {
+      return help.sendBackJSON(404, res, next)(null)
+    }
 
-      help.sendBackJSON(200, res, next)(null, {results})
-    }).catch(this.handleError(res, next))
-  })
+    help.sendBackJSON(200, res, next)(null, {results})
+  }).catch(this.handleError(res, next))
 }
 
 Clients.prototype.get = function (req, res, next) {
   return acl.access.get(req.dadiApiClient, 'clients').then(access => {
     if (access.read !== true) {
-      return help.sendBackJSON(null, res, next)(
+      return Promise.reject(
         acl.createError(req.dadiApiClient)
       )
     }
@@ -141,12 +141,16 @@ Clients.prototype.get = function (req, res, next) {
     help.sendBackJSON(200, res, next)(null, {
       results: sanitisedClients
     })
-  })
+  }).catch(this.handleError(res, next))
 }
 
 Clients.prototype.handleError = function (res, next) {
   return err => {
     switch (err.message) {
+      case 'FORBIDDEN':
+      case 'UNAUTHORISED':
+        return help.sendBackJSON(null, res, next)(err)
+
       case 'ACCESS_MATRIX_VALIDATION_FAILED':
         return help.sendBackJSON(400, res, next)(null, {
           success: false,
@@ -210,19 +214,19 @@ Clients.prototype.post = function (req, res, next) {
 
   return acl.access.get(req.dadiApiClient, 'clients').then(access => {
     if (access.create !== true) {
-      return help.sendBackJSON(null, res, next)(
+      return Promise.reject(
         acl.createError(req.dadiApiClient)
       )
     }
 
-    return model.create(req.body).catch(this.handleError(res, next))
+    return model.create(req.body)
   }).then(({results}) => {
     help.sendBackJSON(201, res, next)(null, {
       results: [
         model.sanitise(results[0])
       ]
     })
-  })
+  }).catch(this.handleError(res, next))
 }
 
 Clients.prototype.postResource = function (req, res, next) {
@@ -248,7 +252,7 @@ Clients.prototype.postResource = function (req, res, next) {
   // resource in question.
   return acl.access.get(req.dadiApiClient, 'clients').then(access => {
     if (access.update !== true) {
-      return help.sendBackJSON(null, res, next)(
+      return Promise.reject(
         acl.createError(req.dadiApiClient)
       )
     }
@@ -259,7 +263,7 @@ Clients.prototype.postResource = function (req, res, next) {
       })
 
       if (forbiddenType) {
-        return help.sendBackJSON(null, res, next)(
+        return Promise.reject(
           acl.createError(req.dadiApiClient)
         )
       }
@@ -268,11 +272,11 @@ Clients.prototype.postResource = function (req, res, next) {
         req.params.clientId,
         req.body.name,
         req.body.access
-      ).then(({results}) => {
-        help.sendBackJSON(201, res, next)(null, {results})
-      }).catch(this.handleError(res, next))
+      )
     })
-  })
+  }).then(({results}) => {
+    help.sendBackJSON(201, res, next)(null, {results})
+  }).catch(this.handleError(res, next))
 }
 
 Clients.prototype.postRole = function (req, res, next) {
@@ -290,7 +294,7 @@ Clients.prototype.postRole = function (req, res, next) {
   // role they're trying to assign.
   return acl.access.get(req.dadiApiClient, 'clients').then(access => {
     if (access.update !== true) {
-      return help.sendBackJSON(null, res, next)(
+      return Promise.reject(
         acl.createError(req.dadiApiClient)
       )
     }
@@ -311,15 +315,15 @@ Clients.prototype.postRole = function (req, res, next) {
     return []
   }).then(forbiddenRoles => {
     if (forbiddenRoles.length > 0) {
-      return help.sendBackJSON(null, res, next)(
+      return Promise.reject(
         acl.createError(req.dadiApiClient)
       )
     }
 
-    return model.roleAdd(req.params.clientId, roles).then(({results}) => {
-      help.sendBackJSON(200, res, next)(null, {results})
-    }).catch(this.handleError(res, next))
-  })
+    return model.roleAdd(req.params.clientId, roles)
+  }).then(({results}) => {
+    help.sendBackJSON(200, res, next)(null, {results})
+  }).catch(this.handleError(res, next))
 }
 
 Clients.prototype.putResource = function (req, res, next) {
@@ -339,7 +343,7 @@ Clients.prototype.putResource = function (req, res, next) {
   // resource in question.
   return acl.access.get(req.dadiApiClient, 'clients').then(access => {
     if (access.update !== true) {
-      return help.sendBackJSON(null, res, next)(
+      return Promise.reject(
         acl.createError(req.dadiApiClient)
       )
     }
@@ -350,7 +354,7 @@ Clients.prototype.putResource = function (req, res, next) {
       })
 
       if (forbiddenType) {
-        return help.sendBackJSON(null, res, next)(
+        return Promise.reject(
           acl.createError(req.dadiApiClient)
         )
       }
@@ -359,11 +363,11 @@ Clients.prototype.putResource = function (req, res, next) {
         req.params.clientId,
         req.params.resource,
         req.body
-      ).then(({results}) => {
-        help.sendBackJSON(200, res, next)(null, {results})
-      }).catch(this.handleError(res, next))
+      )
     })
-  })
+  }).then(({results}) => {
+    help.sendBackJSON(200, res, next)(null, {results})
+  }).catch(this.handleError(res, next))
 }
 
 module.exports = server => new Clients(server)

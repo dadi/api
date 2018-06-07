@@ -52,7 +52,7 @@ function count ({
         metadata: response.metadata
       }
     })
-  })  
+  })
 }
 
 module.exports = function () {

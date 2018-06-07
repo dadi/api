@@ -1,19 +1,20 @@
 'use strict'
+const path = require('path')
 
 const Busboy = require('busboy')
-const config = require('./../../../config')
+const config = require(path.join(__dirname, '/../../../config'))
 const Controller = require('./index')
-const help = require('./../help')
+const help = require(path.join(__dirname, '/../help'))
 const imagesize = require('imagesize')
 const jwt = require('jsonwebtoken')
 const mediaModel = require('./../model/media')
 const PassThrough = require('stream').PassThrough
-const path = require('path')
-const serveStatic = require('serve-static')
 const sha1 = require('sha1')
-const StorageFactory = require('./../storage/factory')
+const StorageFactory = require(path.join(__dirname, '/../storage/factory'))
 const streamifier = require('streamifier')
 const url = require('url')
+
+const ID_PATTERN = '[a-fA-F0-9-]*'
 
 const MediaController = function (model, server) {
   this.model = model
@@ -99,18 +100,12 @@ MediaController.prototype.get = function (req, res, next) {
 }
 
 /**
- * Serve a media file from its location on disk.
+ * Serve a media file from its location.
  */
 MediaController.prototype.getFile = function (req, res, next, route) {
-  // `serveStatic` will look at the entire URL to find the file it needs to
-  // serve, but we're not serving files from the root. To get around this, we
-  // pass it a modified version of the URL, where the root URL becomes just the
-  // filename parameter.
-  const modifiedReq = Object.assign({}, req, {
-    url: `${route}/${req.params.filename}`
-  })
+  let storageHandler = StorageFactory.create(req.params.filename)
 
-  return serveStatic(config.get('media.basePath'))(modifiedReq, res, next)
+  return storageHandler.get(req.params.filename, route, req, res, next)
 }
 
 /**
@@ -277,6 +272,51 @@ MediaController.prototype.post = function (req, res, next) {
   }
 }
 
+MediaController.prototype.delete = function (req, res, next) {
+  let query = req.params.id ? { _id: req.params.id } : req.body.query
+
+  if (!query) return next()
+
+  this.model.get({
+    query, req
+  }).then(results => {
+    if (!results.results[0]) return next()
+
+    let file = results.results[0]
+
+    // remove physical file
+    let storageHandler = StorageFactory.create(file.fileName)
+
+    storageHandler.delete(file)
+      .then(result => {
+        this.model.delete({
+          query,
+          req
+        }).then(({deletedCount, totalCount}) => {
+          if (config.get('feedback')) {
+            // Send 200 with JSON payload.
+            return help.sendBackJSON(200, res, next)(null, {
+              status: 'success',
+              message: 'Document(s) deleted successfully',
+              deleted: deletedCount,
+              totalCount
+            })
+          }
+
+          // Send 204 with no content.
+          res.statusCode = 204
+          res.end()
+        }).catch(error => {
+          return help.sendBackJSON(200, res, next)(error)
+        })
+      }).catch(err => {
+        return next(err)
+      })
+  }).catch(err => {
+    return next(err)
+  })
+}
+
 MediaController.prototype.registerRoutes = function (route) {
   this.route = route
 
@@ -369,6 +409,21 @@ MediaController.prototype.registerRoutes = function (route) {
   // GET media/filename
   this.server.app.use(route + '/:filename(.*png|.*jpg|.*jpeg|.*gif|.*bmp|.*tiff|.*pdf)', (req, res, next) => {
     return this.getFile(req, res, next, route)
+  })
+
+  // DELETE media
+  this.server.app.use(`${route}/:id(${ID_PATTERN})`, (req, res, next) => {
+    let method = req.method && req.method.toLowerCase()
+
+    if (method !== 'delete') {
+      return next()
+    }
+
+    if (!this[method]) {
+      return next()
+    }
+
+    return this[method](req, res, next)
   })
 }
 

@@ -339,7 +339,7 @@ describe('Cache', function (done) {
     })
 
     it('should flush on POST create request', function (done) {
-  	  this.timeout(4000)
+      this.timeout(4000)
       help.createDoc(bearerToken, function (err, doc) {
         if (err) return done(err)
 
@@ -385,7 +385,7 @@ describe('Cache', function (done) {
     })
 
     it('should flush on PUT update request', function (done) {
-  	   this.timeout(4000)
+       this.timeout(4000)
 
       help.createDoc(bearerToken, function (err, doc) {
         if (err) return done(err)
@@ -459,7 +459,7 @@ describe('Cache', function (done) {
     })
 
     it('should flush on DELETE request', function (done) {
-  	  this.timeout(4000)
+      this.timeout(4000)
       help.createDoc(bearerToken, function (err, doc) {
         if (err) return done(err)
 
@@ -713,7 +713,7 @@ describe('Cache', function (done) {
       }
     })
 
-    it('should return data if key exists in Redis, with correct headers', function (done) {
+    it.skip('should return data if key exists in Redis, with correct headers', function (done) {
       delete require.cache[__dirname + '/../../config.js']
       config.loadFile(config.configPath())
 
@@ -760,7 +760,7 @@ describe('Cache', function (done) {
       }
     })
 
-    it('should invalidate based on TTL', function (done) {
+    it.skip('should invalidate based on TTL', function (done) {
       this.timeout(6000)
 
       var configString = fs.readFileSync(config.configPath())

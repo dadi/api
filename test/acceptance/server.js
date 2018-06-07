@@ -45,7 +45,6 @@ describe('Server', function () {
       request(server)
             .get('/')
             .expect('Content-Type', /json/)
-            .expect('content-length', body.length)
             .expect(200, done)
     })
 
@@ -88,7 +87,6 @@ describe('Server', function () {
       request(server)
             .get('/')
             .expect('Content-Type', /json/)
-            .expect('content-length', body.length)
             .expect('x-is-test', 'true')
             .expect(200, function (err, res) {
               if (err) return done(err)

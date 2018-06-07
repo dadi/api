@@ -312,13 +312,13 @@ var conf = convict({
     },
     s3: {
       accessKey: {
-        doc: 'The AWS access key used to connect to S3',
+        doc: 'The access key used to connect to an S3-compatible storage provider',
         format: String,
         default: '',
         env: 'AWS_S3_ACCESS_KEY'
       },
       secretKey: {
-        doc: 'The AWS secret key used to connect to S3',
+        doc: 'The secret key used to connect to an S3-compatible storage provider',
         format: String,
         default: '',
         env: 'AWS_S3_SECRET_KEY'
@@ -330,10 +330,15 @@ var conf = convict({
         env: 'AWS_S3_BUCKET_NAME'
       },
       region: {
-        doc: 'The AWS region',
+        doc: 'The region for an S3-compatible storage provider',
         format: String,
         default: '',
         env: 'AWS_S3_REGION'
+      },
+      endpoint: {
+        doc: 'The endpoint for an S3-compatible storage provider',
+        format: String,
+        default: ''
       }
     }
   },

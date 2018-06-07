@@ -1,18 +1,21 @@
-var AWS = require('aws-sdk')
-var concat = require('concat-stream')
-var lengthStream = require('length-stream')
-var path = require('path')
+const AWS = require('aws-sdk')
+const concat = require('concat-stream')
+const lengthStream = require('length-stream')
+const path = require('path')
+const stream = require('stream')
 
-var config = require(path.join(__dirname, '/../../../config'))
-var logger = require('@dadi/logger')
+const config = require(path.join(__dirname, '/../../../config'))
+const logger = require('@dadi/logger')
 
 /**
- *
- * @param {string} fileName - xxx
+ * Creates a new S3Storage instance, setting the S3 credentials from config
+ * @constructor
+ * @classdesc
  */
-var S3Storage = function (fileName) {
+const S3Storage = function (fileName) {
   this.fileName = fileName
   this.settings = config.get('media')
+  this.providerType = 'AWS S3'
 
   AWS.config.update({ accessKeyId: this.settings.s3.accessKey, secretAccessKey: this.settings.s3.secretKey })
 
@@ -20,41 +23,87 @@ var S3Storage = function (fileName) {
     AWS.config.update({ region: this.settings.s3.region })
   }
 
+  // Allow configuration of endpoint for Digital Ocean Spaces
+  if (this.settings.s3.endpoint && this.settings.s3.endpoint !== '') {
+    AWS.config.update({ endpoint: this.settings.s3.endpoint })
+
+    this.providerType = 'DigitalOcean'
+  }
+
   this.s3 = new AWS.S3()
 }
 
 /**
- *
- * @returns {string} xxx
+ * Get the name of the bucket configured to store files
  */
 S3Storage.prototype.getBucket = function () {
   return this.settings.s3.bucketName
 }
 
 /**
- *
- * @returns {string} xxx
+ * Get the value to be used as the key in the S3 filesystem
  */
 S3Storage.prototype.getKey = function () {
   return this.fileName
 }
 
 /**
+ * Get a file from an S3-compatible location
  *
- * @param {Stream} stream - xxx
- * @param {string} folderPath - xxx
+ * @param {string} filePath - the media file's path
+ */
+S3Storage.prototype.get = function (filePath, route, req, res, next) {
+  return new Promise((resolve, reject) => {
+    let requestData = {
+      Bucket: this.getBucket(),
+      Key: filePath
+    }
+
+    if (requestData.Bucket === '' || requestData.Key === '') {
+      let err = {
+        statusCode: 400,
+        statusText: 'Bad Request',
+        message: 'Either no Bucket or Key provided: ' + JSON.stringify(requestData)
+      }
+      return reject(err)
+    }
+
+    logger.info(`${this.providerType} GET Request:` + JSON.stringify({
+      Bucket: requestData.Bucket,
+      Key: requestData.Key
+    }))
+
+    // create the AWS.Request object
+    let getObjectPromise = this.s3.getObject(requestData).promise()
+
+    return getObjectPromise.then(data => {
+      let bufferStream = new stream.PassThrough()
+      bufferStream.push(data.Body)
+      bufferStream.push(null)
+      bufferStream.pipe(res)
+    }).catch(error => {
+      return reject(error)
+    })
+  })
+}
+
+/**
+ * Upload a file to an S3-compatible location
+ *
+ * @param {Stream} stream - the stream containing the uploaded file
+ * @param {string} folderPath - the directory structure in which to store the file
  */
 S3Storage.prototype.put = function (stream, folderPath) {
   return new Promise((resolve, reject) => {
-    var fullPath = path.join(this.settings.basePath, folderPath, this.getKey())
+    let fullPath = path.join(this.settings.basePath, folderPath, this.getKey())
 
-    var requestData = {
+    let requestData = {
       Bucket: this.getBucket(),
       Key: fullPath
     }
 
     if (requestData.Bucket === '' || requestData.Key === '') {
-      var err = {
+      let err = {
         statusCode: 400,
         statusText: 'Bad Request',
         message: 'Either no Bucket or Key provided: ' + JSON.stringify(requestData)
@@ -66,7 +115,7 @@ S3Storage.prototype.put = function (stream, folderPath) {
       requestData.ContentType = 'application/pdf'
     }
 
-    var contentLength = 0
+    let contentLength = 0
 
     function lengthListener (length) {
       contentLength = length
@@ -74,41 +123,76 @@ S3Storage.prototype.put = function (stream, folderPath) {
 
     // receive the concatenated buffer and send the response
     // unless the etag hasn't changed, then send 304 and end the response
-    var sendBuffer = (buffer) => {
+    let sendBuffer = (buffer) => {
       requestData.Body = buffer
       requestData.ContentLength = contentLength
 
-      logger.info('S3 PUT Request:' + JSON.stringify({
+      logger.info(`${this.providerType} PUT Request:` + JSON.stringify({
         Bucket: requestData.Bucket,
         Key: requestData.Key,
-        // fileName: fileName,
         ContentLength: requestData.ContentLength
       }))
 
       // create the AWS.Request object
-      var putObjectPromise = this.s3.putObject(requestData).promise()
+      let putObjectPromise = this.s3.putObject(requestData).promise()
 
-      putObjectPromise.then((data) => {
-        var obj = {
+      putObjectPromise.then(data => {
+        let obj = {
           path: requestData.Key,
           contentLength: contentLength,
           awsUrl: `https://${requestData.Bucket}.s3.amazonaws.com/${requestData.Key}`
         }
 
         return resolve(obj)
-      }).catch((error) => {
-        console.log(error)
+      }).catch(error => {
         return reject(error)
       })
     }
 
-    var concatStream = concat(sendBuffer)
+    let concatStream = concat(sendBuffer)
 
     // send the file stream through:
     // 1) lengthStream to obtain contentLength
     // 2) concatStream to get a buffer, which then passes the buffer to sendBuffer
     // for sending to AWS
     stream.pipe(lengthStream(lengthListener)).pipe(concatStream)
+  })
+}
+
+/**
+ * Delete a file from an S3-compatible location
+ *
+ * @param {Object} file - the media file's database record
+ */
+S3Storage.prototype.delete = function (file) {
+  return new Promise((resolve, reject) => {
+    let requestData = {
+      Bucket: this.getBucket(),
+      Key: file.path
+    }
+
+    if (requestData.Bucket === '' || requestData.Key === '') {
+      let err = {
+        statusCode: 400,
+        statusText: 'Bad Request',
+        message: 'Either no Bucket or Key provided: ' + JSON.stringify(requestData)
+      }
+      return reject(err)
+    }
+
+    logger.info(`${this.providerType} DELETE Request:` + JSON.stringify({
+      Bucket: requestData.Bucket,
+      Key: requestData.Key
+    }))
+
+    // create the AWS.Request object
+    let deleteObjectPromise = this.s3.deleteObject(requestData).promise()
+
+    deleteObjectPromise.then(data => {
+      return resolve()
+    }).catch(error => {
+      return reject(error)
+    })
   })
 }
 

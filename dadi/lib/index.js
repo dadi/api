@@ -8,7 +8,6 @@ var cluster = require('cluster')
 var colors = require('colors') // eslint-disable-line
 var debug = require('debug')('api:server')
 var parsecomments = require('parse-comments')
-var formatError = require('@dadi/format-error')
 var fs = require('fs')
 var mkdirp = require('mkdirp')
 var path = require('path')
@@ -23,6 +22,7 @@ var Connection = require(path.join(__dirname, '/model/connection'))
 var CollectionController = require(path.join(__dirname, '/controller/collection'))
 var cors = require(path.join(__dirname, '/cors'))
 var ApiConfigController = require(path.join(__dirname, '/controller/apiConfig'))
+var CacheFlushController = require(path.join(__dirname, '/controller/cacheFlush'))
 var ClientsController = require(path.join(__dirname, '/controller/clients'))
 var CreateCollectionController = require(path.join(__dirname, '/controller/createCollection'))
 var CreateEndpointController = require(path.join(__dirname, '/controller/createEndpoint'))
@@ -350,21 +350,7 @@ Server.prototype.loadApi = function (options) {
 
   this.loadMediaCollections()
 
-  this.app.use('/api/flush', function (req, res, next) {
-    var method = req.method && req.method.toLowerCase()
-    if (method !== 'post') return next()
-
-    if (!req.body.path) {
-      return help.sendBackJSON(400, res, next)(null, formatError.createApiError('0003'))
-    }
-
-    return help.clearCache(req.body.path, function (err) {
-      help.sendBackJSON(200, res, next)(err, {
-        result: 'success',
-        message: 'Cache flush successful'
-      })
-    })
-  })
+  CacheFlushController(this)
 
   this.app.use('/hello', function (req, res, next) {
     var method = req.method && req.method.toLowerCase()

@@ -65,6 +65,19 @@ Clients.prototype.deleteResource = function (req, res, next) {
       )
     }
 
+    return acl.access.get(req.dadiApiClient, req.params.resource)
+  }).then(access => {
+    if (
+      access.create !== true ||
+      access.delete !== true ||
+      access.read !== true ||
+      access.update !== true
+    ) {
+      return Promise.reject(
+        acl.createError(req.dadiApiClient)
+      )
+    }
+  }).then(() => {
     return model.resourceRemove(
       req.params.clientId,
       req.params.resource

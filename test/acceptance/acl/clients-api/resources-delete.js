@@ -121,21 +121,72 @@ module.exports = () => {
       })
     })
 
-    it('should return 404 if the client does not have permission to access the resource', done => {
+    it('should return 403 if the request includes a valid bearer token without sufficient permissions (no full access to the referenced resource)', done => {
       let testClient = {
         clientId: 'apiClient',
         secret: 'someSecret',
         resources: {
           clients: {
+            read: true,
             update: true
-          },
-          'other:resource': {
-            read: true
-          },
+          },            
           [resource]: {
-            read: true
+            create: true,
+            delete: true
           }
         }
+      }
+
+      help.createACLClient(testClient).then(() => {
+        client
+        .post(config.get('auth.tokenUrl'))
+        .set('content-type', 'application/json')
+        .send({
+          clientId: testClient.clientId,
+          secret: testClient.secret
+        })
+        .expect(200)
+        .expect('content-type', 'application/json')
+        .end((err, res) => {
+          if (err) return done(err)
+
+          res.body.accessToken.should.be.String
+
+          let bearerToken = res.body.accessToken
+
+          client
+          .get(`/api/clients/${targetClient.clientId}`)
+          .set('content-type', 'application/json')
+          .set('Authorization', `Bearer ${bearerToken}`)
+          .expect('content-type', 'application/json')
+          .end((err, res) => {
+            res.body.results.should.be.Array
+            res.body.results.length.should.eql(1)
+
+            let result = res.body.results[0]
+
+            should.exist(result.resources[resource])
+
+            client
+            .delete(`/api/clients/${targetClient.clientId}/resources/${resource}`)
+            .set('content-type', 'application/json')
+            .set('Authorization', `Bearer ${bearerToken}`)
+            .expect('content-type', 'application/json')
+            .end((err, res) => {
+              res.statusCode.should.eql(403)
+
+              done()
+            })
+          })
+        })
+      })
+    })    
+
+    it('should return 404 if the referenced resource does not exist', done => {
+      let testClient = {
+        clientId: 'apiClient',
+        secret: 'someSecret',
+        accessType: 'admin'
       }
 
       help.createACLClient(testClient).then(() => {
@@ -181,6 +232,8 @@ module.exports = () => {
             update: true
           },            
           [resource]: {
+            create: true,
+            delete: true,
             read: true,
             update: true
           }
@@ -219,10 +272,6 @@ module.exports = () => {
 
             client
             .delete(`/api/clients/${targetClient.clientId}/resources/${resource}`)
-            .send({
-              read: false,
-              update: true
-            })
             .set('content-type', 'application/json')
             .set('Authorization', `Bearer ${bearerToken}`)
             .expect('content-type', 'application/json')

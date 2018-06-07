@@ -6,11 +6,11 @@ var fs = require('fs')
 var app = require(__dirname + '/../../dadi/lib/')
 var help = require(__dirname + '/help')
 
-var originalSchemaPath = __dirname + '/workspace/monitor-collection/collection.monitor-test-schema.json'
-var testSchemaPath = __dirname + '/workspace/collections/vtest/testdb/collection.monitor-test-schema.json'
+var originalSchemaPath = __dirname + '/temp-workspace/monitor-collection/collection.monitor-test-schema.json'
+var testSchemaPath = __dirname + '/temp-workspace/collections/vtest/testdb/collection.monitor-test-schema.json'
 
-var originalEndpointPath = __dirname + '/workspace/monitor-collection/endpoint.monitor-test-endpoint.js'
-var testEndpointPath = __dirname + '/workspace/endpoints/v1/endpoint.monitor-test-endpoint.js'
+var originalEndpointPath = __dirname + '/temp-workspace/monitor-collection/endpoint.monitor-test-endpoint.js'
+var testEndpointPath = __dirname + '/temp-workspace/endpoints/v1/endpoint.monitor-test-endpoint.js'
 
 var bearerToken // used through out tests
 
@@ -76,7 +76,7 @@ describe('File system watching', function () {
           if (err) return done(err)
 
           // Change the schema file's content
-          var schemaPath = __dirname + '/workspace/collections/vtest/testdb/collection.monitor-test-schema.json'
+          var schemaPath = __dirname + '/temp-workspace/collections/vtest/testdb/collection.monitor-test-schema.json'
           // clone so that `require.cache` is unaffected
           var schema = JSON.parse(JSON.stringify(require(schemaPath)))
           schema.fields.field1.type = 'Number'
@@ -137,16 +137,16 @@ describe('File system watching', function () {
   })
 
   describe('adding new files', function () {
-    var newSchemaPath = __dirname + '/workspace/collections/vtest2/testdb/collection.new-test-schema.json'
-    var newEndpointPath = __dirname + '/workspace/endpoints/v1/endpoint.new-test-endpoint.js'
+    var newSchemaPath = __dirname + '/temp-workspace/collections/vtest2/testdb/collection.new-test-schema.json'
+    var newEndpointPath = __dirname + '/temp-workspace/endpoints/v1/endpoint.new-test-endpoint.js'
 
     before(function (done) {
       // tests are going to try to create these directories and they shouldn't exist before hand
-      if (fs.existsSync(__dirname + '/workspace/collections/vtest2/testdb')) {
-        fs.rmdirSync(__dirname + '/workspace/collections/vtest2/testdb')
+      if (fs.existsSync(__dirname + '/temp-workspace/collections/vtest2/testdb')) {
+        fs.rmdirSync(__dirname + '/temp-workspace/collections/vtest2/testdb')
       }
-      if (fs.existsSync(__dirname + '/workspace/collections/vtest2')) {
-        fs.rmdirSync(__dirname + '/workspace/collections/vtest2')
+      if (fs.existsSync(__dirname + '/temp-workspace/collections/vtest2')) {
+        fs.rmdirSync(__dirname + '/temp-workspace/collections/vtest2')
       }
 
       done()
@@ -155,8 +155,8 @@ describe('File system watching', function () {
     after(function (done) {
       fs.unlinkSync(newSchemaPath)
       fs.unlinkSync(newEndpointPath)
-      fs.rmdirSync(__dirname + '/workspace/collections/vtest2/testdb')
-      fs.rmdirSync(__dirname + '/workspace/collections/vtest2')
+      fs.rmdirSync(__dirname + '/temp-workspace/collections/vtest2/testdb')
+      fs.rmdirSync(__dirname + '/temp-workspace/collections/vtest2')
       done()
     })
 
@@ -164,8 +164,8 @@ describe('File system watching', function () {
       // make a copy of the test schema in a new collections dir
       var testSchema = fs.readFileSync(originalSchemaPath)
 
-      fs.mkdirSync(__dirname + '/workspace/collections/vtest2')
-      fs.mkdirSync(__dirname + '/workspace/collections/vtest2/testdb')
+      fs.mkdirSync(__dirname + '/temp-workspace/collections/vtest2')
+      fs.mkdirSync(__dirname + '/temp-workspace/collections/vtest2/testdb')
       fs.writeFileSync(newSchemaPath, testSchema)
 
       // allow time for app to respond

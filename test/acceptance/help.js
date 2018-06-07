@@ -331,7 +331,9 @@ module.exports.getBearerTokenWithPermissions = function (permissions, done) {
 
         should.exist(bearerToken)
 
-        done(null, bearerToken)
+        acl.access.write().then(() => {
+          done(null, bearerToken)  
+        })
       })
     })
   })

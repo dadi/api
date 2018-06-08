@@ -63,20 +63,18 @@ Endpoint.prototype.registerRoutes = function (route, filePath) {
       return next()
     }
 
-    return acl.access.get(req.dadiApiClient).then(access => {
-      if (!access.update) {
-        return help.sendBackJSON(401, res, next)(
-          new Error('UNAUTHORISED')
-        )
-      }
+    if (!acl.client.isAdmin(req.dadiApiClient)) {
+      return help.sendBackJSON(null, res, next)(
+        acl.createError(req.dadiApiClient)
+      )
+    }
 
-      return fs.writeFile(filePath, req.body, err => {
-        if (err) return next(err)
+    return fs.writeFile(filePath, req.body, err => {
+      if (err) return next(err)
 
-        help.sendBackJSON(200, res, next)(null, {
-          success: true,
-          message: 'Endpoint updated'
-        })
+      help.sendBackJSON(200, res, next)(null, {
+        success: true,
+        message: 'Endpoint updated'
       })
     })
   })

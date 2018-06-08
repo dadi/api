@@ -79,96 +79,90 @@ HooksController.prototype._writeHook = function (name, content) {
 }
 
 HooksController.prototype.delete = function (req, res, next) {
-  return acl.access.get(req.dadiApiClient).then(access => {
-    if (access.delete !== true) {
-      return help.sendBackJSON(null, res, next)(
-        acl.createError(req.dadiApiClient)
-      )
-    }
+  if (!acl.client.isAdmin(req.dadiApiClient)) {
+    return help.sendBackJSON(null, res, next)(
+      acl.createError(req.dadiApiClient)
+    )
+  }
 
-    let name = req.params.hookName
-    let hook = this._findHooks(name)[0]
+  let name = req.params.hookName
+  let hook = this._findHooks(name)[0]
 
-    if (!hook) {
-      return help.sendBackJSON(404, res, next)(null)
-    }
+  if (!hook) {
+    return help.sendBackJSON(404, res, next)(null)
+  }
 
-    this._deleteHook(name).then(() => {
-      return help.sendBackJSON(204, res, next)(null)
-    }).catch(err => {
-      return help.sendBackJSON(500, res, next)(err)
-    })
+  this._deleteHook(name).then(() => {
+    return help.sendBackJSON(204, res, next)(null)
+  }).catch(err => {
+    return help.sendBackJSON(500, res, next)(err)
   })
 }
 
 HooksController.prototype.get = function (req, res, next) {
-  return acl.access.get(req.dadiApiClient).then(access => {
-    if (access.read !== true) {
-      return help.sendBackJSON(null, res, next)(
-        acl.createError(req.dadiApiClient)
-      )
-    }
+  if (!acl.client.isAdmin(req.dadiApiClient)) {
+    return help.sendBackJSON(null, res, next)(
+      acl.createError(req.dadiApiClient)
+    )
+  }
 
-    // Return the content of a specific hook
-    if (req.params.hookName) {
-      let name = req.params.hookName
-      let hook = this._findHooks(name)[0]
-
-      if (!hook) {
-        return help.sendBackText(404, res, next)(null, '')
-      }
-
-      fs.readFile(this.server.components[HOOK_PREFIX + name], (err, content) => {
-        return help.sendBackText(200, res, next)(err, content.toString())
-      })
-    } else {
-      // List all hooks
-      let hooks = this._findHooks().map(key => {
-        let hook = {
-          name: key
-        }
-
-        let docs = this.server.docs[HOOK_PREFIX + key]
-
-        if (docs && docs[0]) {
-          hook.description = docs[0].description
-          hook.params = docs[0].params
-          hook.returns = docs[0].returns
-        }
-
-        return hook
-      })
-
-      return help.sendBackJSON(200, res, next)(null, {results: hooks})
-    }
-  })
-}
-
-HooksController.prototype.post = function (req, res, next) {
-  return acl.access.get(req.dadiApiClient).then(access => {
-    if (access.create !== true) {
-      return help.sendBackJSON(null, res, next)(
-        acl.createError(req.dadiApiClient)
-      )
-    }
-
+  // Return the content of a specific hook
+  if (req.params.hookName) {
     let name = req.params.hookName
     let hook = this._findHooks(name)[0]
 
-    if (hook) {
-      return help.sendBackJSON(409, res, next)(null, {
-        err: 'Hook already exists'
-      })
+    if (!hook) {
+      return help.sendBackText(404, res, next)(null, '')
     }
 
-    return this._writeHook(name, req.body).then(() => {
-      return help.sendBackJSON(201, res, next)(null, {
-        success: true,
-        message: 'Hook created'
-      })
-    }).catch(err => {
-      return help.sendBackJSON(500, res, next)(err)
+    fs.readFile(this.server.components[HOOK_PREFIX + name], (err, content) => {
+      return help.sendBackText(200, res, next)(err, content.toString())
     })
+  } else {
+    // List all hooks
+    let hooks = this._findHooks().map(key => {
+      let hook = {
+        name: key
+      }
+
+      let docs = this.server.docs[HOOK_PREFIX + key]
+
+      if (docs && docs[0]) {
+        hook.description = docs[0].description
+        hook.params = docs[0].params
+        hook.returns = docs[0].returns
+      }
+
+      return hook
+    })
+
+    return help.sendBackJSON(200, res, next)(null, {results: hooks})
+  }
+}
+
+HooksController.prototype.post = function (req, res, next) {
+  if (!acl.client.isAdmin(req.dadiApiClient)) {
+    return help.sendBackJSON(null, res, next)(
+      acl.createError(req.dadiApiClient)
+    )
+  }
+
+  let name = req.params.hookName
+  let hook = this._findHooks(name)[0]
+
+  if (hook) {
+    return help.sendBackJSON(409, res, next)(null, {
+      err: 'Hook already exists'
+    })
+  }
+
+  return this._writeHook(name, req.body).then(() => {
+    return help.sendBackJSON(201, res, next)(null, {
+      success: true,
+      message: 'Hook created'
+    })
+  }).catch(err => {
+    return help.sendBackJSON(500, res, next)(err)
   })
 }
 

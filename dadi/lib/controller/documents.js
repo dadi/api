@@ -212,46 +212,42 @@ Collection.prototype.registerRoutes = function (route, filePath) {
 
       case 'delete':
         // A client can delete the collection schema if they have root access.
-        return acl.access.get(req.dadiApiClient).then(access => {
-          if (!access.delete) {
-            return help.sendBackJSON(401, res, next)(
-              new Error('UNAUTHORISED')
-            )
-          }
+        if (!acl.client.isAdmin(req.dadiApiClient)) {
+          return help.sendBackJSON(null, res, next)(
+            acl.createError(req.dadiApiClient)
+          )
+        }
 
-          this.server.removeComponent(route)
-          this.unregisterRoutes(route)
+        this.server.removeComponent(route)
+        this.unregisterRoutes(route)
 
-          return fs.unlink(filePath, err => {
-            help.sendBackJSON(200, res, next)(err, {
-              success: false,
-              message: `Collection deleted: ${this.model.name}`
-            })
+        return fs.unlink(filePath, err => {
+          help.sendBackJSON(200, res, next)(err, {
+            success: false,
+            message: `Collection deleted: ${this.model.name}`
           })
         })
 
       case 'post':
         // A client can update the collection schema if they have root access.
-        return acl.access.get(req.dadiApiClient).then(access => {
-          if (!access.update) {
-            return help.sendBackJSON(401, res, next)(
-              new Error('UNAUTHORISED')
-            )
-          }
+        if (!acl.client.isAdmin(req.dadiApiClient)) {
+          return help.sendBackJSON(null, res, next)(
+            acl.createError(req.dadiApiClient)
+          )
+        }
 
-          let schema = typeof req.body === 'object'
-            ? req.body
-            : JSON.parse(req.body)
+        let schema = typeof req.body === 'object'
+          ? req.body
+          : JSON.parse(req.body)
 
-          schema.settings.lastModifiedAt = Date.now()
+        schema.settings.lastModifiedAt = Date.now()
 
-          let payload = JSON.stringify(schema, null, 2)
+        let payload = JSON.stringify(schema, null, 2)
 
-          return fs.writeFile(filePath, payload, err => {
-            help.sendBackJSON(200, res, next)(err, {
-              success: true,
-              message: `Collection updated: ${this.model.name}`
-            })
+        return fs.writeFile(filePath, payload, err => {
+          help.sendBackJSON(200, res, next)(err, {
+            success: true,
+            message: `Collection updated: ${this.model.name}`
           })
         })
 

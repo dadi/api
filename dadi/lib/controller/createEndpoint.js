@@ -1,4 +1,4 @@
-const acl = require('./../model/acl/access')
+const acl = require('./../model/acl')
 const fs = require('fs-extra')
 const help = require('./../help')
 const mkdirp = require('mkdirp')
@@ -24,17 +24,21 @@ CreateEndpoint.prototype.post = function (req, res, next) {
   }
 
   // Accessible to root users only.
-  return acl.get(req.dadiApiClient).then(access => {
-    mkdirp(dir, {}, (err, made) => {
+  if (!acl.client.isAdmin(req.dadiApiClient)) {
+    return help.sendBackJSON(null, res, next)(
+      acl.createError(req.dadiApiClient)
+    )
+  }
+
+  mkdirp(dir, {}, (err, made) => {
+    if (err) return next(err)
+
+    return fs.writeFile(filePath, req.body, err => {
       if (err) return next(err)
 
-      return fs.writeFile(filePath, req.body, err => {
-        if (err) return next(err)
-
-        help.sendBackJSON(200, res, next)(null, {
-          success: true,
-          message: `Endpoint "${version}:${name}" created`
-        })
+      help.sendBackJSON(200, res, next)(null, {
+        success: true,
+        message: `Endpoint "${version}:${name}" created`
       })
     })
   })

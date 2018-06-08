@@ -12,35 +12,31 @@ const ApiConfig = function (server) {
 }
 
 ApiConfig.prototype.get = function (req, res, next) {
-  return acl.access.get(req.dadiApiClient).then(access => {
-    if (!access.read) {
-      return help.sendBackJSON(401, res, next)(
-        new Error('UNAUTHORISED')
-      )
-    }
+  if (!acl.client.isAdmin(req.dadiApiClient)) {
+    return help.sendBackJSON(null, res, next)(
+      acl.createError(req.dadiApiClient)
+    )
+  }
 
-    return help.sendBackJSON(200, res, next)(null, config.getProperties())
-  })
+  return help.sendBackJSON(200, res, next)(null, config.getProperties())
 }
 
 ApiConfig.prototype.post = function (req, res, next) {
-  return acl.access.get(req.dadiApiClient).then(access => {
-    if (!access.update) {
-      return help.sendBackJSON(401, res, next)(
-        new Error('UNAUTHORISED')
-      )
-    }
+  if (!acl.client.isAdmin(req.dadiApiClient)) {
+    return help.sendBackJSON(null, res, next)(
+      acl.createError(req.dadiApiClient)
+    )
+  }
 
-    let configPath = path.resolve(config.configPath())
-    let newConfig = Object.assign({}, config.getProperties(), req.body || {})
+  let configPath = path.resolve(config.configPath())
+  let newConfig = Object.assign({}, config.getProperties(), req.body || {})
 
-    return fs.writeJson(configPath, newConfig, {
-      spaces: 4
-    }).then(() => {
-      return help.sendBackJSON(200, res, next)(null, {
-        success: true,
-        message: 'Server restart required'
-      })
+  return fs.writeJson(configPath, newConfig, {
+    spaces: 4
+  }).then(() => {
+    return help.sendBackJSON(200, res, next)(null, {
+      success: true,
+      message: 'Server restart required'
     })
   })
 }

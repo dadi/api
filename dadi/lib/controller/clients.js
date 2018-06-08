@@ -2,12 +2,12 @@ const acl = require('./../model/acl')
 const model = require('./../model/acl/client')
 const help = require('./../help')
 
-acl.registerResource(
-  'clients',
-  'API clients'
-)
-
 const Clients = function (server) {
+  acl.registerResource(
+    'clients',
+    'API clients'
+  )
+
   server.app.routeMethods('/api/clients', {
     post: this.post.bind(this)
   })

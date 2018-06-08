@@ -148,11 +148,13 @@ module.exports.createACLClient = function (client, callback) {
     collection: config.get('auth.clientCollection'),
     schema: {}
   }).then(result => {
-    return acl.access.write()
-  }).then(() => {
-    if (typeof callback === 'function') {
-      done()
-    }
+    return acl.access.write().then(w => {
+      if (typeof callback === 'function') {
+        done(null, result)
+      }
+
+      return result
+    })
   }).catch(err => {
     if (typeof callback === 'function') {
       done(err)
@@ -178,11 +180,13 @@ module.exports.createACLRole = function (role, callback) {
     collection: config.get('auth.roleCollection'),
     schema: {}
   }).then(result => {
-    return acl.access.write()
-  }).then(() => {
-    if (typeof callback === 'function') {
-      done()
-    }
+    return acl.access.write().then(() => {
+      if (typeof callback === 'function') {
+        done(null, result)
+      }
+
+      return result
+    })
   }).catch(err => {
     if (typeof callback === 'function') {
       done(err)

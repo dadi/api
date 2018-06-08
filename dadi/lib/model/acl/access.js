@@ -52,24 +52,32 @@ Access.prototype.combineAccessMatrices = function (matrix1 = {}, matrix2 = {}) {
     }
 
     // At this point, we now that both the existing and the candidate
-    // values are objects. When merging, we always want to get the
-    // broadest set of permissions, but it's difficult when it comes
-    // to merging objects. Because having a property like `fields` or
-    // `filter` means narrowing permissions, the best we can do is to
-    // remove from the existing value any properties that don't exist
-    // in the candidate value. If a property exists in both, we'll keep
-    // the one from the existing value, meaning that inheriting compound
-    // permissions will be limited.
-    if (
-      typeof matrix1[accessType] === 'object' &&
-      typeof matrix2[accessType] === 'object'
-    ) {
-      Object.keys(matrix1[accessType]).forEach(key => {
-        if (matrix2[accessType][key] === undefined) {
-          delete matrix1[accessType][key]
-        }
-      })
+    // values are objects. We can start by merging the `fields` objects
+    // of both the existing and candidate values, so that they result in
+    // the broadest set of fields.
+    if (matrix1[accessType].fields || matrix2[accessType].fields) {
+      let fields = this.mergeFields([
+        matrix1[accessType].fields,
+        matrix2[accessType].fields
+      ])
+
+      // If `fields` is the only property in the access type and the
+      // result of merging the matrices resulted in a projection with
+      // no field restrictions, we can simply set the access type to
+      // `true`.
+      if (
+        Object.keys(matrix1[accessType]).length === 1 &&
+        Object.keys(fields).length === 0
+      ) {
+        matrix1[accessType] = true
+      } else {
+        matrix1[accessType].fields = fields
+      }
     }
+
+    // We can't do the same with `filter`, because it's not possible to
+    // compute the union of two filter expressions (we'd have to use an
+    // *or* expression, which API doesn't currently have).
   })
 
   return matrix1
@@ -217,6 +225,56 @@ Access.prototype.getClientRoles = function (clientId) {
 
     return this.getRoleChain(roles)
   })
+}
+
+Access.prototype.mergeFields = function mergeFields (projections) {
+  let fields = []
+  let isExclusion = false
+
+  projections.some(projection => {
+    if (!projection) {
+      fields = []
+
+      return true
+    }
+
+    let projectionFields = Object.keys(projection)
+    let projectionIsExclusion = projectionFields.find(field => {
+      return field !== '_id' && projection[field] === 0
+    })
+
+    if (projectionIsExclusion) {
+      if (isExclusion) {
+        fields = fields.filter(field => {
+          return projectionFields.includes(field)
+        })
+      } else {
+        fields = projectionFields.filter(field => {
+          return !fields.includes(field)
+        })
+      }
+
+      isExclusion = true
+    } else {
+      if (isExclusion) {
+        fields = fields.filter(field => {
+          return !projectionFields.includes(field)
+        })
+      } else {
+        projectionFields.forEach(field => {
+          if (!fields.includes(field)) {
+            fields.push(field)
+          }
+        })
+      }
+    }
+  })
+
+  return fields.reduce((result, field) => {
+    result[field] = isExclusion ? 0 : 1
+
+    return result
+  }, {})
 }
 
 /**

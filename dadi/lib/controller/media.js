@@ -284,8 +284,16 @@ MediaController.prototype.delete = function (req, res, next) {
 
   if (!query) return next()
 
-  this.model.get({
-    query, req
+  return acl.access.get(req.dadiApiClient, this.model.aclKey).then(access => {
+    if (access.delete !== true) {
+      return help.sendBackJSON(null, res, next)(
+        acl.createError(req.dadiApiClient)
+      )
+    }
+
+    return this.model.get({
+      query, req
+    })
   }).then(results => {
     if (!results.results[0]) return next()
 
@@ -294,34 +302,28 @@ MediaController.prototype.delete = function (req, res, next) {
     // remove physical file
     let storageHandler = StorageFactory.create(file.fileName)
 
-    storageHandler.delete(file)
-      .then(result => {
-        this.model.delete({
-          client: req.dadiApiClient,
-          query,
-          req
-        }).then(({deletedCount, totalCount}) => {
-          if (config.get('feedback')) {
-            // Send 200 with JSON payload.
-            return help.sendBackJSON(200, res, next)(null, {
-              status: 'success',
-              message: 'Document(s) deleted successfully',
-              deleted: deletedCount,
-              totalCount
-            })
-          }
-
-          // Send 204 with no content.
-          res.statusCode = 204
-          res.end()
-        }).catch(error => {
-          return help.sendBackJSON(200, res, next)(error)
-        })
-      }).catch(err => {
-        return next(err)
+    return storageHandler.delete(file).then(result => {
+      return this.model.delete({
+        query,
+        req
       })
-  }).catch(err => {
-    return next(err)
+    }).then(({deletedCount, totalCount}) => {
+      if (config.get('feedback')) {
+        // Send 200 with JSON payload.
+        return help.sendBackJSON(200, res, next)(null, {
+          status: 'success',
+          message: 'Document(s) deleted successfully',
+          deleted: deletedCount,
+          totalCount
+        })
+      }
+
+      // Send 204 with no content.
+      res.statusCode = 204
+      res.end()
+    })
+  }).catch(error => {
+    return help.sendBackJSON(200, res, next)(error)
   })
 }
 

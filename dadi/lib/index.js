@@ -22,6 +22,7 @@ var cors = require(path.join(__dirname, '/cors'))
 var ApiConfigController = require(path.join(__dirname, '/controller/apiConfig'))
 var CacheFlushController = require(path.join(__dirname, '/controller/cacheFlush'))
 var ClientsController = require(path.join(__dirname, '/controller/clients'))
+var CollectionsController = require(path.join(__dirname, '/controller/collections'))
 var CreateCollectionController = require(path.join(__dirname, '/controller/createCollection'))
 var CreateEndpointController = require(path.join(__dirname, '/controller/createEndpoint'))
 var DocumentController = require(path.join(__dirname, '/controller/documents'))
@@ -259,11 +260,11 @@ Server.prototype.start = function (done) {
   this.loadApi(options)
 
   ClientsController(this)
+  CollectionsController(this)
   HooksController(this, options.hookPath)
   ResourcesController(this)
   RolesController(this)
 
-  this.loadCollectionRoute()
   this.loadEndpointsRoute()
 
   this.readyState = 1
@@ -378,83 +379,6 @@ Server.prototype.loadConfigApi = function () {
   ApiConfigController(this)
   CreateCollectionController(this)
   CreateEndpointController(this)
-}
-
-// route to retrieve list of collections
-Server.prototype.loadCollectionRoute = function () {
-  var self = this
-
-  this.app.use('/api/collections', function (req, res, next) {
-    var method = req.method && req.method.toLowerCase()
-
-    if (method !== 'get') return help.sendBackJSON(405, res, next)(null, {'error': 'Invalid method'})
-
-    var data = {}
-    var collections = []
-
-    // Adding normal document collections
-    _.each(self.components, function (value, key) {
-      var model
-      var name = null
-      var slug
-      var parts = _.compact(key.split('/'))
-
-      var hasModel = _.contains(Object.keys(value), 'model') &&
-        value.model.constructor.name === 'Model'
-      var hasGetMethod = _.contains(Object.keys(value), 'get')
-
-      if (hasModel && !hasGetMethod) {
-        model = value.model
-
-        if (model.name) {
-          name = model.name
-          slug = model.name
-        }
-
-        var collection = {
-          version: parts[0],
-          database: parts[1],
-          name: name,
-          slug: slug,
-          path: '/' + [parts[0], parts[1], slug].join('/')
-        }
-
-        if (model.settings) {
-          if (model.settings.displayName) collection.name = model.settings.displayName
-          if (model.settings.lastModifiedAt) collection.lastModifiedAt = model.settings.lastModifiedAt
-          if (model.settings.type) collection.type = model.settings.type
-
-          // If this is a media collection, we don't want to add it to the
-          // collections endpoint.
-          if (collection.type === 'mediaCollection') {
-            return
-          }
-        }
-
-        const collectionAlreadyAdded = collections.some(collectionInArray => {
-          return collectionInArray.name === collection.name &&
-            collectionInArray.version === collection.version &&
-            collectionInArray.database === collection.database
-        })
-
-        if (!collectionAlreadyAdded) {
-          collections.push(collection)
-        }
-      }
-    })
-
-    data.collections = _.sortBy(collections, 'path')
-
-    // Adding media buckets
-    const buckets = config.get('media.buckets').concat(config.get('media.defaultBucket'))
-
-    data.media = {
-      buckets: buckets,
-      defaultBucket: config.get('media.defaultBucket')
-    }
-
-    return help.sendBackJSON(200, res, next)(null, data)
-  })
 }
 
 // Route to retrieve list of endpoints.

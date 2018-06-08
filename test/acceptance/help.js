@@ -311,32 +311,48 @@ module.exports.getBearerToken = function (done) {
   })
 }
 
-module.exports.getBearerTokenWithPermissions = function (permissions, done) {
+module.exports.getBearerTokenWithPermissions = function (permissions, done = (() => {})) {
   let client = Object.assign({}, {
     clientId: 'test123',
     secret: 'superSecret'
   }, permissions)
 
-  module.exports.removeTestClients(err => {
-    if (err) return done(err)
+  return new Promise((resolve, reject) => {
+    module.exports.removeTestClients(err => {
+      if (err) {
+        reject(err)
 
-    module.exports.createClient(client, err => {
-      if (err) return done(err)
+        return done(err)
+      }
 
-      request(`http://${config.get('server.host')}:${config.get('server.port')}`)
-      .post(config.get('auth.tokenUrl'))
-      .send(client)
-      .expect(200)
-      .expect('content-type', 'application/json')
-      .end((err, res) => {
-        if (err) return done(err)
+      module.exports.createClient(client, err => {
+        if (err) {
+          reject(err)
 
-        let bearerToken = res.body.accessToken
+          return done(err)
+        }
 
-        should.exist(bearerToken)
+        request(`http://${config.get('server.host')}:${config.get('server.port')}`)
+        .post(config.get('auth.tokenUrl'))
+        .send(client)
+        .expect(200)
+        .expect('content-type', 'application/json')
+        .end((err, res) => {
+          if (err) {
+            reject(err)
 
-        acl.access.write().then(() => {
-          done(null, bearerToken)  
+            return done(err)
+          }
+
+          let bearerToken = res.body.accessToken
+
+          should.exist(bearerToken)
+
+          return acl.access.write().then(() => {
+            done(null, bearerToken)
+
+            resolve(bearerToken)
+          })
         })
       })
     })
@@ -371,4 +387,37 @@ module.exports.getBearerTokenWithAccessType = function (accessType, done) {
       })
     })
   })
+}
+
+module.exports.getCollectionMap = function () {
+  let collectionsPath = path.resolve(
+    config.get('paths.collections')
+  )
+  let versions = fs.readdirSync(collectionsPath)
+  let map = {}
+
+  versions.forEach(version => {
+    let versionPath = path.join(collectionsPath, version)
+    let databases = fs.readdirSync(versionPath)
+
+    databases.forEach(database => {
+      let databasePath = path.join(versionPath, database)
+      let collections = fs.readdirSync(databasePath)
+
+      collections.forEach(collection => {
+        let match = collection.match(/^collection.(.*).json$/)
+
+        if (!match) {
+          return
+        }
+
+        let collectionName = match[1]
+        let collectionPath = path.join(databasePath, collection)
+
+        map[`/${version}/${database}/${collectionName}`] = require(collectionPath)
+      })
+    })
+  })
+
+  return map
 }

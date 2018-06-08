@@ -25,6 +25,7 @@ var Connection = require(path.join(__dirname, '/model/connection'))
 var Controller = require(path.join(__dirname, '/controller'))
 var HooksController = require(path.join(__dirname, '/controller/hooks'))
 var MediaController = require(path.join(__dirname, '/controller/media'))
+var SearchController = require(path.join(__dirname, '/controller/search'))
 var dadiStatus = require('@dadi/status')
 var help = require(path.join(__dirname, '/help'))
 var Model = require(path.join(__dirname, '/model'))
@@ -1019,12 +1020,13 @@ Server.prototype.addComponent = function (options) {
   this.app.use(options.route + '/search', function (req, res, next) {
     var method = req.method && req.method.toLowerCase()
 
-    // call controller stats method
-    if (method === 'get') {
-      return options.component['search'](req, res, next)
-    } else {
-      next()
+    if (method !== 'get') {
+      return next()
     }
+
+    let newController = Object.assign({}, options)
+    newController.component = new SearchController(options.component.model)
+    return newController.component[method](req, res, next)
   })
 
   this.app.use(options.route + '/count', function (req, res, next) {

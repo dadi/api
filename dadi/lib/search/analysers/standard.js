@@ -1,10 +1,10 @@
 'use strict'
-const natural = require('natural')
-const tokenizer = new natural.WordTokenizer()
-const util = require('../util')
-const TfIdf = natural.TfIdf
 
-module.exports = class StandardAnalyzer {
+const natural = require('natural')
+const TfIdf = natural.TfIdf
+const tokenizer = new natural.WordTokenizer()
+
+class StandardAnalyzer {
   constructor (fieldRules) {
     this.fieldRules = fieldRules
     this.tfidf = new TfIdf()
@@ -12,7 +12,7 @@ module.exports = class StandardAnalyzer {
 
   add (field, value) {
     if (Array.isArray(value)) {
-      const filteredValues = value.filter(this.isValid)
+      let filteredValues = value.filter(this.isValid)
       filteredValues.forEach(val => this.tfidf.addDocument(val, field))
     } else if (this.isValid(value)) {
       this.tfidf.addDocument(value, field)
@@ -34,7 +34,7 @@ module.exports = class StandardAnalyzer {
     })
 
     if (words.length) {
-      words = words.reduce(util.mergeArrays)
+      words = words.reduce((a, b) => a.concat(b))
     }
 
     return this.unique(words)
@@ -47,7 +47,10 @@ module.exports = class StandardAnalyzer {
   }
 
   unique (list) {
-    if (!Array.isArray(list)) return []
+    if (!Array.isArray(list)) {
+      return []
+    }
+
     return [...new Set(list)]
   }
 
@@ -64,37 +67,39 @@ module.exports = class StandardAnalyzer {
     if (!this.areValidWords(words)) return []
 
     return words
-      .reduce((prev, curr) => {
-        const match = prev.find(wordSearch => wordSearch.word === curr.word)
+      .reduce((prev, current) => {
+        let match = prev.find(wordSearch => wordSearch.word === current.word)
 
         if (match) {
           match.count = match.count ? match.count + 1 : 2
-          match.weight += curr.weight
+          match.weight += current.weight
           return prev
         }
-        return prev.concat(curr)
+        return prev.concat(current)
       }, [])
       .map(match => {
         if (match.count) {
           match.weight = match.weight / match.count
           delete match.count
         }
+
         return match
       })
   }
 
   getWordInstances () {
-    const words = this.getAllWords()
+    let words = this.getAllWords()
     if (!words || !words.length) return []
 
-    const docWords = this.tfidf.documents
+    let docWords = this.tfidf.documents
       .map((doc, index) => {
-        const rules = this.fieldRules[doc.__key]
+        let rules = this.fieldRules[doc.__key]
 
         return words
           .filter(word => doc[word])
           .map(word => {
-            const weight = this.tfidf.tfidf(word, index) * rules.weight
+            let weight = this.tfidf.tfidf(word, index) * rules.weight
+
             return {
               weight,
               word
@@ -105,3 +110,5 @@ module.exports = class StandardAnalyzer {
     return this.mergeWeights(docWords)
   }
 }
+
+module.exports = StandardAnalyzer

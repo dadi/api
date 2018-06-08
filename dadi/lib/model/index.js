@@ -102,10 +102,12 @@ const Model = function (name, schema, conn, settings) {
   }
 
   // setup search context
-  this.searcher = new Search(this)
+  this.searchHandler = new Search(this)
 
-  if (this.searcher.canUse()) {
-    this.searcher.init()
+  console.log(this.searchHandler.canUse())
+
+  if (this.searchHandler.canUse()) {
+    this.searchHandler.init()
   }
 
   if (this.settings.index) {
@@ -265,7 +267,7 @@ Model.prototype.create = function (documents, internals, done, req) {
         returnData.results = obj
 
         // Asynchronous search index
-        this.searcher.index(returnData.results)
+        this.searchHandler.index(returnData.results)
 
         // apply any existing `afterCreate` hooks
         if (this.settings.hasOwnProperty('hooks') && (typeof this.settings.hooks.afterCreate === 'object')) {
@@ -364,7 +366,7 @@ Model.prototype.delete = function (query, done, req) {
     }).then(result => {
       if (result.deletedCount > 0) {
         // clear documents from search index
-        this.searcher.delete(deletedDocs)
+        this.searchHandler.delete(deletedDocs)
 
         // apply any existing `afterDelete` hooks
         if (this.settings.hasOwnProperty('hooks') && (typeof this.settings.hooks.afterDelete === 'object')) {
@@ -713,49 +715,59 @@ Model.prototype.find = function (query, options, done) {
  * @return undefined
  * @api public
  */
-Model.prototype.search = function (options, done, req) {
-  let err
+// Model.prototype.search = function (options, done, req) {
+//   let err
 
-  if (typeof options === 'function') {
-    done = options
-    options = {}
-  }
+//   if (typeof options === 'function') {
+//     done = options
+//     options = {}
+//   }
 
-  if (!this.searcher.canUse()) {
-    err = new Error('Not Implemented')
-    err.statusCode = 501
-    err.message = `Search is disabled or an invalid data connector has been specified`
-  } else if (!options.search || options.search.length < config.get('search.minQueryLength')) {
-    err = new Error('Bad Request')
-    err.statusCode = 400
-    err.message = `Search query must be at least ${config.get('search.minQueryLength')} characters`
-  }
+//   if (!this.searchHandler.canUse()) {
+//     err = new Error('Not Implemented')
+//     err.statusCode = 501
+//     err.json = {
+//       errors: [{
+//         message: `Search is disabled or an invalid data connector has been specified.`
+//       }]
+//     }
+//   } else if (!options.search || options.search.length < config.get('search.minQueryLength')) {
+//     err = new Error('Bad Request')
+//     err.statusCode = 400
+//     err.json = {
+//       errors: [{
+//         message: `Search query must be at least ${config.get('search.minQueryLength')} characters.`
+//       }]
+//     }
+//   }
 
-  if (err) {
-    return done(err, null)
-  }
+//   if (err) {
+//     return done(err, null)
+//   }
 
-  this.searcher.find(options.search).then(query => {
-    const ids = query._id.$in.map(id => id.toString())
+//   console.log(this.searchHandler)
 
-    this.get(query, options, (err, results) => {
-      // sort the results
-      results.results = results.results.sort((a, b) => {
-        const aIndex = ids.indexOf(a._id.toString())
-        const bIndex = ids.indexOf(b._id.toString())
+//   this.searchHandler.find(options.search).then(query => {
+//     let ids = query._id['$containsAny'].map(id => id.toString())
 
-        if (aIndex === bIndex) return 1
+//     this.get(query, options, (err, results) => {
+//       // sort the results
+//       results.results = results.results.sort((a, b) => {
+//         let aIndex = ids.indexOf(a._id.toString())
+//         let bIndex = ids.indexOf(b._id.toString())
 
-        return aIndex < bIndex ? -1 : 1
-      })
+//         if (aIndex === bIndex) return 1
 
-      return done(err, results)
-    }, req)
-  }).catch(err => {
-    console.log(err)
-    return done(err)
-  })
-}
+//         return aIndex < bIndex ? -1 : 1
+//       })
+
+//       return done(err, results)
+//     }, req)
+//   }).catch(err => {
+//     console.log(err)
+//     return done(err)
+//   })
+// }
 
 /**
  * Performs a last round of formatting to the query before it's

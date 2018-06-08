@@ -1,6 +1,5 @@
-var site = require('../../package.json').name
-var version = require('../../package.json').version
 var nodeVersion = Number(process.version.match(/^v(\d+\.\d+)/)[1])
+var version = require('../../package.json').version
 
 var bodyParser = require('body-parser')
 var chokidar = require('chokidar')
@@ -31,8 +30,8 @@ var HooksController = require(path.join(__dirname, '/controller/hooks'))
 var MediaController = require(path.join(__dirname, '/controller/media'))
 var ResourcesController = require(path.join(__dirname, '/controller/resources'))
 var RolesController = require(path.join(__dirname, '/controller/roles'))
+var StatusEndpointController = require(path.join(__dirname, '/controller/status'))
 var dadiBoot = require('@dadi/boot')
-var dadiStatus = require('@dadi/status')
 var help = require(path.join(__dirname, '/help'))
 var Model = require(path.join(__dirname, '/model'))
 var mediaModel = require(path.join(__dirname, '/model/media'))
@@ -351,6 +350,7 @@ Server.prototype.loadApi = function (options) {
   this.loadMediaCollections()
 
   CacheFlushController(this)
+  StatusEndpointController(this)
 
   this.app.use('/hello', function (req, res, next) {
     var method = req.method && req.method.toLowerCase()
@@ -361,36 +361,6 @@ Server.prototype.loadApi = function (options) {
 
     res.statusCode = 200
     return res.end('Welcome to API')
-  })
-
-  this.app.use('/api/status', function (req, res, next) {
-    var method = req.method && req.method.toLowerCase()
-    var authorization = req.headers.authorization
-
-    if (method !== 'post' || config.get('status.enabled') === false) {
-      return next()
-    } else {
-      var params = {
-        site: site,
-        package: '@dadi/api',
-        version: version,
-        healthCheck: {
-          authorization: authorization,
-          baseUrl: 'http://' + config.get('server.host') + ':' + config.get('server.port'),
-          routes: config.get('status.routes')
-        }
-      }
-
-      dadiStatus(params, function (err, data) {
-        if (err) return next(err)
-        var resBody = JSON.stringify(data, null, 2)
-
-        res.statusCode = 200
-        res.setHeader('Content-Type', 'application/json')
-        res.setHeader('content-length', Buffer.byteLength(resBody))
-        return res.end(resBody)
-      })
-    }
   })
 
 // need to ensure filepath exists since this could be a removal

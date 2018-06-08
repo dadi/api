@@ -516,5 +516,92 @@ describe('ACL', () => {
         })
       })
     })
+
+    it('should return all the resources accessible by a client', () => {
+      return help.createACLRole({
+        name: 'editor',
+        resources: {
+          'collection:one': {
+            read: true
+          },
+          'collection:two': {
+            create: true
+          },
+          'collection:three': {
+            read: {
+              fields: {
+                fieldOne: 1
+              }
+            }
+          },
+          'collection:four': {
+            read: {
+              filter: {
+                fieldOne: 'value'
+              }
+            }
+          }
+        }
+      }).then(() => {
+        return help.createACLClient({
+          clientId: 'testClient',
+          secret: 'superSecret',
+          resources: {
+            'collection:one': {
+              update: true
+            },
+            'collection:two': {
+              create: false
+            },
+            'collection:three': {
+              read: {
+                fields: {
+                  fieldTwo: 1,
+                  fieldThree: 1
+                }
+              }
+            },
+            'collection:four': {
+              read: true 
+            },
+            'collection:five': {
+              update: true
+            }
+          },
+          roles: ['editor']
+        })
+      }).then(client => {
+        return acl.access.get({
+          clientId: 'testClient'
+        })
+      }).then(matrices => {
+        assertAccess(matrices['collection:one'], {
+          read: true,
+          update: true
+        })
+
+        assertAccess(matrices['collection:two'], {
+          create: true
+        })
+
+        assertAccess(matrices['collection:three'], {
+          read: {
+            fields: {
+              fieldOne: 1,
+              fieldTwo: 1,
+              fieldThree: 1
+            }
+          }
+        })
+
+        assertAccess(matrices['collection:four'], {
+          read: true
+        })
+
+        assertAccess(matrices['collection:five'], {
+          update: true
+        })
+      })      
+    })
   })
 })

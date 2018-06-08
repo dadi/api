@@ -141,16 +141,27 @@ Access.prototype.get = function ({clientId = null, accessType = null} = {}, reso
     return Promise.resolve(matrix)
   }
 
-  if (!resource) {
-    return Promise.resolve({})
+  let query = {
+    client: clientId
+  }
+
+  if (resource) {
+    query.resource = resource
   }
 
   return this.model.get({
-    query: {
-      client: clientId,
-      resource
-    }
+    query
   }).then(({results}) => {
+    if (!resource) {
+      let accessByResource = results.reduce((output, result) => {
+        output[result.resource] = result.access
+
+        return output
+      }, {})
+
+      return accessByResource
+    }
+
     if (
       results.length > 0 &&
       typeof results[0].access === 'object'

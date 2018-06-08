@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## [3.2.0] (2018-06-08)
+
+See release notes at https://github.com/dadi/api/releases/tag/v3.2.0
+
+### Added
+
+* [#431](https://github.com/dadi/api/pull/431): allow DELETE requests to media collection endpoints; enable `s3.endpoint` in the configuration to allow using Digital Ocean Spaces as a storage handler.
+
 ## [3.1.2] (2018-05-01)
 
 ### Changed

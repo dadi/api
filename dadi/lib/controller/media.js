@@ -2,6 +2,7 @@
 
 const Busboy = require('busboy')
 const imagesize = require('imagesize')
+const mime = require('mime')
 const PassThrough = require('stream').PassThrough
 const path = require('path')
 const sha1 = require('sha1')
@@ -179,12 +180,13 @@ MediaController.prototype.post = function (req, res, next) {
         }
 
         let fields = Object.keys(this.model.schema)
+
         let obj = {
           fileName: this.fileName
         }
 
         if (fields.includes('mimetype')) {
-          obj.mimetype = this.mimetype
+          obj.mimetype = mime.getType(this.fileName)
         }
 
         // Is `imageInfo` available?
@@ -220,8 +222,10 @@ MediaController.prototype.post = function (req, res, next) {
               return mediaModel.formatDocuments(document)
             })
 
-            help.sendBackJSON(201, res, next)(err, response)
+            help.sendBackJSON(201, res, next)(null, response)
           })
+        }).catch(err => {
+          help.sendBackJSON(null, res, next)(err)
         })
       })
     })

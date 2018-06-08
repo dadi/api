@@ -1,20 +1,18 @@
 'use strict'
 
 const Busboy = require('busboy')
+const config = require('../../../config')
+const Controller = require('./index')
+const help = require('../help')
 const imagesize = require('imagesize')
+const mediaModel = require('../model/media')
 const mime = require('mime')
 const PassThrough = require('stream').PassThrough
 const path = require('path')
 const sha1 = require('sha1')
-const url = require('url')
-
-const config = require(path.join(__dirname, '/../../../config'))
-const help = require(path.join(__dirname, '/../help'))
+const StorageFactory = require('../storage/factory')
 const streamifier = require('streamifier')
-
-const Controller = require('./index')
-const mediaModel = require(path.join(__dirname, '/../model/media'))
-const StorageFactory = require(path.join(__dirname, '/../storage/factory'))
+const url = require('url')
 
 const MediaController = function (model) {
   this.model = model
@@ -280,7 +278,7 @@ MediaController.prototype.delete = function (req, res, next) {
             // Send 200 with JSON payload.
             return help.sendBackJSON(200, res, next)(null, {
               status: 'success',
-              message: 'Documents deleted successfully',
+              message: 'Document deleted successfully',
               deleted: deletedCount,
               totalCount
             })

@@ -539,6 +539,28 @@ describe('Media', function () {
         })
       })
 
+      it('should return 404 when no query is specified', function (done) {
+        var client = request(connectionString)
+
+        client
+        .delete('/media/')
+        .set('Authorization', 'Bearer ' + bearerToken)
+        .set('content-type', 'application/json')
+        .expect(404)
+        .end(done)
+      })
+
+      it('should return 404 when query returns no results', function (done) {
+        var client = request(connectionString)
+
+        client
+        .delete('/media/xyz')
+        .set('Authorization', 'Bearer ' + bearerToken)
+        .set('content-type', 'application/json')
+        .expect(404)
+        .end(done)
+      })
+
       it('should return 204 when deleting media and feedback == false', function (done) {
         var obj = {
           fileName: '1f525.png',

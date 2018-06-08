@@ -1088,6 +1088,7 @@ Server.prototype.addComponent = function (options) {
 
     this.components[mediaRoute] = options.component
     this.components[mediaRoute + '/:token?'] = options.component
+    this.components[mediaRoute + '/' + idParam] = options.component
     this.components[mediaRoute + '/:filename(.*png|.*jpg|.*jpeg|.*gif|.*bmp|.*tiff|.*pdf)'] = options.component
 
     if (options.component.setRoute) {
@@ -1157,7 +1158,7 @@ Server.prototype.addComponent = function (options) {
 
     // GET media
     this.app.use(mediaRoute, (req, res, next) => {
-      var method = req.method && req.method.toLowerCase()
+      let method = req.method && req.method.toLowerCase()
       if (method !== 'get') return next()
 
       if (options.component[method]) {
@@ -1169,6 +1170,16 @@ Server.prototype.addComponent = function (options) {
     this.app.use(mediaRoute + '/:filename(.*png|.*jpg|.*jpeg|.*gif|.*bmp|.*tiff|.*pdf)', (req, res, next) => {
       if (options.component.getFile) {
         return options.component.getFile(req, res, next, mediaRoute)
+      }
+    })
+
+    // DELETE media
+    this.app.use(`${mediaRoute}/${idParam}`, (req, res, next) => {
+      let method = req.method && req.method.toLowerCase()
+      if (method !== 'delete') return next()
+
+      if (options.component[method]) {
+        return options.component[method](req, res, next)
       }
     })
   }

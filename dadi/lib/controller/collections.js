@@ -83,10 +83,16 @@ Collections.prototype.get = function (req, res, next) {
 
       return matrix.read || matrix.create
     })
+    let media = {
+      buckets: allowedMediaBuckets,
+      defaultBucket: allowedMediaBuckets.includes(config.get('media.defaultBucket'))
+        ? config.get('media.defaultBucket')
+        : null
+    }
 
     help.sendBackJSON(200, res, next)(null, {
       collections,
-      media: allowedMediaBuckets
+      media
     })
   })
 }

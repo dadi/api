@@ -10,7 +10,6 @@ var parsecomments = require('parse-comments')
 var fs = require('fs')
 var mkdirp = require('mkdirp')
 var path = require('path')
-var pathToRegexp = require('path-to-regexp')
 var _ = require('underscore')
 
 var acl = require(path.join(__dirname, '/model/acl'))
@@ -27,6 +26,7 @@ var CreateCollectionController = require(path.join(__dirname, '/controller/creat
 var CreateEndpointController = require(path.join(__dirname, '/controller/createEndpoint'))
 var DocumentController = require(path.join(__dirname, '/controller/documents'))
 var EndpointController = require(path.join(__dirname, '/controller/endpoint'))
+var EndpointsController = require(path.join(__dirname, '/controller/endpoints'))
 var HooksController = require(path.join(__dirname, '/controller/hooks'))
 var MediaController = require(path.join(__dirname, '/controller/media'))
 var ResourcesController = require(path.join(__dirname, '/controller/resources'))
@@ -261,11 +261,10 @@ Server.prototype.start = function (done) {
 
   ClientsController(this)
   CollectionsController(this)
+  EndpointsController(this)
   HooksController(this, options.hookPath)
   ResourcesController(this)
   RolesController(this)
-
-  this.loadEndpointsRoute()
 
   this.readyState = 1
 
@@ -379,52 +378,6 @@ Server.prototype.loadConfigApi = function () {
   ApiConfigController(this)
   CreateCollectionController(this)
   CreateEndpointController(this)
-}
-
-// Route to retrieve list of endpoints.
-Server.prototype.loadEndpointsRoute = function () {
-  this.app.use('/api/endpoints', (req, res, next) => {
-    let method = req.method && req.method.toLowerCase()
-
-    if (method !== 'get') {
-      return help.sendBackJSON(405, res, next)(null, {
-        success: false,
-        errors: ['Invalid method']
-      })
-    }
-
-    let endpoints = Object.keys(this.components).filter(key => {
-      return this.components[key]._type === this.COMPONENT_TYPE.CUSTOM_ENDPOINT
-    }).map(key => {
-      let parts = key.split('/')
-      let endpoint = {
-        name: this.components[key].getDisplayName() || parts[2],
-        path: key,
-        version: parts[1]
-      }
-      let regexp = pathToRegexp(key)
-
-      if (regexp.keys.length > 0) {
-        endpoint.params = regexp.keys
-      }
-
-      return endpoint
-    }).sort((a, b) => {
-      if (a < b) {
-        return -1
-      }
-
-      if (a > b) {
-        return 1
-      }
-
-      return 0
-    })
-
-    return help.sendBackJSON(200, res, next)(null, {
-      endpoints
-    })
-  })
 }
 
 Server.prototype.updateVersions = function (versionsPath) {

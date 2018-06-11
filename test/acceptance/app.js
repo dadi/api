@@ -926,8 +926,8 @@ describe('Application', function () {
     })
 
     describe('GET', function () {
-      it('should NOT return the Javascript file backing the endpoint', function (done) {
-        help.getBearerToken(function (err, bearerToken) {
+      it('should NOT return the Javascript file backing the endpoint', done => {
+        help.getBearerToken((err, bearerToken) => {
           request(connectionString)
           .get('/v1/test-endpoint/config?cache=false')
           .set('Authorization', 'Bearer ' + bearerToken)
@@ -936,26 +936,39 @@ describe('Application', function () {
         })
       })
 
-      it('should return all loaded endpoints', function (done) {
-        help.getBearerToken(function (err, bearerToken) {
+      it('should return 401 when trying to access the list of endpoints without a valid bearer token', done => {
+        request(connectionString)
+        .get('/api/endpoints')
+        .expect('content-type', 'application/json')
+        .end((err, res) => {
+          if (err) return done(err)
+
+          res.statusCode.should.eql(401)
+
+          done()
+        })
+      })
+
+      it('should return all loaded endpoints if the requesting client has admin access', done => {
+        help.getBearerToken((err, bearerToken) => {
           request(connectionString)
           .get('/api/endpoints')
           .set('Authorization', 'Bearer ' + bearerToken)
           .expect(200)
           .expect('content-type', 'application/json')
-          .end(function (err, res) {
+          .end((err, res) => {
             if (err) return done(err)
 
             res.body.should.be.Object
             res.body.endpoints.should.be.Array
 
-            _.each(res.body.endpoints, function (endpoint) {
+            res.body.endpoints.forEach(endpoint => {
               should.exist(endpoint.version)
               should.exist(endpoint.name)
               should.exist(endpoint.path)
             })
 
-            var endpointWithDisplayName = _.find(res.body.endpoints, function (endpoint) {
+            let endpointWithDisplayName = res.body.endpoints.find(endpoint => {
               return endpoint.name === 'Test Endpoint'
             })
 
@@ -965,6 +978,37 @@ describe('Application', function () {
           })
         })
       })
+
+      it('should return the endpoints which the requesting client has `read` access to', done => {
+        help.getBearerTokenWithPermissions({
+          resources: {
+            'endpoint:v1_test-endpoint': {
+              read: true
+            },
+            'endpoint:v1_test-endpoint-with-docs': {
+              create: true
+            }
+          }
+        }).then(bearerToken => {
+          request(connectionString)
+          .get('/api/endpoints')
+          .set('Authorization', 'Bearer ' + bearerToken)
+          .expect(200)
+          .expect('content-type', 'application/json')
+          .end((err, res) => {
+            if (err) return done(err)
+
+            res.body.should.be.Object
+            res.body.endpoints.should.be.Array
+            res.body.endpoints.length.should.eql(1)
+
+            res.body.endpoints[0].name.should.eql('test-endpoint')
+            res.body.endpoints[0].path.should.eql('/v1/test-endpoint')
+
+            done()
+          })
+        })
+      })      
     })
 
     describe('DELETE', function () {

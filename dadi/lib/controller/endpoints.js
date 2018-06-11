@@ -62,6 +62,8 @@ Endpoints.prototype.get = function (req, res, next) {
     return help.sendBackJSON(200, res, next)(null, {
       endpoints
     })
+  }).catch(err => {
+    help.sendBackJSON(500, res, next)(err)
   })
 }
 

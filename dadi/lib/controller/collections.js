@@ -94,6 +94,8 @@ Collections.prototype.get = function (req, res, next) {
       collections,
       media
     })
+  }).catch(err => {
+    help.sendBackJSON(500, res, next)(err)
   })
 }
 

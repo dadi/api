@@ -65,7 +65,7 @@ describe('Token Store', function () {
       database: 'separate_auth_db',
       clientCollection: 'clientStore',
       tokenCollection: 'tokenStore',
-      datastore: '@dadi/api-mongodb'
+      datastore: './../../../test/test-connector'
     }
     var TokenStore = tokenStore.TokenStore
 

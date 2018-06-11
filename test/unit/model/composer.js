@@ -1,631 +1,888 @@
-var should = require('should')
-var sinon = require('sinon')
-var model = require(__dirname + '/../../../dadi/lib/model')
-var queryUtils = require(__dirname + '/../../../dadi/lib/model/utils')
-var apiHelp = require(__dirname + '/../../../dadi/lib/help')
-var Validator = require(__dirname + '/../../../dadi/lib/model/validator')
-var connection = require(__dirname + '/../../../dadi/lib/model/connection')
-var _ = require('underscore')
-var help = require(__dirname + '/../help')
-var acceptanceHelper = require(__dirname + '/../../acceptance/help')
-var config = require(__dirname + '/../../../config')
+const should = require('should')
+const sinon = require('sinon')
+const model = require(__dirname + '/../../../dadi/lib/model')
+const apiHelp = require(__dirname + '/../../../dadi/lib/help')
+const Validator = require(__dirname + '/../../../dadi/lib/model/validator')
+const connection = require(__dirname + '/../../../dadi/lib/model/connection')
+const _ = require('underscore')
+const help = require(__dirname + '/../help')
+const acceptanceHelper = require(__dirname + '/../../acceptance/help')
+const config = require(__dirname + '/../../../config')
 
-describe('Model', function () {
-  describe('Composer', function () {
-    it('should be attached to Model', function (done) {
-      var mod = model('testModelName', help.getModelSchema(), null, { database: 'testdb' })
-      mod.composer.should.be.Object
-      mod.composer.compose.should.be.Function
-      done()
+describe('Model composer', function () {
+  // some defaults
+  let bookSchema = {
+    'title': {
+      'type': 'String',
+      'required': true
+    },
+    'author': {
+      'type': 'Reference',
+      'settings': {
+        'collection': 'person',
+        'fields': ['name', 'spouse']
+      }
+    },
+    'booksInSeries': {
+      'type': 'Reference',
+      'settings': {
+        'collection': 'book',
+        'multiple': true
+      }
+    }
+  }
+  let personSchema = {
+    'name': {
+      'type': 'String',
+      'required': true
+    },
+    'occupation': {
+      'type': 'String',
+      'required': false
+    },
+    'nationality': {
+      'type': 'String',
+      'required': false
+    },
+    'education': {
+      'type': 'String',
+      'required': false
+    },
+    'spouse': {
+      'type': 'Reference'
+    }
+  }
+  let refField = {
+    'refField': {
+      'type': 'Reference',
+      'settings': {
+        // "database": "library2", // leave out to default to the same
+        // "collection": "authors", // leave out to default to the same
+        // "fields": ["firstName", "lastName"]
+      }
+    }
+  }
+  let nameFields = {
+    'firstName': {
+      'type': 'String',
+      'required': false
+    },
+    'lastName': {
+      'type': 'String',
+      'required': false
+    }
+  }
+  let schema = Object.assign(
+    help.getModelSchema(),
+    refField,
+    nameFields
+  )
+  let mod
+
+  beforeEach(done => {
+    let insertedDocuments = 0
+
+    mod = model(
+      'testModelName',
+      schema,
+      null,
+      { database: 'testdb'}
+    )
+
+    help.whenModelsConnect([mod]).then(() => {
+      acceptanceHelper.dropDatabase('testdb', null, err => {
+        // create some docs
+        for (var i = 0; i <= 4; i++) {
+          mod.create({
+            documents: {
+              fieldName: 'foo_' + i,
+              firstName: 'Foo',
+              lastName: i.toString()
+            }
+          }).then(response => {
+            if (++insertedDocuments === 5) {
+              return done()  
+            }          
+          }).catch(done)
+        }
+      })
+    })
+  })
+
+  it('should populate a reference field containing an ObjectID', () => {
+    return help.whenModelsConnect([mod])
+      .then(() => {
+        return mod.get({
+          query: { fieldName: 'foo_3' }
+        })
+      })
+      .then(({metadata, results}) => {
+        let anotherDoc = results[0]
+
+        return mod.update({
+          query: { fieldName: 'foo_1' },
+          update: {
+            refField: anotherDoc._id.toString()
+          }
+        })
+      })
+      .then(({updatedCount}) => {
+        return mod.get({
+          options: { compose: true },
+          query: { fieldName: 'foo_1' }
+        })
+      })
+      .then(({metadata, results}) => {
+        let doc = results[0]
+
+        should.exist(doc.refField.fieldName)
+        doc.refField.fieldName.should.equal('foo_3')
+
+        // composed property
+        should.exist(doc._composed)
+        should.exist(doc._composed.refField)
+
+        doc._composed.refField.toString().should.eql(
+          doc.refField._id.toString()
+        )
+      })
+  })
+
+  it('should populate a reference field with specified fields only', () => {
+    schema.refField.settings['fields'] = ['firstName', 'lastName']
+
+    return help.whenModelsConnect([mod])
+      .then(() => {
+        return mod.find({
+          query: { fieldName: 'foo_3' }
+        })
+      })
+      .then(({metadata, results}) => {
+        let anotherDoc = results[0]
+
+        return mod.update({
+          query: { fieldName: 'foo_1' },
+          update: { refField: anotherDoc._id }
+        })
+      })
+      .then(response => {
+        return mod.get({
+          options: { compose: true },
+          query: { fieldName: 'foo_1' }
+        })
+      })
+      .then(({metadata, results}) => {
+        let doc = results[0]
+
+        should.not.exist(doc.refField.fieldName)
+        should.exist(doc.refField.firstName)
+        should.exist(doc.refField.lastName)
+        doc.refField.firstName.should.equal('Foo')
+        doc.refField.lastName.should.equal('3')
+
+        // composed property
+        should.exist(doc._composed)
+        should.exist(doc._composed.refField)
+        doc._composed.refField.toString().should.eql(
+          doc.refField._id.toString()
+        )
+      })
+  })
+
+  it('should reference a document in the specified collection', () => {
+    // create two models
+    let book = model('book', bookSchema, null, { database: 'testdb' })
+    let person = model('person', personSchema, null, { database: 'testdb' })
+
+    return help.whenModelsConnect([book, person])
+      .then(() => {
+        return person.create({
+          documents: { name: 'Neil Murray' }
+        })
+      })
+      .then(({results}) => {
+        return person.create({
+          documents: { name: 'J K Rowling', spouse: results[0]._id }
+        }).then(({results}) => {
+          let authorId = results[0]._id
+
+          return book.create({
+            documents: { title: 'Harry Potter 1', author: authorId }
+          }).then(({results}) => {
+            let bookId = results[0]._id
+            let books = [bookId]
+
+            return book.create({
+              documents: {
+                title: 'Harry Potter 2',
+                author: authorId,
+                booksInSeries: books
+              }
+            })
+          })
+        })
+      })
+      .then(({results}) => {
+        return book.get({
+          documents: { title: 'Harry Potter 2' },
+          options: { compose: true }
+        })
+      })
+      .then(({results}) => {
+        let doc = results[0]
+
+        should.exist(doc.author.name)
+        doc.author.name.should.equal('J K Rowling')        
+      })
+  })
+
+  it('should allow specifying to not resolve the references via the model settings', () => {
+    // create two models
+    let book = model(
+      'book',
+      bookSchema,
+      null,
+      { database: 'testdb', compose: false }
+    )
+    let person = model(
+      'person',
+      personSchema,
+      null,
+      { database: 'testdb', compose: false }
+    )
+
+    return help.whenModelsConnect([book, person])
+      .then(() => {
+        return person.create({
+          documents: { name: 'Neil Murray' }
+        })
+      })
+      .then(({results}) => {
+        return person.create({
+          documents: { name: 'J K Rowling', spouse: results[0]._id }
+        })
+      }).then(({results}) => {
+        let authorId = results[0]._id
+
+        return book.create({
+          documents: { title: 'Harry Potter 1', author: authorId }
+        }).then(({results}) => {
+          let bookId = results[0]._id
+          let books = [bookId]
+
+          return book.create({
+            documents: {
+              title: 'Harry Potter 2',
+              author: authorId,
+              booksInSeries: books
+            }
+          })
+        }).then(({results}) => {
+          return book.get({
+            options: { compose: true },
+            query: { title: 'Harry Potter 2' }
+          })
+        }).then(({results}) => {
+          let doc = results[0]
+
+          should.exist(doc.author.name)
+          should.not.exist(doc.author.spouse.name)
+        })
+      })
+  })
+
+  it('should allow specifying to resolve the references via the model settings', () => {
+    // create two models
+    let book = model(
+      'book',
+      bookSchema,
+      null,
+      { database: 'testdb', compose: true }
+    )
+    let person = model(
+      'person',
+      personSchema,
+      null,
+      { database: 'testdb', compose: true }
+    )
+
+    return person.create({
+      documents: { name: 'Neil Murray' }
+    }).then(({results}) => {
+      return person.create({
+        documents: { name: 'J K Rowling', spouse: results[0]._id }
+      })
+    }).then(({results}) => {
+      let authorId = results[0]._id
+
+      return book.create({
+        documents: { title: 'Harry Potter 1', author: authorId }
+      }).then(({results}) => {
+        let bookId = results[0]._id
+        let books = [bookId]
+
+        return book.create({
+          documents: {
+            title: 'Harry Potter 2',
+            author: authorId,
+            booksInSeries: books
+          }
+        })
+      })
+    }).then(({results}) => {
+      return book.get({
+        options: { compose: true },
+        query: { title: 'Harry Potter 2' }
+      })
+    }).then(({results}) => {
+      let doc = results[0]
+
+      should.exist(doc.author.name)
+      should.exist(doc.author.spouse.name)      
+    })
+  })
+
+  it('should populate a reference field containing an array of ObjectIDs', () => {
+    return mod.get({
+      query: { fieldName: { '$regex': 'foo' } }
+    }).then(({results}) => {
+      let firstDoc = results[0]
+      let remainingDocs = results.slice(1)
+
+      return mod.update({
+        query: { _id: firstDoc._id.toString() },
+        update: { refField: remainingDocs.map(doc => doc._id.toString()) }
+      }).then(() => {
+        return mod.get({
+          options: { compose: true },
+          query: { _id: firstDoc._id.toString() }
+        })
+      }).then(({results}) => {
+        let doc = results[0]
+
+        doc.refField.length.should.eql(4)
+        doc.refField[0].lastName.should.eql(
+          remainingDocs[0].lastName
+        )
+        doc.refField[1].lastName.should.eql(
+          remainingDocs[1].lastName
+        )
+        doc.refField[2].lastName.should.eql(
+          remainingDocs[2].lastName
+        )
+        doc.refField[3].lastName.should.eql(
+          remainingDocs[3].lastName
+        )
+
+        // composed property
+        should.exist(doc._composed.refField)
+        doc._composed.refField.length.should.eql(4)
+      })
+    })
+  })
+
+  describe('Reference field nested query', () => {
+    it('should allow querying nested Reference field properties', () => {
+      let bookSchemaString = JSON.stringify(bookSchema)
+      bookSchemaString = bookSchemaString.replace('author','person')
+
+      let book = model(
+        'book',
+        JSON.parse(bookSchemaString),
+        null,
+        {database: 'testdb'}
+      )
+      let person = model(
+        'person',
+        personSchema,
+        null,
+        {database: 'testdb'}
+      )
+
+      let neil
+      let rowling
+
+      return help.whenModelsConnect([book, person]).then(() => {
+        return person.create({
+          documents: { name: 'Neil Murray' }
+        })
+      }).then(({results}) => {
+        neil = results[0]._id
+
+        return person.create({
+          documents: { name: 'J K Rowling', spouse: neil }
+        })        
+      }).then(({results}) => {
+        rowling = results[0]._id
+
+        return book.create({
+          documents: {
+            title: 'Harry Potter 1',
+            person: rowling
+          }
+        })
+      }).then(({results}) => {
+        return book.create({
+          documents: {
+            title: 'Neil\'s Autobiography',
+            person: neil
+          }
+        })
+      }).then(({results}) => {
+        return book.get({
+          options: {
+            compose: true
+          },
+          query: {
+            'person.name': 'J K Rowling'
+          }
+        }) 
+      }).then(({results}) => {
+        results.length.should.eql(1)
+
+        let doc = results[0]
+        should.exist(doc.person.name)
+        doc.person.name.should.equal('J K Rowling')
+      })
     })
 
-    describe('compose', function () {
-      // some defaults
-      var bookSchema = {
-        'title': {
-          'type': 'String',
-          'required': true
-        },
-        'author': {
-          'type': 'Reference',
-          'settings': {
-            'collection': 'person',
-            'fields': ['name', 'spouse']
-          }
-        },
-        'booksInSeries': {
-          'type': 'Reference',
-          'settings': {
-            'collection': 'book',
-            'multiple': true
-          }
-        }
-      }
+    it('should allow querying second level nested Reference field properties', () => {
+      let bookSchemaString = JSON.stringify(bookSchema)
+      bookSchemaString = bookSchemaString.replace('author','person')
 
-      var personSchema = {
-        'name': {
-          'type': 'String',
-          'required': true
-        },
-        'occupation': {
-          'type': 'String',
-          'required': false
-        },
-        'nationality': {
-          'type': 'String',
-          'required': false
-        },
-        'education': {
-          'type': 'String',
-          'required': false
-        },
-        'spouse': {
-          'type': 'Reference'
-        }
-      }
+      let book = model(
+        'book',
+        JSON.parse(bookSchemaString),
+        null,
+        {database: 'testdb'}
+      )
+      let person = model(
+        'person',
+        personSchema,
+        null,
+        {database: 'testdb'}
+      )
 
-      var schema = help.getModelSchema()
-
-      var refField = {
-        'refField': {
-          'type': 'Reference',
-          'settings': {
-            // "database": "library2", // leave out to default to the same
-            // "collection": "authors", // leave out to default to the same
-            // "fields": ["firstName", "lastName"]
-          }
-        }
-      }
-
-      var nameFields = {
-        'firstName': {
-          'type': 'String',
-          'required': false
-        },
-        'lastName': {
-          'type': 'String',
-          'required': false
-        }
-      }
-
-      _.extend(schema, refField)
-      _.extend(schema, nameFields)
-
-      var mod = model('testModelName', schema, null, { database: 'testdb'})
-
-      beforeEach(function (done) {
-        acceptanceHelper.dropDatabase('testdb', err => {
-          // create some docs
-          for (var i = 0; i < 5; i++) {
-            mod.create({fieldName: 'foo_' + i, firstName: 'Foo', lastName: i.toString()}, (err, result) => {
-              if (err) return done(err)
-            })
-
-            if (i === 4) {
-              return done()
-            }
+      return help.whenModelsConnect([book, person]).then(() => {
+        return person.create({
+          documents: { name: 'Neil Murray' }
+        })
+      }).then(({results}) => {
+        return person.create({
+          documents: { name: 'J K Rowling', spouse: results[0]._id }
+        })
+      }).then(({results}) => {
+        return book.create({
+          documents: { title: 'Harry Potter 1', person: results[0]._id }
+        })
+      }).then(({results}) => {
+        return book.get({
+          options: { compose: true },
+          query: {
+            'person.spouse.name': 'Neil Murray'
           }
         })
+      }).then(({results}) => {
+        results.length.should.eql(1)
+
+        let doc = results[0]
+        should.exist(doc.person.spouse)
+        doc.person.name.should.equal('J K Rowling')        
       })
+    })
 
-      it('should populate a reference field containing an ObjectID', function (done) {
-        help.whenModelsConnect([mod], () => {
-          // find a doc
-          mod.find({ fieldName: 'foo_3' } , {}, function (err, result) {
-            var anotherDoc = result.results[0]
-
-            // add the id to another doc
-            mod.update({ fieldName: 'foo_1' }, { refField: anotherDoc._id.toString() }, function (err, result) {
-              // doc1 should now have anotherDoc == doc3
-              mod.find({fieldName: 'foo_1'}, { 'compose': true }, function (err, result) {
-
-                var doc = result.results[0]
-                should.exist(doc.refField.fieldName)
-                doc.refField.fieldName.should.equal('foo_3')
-
-                // composed property
-                should.exist(doc._composed)
-                should.exist(doc._composed.refField)
-
-                doc._composed.refField.toString().should.eql(doc.refField._id.toString())
-
-                done()
-              })
-            })
-          })
-        })
-      })
-
-      it('should populate a reference field with specified fields only', function (done) {
-        schema.refField.settings['fields'] = ['firstName', 'lastName']
-
-        help.whenModelsConnect([mod], () => {
-          // find a doc
-          mod.find({ fieldName: 'foo_3' } , {}, function (err, result) {
-            var anotherDoc = result.results[0]
-
-            // add the id to another doc
-            mod.update({ fieldName: 'foo_1' }, { refField: anotherDoc._id }, function (err, result) {
-              // doc1 should now have anotherDoc == doc3
-              mod.find({fieldName: 'foo_1'}, { 'compose': true }, function (err, result) {
-                var doc = result.results[0]
-                should.not.exist(doc.refField.fieldName)
-                should.exist(doc.refField.firstName)
-                should.exist(doc.refField.lastName)
-                doc.refField.firstName.should.equal('Foo')
-                doc.refField.lastName.should.equal('3')
-
-                // composed property
-                should.exist(doc._composed)
-                should.exist(doc._composed.refField)
-                doc._composed.refField.toString().should.eql(doc.refField._id.toString())
-
-                done()
-              })
-            })
-          })
-        })
-      })
-
-      it('should reference a document in the specified collection', function (done) {
-        // create two models
-        var book = model('book', bookSchema, null, { database: 'testdb' })
-        var person = model('person', personSchema, null, { database: 'testdb' })
-
-        help.whenModelsConnect([book, person], () => {
-          person.create({name: 'Neil Murray'}, function (err, result) {
-            var id = result.results[0]._id
-
-            person.create({name: 'J K Rowling', spouse: id}, function (err, result) {
-              var id = result.results[0]._id
-
-              book.create({title: 'Harry Potter 1', author: id}, function (err, result) {
-                var bookid = result.results[0]._id
-                var books = []
-                books.push(bookid)
-
-                book.create({title: 'Harry Potter 2', author: id, booksInSeries: books}, function (err, result) {
-                  // find a book
-                  book.find({ title: 'Harry Potter 2' } , { 'compose': true }, function (err, result) {
-                    var doc = result.results[0]
-                    should.exist(doc.author.name)
-                    doc.author.name.should.equal('J K Rowling')
-
-                    done()
-                  })
-                })
-              })
-            })
-          })
-        })
-      })
-
-      it('should allow specifying to not resolve the references via the model settings', function (done) {
-        // create two models
-        var book = model('book', bookSchema, null, { database: 'testdb', 'compose': false })
-        var person = model('person', personSchema, null, { database: 'testdb', 'compose': false })
-
-        help.whenModelsConnect([book, person], () => {
-          person.create({name: 'Neil Murray'}, function (err, result) {
-            var id = result.results[0]._id
-
-            person.create({name: 'J K Rowling', spouse: id}, function (err, result) {
-              var id = result.results[0]._id
-
-              book.create({title: 'Harry Potter 1', author: id}, function (err, result) {
-                var bookid = result.results[0]._id
-                var books = []
-                books.push(bookid)
-
-                book.create({title: 'Harry Potter 2', author: id, booksInSeries: books}, function (err, result) {
-                  // find a book
-                  book.find({ title: 'Harry Potter 2' } , { 'compose': true }, function (err, result) {
-                    // console.log(JSON.stringify(result, null, 2))
-
-                    var doc = result.results[0]
-                    should.exist(doc.author.name)
-                    should.not.exist(doc.author.spouse.name)
-
-                    done()
-                  })
-                })
-              })
-            })
-          })
-        })
-      })
-
-      it('should allow specifying to resolve the references via the model settings', function (done) {
-        // create two models
-        var book = model('book', bookSchema, null, { database: 'testdb', 'compose': true })
-        var person = model('person', personSchema, null, { database: 'testdb', 'compose': true })
-
-        help.whenModelsConnect([book, person], () => {
-          person.create({name: 'Neil Murray'}, function (err, result) {
-            var id = result.results[0]._id
-
-            person.create({name: 'J K Rowling', spouse: id}, function (err, result) {
-              var id = result.results[0]._id
-
-              book.create({title: 'Harry Potter 1', author: id}, function (err, result) {
-                var bookid = result.results[0]._id
-                var books = []
-                books.push(bookid)
-
-                book.create({title: 'Harry Potter 2', author: id, booksInSeries: books}, function (err, result) {
-                  // find a book
-                  book.find({ title: 'Harry Potter 2' } , { 'compose': true }, function (err, result) {
-                    // console.log(JSON.stringify(result, null, 2))
-
-                    var doc = result.results[0]
-                    should.exist(doc.author.name)
-                    should.exist(doc.author.spouse.name)
-
-                    done()
-                  })
-                })
-              })
-            })
-          })
-        })
-      })
-
-      it('should populate a reference field containing an array of ObjectIDs', function (done) {
-        help.whenModelsConnect([mod], () => {
-          // find a doc
-          mod.find({ fieldName: { '$regex': 'foo' } } , {}, function (err, result) {
-            // remove foo_1 from the results so we can add the remaining docs
-            // to it as a reference
-            var foo1 = _.findWhere(result.results, { fieldName: 'foo_1' })
-            result.results.splice(result.results.indexOf(foo1), 1)
-
-            var anotherDoc = _.map(_.pluck(result.results, '_id'), function(id) {
-              return id.toString()
-            })
-
-            // console.log(result)
-            // console.log(anotherDoc)
-
-            // add the id to another doc
-            mod.update({ fieldName: 'foo_1' }, { refField: anotherDoc }, function (err, result) {
-              // doc1 should now have refField as array of docs
-              //console.log(result)
-              mod.find({fieldName: 'foo_1'}, { 'compose': true }, function (err, result) {
-                var doc = result.results[0]
-                doc.refField.length.should.eql(4)
-
-                // composed property
-                should.exist(doc._composed)
-                should.exist(doc._composed.refField)
-                doc._composed.refField.length.should.eql(4)
-
-                done()
-              })
-            })
-          })
-        })
-      })
-
-      describe('Reference field nested query', function () {
-        it('should allow querying nested Reference field properties', function (done) {
-          // add a setting & replace "author" with "person" for this test
-          bookSchema.author.settings.multiple = false
-          var bookSchemaString = JSON.stringify(bookSchema)
-          bookSchemaString = bookSchemaString.replace('author','person')
-
-          var book = model('book', JSON.parse(bookSchemaString), null, {database: 'testdb'})
-          var person = model('person', personSchema, null, {database: 'testdb'})
-
-          help.whenModelsConnect([book, person], () => {
-            person.create({name: 'Neil Murray'}, function (err, result) {
-              var neil = result.results[0]._id
-
-              person.create({name: 'J K Rowling', spouse: neil}, function (err, result) {
-                var rowling = result.results[0]._id.toString()
-
-                book.create({title: 'Harry Potter 1', person: rowling}, function (err, result) {
-                  var bookid = result.results[0]._id
-                  var books = []
-                  books.push(bookid)
-
-                  book.create({title: 'Neil\'s Autobiography', person: neil}, function (err, result) {
-                    // find book where person.name = J K Rowling
-                    book.find({ 'person.name': 'J K Rowling' }, { compose: true }, function (err, result) {
-                      result.results.length.should.eql(1)
-                      var doc = result.results[0]
-                      should.exist(doc.person.name)
-                      doc.person.name.should.equal('J K Rowling')
-
-                      done()
-                    })
-                  })
-                })
-              })
-            })
-          })
-        })
-
-        it('should allow querying second level nested Reference field properties', function (done) {
-          // add a setting & replace "author" with "person" for this test
-          bookSchema.author.settings.multiple = false
-          bookSchema.author.settings.compose = true
-          bookSchema.settings = {
-            compose: true
-          }
-
-          var bookSchemaString = JSON.stringify(bookSchema)
-          bookSchemaString = bookSchemaString.replace('author','person')
-
-          personSchema.spouse.settings = {
-            compose: true
-          }
-
-          var book = model('book', JSON.parse(bookSchemaString), null, {database: 'testdb'})
-          var person = model('person', personSchema, null, {database: 'testdb'})
-
-          help.whenModelsConnect([book, person], () => {
-            person.create({name: 'Neil Murray'}, function (err, result) {
-              var neil = result.results[0]._id
-
-              person.create({name: 'J K Rowling', spouse: neil}, function (err, result) {
-                var rowling = result.results[0]._id.toString()
-
-                book.create({title: 'Harry Potter 1', person: rowling}, function (err, result) {
-
-                  book.find({ "person.spouse.name": "Neil Murray" }, { compose: true }, function (err, result) {
-                    result.results.length.should.eql(1)
-                    var doc = result.results[0]
-                    should.exist(doc.person.spouse)
-                    doc.person.name.should.equal('J K Rowling')
-
-                    done()
-                  })
-                })
-              })
-            })
-          })
-        })
-
-        it('should return results when multiple documents match a nested query', function (done) {
-          var categoriesSchema = {
-            fields: {
-              parent: {
-                type: "Reference",
-                settings: {
-                  collection: "categories",
-                  compose: true
-                },
-                required: false
-              },
-              name: {
-                type: "String",
-                label: "Name",
-                required: false
-              },
-              furl: {
-                type: "String",
-                label: "Friendly URL",
-                required: false
-              }
-            },
+    it('should return results when multiple documents match a nested query', () => {
+      let categoriesSchema = {
+        fields: {
+          parent: {
+            type: 'Reference',
             settings: {
+              collection: 'categories',
               compose: true
-            }
-          }
-
-          var articleSchema = {
-            fields: {
-              title: {
-                type: 'String',
-                required: true
-              },
-              categories: {
-                type: 'Reference',
-                settings: {
-                  collection: "categories",
-                  multiple: true
-                }
-              }
             },
+            required: false
+          },
+          name: {
+            type: 'String',
+            label: 'Name',
+            required: false
+          },
+          furl: {
+            type: 'String',
+            label: 'Friendly URL',
+            required: false
+          }
+        },
+        settings: {
+          compose: true
+        }
+      }
+
+      let articleSchema = {
+        fields: {
+          title: {
+            type: 'String',
+            required: true
+          },
+          categories: {
+            type: 'Reference',
             settings: {
-              compose: true
+              collection: 'categories',
+              multiple: true
             }
           }
+        },
+        settings: {
+          compose: true
+        }
+      }
 
-          var category = model('categories', categoriesSchema.fields, null, {database: 'testdb', compose: true})
-          category.compose = true
+      let category = model(
+        'categories',
+        categoriesSchema.fields,
+        null,
+        {database: 'testdb', compose: true}
+      )
 
-          var article = model('articles', articleSchema.fields, null, {database: 'testdb'})
-          article.compose = true
+      let article = model(
+        'articles',
+        articleSchema.fields,
+        null,
+        {database: 'testdb', compose: true}
+      )
 
-          help.whenModelsConnect([category, article], () => {
-            // parent categories
-            category.create({name: 'Sports', furl: 'sports'}, function (err, result) {
-              var sports = result.results[0]._id
+      let ids = {}
 
-              category.create({name: 'Music', furl: 'music'}, function (err, result) {
-                var music = result.results[0]._id
-
-                // child categories
-                category.create({name: 'Music News', furl: 'news', parent: music.toString()}, function (err, result) {
-                  var musicNews = result.results[0]._id
-                  category.create({name: 'Sports News', furl: 'news', parent: sports.toString()}, function (err, result) {
-                    var sportsNews = result.results[0]._id
-
-                    category.create({name: 'Sports Events', furl: 'events', parent: sports.toString()}, function (err, result) {
-
-                      // add an article
-                      article.create({title: 'A Day at the Opera', categories: [musicNews.toString()]}, function (err, result) {
-
-                        // add an article
-                        article.create({title: 'A Day at the Races', categories: [sportsNews.toString()]}, function (err, result) {
-
-                          article.find({ "categories.furl": "news", "categories.parent.furl": "sports" }, { compose: true }, function (err, result) {
-                            result.results.length.should.eql(1)
-                            var doc = result.results[0]
-
-                            doc.categories[0].name.should.equal('Sports News')
-                            doc.categories[0].parent.name.should.equal('Sports')
-                            done()
-                          })
-                        })
-                      })
-                    })
-                  })
-                })
-              })
-            })
-          })
+      return help.whenModelsConnect([category, article]).then(() => {
+        return category.create({
+          documents: {
+            name: 'Sports',
+            furl: 'sports'
+          }
         })
+      }).then(({results}) => {
+        ids.sports = results[0]._id.toString()
 
-        it('should allow querying nested Reference fields with a different property name', function (done) {
-          // add a setting & replace "author" with "person" for this test
-          bookSchema.author.settings.multiple = false
-
-          var book = model('book', bookSchema, null, {database: 'testdb'})
-          var person = model('person', personSchema, null, {database: 'testdb'})
-
-          help.whenModelsConnect([book, person], () => {
-            person.create({name: 'Neil Murray'}, function (err, result) {
-              var neil = result.results[0]._id
-
-              person.create({name: 'J K Rowling', spouse: neil}, function (err, result) {
-                var rowling = result.results[0]._id.toString()
-
-                book.create({title: 'Harry Potter 1', author: rowling}, function (err, result) {
-                  var bookid = result.results[0]._id
-                  var books = []
-                  books.push(bookid)
-
-                  book.create({title: 'Neil\'s Autobiography', author: neil}, function (err, result) {
-
-                    // find book where author.name = J K Rowling
-
-                    book.find({ 'author.name': 'J K Rowling' }, { compose: true }, function (err, result) {
-                      //console.log(JSON.stringify(result, null, 2))
-
-                      result.results.length.should.eql(1)
-                      var doc = result.results[0]
-                      should.exist(doc.author.name)
-                      doc.author.name.should.equal('J K Rowling')
-
-                      done()
-                    })
-                  })
-                })
-              })
-            })
-          })
+        return category.create({
+          documents: {
+            name: 'Music',
+            furl: 'music'
+          }
         })
+      }).then(({results}) => {
+        ids.music = results[0]._id.toString()
 
-        it('should only return specified fields when querying nested Reference field properties', function (done) {
-          bookSchema.author.settings.multiple = false
-
-          // create two models
-          var book = model('book', bookSchema, null, {database: 'testdb'})
-          var person = model('person', personSchema, null, {database: 'testdb'})
-
-          help.whenModelsConnect([book, person], () => {
-            person.create({name: 'Neil Murray'}, function (err, result) {
-              var neil = result.results[0]._id
-
-              person.create({name: 'J K Rowling', spouse: neil}, function (err, result) {
-                var rowling = result.results[0]._id.toString()
-
-                book.create({title: 'Harry Potter 1', author: rowling}, function (err, result) {
-                  var bookid = result.results[0]._id
-                  var books = []
-                  books.push(bookid)
-
-                  book.create({title: 'Neil\'s Autobiography', author: neil}, function (err, result) {
-
-                    // find book where author.name = J K Rowling
-
-                    book.find({ 'author.name': 'J K Rowling' }, { compose: true, fields: { 'title': 1, 'author': 1 }}, function (err, result) {
-
-                      result.results.length.should.eql(1)
-                      var doc = result.results[0]
-                      should.exist(doc._id)
-                      should.exist(doc.title)
-                      should.exist(doc.author.name)
-                      should.exist(doc._composed)
-                      should.not.exist(doc._history)
-
-                      done()
-                    })
-                  })
-                })
-              })
-            })
-          })
+        return category.create({
+          documents: {
+            name: 'Music News',
+            furl: 'news',
+            parent: ids.music
+          }
         })
+      }).then(({results}) => {
+        ids.musicNews = results[0]._id.toString()
 
-        it('should allow querying normal fields and nested Reference field properties', function (done) {
-          bookSchema.author.settings.multiple = false
-
-          // create two models
-          var book = model('book', bookSchema, null, {database: 'testdb'})
-          var person = model('person', personSchema, null, {database: 'testdb'})
-
-          help.whenModelsConnect([book, person], () => {
-            person.create({name: 'Neil Murray'}, function (err, result) {
-              var neil = result.results[0]._id
-
-              person.create({name: 'J K Rowling', spouse: neil}, function (err, result) {
-                var rowling = result.results[0]._id.toString()
-
-                book.create({title: 'Harry Potter 1', author: rowling}, function (err, result) {
-
-                  book.create({title: 'Harry Potter 2', author: rowling}, function (err, result) {
-
-                    book.create({title: 'Neil\'s Autobiography', author: neil}, function (err, result) {
-
-                      // find book where author.name = J K Rowling
-
-                      book.find({ title: 'Harry Potter 1', 'author.name': 'J K Rowling' }, {compose: true}, function (err, result) {
-
-                        result.results.length.should.eql(1)
-                        var doc = result.results[0]
-                        should.exist(doc.author.name)
-                        doc.author.name.should.equal('J K Rowling')
-                        done()
-                      })
-                    })
-                  })
-                })
-              })
-            })
-          })
+        return category.create({
+          documents: {
+            name: 'Sports News',
+            furl: 'news',
+            parent: ids.sports
+          }
         })
+      }).then(({results}) => {
+        ids.sportsNews = results[0]._id.toString()
 
-        it('should only return matching results when querying nested Reference field properties', function (done) {
-          bookSchema.author.settings.multiple = false
-
-          // create two models
-          var book = model('book', bookSchema, null, {database: 'testdb'})
-          var person = model('person', personSchema, null, {database: 'testdb'})
-
-          help.whenModelsConnect([book, person], () => {
-            person.create({name: 'Neil Murray'}, function (err, result) {
-              var neil = result.results[0]._id
-              person.create({name: 'J K Rowling', spouse: neil}, function (err, result) {
-                var rowling = result.results[0]._id.toString()
-                book.create({title: 'Harry Potter 1', author: rowling}, function (err, result) {
-                  book.create({title: 'Harry Potter 2', author: rowling}, function (err, result) {
-                    book.create({title: 'Neil\'s Autobiography', author: neil}, function (err, result) {
-
-                      // find book where author.name = J K Rowling
-                      book.find({ title: 'Harry Potter 1', 'author.name': 'A B Cowling' }, {compose: true}, function (err, result) {
-                        result.results.length.should.eql(0)
-                        done()
-                      })
-                    })
-                  })
-                })
-              })
-            })
-          })
+        return article.create({
+          documents: {
+            title: 'A Day at the Opera',
+            categories: [ids.musicNews]
+          }
         })
+      }).then(({results}) => {
+        return article.create({
+          documents: {
+            title: 'A Day at the Races',
+            categories: [ids.sportsNews]
+          }
+        })
+      }).then(({results}) => {
+        return article.get({
+          options: { compose: 'all' },
+          query: {
+            'categories.furl': 'news',
+            'categories.parent.furl': 'sports'
+          }
+        })
+      }).then(({results}) => {
+        results.length.should.eql(1)
+
+        let doc = results[0]
+
+        doc.categories[0].name.should.equal('Sports News')
+        doc.categories[0].parent.name.should.equal('Sports')        
+      })
+    })
+
+    it('should allow querying nested Reference fields with a different property name', () => {
+      let book = model(
+        'book',
+        bookSchema,
+        null,
+        {database: 'testdb'}
+      )
+      console.log(book.schema)
+      let person = model(
+        'person',
+        personSchema,
+        null,
+        {database: 'testdb'}
+      )
+
+      let neil
+      let rowling
+
+      return help.whenModelsConnect([book, person]).then(() => {
+        return person.create({
+          documents: { name: 'Neil Murray' }
+        })
+      }).then(({results}) => {
+        neil = results[0]._id
+
+        return person.create({
+          documents: { name: 'J K Rowling', spouse: neil }
+        })        
+      }).then(({results}) => {
+        rowling = results[0]._id
+
+        return book.create({
+          documents: {
+            title: 'Harry Potter 1',
+            author: rowling
+          }
+        })
+      }).then(({results}) => {
+        return book.create({
+          documents: {
+            title: 'Neil\'s Autobiography',
+            author: neil
+          }
+        })
+      }).then(({results}) => {
+        return book.get({
+          options: {
+            compose: true
+          },
+          query: {
+            'author.name': 'J K Rowling'
+          }
+        }) 
+      }).then(({results}) => {
+        results.length.should.eql(1)
+
+        let doc = results[0]
+        should.exist(doc.author.name)
+        doc.author.name.should.equal('J K Rowling')
+      })
+    })
+
+    it('should only return specified fields when querying nested Reference field properties', () => {
+      let book = model(
+        'book',
+        bookSchema,
+        null,
+        {database: 'testdb'}
+      )
+      let person = model(
+        'person',
+        personSchema,
+        null,
+        {database: 'testdb'}
+      )
+
+      let neil
+      let rowling
+
+      return help.whenModelsConnect([book, person]).then(() => {
+        return person.create({
+          documents: { name: 'Neil Murray' }
+        })
+      }).then(({results}) => {
+        neil = results[0]._id
+
+        return person.create({
+          documents: { name: 'J K Rowling', spouse: neil }
+        })        
+      }).then(({results}) => {
+        rowling = results[0]._id
+
+        return book.create({
+          documents: {
+            title: 'Harry Potter 1',
+            author: rowling
+          }
+        })
+      }).then(({results}) => {
+        return book.create({
+          documents: {
+            title: 'Neil\'s Autobiography',
+            author: neil
+          }
+        })
+      }).then(({results}) => {
+        return book.get({
+          options: {
+            compose: true,
+            fields: {
+              author: 1
+            }
+          },
+          query: {
+            'author.name': 'J K Rowling'
+          }
+        }) 
+      }).then(({results}) => {
+        results.length.should.eql(1)
+
+        let doc = results[0]
+        should.exist(doc._id)
+        should.not.exist(doc.title)
+        should.exist(doc.author.name)
+        should.exist(doc._composed)
+        should.not.exist(doc._history)
+      })
+    })
+
+    it('should allow querying normal fields and nested Reference field properties', () => {
+      let book = model(
+        'book',
+        bookSchema,
+        null,
+        {database: 'testdb'}
+      )
+      let person = model(
+        'person',
+        personSchema,
+        null,
+        {database: 'testdb'}
+      )
+
+      let neil
+      let rowling
+
+      return help.whenModelsConnect([book, person]).then(() => {
+        return person.create({
+          documents: { name: 'Neil Murray' }
+        })
+      }).then(({results}) => {
+        neil = results[0]._id
+
+        return person.create({
+          documents: { name: 'J K Rowling', spouse: neil }
+        })        
+      }).then(({results}) => {
+        rowling = results[0]._id
+
+        return book.create({
+          documents: {
+            title: 'Harry Potter 1',
+            author: rowling
+          }
+        })
+      }).then(({results}) => {
+        return book.create({
+          documents: {
+            title: 'Harry Potter 2',
+            author: rowling
+          }
+        })
+      }).then(({results}) => {
+        return book.create({
+          documents: {
+            title: 'Neil\'s Autobiography',
+            author: neil
+          }
+        })
+      }).then(({results}) => {
+        return book.get({
+          options: {
+            compose: true
+          },
+          query: {
+            title: 'Harry Potter 1',
+            'author.name': 'J K Rowling'
+          }
+        }) 
+      }).then(({results}) => {
+        results.length.should.eql(1)
+
+        let doc = results[0]
+        should.exist(doc.author.name)
+        doc.author.name.should.equal('J K Rowling')
+      })
+    })
+
+    it('should only return matching results when querying nested Reference field properties', () => {
+      let book = model(
+        'book',
+        bookSchema,
+        null,
+        {database: 'testdb'}
+      )
+      let person = model(
+        'person',
+        personSchema,
+        null,
+        {database: 'testdb'}
+      )
+
+      let neil
+      let rowling
+
+      return help.whenModelsConnect([book, person]).then(() => {
+        return person.create({
+          documents: { name: 'Neil Murray' }
+        })
+      }).then(({results}) => {
+        neil = results[0]._id
+
+        return person.create({
+          documents: { name: 'J K Rowling', spouse: neil }
+        })        
+      }).then(({results}) => {
+        rowling = results[0]._id
+
+        return book.create({
+          documents: {
+            title: 'Harry Potter 1',
+            author: rowling
+          }
+        })
+      }).then(({results}) => {
+        return book.create({
+          documents: {
+            title: 'Harry Potter 2',
+            author: rowling
+          }
+        })
+      }).then(({results}) => {
+        return book.create({
+          documents: {
+            title: 'Neil\'s Autobiography',
+            author: neil
+          }
+        })
+      }).then(({results}) => {
+        return book.get({
+          options: {
+            compose: true
+          },
+          query: {
+            title: 'Harry Potter 1',
+            'author.name': 'A B Cowling'
+          }
+        }) 
+      }).then(({results}) => {
+        results.length.should.eql(0)
       })
     })
   })

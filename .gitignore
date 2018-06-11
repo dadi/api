@@ -14,3 +14,5 @@ config/config.qa.json
 config/config.production.json
 
 workspace/media/*
+
+scripts/coverage.svg

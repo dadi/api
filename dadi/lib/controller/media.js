@@ -1,34 +1,49 @@
 'use strict'
 
-var _ = require('underscore')
-var Busboy = require('busboy')
-var imagesize = require('imagesize')
-var PassThrough = require('stream').PassThrough
-var path = require('path')
-var serveStatic = require('serve-static')
-var sha1 = require('sha1')
-var url = require('url')
+const Busboy = require('busboy')
+const config = require('../../../config')
+const Controller = require('./index')
+const help = require('../help')
+const imagesize = require('imagesize')
+const mediaModel = require('../model/media')
+const mime = require('mime')
+const PassThrough = require('stream').PassThrough
+const path = require('path')
+const sha1 = require('sha1')
+const StorageFactory = require('../storage/factory')
+const streamifier = require('streamifier')
+const url = require('url')
 
-var config = require(path.join(__dirname, '/../../../config'))
-var help = require(path.join(__dirname, '/../help'))
-var streamifier = require('streamifier')
-
-var mediaModel = require(path.join(__dirname, '/../model/media'))
-var prepareQuery = require(path.join(__dirname, './index')).prepareQuery
-var prepareQueryOptions = require(path.join(__dirname, './index')).prepareQueryOptions
-var StorageFactory = require(path.join(__dirname, '/../storage/factory'))
-
-var MediaController = function (model) {
+const MediaController = function (model) {
   this.model = model
+}
+
+MediaController.prototype = new Controller({})
+
+MediaController.prototype._formatDate = function (includeTime) {
+  let d = new Date()
+  let dateParts = [
+    d.getFullYear(),
+    ('0' + (d.getMonth() + 1)).slice(-2),
+    ('0' + d.getDate()).slice(-2)
+  ]
+
+  if (includeTime) {
+    dateParts.push(d.getHours())
+    dateParts.push(d.getMinutes())
+    dateParts.push(d.getSeconds())
+  }
+
+  return dateParts.join('/')
 }
 
 /**
  *
  */
 MediaController.prototype.get = function (req, res, next) {
-  var path = url.parse(req.url, true)
-  var query = prepareQuery(req, this.model)
-  var parsedOptions = prepareQueryOptions(path.query, this.model.settings)
+  let path = url.parse(req.url, true)
+  let query = this._prepareQuery(req, this.model)
+  let parsedOptions = this._prepareQueryOptions(path.query, this.model.settings)
 
   if (parsedOptions.errors.length > 0) {
     return help.sendBackJSON(400, res, next)(null, parsedOptions)
@@ -49,9 +64,9 @@ MediaController.prototype.get = function (req, res, next) {
  *
  */
 MediaController.prototype.count = function (req, res, next) {
-  var path = url.parse(req.url, true)
-  var query = prepareQuery(req, this.model)
-  var parsedOptions = prepareQueryOptions(path.query, this.model.settings)
+  let path = url.parse(req.url, true)
+  let query = this._prepareQuery(req, this.model)
+  let parsedOptions = this._prepareQueryOptions(path.query, this.model.settings)
 
   if (parsedOptions.errors.length > 0) {
     return help.sendBackJSON(400, res, next)(null, parsedOptions)
@@ -61,18 +76,12 @@ MediaController.prototype.count = function (req, res, next) {
 }
 
 /**
- * Serve a media file from it's location on disk.
+ * Serve a media file from its location.
  */
 MediaController.prototype.getFile = function (req, res, next, route) {
-  // `serveStatic` will look at the entire URL to find the file it needs to
-  // serve, but we're not serving files from the root. To get around this, we
-  // pass it a modified version of the URL, where the root URL becomes just the
-  // filename parameter.
-  const modifiedReq = Object.assign({}, req, {
-    url: `${route}/${req.params.filename}`
-  })
+  let storageHandler = StorageFactory.create(req.params.filename)
 
-  return serveStatic(config.get('media.basePath'))(modifiedReq, res, next)
+  return storageHandler.get(req.params.filename, route, req, res, next)
 }
 
 /**
@@ -81,7 +90,7 @@ MediaController.prototype.getFile = function (req, res, next, route) {
  * @param {string} fileName - the name of the file being uploaded
  */
 MediaController.prototype.getPath = function (fileName) {
-  var reSplitter
+  let reSplitter
 
   switch (config.get('media.pathFormat')) {
     case 'sha1/4':
@@ -94,9 +103,9 @@ MediaController.prototype.getPath = function (fileName) {
       reSplitter = new RegExp('.{1,8}', 'g')
       return sha1(fileName).match(reSplitter).join('/')
     case 'date':
-      return formatDate()
+      return this._formatDate()
     case 'datetime':
-      return formatDate(true)
+      return this._formatDate(true)
     default:
       return ''
   }
@@ -108,7 +117,7 @@ MediaController.prototype.put = function (req, res, next) {
 
 MediaController.prototype.post = function (req, res, next) {
   if (req.method.toLowerCase() === 'post') {
-    var busboy = new Busboy({ headers: req.headers })
+    let busboy = new Busboy({ headers: req.headers })
     this.data = []
     this.fileName = ''
 
@@ -151,11 +160,11 @@ MediaController.prototype.post = function (req, res, next) {
 
     // Listen for event when Busboy is finished parsing the form
     busboy.on('finish', () => {
-      var data = Buffer.concat(this.data)
-      var stream = streamifier.createReadStream(data)
+      let data = Buffer.concat(this.data)
+      let stream = streamifier.createReadStream(data)
 
-      var imageSizeStream = new PassThrough()
-      var dataStream = new PassThrough()
+      let imageSizeStream = new PassThrough()
+      let dataStream = new PassThrough()
 
       // duplicate the stream so we can use it for the imagesize() request and the
       // response. this saves requesting the same data a second time.
@@ -168,38 +177,53 @@ MediaController.prototype.post = function (req, res, next) {
           console.log(err)
         }
 
-        var fields = Object.keys(this.model.schema)
+        let fields = Object.keys(this.model.schema)
 
-        var obj = {
+        let obj = {
           fileName: this.fileName
         }
 
-        if (_.contains(fields, 'mimetype')) obj.mimetype = this.mimetype
-        if (_.contains(fields, 'width')) obj.width = imageInfo.width
-        if (_.contains(fields, 'height')) obj.height = imageInfo.height
+        if (fields.includes('mimetype')) {
+          obj.mimetype = mime.getType(this.fileName)
+        }
 
-        var internals = {
+        // Is `imageInfo` available?
+        if (!err) {
+          if (fields.includes('width')) {
+            obj.width = imageInfo.width
+          }
+
+          if (fields.includes('height')) {
+            obj.height = imageInfo.height
+          }
+        }
+
+        let internals = {
           _apiVersion: req.url.split('/')[1],
           _createdAt: Date.now(),
           _createdBy: req.client && req.client.clientId
         }
 
-        const callback = (err, response) => {
-          response.results = response.results.map(document => {
-            return mediaModel.formatDocuments(document)
-          })
-
-          help.sendBackJSON(201, res, next)(err, response)
-        }
-
         return this.writeFile(req, this.fileName, this.mimetype, dataStream).then(result => {
-          if (_.contains(fields, 'contentLength')) {
+          if (fields.includes('contentLength')) {
             obj.contentLength = result.contentLength
           }
 
           obj.path = result.path
 
-          this.model.create(obj, internals, callback, req)
+          return this.model.create({
+            documents: obj,
+            internals,
+            req
+          }).then(response => {
+            response.results = response.results.map(document => {
+              return mediaModel.formatDocuments(document)
+            })
+
+            help.sendBackJSON(201, res, next)(null, response)
+          })
+        }).catch(err => {
+          help.sendBackJSON(null, res, next)(err)
         })
       })
     })
@@ -209,13 +233,12 @@ MediaController.prototype.post = function (req, res, next) {
   } else {
     // if id is present in the url, then this is an update
     if (req.params.id || req.body.update) {
-      var internals = {
+      let internals = {
         _lastModifiedAt: Date.now(),
         _lastModifiedBy: req.client && req.client.clientId
       }
-
-      var query = {}
-      var update = {}
+      let query = {}
+      let update = {}
 
       if (req.params.id) {
         query._id = req.params.id
@@ -228,6 +251,51 @@ MediaController.prototype.post = function (req, res, next) {
       this.model.update(query, update, internals, help.sendBackJSON(200, res, next), req)
     }
   }
+}
+
+MediaController.prototype.delete = function (req, res, next) {
+  let query = req.params.id ? { _id: req.params.id } : req.body.query
+
+  if (!query) return next()
+
+  this.model.get({
+    query, req
+  }).then(results => {
+    if (!results.results[0]) return next()
+
+    let file = results.results[0]
+
+    // remove physical file
+    let storageHandler = StorageFactory.create(file.fileName)
+
+    storageHandler.delete(file)
+      .then(result => {
+        this.model.delete({
+          query,
+          req
+        }).then(({deletedCount, totalCount}) => {
+          if (config.get('feedback')) {
+            // Send 200 with JSON payload.
+            return help.sendBackJSON(200, res, next)(null, {
+              status: 'success',
+              message: 'Document deleted successfully',
+              deleted: deletedCount,
+              totalCount
+            })
+          }
+
+          // Send 204 with no content.
+          res.statusCode = 204
+          res.end()
+        }).catch(error => {
+          return help.sendBackJSON(200, res, next)(error)
+        })
+      }).catch(err => {
+        return next(err)
+      })
+  }).catch(err => {
+    return next(err)
+  })
 }
 
 /**
@@ -256,8 +324,8 @@ MediaController.prototype.setRoute = function (route) {
  */
 MediaController.prototype.writeFile = function (req, fileName, mimetype, stream) {
   return new Promise((resolve, reject) => {
-    var folderPath = path.join(this.route, this.getPath(fileName))
-    var storageHandler = StorageFactory.create(fileName)
+    let folderPath = path.join(this.route, this.getPath(fileName))
+    let storageHandler = StorageFactory.create(fileName)
 
     storageHandler.put(stream, folderPath).then((result) => {
       return resolve(result)
@@ -265,23 +333,6 @@ MediaController.prototype.writeFile = function (req, fileName, mimetype, stream)
       return reject(err)
     })
   })
-}
-
-function formatDate (includeTime) {
-  var d = new Date()
-  var dateParts = [
-    d.getFullYear(),
-    ('0' + (d.getMonth() + 1)).slice(-2),
-    ('0' + d.getDate()).slice(-2)
-  ]
-
-  if (includeTime) {
-    dateParts.push(d.getHours())
-    dateParts.push(d.getMinutes())
-    dateParts.push(d.getSeconds())
-  }
-
-  return dateParts.join('/')
 }
 
 module.exports = function (model) {

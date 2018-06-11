@@ -13,6 +13,12 @@
         "index": true,
         "edit": true
       }
+    },
+    "object": {
+      "type": "Object"
+    },
+    "mixed": {
+      "type": "Mixed"
     }
   },
   "settings": {

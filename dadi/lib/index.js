@@ -23,8 +23,10 @@ var auth = require(path.join(__dirname, '/auth'))
 var cache = require(path.join(__dirname, '/cache'))
 var Connection = require(path.join(__dirname, '/model/connection'))
 var Controller = require(path.join(__dirname, '/controller'))
+var cors = require(path.join(__dirname, '/cors'))
 var HooksController = require(path.join(__dirname, '/controller/hooks'))
 var MediaController = require(path.join(__dirname, '/controller/media'))
+var dadiBoot = require('@dadi/boot')
 var dadiStatus = require('@dadi/status')
 var help = require(path.join(__dirname, '/help'))
 var Model = require(path.join(__dirname, '/model'))
@@ -109,6 +111,10 @@ Server.prototype.run = function (done) {
           if (message.type === 'shutdown') {
             log.info('Process ' + process.pid + ' is shutting down...')
 
+            if (config.get('env') !== 'test') {
+              dadiBoot.stopped()
+            }
+
             process.exit(0)
           }
         })
@@ -151,6 +157,10 @@ Server.prototype.run = function (done) {
 Server.prototype.start = function (done) {
   var self = this
   this.readyState = 2
+
+  if (config.get('env') !== 'test') {
+    dadiBoot.start(require('../../package.json'))
+  }
 
   var defaultPaths = {
     collections: path.join(__dirname, '/../../workspace/collections'),
@@ -203,6 +213,8 @@ Server.prototype.start = function (done) {
   app.use(bodyParser.urlencoded({ extended: true, limit: '50mb' }))
   app.use(bodyParser.text({ limit: '50mb' }))
 
+  cors(self)
+
   // update configuration based on domain
   var domainConfigLoaded
   app.use(function (req, res, next) {
@@ -254,9 +266,11 @@ Server.prototype.stop = function (done) {
   this.server.close(function (err) {
     self.readyState = 0
 
-    Connection.resetConnections()
-
-    done && done(err)
+    Connection.resetConnections().then(() => {
+      if (typeof done === 'function') {
+        done(err)
+      }
+    })
   })
 }
 
@@ -446,6 +460,7 @@ Server.prototype.loadConfigApi = function () {
     var name = params.collectionName
     if (schema.hasOwnProperty('model')) name = schema.model
 
+    schema.settings = schema.settings || {}
     schema.settings.lastModifiedAt = Date.now()
 
     var route = ['', params.version, params.database, name, idParam].join('/')
@@ -825,21 +840,12 @@ Server.prototype.loadMediaCollections = function () {
  * req.method` to component methods
  */
 Server.prototype.addCollectionResource = function (options) {
-  var fields = help.getFieldsFromSchema(options.schema)
-
-  var settings = _.extend(options.schema.settings, { database: options.database })
-
-  // var settings = options.schema.settings
-  var model
-  var controller
-
-  model = Model(options.name, JSON.parse(fields), null, settings, settings.database)
-
-  if (settings.type && settings.type === 'mediaCollection') {
-    controller = MediaController(model)
-  } else {
-    controller = Controller(model)
-  }
+  let fields = help.getFieldsFromSchema(options.schema)
+  let settings = Object.assign({}, options.schema.settings, { database: options.database })
+  let model = Model(options.name, JSON.parse(fields), null, settings, settings.database)
+  let controller = (settings.type && settings.type === 'mediaCollection')
+    ? MediaController(model)
+    : Controller(model)
 
   this.addComponent({
     route: options.route,
@@ -847,19 +853,19 @@ Server.prototype.addCollectionResource = function (options) {
     filepath: options.filepath
   })
 
-  // watch the schema's file and update it in place
+  // Watch the schema's file and update it in place.
   this.addMonitor(options.filepath, filename => {
-    // invalidate schema file cache then reload
+    // Invalidate schema file cache then reload.
     delete require.cache[options.filepath]
 
     try {
-      var schemaObj = require(options.filepath)
-      var fields = help.getFieldsFromSchema(schemaObj)
+      let schemaObj = require(options.filepath)
+      let fields = help.getFieldsFromSchema(schemaObj)
 
       this.components[options.route].model.schema = JSON.parse(fields)
       this.components[options.route].model.settings = schemaObj.settings
     } catch (e) {
-      // if file was removed "un-use" this component
+      // If file was removed, "un-use" this component.
       if (e && e.code === 'ENOENT') {
         this.removeMonitor(options.filepath)
         this.removeComponent(options.route)
@@ -1124,7 +1130,8 @@ Server.prototype.addComponent = function (options) {
 
     this.components[mediaRoute] = options.component
     this.components[mediaRoute + '/:token?'] = options.component
-    this.components[mediaRoute + '/:filename(.*png|.*jpg|.*gif|.*bmp|.*tiff)'] = options.component
+    this.components[mediaRoute + '/' + idParam] = options.component
+    this.components[mediaRoute + '/:filename(.*png|.*jpg|.*jpeg|.*gif|.*bmp|.*tiff|.*pdf)'] = options.component
 
     if (options.component.setRoute) {
       options.component.setRoute(mediaRoute)
@@ -1139,8 +1146,13 @@ Server.prototype.addComponent = function (options) {
         var token = this._signToken(req.body)
       } catch (err) {
         if (err) {
-          err.statusCode = 400
-          return next(err)
+          let error = {
+            name: 'ValidationError',
+            message: err.message,
+            statusCode: 400
+          }
+
+          return next(error)
         }
       }
 
@@ -1188,7 +1200,7 @@ Server.prototype.addComponent = function (options) {
 
     // GET media
     this.app.use(mediaRoute, (req, res, next) => {
-      var method = req.method && req.method.toLowerCase()
+      let method = req.method && req.method.toLowerCase()
       if (method !== 'get') return next()
 
       if (options.component[method]) {
@@ -1197,9 +1209,19 @@ Server.prototype.addComponent = function (options) {
     })
 
     // GET media/filename
-    this.app.use(mediaRoute + '/:filename(.*png|.*jpg|.*gif|.*bmp|.*tiff)', (req, res, next) => {
+    this.app.use(mediaRoute + '/:filename(.*png|.*jpg|.*jpeg|.*gif|.*bmp|.*tiff|.*pdf)', (req, res, next) => {
       if (options.component.getFile) {
         return options.component.getFile(req, res, next, mediaRoute)
+      }
+    })
+
+    // DELETE media
+    this.app.use(`${mediaRoute}/${idParam}`, (req, res, next) => {
+      let method = req.method && req.method.toLowerCase()
+      if (method !== 'delete') return next()
+
+      if (options.component[method]) {
+        return options.component[method](req, res, next)
       }
     })
   }
@@ -1340,25 +1362,23 @@ function buildVerbMethod (verb) {
 }
 
 function onListening (server) {
-  var env = config.get('env')
-
-  var address = server.address()
-
-  var startText = '\n\n'
-  startText += '  ----------------------------\n'
-  startText += '  ' + config.get('app.name').green + '\n'
-  startText += "  Started 'DADI API'\n"
-  startText += '  ----------------------------\n'
-  startText += '  Server:      '.green + address.address + ':' + address.port + '\n'
-  startText += '  Version:     '.green + version + '\n'
-  startText += '  Node.JS:     '.green + nodeVersion + '\n'
-  startText += '  Environment: '.green + env + '\n'
-  startText += '  ----------------------------\n'
-
-  startText += '\n\n  Copyright ' + String.fromCharCode(169) + ' 2015-' + new Date().getFullYear() + ' DADI+ Limited (https://dadi.tech)'.white + '\n'
+  const address = server.address()
+  const env = config.get('env')
 
   if (env !== 'test') {
-    console.log(startText)
+    dadiBoot.started({
+      server: `${config.get('server.protocol')}://${address.address}:${address.port}`,
+      header: {
+        app: config.get('app.name')
+      },
+      body: {
+        'Protocol': config.get('server.protocol'),
+        'Version': version,
+        'Node.js': nodeVersion,
+        'Environment': env
+      },
+      footer: {}
+    })
 
     let pkg
     try {

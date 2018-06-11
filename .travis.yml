@@ -5,22 +5,12 @@ cache:
 notifications:
   email: false
 node_js:
-  - '6'
-before_install:
-  - if [[ `npm -v` != 3* ]]; then npm i -g npm@latest; fi
+  - '8.9.4'
+  - '6.11.1'
 before_script:
   - npm prune
 branches:
   except:
     - /^v\d+\.\d+\.\d+$/
-env:
-  - CXX=g++-4.8
-addons:
-  apt:
-    sources:
-      - ubuntu-toolchain-r-test
-    packages:
-      - g++-4.8
 services:
-  - mongodb
   - redis-server

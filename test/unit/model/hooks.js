@@ -21,7 +21,7 @@ querySlugifyHook += "  if (!text)return '';\n"
 querySlugifyHook += "  return text.toString().toLowerCase().replace(/ /g, '-')\n"
 querySlugifyHook += '}\n'
 querySlugifyHook += 'module.exports = function (obj, type, data) { \n'
-querySlugifyHook += '  console.log("----> hook:", obj);\n'
+querySlugifyHook += '  // console.log("----> hook:", obj);\n'
 querySlugifyHook += '  obj[data.options.field] = slugify(obj[data.options.field]);\n'
 querySlugifyHook += '  return obj;\n'
 querySlugifyHook += '}\n'
@@ -324,16 +324,18 @@ describe('Hook', function () {
 
       var mod = model('testModelName', schema, null, settings)
 
-      mod.create({fieldName: 'foo', title: 'Article One', slug: ''}, function (err, result) {
-        if (err) return done(err)
-
-        hook.Hook.prototype.load.restore()
-
-        // find the obj we just created
-        mod.find({fieldName: 'foo'}, function (err, doc) {
+      help.whenModelsConnect([mod], () => {
+        mod.create({fieldName: 'foo', title: 'Article One', slug: ''}, function (err, result) {
           if (err) return done(err)
 
-          done()
+          hook.Hook.prototype.load.restore()
+
+          // find the obj we just created
+          mod.find({fieldName: 'foo'}, function (err, doc) {
+            if (err) return done(err)
+
+            done()
+          })
         })
       })
     })
@@ -369,17 +371,27 @@ describe('Hook', function () {
 
       var mod = model('testModelName', schema, null, settings)
 
-      mod.create({fieldName: 'foo', title: 'Article One', slug: ''}, function (err, result) {
-        if (err) return done(err)
-
-        hook.Hook.prototype.load.restore()
-
-        // find the obj we just created
-        mod.find({}, function (err, doc) {
+      help.whenModelsConnect([mod], () => {
+        mod.create({fieldName: 'foo', title: 'Article One', slug: ''}, function (err, result) {
           if (err) return done(err)
 
-          doc.results[0].slug.should.eql('article-one')
-          done()
+            console.log('***')
+            console.log('result:', result)
+            console.log('***')
+
+          hook.Hook.prototype.load.restore()
+
+          // find the obj we just created
+          mod.find({}, function (err, doc) {
+            if (err) return done(err)
+
+              console.log('***')
+              console.log('doc:', doc)
+              console.log('***')
+
+            doc.results[0].slug.should.eql('article-one')
+            done()
+          })
         })
       })
     })
@@ -420,17 +432,19 @@ describe('Hook', function () {
 
       var mod = model('testModelName', schema, null, settings)
 
-      mod.create(docs, function (err, result) {
-        if (err) return done(err)
-
-        hook.Hook.prototype.load.restore()
-
-        // find the obj we just created
-        mod.find({fieldName: 'foo'}, function (err, doc) {
+      help.whenModelsConnect([mod], () => {
+        mod.create(docs, function (err, result) {
           if (err) return done(err)
-          doc.results[0].slug.should.eql('article-one')
-          doc.results[1].slug.should.eql('article-two')
-          done()
+
+          hook.Hook.prototype.load.restore()
+
+          // find the obj we just created
+          mod.find({fieldName: 'foo'}, function (err, doc) {
+            if (err) return done(err)
+            doc.results[0].slug.should.eql('article-one')
+            doc.results[1].slug.should.eql('article-two')
+            done()
+          })
         })
       })
     })
@@ -452,16 +466,18 @@ describe('Hook', function () {
 
       var mod = model('testModelName', schema, null, settings)
 
-      return mod.create(docs, function (err, result) {
-        hook.Hook.prototype.load.restore()
+      return help.whenModelsConnect([mod], () => {
+        return mod.create(docs, function (err, result) {
+          hook.Hook.prototype.load.restore()
 
-        if (err) return (err)
+          if (err) return (err)
 
-        // find the objs we just created
-        mod.find({fieldName: 'foo'}, function (err, doc) {
-          if (err) return done(err)
-          doc.results.length.should.eql(1)
-          doc.results[0].slug.should.eql('article-one')
+          // find the objs we just created
+          mod.find({fieldName: 'foo'}, function (err, doc) {
+            if (err) return done(err)
+            doc.results.length.should.eql(1)
+            doc.results[0].slug.should.eql('article-one')
+          })
         })
       })
     })
@@ -483,12 +499,14 @@ describe('Hook', function () {
 
       var mod = model('testModelName', schema, null, settings)
 
-      return mod.create(docs, function (err, result) {
-        hook.Hook.prototype.load.restore()
+      return help.whenModelsConnect([mod], () => {
+        return mod.create(docs, function (err, result) {
+          hook.Hook.prototype.load.restore()
 
-        // find the objs we just created
-        mod.find({fieldName: 'foo'}, function (err, doc) {
-          doc.results.should.eql([])
+          // find the objs we just created
+          mod.find({fieldName: 'foo'}, function (err, doc) {
+            doc.results.should.eql([])
+          })
         })
       })
     })

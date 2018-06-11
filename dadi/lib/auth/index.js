@@ -100,6 +100,8 @@ function isAuthorized (endpoints, req, client) {
 
 // This attaches middleware to the passed in app instance
 module.exports = function (server) {
+  tokens.connect()
+
   const tokenRoute = config.get('auth.tokenUrl') || '/token'
 
   // Authorize
@@ -176,6 +178,7 @@ module.exports = function (server) {
     if (method === 'post') {
       return tokens.generate(req, res, next)
     }
+
     next()
   })
 }

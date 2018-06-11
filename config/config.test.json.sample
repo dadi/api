@@ -10,20 +10,19 @@
     "host": "api.somedomain.tech",
     "port": 80
   },
-  "datastore": "@dadi/api-mongodb",
+  "datastore": "./../../../test/test-connector",
   "auth": {
     "tokenUrl": "/token",
     "tokenTtl": 1800000,
     "clientCollection": "client-store",
     "tokenCollection": "token-store",
-    "datastore": "@dadi/api-mongodb",
+    "datastore": "./../../../test/test-connector",
     "database": "testdb"
   },
   "caching": {
     "ttl": 300,
     "directory": {
       "enabled": false,
-      "path": "./cache/api",
       "extension": "json"
     },
     "redis": {

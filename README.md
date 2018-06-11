@@ -1,7 +1,7 @@
-<img src="https://dadi.tech/assets/products/dadi-api-full.png" alt="DADI API" height="65"/>
+<img src="https://dadi.cloud/assets/products/dadi-api-full.png" alt="DADI API" height="65"/>
 
 [![npm (scoped)](https://img.shields.io/npm/v/@dadi/api.svg?maxAge=10800&style=flat-square)](https://www.npmjs.com/package/@dadi/api)
-[![coverage](https://img.shields.io/badge/coverage-88%25-yellow.svg?style=flat?style=flat-square)](https://github.com/dadi/api)
+[![coverage](https://img.shields.io/badge/coverage-88%25-yellow.svg?style=flat)](https://github.com/dadi/api)
 [![Build Status](https://travis-ci.org/dadi/api.svg?branch=master)](https://travis-ci.org/dadi/api)
 [![JavaScript Style Guide](https://img.shields.io/badge/code%20style-standard-brightgreen.svg?style=flat-square)](http://standardjs.com/)
 
@@ -14,9 +14,9 @@
 
 ## Overview
 
-DADI API is built on Node.JS and MongoDB. It is a high performance RESTful API layer designed in support of [API-first development and the principle of COPE](https://dadi.tech/platform/concepts/api-first-and-cope/).
+DADI API is built on Node.JS. It is a high performance RESTful API layer designed in support of API-first development and the principle of COPE. It can use virtually any database engine, such as [MongoDB](https://github.com/dadi/api-mongodb), [CouchDB](https://github.com/dadi/api-couchdb), [RethinkDB](https://github.com/dadi/api-rethinkdb) or simply a [JSON filestore](https://github.com/dadi/api-filestore).
 
-You can consider it as the data layer within a platform (including the data model). It is designed to be plugged into a templating layer (such as [DADI Web](https://dadi.tech/platform/web)), a mobile application or to be used with any other data consumer.
+You can consider it as the data layer within a platform (including the data model). It is designed to be plugged into a templating layer (such as [DADI Web](https://dadi.cloud/en/web)), a mobile application or to be used with any other data consumer.
 
 Calls to a DADI API can contain your business/domain logic (the part of a platform that encodes the real-world business rules that determine how data is created, displayed, stored and changed). It has full support for searching, filtering, limiting, sorting, offsetting, input validation and data aggregation (through support for MongoDB's aggregation pipeline).
 
@@ -28,32 +28,19 @@ It is part of DADI, a suite of components covering the full development stack, b
 
 ## Requirements
 
-* **[MongoDB](https://docs.mongodb.com/v3.0/)** (supported versions: 2.6 - 3.0)
-* **[Node.js](https://www.nodejs.org/)** (supported versions: 4.7.0, 5.12.0, 6.x.x)
+* **[Node.js](https://www.nodejs.org/)** (supported versions: 6.11.x, 8.9.x)
+* A [data connector module](https://www.npmjs.com/search?q=keywords:dadi-api-connector)
 
 ## Your first API project
 
-### Install dependencies
-
-Ensure you have the required dependencies installed. See the first sections in the API  [installation](http://docs.dadi.tech/api/getting-started/installing/) documentation.
-
 ### Install API
 
-The quickest way to get started with *API* is to use [DADI CLI](https://github.com/dadi/cli). To install it for the first time, run:
+The quickest way to get started with *API* is to use [DADI CLI](https://github.com/dadi/cli). See [Creating an API](https://docs.dadicloud/api) for full installation details.
 
-```bash
-npm install @dadi/cli -g
-```
-
-And to install *API* in a directory called `my-new-api`:
-
-```bash
-dadi api new my-new-api
-```
 
 ### Configuration
 
-API starts with some sensible defaults, so it's not necessary to understand all the configuration options available when first running the application. Full configuration documentation can be found at http://docs.dadi.tech/api/getting-started/configuration/.
+API starts with some sensible defaults, so it's not necessary to understand all the configuration options available when first running the application.
 
 Configuration is handled using JSON files specific to the application environment. For example in the production environment a file named `config.production.json` will be used. Configuration files must be placed in a `config` folder in your application root, for example `config/config.production.json`. The default start up environment is `development`, using the configuration file at `config/config.development.json`.
 
@@ -108,7 +95,7 @@ Connection: keep-alive
 
 The HTTP 401 response received in the previous step shows that the server is running. To start using the REST endpoints you'll need a user account so you can obtain access tokens for interacting with the API.
 
-User accounts provide an authentication layer for API. Each user account has a *__clientId__* and a *__secret__*. These are used to obtain access tokens for interacting with the API. See the [Authentication](http://docs.dadi.tech/api/concepts/authentication/) section of the API documentation for full details.
+User accounts provide an authentication layer for API. Each user account has a *__clientId__* and a *__secret__*. These are used to obtain access tokens for interacting with the API. See the [Authentication](https://docs.dadi.cloud/api#authentication) section of the API documentation for full details.
 
 #### Creating the first user
 
@@ -131,7 +118,7 @@ To run your API application in the background as a service, install Forever and 
 ```bash
 $ npm install forever forever-service -g
 
-$ forever-service install -s index.js -e NODE_ENV=production api --start
+$ sudo forever-service install -s index.js -e "NODE_ENV=production" api --start
 ```
 
 You can now interact with the `api` service using the following commands:
@@ -145,25 +132,33 @@ $ [sudo] service api restart
 
 > Note: the environment variable `NODE_ENV=production` must be set to the required configuration version matching the configuration files available in the `config` directory.
 
+## Tests
+
+To run the tests after cloning the repository, run the following command:
+
+```
+$ npm test
+```
+
+> NOTE: API installs version 4.0.1 of Mocha and uses this when calling `npm test`. If you have Mocha installed globally and want to simply run `mocha`, if using version 4 or above, add `--exit` to the command so it becomes `mocha --exit`
+
+
 ## Links
-* [API Documentation](http://docs.dadi.tech/api/)
+* [API Documentation](https://docs.dadi.cloud/api/)
 
 ## Contributors
 
-DADI API is based on an original idea by Joseph Denne. It is developed and maintained by the engineering team at DADI ([https://dadi.tech](https://dadi.tech))
+DADI API is based on an original idea by Joseph Denne. It is developed and maintained by the engineering team at DADI ([https://dadi.cloud](https://dadi.cloud))
 
 * Adam K Dean <akd@dadi.co>
 * Arthur Mingard <am@dadi.co>
-* Dave Allen <da@dadi.co>
 * David Longworth <dl@dadi.co>
-* Derrick <dh@dadi.co>
 * Eduardo Bouças <eb@dadi.co>
 * Francesco Iannuzzelli <fi@dadi.co>
 * James Lambie <jl@dadi.co>
 * Joe Wagner
 * Joseph Denne <jd@dadi.co>
 * Kevin Sowers <kevin.sowers223@gmail.com>
-* Magnus Dahlstrand <magnus@mdahlstrand.com>
 * Robert Stanford <rs@dadi.co>
 * Viktor Fero <vf@dadi.co>
 
@@ -172,7 +167,7 @@ DADI API is based on an original idea by Joseph Denne. It is developed and maint
 DADI is a data centric development and delivery stack, built specifically in support of the principles of API first and COPE.
 
 Copyright notice<br />
-(C) 2017 DADI+ Limited <support@dadi.tech><br />
+(C) 2018 DADI+ Limited <support@dadi.cloud><br />
 All rights reserved
 
 This product is part of DADI.<br />

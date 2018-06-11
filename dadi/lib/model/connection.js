@@ -12,7 +12,7 @@ const STATE_DISCONNECTED = 0
 const STATE_CONNECTED = 1
 const STATE_CONNECTING = 2
 
-let connectionPool = []
+let connectionPool = {}
 
 /**
  * @typedef ConnectionOptions
@@ -36,6 +36,13 @@ const Connection = function (options, storeName) {
   this.recovery = new Recovery({
     retries: config.get('databaseConnection.maxRetries')
   })
+
+  if (
+    options &&
+    this.datastore.settings.connectWithCollection !== true
+  ) {
+    delete options.collection
+  }
 
   // Setting up the reconnect method
   this.recovery.on('reconnect', opts => {
@@ -105,6 +112,14 @@ Connection.prototype.connect = function (options) {
   })
 }
 
+Connection.prototype.destroy = function () {
+  if (typeof this.datastore.destroy === 'function') {
+    return Promise.resolve(this.datastore.destroy())
+  }
+
+  return Promise.resolve()
+}
+
 Connection.prototype.setUpEventListeners = function (db) {
   db.on('DB_ERROR', err => {
     log.error({module: 'connection'}, err)
@@ -134,14 +149,12 @@ module.exports = function (options, collection, storeName) {
   let conn
 
   try {
-    const storeConfig = require(storeName).Config
+    const storeSettings = require(storeName).settings
 
-    if (storeConfig.get('connectWithCollection') === false) {
+    if (storeSettings && storeSettings.connectWithCollection === false) {
       delete options.collection
     }
-  } catch (err) {
-    log.error({module: 'connection'}, err)
-  }
+  } catch (err) {} // eslint-disable-line
 
   const connectionKey = Object.keys(options).map(option => { return options[option] }).join(':')
 
@@ -164,5 +177,11 @@ module.exports = function (options, collection, storeName) {
 
 module.exports.Connection = Connection
 module.exports.resetConnections = () => {
-  connectionPool = []
+  const queue = Object.keys(connectionPool).map(connectionKey => {
+    return connectionPool[connectionKey].destroy()
+  })
+
+  connectionPool = {}
+
+  return Promise.all(queue)
 }

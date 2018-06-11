@@ -1,5 +1,8 @@
 const path = require('path')
 const config = require(path.join(__dirname, '/../../../config.js'))
+const semver = require('semver')
+
+let packageData = require('./../../../package.json')
 
 /**
  * Creates a new DataStore from the configuration property "datastore"
@@ -7,18 +10,52 @@ const config = require(path.join(__dirname, '/../../../config.js'))
  * @classdesc
  */
 const DataStore = function (storeName) {
-  const store = storeName || config.get('datastore')
+  let store = storeName || config.get('datastore')
+  let minimumVersion = packageData.dataConnectorDependencies[store]
 
   try {
-    const DataStore = require(store)
+    let DataStore = require(store)
+    let instance = new DataStore()
+    let version = '0.0.0'
 
-    return new DataStore()
+    if (typeof instance.handshake === 'function') {
+      let connectorData = instance.handshake()
+
+      version = connectorData.version || version
+
+      if (
+        connectorData.minimumApiVersion &&
+        semver.lt(packageData.version, connectorData.minimumApiVersion)
+      ) {
+        throw new Error(
+          `The version of '${store}' being used (${version}) requires version ${connectorData.minimumApiVersion} (or greater) of DADI API. Please update your app or install an older version of the data connector, if available.`
+        )
+      }
+    }
+
+    if (minimumVersion && semver.lt(version, minimumVersion)) {
+      throw new Error(
+        `The minimum supported version of '${store}' is '${minimumVersion}'. Please update your dependency.`
+      )
+    }
+
+    instance.settings = DataStore.settings || {}
+
+    return instance
   } catch (err) {
     if (err.message.indexOf('Cannot find module') > -1) {
       console.error('\n  Error: API configured to use a datastore that has not been installed: "' + store + '"\n')
-      process.exit(1)
+    } else {
+      console.error('\n  Error: Loading datastore "' + store + '" caused an error: ' + err.message + '\n')
     }
+
+    throw err
   }
 }
 
 module.exports = DataStore
+
+// Used for tests.
+module.exports.setPackageData = data => {
+  packageData = data
+}

@@ -4,7 +4,46 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
-## [3.0.0] (2017-11-02)
+## [3.2.0] (2018-06-08)
+
+See release notes at https://github.com/dadi/api/releases/tag/v3.2.0
+
+### Added
+
+* [#431](https://github.com/dadi/api/pull/431): allow DELETE requests to media collection endpoints; enable `s3.endpoint` in the configuration to allow using Digital Ocean Spaces as a storage handler.
+
+## [3.1.2] (2018-05-01)
+
+### Changed
+
+* [#417](https://github.com/dadi/api/pull/417): Fix issue where `Reference` fields pointing to the media collection were not fully resolved.
+
+## [3.1.1] (2018-04-13)
+
+### Changed
+
+* [#413](https://github.com/dadi/api/pull/413): Pass `req` object to hooks.
+
+## [3.1.0-rc1] (2018-04-06)
+
+### Added
+
+* [#157](https://github.com/dadi/api/issues/157): Documents in Reference fields are now resolved multiple times if `settings.strictCompose` is set to `true`
+* [#177](https://github.com/dadi/api/issues/177): Model API now supports Promises and named parameters. old syntax is retained for backward-compatibility.
+* [#329](https://github.com/dadi/api/issues/329): Fields in referenced documents can now be specified using dot-notation in the existing `fields` parameter.
+* [#336](https://github.com/dadi/api/issues/336): A Reference field can now reference documents from multiple collections.
+* [#406](https://github.com/dadi/api/pull/406): Introduced handshake function to ensure compatibility of versions between API core and data connectors.
+
+### Changed
+
+* [#196](https://github.com/dadi/api/issues/196) and [#323](https://github.com/dadi/api/issues/323): Added field modules to encapsulate field-specific logic.
+* [#300](https://github.com/dadi/api/issues/300): `_createdAt` and `_lastModifiedAt` internal fields are now appended to documents in the Model class.
+* [#371](https://github.com/dadi/api/issues/371) and [#384](https://github.com/dadi/api/issues/384): Make defaults paths relative to the parent app, not the module.
+* [#390](https://github.com/dadi/api/issues/390): Falsy values of Reference fields are now ignored, preserving the behavior of any other Reference fields in the document.
+* [#394](https://github.com/dadi/api/issues/394): New DateTime field module now stores values as Unix timestamps and allows queries to be performed using any date format.
+* [#405](https://github.com/dadi/api/pull/405): Lock down major version of `@dadi/logger`.
+
+## [3.0.0] (2017-12-05)
 
 See full release notes at https://github.com/dadi/api/releases/tag/v3.0.0
 
@@ -50,6 +89,7 @@ The maximum number of connection retries can be configured in the main configura
 
 ### Changed
 
+* New startup message displayed, with links to documentation
 * [#141](https://github.com/dadi/api/issues/141): the internal fields will be prefixed with a special character (`_` by default) which is configurable using the configuration property `internalFieldsPrefix`
 * [#180](https://github.com/dadi/api/issues/180): document properties with `null` values are not returned as part of the response
 * [#251](https://github.com/dadi/api/issues/251): added a new `/hello` endpoint which returns HTTP 200 and a "Welcome to API" message
@@ -66,6 +106,18 @@ DELETE requests throws a 404 (instead of 204) when deleting a non-existing docum
 POST/PUT requests throw a 404 when updating a non-existing document by ID. This applies to requests where the document ID is passed in the URL, not when in the body (e.g. PUT /v1/db/collection/DOC-ID vs PUT /v1/db/collection).
 
 Closes [#345](https://github.com/dadi/api/issues/345).
+
+## [2.2.9] (2017-12-05)
+
+### Changed
+
+Fix previous release 2.2.8: [#363](https://github.com/dadi/api/issues/363): allow OPTIONS method when calling the token route
+
+## [2.2.8] (2017-12-04)
+
+### Changed
+
+[#363](https://github.com/dadi/api/issues/363): allow OPTIONS method when calling the token route
 
 ## [2.2.0] (2017-07-05)
 

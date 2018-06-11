@@ -1,6 +1,5 @@
 const debug = require('debug')('api:history')
-const path = require('path')
-const queryUtils = require(path.join(__dirname, '/utils'))
+const deepClone = require('deep-clone')
 
 const History = function (model) {
   this.model = model
@@ -8,15 +7,19 @@ const History = function (model) {
 
 History.prototype.create = function (obj, model, done) {
   // create copy of original
-  let revisionObj = queryUtils.snapshot(obj)
+  let revisionObj = deepClone(obj)
+
   revisionObj._originalDocumentId = obj._id
 
-  // TODO: use datastore plugin's internal fields
   delete revisionObj._id
-  delete revisionObj.meta
-  delete revisionObj.$loki
 
   const _done = function (database) {
+    if (Array.isArray(database.settings.internalProperties)) {
+      database.settings.internalProperties.forEach(property => {
+        delete revisionObj[property]
+      })
+    }
+
     database.insert({
       data: revisionObj,
       collection: model.revisionCollection,

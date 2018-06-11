@@ -67,17 +67,18 @@ describe('Collections API – GET', function () {
           var client = request(connectionString)
 
           client
-            .post('/vtest/testdb/test-schema/config')
-            .send(JSON.stringify(schema, null, 4))
-            .set('content-type', 'text/plain')
-            .set('Authorization', 'Bearer ' + bearerToken)
-            .expect(200)
-            .expect('content-type', 'application/json')
-            .end(function (err, res) {
-              if (err) return done(err)
+          .post('/vtest/testdb/test-schema/config')
+          .send(JSON.stringify(schema, null, 4))
+          .set('content-type', 'text/plain')
+          .set('Authorization', 'Bearer ' + bearerToken)
+          .expect(200)
+          .expect('content-type', 'application/json')
+          .end(function (err, res) {
+            if (err) return done(err)
 
-              done()
-            })
+            // Waiting for the new schema to be written to disk.
+            setTimeout(done, 1000)
+          })
         })
       })
     })

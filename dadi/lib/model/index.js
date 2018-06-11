@@ -104,8 +104,6 @@ const Model = function (name, schema, conn, settings) {
   // setup search context
   this.searchHandler = new Search(this)
 
-  console.log(this.searchHandler.canUse())
-
   if (this.searchHandler.canUse()) {
     this.searchHandler.init()
   }
@@ -715,59 +713,55 @@ Model.prototype.find = function (query, options, done) {
  * @return undefined
  * @api public
  */
-// Model.prototype.search = function (options, done, req) {
-//   let err
+Model.prototype.search = function (options, done, req) {
+  let err
 
-//   if (typeof options === 'function') {
-//     done = options
-//     options = {}
-//   }
+  if (typeof options === 'function') {
+    done = options
+    options = {}
+  }
 
-//   if (!this.searchHandler.canUse()) {
-//     err = new Error('Not Implemented')
-//     err.statusCode = 501
-//     err.json = {
-//       errors: [{
-//         message: `Search is disabled or an invalid data connector has been specified.`
-//       }]
-//     }
-//   } else if (!options.search || options.search.length < config.get('search.minQueryLength')) {
-//     err = new Error('Bad Request')
-//     err.statusCode = 400
-//     err.json = {
-//       errors: [{
-//         message: `Search query must be at least ${config.get('search.minQueryLength')} characters.`
-//       }]
-//     }
-//   }
+  if (!this.searchHandler.canUse()) {
+    err = new Error('Not Implemented')
+    err.statusCode = 501
+    err.json = {
+      errors: [{
+        message: `Search is disabled or an invalid data connector has been specified.`
+      }]
+    }
+  } else if (!options.search || options.search.length < config.get('search.minQueryLength')) {
+    err = new Error('Bad Request')
+    err.statusCode = 400
+    err.json = {
+      errors: [{
+        message: `Search query must be at least ${config.get('search.minQueryLength')} characters.`
+      }]
+    }
+  }
 
-//   if (err) {
-//     return done(err, null)
-//   }
+  if (err) {
+    return done(err, null)
+  }
 
-//   console.log(this.searchHandler)
+  this.searchHandler.find(options.search).then(query => {
+    let ids = query._id['$containsAny'].map(id => id.toString())
 
-//   this.searchHandler.find(options.search).then(query => {
-//     let ids = query._id['$containsAny'].map(id => id.toString())
+    this.get(query, options, (err, results) => {
+      results.results = results.results.sort((a, b) => {
+        let aIndex = ids.indexOf(a._id.toString())
+        let bIndex = ids.indexOf(b._id.toString())
 
-//     this.get(query, options, (err, results) => {
-//       // sort the results
-//       results.results = results.results.sort((a, b) => {
-//         let aIndex = ids.indexOf(a._id.toString())
-//         let bIndex = ids.indexOf(b._id.toString())
+        if (aIndex === bIndex) return 0
 
-//         if (aIndex === bIndex) return 1
+        return aIndex < bIndex ? -1 : 1
+      })
 
-//         return aIndex < bIndex ? -1 : 1
-//       })
-
-//       return done(err, results)
-//     }, req)
-//   }).catch(err => {
-//     console.log(err)
-//     return done(err)
-//   })
-// }
+      return done(err, results)
+    }, req)
+  }).catch(err => {
+    return done(err)
+  })
+}
 
 /**
  * Performs a last round of formatting to the query before it's

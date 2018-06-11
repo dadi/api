@@ -42,7 +42,7 @@ Search.prototype.canUse = function () {
 
   this.datastore = DataStore(searchConfig.datastore)
 
-  return this.datastore.searchable &&
+  return this.datastore.search &&
     searchConfig.enabled &&
     Object.keys(this.indexableFields).length > 0
 }
@@ -110,26 +110,32 @@ Search.prototype.applyIndexListeners = function () {
  * that contain the searchTerm
  *
  * @param {String} searchTerm - the search query passed to the collection search endpoint
- * @return {Promise} - resolves with a MongoDB query containing IDs of documents that contain the searchTerm
+ * @return {Promise} - resolves with a query containing IDs of documents that contain the searchTerm
  */
 Search.prototype.find = function (searchTerm) {
   if (!this.canUse()) {
     return {}
   }
 
-  try {
-    // let analyser = new DefaultAnalyser(this.indexableFields)
-    let tokenized = this.analyser.tokenize(searchTerm)
+  let tokenized = this.analyser.tokenize(searchTerm)
 
-    return this.getWords(tokenized).then(words => {
-      return this.getInstancesOfWords(words.results).then(instances => {
-        let ids = instances.map(instance => instance._id.document)
-        return { _id: { '$containsAny': ids } }
-      })
+  return this.getWords(tokenized).then(words => {
+    words = words.results.map(word => word._id.toString())
+
+    return this.searchConnection.datastore.search({
+      words: words,
+      collection: this.searchCollection,
+      schema: this.getSearchSchema().fields,
+      settings: this.getSearchSchema().settings,
+      opions: { limit: pageLimit }
+    }).then(wordInstances => {
+      return {
+        _id: {
+          '$containsAny': wordInstances.map(instance => instance._id.document)
+        }
+      }
     })
-  } catch (err) {
-    console.log(err)
-  }
+  })
 }
 
 /**

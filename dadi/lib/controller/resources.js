@@ -8,6 +8,12 @@ const Resources = function (server) {
 }
 
 Resources.prototype.get = function (req, res, next) {
+  if (!req.dadiApiClient.clientId) {
+    return help.sendBackJSON(null, res, next)(
+      acl.createError(req.dadiApiClient)
+    )
+  }
+
   let resources = acl.getResources()
 
   return help.sendBackJSON(200, res, next)(null, {

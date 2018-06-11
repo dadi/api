@@ -3,6 +3,7 @@
 const path = require('path')
 const config = require(path.join(__dirname, '/../../../config'))
 const Connection = require(path.join(__dirname, '/../model/connection'))
+const debug = require('debug')('api:search')
 const DataStore = require(path.join(__dirname, '../datastore'))
 const StandardAnalyser = require('./analysers/standard')
 const DefaultAnalyser = StandardAnalyser
@@ -42,7 +43,7 @@ Search.prototype.canUse = function () {
 
   this.datastore = DataStore(searchConfig.datastore)
 
-  return this.datastore.search &&
+  return (typeof this.datastore.search !== 'undefined') &&
     searchConfig.enabled &&
     Object.keys(this.indexableFields).length > 0
 }
@@ -53,6 +54,8 @@ Search.prototype.canUse = function () {
 Search.prototype.init = function () {
   this.wordCollection = config.get('search.wordCollection')
   this.searchCollection = this.model.searchCollection || this.model.name + 'Search'
+
+  debug('initialised wordCollection: %s, indexCollection: %s', this.wordCollection, this.searchCollection)
 
   this.initialiseConnections()
   this.applyIndexListeners()
@@ -113,17 +116,19 @@ Search.prototype.applyIndexListeners = function () {
  * @return {Promise} - resolves with a query containing IDs of documents that contain the searchTerm
  */
 Search.prototype.find = function (searchTerm) {
-  if (!this.canUse()) {
-    return {}
-  }
+  debug(this.canUse() ? 'search enabled' : 'search disabled')
+
+  debug('find in %s: %s', this.searchCollection, searchTerm)
 
   let tokenized = this.analyser.tokenize(searchTerm)
 
   return this.getWords(tokenized).then(words => {
-    words = words.results.map(word => word._id.toString())
+    let wordIds = words.results.map(word => word._id.toString())
+
+    debug('searching %s for words %o', this.searchCollection, words.results.map(word => word.word))
 
     return this.searchConnection.datastore.search({
-      words: words,
+      words: wordIds,
       collection: this.searchCollection,
       schema: this.getSearchSchema().fields,
       settings: this.getSearchSchema().settings,
@@ -151,6 +156,8 @@ Search.prototype.delete = function (docs) {
   if (!Array.isArray(docs)) {
     return
   }
+
+  debug('deleting documents from the %s index: %o', this.searchCollection, docs.map(doc => doc._id.toString()))
 
   let deleteQueue = docs.map(doc => this.clearDocumentInstances(doc._id.toString()))
 
@@ -303,8 +310,6 @@ Search.prototype.indexDocument = function (document) {
 
     let data = this.formatInsertQuery(uniqueWords)
 
-    console.log(words, uniqueWords, data)
-
     if (!uniqueWords.length) {
       return this.clearAndInsertWordInstances(words, document._id.toString())
     }
@@ -317,27 +322,11 @@ Search.prototype.indexDocument = function (document) {
       schema: this.getWordSchema().fields,
       settings: this.getWordSchema().settings
     }).then(response => {
-      console.log('************')
-      console.log(response)
       return this.clearAndInsertWordInstances(words, document._id.toString())
+    }).catch(err => {
+      console.log(err)
     })
-  .catch(err => {
-    console.log(err)
-    // code `11000` returns if the word already exists, continue regardless
-    // MONGO SPECIFIC ERROR
-    // if (err.code === 11000) {
-    //   return this.clearAndInsertWordInstances(words, document._id.toString())
-    // }
   })
-  })
-
-  // return this.insert(
-  //   this.wordConnection.datastore,
-  //   data,
-  //   this.wordCollection,
-  //   this.getWordSchema().fields,
-  //   { ordered: false }
-  // )
 }
 
 /**
@@ -392,7 +381,7 @@ Search.prototype.clearAndInsertWordInstances = function (words, docId) {
     // Get all word instances from Analyser
     this.clearDocumentInstances(docId).then(response => {
       if (response.deletedCount) {
-        // console.log(`Cleared ${response.deletedCount} documents`)
+        debug('Removed %s documents from the %s index', response.deletedCount, this.searchCollection)
       }
 
       this.insertWordInstances(results.results, docId)
@@ -445,12 +434,8 @@ Search.prototype.insertWordInstances = function (words, docId) {
  * @return {Promise} - Database delete query.
  */
 Search.prototype.clearDocumentInstances = function (docId) {
-  let query = {
-    document: docId
-  }
-
   return this.searchConnection.datastore.delete({
-    query,
+    query: { document: docId },
     collection: this.searchCollection,
     schema: this.getSearchSchema().fields
   })
@@ -563,11 +548,11 @@ Search.prototype.getSearchSchema = function () {
   return {
     fields: {
       word: {
-        type: 'String',
+        type: 'Reference',
         required: true
       },
       document: {
-        type: 'String',
+        type: 'Reference',
         required: true
       },
       weight: {

@@ -356,7 +356,7 @@ Controller.prototype.search = function (req, res, next) {
   let path = url.parse(req.url, true)
   let options = path.query
 
-  let queryOptions = this.prepareQueryOptions(options)
+  let queryOptions = this._prepareQueryOptions(options)
 
   if (queryOptions.errors.length !== 0) {
     sendBackJSON(400, res, next)(null, queryOptions)
@@ -364,8 +364,27 @@ Controller.prototype.search = function (req, res, next) {
     queryOptions = queryOptions.queryOptions
   }
 
-  this.model.search(queryOptions).then(results => {
-    return help.sendBackJSON(200, res, next)(null, results)
+  return this.model.search(queryOptions).then(query => {
+    let ids = query._id['$containsAny'].map(id => id.toString())
+
+    return this.model.get({
+      query,
+      options: queryOptions,
+      req
+    }).then(results => {
+      results.results = results.results.sort((a, b) => {
+        let aIndex = ids.indexOf(a._id.toString())
+        let bIndex = ids.indexOf(b._id.toString())
+
+        if (aIndex === bIndex) return 0
+
+        return aIndex > bIndex ? 1 : -1
+      })
+
+      return help.sendBackJSON(200, res, next)(null, results)
+    }).catch(error => {
+      return next(error)
+    })
   }).catch(error => {
     return next(error)
   })

@@ -1,13 +1,13 @@
 'use strict'
 
+const config = require('./../../../config')
+const Connection = require('./connection')
 const deepMerge = require('deepmerge')
-const path = require('path')
-const config = require(path.join(__dirname, '/../../../config'))
-const Connection = require(path.join(__dirname, '/connection'))
 const fields = require('./../fields')
-const History = require(path.join(__dirname, '/history'))
+const History = require('./history')
 const logger = require('@dadi/logger')
-const Validator = require(path.join(__dirname, '/validator'))
+const Search = require('./../search')
+const Validator = require('./validator')
 
 /**
  * Block with metadata pertaining to an API collection.
@@ -69,6 +69,13 @@ const Model = function (name, schema, connection, settings) {
   // Composable reference fields.
   if (this.settings.compose) {
     this.compose = this.settings.compose
+  }
+
+  // setup search context
+  this.searchHandler = new Search(this)
+
+  if (this.searchHandler.canUse()) {
+    this.searchHandler.init()
   }
 
   // Add any configured indexes.
@@ -585,7 +592,7 @@ Model.prototype.getStats = require('./getStats')
 Model.prototype.revisions = require('./getRevisions') // (!) Deprecated in favour of `getRevisions`
 Model.prototype.stats = require('./getStats') // (!) Deprecated in favour of `getStats`
 Model.prototype.update = require('./update')
-// Model.prototype.search = require('./search')
+Model.prototype.search = require('./search')
 
 module.exports = function (name, schema, connection, settings) {
   if (schema) {

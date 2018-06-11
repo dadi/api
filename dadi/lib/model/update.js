@@ -211,6 +211,9 @@ function update ({
       })
     }
 
+    // Asynchronous search index.
+    this.searchHandler.index(data.results)
+
     // Format result set for output.
     if (!rawOutput) {
       return this.formatForOutput(data.results, {

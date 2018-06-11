@@ -112,6 +112,9 @@ function deleteFn ({query, req}) {
       schema: this.schema
     }).then(result => {
       if (result.deletedCount > 0) {
+        // Clear documents from search index.
+        this.searchHandler.delete(deletedDocuments)
+
         // Run any `afterDelete` hooks.
         if (this.settings.hooks && (typeof this.settings.hooks.afterDelete === 'object')) {
           this.settings.hooks.afterDelete.forEach((hookConfig, index) => {

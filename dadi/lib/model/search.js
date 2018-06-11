@@ -1,14 +1,5 @@
-/**
- * Block with metadata pertaining to an API collection.
- *
- * @typedef {Object} Metadata
- * @property {Number} page - current page
- * @property {Number} offset - offset from start of collection
- * @property {Number} totalCount - total number of documents
- * @property {Number} totalPages - total number of pages
- * @property {Number} nextPage - number of next available page
- * @property {Number} prevPage - number of previous available page
- */
+const config = require('./../../../config')
+const debug = require('debug')('api:model:search')
 
 /**
  * Searchs for documents in the datbase and returns a
@@ -18,60 +9,37 @@
  * @param {Object} options - an options object
  * @returns {Promise<Metadata>}
  */
-function count ({
-  query = {},
-  options = {}
-} = {}) {
-  const validation = this.validate.query(query)
+module.exports = function (options = {}) {
+  let err
 
-  if (!validation.success) {
-    const err = this._createValidationError('Bad Query')
+  if (typeof options === 'function') {
+    // done = options
+    options = {}
+  }
 
-    err.json = validation
+  if (!this.searchHandler.canUse()) {
+    err = new Error('Not Implemented')
+    err.statusCode = 501
+    err.json = {
+      errors: [{
+        message: `Search is disabled or an invalid data connector has been specified.`
+      }]
+    }
+  } else if (!options.search || options.search.length < config.get('search.minQueryLength')) {
+    err = new Error('Bad Request')
+    err.statusCode = 400
+    err.json = {
+      errors: [{
+        message: `Search query must be at least ${config.get('search.minQueryLength')} characters.`
+      }]
+    }
+  }
 
+  if (err) {
     return Promise.reject(err)
   }
 
-  if (typeof query !== 'object') {
-    return Promise.reject(
-      this._createValidationError('Bad Query')
-    )
-  }
+  debug(options.search)
 
-  return this.find({
-    query,
-    options
-  }).then(response => {
-    return {
-      metadata: response.metadata
-    }
-  })
-}
-
-module.exports = function () {
-  // Compatibility with legacy model API.
-  // Signature: query, options, done
-  if (arguments.length > 1) {
-    let callback
-    let legacyArguments = {
-      query: arguments[0]
-    }
-
-    if (typeof arguments[1] === 'function') {
-      callback = arguments[1]
-      legacyArguments.options = {}
-    } else {
-      callback = arguments[2]
-      legacyArguments.options = arguments[1]
-    }
-
-    // Legacy arguments: query, options, done
-    count.call(this, legacyArguments)
-      .then(response => callback && callback(null, response))
-      .catch(error => callback && callback(error))
-
-    return
-  }
-
-  return count.apply(this, arguments)
+  return this.searchHandler.find(options.search)
 }

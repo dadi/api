@@ -563,11 +563,11 @@ Search.prototype.getSearchSchema = function () {
   return {
     fields: {
       word: {
-        type: 'Reference',
+        type: 'String',
         required: true
       },
       document: {
-        type: 'Reference',
+        type: 'String',
         required: true
       },
       weight: {

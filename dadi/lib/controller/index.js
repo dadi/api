@@ -115,6 +115,11 @@ Controller.prototype._prepareQueryOptions = function (options) {
     )
   }
 
+  // `q` represents a search query, e.g. `?q=foo bar baz`.
+  if (options.q) {
+    queryOptions.search = options.q
+  }
+
   // Specified / default number of records to return.
   let limit = parseInt(options.count || settings.count) || 50
 
@@ -338,6 +343,29 @@ Controller.prototype.put = function (req, res, next) {
 Controller.prototype.stats = function (req, res, next) {
   this.model.getStats().then(stats => {
     return help.sendBackJSON(200, res, next)(null, stats)
+  }).catch(error => {
+    return next(error)
+  })
+}
+
+/**
+ * Handle collection search endpoints
+ * Example: /1.0/library/books/search?q=title
+ */
+Controller.prototype.search = function (req, res, next) {
+  let path = url.parse(req.url, true)
+  let options = path.query
+
+  let queryOptions = this.prepareQueryOptions(options)
+
+  if (queryOptions.errors.length !== 0) {
+    sendBackJSON(400, res, next)(null, queryOptions)
+  } else {
+    queryOptions = queryOptions.queryOptions
+  }
+
+  this.model.search(queryOptions).then(results => {
+    return help.sendBackJSON(200, res, next)(null, results)
   }).catch(error => {
     return next(error)
   })

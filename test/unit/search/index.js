@@ -10,7 +10,7 @@ const store = require(config.get('search.datastore'))
 let mod
 let searchInstance
 
-describe('Search', () => {
+describe.skip('Search', () => {
   beforeEach(done => {
     mod = Model('testSearchModel', help.getSearchModelSchema(), null, { database: 'testdb' })
     searchInstance = new Search(mod)
@@ -24,8 +24,8 @@ describe('Search', () => {
   })
 
   it('should export a function that returns an instance', done => {
-      searchInstance.should.be.an.instanceOf(Search)
-      done()
+    searchInstance.should.be.an.instanceOf(Search)
+    done()
   })
 
   it('should throw an error if model is incorrect type', done => {
@@ -273,8 +273,8 @@ describe('Search', () => {
       const spy = sinon.spy(indexable, 'runBatchIndex')
 
       function guid () {
-        return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-          var r = Math.random()*16|0, v = c == 'x' ? r : (r&0x3|0x8)
+        return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
+          var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8)
           return v.toString(16)
         })
       }

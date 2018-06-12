@@ -183,7 +183,7 @@ describe('Media', function () {
         .end((err, res) => {
           if (err) return done(err)
           should.exist(res.body.url)
-          var url = res.body.url.replace('/media/$upload/', '')
+          var url = res.body.url.replace('/media/upload/', '')
           jwt.verify(url, config.get('media.tokenSecret'), (err, payload) => {
             payload.fileName.should.eql(obj.fileName)
             payload._createdBy.should.eql('test123')

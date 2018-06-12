@@ -417,7 +417,7 @@ MediaController.prototype.registerRoutes = function (route) {
       }
 
       help.sendBackJSON(200, res, next)(null, {
-        url: `${route}/$upload/${token}`
+        url: `${route}/upload/${token}`
       })
     })
   })
@@ -450,7 +450,7 @@ MediaController.prototype.registerRoutes = function (route) {
   })
 
   // Creates new document.
-  this.server.app.use(`${route}/$upload/:token?`, (req, res, next) => {
+  this.server.app.use(`${route}/upload/:token?`, (req, res, next) => {
     let method = req.method && req.method.toLowerCase()
 
     // If this isn't a new document upload, let the next handler deal with it.
@@ -498,7 +498,7 @@ MediaController.prototype.registerRoutes = function (route) {
   this.server.app.use(`${route}/:filename(.*)`, (req, res, next) => {
     let pathNodes = req.params.filename.split('/')
 
-    if (pathNodes[0] === '$upload' || !pathNodes[pathNodes.length - 1].includes('.')) {
+    if (pathNodes[0] === 'upload' || !pathNodes[pathNodes.length - 1].includes('.')) {
       return next()
     }
 

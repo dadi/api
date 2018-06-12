@@ -1376,6 +1376,57 @@ describe('Reference Field', () => {
       })
     })
 
+    it('should filter documents by nested objects properties', done => {
+      let event = {
+        type: 'Book status',
+        book: {
+          title: 'For Whom The Bell Tolls',
+          publishStatus: {
+            status: "published",
+            rights: "public domain"
+          },
+          author: {
+            name: 'Ernest Hemingway'
+          }
+        }
+      }
+
+      config.set('query.useVersionFilter', true)
+
+      let client = request(connectionString)
+      client
+      .post('/v1/library/event')
+      .set('Authorization', 'Bearer ' + bearerToken)
+      .send(event)
+      .expect(200)
+      .end((err, res) => {
+        if (err) return done(err)
+
+        client
+        .get('/v1/library/event?filter={"book.publishStatus.status":"draft"}')
+        .set('Authorization', 'Bearer ' + bearerToken)
+        .expect(200)
+        .end((err, res) => {
+          if (err) return done(err)
+
+          res.body.results.length.should.eql(0)
+
+          client
+          .get('/v1/library/event?filter={"book.publishStatus.status":"published"}')
+          .set('Authorization', 'Bearer ' + bearerToken)
+          .expect(200)
+          .end((err, res) => {
+            if (err) return done(err)
+
+            res.body.results.length.should.eql(1)
+            res.body.results[0].type.should.eql(event.type)
+
+            done()
+          })
+        })
+      })
+    })
+
     it('should filter documents by nested properties in multi-collection references', done => {
       let miscItem = {
         string: 'Some string',

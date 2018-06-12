@@ -1,8 +1,9 @@
-const acceptanceHelper = require(__dirname + '/../../acceptance/help')
-const config = require(__dirname + '/../../../config')
-const help = require(__dirname + '/../help')
-const Model = require(__dirname + '/../../../dadi/lib/model')
-const Search = require(__dirname + '/../../../dadi/lib/search')
+const acceptanceHelper = require('./../../acceptance/help')
+const config = require('./../../../config')
+const faker = require('faker')
+const help = require('./../help')
+const Model = require('./../../../dadi/lib/model')
+const Search = require('./../../../dadi/lib/search')
 const should = require('should')
 const sinon = require('sinon')
 const store = require(config.get('search.datastore'))
@@ -10,12 +11,20 @@ const store = require(config.get('search.datastore'))
 let mod
 let searchInstance
 
-describe.skip('Search', () => {
+describe('Search', () => {
+  before(() => {
+    config.set('search.enabled', true)
+  })
+
   beforeEach(done => {
     mod = Model('testSearchModel', help.getSearchModelSchema(), null, { database: 'testdb' })
     searchInstance = new Search(mod)
     searchInstance.init()
     done()
+  })
+
+  after(() => {
+    config.set('search.enabled', false)
   })
 
   it('should export constructor', done => {
@@ -40,17 +49,12 @@ describe.skip('Search', () => {
       setTimeout(() => {
         should.exist(searchInstance.wordConnection.db)
         should.exist(searchInstance.searchConnection.db)
-        searchInstance.wordConnection.db.config.hosts[0].host.should.eql('127.0.0.1')
-        searchInstance.wordConnection.db.config.hosts[0].port.should.eql(27017)
-        searchInstance.searchConnection.db.config.hosts[0].host.should.eql('127.0.0.1')
-        searchInstance.searchConnection.db.config.hosts[0].port.should.eql(27017)
-
         done()
       }, 500)
     })
   })
 
-  describe('`applyIndexListeners` method', () => {
+  describe.skip('`applyIndexListeners` method', () => {
     it('should call database index method once connection is established', done => {
       mod = Model('testModelNew', help.getSearchModelSchema(), null, { database: 'testdb' })
       const dbIndexStub = sinon.spy(store.prototype, 'index')
@@ -115,10 +119,10 @@ describe.skip('Search', () => {
     })
   })
 
-  describe('`createWordInstanceInsertQuery` method', () => {
+  describe('`formatInsertQuery` method', () => {
     it('should convert list of words to valid insert query object', done => {
-      searchInstance.createWordInstanceInsertQuery(['foo']).should.be.an.instanceOf(Array)
-      searchInstance.createWordInstanceInsertQuery(['foo'])[0].should.have.property('word', 'foo')
+      searchInstance.formatInsertQuery(['foo']).should.be.an.instanceOf(Array)
+      searchInstance.formatInsertQuery(['foo'])[0].should.have.property('word', 'foo')
       done()
     })
   })
@@ -140,7 +144,7 @@ describe.skip('Search', () => {
     })
   })
 
-  describe('`runFind` method', () => {
+  describe.skip('`runFind` method', () => {
     it('should search the database based on the query', done => {
       const dbFindStub = sinon.spy(store.prototype, 'find')
 
@@ -189,7 +193,7 @@ describe.skip('Search', () => {
     })
   })
 
-  describe('`insert` method', () => {
+  describe.skip('`insert` method', () => {
     it('should not execute the database insert if no data is provided', done => {
       const dbInsertStub = sinon.spy(store.prototype, 'insert')
 
@@ -267,27 +271,27 @@ describe.skip('Search', () => {
     it('should call runBatchIndex repeatedly when there are more results', done => {
       let schema = help.getSearchModelSchema()
       let mod = Model('testSearchModel', schema, null, { database: 'testdb' })
-      const indexable = new Search(mod)
+      let indexable = new Search(mod)
       indexable.init()
 
-      const spy = sinon.spy(indexable, 'runBatchIndex')
+      let spy = sinon.spy(indexable, 'runBatchIndex')
 
-      function guid () {
-        return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
-          var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8)
-          return v.toString(16)
-        })
-      }
-
-      var docs = [
-        { searchableFieldName: guid() },
-        { searchableFieldName: guid() },
-        { searchableFieldName: guid() },
-        { searchableFieldName: guid() },
-        { searchableFieldName: guid() }
+      let docs = [
+        { searchableFieldName: faker.name.findName() },
+        { searchableFieldName: faker.name.findName() },
+        { searchableFieldName: faker.name.findName() },
+        { searchableFieldName: faker.name.findName() },
+        { searchableFieldName: faker.name.findName() }
       ]
 
-      const indexStub = sinon.stub(indexable, 'index').callsFake(() => {
+      // insert documents directly
+      mod.connection.db.insert({
+        data: docs,
+        collection: 'testSearchModel',
+        schema
+      })
+
+      let indexStub = sinon.stub(indexable, 'index').callsFake(() => {
         return Promise.resolve({
           results: docs,
           metadata: {
@@ -297,27 +301,25 @@ describe.skip('Search', () => {
         })
       })
 
-      mod.create(docs, {}, obj => {
-        indexable.batchIndex(1, 1)
+      indexable.batchIndex(1, 1)
 
-        setTimeout(() => {
-          spy.restore()
-          indexStub.restore()
-          spy.callCount.should.be.above(1)
-          let args = spy.args
-          args[0][0].skip.should.eql(0)
-          args[0][0].page.should.eql(1)
-          args[1][0].skip.should.eql(1)
-          args[1][0].page.should.eql(2)
-          args[2][0].skip.should.eql(2)
-          args[2][0].page.should.eql(3)
-          args[3][0].skip.should.eql(3)
-          args[3][0].page.should.eql(4)
-          args[4][0].skip.should.eql(4)
-          args[4][0].page.should.eql(5)
-          done()
-        }, 3000)
-      })
+      setTimeout(() => {
+        spy.restore()
+        indexStub.restore()
+        spy.callCount.should.be.above(1)
+        let args = spy.args
+        args[0][0].skip.should.eql(0)
+        args[0][0].page.should.eql(1)
+        args[1][0].skip.should.eql(1)
+        args[1][0].page.should.eql(2)
+        args[2][0].skip.should.eql(2)
+        args[2][0].page.should.eql(3)
+        args[3][0].skip.should.eql(3)
+        args[3][0].page.should.eql(4)
+        args[4][0].skip.should.eql(4)
+        args[4][0].page.should.eql(5)
+        done()
+      }, 3000)
     })
   })
 })

@@ -121,7 +121,7 @@ DataStore.prototype.connect = function ({database, collection}) {
     })
 
     if (DEBUG) {
-      this.database.___id = Math.random()  
+      this.database.___id = Math.random()
     }
 
     databasePool[connectionKey] = this.database
@@ -162,9 +162,8 @@ DataStore.prototype.delete = function ({query, collection, schema}) {
       if (DEBUG) {
         console.log('')
         console.log('* (Test connector) Delete:', this.database.___id, query, results.data(), count)
-        console.log('')  
+        console.log('')
       }
-      
 
       results.remove()
 
@@ -466,6 +465,56 @@ DataStore.prototype.insert = function ({data, collection, options = {}, schema, 
         return reject(err)
       }
     })
+  })
+}
+
+/** Search for documents in the database
+ *
+ * @param {Object|Array} words -
+ * @param {string} collection - the name of the collection to search
+ * @param {object} options - options to modify the query
+ * @param {Object} schema - the JSON schema for the collection
+ * @param {Object} settings - the JSON settings configuration for the collection
+ * @returns {Promise.<Array, Error>}
+ */
+DataStore.prototype.search = function ({ words, collection, options = {}, schema, settings }) {
+  if (this._mockIsDisconnected(collection)) {
+    this.readyState = STATE_DISCONNECTED
+
+    return Promise.reject(new Error('DB_DISCONNECTED'))
+  }
+
+  debug('search in %s for %o', collection, words)
+
+  let query = [
+    {
+      $match: {
+        word: {
+          $in: words
+        }
+      }
+    },
+    {
+      $group: {
+        _id: { document: '$document' },
+        count: { $sum: 1 },
+        weight: { $sum: '$weight' }
+      }
+    },
+    {
+      $sort: {
+        weight: -1
+      }
+    },
+    { $limit: options.limit || 100 }
+  ]
+
+  return this.find({
+    query,
+    collection,
+    options,
+    schema,
+    settings
   })
 }
 

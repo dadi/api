@@ -48,10 +48,10 @@
     "basePath": "test/acceptance/workspace/media"
   },
   "search": {
-    "enabled": true,
+    "enabled": false,
     "minQueryLength": 3,
     "wordCollection": "words",
-    "datastore": "@dadi/api-mongodb",
+    "datastore": "./../../../test/test-connector",
     "database": "search"
   },
   "feedback": false,

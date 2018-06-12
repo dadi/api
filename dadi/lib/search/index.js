@@ -5,6 +5,7 @@ const config = require(path.join(__dirname, '/../../../config'))
 const Connection = require(path.join(__dirname, '/../model/connection'))
 const debug = require('debug')('api:search')
 const DataStore = require(path.join(__dirname, '../datastore'))
+const promiseQueue = require('js-promise-queue')
 const StandardAnalyser = require('./analysers/standard')
 const DefaultAnalyser = StandardAnalyser
 const pageLimit = 20
@@ -145,21 +146,21 @@ Search.prototype.find = function (searchTerm) {
 
 /**
  * Removes entries in the collection's search collection that match the specified documents
- * @param {Array} docs - an array of documents for which to remove word instances
+ * @param {Array} documents - an array of documents for which to remove word instances
  * @return {Promise} - Query to delete instances with matching document ids.
  */
-Search.prototype.delete = function (docs) {
+Search.prototype.delete = function (documents) {
   if (!this.canUse()) {
     return Promise.resolve()
   }
 
-  if (!Array.isArray(docs)) {
+  if (!Array.isArray(documents)) {
     return
   }
 
-  debug('deleting documents from the %s index: %o', this.searchCollection, docs.map(doc => doc._id.toString()))
+  debug('deleting documents from the %s index', this.searchCollection)
 
-  let deleteQueue = docs.map(doc => this.clearDocumentInstances(doc._id.toString()))
+  let deleteQueue = documents.map(document => this.clearDocumentInstances(document._id.toString()))
 
   return Promise.all(deleteQueue)
 }
@@ -262,28 +263,32 @@ Search.prototype.hasSearchField = function (field) {
 /**
  * Removes properties from the specified document that aren't configured to be indexed
  *
- * @param  {Object} doc - a document to be indexed
+ * @param  {Object} document - a document to be indexed
  * @return {Object} the specified document with non-indexable properties removed
  */
-Search.prototype.removeNonIndexableFields = function (doc) {
-  if (typeof doc !== 'object') return {}
+Search.prototype.removeNonIndexableFields = function (document) {
+  if (typeof document !== 'object') return {}
 
-  return Object.assign({}, ...Object.keys(doc)
+  return Object.assign({}, ...Object.keys(document)
     .filter(key => this.indexableFields[key])
     .map(key => {
-      return {[key]: doc[key]}
+      return {[key]: document[key]}
     }))
 }
 
 /**
  * Index the specified documents
- * @param {Array} docs - an array of documents to be indexed
+ * @param {Array} documents - an array of documents to be indexed
  * @return {Promise} - Queries to index documents.
  */
-Search.prototype.index = function (docs) {
-  if (!this.canUse() || !Array.isArray(docs)) return Promise.resolve()
+Search.prototype.index = function (documents) {
+  if (!this.canUse() || !Array.isArray(documents)) {
+    return Promise.resolve()
+  }
 
-  return Promise.all(docs.map(doc => this.indexDocument(doc)))
+  promiseQueue(documents, this.indexDocument.bind(this), {
+    interval: 300
+  })
 }
 
 /**
@@ -294,7 +299,6 @@ Search.prototype.index = function (docs) {
  * @return {[type]}     [description]
  */
 Search.prototype.indexDocument = function (document) {
-  // let analyser = new DefaultAnalyser(this.indexableFields)
   let reducedDocument = this.removeNonIndexableFields(document)
   let words = this.analyseDocumentWords(reducedDocument)
   let uniqueWords

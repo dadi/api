@@ -183,9 +183,10 @@ describe('Media', function () {
         .end((err, res) => {
           if (err) return done(err)
           should.exist(res.body.url)
-          var url = res.body.url.replace('/media/', '')
+          var url = res.body.url.replace('/media/$upload/', '')
           jwt.verify(url, config.get('media.tokenSecret'), (err, payload) => {
             payload.fileName.should.eql(obj.fileName)
+            payload._createdBy.should.eql('test123')
             done()
           })
         })
@@ -222,7 +223,8 @@ describe('Media', function () {
       it('should use override expiresIn value if specified', function (done) {
         var obj = {
           fileName: 'test.jpg',
-          expiresIn: '60'
+          expiresIn: '60',
+          _createdBy: 'test123'
         }
 
         var spy = sinon.spy(MediaController.MediaController.prototype, '_signToken')
@@ -267,7 +269,7 @@ describe('Media', function () {
 
         signAndUpload(obj, (err, res) => {
           res.statusCode.should.eql(400)
-          res.body.name.should.eql('Unexpected filename')
+          res.body.errors[0].includes('Unexpected filename').should.eql(true)
           done()
         })
       })
@@ -280,9 +282,57 @@ describe('Media', function () {
 
         signAndUpload(obj, (err, res) => {
           res.statusCode.should.eql(400)
-          res.body.name.should.eql('Unexpected mimetype')
+          res.body.errors[0].includes('Unexpected MIME type').should.eql(true)
           done()
         })
+      })
+    })
+
+    describe('PUT', function () {
+      it('should update a document by ID', done => {
+        let obj = {
+          fileName: '1f525.png',
+          mimetype: 'image/png'
+        }
+
+        signAndUpload(obj, (err, res) => {
+          res.statusCode.should.eql(201)
+          
+          res.body.results.should.be.Array
+          res.body.results.length.should.eql(1)
+
+          res.body.results[0].fileName.should.eql(obj.fileName)
+          res.body.results[0].mimetype.should.eql(obj.mimetype)
+          res.body.results[0].width.should.eql(512)
+          res.body.results[0].height.should.eql(512)
+
+          let id = res.body.results[0]._id
+
+          client
+          .put(`/media/${id}`)
+          .set('content-type', 'application/json')
+          .set('Authorization', `Bearer ${bearerToken}`)
+          .attach('avatar', 'test/acceptance/workspace/media/flowers.jpg')
+          .end((err, res) => {
+            res.body.results[0].fileName.should.eql('flowers.jpg')
+            res.body.results[0].mimetype.should.eql('image/jpeg')
+            res.body.results[0].width.should.eql(1600)
+            res.body.results[0].height.should.eql(1086)
+
+            client
+            .get(`/media/${id}`)
+            .set('content-type', 'application/json')
+            .set('Authorization', `Bearer ${bearerToken}`)
+            .end((err, res) => {
+              res.body.results[0].fileName.should.eql('flowers.jpg')
+              res.body.results[0].mimetype.should.eql('image/jpeg')
+              res.body.results[0].width.should.eql(1600)
+              res.body.results[0].height.should.eql(1086)
+
+              done(err)
+            })
+          })
+        })        
       })
     })
 
@@ -818,8 +868,7 @@ describe('Media', function () {
           .expect(200)
           .end((err, res) => {
             if (err) return done(err)
-            should.exist(res.body.status)
-            res.body.status.should.eql('success')
+            res.body.success.should.eql(true)
             res.body.deleted.should.eql(1)
             done()
           })

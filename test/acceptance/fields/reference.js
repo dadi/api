@@ -65,7 +65,7 @@ describe('Reference Field', () => {
         .set('Authorization', 'Bearer ' + bearerToken)
         .send(book)
         .expect(200)
-        .end((err, res) => {        
+        .end((err, res) => {
           res.body.results[0].author.name.should.eql(author.name)
 
           done()
@@ -101,7 +101,7 @@ describe('Reference Field', () => {
         .set('Authorization', 'Bearer ' + bearerToken)
         .send(book)
         .expect(200)
-        .end((err, res) => {        
+        .end((err, res) => {
           res.body.results[0].author.length.should.eql(3)
           res.body.results[0].author[0].name.should.eql(authors[0].name)
           res.body.results[0].author[1].name.should.eql(authors[1].name)
@@ -197,7 +197,7 @@ describe('Reference Field', () => {
             doc._refMultiReference[bookIds[1]].should.eql('book')
 
             done()
-          })   
+          })
         })
       })
     })
@@ -341,10 +341,10 @@ describe('Reference Field', () => {
             res.body.results[0].book.author.name.should.eql(event.book.author.name)
 
             done()
-          })          
+          })
         })
       })
-    })    
+    })
 
     it('should create reference documents recursively in the collections specified by the `_collection` field', done => {
       let item = {
@@ -434,7 +434,7 @@ describe('Reference Field', () => {
 
               done()
             })
-          })          
+          })
         })
       })
     })
@@ -639,7 +639,7 @@ describe('Reference Field', () => {
 
           newDoc.author._id.should.eql(authorId)
           newDoc.author.name.should.eql('Ernest Hemingway')
-          
+
           client
           .get('/v1/library/person/' + authorId)
           .set('Authorization', 'Bearer ' + bearerToken)
@@ -652,7 +652,7 @@ describe('Reference Field', () => {
             res.body.results[0].name.should.eql('Ernest Hemingway')
 
             done()
-          })          
+          })
         })
       })
     })
@@ -1059,9 +1059,9 @@ describe('Reference Field', () => {
 
               done()
             })
-          })            
+          })
         })
-      })       
+      })
     })
   })
 
@@ -1372,7 +1372,7 @@ describe('Reference Field', () => {
 
             done()
           })
-        })          
+        })
       })
     })
 
@@ -1382,8 +1382,8 @@ describe('Reference Field', () => {
         book: {
           title: 'For Whom The Bell Tolls',
           publishStatus: {
-            status: "published",
-            rights: "public domain"
+            status: 'published',
+            rights: 'public domain'
           },
           author: {
             name: 'Ernest Hemingway'
@@ -1412,7 +1412,7 @@ describe('Reference Field', () => {
           res.body.results.length.should.eql(0)
 
           client
-          .get('/v1/library/event?filter={"book.publishStatus.status":"published"}')
+          .get('/v1/library/event?filter={"book.publishStatus.status":"published"}&compose=true')
           .set('Authorization', 'Bearer ' + bearerToken)
           .expect(200)
           .end((err, res) => {
@@ -1420,6 +1420,9 @@ describe('Reference Field', () => {
 
             res.body.results.length.should.eql(1)
             res.body.results[0].type.should.eql(event.type)
+
+            should.exist(res.body.results[0].book.publishStatus)
+            res.body.results[0].book.publishStatus.status.should.eql('published')
 
             done()
           })
@@ -1452,7 +1455,7 @@ describe('Reference Field', () => {
       config.set('query.useVersionFilter', true)
 
       let client = request(connectionString)
-      
+
       client
       .post('/v1/library/misc')
       .set('Authorization', 'Bearer ' + bearerToken)
@@ -1619,7 +1622,7 @@ describe('Reference Field', () => {
               name: 'Ernest Hemingway',
               spouse: {
                 name: 'Mary Welsh Hemingway'
-              }  
+              }
             }
           },
           {
@@ -1628,7 +1631,7 @@ describe('Reference Field', () => {
               title: 'War and Peace',
               author: {
                 name: 'Leo Tolstoy'
-              }  
+              }
             }
           }
         ]
@@ -1807,7 +1810,7 @@ describe('Reference Field', () => {
           done()
         })
       })
-    })    
+    })
 
     describe('when `settings.strictCompose` is not enabled', () => {
       it('should return unique results for a reference field containing an Array of Strings', done => {

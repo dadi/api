@@ -402,25 +402,24 @@ module.exports.getCollectionMap = function () {
 
     databases.forEach(database => {
       let databasePath = path.join(versionPath, database)
-      fs.stat(databasePath, (err, stats) => {
-        if (err) console.log(err)
-        if (stats.isDirectory()) {
-          let collections = fs.readdirSync(databasePath)
+      let stats = fs.statSync(databasePath)
+      
+      if (stats.isDirectory()) {
+        let collections = fs.readdirSync(databasePath)
 
-          collections.forEach(collection => {
-            let match = collection.match(/^collection.(.*).json$/)
+        collections.forEach(collection => {
+          let match = collection.match(/^collection.(.*).json$/)
 
-            if (!match) {
-              return
-            }
+          if (!match) {
+            return
+          }
 
-            let collectionName = match[1]
-            let collectionPath = path.join(databasePath, collection)
+          let collectionName = match[1]
+          let collectionPath = path.join(databasePath, collection)
 
-            map[`/${version}/${database}/${collectionName}`] = require(collectionPath)
-          })
-        }
-      })
+          map[`/${version}/${database}/${collectionName}`] = require(collectionPath)
+        })
+      }      
     })
   })
 

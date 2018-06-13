@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## [3.2.1] (2018-06-13)
+
+### Changed
+
+* [#435](https://github.com/dadi/api/issues/435): Fix issue where filtering `Object` fields with nested queries would return a 400 error.
+
 ## [3.2.0] (2018-06-08)
 
 See release notes at https://github.com/dadi/api/releases/tag/v3.2.0

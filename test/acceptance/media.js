@@ -13,11 +13,9 @@ const sinon = require('sinon')
 // Bearer token with admin access
 let bearerToken
 let client = request(`http://${config.get('server.host')}:${config.get('server.port')}`)
-
 let configBackup = config.get()
 
 function signAndUpload (data, callback) {
-  let client = request(connectionString)
   return client
   .post('/media/sign')
   .set('Authorization', `Bearer ${bearerToken}`)
@@ -169,7 +167,7 @@ describe('Media', function () {
             done()
           })
         })
-      })      
+      })
 
       it('should accept a payload and return a signed url', function (done) {
         var obj = {
@@ -299,7 +297,7 @@ describe('Media', function () {
 
         signAndUpload(obj, (err, res) => {
           res.statusCode.should.eql(201)
-          
+
           res.body.results.should.be.Array
           res.body.results.length.should.eql(1)
 
@@ -334,7 +332,7 @@ describe('Media', function () {
               done(err)
             })
           })
-        })        
+        })
       })
     })
 
@@ -446,7 +444,7 @@ describe('Media', function () {
             bearerToken = token
 
             done()
-          })          
+          })
         })
 
         it('should return 401 if the request does not include a valid bearer token', done => {
@@ -482,7 +480,7 @@ describe('Media', function () {
               done()
             })
           })
-        })        
+        })
 
         it('should return an empty result set if no media has been created', function (done) {
           client
@@ -573,8 +571,6 @@ describe('Media', function () {
             mimetype: 'image/png'
           }
 
-          var client = request(connectionString)
-
           signAndUpload(obj, (err, res) => {
             if (err) return done(err)
 
@@ -597,8 +593,6 @@ describe('Media', function () {
             fileName: '1f525.png',
             mimetype: 'image/png'
           }
-
-          var client = request(connectionString)
 
           signAndUpload(obj, (err, res) => {
             if (err) return done(err)
@@ -640,7 +634,7 @@ describe('Media', function () {
             bearerToken = token
 
             done()
-          })          
+          })
         })
 
         it('should return 401 if the request does not include a valid bearer token', done => {
@@ -790,10 +784,10 @@ describe('Media', function () {
         }, (err, token) => {
           if (err) return done(err)
 
-        var client = request(connectionString)
+          bearerToken = token
 
-        config.set('feedback', true)
-        })          
+          done()
+        })
       })
 
       it('should return 401 if the request does not include a valid bearer token', done => {
@@ -813,7 +807,7 @@ describe('Media', function () {
           .set('content-type', 'application/json')
           .end((err, res) => {
             res.statusCode.should.eql(401)
-            res.body.deleted.should.eql(1)
+
             done()
           })
         })
@@ -832,7 +826,7 @@ describe('Media', function () {
             }
           }
         }, (err, token) => {
-        var client = request(connectionString)
+          if (err) return done(err)
 
           signAndUpload(obj, (err, res) => {
             should.exist(res.body.results)
@@ -871,8 +865,8 @@ describe('Media', function () {
           .delete('/media/' + res.body.results[0]._id)
           .set('Authorization', `Bearer ${bearerToken}`)
           .set('content-type', 'application/json')
-        .expect(404)
-        .end(done)
+          .expect(200)
+          .end((err, res) => {
             if (err) return done(err)
             res.body.success.should.eql(true)
             res.body.deleted.should.eql(1)
@@ -886,8 +880,6 @@ describe('Media', function () {
           fileName: '1f525.png',
           mimetype: 'image/png'
         }
-
-        var client = request(connectionString)
 
         config.set('feedback', false)
 
@@ -925,7 +917,7 @@ describe('Media', function () {
 
       it('should return 200 when image is returned', function (done) {
         // return a buffer from the S3 request
-        let stream = fs.createReadStream('./test/acceptance/workspace/media/1f525.png')
+        let stream = fs.createReadStream('./test/acceptance/temp-workspace/media/1f525.png')
         let buffers = []
 
         stream
@@ -942,7 +934,6 @@ describe('Media', function () {
             config.set('media.s3.accessKey', 'xxx')
             config.set('media.s3.secretKey', 'xyz')
 
-            let client = request(connectionString)
             client
             .get('/media/mock/logo.png')
             .set('Authorization', `Bearer ${bearerToken}`)
@@ -953,258 +944,6 @@ describe('Media', function () {
               // res.text.should.be.instanceof(Buffer)
               // res.headers['content-type'].should.eql('image/png')
               res.statusCode.should.eql(200)
-
-              done()
-            })
-          })
-      })
-    })
-  })
-
-  describe('Standard collection media', function () {
-    beforeEach((done) => {
-      app.start(() => {
-        help.dropDatabase('testdb', null, (err) => {
-          if (err) return done(err)
-
-          help.getBearerTokenWithAccessType('admin', (err, token) => {
-            if (err) return done(err)
-            bearerToken = token
-
-            // mimic a file that could be sent to the server
-            var mediaSchema = fs.readFileSync(__dirname + '/../media-schema.json', {encoding: 'utf8'})
-            request(connectionString)
-            .post('/1.0/testdb/media/config')
-            .send(mediaSchema)
-            .set('content-type', 'text/plain')
-            .set('Authorization', 'Bearer ' + bearerToken)
-            .expect(200)
-            .expect('content-type', 'application/json')
-            .end(function (err, res) {
-              if (err) return done(err)
-
-              mediaSchema = JSON.parse(mediaSchema)
-              mediaSchema.settings.signUploads = true
-              mediaSchema = JSON.stringify(mediaSchema, null, 2)
-
-              request(connectionString)
-              .post('/1.0/testdb/media2/config')
-              .send(mediaSchema)
-              .set('content-type', 'text/plain')
-              .set('Authorization', 'Bearer ' + bearerToken)
-              .expect(200)
-              .expect('content-type', 'application/json')
-              .end(function (err, res) {
-                if (err) return done(err)
-
-                setTimeout(function () {
-                  done()
-                }, 550)
-              })
-            })
-          })
-        })
-      })
-    })
-
-    afterEach((done) => {
-      app.stop(() => {
-        help.removeTestClients(() => {
-          var dirs = config.get('paths')
-
-          try {
-            fs.unlinkSync(dirs.collections + '/1.0/testdb/collection.media.json')
-            fs.unlinkSync(dirs.collections + '/1.0/testdb/collection.media2.json')
-            return done()
-          } catch (e) {}
-
-          return done()
-        })
-      })
-    })
-
-    describe('sign token', function () {
-      it('should accept a payload and return a signed url', function (done) {
-        var obj = {
-          fileName: 'test.jpg'
-        }
-
-        var client = request(connectionString)
-
-        client
-        .post('/1.0/testdb/media/sign')
-        .set('Authorization', 'Bearer ' + bearerToken)
-        .set('content-type', 'application/json')
-        .send(obj)
-        // .expect(200)
-        .end((err, res) => {
-          if (err) return done(err)
-          should.exist(res.body.url)
-          var url = res.body.url.replace('/1.0/testdb/media/', '')
-          jwt.verify(url, config.get('media.tokenSecret'), (err, payload) => {
-            payload.fileName.should.eql(obj.fileName)
-            done()
-          })
-        })
-      })
-
-      it('should return 404 if incorrect HTTP method is used to get a signed token', function (done) {
-        var client = request(connectionString)
-
-        client
-        .get('/1.0/testdb/media/sign')
-        .set('Authorization', 'Bearer ' + bearerToken)
-        .set('content-type', 'application/json')
-        .expect(404)
-        .end((err, res) => {
-          if (err) return done(err)
-          done()
-        })
-      })
-
-      it('should return 400 if tokenExpiresIn configuration parameter is invalid', function (done) {
-        config.set('media.tokenExpiresIn', 0.5)
-        var client = request(connectionString)
-
-        client
-        .post('/1.0/testdb/media/sign')
-        .set('Authorization', 'Bearer ' + bearerToken)
-        .set('content-type', 'application/json')
-        .expect(400)
-        .end((err, res) => {
-          if (err) return done(err)
-          res.body.name.should.eql('ValidationError')
-          config.set('media.tokenExpiresIn', '1h')
-          done()
-        })
-      })
-
-      it('should use override expiresIn value if specified', function (done) {
-        var obj = {
-          fileName: 'test.jpg',
-          expiresIn: '60'
-        }
-
-        var spy = sinon.spy(app, '_signToken')
-
-        var expected = jwt.sign(obj, config.get('media.tokenSecret'), { expiresIn: '60' })
-
-        var client = request(connectionString)
-
-        client
-        .post('/1.0/testdb/media/sign')
-        .set('Authorization', 'Bearer ' + bearerToken)
-        .set('content-type', 'application/json')
-        .send(obj)
-        .end((err, res) => {
-          if (err) return done(err)
-          app._signToken.restore()
-          spy.firstCall.returnValue.should.eql(expected)
-          done()
-        })
-      })
-    })
-
-    describe('POST', function () {
-      // it('should allow upload without using a signed token', function (done) {
-      //   var client = request(connectionString)
-      //   client
-      //   .post('/1.0/testdb/media')
-      //   .set('Authorization', 'Bearer ' + bearerToken)
-      //   .attach('avatar', 'test/acceptance/workspace/media/1f525.png')
-      //   .expect(201)
-      //   .end((err, res) => {
-      //     if (err) return done(err)
-      //     should.exist(res.body.results)
-      //     done()
-      //   })
-      // })
-      //
-      // it('should error if upload attempted without using a signed token', function (done) {
-      //   var client = request(connectionString)
-      //   client
-      //   .post('/1.0/testdb/media2')
-      //   .set('Authorization', 'Bearer ' + bearerToken)
-      //   .attach('avatar', 'test/acceptance/workspace/media/1f525.png')
-      //   .expect(400)
-      //   .end(done)
-      // })
-
-      it('should return an error if specified token has expired', function (done) {
-        var obj = {
-          fileName: 'test.jpg'
-        }
-
-        sinon.stub(app, '_signToken').callsFake(function (obj) {
-          return jwt.sign(obj, config.get('media.tokenSecret'), { expiresIn: 1 })
-        })
-
-        var client = request(connectionString)
-
-        client
-        .post('/1.0/testdb/media/sign')
-        .set('Authorization', 'Bearer ' + bearerToken)
-        .set('content-type', 'application/json')
-        .send(obj)
-        .end((err, res) => {
-          if (err) return done(err)
-
-          app._signToken.restore()
-          var url = res.body.url
-
-          setTimeout(function () {
-            client
-            .post(url)
-            .set('content-type', 'application/json')
-            .send(obj)
-            .expect(400)
-            .end((err, res) => {
-              if (err) return done(err)
-              res.body.name.should.eql('TokenExpiredError')
-              done()
-            })
-          }, 1500)
-        })
-      })
-
-      it('should return an error if posted filename does not match token payload', function (done) {
-        var obj = {
-          fileName: 'test.jpg'
-        }
-
-        var client = request(connectionString)
-
-        client
-        .post('/1.0/testdb/media/sign')
-        .set('Authorization', 'Bearer ' + bearerToken)
-        .set('content-type', 'application/json')
-        .send(obj)
-        .end((err, res) => {
-          if (err) return done(err)
-
-          var url = res.body.url
-
-          client
-          .post(url)
-          .set('content-type', 'application/json')
-          .attach('avatar', 'test/acceptance/workspace/media/1f525.png')
-          .expect(400)
-          .end((err, res) => {
-            if (err) return done(err)
-
-            res.body.name.should.eql('Unexpected filename')
-            done()
-          })
-        })
-      })
-
-      it('should return an error if posted mimetype does not match token payload', function (done) {
-        var obj = {
-          fileName: '1f525.png',
-          mimetype: 'image/jpeg'
-        }
-
-        var client = request(connectionString)
 
               done()
             })

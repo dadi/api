@@ -218,13 +218,12 @@ MediaController.prototype.post = function (req, res, next) {
           }
 
           let fields = Object.keys(this.model.schema)
-
           let obj = {
             fileName: this.fileName
           }
 
           if (fields.includes('mimetype')) {
-          obj.mimetype = mime.getType(this.fileName)
+            obj.mimetype = mime.getType(this.fileName)
           }
 
           // Is `imageInfo` available?
@@ -293,9 +292,6 @@ MediaController.prototype.post = function (req, res, next) {
 
             resolve(response)
           })
-        }).catch(err => {
-          help.sendBackJSON(null, res, next)(err)
-          })
         })
       })
 
@@ -363,7 +359,6 @@ MediaController.prototype.delete = function (req, res, next) {
     let storageHandler = StorageFactory.create(file.fileName)
 
     return storageHandler.delete(file).then(result => {
-      .then(result => {
       return this.model.delete({
         query,
         req

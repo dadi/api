@@ -39,15 +39,12 @@ function deleteFn ({
   // A reference to the documents affected by the query.
   let deletedDocuments = []
 
-  // A reference to the query that will find documents for deletion.
-  let deleteQuery = query
-
   return this.validateAccess({
     client,
-    query: deleteQuery,
+    query,
     type: 'delete'
-  }).then(({query}) => {
-    let validation = this.validate.query(query)
+  }).then(({query: aclQuery}) => {
+    let validation = this.validate.query(aclQuery)
 
     if (!validation.success) {
       let error = this._createValidationError('Validation Failed')
@@ -57,8 +54,6 @@ function deleteFn ({
       return Promise.reject(error)
     }
 
-    deleteQuery = this.formatQuery(query)
-
     // Op 1: Finding all documents
     return this.find({
       options: {
@@ -67,8 +62,28 @@ function deleteFn ({
           _id: 1
         }
       }
+    }).then(documents => {
+      return {
+        aclQuery,
+        documents
+      }
     })
-  }).then(documents => {
+  }).then(({aclQuery, documents}) => {
+    // If merging the request query with ACL data resulted in
+    // an impossible query, we can simply return an empty result
+    // set without even going to the database.
+    if (
+      aclQuery instanceof Error &&
+      aclQuery.message === 'EMPTY_RESULT_SET'
+    ) {
+      return {
+        deletedCount: 0,
+        totalCount: documents.length
+      }
+    }
+
+    query = this.formatQuery(aclQuery)
+
     allDocuments = documents
 
     // Op 2: Finding documents matching query
@@ -76,91 +91,91 @@ function deleteFn ({
       options: {
         compose: false
       },
-      query: deleteQuery
-    })
-  }).then(({metadata, results}) => {
-    deletedDocuments = results
+      query
+    }).then(({metadata, results}) => {
+      deletedDocuments = results
 
-    if (isRestIDQuery && (deletedDocuments.length === 0)) {
-      let error = new Error('Document not found')
+      if (isRestIDQuery && (deletedDocuments.length === 0)) {
+        let error = new Error('Document not found')
 
-      error.statusCode = 404
+        error.statusCode = 404
 
-      return Promise.reject(error)
-    }
-
-    // Create a revision for each of the documents about to be deleted.
-    if (this.history && deletedDocuments.length > 0) {
-      return this.history.createEach(
-        deletedDocuments,
-        'delete',
-        this
-      )
-    }
-  }).then(() => {
-    // Run any `beforeDelete` hooks.
-    if (this.settings.hooks && this.settings.hooks.beforeDelete) {
-      return new Promise((resolve, reject) => {
-        async.reduce(
-          this.settings.hooks.beforeDelete,
-          deleteQuery,
-          (current, hookConfig, callback) => {
-            let hook = new Hook(hookConfig, 'beforeDelete')
-            let hookError = {}
-
-            Promise.resolve(
-              hook.apply(
-                current,
-                deletedDocuments,
-                hookError,
-                this.schema,
-                this.name,
-                req
-              )
-            ).then(newQuery => {
-              callback((newQuery === null) ? {} : null, newQuery || deleteQuery)
-            }).catch(error => {
-              callback(hook.formatError(error))
-            })
-          },
-          (error, result) => {
-            if (error) return reject(error)
-
-            resolve(result)
-          }
-        )
-      })
-    }
-
-    return deleteQuery
-  }).then(query => {
-    return this.connection.db.delete({
-      collection: this.name,
-      query,
-      schema: this.schema
-    }).then(result => {
-      if (result.deletedCount > 0) {
-        // Run any `afterDelete` hooks.
-        if (this.settings.hooks && (typeof this.settings.hooks.afterDelete === 'object')) {
-          this.settings.hooks.afterDelete.forEach((hookConfig, index) => {
-            let hook = new Hook(
-              this.settings.hooks.afterDelete[index],
-              'afterDelete'
-            )
-
-            return hook.apply(
-              query,
-              deletedDocuments,
-              this.schema,
-              this.name
-            )
-          })
-        }
+        return Promise.reject(error)
       }
 
-      result.totalCount = allDocuments.metadata.totalCount - result.deletedCount
+      // Create a revision for each of the documents about to be deleted.
+      if (this.history && deletedDocuments.length > 0) {
+        return this.history.createEach(
+          deletedDocuments,
+          'delete',
+          this
+        )
+      }
+    }).then(() => {
+      // Run any `beforeDelete` hooks.
+      if (this.settings.hooks && this.settings.hooks.beforeDelete) {
+        return new Promise((resolve, reject) => {
+          async.reduce(
+            this.settings.hooks.beforeDelete,
+            query,
+            (current, hookConfig, callback) => {
+              let hook = new Hook(hookConfig, 'beforeDelete')
+              let hookError = {}
 
-      return result
+              Promise.resolve(
+                hook.apply(
+                  current,
+                  deletedDocuments,
+                  hookError,
+                  this.schema,
+                  this.name,
+                  req
+                )
+              ).then(newQuery => {
+                callback((newQuery === null) ? {} : null, newQuery || query)
+              }).catch(error => {
+                callback(hook.formatError(error))
+              })
+            },
+            (error, result) => {
+              if (error) return reject(error)
+
+              resolve(result)
+            }
+          )
+        })
+      }
+
+      return query
+    }).then(query => {
+      return this.connection.db.delete({
+        collection: this.name,
+        query,
+        schema: this.schema
+      }).then(result => {
+        if (result.deletedCount > 0) {
+          // Run any `afterDelete` hooks.
+          if (this.settings.hooks && (typeof this.settings.hooks.afterDelete === 'object')) {
+            this.settings.hooks.afterDelete.forEach((hookConfig, index) => {
+              let hook = new Hook(
+                this.settings.hooks.afterDelete[index],
+                'afterDelete'
+              )
+
+              return hook.apply(
+                query,
+                deletedDocuments,
+                this.schema,
+                this.name
+              )
+            })
+          }
+        }
+
+        result.totalCount = allDocuments.metadata.totalCount - result.deletedCount
+
+        return result
+      })
     })
   }).catch(error => {
     logger.error({module: 'model'}, error)

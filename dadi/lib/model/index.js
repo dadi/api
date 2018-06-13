@@ -2,6 +2,7 @@
 
 const config = require('./../../../config')
 const Connection = require('./connection')
+const dadiMetadata = require('@dadi/metadata')
 const deepMerge = require('deepmerge')
 const fields = require('./../fields')
 const History = require('./history')
@@ -137,6 +138,20 @@ const Model = function (name, schema, connection, settings) {
 
   // Compile a list of hooks by field type.
   this.hooks = this._compileFieldHooks()
+}
+
+/**
+ * Builds an empty response in the expected format, containing
+ * a results array and a metadata block.
+ *
+ * @param  {Object} options
+ * @return {ResultSet}
+ */
+Model.prototype._buildEmptyResponse = function (options = {}) {
+  return {
+    results: [],
+    metadata: dadiMetadata(options, 0)
+  }
 }
 
 /**
@@ -677,7 +692,16 @@ Model.prototype.validateAccess = function ({
     }
 
     if (value.filter) {
-      query = Object.assign({}, query, value.filter)
+      let conflict = Object.keys(value.filter).some(field => {
+        return (
+          query[field] !== undefined &&
+          JSON.stringify(query[field]) !== JSON.stringify(value.filter[field])
+        )
+      })
+
+      query = conflict
+        ? new Error('EMPTY_RESULT_SET')
+        : Object.assign({}, query, value.filter)
     }
 
     if (value.fields) {

@@ -80,6 +80,16 @@ function update ({
     query,
     type: 'update'
   }).then(({query: aclQuery, schema}) => {
+    // If merging the request query with ACL data resulted in
+    // an impossible query, we can simply return an empty result
+    // set without even going to the database.    
+    if (
+      aclQuery instanceof Error &&
+      aclQuery.message === 'EMPTY_RESULT_SET'
+    ) {
+      return this._buildEmptyResponse()
+    }
+
     if (validate) {
       // Validate the query.
       let validation = this.validate.query(aclQuery)
@@ -136,106 +146,106 @@ function update ({
       return this.find({
         query
       })
-    })
-  }).then(result => {
-    // Create a copy of the documents that matched the find
-    // query, as these will be updated and we need to send back
-    // to the client a full result set of modified documents.
-    updatedDocuments = result.results
+    }).then(result => {
+      // Create a copy of the documents that matched the find
+      // query, as these will be updated and we need to send back
+      // to the client a full result set of modified documents.
+      updatedDocuments = result.results
 
-    // Run any `beforeUpdate` hooks.
-    if (this.settings.hooks && this.settings.hooks.beforeUpdate) {
-      return new Promise((resolve, reject) => {
-        async.reduce(this.settings.hooks.beforeUpdate, update, (current, hookConfig, callback) => {
-          let hook = new Hook(hookConfig, 'beforeUpdate')
+      // Run any `beforeUpdate` hooks.
+      if (this.settings.hooks && this.settings.hooks.beforeUpdate) {
+        return new Promise((resolve, reject) => {
+          async.reduce(this.settings.hooks.beforeUpdate, update, (current, hookConfig, callback) => {
+            let hook = new Hook(hookConfig, 'beforeUpdate')
 
-          Promise.resolve(hook.apply(current, updatedDocuments, this.schema, this.name, req))
-            .then(newUpdate => {
-              callback((newUpdate === null) ? {} : null, newUpdate)
-            }).catch(err => {
-              callback(hook.formatError(err))
-            })
-        }, (error, newUpdate) => {
-          if (error) {
-            reject(error)
-          }
+            Promise.resolve(hook.apply(current, updatedDocuments, this.schema, this.name, req))
+              .then(newUpdate => {
+                callback((newUpdate === null) ? {} : null, newUpdate)
+              }).catch(err => {
+                callback(hook.formatError(err))
+              })
+          }, (error, newUpdate) => {
+            if (error) {
+              reject(error)
+            }
 
-          resolve(newUpdate)
+            resolve(newUpdate)
+          })
         })
+      }
+
+      return update
+    }).then(update => {
+      return this.connection.db.update({
+        collection: this.name,
+        options: {
+          multi: true
+        },
+        query,
+        schema: this.schema,
+        update: {
+          $set: update,
+          $inc: { _version: 1 }
+        }
       })
-    }
+    }).then(({matchedCount}) => {
+      if (isRestIDQuery && (matchedCount === 0)) {
+        let error = new Error('Not Found')
 
-    return update
-  }).then(update => {
-    return this.connection.db.update({
-      collection: this.name,
-      options: {
-        multi: true
-      },
-      query,
-      schema: this.schema,
-      update: {
-        $set: update,
-        $inc: { _version: 1 }
+        error.statusCode = 404
+
+        return Promise.reject(error)
       }
-    })
-  }).then(({matchedCount}) => {
-    if (isRestIDQuery && (matchedCount === 0)) {
-      let error = new Error('Not Found')
 
-      error.statusCode = 404
-
-      return Promise.reject(error)
-    }
-
-    // Create a revision for each of the updated documents.
-    if (this.history) {
-      return this.history.createEach(
-        updatedDocuments,
-        'update',
-        this
-      )
-    }
-  }).then(() => {
-    let updatedDocumentsQuery = {
-      _id: {
-        '$in': updatedDocuments.map(doc => doc._id.toString())
+      // Create a revision for each of the updated documents.
+      if (this.history) {
+        return this.history.createEach(
+          updatedDocuments,
+          'update',
+          this
+        )
       }
-    }
-
-    return this.find({
-      query: updatedDocumentsQuery,
-      options: {
-        compose: true
+    }).then(() => {
+      let updatedDocumentsQuery = {
+        _id: {
+          '$in': updatedDocuments.map(doc => doc._id.toString())
+        }
       }
-    })
-  }).then(data => {
-    if (data.results.length === 0) {
+
+      return this.find({
+        query: updatedDocumentsQuery,
+        options: {
+          compose: true
+        }
+      })
+    }).then(data => {
+      if (data.results.length === 0) {
+        return data
+      }
+
+      // Run any `afterUpdate` hooks.
+      if (this.settings.hooks && (typeof this.settings.hooks.afterUpdate === 'object')) {
+        this.settings.hooks.afterUpdate.forEach((hookConfig, index) => {
+          let hook = new Hook(this.settings.hooks.afterUpdate[index], 'afterUpdate')
+
+          return hook.apply(data.results, this.schema, this.name)
+        })
+      }
+
+      // Format result set for output.
+      if (!rawOutput) {
+        return this.formatForOutput(data.results, {
+          client,
+          composeOverride: compose
+        }).then(results => {
+          return Object.assign({}, data, {
+            results
+          })
+        })
+      }
+
       return data
-    }
-
-    // Run any `afterUpdate` hooks.
-    if (this.settings.hooks && (typeof this.settings.hooks.afterUpdate === 'object')) {
-      this.settings.hooks.afterUpdate.forEach((hookConfig, index) => {
-        let hook = new Hook(this.settings.hooks.afterUpdate[index], 'afterUpdate')
-
-        return hook.apply(data.results, this.schema, this.name)
-      })
-    }
-
-    // Format result set for output.
-    if (!rawOutput) {
-      return this.formatForOutput(data.results, {
-        client,
-        composeOverride: compose
-      }).then(results => {
-        return Object.assign({}, data, {
-          results
-        })
-      })
-    }
-
-    return data
+    })
   }).catch(error => {
     logger.error({ module: 'model' }, error)
 

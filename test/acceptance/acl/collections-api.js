@@ -42,9 +42,11 @@ describe('Collections API', () => {
         .set('content-type', 'application/json')
         .send(creatingClient)
         .end((err, res) => {
-          help.createDocWithParams(res.body.accessToken, { 'field1': '7', 'title': 'test doc' }, (err, doc) => {
-            help.createDocWithParams(res.body.accessToken, { 'field1': '11', 'title': 'very long title' }, (err, doc) => {
-              help.removeACLData(done)
+          help.dropDatabase('testdb', 'test-schema', () => {
+            help.createDocWithParams(res.body.accessToken, { 'field1': '7', 'title': 'test doc' }, (err, doc) => {
+              help.createDocWithParams(res.body.accessToken, { 'field1': '11', 'title': 'very long title' }, (err, doc) => {
+                help.removeACLData(done)
+              })
             })
           })
         })
@@ -254,7 +256,6 @@ describe('Collections API', () => {
             if (err) return done(err)
             res.statusCode.should.eql(403)
 
-            console.log(res.body)
             done()
           })
         })
@@ -595,6 +596,70 @@ describe('Collections API', () => {
         })
       })
     })
+
+    it('should return 200 and not update any documents when the query differs from the filter permission', function (done) {
+      let testClient = {
+        clientId: 'apiClient',
+        secret: 'someSecret',
+        resources: {
+          'collection:testdb_test-schema': {
+            read: true,
+            update: {
+              filter: {
+                title: 'some title'
+              }
+            }
+          }
+        }
+      }
+
+      help.createACLClient(testClient).then(() => {
+        client
+        .post(config.get('auth.tokenUrl'))
+        .set('content-type', 'application/json')
+        .send(testClient)
+        .expect(200)
+        .end((err, res) => {
+          if (err) return done(err)
+
+          let bearerToken = res.body.accessToken
+
+          client
+          .put(`/vtest/testdb/test-schema`)
+          .send({
+            query: {
+              title: 'test doc'
+            },
+            update: {
+              field1: 'updated'
+            }
+          })
+          .set('content-type', 'application/json')
+          .set('Authorization', `Bearer ${bearerToken}`)
+          .end((err, res) => {
+            if (err) return done(err)
+
+            res.statusCode.should.eql(200)
+            res.body.results.length.should.eql(0)
+
+            client
+            .get(`/vtest/testdb/test-schema?filter={"title":"test doc"}`)
+            .set('content-type', 'application/json')
+            .set('Authorization', `Bearer ${bearerToken}`)
+            .end((err, res) => {
+              if (err) return done(err)
+
+              res.statusCode.should.eql(200)
+              res.body.results.length.should.eql(1)
+
+              res.body.results[0].field1.should.eql('7')
+
+              done()
+            })
+          })
+        })
+      })
+    })    
   })
 
   describe('DELETE', function () {
@@ -665,5 +730,65 @@ describe('Collections API', () => {
         })
       })
     })
+
+    it('should return 204 and not delete any documents when the query differs from the filter permission', function (done) {
+      let testClient = {
+        clientId: 'apiClient',
+        secret: 'someSecret',
+        resources: {
+          'collection:testdb_test-schema': {
+            read: true,
+            delete: {
+              filter: {
+                title: 'some title'
+              }
+            }
+          }
+        }
+      }
+
+      help.createACLClient(testClient).then(() => {
+        client
+        .post(config.get('auth.tokenUrl'))
+        .set('content-type', 'application/json')
+        .send(testClient)
+        .expect(200)
+        .end((err, res) => {
+          if (err) return done(err)
+
+          let bearerToken = res.body.accessToken
+
+          client
+          .delete(`/vtest/testdb/test-schema`)
+          .send({
+            query: {
+              title: 'test doc'
+            }
+          })
+          .set('content-type', 'application/json')
+          .set('Authorization', `Bearer ${bearerToken}`)
+          .end((err, res) => {
+            if (err) return done(err)
+
+            res.statusCode.should.eql(204)
+
+            client
+            .get(`/vtest/testdb/test-schema?filter={"title":"test doc"}`)
+            .set('content-type', 'application/json')
+            .set('Authorization', `Bearer ${bearerToken}`)
+            .end((err, res) => {
+              if (err) return done(err)
+
+              res.statusCode.should.eql(200)
+              res.body.results.length.should.eql(1)
+
+              res.body.results[0].field1.should.eql('7')
+
+              done()
+            })
+          })
+        })
+      })
+    })    
   })
 })

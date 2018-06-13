@@ -10,6 +10,9 @@
 	      "collection": "person"
 	    }
   	},
+    "publishStatus": {
+      "type": "Object"
+    },
     "authorStrict": {
       "type": "Reference",
       "settings": {

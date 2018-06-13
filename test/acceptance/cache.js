@@ -725,7 +725,7 @@ describe('Cache', function (done) {
       }
     })
 
-    it.skip('should return data if key exists in Redis, with correct headers', function (done) {
+    it('should return data if key exists in Redis, with correct headers', function (done) {
       delete require.cache[__dirname + '/../../config.js']
       config.loadFile(config.configPath())
 
@@ -742,7 +742,7 @@ describe('Cache', function (done) {
       var c = cache(app)
       c.cache.cacheHandler.redisClient = fakeredis.createClient()
       c.cache.cacheHandler.redisClient.status = 'ready'
-      c.cache.cacheHandler.redisClient.set(cacheKey, 'DATA')
+      c.cache.cacheHandler.redisClient.set(cacheKey, JSON.stringify({'DATA': 'OK'}))
 
       try {
         app.start(function () {
@@ -759,7 +759,7 @@ describe('Cache', function (done) {
             .end(function (err, res) {
               if (err) return done(err)
 
-              res.text.should.eql('DATA')
+              res.body.should.eql({'DATA': 'OK'})
               res.headers['x-cache'].should.eql('HIT')
 
               app.stop(done)

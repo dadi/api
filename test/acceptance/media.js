@@ -25,7 +25,7 @@ function signAndUpload (data, callback) {
     return client
     .post(res.body.url)
     .set('content-type', 'application/json')
-    .attach('avatar', 'test/acceptance/workspace/media/1f525.png')
+    .attach('avatar', 'test/acceptance/temp-workspace/media/1f525.png')
     .end((err, res) => {
       return callback(err, res)
     })
@@ -312,7 +312,7 @@ describe('Media', function () {
           .put(`/media/${id}`)
           .set('content-type', 'application/json')
           .set('Authorization', `Bearer ${bearerToken}`)
-          .attach('avatar', 'test/acceptance/workspace/media/flowers.jpg')
+          .attach('avatar', 'test/acceptance/temp-workspace/media/flowers.jpg')
           .end((err, res) => {
             res.body.results[0].fileName.should.eql('flowers.jpg')
             res.body.results[0].mimetype.should.eql('image/jpeg')
@@ -706,7 +706,7 @@ describe('Media', function () {
             client
             .post(url)
             .set('content-type', 'application/json')
-            .attach('avatar', 'test/acceptance/workspace/media/1f525.png')
+            .attach('avatar', 'test/acceptance/temp-workspace/media/1f525.png')
             .end((err, res) => {
               if (err) return done(err)
 

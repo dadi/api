@@ -7,6 +7,7 @@ const help = require(__dirname + '/../help')
 const app = require(__dirname + '/../../../dadi/lib/')
 
 let bearerToken
+let configBackup = config.get()
 let connectionString = 'http://' + config.get('server.host') + ':' + config.get('server.port')
 
 describe('Mixed Field', () => {
@@ -25,7 +26,7 @@ describe('Mixed Field', () => {
   })
 
   afterEach(done => {
-    config.set('paths.collections', 'workspace/collections')
+    config.set('paths.collections', configBackup.paths.collections)
     app.stop(done)
   })
 

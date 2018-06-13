@@ -163,7 +163,7 @@ describe('Collections API – GET', function () {
     })
   })
 
-  it.skip('should use apiVersion when getting reference documents if useVersionFilter is set to true', function (done) {
+  it('should use apiVersion when getting reference documents if useVersionFilter is set to true', function (done) {
     config.set('query.useVersionFilter', true)
 
     var bookSchema = {
@@ -265,7 +265,7 @@ describe('Collections API – GET', function () {
                 var spy = sinon.spy(Model.Model.prototype, 'find')
 
                 client
-                .get('/1.0/library/book?filter={ "title": "Harry Potter 2" }&compose=true')
+                .get('/1.0/library/book?filter={ "title": "Harry Potter 2" }')
                 .send({title: 'Harry Potter 2', author: id, booksInSeries: books})
                 .set('content-type', 'application/json')
                 .set('Authorization', 'Bearer ' + bearerToken)
@@ -277,7 +277,7 @@ describe('Collections API – GET', function () {
 
                   // apiVersion should be in the query passed to find
                   args.forEach((arg) => {
-                    should.exist(arg[0]._apiVersion)
+                    should.exist(arg[0].query._apiVersion)
                   })
 
                   var results = res.body.results
@@ -410,7 +410,7 @@ describe('Collections API – GET', function () {
 
                     // apiVersion should be in the query passed to find
                     args.forEach((arg) => {
-                      should.not.exist(arg[0]._apiVersion)
+                      should.not.exist(arg[0].query._apiVersion)
                     })
 
                     var results = res.body.results

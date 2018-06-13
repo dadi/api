@@ -7,6 +7,7 @@ const help = require(__dirname + '/../help')
 const app = require(__dirname + '/../../../dadi/lib/')
 
 let bearerToken
+let configBackup = config.get()
 let connectionString = 'http://' + config.get('server.host') + ':' + config.get('server.port')
 
 describe('Reference Field', () => {
@@ -34,7 +35,7 @@ describe('Reference Field', () => {
   })
 
   afterEach(done => {
-    config.set('paths.collections', 'workspace/collections')
+    config.set('paths.collections', configBackup.paths.collections)
     app.stop(done)
   })
 
@@ -714,7 +715,7 @@ describe('Reference Field', () => {
     it('should compose updated document and return when history is on', done => {
       help.getBearerTokenWithAccessType('admin', function (err, token) {
         // modify schema settings
-        let jsSchemaString = fs.readFileSync(__dirname + '/../workspace/collections/v1/library/collection.book.json', {encoding: 'utf8'})
+        let jsSchemaString = fs.readFileSync(__dirname + '/../temp-workspace/collections/v1/library/collection.book.json', {encoding: 'utf8'})
         let schema = JSON.parse(jsSchemaString)
         schema.settings.storeRevisions = true
 
@@ -785,7 +786,7 @@ describe('Reference Field', () => {
     it('should compose updated document and return when history is off', done => {
       help.getBearerTokenWithAccessType('admin', function (err, token) {
         // modify schema settings
-        let jsSchemaString = fs.readFileSync(__dirname + '/../workspace/collections/v1/library/collection.book.json', {encoding: 'utf8'})
+        let jsSchemaString = fs.readFileSync(__dirname + '/../temp-workspace/collections/v1/library/collection.book.json', {encoding: 'utf8'})
         let schema = JSON.parse(jsSchemaString)
         schema.settings.storeRevisions = false
 

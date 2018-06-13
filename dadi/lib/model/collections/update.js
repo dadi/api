@@ -82,7 +82,7 @@ function update ({
   }).then(({query: aclQuery, schema}) => {
     // If merging the request query with ACL data resulted in
     // an impossible query, we can simply return an empty result
-    // set without even going to the database.    
+    // set without even going to the database.
     if (
       aclQuery instanceof Error &&
       aclQuery.message === 'EMPTY_RESULT_SET'

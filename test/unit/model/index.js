@@ -45,19 +45,14 @@ describe('Model', function () {
     done()
   })
 
-  it.skip('should only create one instance of Model for a specific name', function (done) {
+  it('should only create one instance of Model for a specific name', function (done) {
     model(
       'testModelName',
       help.getModelSchema(),
       null,
       { database: 'testdb' }
-    ).should.equal(
-      model(
-        'testModelName',
-        help.getModelSchema(),
-        null,
-        { database: 'testdb' }
-      )
+    ).should.eql(
+      model('testModelName')
     )
 
     done()

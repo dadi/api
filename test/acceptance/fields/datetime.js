@@ -10,6 +10,7 @@ const app = require(__dirname + '/../../../dadi/lib/')
 
 // variables scoped for use throughout tests
 let bearerToken
+let configBackup = config.get()
 let connectionString = 'http://' + config.get('server.host') + ':' + config.get('server.port')
 
 describe('DateTime Field', function () {
@@ -38,7 +39,7 @@ describe('DateTime Field', function () {
   })
 
   after(() => {
-    config.set('paths.collections', 'workspace/collections')
+    config.set('paths.collections', configBackup.paths.collections)
   })
 
   it('should format a DateTime field as ISO when no format is specified', done => {

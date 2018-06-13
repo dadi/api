@@ -165,7 +165,7 @@ describe('Hooks', function () {
 
   //  config.set('query.useVersionFilter', true)
 
-    sinon.stub(hook.Hook.prototype, 'load').returns(require(__dirname + '/workspace/hooks/layout.js'))
+    sinon.stub(hook.Hook.prototype, 'load').returns(require(__dirname + '/temp-workspace/hooks/layout.js'))
 
     var client = request(connectionString)
 

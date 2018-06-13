@@ -304,6 +304,51 @@ describe('Collections API', () => {
       })
     })
 
+    it('should return 200 with a result set with results from the filter permission, even when no query is supplied', function (done) {
+      let testClient = {
+        clientId: 'apiClient',
+        secret: 'someSecret',
+        resources: { 'collection:testdb_test-schema': PERMISSIONS.FILTER }
+      }
+
+      let params = {
+        filter: JSON.stringify({})
+      }
+
+      help.createACLClient(testClient).then(() => {
+        client
+        .post(config.get('auth.tokenUrl'))
+        .set('content-type', 'application/json')
+        .send(testClient)
+        .expect(200)
+        .end((err, res) => {
+          if (err) return done(err)
+
+          let bearerToken = res.body.accessToken
+          let query = require('querystring').stringify(params)
+
+          client
+          .get(`/vtest/testdb/test-schema/?${query}`)
+          .set('content-type', 'application/json')
+          .set('Authorization', `Bearer ${bearerToken}`)
+          .end((err, res) => {
+            if (err) return done(err)
+            res.statusCode.should.eql(200)
+
+            res.body.results.length.should.be.above(0)
+
+            let allCorrect = res.body.results.every(record => {
+              return record.title === 'very long title'
+            })
+
+            allCorrect.should.eql(true)
+
+            done()
+          })
+        })
+      })
+    })
+
     it('should return 200 with an empty result set when the query differs from the filter permission', function (done) {
       let testClient = {
         clientId: 'apiClient',
@@ -328,7 +373,7 @@ describe('Collections API', () => {
           let query = require('querystring').stringify(params)
 
           client
-          .get(`/vtest/testdb/test-schema/?cache=false&filter={}`)
+          .get(`/vtest/testdb/test-schema/?${query}`)
           .set('content-type', 'application/json')
           .set('Authorization', `Bearer ${bearerToken}`)
           .end((err, res) => {

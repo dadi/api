@@ -1,4 +1,3 @@
-const objectPath = require('object-path')
 const path = require('path')
 
 module.exports.type = 'reference'
@@ -13,9 +12,6 @@ module.exports.type = 'reference'
  */
 function createModelChain (rootModel, fields) {
   return fields.reduce((chain, field, index) => {
-    // Propagating an error state.
-    if (chain === null) return chain
-
     if (chain.length === 0) {
       return chain.concat(rootModel)
     }
@@ -31,7 +27,7 @@ function createModelChain (rootModel, fields) {
       !referenceField.type.length ||
       referenceField.type.toLowerCase() !== 'reference'
     ) {
-      return null
+      return chain.concat(null)
     }
 
     let referenceCollection = field.split('@')[1] ||
@@ -259,11 +255,51 @@ module.exports.beforeQuery = function ({config, field, input, options}) {
   //     }
   //   }
   // }
-  let inputTree = Object.keys(input).reduce((tree, path) => {
-    objectPath.set(tree, path, input[path])
+  //
+  // It looks at the various models in the chain to look for fields
+  // that are not Reference fields. When it finds one, it leaves the
+  // dot-notation in the node key, rather than expanding it out. For
+  // example, imagine that `status` is a field of type Object:
+  //
+  // In:
+  // {
+  //   "book.author.occupation": "writer",
+  //   "book.status.live": true
+  // }
+  //
+  // Out:
+  // {
+  //   "book": {
+  //     "author": {
+  //       "occupation": "writer"
+  //     },
+  //     "status.live": true
+  //   }
+  // }
+  let inputTree = {}
 
-    return tree
-  }, {})
+  Object.keys(input).forEach(path => {
+    let nodes = path.split('.')
+    let modelChain = createModelChain(this, nodes)
+    let pointer = inputTree
+
+    let interrupted = nodes.slice(0, -1).some((node, index) => {
+      if (!modelChain[index + 1]) {
+        let key = nodes.slice(index).join('.')
+
+        pointer[key] = input[path]
+
+        return true
+      }
+
+      pointer[node] = Object.assign({}, pointer[node])
+      pointer = pointer[node]
+    })
+
+    if (!interrupted) {
+      pointer[nodes.slice(-1)] = input[path]
+    }
+  })
 
   // This function takes a tree like the one in the example above and
   // processes it recursively, running the `find` method in the
@@ -298,7 +334,7 @@ module.exports.beforeQuery = function ({config, field, input, options}) {
 
     let firstKey = Object.keys(tree)[0]
     let modelChain = createModelChain(this, path.concat(firstKey))
-    let model = modelChain[modelChain.length - 1]
+    let model = modelChain && modelChain[modelChain.length - 1]
 
     return queue.then(query => {
       if (path.length === 0) {

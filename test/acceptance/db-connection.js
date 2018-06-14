@@ -127,7 +127,6 @@ describe('Database connection', () => {
               if (err) return done(err)
 
               res.statusCode.should.eql(503)
-              res.body.statusCode.should.eql(503)
               res.body.code.should.eql('API-0004')
               res.body.title.should.eql('Database unavailable')
 
@@ -199,7 +198,6 @@ describe('Database connection', () => {
               if (err) return done(err)
 
               res.statusCode.should.eql(503)
-              res.body.statusCode.should.eql(503)
               res.body.code.should.eql('API-0004')
               res.body.title.should.eql('Database unavailable')
 
@@ -287,7 +285,6 @@ describe('Database connection', () => {
                 if (err) return done(err)
 
                 res.statusCode.should.eql(503)
-                res.body.statusCode.should.eql(503)
                 res.body.code.should.eql('API-0004')
                 res.body.title.should.eql('Database unavailable')
 
@@ -361,7 +358,6 @@ describe('Database connection', () => {
               if (err) return done(err)
 
               res.statusCode.should.eql(503)
-              res.body.statusCode.should.eql(503)
               res.body.code.should.eql('API-0004')
               res.body.title.should.eql('Database unavailable')
 
@@ -403,7 +399,6 @@ describe('Database connection', () => {
           datastore._spies.index.called.should.eql(false)
 
           res.statusCode.should.eql(503)
-          res.body.statusCode.should.eql(503)
           res.body.code.should.eql('API-0004')
           res.body.title.should.eql('Database unavailable')
 
@@ -414,7 +409,6 @@ describe('Database connection', () => {
               .set('Authorization', 'Bearer ' + bearerToken)
               .end((err, res) => {
                 res.statusCode.should.eql(503)
-                res.body.statusCode.should.eql(503)
                 res.body.code.should.eql('API-0004')
                 res.body.title.should.eql('Database unavailable')
 
@@ -435,7 +429,6 @@ describe('Database connection', () => {
           datastore._spies.index.called.should.eql(false)
 
           res.statusCode.should.eql(503)
-          res.body.statusCode.should.eql(503)
           res.body.code.should.eql('API-0004')
           res.body.title.should.eql('Database unavailable')
 
@@ -471,7 +464,6 @@ describe('Database connection', () => {
           datastore._spies.index.called.should.eql(false)
 
           res.statusCode.should.eql(503)
-          res.body.statusCode.should.eql(503)
           res.body.code.should.eql('API-0004')
           res.body.title.should.eql('Database unavailable')
 
@@ -485,7 +477,6 @@ describe('Database connection', () => {
               .set('Authorization', 'Bearer ' + bearerToken)
               .end((err, res) => {
                 res.statusCode.should.eql(503)
-                res.body.statusCode.should.eql(503)
                 res.body.code.should.eql('API-0004')
                 res.body.title.should.eql('Database unavailable')
 
@@ -509,7 +500,6 @@ describe('Database connection', () => {
           datastore._spies.index.called.should.eql(false)
 
           res.statusCode.should.eql(503)
-          res.body.statusCode.should.eql(503)
           res.body.code.should.eql('API-0004')
           res.body.title.should.eql('Database unavailable')
 
@@ -559,7 +549,6 @@ describe('Database connection', () => {
           datastore._spies.index.called.should.eql(false)
 
           res.statusCode.should.eql(503)
-          res.body.statusCode.should.eql(503)
           res.body.code.should.eql('API-0004')
           res.body.title.should.eql('Database unavailable')
 
@@ -576,7 +565,6 @@ describe('Database connection', () => {
               .set('Authorization', 'Bearer ' + bearerToken)
               .end((err, res) => {
                 res.statusCode.should.eql(503)
-                res.body.statusCode.should.eql(503)
                 res.body.code.should.eql('API-0004')
                 res.body.title.should.eql('Database unavailable')
 
@@ -603,7 +591,6 @@ describe('Database connection', () => {
           datastore._spies.index.called.should.eql(false)
 
           res.statusCode.should.eql(503)
-          res.body.statusCode.should.eql(503)
           res.body.code.should.eql('API-0004')
           res.body.title.should.eql('Database unavailable')
 
@@ -643,7 +630,6 @@ describe('Database connection', () => {
           datastore._spies.index.called.should.eql(false)
 
           res.statusCode.should.eql(503)
-          res.body.statusCode.should.eql(503)
           res.body.code.should.eql('API-0004')
           res.body.title.should.eql('Database unavailable')
 
@@ -654,7 +640,6 @@ describe('Database connection', () => {
               .set('Authorization', 'Bearer ' + bearerToken)
               .end((err, res) => {
                 res.statusCode.should.eql(503)
-                res.body.statusCode.should.eql(503)
                 res.body.code.should.eql('API-0004')
                 res.body.title.should.eql('Database unavailable')
 
@@ -675,7 +660,6 @@ describe('Database connection', () => {
           datastore._spies.index.called.should.eql(false)
 
           res.statusCode.should.eql(503)
-          res.body.statusCode.should.eql(503)
           res.body.code.should.eql('API-0004')
           res.body.title.should.eql('Database unavailable')
 

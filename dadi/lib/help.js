@@ -1,6 +1,7 @@
 const cache = require('./cache')
 const config = require('./../../config')
 const crypto = require('crypto')
+const ERROR_CODES = require('./../../error-codes')
 const formatError = require('@dadi/format-error')
 const log = require('@dadi/logger')
 const stackTrace = require('stack-trace')
@@ -54,25 +55,19 @@ module.exports.sendBackJSON = function (successCode, res, next) {
           break
 
         case 'DB_DISCONNECTED':
-          body = Object.assign(formatError.createApiError('0004'), {
-            statusCode: 503
-          })
-          statusCode = body.statusCode
+          body = formatError.createError('api', '0004', null, ERROR_CODES)
+          statusCode = 503
 
           break
 
         case 'FORBIDDEN':
-          body = Object.assign(formatError.createApiError('0006'), {
-            statusCode: 403
-          })
+          body = formatError.createError('api', '0006', null, ERROR_CODES)
           statusCode = 403
 
           break
 
         case 'UNAUTHORISED':
-          body = Object.assign(formatError.createApiError('0005'), {
-            statusCode: 401
-          })
+          body = formatError.createError('api', '0005', null, ERROR_CODES)
           statusCode = 401
 
           break

@@ -17,6 +17,7 @@ const PERMISSIONS = {
 }
 
 let client = request(`http://${config.get('server.host')}:${config.get('server.port')}`)
+let docs
 
 describe('Collections API', () => {
   before(done => {
@@ -43,8 +44,10 @@ describe('Collections API', () => {
         .send(creatingClient)
         .end((err, res) => {
           help.dropDatabase('testdb', 'test-schema', () => {
-            help.createDocWithParams(res.body.accessToken, { 'field1': '7', 'title': 'test doc' }, (err, doc) => {
-              help.createDocWithParams(res.body.accessToken, { 'field1': '11', 'title': 'very long title' }, (err, doc) => {
+            help.createDocWithParams(res.body.accessToken, { 'field1': '7', 'title': 'test doc' }, (err, doc1) => {
+              help.createDocWithParams(res.body.accessToken, { 'field1': '11', 'title': 'very long title' }, (err, doc2) => {
+                docs = [doc1._id, doc2._id]
+
                 help.removeACLData(done)
               })
             })
@@ -495,7 +498,7 @@ describe('Collections API', () => {
   })
 
   describe('PUT', function () {
-    it('should return 403 with no update permission', function (done) {
+    it('should return 403 with no update permission (query in body)', function (done) {
       let testClient = {
         clientId: 'apiClient',
         secret: 'someSecret',
@@ -529,7 +532,41 @@ describe('Collections API', () => {
       })
     })
 
-    it('should return 200 with all permissions', function (done) {
+    it('should return 403 with no update permission (querying by ID)', function (done) {
+      let testClient = {
+        clientId: 'apiClient',
+        secret: 'someSecret',
+        resources: { 'collection:testdb_test-schema': PERMISSIONS.READ }
+      }
+
+      let update = { title: 'updated title' }
+
+      help.createACLClient(testClient).then(() => {
+        client
+        .post(config.get('auth.tokenUrl'))
+        .set('content-type', 'application/json')
+        .send(testClient)
+        .expect(200)
+        .end((err, res) => {
+          if (err) return done(err)
+
+          let bearerToken = res.body.accessToken
+
+          client
+          .put(`/vtest/testdb/test-schema/${docs[0]}`)
+          .send(update)
+          .set('content-type', 'application/json')
+          .set('Authorization', `Bearer ${bearerToken}`)
+          .end((err, res) => {
+            if (err) return done(err)
+            res.statusCode.should.eql(403)
+            done()
+          })
+        })
+      })
+    })    
+
+    it('should return 200 with all permissions (query in body)', function (done) {
       let testClient = {
         clientId: 'apiClient',
         secret: 'someSecret',
@@ -563,7 +600,45 @@ describe('Collections API', () => {
       })
     })
 
-    it('should return 200 with update permissions', function (done) {
+    it('should return 200 with all permissions (query by ID)', function (done) {
+      let testClient = {
+        clientId: 'apiClient',
+        secret: 'someSecret',
+        resources: { 'collection:testdb_test-schema': PERMISSIONS.ALL }
+      }
+
+      let update = { title: 'updated title' }
+
+      help.createACLClient(testClient).then(() => {
+        client
+        .post(config.get('auth.tokenUrl'))
+        .set('content-type', 'application/json')
+        .send(testClient)
+        .expect(200)
+        .end((err, res) => {
+          if (err) return done(err)
+
+          let bearerToken = res.body.accessToken
+
+          client
+          .put(`/vtest/testdb/test-schema/${docs[0]}`)
+          .send(update)
+          .set('content-type', 'application/json')
+          .set('Authorization', `Bearer ${bearerToken}`)
+          .end((err, res) => {
+            if (err) return done(err)
+
+            res.statusCode.should.eql(200)
+            res.body.results.length.should.eql(1)
+            res.body.results[0].title.should.eql(update.title)
+
+            done()
+          })
+        })
+      })
+    })    
+
+    it('should return 200 with update permissions (query in body)', function (done) {
       let testClient = {
         clientId: 'apiClient',
         secret: 'someSecret',
@@ -596,6 +671,44 @@ describe('Collections API', () => {
         })
       })
     })
+
+    it('should return 200 with update permissions (query by ID)', function (done) {
+      let testClient = {
+        clientId: 'apiClient',
+        secret: 'someSecret',
+        resources: { 'collection:testdb_test-schema': PERMISSIONS.UPDATE }
+      }
+
+      let update = { title: 'updated title' }
+
+      help.createACLClient(testClient).then(() => {
+        client
+        .post(config.get('auth.tokenUrl'))
+        .set('content-type', 'application/json')
+        .send(testClient)
+        .expect(200)
+        .end((err, res) => {
+          if (err) return done(err)
+
+          let bearerToken = res.body.accessToken
+
+          client
+          .put(`/vtest/testdb/test-schema/${docs[0]}`)
+          .send(update)
+          .set('content-type', 'application/json')
+          .set('Authorization', `Bearer ${bearerToken}`)
+          .end((err, res) => {
+            if (err) return done(err)
+
+            res.statusCode.should.eql(200)
+            res.body.results.length.should.eql(1)
+            res.body.results[0].title.should.eql(update.title)
+
+            done()
+          })
+        })
+      })
+    })    
 
     it('should return 200 and not update any documents when the query differs from the filter permission', function (done) {
       let testClient = {
@@ -663,7 +776,7 @@ describe('Collections API', () => {
   })
 
   describe('DELETE', function () {
-    it('should return 403 with no delete permission', function (done) {
+    it('should return 403 with no delete permission (query in body)', function (done) {
       let testClient = {
         clientId: 'apiClient',
         secret: 'someSecret',
@@ -697,11 +810,47 @@ describe('Collections API', () => {
       })
     })
 
-    it('should return 204 with delete permission', function (done) {
+    it('should return 403 with no delete permission (query by ID)', function (done) {
       let testClient = {
         clientId: 'apiClient',
         secret: 'someSecret',
-        resources: { 'collection:testdb_test-schema': PERMISSIONS.DELETE }
+        resources: { 'collection:testdb_test-schema': PERMISSIONS.READ }
+      }
+
+      help.createACLClient(testClient).then(() => {
+        client
+        .post(config.get('auth.tokenUrl'))
+        .set('content-type', 'application/json')
+        .send(testClient)
+        .expect(200)
+        .end((err, res) => {
+          if (err) return done(err)
+
+          let bearerToken = res.body.accessToken
+
+          client
+          .delete(`/vtest/testdb/test-schema/${docs[0]}`)
+          .set('content-type', 'application/json')
+          .set('Authorization', `Bearer ${bearerToken}`)
+          .end((err, res) => {
+            if (err) return done(err)
+            res.statusCode.should.eql(403)
+            done()
+          })
+        })
+      })
+    })    
+
+    it('should return 204 with delete permission (query in body)', function (done) {
+      let testClient = {
+        clientId: 'apiClient',
+        secret: 'someSecret',
+        resources: {
+          'collection:testdb_test-schema': {
+            read: true,
+            delete: true
+          }
+        }
       }
 
       let payload = { query: { field1: 'fieldValue' } }
@@ -725,11 +874,69 @@ describe('Collections API', () => {
           .end((err, res) => {
             if (err) return done(err)
             res.statusCode.should.eql(204)
-            done()
+
+            client
+            .get(`/vtest/testdb/test-schema?filter={"field1":"fieldValue"}`)
+            .set('content-type', 'application/json')
+            .set('Authorization', `Bearer ${bearerToken}`)
+            .end((err, res) => {
+              if (err) return done(err)
+              res.statusCode.should.eql(200)
+              res.body.results.should.be.Array
+              res.body.results.length.should.eql(0)
+
+              done()
+            })
           })
         })
       })
     })
+
+    it('should return 204 with delete permission (query by ID)', function (done) {
+      let testClient = {
+        clientId: 'apiClient',
+        secret: 'someSecret',
+        resources: {
+          'collection:testdb_test-schema': {
+            read: true,
+            delete: true
+          }
+        }
+      }
+
+      help.createACLClient(testClient).then(() => {
+        client
+        .post(config.get('auth.tokenUrl'))
+        .set('content-type', 'application/json')
+        .send(testClient)
+        .expect(200)
+        .end((err, res) => {
+          if (err) return done(err)
+
+          let bearerToken = res.body.accessToken
+
+          client
+          .delete(`/vtest/testdb/test-schema/${docs[0]}`)
+          .set('content-type', 'application/json')
+          .set('Authorization', `Bearer ${bearerToken}`)
+          .end((err, res) => {
+            if (err) return done(err)
+            res.statusCode.should.eql(204)
+
+            client
+            .get(`/vtest/testdb/test-schema/${docs[0]}`)
+            .set('content-type', 'application/json')
+            .set('Authorization', `Bearer ${bearerToken}`)
+            .end((err, res) => {
+              if (err) return done(err)
+              res.statusCode.should.eql(404)
+
+              done()
+            })
+          })
+        })
+      })
+    })    
 
     it('should return 204 and not delete any documents when the query differs from the filter permission', function (done) {
       let testClient = {

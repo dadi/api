@@ -30,7 +30,7 @@ function deleteFn ({
   }
 
   // Is this a RESTful query by ID?
-  let isRestIDQuery = req && req.params.id
+  let isRestIDQuery = req && req.params && req.params.id
 
   // A reference to all documents in the collection, so that we
   // know how many are left after the operation.

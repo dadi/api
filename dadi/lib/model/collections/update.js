@@ -70,7 +70,7 @@ function update ({
   internals._lastModifiedAt = internals._lastModifiedAt || Date.now()
 
   // Is this a RESTful query by ID?
-  let isRestIDQuery = req && req.params.id
+  let isRestIDQuery = req && req.params && req.params.id
 
   // Get a reference to the documents that will be updated.
   let updatedDocuments = []

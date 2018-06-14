@@ -235,12 +235,8 @@ describe('Object Field', () => {
         client
         .get(`/v1/library/misc/${id}`)
         .set('Authorization', 'Bearer ' + bearerToken)
-        .expect(200)
-        .end((err, res) => {
-          res.body.results.length.should.eql(0)
-
-          done()
-        })
+        .expect(404)
+        .end(done)
       })
     })
   })

@@ -35,6 +35,9 @@ function get ({
   options = {},
   req
 }) {
+  // Is this a RESTful query by ID?
+  let isRestIDQuery = req && req.params && req.params.id
+
   return new Promise((resolve, reject) => {
     // Run any `beforeGet` hooks.
     if (this.settings.hooks && this.settings.hooks.beforeGet) {
@@ -69,6 +72,14 @@ function get ({
       options
     })
   }).then(response => {
+    if (isRestIDQuery && response.results.length === 0) {
+      let error = new Error('Document not found')
+
+      error.statusCode = 404
+
+      return Promise.reject(error)
+    }
+
     if (this.settings.hooks && this.settings.hooks.afterGet) {
       return new Promise((resolve, reject) => {
         async.reduce(

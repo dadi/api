@@ -1486,4 +1486,87 @@ describe('Model', function () {
       })
     })
   })
+
+  describe('`_mergeQueryAndAclFields` method', () => {
+    it('should use the fields provided by the query if ACL does not specify any', () => {
+      let testModel = model(
+        'testModelName',
+        help.getModelSchema(),
+        null,
+        { database: 'testdb' }
+      )
+
+      let queryFields = {
+        field1: 1,
+        field2: 1
+      }
+
+      testModel._mergeQueryAndAclFields(queryFields).should.eql(
+        queryFields
+      )
+    })
+
+    it('should use the fields provided by the ACL filter if the query does not specify any', () => {
+      let testModel = model(
+        'testModelName',
+        help.getModelSchema(),
+        null,
+        { database: 'testdb' }
+      )
+
+      let aclFields = {
+        field1: 1,
+        field2: 1
+      }
+
+      testModel._mergeQueryAndAclFields(null, aclFields).should.eql(
+        aclFields
+      )
+    })
+
+    it('should merge the fields from the query and the ACL filter so that the ACL restrictions are respected', () => {
+      let testModel = model(
+        'testModelName',
+        help.getModelSchema(),
+        null,
+        { database: 'testdb' }
+      )
+
+      testModel._mergeQueryAndAclFields(
+        { one: 1 },
+        { one: 1, two: 1 }
+      ).should.eql(
+        { one: 1 }
+      )
+
+      testModel._mergeQueryAndAclFields(
+        { one: 0 },
+        { one: 1, two: 1 }
+      ).should.eql(
+        { two: 1 }
+      )
+
+      testModel._mergeQueryAndAclFields(
+        { one: 0 },
+        { two: 0 }
+      ).should.eql(
+        { one: 0, two: 0 }
+      )
+
+      testModel._mergeQueryAndAclFields(
+        { one: 1, two: 1 },
+        { four: 0 }
+      ).should.eql(
+        { one: 1, two: 1 }
+      )
+
+      should.throws(
+        () => testModel._mergeQueryAndAclFields(
+          { one: 1 },
+          { two: 1 }
+        ),
+        Error
+      )
+    })    
+  })
 })

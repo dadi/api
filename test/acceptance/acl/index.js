@@ -305,7 +305,7 @@ describe('ACL', () => {
           }
         })
       })
-    })    
+    })  
 
     it('should give priority to an object with fields over falsy permissions', () => {
       let fields = {

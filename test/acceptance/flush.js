@@ -58,22 +58,24 @@ describe('Cache', function (done) {
                 help.createDoc(adminBearerToken, function (err, doc) {
                   if (err) return done(err)
 
-                  help.createDoc(adminBearerToken, function (err, doc) {
-                    if (err) return done(err)
-
-                    var client = request('http://' + config.get('server.host') + ':' + config.get('server.port'))
-
-                    client
-                    .get('/vtest/testdb/test-schema')
-                    .set('Authorization', `Bearer ${adminBearerToken}`)
-                    .expect(200)
-                    .end(function (err, res1) {
+                  setTimeout(() => {
+                    help.createDoc(adminBearerToken, function (err, doc) {
                       if (err) return done(err)
-                      res1.headers['x-cache'].should.exist
-                      res1.headers['x-cache'].should.eql('MISS')
-                      done()
-                    })
-                  })
+
+                      var client = request('http://' + config.get('server.host') + ':' + config.get('server.port'))
+
+                      client
+                      .get('/vtest/testdb/test-schema')
+                      .set('Authorization', `Bearer ${adminBearerToken}`)
+                      .expect(200)
+                      .end(function (err, res1) {
+                        if (err) return done(err)
+                        res1.headers['x-cache'].should.exist
+                        res1.headers['x-cache'].should.eql('MISS')
+                        done()
+                      })
+                    })                    
+                  }, 300)
                 })
               }
             )

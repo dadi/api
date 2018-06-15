@@ -17,13 +17,13 @@ Controller.prototype._prepareQuery = function (req) {
 
   // Remove filter params that don't exist in
   // the model schema.
-  if (!Array.isArray(query)) {
-    Object.keys(query).forEach(key => {
-      if (!this.model.isKeyValid(key)) {
-        delete query[key]
-      }
-    })
-  }
+  // if (!Array.isArray(query)) {
+  //   Object.keys(query).forEach(key => {
+  //     if (!this.model.isKeyValid(key)) {
+  //       delete query[key]
+  //     }
+  //   })
+  // }
 
   // If id is present in the url, add to the query.
   if (req.params && req.params.id) {

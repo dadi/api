@@ -393,6 +393,132 @@ describe('Collections API', () => {
     })
   })
 
+  describe('COUNT', function () {
+    it('should return 400 for an invalid query', function (done) {
+      let testClient = {
+        clientId: 'apiClient',
+        secret: 'someSecret',
+        resources: { 'collection:testdb_test-schema': PERMISSIONS.READ }
+      }
+
+      help.createACLClient(testClient).then(() => {
+        client
+        .post(config.get('auth.tokenUrl'))
+        .set('content-type', 'application/json')
+        .send(testClient)
+        .expect(200)
+        .end((err, res) => {
+          if (err) return done(err)
+
+          let bearerToken = res.body.accessToken
+
+          client
+          .get(`/vtest/testdb/test-schema/count?filter={"$where":{"title":"xxx"}}`)
+          .set('content-type', 'application/json')
+          .set('Authorization', `Bearer ${bearerToken}`)
+          .end((err, res) => {
+            if (err) return done(err)
+            res.statusCode.should.eql(400)
+            done()
+          })
+        })
+      })
+    })
+
+    it('should return 403 with no permissions', function (done) {
+      let testClient = {
+        clientId: 'apiClient',
+        secret: 'someSecret',
+        resources: { 'collection:testdb_test-schema': {} }
+      }
+
+      help.createACLClient(testClient).then(() => {
+        client
+        .post(config.get('auth.tokenUrl'))
+        .set('content-type', 'application/json')
+        .send(testClient)
+        .expect(200)
+        .end((err, res) => {
+          if (err) return done(err)
+
+          let bearerToken = res.body.accessToken
+
+          client
+          .get(`/vtest/testdb/test-schema/count`)
+          .set('content-type', 'application/json')
+          .set('Authorization', `Bearer ${bearerToken}`)
+          .end((err, res) => {
+            if (err) return done(err)
+            res.statusCode.should.eql(403)
+            done()
+          })
+        })
+      })
+    })
+
+    it('should return 403 with no read permission', function (done) {
+      let testClient = {
+        clientId: 'apiClient',
+        secret: 'someSecret',
+        resources: { 'collection:testdb_test-schema': PERMISSIONS.NO_READ }
+      }
+
+      help.createACLClient(testClient).then(() => {
+        client
+        .post(config.get('auth.tokenUrl'))
+        .set('content-type', 'application/json')
+        .send(testClient)
+        .expect(200)
+        .end((err, res) => {
+          if (err) return done(err)
+
+          let bearerToken = res.body.accessToken
+
+          client
+          .get(`/vtest/testdb/test-schema/count`)
+          .set('content-type', 'application/json')
+          .set('Authorization', `Bearer ${bearerToken}`)
+          .end((err, res) => {
+            if (err) return done(err)
+            res.statusCode.should.eql(403)
+            done()
+          })
+        })
+      })
+    })
+
+    it('should return 200 with read permission', function (done) {
+      let testClient = {
+        clientId: 'apiClient',
+        secret: 'someSecret',
+        resources: { 'collection:testdb_test-schema': PERMISSIONS.READ }
+      }
+
+      help.createACLClient(testClient).then(() => {
+        client
+        .post(config.get('auth.tokenUrl'))
+        .set('content-type', 'application/json')
+        .send(testClient)
+        .expect(200)
+        .end((err, res) => {
+          if (err) return done(err)
+
+          let bearerToken = res.body.accessToken
+
+          client
+          .get(`/vtest/testdb/test-schema/count`)
+          .set('content-type', 'application/json')
+          .set('Authorization', `Bearer ${bearerToken}`)
+          .end((err, res) => {
+            if (err) return done(err)
+            res.statusCode.should.eql(200)
+            done()
+          })
+        })
+      })
+    })
+  })
+
   describe('POST', function () {
     it('should return 400 with invalid payload', function (done) {
       let testClient = {
@@ -564,7 +690,7 @@ describe('Collections API', () => {
           })
         })
       })
-    })    
+    })
 
     it('should return 200 with all permissions (query in body)', function (done) {
       let testClient = {
@@ -636,7 +762,7 @@ describe('Collections API', () => {
           })
         })
       })
-    })    
+    })
 
     it('should return 200 with update permissions (query in body)', function (done) {
       let testClient = {
@@ -708,7 +834,7 @@ describe('Collections API', () => {
           })
         })
       })
-    })    
+    })
 
     it('should return 200 and not update any documents when the query differs from the filter permission', function (done) {
       let testClient = {
@@ -772,7 +898,7 @@ describe('Collections API', () => {
           })
         })
       })
-    })    
+    })
   })
 
   describe('DELETE', function () {
@@ -839,7 +965,7 @@ describe('Collections API', () => {
           })
         })
       })
-    })    
+    })
 
     it('should return 204 with delete permission (query in body)', function (done) {
       let testClient = {
@@ -936,7 +1062,7 @@ describe('Collections API', () => {
           })
         })
       })
-    })    
+    })
 
     it('should return 204 and not delete any documents when the query differs from the filter permission', function (done) {
       let testClient = {
@@ -996,6 +1122,6 @@ describe('Collections API', () => {
           })
         })
       })
-    })    
+    })
   })
 })

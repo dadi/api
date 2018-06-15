@@ -73,7 +73,7 @@ describe('Controller', () => {
         stub.restore()
       })
 
-      it('should strip unknown params from the query', () => {
+      it('should not strip unknown params from the query', () => {
         let mod = model(
           'testModel',
           help.getModelSchema(),
@@ -91,7 +91,7 @@ describe('Controller', () => {
         let queryParameters = stub.returnsArg(0).args[0][0].query
 
         queryParameters.fieldName.should.equal('test')
-        should.not.exist(queryParameters.busted)
+        should.exist(queryParameters.busted)
 
         stub.restore()
       })
@@ -520,7 +520,7 @@ describe('Controller', () => {
 
         sinon.stub(libHelp, 'clearCache').callsFake(pathname => {
           pathname.should.eql(req.url)
-        })        
+        })
 
         controller(mod).delete(req)
 

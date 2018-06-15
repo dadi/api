@@ -137,7 +137,7 @@ S3Storage.prototype.put = function (stream, folderPath) {
       // create the AWS.Request object
       let putObjectPromise = this.s3.putObject(requestData).promise()
 
-      putObjectPromise.then(data => {
+      return putObjectPromise.then(data => {
         let obj = {
           path: requestData.Key,
           contentLength: contentLength,

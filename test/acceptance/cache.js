@@ -368,7 +368,7 @@ describe('Cache', function (done) {
     })
 
     it('should flush on PUT update request', function (done) {
-       this.timeout(4000)
+      this.timeout(4000)
 
       help.createDoc(bearerToken, function (err, doc) {
         if (err) return done(err)

@@ -1018,6 +1018,62 @@ describe('Media', function () {
           })
         })
       })
+
+      describe('PUT', function () {
+        beforeEach(done => {
+          help.getBearerTokenWithPermissions({
+            resources: {
+              'media:mediaStore': {
+                create: true,
+                read: true,
+                delete: true,
+                update: true
+              }
+            }
+          }, (err, token) => {
+            if (err) return done(err)
+
+            bearerToken = token
+
+            done()
+          })
+        })
+
+        it('should return 400 when no bucket is defined', function (done) {
+          var obj = {
+            fileName: '1f525.png',
+            mimetype: 'image/png'
+          }
+
+          AWS.mock('S3', 'putObject', Promise.resolve({
+            path: obj.filename,
+            contentLength: 100,
+            awsUrl: `https://s3.amazonaws.com/${obj.filename}`
+          }))
+
+          config.set('media.s3.bucketName', 'test-bucket')
+          config.set('media.s3.accessKey', 'xxx')
+          config.set('media.s3.secretKey', 'xyz')
+
+          signAndUpload(obj, (err, res) => {
+            should.exist(res.body.results)
+            res.body.results.should.be.Array
+            res.body.results.length.should.eql(1)
+            res.body.results[0].fileName.should.eql('1f525.png')
+
+            config.set('media.s3.bucketName', '')
+            config.set('media.s3.accessKey', 'xxx')
+            config.set('media.s3.secretKey', 'xyz')
+
+            client
+            .put('/media/' + res.body.results[0]._id)
+            .set('Authorization', `Bearer ${bearerToken}`)
+            .attach('avatar', 'test/acceptance/temp-workspace/media/1f525.png')
+            .expect(400)
+            .end(done)
+          })
+        })
+      })
     })
   })
 })

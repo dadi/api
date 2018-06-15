@@ -108,6 +108,7 @@ S3Storage.prototype.put = function (stream, folderPath) {
         statusText: 'Bad Request',
         message: 'Either no Bucket or Key provided: ' + JSON.stringify(requestData)
       }
+
       return reject(err)
     }
 

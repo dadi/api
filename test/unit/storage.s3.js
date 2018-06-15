@@ -41,6 +41,17 @@ describe('Storage', function (done) {
       return s3Storage.getBucket().should.eql(settings.s3.bucketName)
     })
 
+    it('should determine provider type by inclusion of endpoint', function () {
+      config.set('media.enabled', true)
+      config.set('media.s3.bucketName', 'testbucket')
+      config.set('media.s3.endpoint', 'nyc1')
+
+      var settings = config.get('media')
+      var s3Storage = new S3Storage('test.jpg')
+
+      return s3Storage.providerType.should.eql('DigitalOcean')
+    })
+
     it('should call S3 API with the correct parameters when uploading media', function (done) {
       config.set('media.enabled', true)
       config.set('media.s3.bucketName', 'testbucket')

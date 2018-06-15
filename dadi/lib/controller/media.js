@@ -291,6 +291,8 @@ MediaController.prototype.post = function (req, res, next) {
             })
 
             resolve(response)
+          }).catch(err => {
+            return help.sendBackJSON(err.statusCode, res, next)(err)
           })
         })
       })
@@ -528,9 +530,9 @@ MediaController.prototype.writeFile = function (req, fileName, mimetype, stream)
     let folderPath = path.join(this.route, this.getPath(fileName))
     let storageHandler = StorageFactory.create(fileName)
 
-    storageHandler.put(stream, folderPath).then((result) => {
+    storageHandler.put(stream, folderPath).then(result => {
       return resolve(result)
-    }).catch((err) => {
+    }).catch(err => {
       return reject(err)
     })
   })

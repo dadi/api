@@ -2,6 +2,11 @@ const acl = require('./../model/acl/index')
 const help = require('./../help')
 
 const Roles = function (server) {
+  acl.registerResource(
+    'roles',
+    'API roles'
+  )
+
   server.app.routeMethods('/api/roles', {
     post: this.post.bind(this)
   })

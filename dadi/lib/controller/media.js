@@ -507,7 +507,11 @@ MediaController.prototype.registerRoutes = function (route) {
       return help.sendBackJSON(405, res, next)()
     }
 
-    return this.getFile(req, res, next, route)
+    return this
+      .getFile(req, res, next, route)
+      .catch(err => {
+        return help.sendBackJSON(400, res, next)(err)
+      })
   })
 }
 

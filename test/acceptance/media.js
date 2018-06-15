@@ -915,12 +915,13 @@ describe('Media', function () {
         config.set('media.s3.secretKey', configBackup.media.s3.secretKey)
       })
 
-      it('should return 200 when image is returned', function (done) {
+      describe('GET', function () {
+        it('should return 200 when image is returned', function (done) {
         // return a buffer from the S3 request
-        let stream = fs.createReadStream('./test/acceptance/temp-workspace/media/1f525.png')
-        let buffers = []
+          let stream = fs.createReadStream('./test/acceptance/temp-workspace/media/1f525.png')
+          let buffers = []
 
-        stream
+          stream
           .on('data', function (data) { buffers.push(data) })
           .on('end', function () {
             let buffer = Buffer.concat(buffers)
@@ -933,6 +934,7 @@ describe('Media', function () {
             config.set('media.s3.bucketName', 'test-bucket')
             config.set('media.s3.accessKey', 'xxx')
             config.set('media.s3.secretKey', 'xyz')
+            config.set('media.s3.region', 'eu-west-1')
 
             client
             .get('/media/mock/logo.png')
@@ -948,6 +950,73 @@ describe('Media', function () {
               done()
             })
           })
+        })
+
+        it('should return 400 when no bucket is defined', function (done) {
+          config.set('media.s3.bucketName', '')
+          config.set('media.s3.accessKey', 'xxx')
+          config.set('media.s3.secretKey', 'xyz')
+
+          client
+        .get('/media/mock/logo.png')
+        .set('Authorization', `Bearer ${bearerToken}`)
+        .expect(400)
+        .end(done)
+        })
+      })
+
+      describe('DELETE', function () {
+        beforeEach(done => {
+          help.getBearerTokenWithPermissions({
+            resources: {
+              'media:mediaStore': {
+                create: true,
+                read: true,
+                delete: true
+              }
+            }
+          }, (err, token) => {
+            if (err) return done(err)
+
+            bearerToken = token
+
+            done()
+          })
+        })
+
+        it('should return 400 when no bucket is defined', function (done) {
+          var obj = {
+            fileName: '1f525.png',
+            mimetype: 'image/png'
+          }
+
+          AWS.mock('S3', 'putObject', Promise.resolve({
+            path: obj.filename,
+            contentLength: 100,
+            awsUrl: `https://s3.amazonaws.com/${obj.filename}`
+          }))
+
+          config.set('media.s3.bucketName', 'test-bucket')
+          config.set('media.s3.accessKey', 'xxx')
+          config.set('media.s3.secretKey', 'xyz')
+
+          signAndUpload(obj, (err, res) => {
+            should.exist(res.body.results)
+            res.body.results.should.be.Array
+            res.body.results.length.should.eql(1)
+            res.body.results[0].fileName.should.eql('1f525.png')
+
+            config.set('media.s3.bucketName', '')
+            config.set('media.s3.accessKey', 'xxx')
+            config.set('media.s3.secretKey', 'xyz')
+
+            client
+            .delete('/media/' + res.body.results[0]._id)
+            .set('Authorization', `Bearer ${bearerToken}`)
+            .expect(400)
+            .end(done)
+          })
+        })
       })
     })
   })

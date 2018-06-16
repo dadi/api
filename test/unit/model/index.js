@@ -347,6 +347,22 @@ describe('Model', function () {
         stats.should.exist
       })
     })
+
+    it('should return an error when db is disconnected', () => {
+      let mod = model(
+        'testModelName',
+        help.getModelSchema(),
+        null,
+        { database: 'testdb' }
+      )
+      let connectedDb = mod.connection.db
+      mod.connection.db = null
+      return mod.getStats().catch(err => {
+        mod.connection.db = connectedDb
+        err.should.exist
+        err.message.should.eql('DB_DISCONNECTED')
+      })
+    })
   })
 
   describe('`find` method', function () {
@@ -626,6 +642,49 @@ describe('Model', function () {
             })
             done()
           })
+        })
+      })
+    })
+  })
+
+  describe('`getIndexes` method', function () {
+    beforeEach((done) => {
+      acceptanceHelper.dropDatabase('testdb', err => {
+        done()
+      })
+    })
+
+    it('should return indexes', function (done) {
+      var mod = model('testModelName',
+        help.getModelSchema(),
+        null,
+        {
+          database: 'testdb',
+          index: {
+            enabled: true,
+            keys: {
+              fieldName: 1
+            },
+            options: {
+              unique: false
+            }
+          }
+        }
+      )
+
+      help.whenModelsConnect([mod]).then(() => {
+        mod.create({fieldName: 'ABCDEF'}, function (err, result) {
+          if (err) return done(err)
+
+          setTimeout(function () {
+            // mod.connection.db = null
+
+            mod.getIndexes(indexes => {
+              var result = _.some(indexes, index => { return index.name.indexOf('fieldName') > -1 })
+              result.should.eql(true)
+              done()
+            })
+          }, 1000)
         })
       })
     })
@@ -1567,6 +1626,6 @@ describe('Model', function () {
         ),
         Error
       )
-    })    
+    })
   })
 })

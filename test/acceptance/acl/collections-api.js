@@ -517,6 +517,73 @@ describe('Collections API', () => {
         })
       })
     })
+
+    it('should only count the documents that match the ACL filter, if one is set', function (done) {
+      let testClient = {
+        clientId: 'apiClient',
+        secret: 'someSecret',
+        resources: {
+          'collection:testdb_test-schema': {
+            read: {
+              filter: {
+                field1: 'Value one'
+              }
+            }
+          }
+        }
+      }
+
+      let documents = [
+        { field1: 'Value one' },
+        { field1: 'Value one' },
+        { field1: 'Value one' },
+        { field1: 'Value two' },
+        { field1: 'Value three' }
+      ]      
+
+      help.getBearerTokenWithPermissions({
+        accessType: 'admin'
+      }).then(adminToken => {
+        client
+        .post(`/vtest/testdb/test-schema`)
+        .send(documents)
+        .set('content-type', 'application/json')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .end((err, res) => {
+          if (err) return done(err)
+
+          res.body.results.length.should.eql(documents.length)
+
+          help.createACLClient(testClient).then(() => {
+            client
+            .post(config.get('auth.tokenUrl'))
+            .set('content-type', 'application/json')
+            .send(testClient)
+            .expect(200)
+            .end((err, res) => {
+              if (err) return done(err)
+
+              let bearerToken = res.body.accessToken
+
+              client
+              .get(`/vtest/testdb/test-schema/count`)
+              .set('content-type', 'application/json')
+              .set('Authorization', `Bearer ${bearerToken}`)
+              .end((err, res) => {
+                if (err) return done(err)
+
+                res.statusCode.should.eql(200)
+                res.body.metadata.totalCount.should.eql(
+                  documents.filter(doc => doc.field1 === 'Value one').length
+                )
+
+                done()
+              })
+            })
+          })
+        })        
+      })
+    })    
   })
 
   describe('POST', function () {

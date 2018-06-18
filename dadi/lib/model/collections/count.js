@@ -26,8 +26,9 @@ function count ({
 } = {}) {
   return this.validateAccess({
     client,
+    query,
     type: 'read'
-  }).then(() => {
+  }).then(({query}) => {
     let validation = this.validate.query(query)
 
     if (!validation.success) {

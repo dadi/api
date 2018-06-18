@@ -391,6 +391,70 @@ describe('Collections API', () => {
         })
       })
     })
+
+    it('should return 200 without bearer token if `settings.authenticate` is `false`', function (done) {
+      let modelSettings = Object.assign({}, app.components['/vtest/testdb/test-schema'].model.settings)
+
+      app.components['/vtest/testdb/test-schema'].model.settings.authenticate = false
+
+      client
+      .get(`/vtest/testdb/test-schema`)
+      .set('content-type', 'application/json')
+      .end((err, res) => {
+        if (err) return done(err)
+        res.statusCode.should.eql(200)
+
+        app.components['/vtest/testdb/test-schema'].model.settings = modelSettings
+
+        done()
+      })
+    })
+
+    it('should return 200 without bearer token if `settings.authenticate` is set to an array that does not include `GET`', function (done) {
+      let modelSettings = Object.assign({}, app.components['/vtest/testdb/test-schema'].model.settings)
+
+      app.components['/vtest/testdb/test-schema'].model.settings.authenticate = [
+        "POST",
+        "PUT",
+        "DELETE"
+      ]
+
+      client
+      .get(`/vtest/testdb/test-schema`)
+      .set('content-type', 'application/json')
+      .end((err, res) => {
+        if (err) return done(err)
+        res.statusCode.should.eql(200)
+
+        app.components['/vtest/testdb/test-schema'].model.settings = modelSettings
+
+        done()
+      })
+    })
+
+    it('should return 401 without bearer token if `settings.authenticate` is set to an array that includes `GET`', function (done) {
+      let modelSettings = Object.assign({}, app.components['/vtest/testdb/test-schema'].model.settings)
+
+      app.components['/vtest/testdb/test-schema'].model.settings.authenticate = [
+        "GET",
+        "POST",
+        "PUT",
+        "DELETE"
+      ]
+
+      client
+      .get(`/vtest/testdb/test-schema`)
+      .set('content-type', 'application/json')
+      .end((err, res) => {
+        if (err) return done(err)
+
+        res.statusCode.should.eql(401)
+
+        app.components['/vtest/testdb/test-schema'].model.settings = modelSettings
+
+        done()
+      })
+    })
   })
 
   describe('COUNT', function () {
@@ -581,6 +645,69 @@ describe('Collections API', () => {
               })
             })
           })
+        })
+      })
+    })
+
+    it('should return a count of zero if there is an ACL filter set that does not match any document in the collection', function (done) {
+      let testClient = {
+        clientId: 'apiClient',
+        secret: 'someSecret',
+        resources: {
+          'collection:testdb_test-schema': {
+            read: {
+              filter: {
+                field1: 'Value one'
+              }
+            }
+          }
+        }
+      }
+
+      let documents = [
+        { field1: 'Value two' },
+        { field1: 'Value three' },
+        { field1: 'Value four' }
+      ]      
+
+      help.getBearerTokenWithPermissions({
+        accessType: 'admin'
+      }).then(adminToken => {
+        client
+        .post(`/vtest/testdb/test-schema`)
+        .send(documents)
+        .set('content-type', 'application/json')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .end((err, res) => {
+          if (err) return done(err)
+
+          res.body.results.length.should.eql(documents.length)
+
+          help.createACLClient(testClient).then(() => {
+            client
+            .post(config.get('auth.tokenUrl'))
+            .set('content-type', 'application/json')
+            .send(testClient)
+            .expect(200)
+            .end((err, res) => {
+              if (err) return done(err)
+
+              let bearerToken = res.body.accessToken
+
+              client
+              .get(`/vtest/testdb/test-schema/count`)
+              .set('content-type', 'application/json')
+              .set('Authorization', `Bearer ${bearerToken}`)
+              .end((err, res) => {
+                if (err) return done(err)
+
+                res.statusCode.should.eql(200)
+                res.body.metadata.totalCount.should.eql(0)
+
+                done()
+              })
+            })
+          })
         })        
       })
     })    
@@ -688,6 +815,81 @@ describe('Collections API', () => {
         })
       })
     })
+
+    it('should return 200 without bearer token if `settings.authenticate` is `false`', function (done) {
+      let modelSettings = Object.assign({}, app.components['/vtest/testdb/test-schema'].model.settings)
+
+      app.components['/vtest/testdb/test-schema'].model.settings.authenticate = false
+
+      client
+      .post(`/vtest/testdb/test-schema`)
+      .send({
+        field1: 'fieldValue',
+        title: 'title'
+      })
+      .set('content-type', 'application/json')
+      .end((err, res) => {
+        if (err) return done(err)
+        res.statusCode.should.eql(200)
+
+        app.components['/vtest/testdb/test-schema'].model.settings = modelSettings
+
+        done()
+      })
+    })
+
+    it('should return 200 without bearer token if `settings.authenticate` is set to an array that does not include `POST`', function (done) {
+      let modelSettings = Object.assign({}, app.components['/vtest/testdb/test-schema'].model.settings)
+
+      app.components['/vtest/testdb/test-schema'].model.settings.authenticate = [
+        "GET",
+        "PUT",
+        "DELETE"
+      ]
+
+      client
+      .post(`/vtest/testdb/test-schema`)
+      .send({
+        field1: 'fieldValue',
+        title: 'title'
+      })
+      .end((err, res) => {
+        if (err) return done(err)
+        res.statusCode.should.eql(200)
+
+        app.components['/vtest/testdb/test-schema'].model.settings = modelSettings
+
+        done()
+      })
+    })
+
+    it('should return 401 without bearer token if `settings.authenticate` is set to an array that includes `POST`', function (done) {
+      let modelSettings = Object.assign({}, app.components['/vtest/testdb/test-schema'].model.settings)
+
+      app.components['/vtest/testdb/test-schema'].model.settings.authenticate = [
+        "GET",
+        "POST",
+        "PUT",
+        "DELETE"
+      ]
+
+      client
+      .post(`/vtest/testdb/test-schema`)
+      .send({
+        field1: 'fieldValue',
+        title: 'title'
+      })
+      .set('content-type', 'application/json')
+      .end((err, res) => {
+        if (err) return done(err)
+
+        res.statusCode.should.eql(401)
+
+        app.components['/vtest/testdb/test-schema'].model.settings = modelSettings
+
+        done()
+      })
+    })    
   })
 
   describe('PUT', function () {
@@ -966,6 +1168,93 @@ describe('Collections API', () => {
         })
       })
     })
+
+    it('should return 200 without bearer token if `settings.authenticate` is `false`', function (done) {
+      let modelSettings = Object.assign({}, app.components['/vtest/testdb/test-schema'].model.settings)
+
+      app.components['/vtest/testdb/test-schema'].model.settings.authenticate = false
+
+      client
+      .put(`/vtest/testdb/test-schema`)
+      .send({
+        query: {
+          title: 'test doc'
+        },
+        update: {
+          field1: 'updated'
+        }
+      })
+      .set('content-type', 'application/json')
+      .end((err, res) => {
+        if (err) return done(err)
+        res.statusCode.should.eql(200)
+
+        app.components['/vtest/testdb/test-schema'].model.settings = modelSettings
+
+        done()
+      })
+    })
+
+    it('should return 200 without bearer token if `settings.authenticate` is set to an array that does not include `PUT`', function (done) {
+      let modelSettings = Object.assign({}, app.components['/vtest/testdb/test-schema'].model.settings)
+
+      app.components['/vtest/testdb/test-schema'].model.settings.authenticate = [
+        "GET",
+        "POST",
+        "DELETE"
+      ]
+
+      client
+      .put(`/vtest/testdb/test-schema`)
+      .send({
+        query: {
+          title: 'test doc'
+        },
+        update: {
+          field1: 'updated'
+        }
+      })
+      .end((err, res) => {
+        if (err) return done(err)
+        res.statusCode.should.eql(200)
+
+        app.components['/vtest/testdb/test-schema'].model.settings = modelSettings
+
+        done()
+      })
+    })
+
+    it('should return 401 without bearer token if `settings.authenticate` is set to an array that includes `PUT`', function (done) {
+      let modelSettings = Object.assign({}, app.components['/vtest/testdb/test-schema'].model.settings)
+
+      app.components['/vtest/testdb/test-schema'].model.settings.authenticate = [
+        "GET",
+        "POST",
+        "PUT",
+        "DELETE"
+      ]
+
+      client
+      .put(`/vtest/testdb/test-schema`)
+      .send({
+        query: {
+          title: 'test doc'
+        },
+        update: {
+          field1: 'updated'
+        }
+      })
+      .set('content-type', 'application/json')
+      .end((err, res) => {
+        if (err) return done(err)
+
+        res.statusCode.should.eql(401)
+
+        app.components['/vtest/testdb/test-schema'].model.settings = modelSettings
+
+        done()
+      })
+    })    
   })
 
   describe('DELETE', function () {
@@ -1190,5 +1479,84 @@ describe('Collections API', () => {
         })
       })
     })
+
+    it('should return 204 without bearer token if `settings.authenticate` is `false`', function (done) {
+      let modelSettings = Object.assign({}, app.components['/vtest/testdb/test-schema'].model.settings)
+
+      app.components['/vtest/testdb/test-schema'].model.settings.authenticate = false
+
+      client
+      .delete(`/vtest/testdb/test-schema/${docs[0]}`)
+      .set('content-type', 'application/json')
+      .end((err, res) => {
+        if (err) return done(err)
+        res.statusCode.should.eql(204)
+
+        app.components['/vtest/testdb/test-schema'].model.settings = modelSettings
+
+        done()
+      })
+    })
+
+    it('should return 204 without bearer token if `settings.authenticate` is set to an array that does not include `DELETE`', function (done) {
+      let modelSettings = Object.assign({}, app.components['/vtest/testdb/test-schema'].model.settings)
+
+      app.components['/vtest/testdb/test-schema'].model.settings.authenticate = [
+        "GET",
+        "POST",
+        "PUT"
+      ]
+
+      client
+      .delete(`/vtest/testdb/test-schema/${docs[0]}`)
+      .send({
+        query: {
+          title: 'test doc'
+        },
+        update: {
+          field1: 'updated'
+        }
+      })
+      .end((err, res) => {
+        if (err) return done(err)
+        res.statusCode.should.eql(204)
+
+        app.components['/vtest/testdb/test-schema'].model.settings = modelSettings
+
+        done()
+      })
+    })
+
+    it('should return 401 without bearer token if `settings.authenticate` is set to an array that includes `DELETE`', function (done) {
+      let modelSettings = Object.assign({}, app.components['/vtest/testdb/test-schema'].model.settings)
+
+      app.components['/vtest/testdb/test-schema'].model.settings.authenticate = [
+        "GET",
+        "POST",
+        "PUT",
+        "DELETE"
+      ]
+
+      client
+      .delete(`/vtest/testdb/test-schema/${docs[0]}`)
+      .send({
+        query: {
+          title: 'test doc'
+        },
+        update: {
+          field1: 'updated'
+        }
+      })
+      .set('content-type', 'application/json')
+      .end((err, res) => {
+        if (err) return done(err)
+
+        res.statusCode.should.eql(401)
+
+        app.components['/vtest/testdb/test-schema'].model.settings = modelSettings
+
+        done()
+      })
+    })    
   })
 })

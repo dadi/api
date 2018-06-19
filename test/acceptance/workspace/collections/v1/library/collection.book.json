@@ -22,7 +22,10 @@
     },
   	"booksInSeries": {
 	    "type": "Reference"
-  	}
+  	},
+    "publishStatus": {
+      "type": "Object"
+    }
   },
 	"settings": {
     "cache": true,

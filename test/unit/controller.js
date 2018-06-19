@@ -1,6 +1,6 @@
 const should = require('should')
 const sinon = require('sinon')
-const controller = require(__dirname + '/../../dadi/lib/controller')
+const controller = require(__dirname + '/../../dadi/lib/controller/documents')
 const model = require(__dirname + '/../../dadi/lib/model')
 const cache = require(__dirname + '/../../dadi/lib/cache')
 const help = require(__dirname + '/help')
@@ -73,7 +73,7 @@ describe('Controller', () => {
         stub.restore()
       })
 
-      it('should strip unknown params from the query', () => {
+      it('should not strip unknown params from the query', () => {
         let mod = model(
           'testModel',
           help.getModelSchema(),
@@ -91,7 +91,7 @@ describe('Controller', () => {
         let queryParameters = stub.returnsArg(0).args[0][0].query
 
         queryParameters.fieldName.should.equal('test')
-        should.not.exist(queryParameters.busted)
+        should.exist(queryParameters.busted)
 
         stub.restore()
       })
@@ -305,7 +305,7 @@ describe('Controller', () => {
 
         controller(mod).get(req)
         stub.callCount.should.equal(1)
-        
+
         let queryParameters = stub.returnsArg(0).args[0][0].query
         queryParameters.field1.should.equal('xxx')
 
@@ -374,8 +374,8 @@ describe('Controller', () => {
           { database: 'testdb' }
         )
         let stub = sinon.stub(mod, 'create').resolves({})
-        sinon.stub(libHelp, 'clearCache').callsFake((pathname, callback) => {
-          return callback(null)
+        sinon.stub(libHelp, 'clearCache').callsFake(pathname => {
+          pathname.should.be.String
         })
 
         controller(mod).post({
@@ -398,13 +398,13 @@ describe('Controller', () => {
           { database: 'testdb' }
         )
         let stub = sinon.stub(mod, 'create').resolves({})
-        sinon.stub(libHelp, 'clearCache').callsFake((pathname, callback) => {
-          return callback(null)
+        sinon.stub(libHelp, 'clearCache').callsFake(pathname => {
+          pathname.should.be.String
         })
 
         controller(mod).post({
           params: {},
-          client: {clientId: 'clientTestId'},
+          dadiApiClient: {clientId: 'clientTestId'},
           body: { field1: 'foo' },
           url: '/vtest/testdb/testcoll'
         })
@@ -442,8 +442,8 @@ describe('Controller', () => {
           { database: 'testdb' }
         )
         let stub = sinon.stub(mod, 'update').resolves({})
-        sinon.stub(libHelp, 'clearCache').callsFake((pathname, callback) => {
-          return callback(null)
+        sinon.stub(libHelp, 'clearCache').callsFake(pathname => {
+          pathname.should.be.String
         })
 
         controller(mod).put({
@@ -467,19 +467,19 @@ describe('Controller', () => {
           { database: 'testdb' }
         )
         let stub = sinon.stub(mod, 'update').resolves({})
-        sinon.stub(libHelp, 'clearCache').callsFake((pathname, callback) => {
-          return callback(null)
+        sinon.stub(libHelp, 'clearCache').callsFake(pathname => {
+          pathname.should.be.String
         })
 
         controller(mod).put({
           params: {id: '1234567890'},
-          client: {clientId: 'clientTestId'},
+          dadiApiClient: {clientId: 'clientTestId'},
           body: { field1: 'bar' },
           url: '/vtest/testdb/testcoll/1234567890'
         })
 
         stub.callCount.should.equal(1)
-        
+
         let args = stub.getCall(0).args[0]
 
         args.query._id.should.equal('1234567890')
@@ -513,14 +513,14 @@ describe('Controller', () => {
         )
         let stub = sinon.stub(mod, 'delete').resolves({})
 
-        sinon.stub(libHelp, 'clearCache').callsFake((pathname, callback) => {
-          return callback(null)
-        })
-
         let req = {
           url: '/vtest/testdb/testModel',
           params: { id: 'test123' }
         }
+
+        sinon.stub(libHelp, 'clearCache').callsFake(pathname => {
+          pathname.should.eql(req.url)
+        })
 
         controller(mod).delete(req)
 
@@ -552,6 +552,7 @@ describe('Controller', () => {
         )
         let stub = sinon.stub(mod, 'getStats').resolves({})
         let req = {
+          method: 'get',
           url: '/foo/bar'
         }
 

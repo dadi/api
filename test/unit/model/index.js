@@ -11,9 +11,9 @@ var config = require(__dirname + '/../../../config')
 
 describe('Model', function () {
   beforeEach((done) => {
-    help.clearCollection('testModelName', function() {
-      help.clearCollection('testModelNameHistory', function() {
-         done()
+    help.clearCollection('testModelName', function () {
+      help.clearCollection('testModelNameHistory', function () {
+        done()
       })
     })
   })
@@ -45,19 +45,14 @@ describe('Model', function () {
     done()
   })
 
-  it.skip('should only create one instance of Model for a specific name', function (done) {
+  it('should only create one instance of Model for a specific name', function (done) {
     model(
       'testModelName',
       help.getModelSchema(),
       null,
       { database: 'testdb' }
-    ).should.equal(
-      model(
-        'testModelName',
-        help.getModelSchema(),
-        null,
-        { database: 'testdb' }
-      )
+    ).should.eql(
+      model('testModelName')
     )
 
     done()
@@ -200,7 +195,7 @@ describe('Model', function () {
         }
       )
 
-      setTimeout(function() {
+      setTimeout(function () {
         should.exist(mod1.settings)
         should.exist(mod1.settings.index)
 
@@ -352,6 +347,22 @@ describe('Model', function () {
         stats.should.exist
       })
     })
+
+    it('should return an error when db is disconnected', () => {
+      let mod = model(
+        'testModelName',
+        help.getModelSchema(),
+        null,
+        { database: 'testdb' }
+      )
+      let connectedDb = mod.connection.db
+      mod.connection.db = null
+      return mod.getStats().catch(err => {
+        mod.connection.db = connectedDb
+        err.should.exist
+        err.message.should.eql('DB_DISCONNECTED')
+      })
+    })
   })
 
   describe('`find` method', function () {
@@ -390,7 +401,7 @@ describe('Model', function () {
 
           done()
         })
-      })      
+      })
     })
 
     it('should accept named parameters', () => {
@@ -455,7 +466,7 @@ describe('Model', function () {
 
           done()
         })
-      })      
+      })
     })
 
     it('should accept named parameters', () => {
@@ -533,7 +544,7 @@ describe('Model', function () {
               done()
             })
           })
-        })    
+        })
       })
     })
 
@@ -631,6 +642,49 @@ describe('Model', function () {
             })
             done()
           })
+        })
+      })
+    })
+  })
+
+  describe('`getIndexes` method', function () {
+    beforeEach((done) => {
+      acceptanceHelper.dropDatabase('testdb', err => {
+        done()
+      })
+    })
+
+    it('should return indexes', function (done) {
+      var mod = model('testModelName',
+        help.getModelSchema(),
+        null,
+        {
+          database: 'testdb',
+          index: {
+            enabled: true,
+            keys: {
+              fieldName: 1
+            },
+            options: {
+              unique: false
+            }
+          }
+        }
+      )
+
+      help.whenModelsConnect([mod]).then(() => {
+        mod.create({fieldName: 'ABCDEF'}, function (err, result) {
+          if (err) return done(err)
+
+          setTimeout(function () {
+            // mod.connection.db = null
+
+            mod.getIndexes(indexes => {
+              var result = _.some(indexes, index => { return index.name.indexOf('fieldName') > -1 })
+              result.should.eql(true)
+              done()
+            })
+          }, 1000)
         })
       })
     })
@@ -1026,7 +1080,7 @@ describe('Model', function () {
           should.exist(result && result.results)
           result.results[0].field1.should.equal('foo')
 
-          done()          
+          done()
         }).catch(done)
       })
     })
@@ -1105,7 +1159,7 @@ describe('Model', function () {
           null,
           {database: 'testdb'}
         )
-        
+
         mod.update({fieldName: 'foo'}, {fieldName: '123456'}, err => {
           should.exist(err)
 
@@ -1123,7 +1177,7 @@ describe('Model', function () {
             done()
           }
         )
-      })      
+      })
     })
 
     it('should accept query and update object', () => {
@@ -1148,7 +1202,7 @@ describe('Model', function () {
 
         return mod.find({
           query: {field1: 'bar'}
-        })        
+        })
       }).then(({metadata, results}) => {
         should.exist(results && results[0])
         results[0].field1.should.equal('bar')
@@ -1489,6 +1543,89 @@ describe('Model', function () {
         mod.validate.schema({fieldName: 'qwerty'}).success.should.be.true
         done()
       })
+    })
+  })
+
+  describe('`_mergeQueryAndAclFields` method', () => {
+    it('should use the fields provided by the query if ACL does not specify any', () => {
+      let testModel = model(
+        'testModelName',
+        help.getModelSchema(),
+        null,
+        { database: 'testdb' }
+      )
+
+      let queryFields = {
+        field1: 1,
+        field2: 1
+      }
+
+      testModel._mergeQueryAndAclFields(queryFields).should.eql(
+        queryFields
+      )
+    })
+
+    it('should use the fields provided by the ACL filter if the query does not specify any', () => {
+      let testModel = model(
+        'testModelName',
+        help.getModelSchema(),
+        null,
+        { database: 'testdb' }
+      )
+
+      let aclFields = {
+        field1: 1,
+        field2: 1
+      }
+
+      testModel._mergeQueryAndAclFields(null, aclFields).should.eql(
+        aclFields
+      )
+    })
+
+    it('should merge the fields from the query and the ACL filter so that the ACL restrictions are respected', () => {
+      let testModel = model(
+        'testModelName',
+        help.getModelSchema(),
+        null,
+        { database: 'testdb' }
+      )
+
+      testModel._mergeQueryAndAclFields(
+        { one: 1 },
+        { one: 1, two: 1 }
+      ).should.eql(
+        { one: 1 }
+      )
+
+      testModel._mergeQueryAndAclFields(
+        { one: 0 },
+        { one: 1, two: 1 }
+      ).should.eql(
+        { two: 1 }
+      )
+
+      testModel._mergeQueryAndAclFields(
+        { one: 0 },
+        { two: 0 }
+      ).should.eql(
+        { one: 0, two: 0 }
+      )
+
+      testModel._mergeQueryAndAclFields(
+        { one: 1, two: 1 },
+        { four: 0 }
+      ).should.eql(
+        { one: 1, two: 1 }
+      )
+
+      should.throws(
+        () => testModel._mergeQueryAndAclFields(
+          { one: 1 },
+          { two: 1 }
+        ),
+        Error
+      )
     })
   })
 })

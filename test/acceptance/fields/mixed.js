@@ -7,11 +7,12 @@ const help = require(__dirname + '/../help')
 const app = require(__dirname + '/../../../dadi/lib/')
 
 let bearerToken
+let configBackup = config.get()
 let connectionString = 'http://' + config.get('server.host') + ':' + config.get('server.port')
 
 describe('Mixed Field', () => {
   beforeEach(done => {
-    config.set('paths.collections', 'test/acceptance/workspace/collections')
+    config.set('paths.collections', 'test/acceptance/temp-workspace/collections')
 
     help.dropDatabase('library', 'misc', err => {
       app.start(() => {
@@ -25,7 +26,7 @@ describe('Mixed Field', () => {
   })
 
   afterEach(done => {
-    config.set('paths.collections', 'workspace/collections')
+    config.set('paths.collections', configBackup.paths.collections)
     app.stop(done)
   })
 
@@ -116,12 +117,8 @@ describe('Mixed Field', () => {
           client
           .get(`/v1/library/misc/${id}`)
           .set('Authorization', 'Bearer ' + bearerToken)
-          .expect(200)
-          .end((err, res) => {
-            res.body.results.length.should.eql(0)
-
-            done()
-          })
+          .expect(404)
+          .end(done)
         })
       })
     })
@@ -214,12 +211,8 @@ describe('Mixed Field', () => {
           client
           .get(`/v1/library/misc/${id}`)
           .set('Authorization', 'Bearer ' + bearerToken)
-          .expect(200)
-          .end((err, res) => {
-            res.body.results.length.should.eql(0)
-
-            done()
-          })
+          .expect(404)
+          .end(done)
         })
       })
     })
@@ -292,7 +285,7 @@ describe('Mixed Field', () => {
           done()
         })
       })
-    })    
+    })
 
     it('should update by id', done => {
       let client = request(connectionString)
@@ -431,12 +424,8 @@ describe('Mixed Field', () => {
           client
           .get(`/v1/library/misc/${id}`)
           .set('Authorization', 'Bearer ' + bearerToken)
-          .expect(200)
-          .end((err, res) => {
-            res.body.results.length.should.eql(0)
-
-            done()
-          })
+          .expect(404)
+          .end(done)
         })
       })
     })

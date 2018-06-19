@@ -30,7 +30,7 @@ describe('Collections API – GET', function () {
       fs.rmdirSync(dirs.collections + '/v1/testdb')
     } catch (e) {}
 
-    done()
+    setTimeout(done, 300)
   }
 
   before(function (done) {
@@ -82,7 +82,10 @@ describe('Collections API – GET', function () {
         })
       })
     })
+  })
 
+  beforeEach(done => {
+    cleanup(done)
   })
 
   after(function (done) {
@@ -160,7 +163,7 @@ describe('Collections API – GET', function () {
     })
   })
 
-  it.skip('should use apiVersion when getting reference documents if useVersionFilter is set to true', function (done) {
+  it('should use apiVersion when getting reference documents if useVersionFilter is set to true', function (done) {
     config.set('query.useVersionFilter', true)
 
     var bookSchema = {
@@ -262,7 +265,7 @@ describe('Collections API – GET', function () {
                 var spy = sinon.spy(Model.Model.prototype, 'find')
 
                 client
-                .get('/1.0/library/book?filter={ "title": "Harry Potter 2" }&compose=true')
+                .get('/1.0/library/book?filter={ "title": "Harry Potter 2" }')
                 .send({title: 'Harry Potter 2', author: id, booksInSeries: books})
                 .set('content-type', 'application/json')
                 .set('Authorization', 'Bearer ' + bearerToken)
@@ -274,7 +277,7 @@ describe('Collections API – GET', function () {
 
                   // apiVersion should be in the query passed to find
                   args.forEach((arg) => {
-                    should.exist(arg[0]._apiVersion)
+                    should.exist(arg[0].query._apiVersion)
                   })
 
                   var results = res.body.results
@@ -407,7 +410,7 @@ describe('Collections API – GET', function () {
 
                     // apiVersion should be in the query passed to find
                     args.forEach((arg) => {
-                      should.not.exist(arg[0]._apiVersion)
+                      should.not.exist(arg[0].query._apiVersion)
                     })
 
                     var results = res.body.results
@@ -443,7 +446,7 @@ describe('Collections API – GET', function () {
         .send(jsSchemaString)
         .set('content-type', 'text/plain')
         .set('Authorization', 'Bearer ' + bearerToken)
-        .expect(200)
+        .expect(201)
         .expect('content-type', 'application/json')
         .end(function (err, res) {
           if (err) return done(err)
@@ -493,7 +496,7 @@ describe('Collections API – GET', function () {
         .send(jsSchemaString)
         .set('content-type', 'text/plain')
         .set('Authorization', 'Bearer ' + bearerToken)
-        .expect(200)
+        .expect(201)
         .expect('content-type', 'application/json')
         .end(function (err, res) {
           if (err) return done(err)
@@ -955,7 +958,6 @@ describe('Collections API – GET', function () {
       if (err) return done(err)
 
       var doc = res.body.results[0]
-
       var body = {
         query: { _id: doc._id },
         update: {field1: 'updated'}
@@ -1023,7 +1025,7 @@ describe('Collections API – GET', function () {
         res.body.results[0].field1.should.equal('updated')
 
         client
-        .get('/vtest/testdb/test-schema?includeHistory=true&filter={"$id": "' + doc.$id + '"}')
+        .get('/vtest/testdb/test-schema/' +  doc.$id + '?includeHistory=true')
         .set('Authorization', 'Bearer ' + bearerToken)
         .expect(200)
         .expect('content-type', 'application/json')

@@ -23,11 +23,13 @@ const debug = require('debug')('api:model')
 /**
  * Finds documents in the database.
  *
+ * @param  {Object} client - client to check permissions for
  * @param  {Object} query - query to match documents against
  * @param  {Object} options
  * @return {Promise<ResultSet>}
  */
 function find ({
+  client,
   query = {},
   options = {}
 } = {}) {
@@ -76,17 +78,36 @@ function find ({
     return Promise.reject(err)
   }
 
-  return this._transformQuery(query, options).then(query => {
-    return this.connection.db.find({
-      query,
-      collection: this.name,
-      options: Object.assign({}, options, {
-        compose: undefined,
-        fields: queryFields,
-        historyFilters: undefined
-      }),
-      schema: this.schema,
-      settings: this.settings
+  return this.validateAccess({
+    client,
+    fields: queryFields,
+    query,
+    type: 'read'
+  }).then(({fields, query}) => {
+    // If merging the request query with ACL data resulted in
+    // an impossible query, we can simply return an empty result
+    // set without even going to the database.
+    if (
+      query instanceof Error &&
+      query.message === 'EMPTY_RESULT_SET'
+    ) {
+      return this._buildEmptyResponse(options)
+    }
+
+    queryFields = fields
+
+    return this._transformQuery(query, options).then(query => {
+      return this.connection.db.find({
+        query,
+        collection: this.name,
+        options: Object.assign({}, options, {
+          compose: undefined,
+          fields: queryFields,
+          historyFilters: undefined
+        }),
+        schema: this.schema,
+        settings: this.settings
+      })
     })
   }).then(response => {
     if (options.includeHistory) {

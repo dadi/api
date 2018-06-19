@@ -87,7 +87,7 @@ describe('Collections API – Stats endpoint', function () {
         if (err) return done(err)
 
         app.stop(() => {
-          cleanup(done)  
+          cleanup(done)
         })
       })
   })

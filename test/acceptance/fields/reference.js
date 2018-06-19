@@ -7,11 +7,12 @@ const help = require(__dirname + '/../help')
 const app = require(__dirname + '/../../../dadi/lib/')
 
 let bearerToken
+let configBackup = config.get()
 let connectionString = 'http://' + config.get('server.host') + ':' + config.get('server.port')
 
 describe('Reference Field', () => {
   beforeEach(done => {
-    config.set('paths.collections', 'test/acceptance/workspace/collections')
+    config.set('paths.collections', 'test/acceptance/temp-workspace/collections')
 
     help.dropDatabase('library', 'book', err => {
       if (err) return done(err)
@@ -34,7 +35,7 @@ describe('Reference Field', () => {
   })
 
   afterEach(done => {
-    config.set('paths.collections', 'workspace/collections')
+    config.set('paths.collections', configBackup.paths.collections)
     app.stop(done)
   })
 
@@ -714,7 +715,7 @@ describe('Reference Field', () => {
     it('should compose updated document and return when history is on', done => {
       help.getBearerTokenWithAccessType('admin', function (err, token) {
         // modify schema settings
-        let jsSchemaString = fs.readFileSync(__dirname + '/../workspace/collections/v1/library/collection.book.json', {encoding: 'utf8'})
+        let jsSchemaString = fs.readFileSync(__dirname + '/../temp-workspace/collections/v1/library/collection.book.json', {encoding: 'utf8'})
         let schema = JSON.parse(jsSchemaString)
         schema.settings.storeRevisions = true
 
@@ -785,7 +786,7 @@ describe('Reference Field', () => {
     it('should compose updated document and return when history is off', done => {
       help.getBearerTokenWithAccessType('admin', function (err, token) {
         // modify schema settings
-        let jsSchemaString = fs.readFileSync(__dirname + '/../workspace/collections/v1/library/collection.book.json', {encoding: 'utf8'})
+        let jsSchemaString = fs.readFileSync(__dirname + '/../temp-workspace/collections/v1/library/collection.book.json', {encoding: 'utf8'})
         let schema = JSON.parse(jsSchemaString)
         schema.settings.storeRevisions = false
 
@@ -1429,6 +1430,57 @@ describe('Reference Field', () => {
         })
       })
     })
+
+    it('should filter documents by nested objects properties', done => {
+      let event = {
+        type: 'Book status',
+        book: {
+          title: 'For Whom The Bell Tolls',
+          publishStatus: {
+            status: "published",
+            rights: "public domain"
+          },
+          author: {
+            name: 'Ernest Hemingway'
+          }
+        }
+      }
+
+      config.set('query.useVersionFilter', true)
+
+      let client = request(connectionString)
+      client
+      .post('/v1/library/event')
+      .set('Authorization', 'Bearer ' + bearerToken)
+      .send(event)
+      .expect(200)
+      .end((err, res) => {
+        if (err) return done(err)
+
+        client
+        .get('/v1/library/event?filter={"book.publishStatus.status":"draft"}')
+        .set('Authorization', 'Bearer ' + bearerToken)
+        .expect(200)
+        .end((err, res) => {
+          if (err) return done(err)
+
+          res.body.results.length.should.eql(0)
+
+          client
+          .get('/v1/library/event?filter={"book.publishStatus.status":"published"}')
+          .set('Authorization', 'Bearer ' + bearerToken)
+          .expect(200)
+          .end((err, res) => {
+            if (err) return done(err)
+
+            res.body.results.length.should.eql(1)
+            res.body.results[0].type.should.eql(event.type)
+
+            done()
+          })
+        })  
+      })
+    })    
 
     it('should filter documents by nested properties in multi-collection references', done => {
       let miscItem = {

@@ -6,11 +6,11 @@ var fs = require('fs')
 var app = require(__dirname + '/../../dadi/lib/')
 var help = require(__dirname + '/help')
 
-var originalSchemaPath = __dirname + '/workspace/monitor-collection/collection.monitor-test-schema.json'
-var testSchemaPath = __dirname + '/workspace/collections/vtest/testdb/collection.monitor-test-schema.json'
+var originalSchemaPath = __dirname + '/temp-workspace/monitor-collection/collection.monitor-test-schema.json'
+var testSchemaPath = __dirname + '/temp-workspace/collections/vtest/testdb/collection.monitor-test-schema.json'
 
-var originalEndpointPath = __dirname + '/workspace/monitor-collection/endpoint.monitor-test-endpoint.js'
-var testEndpointPath = __dirname + '/workspace/endpoints/v1/endpoint.monitor-test-endpoint.js'
+var originalEndpointPath = __dirname + '/temp-workspace/monitor-collection/endpoint.monitor-test-endpoint.js'
+var testEndpointPath = __dirname + '/temp-workspace/endpoints/v1/endpoint.monitor-test-endpoint.js'
 
 var bearerToken // used through out tests
 
@@ -76,7 +76,7 @@ describe('File system watching', function () {
           if (err) return done(err)
 
           // Change the schema file's content
-          var schemaPath = __dirname + '/workspace/collections/vtest/testdb/collection.monitor-test-schema.json'
+          var schemaPath = __dirname + '/temp-workspace/collections/vtest/testdb/collection.monitor-test-schema.json'
           // clone so that `require.cache` is unaffected
           var schema = JSON.parse(JSON.stringify(require(schemaPath)))
           schema.fields.field1.type = 'Number'
@@ -98,7 +98,7 @@ describe('File system watching', function () {
         })
     })
 
-    it.skip('should update endpoint component when file changes', function (done) {
+    it('should update endpoint component when file changes', function (done) {
       this.timeout(5000)
       var client = request('http://' + config.get('server.host') + ':' + config.get('server.port'))
 
@@ -119,7 +119,7 @@ describe('File system watching', function () {
           fs.writeFileSync(testEndpointPath, lines.join('\n'))
 
           setTimeout(function () {
-            //console.log(app.components['/v1/monitor-test-endpoint'])
+            // console.log(app.components['/v1/monitor-test-endpoint'])
             client
               .get('/v1/monitor-test-endpoint?cache=false')
               .set('Authorization', 'Bearer ' + bearerToken)
@@ -137,16 +137,16 @@ describe('File system watching', function () {
   })
 
   describe('adding new files', function () {
-    var newSchemaPath = __dirname + '/workspace/collections/vtest2/testdb/collection.new-test-schema.json'
-    var newEndpointPath = __dirname + '/workspace/endpoints/v1/endpoint.new-test-endpoint.js'
+    var newSchemaPath = __dirname + '/temp-workspace/collections/vtest2/testdb/collection.new-test-schema.json'
+    var newEndpointPath = __dirname + '/temp-workspace/endpoints/v1/endpoint.new-test-endpoint.js'
 
     before(function (done) {
       // tests are going to try to create these directories and they shouldn't exist before hand
-      if (fs.existsSync(__dirname + '/workspace/collections/vtest2/testdb')) {
-        fs.rmdirSync(__dirname + '/workspace/collections/vtest2/testdb')
+      if (fs.existsSync(__dirname + '/temp-workspace/collections/vtest2/testdb')) {
+        fs.rmdirSync(__dirname + '/temp-workspace/collections/vtest2/testdb')
       }
-      if (fs.existsSync(__dirname + '/workspace/collections/vtest2')) {
-        fs.rmdirSync(__dirname + '/workspace/collections/vtest2')
+      if (fs.existsSync(__dirname + '/temp-workspace/collections/vtest2')) {
+        fs.rmdirSync(__dirname + '/temp-workspace/collections/vtest2')
       }
 
       done()
@@ -155,18 +155,17 @@ describe('File system watching', function () {
     after(function (done) {
       fs.unlinkSync(newSchemaPath)
       fs.unlinkSync(newEndpointPath)
-      fs.rmdirSync(__dirname + '/workspace/collections/vtest2/testdb')
-      fs.rmdirSync(__dirname + '/workspace/collections/vtest2')
+      fs.rmdirSync(__dirname + '/temp-workspace/collections/vtest2/testdb')
+      fs.rmdirSync(__dirname + '/temp-workspace/collections/vtest2')
       done()
     })
 
     it('should add to collections api when file is added', function (done) {
-
       // make a copy of the test schema in a new collections dir
       var testSchema = fs.readFileSync(originalSchemaPath)
 
-      fs.mkdirSync(__dirname + '/workspace/collections/vtest2')
-      fs.mkdirSync(__dirname + '/workspace/collections/vtest2/testdb')
+      fs.mkdirSync(__dirname + '/temp-workspace/collections/vtest2')
+      fs.mkdirSync(__dirname + '/temp-workspace/collections/vtest2/testdb')
       fs.writeFileSync(newSchemaPath, testSchema)
 
       // allow time for app to respond
@@ -183,7 +182,6 @@ describe('File system watching', function () {
     })
 
     it('should add to endpoints api when file is added', function (done) {
-
       // Change the endpoint file's content
       var endpoint = fs.readFileSync(testEndpointPath).toString()
 
@@ -215,7 +213,7 @@ describe('File system watching', function () {
 
       var client = request('http://' + config.get('server.host') + ':' + config.get('server.port'))
 
-      setTimeout(function() {
+      setTimeout(function () {
         client
           .get('/v1/monitor-test-endpoint?cache=false')
           .set('Authorization', 'Bearer ' + bearerToken)
@@ -229,7 +227,7 @@ describe('File system watching', function () {
 
       var client = request('http://' + config.get('server.host') + ':' + config.get('server.port'))
 
-      setTimeout(function() {
+      setTimeout(function () {
         client
           .get('/vtest/testdb/monitor-test-schema')
           .set('Authorization', 'Bearer ' + bearerToken)

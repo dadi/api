@@ -1,0 +1,38 @@
+  {
+  "0001": {
+    "code": "API-0001",
+    "title": "Missing Index Key",
+    "details": "'${field}' is specified as the primary sort field, but is missing from the index key collection.",
+    "params": ["field"]
+  },
+  "0002": {
+    "code": "API-0002",
+    "title": "Hook Error",
+    "details": "${hookName} - ${errorMessage}",
+    "params": ["hookName", "errorMessage"]
+  },
+  "0003": {
+    "code": "API-0003",
+    "title": "Cache Path Missing",
+    "details": "`path` must be specified in the request body.",
+    "params": []
+  },
+  "0004": {
+    "code": "API-0004",
+    "title": "Database unavailable",
+    "details": "The database is currently unavailable. Please retry the request.",
+    "params": []
+  },
+  "0005": {
+    "code": "API-0005",
+    "title": "Unauthorised",
+    "details": "The request could not be fulfilled because it did not contain a valid bearer token.",
+    "params": []
+  },
+  "0006": {
+    "code": "API-0006",
+    "title": "Access denied",
+    "details": "The bearer token supplied in the request does not have sufficient permissions to perform the operation.",
+    "params": []
+  }  
+}

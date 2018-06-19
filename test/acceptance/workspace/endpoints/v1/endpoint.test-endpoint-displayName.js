@@ -1,12 +1,12 @@
 module.exports.get = function (req, res, next) {
-    res.setHeader('content-type', 'application/json');
-    res.statusCode = 200;
-    res.end(JSON.stringify({message: 'Hello World'}));
-};
+  res.setHeader('content-type', 'application/json')
+  res.statusCode = 200
+  res.end(JSON.stringify({message: 'Hello World'}))
+}
 
 module.exports.model = {
-  "settings": {
-    "authenticate": false,
-    "displayName": "Test Endpoint"
+  'settings': {
+    'authenticate': false,
+    'displayName': 'Test Endpoint'
   }
 }

@@ -689,15 +689,15 @@ describe('Model validator', function () {
 
       it('should return true when using flags along with the pattern', function (done) {
         var validator = new Validator({
-          "schema": {
-            "email": {
-              "type": "String",
-              "label": "Email address",
-              "message": "must be a valid email address",
-              "validation": {
-                "regex": {
-                  "pattern": "^[A-Z]{2,}",
-                  "flags": "gi"
+          'schema': {
+            'email': {
+              'type': 'String',
+              'label': 'Email address',
+              'message': 'must be a valid email address',
+              'validation': {
+                'regex': {
+                  'pattern': '^[A-Z]{2,}',
+                  'flags': 'gi'
                 }
               }
             }
@@ -711,15 +711,15 @@ describe('Model validator', function () {
 
       it('should return false when using flags along with the pattern', function (done) {
         var validator = new Validator({
-          "schema": {
-            "email": {
-              "type": "String",
-              "label": "Email address",
-              "message": "must start with uppercase",
-              "validation": {
-                "regex": {
-                  "pattern": "^[A-Z]{2,}",
-                  "flags": "g"
+          'schema': {
+            'email': {
+              'type': 'String',
+              'label': 'Email address',
+              'message': 'must start with uppercase',
+              'validation': {
+                'regex': {
+                  'pattern': '^[A-Z]{2,}',
+                  'flags': 'g'
                 }
               }
             }

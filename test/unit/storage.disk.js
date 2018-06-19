@@ -63,7 +63,7 @@ describe('Storage', function (done) {
     it('should set a new filename if a file exists with the specified name', function (done) {
       config.set('media.enabled', true)
       config.set('media.storage', 'disk')
-      config.set('media.basePath', 'test/workspace/media')
+      config.set('media.basePath', 'test/temp-workspace/media')
 
       // create the handler
       var storage = StorageFactory.create('test.jpg')
@@ -71,7 +71,7 @@ describe('Storage', function (done) {
       // mock the call to fs.stat, returning no error so we can
       // test the file renaming sequence
       sinon.stub(fs, 'stat').yields(null, {
-        isDirectory: function(path) { return true }
+        isDirectory: function (path) { return true }
       })
 
       // dummy stream

@@ -7,7 +7,8 @@
     "docs": "jsdoc -c ./docs/conf.json -R README.md -r dadi/lib -d docs",
     "commitmsg": "commitlint -e",
     "test:prepare": "rm -rf cache && rm -rf config/config.test.json && rm -rf test/acceptance/temp-workspace && cp -R test/acceptance/workspace test/acceptance/temp-workspace",
-    "test": "npm run test:prepare && standard --fix 'dadi/**/*.js' | snazzy && env NODE_ENV=test ./node_modules/.bin/istanbul cover  --report cobertura --report text --report html --report lcov ./node_modules/mocha/bin/_mocha",
+    "test": "npm run test:prepare && standard --fix 'dadi/**/*.js' | snazzy && env NODE_ENV=test ./node_modules/.bin/istanbul cover  --report cobertura --report text --report html --report lcov ./node_modules/mocha/bin/_mocha && npm run test:cleanup",
+    "test:cleanup": "rm -rf test/acceptance/temp-workspace",
     "posttest": "./scripts/coverage.js",
     "start": "node start.js --node_env=development"
   },
@@ -18,7 +19,7 @@
   },
   "dependencies": {
     "@dadi/boot": "^1.1.3",
-    "@dadi/cache": "^2.0.2",
+    "@dadi/cache": "^3.0.0",
     "@dadi/et": "^2.0.0",
     "@dadi/format-error": "^1.7.0",
     "@dadi/logger": "^1.3.0",

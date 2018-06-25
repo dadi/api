@@ -323,7 +323,7 @@ Access.prototype.resolveOwnTypes = function (matrix, clientId) {
   splitTypes.own.forEach(baseType => {
     let accessType = `${baseType}Own`
 
-    if (!matrix[accessType]) {
+    if (!matrix[accessType] || (matrix[baseType] === true)) {
       return
     }
 

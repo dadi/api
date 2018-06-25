@@ -36,6 +36,26 @@ module.exports.createDocWithParams = function (token, doc, done) {
     })
 }
 
+module.exports.createDocument = function ({
+  version,
+  database,
+  collection,
+  document,
+  token
+}) {
+  return new Promise((resolve, reject) => {
+    request(`http://${config.get('server.host')}:${config.get('server.port')}`)
+    .post(`/${version}/${database}/${collection}`)
+    .set('Authorization', `Bearer ${token}`)
+    .send(document)
+    .end((err, res) => {
+      if (err) return reject(err)
+
+      resolve(res.body)
+    })
+  })
+}
+
 // create a document with random string via the api
 module.exports.createDocWithSpecificVersion = function (token, apiVersion, doc, done) {
   request('http://' + config.get('server.host') + ':' + config.get('server.port'))

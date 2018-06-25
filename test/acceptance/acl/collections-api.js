@@ -43,12 +43,16 @@ describe('Collections API', () => {
         .set('content-type', 'application/json')
         .send(creatingClient)
         .end((err, res) => {
-          help.dropDatabase('testdb', 'test-schema', () => {
-            help.createDocWithParams(res.body.accessToken, { 'field1': '7', 'title': 'test doc' }, (err, doc1) => {
-              help.createDocWithParams(res.body.accessToken, { 'field1': '11', 'title': 'very long title' }, (err, doc2) => {
-                docs = [doc1._id, doc2._id]
+          help.dropDatabase('library', 'person', () => {
+            help.dropDatabase('library', 'book', () => {
+              help.dropDatabase('testdb', 'test-schema', () => {
+                help.createDocWithParams(res.body.accessToken, { 'field1': '7', 'title': 'test doc' }, (err, doc1) => {
+                  help.createDocWithParams(res.body.accessToken, { 'field1': '11', 'title': 'very long title' }, (err, doc2) => {
+                    docs = [doc1._id, doc2._id]
 
-                help.removeACLData(done)
+                    help.removeACLData(done)
+                  })
+                })
               })
             })
           })
@@ -227,6 +231,141 @@ describe('Collections API', () => {
         })
       })
     })
+
+    it('should return 200 and compose a Reference field if the client read permissions on both the parent and referenced collections', function (done) {
+      let testClient = {
+        clientId: 'apiClient',
+        secret: 'someSecret',
+        resources: {
+          'collection:library_book': PERMISSIONS.READ,
+          'collection:library_person': PERMISSIONS.READ
+        }
+      }
+
+      let authorId
+
+      help.getBearerTokenWithPermissions({
+        accessType: 'admin'
+      }).then(adminToken => {
+        return help.createDocument({
+          version: 'v1',
+          database: 'library',
+          collection: 'person',
+          document: {
+            name: 'James Lambie'
+          },
+          token: adminToken
+        }).then(response => {
+          authorId = response.results[0]._id
+
+          return help.createDocument({
+            version: 'v1',
+            database: 'library',
+            collection: 'book',
+            document: {
+              title: 'A Kiwi\'s guide to DADI API',
+              author: authorId
+            },
+            token: adminToken
+          })
+        })
+      }).then(response => {
+        return help.createACLClient(testClient).then(() => {
+          client
+          .post(config.get('auth.tokenUrl'))
+          .set('content-type', 'application/json')
+          .send(testClient)
+          .expect(200)
+          .end((err, res) => {
+            if (err) return done(err)
+
+            let bearerToken = res.body.accessToken
+
+            client
+            .get(`/v1/library/book/${response.results[0]._id}?compose=true`)
+            .set('content-type', 'application/json')
+            .set('Authorization', `Bearer ${bearerToken}`)
+            .end((err, res) => {
+              if (err) return done(err)
+
+              res.statusCode.should.eql(200)
+              res.body.results.length.should.eql(1)
+              res.body.results[0].author.name.should.eql('James Lambie')
+
+              done()
+            })
+          })
+        })        
+      })
+    })
+
+    it('should return 200 if the client has read permission on the given collection, but not compose a Reference field if they do not have read permissions on the referenced collection', function (done) {
+      let testClient = {
+        clientId: 'apiClient',
+        secret: 'someSecret',
+        resources: {
+          'collection:library_book': PERMISSIONS.READ,
+          'collection:library_person': PERMISSIONS.NO_READ
+        }
+      }
+
+      let authorId
+
+      help.getBearerTokenWithPermissions({
+        accessType: 'admin'
+      }).then(adminToken => {
+        return help.createDocument({
+          version: 'v1',
+          database: 'library',
+          collection: 'person',
+          document: {
+            name: 'James Lambie'
+          },
+          token: adminToken
+        }).then(response => {
+          authorId = response.results[0]._id
+
+          return help.createDocument({
+            version: 'v1',
+            database: 'library',
+            collection: 'book',
+            document: {
+              title: 'A Kiwi\'s guide to DADI API',
+              author: authorId
+            },
+            token: adminToken
+          })
+        })
+      }).then(response => {
+        return help.createACLClient(testClient).then(() => {
+          client
+          .post(config.get('auth.tokenUrl'))
+          .set('content-type', 'application/json')
+          .send(testClient)
+          .expect(200)
+          .end((err, res) => {
+            if (err) return done(err)
+
+            let bearerToken = res.body.accessToken
+
+            client
+            .get(`/v1/library/book/${response.results[0]._id}?compose=true`)
+            .set('content-type', 'application/json')
+            .set('Authorization', `Bearer ${bearerToken}`)
+            .end((err, res) => {
+              if (err) return done(err)
+
+              res.statusCode.should.eql(200)
+              res.body.results.length.should.eql(1)
+              res.body.results[0].author.should.eql(authorId)
+              should.not.exist(res.body.results[0]._composed)
+
+              done()
+            })
+          })
+        })        
+      })
+    })    
 
     it('should return 403 with an empty filter permission', function (done) {
       let testClient = {
@@ -1104,6 +1243,84 @@ describe('Collections API', () => {
         })
       })
     })
+
+    it('should return 200 with update permissions after they have been updated', function (done) {
+      let testClient = {
+        clientId: 'apiClient',
+        secret: 'someSecret',
+        resources: {
+          'collection:testdb_test-schema': {
+            create: true,
+            deleteOwn: true,
+            readOwn: true,
+            updateOwn: true
+          }
+        }
+      }
+
+      help.getBearerTokenWithPermissions({
+        accessType: 'admin'
+      }).then(adminToken => {
+        help.createDoc(adminToken, (err, document) => {
+          help.createACLClient(testClient).then(() => {
+            client
+            .post(config.get('auth.tokenUrl'))
+            .set('content-type', 'application/json')
+            .send(testClient)
+            .expect(200)
+            .end((err, res) => {
+              if (err) return done(err)
+
+              let userToken = res.body.accessToken
+
+              client
+              .put(`/vtest/testdb/test-schema/${document._id}`)
+              .send({
+                field1: 'something new'
+              })
+              .set('content-type', 'application/json')
+              .set('Authorization', `Bearer ${userToken}`)
+              .end((err, res) => {
+                if (err) return done(err)
+
+                res.statusCode.should.eql(404)
+
+                client
+                .put(`/api/clients/${testClient.clientId}/resources/collection:testdb_test-schema`)
+                .send({
+                  read: true,
+                  update: true
+                })
+                .set('content-type', 'application/json')
+                .set('Authorization', `Bearer ${adminToken}`)
+                .end((err, res) => {
+                  if (err) return done(err)
+
+                  setTimeout(() => {
+                    client
+                    .put(`/vtest/testdb/test-schema/${document._id}`)
+                    .send({
+                      field1: 'something new'
+                    })
+                    .set('content-type', 'application/json')
+                    .set('Authorization', `Bearer ${userToken}`)
+                    .end((err, res) => {
+                      if (err) return done(err)
+
+                      res.statusCode.should.eql(200)
+                      res.body.results.length.should.eql(1)
+                      res.body.results[0].field1.should.eql('something new')
+
+                      done()
+                    })
+                  }, 1000)
+                })
+              })
+            })
+          })
+        })
+      })
+    })    
 
     it('should return 200 and not update any documents when the query differs from the filter permission', function (done) {
       let testClient = {

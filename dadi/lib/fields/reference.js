@@ -185,6 +185,17 @@ module.exports.beforeOutput = function ({
             })
           })
         )
+      }).catch(err => {
+        // If the `find` has failed due to insufficient permissions,
+        // we swallow the error because we don't want the main request
+        // to fail completely due to a 403 in one of the referenced
+        // collections. If we do nothing here, the document ID will
+        // be left untouched, which is what we want.
+        if (err.message === 'FORBIDDEN') {
+          return
+        }
+
+        return Promise.reject(err)
       })
     })
   ).then(() => {

@@ -1244,6 +1244,84 @@ describe('Collections API', () => {
       })
     })
 
+    it('should return 200 with update permissions after they have been updated', function (done) {
+      let testClient = {
+        clientId: 'apiClient',
+        secret: 'someSecret',
+        resources: {
+          'collection:testdb_test-schema': {
+            create: true,
+            deleteOwn: true,
+            readOwn: true,
+            updateOwn: true
+          }
+        }
+      }
+
+      help.getBearerTokenWithPermissions({
+        accessType: 'admin'
+      }).then(adminToken => {
+        help.createDoc(adminToken, (err, document) => {
+          help.createACLClient(testClient).then(() => {
+            client
+            .post(config.get('auth.tokenUrl'))
+            .set('content-type', 'application/json')
+            .send(testClient)
+            .expect(200)
+            .end((err, res) => {
+              if (err) return done(err)
+
+              let userToken = res.body.accessToken
+
+              client
+              .put(`/vtest/testdb/test-schema/${document._id}`)
+              .send({
+                field1: 'something new'
+              })
+              .set('content-type', 'application/json')
+              .set('Authorization', `Bearer ${userToken}`)
+              .end((err, res) => {
+                if (err) return done(err)
+
+                res.statusCode.should.eql(404)
+
+                client
+                .put(`/api/clients/${testClient.clientId}/resources/collection:testdb_test-schema`)
+                .send({
+                  read: true,
+                  update: true
+                })
+                .set('content-type', 'application/json')
+                .set('Authorization', `Bearer ${adminToken}`)
+                .end((err, res) => {
+                  if (err) return done(err)
+
+                  setTimeout(() => {
+                    client
+                    .put(`/vtest/testdb/test-schema/${document._id}`)
+                    .send({
+                      field1: 'something new'
+                    })
+                    .set('content-type', 'application/json')
+                    .set('Authorization', `Bearer ${userToken}`)
+                    .end((err, res) => {
+                      if (err) return done(err)
+
+                      res.statusCode.should.eql(200)
+                      res.body.results.length.should.eql(1)
+                      res.body.results[0].field1.should.eql('something new')
+
+                      done()
+                    })
+                  }, 1000)
+                })
+              })
+            })
+          })
+        })
+      })
+    })    
+
     it('should return 200 and not update any documents when the query differs from the filter permission', function (done) {
       let testClient = {
         clientId: 'apiClient',

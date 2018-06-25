@@ -19,7 +19,7 @@
   },
   "dependencies": {
     "@dadi/boot": "^1.1.3",
-    "@dadi/cache": "^2.0.2",
+    "@dadi/cache": "^3.0.0",
     "@dadi/et": "^2.0.0",
     "@dadi/format-error": "^1.7.0",
     "@dadi/logger": "^1.3.0",

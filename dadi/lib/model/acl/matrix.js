@@ -97,12 +97,38 @@ Matrix.prototype.validate = function (matrix) {
           if (['fields', 'filter'].includes(key)) {
             if (typeof matrix[type][key] !== 'object') {
               errors.push(
-                `Invalid value in access matrix: ${matrix[type]}.${key} (expected object)`
+                `Invalid value in access matrix for key ${type}.${key} (expected object)`
               )
+            } else if (key === 'fields') {
+              let fieldsObj = matrix[type][key]
+              let fields = Object.keys(fieldsObj)
+
+              // A valid fields projection is an object where all fields are
+              // 0 or 1, never combining the two.
+              let invalidProjection = fields.some((field, index) => {
+                if (fieldsObj[field] !== 0 && fieldsObj[field] !== 1) {
+                  return true
+                }
+
+                let nextField = fields[index + 1]
+
+                if (
+                  nextField !== undefined &&
+                  fieldsObj[field] !== fieldsObj[nextField]
+                ) {
+                  return true
+                }
+              })
+
+              if (invalidProjection) {
+                errors.push(
+                  `Invalid field projection in access matrix for ${type} access type. Accepted values for keys are either 0 or 1 and they cannot be combined in the same projection`
+                )
+              }
             }
           } else {
             errors.push(
-              `Invalid key in access matrix: ${key}`
+              `Invalid key in access matrix: ${type}.${key}`
             )
           }
         })

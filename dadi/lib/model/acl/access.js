@@ -154,7 +154,9 @@ Access.prototype.get = function ({clientId = null, accessType = null} = {}, reso
   }).then(({results}) => {
     if (!resource) {
       let accessByResource = results.reduce((output, result) => {
-        output[result.resource] = result.access
+        output[result.resource] = resolveOwnTypes
+          ? this.resolveOwnTypes(result.access, clientId)
+          : result.access
 
         return output
       }, {})

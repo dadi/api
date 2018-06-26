@@ -178,7 +178,9 @@ Client.prototype.resourceAdd = function (clientId, resource, access) {
       },
       rawOutput: true,
       update: {
-        resources: resources.getAll()
+        resources: resources.getAll({
+          formatForInput: true
+        })
       },
       validate: false
     })
@@ -290,7 +292,9 @@ Client.prototype.resourceUpdate = function (clientId, resource, access) {
       },
       rawOutput: true,
       update: {
-        resources: resources.getAll()
+        resources: resources.getAll({
+          formatForInput: true
+        })
       },
       validate: false
     })
@@ -443,7 +447,9 @@ Client.prototype.sanitise = function (client) {
       if (key === 'resources') {
         let resources = new ACLMatrix(value)
 
-        value = resources.format()
+        value = resources.getAll({
+          formatForOutput: true
+        })
       }
 
       output[key] = value

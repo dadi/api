@@ -162,7 +162,9 @@ Role.prototype.resourceAdd = function (role, resource, access) {
       },
       rawOutput: true,
       update: {
-        resources: resources.getAll()
+        resources: resources.getAll({
+          formatForInput: true
+        })
       },
       validate: false
     })
@@ -273,7 +275,9 @@ Role.prototype.resourceUpdate = function (role, resource, access) {
       },
       rawOutput: true,
       update: {
-        resources: resources.getAll()
+        resources: resources.getAll({
+          formatForInput: true
+        })
       },
       validate: false
     })
@@ -300,7 +304,9 @@ Role.prototype.sanitise = function (role) {
       if (key === 'resources') {
         let resources = new ACLMatrix(output[key])
 
-        output[key] = resources.format()
+        output[key] = resources.getAll({
+          formatForOutput: true
+        })
       }
     }
 

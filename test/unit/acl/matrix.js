@@ -62,7 +62,27 @@ describe('ACL access matrix', function () {
       )
     })
 
-    it('should return the access matrix for a given resource and format it for input', () => {
+    it('should return the access matrix for a given resource and add missing access types', () => {
+      let map = {
+        'collection:db_one': {
+          create: true,
+          readOwn: true
+        },
+        'collection:db_two': {
+          create: false,
+          updateOwn: true
+        }
+      }
+      let matrix = new Matrix(map)
+
+      matrix.get('collection:db_one', {
+        addFalsyTypes: true
+      }).should.eql(
+        Object.assign({}, EMPTY_MATRIX, map['collection:db_one'])
+      )
+    })    
+
+    it('should return the access matrix for a given resource and stringify ACL objects', () => {
       let map = {
         'collection:db_one': {
           create: true,
@@ -79,7 +99,7 @@ describe('ACL access matrix', function () {
       let matrix = new Matrix(map)
 
       matrix.get('collection:db_one', {
-        formatForInput: true
+        stringifyObjects: true
       }).should.eql(
         Object.assign(
           {},
@@ -93,7 +113,7 @@ describe('ACL access matrix', function () {
       )
     })
 
-    it('should return the access matrix for a given resource and format it for output', () => {
+    it('should return the access matrix for a given resource and parse ACL objects', () => {
       let map = {
         'collection:db_one': {
           create: true,
@@ -110,11 +130,10 @@ describe('ACL access matrix', function () {
       let matrix = new Matrix(map)
 
       matrix.get('collection:db_one', {
-        formatForOutput: true
+        parseObjects: true
       }).should.eql(
         Object.assign(
           {},
-          EMPTY_MATRIX,
           map['collection:db_one'],
           {
             delete: {
@@ -138,11 +157,10 @@ describe('ACL access matrix', function () {
       let matrix = new Matrix(map)
 
       matrix.get('collection:db_one', {
-        formatForOutput: true
+        parseObjects: true
       }).should.eql(
         Object.assign(
           {},
-          EMPTY_MATRIX,
           map['collection:db_one'],
           {
             delete: false
@@ -169,7 +187,36 @@ describe('ACL access matrix', function () {
       matrix.getAll().should.eql(map)
     })
 
-    it('should return the access matrix for all resources and format them for output', () => {
+    it('should return the access matrix for all resources and add missing access types', () => {
+      let map = {
+        'collection:db_one': {
+          create: true,
+          readOwn: true
+        },
+        'collection:db_two': {
+          create: false,
+          updateOwn: true
+        }
+      }
+      let matrix = new Matrix(map)
+
+      matrix.getAll({
+        addFalsyTypes: true
+      }).should.eql({
+        'collection:db_one': Object.assign(
+          {},
+          EMPTY_MATRIX,
+          map['collection:db_one']
+        ),
+        'collection:db_two': Object.assign(
+          {},
+          EMPTY_MATRIX,
+          map['collection:db_two']
+        )
+      })
+    })    
+
+    it('should return the access matrix for all resources and stringify ACL objects', () => {
       let map = {
         'collection:db_one': {
           create: true,
@@ -197,7 +244,7 @@ describe('ACL access matrix', function () {
       let matrix = new Matrix(map)
 
       matrix.getAll({
-        formatForInput: true
+        stringifyObjects: true
       }).should.eql({
         'collection:db_one': Object.assign(
           {},
@@ -215,12 +262,12 @@ describe('ACL access matrix', function () {
             delete: {
               filter: JSON.stringify(map['collection:db_two'].delete.filter)
             }
-          }          
+          }
         )
       })
     })
 
-    it('should return the access matrix for all resources and format them for output', () => {
+    it('should return the access matrix for all resources and parse ACL objects', () => {
       let map = {
         'collection:db_one': {
           create: true,
@@ -240,11 +287,10 @@ describe('ACL access matrix', function () {
       let matrix = new Matrix(map)
 
       matrix.getAll({
-        formatForOutput: true
+        parseObjects: true
       }).should.eql({
         'collection:db_one': Object.assign(
           {},
-          EMPTY_MATRIX,
           map['collection:db_one'],
           {
             delete: {
@@ -254,7 +300,6 @@ describe('ACL access matrix', function () {
         ),
         'collection:db_two': Object.assign(
           {},
-          EMPTY_MATRIX,
           map['collection:db_two'],
           {
             delete: {

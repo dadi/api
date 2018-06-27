@@ -299,15 +299,7 @@ module.exports = () => {
       let testClient = {
         clientId: 'apiClient',
         secret: 'someSecret',
-        resources: {
-          clients: {
-            update: true
-          },            
-          'collection:library_book': {
-            invalidType: true,
-            read: true
-          }
-        }
+        accessType: 'admin'
       }
       let resource = {
         name: 'collection:library_book',

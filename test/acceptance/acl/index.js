@@ -214,9 +214,9 @@ describe('ACL', () => {
           resources: {
             'some:resource': {
               read: {
-                filter: {
+                filter: JSON.stringify({
                   fieldOne: 'valueOne'
-                }
+                })
               }
             }
           }
@@ -248,10 +248,10 @@ describe('ACL', () => {
           resources: {
             'some:resource': {
               read: {
-                fields: {
+                fields: JSON.stringify({
                   fieldOne: 1,
                   fieldTwo: 1
-                }
+                })
               }
             }
           }
@@ -352,10 +352,10 @@ describe('ACL', () => {
         resources: {
           'some:resource': {
             read: {
-              fields: {
+              fields: JSON.stringify({
                 fieldOne: 1,
                 fieldTwo: 2
-              }
+              })
             }
           }
         }
@@ -366,9 +366,9 @@ describe('ACL', () => {
           resources: {
             'some:resource': {
               read: {
-                fields: {
+                fields: JSON.stringify({
                   fieldThree: 1
-                }
+                })
               }
             }
           }
@@ -381,10 +381,10 @@ describe('ACL', () => {
           resources: {
             'some:resource': {
               read: {
-                fields: {
+                fields: JSON.stringify({
                   fieldThree: 0,
                   fieldFour: 0
-                }
+                })
               }
             }
           }
@@ -410,9 +410,9 @@ describe('ACL', () => {
         resources: {
           'some:resource': {
             read: {
-              fields: {
+              fields: JSON.stringify({
                 fieldOne: 0
-              }
+              })
             }
           }
         }
@@ -423,9 +423,9 @@ describe('ACL', () => {
           resources: {
             'some:resource': {
               read: {
-                fields: {
+                fields: JSON.stringify({
                   fieldOne: 1
-                }
+                })
               }
             }
           }
@@ -438,10 +438,10 @@ describe('ACL', () => {
           resources: {
             'some:resource': {
               read: {
-                fields: {
+                fields: JSON.stringify({
                   fieldThree: 1,
                   fieldFour: 1
-                }
+                })
               }
             }
           }
@@ -463,9 +463,9 @@ describe('ACL', () => {
         resources: {
           'some:resource': {
             read: {
-              fields: {
+              fields: JSON.stringify({
                 fieldOne: 1
-              }
+              })
             }
           }
         }
@@ -476,9 +476,9 @@ describe('ACL', () => {
           resources: {
             'some:resource': {
               read: {
-                fields: {
+                fields: JSON.stringify({
                   fieldTwo: 1
-                }
+                })
               }
             }
           }
@@ -491,10 +491,10 @@ describe('ACL', () => {
           resources: {
             'some:resource': {
               read: {
-                fields: {
+                fields: JSON.stringify({
                   fieldThree: 1,
                   fieldFour: 1
-                }
+                })
               }
             }
           }
@@ -529,16 +529,16 @@ describe('ACL', () => {
           },
           'collection:three': {
             read: {
-              fields: {
+              fields: JSON.stringify({
                 fieldOne: 1
-              }
+              })
             }
           },
           'collection:four': {
             read: {
-              filter: {
+              filter: JSON.stringify({
                 fieldOne: 'value'
-              }
+              })
             }
           }
         }
@@ -555,10 +555,10 @@ describe('ACL', () => {
             },
             'collection:three': {
               read: {
-                fields: {
+                fields: JSON.stringify({
                   fieldTwo: 1,
                   fieldThree: 1
-                }
+                })
               }
             },
             'collection:four': {

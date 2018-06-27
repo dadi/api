@@ -95,6 +95,32 @@ Role.prototype.delete = function (name) {
 }
 
 /**
+ * Sanitises a role, preparing it for output.
+ *
+ * @param  {Object} role
+ * @return {Object}
+ */
+Role.prototype.formatForOutput = function (role) {
+  let sanitisedRole = Object.keys(this.schema).reduce((output, key) => {
+    if (!this.schema[key].hidden) {
+      output[key] = role[key] || this.schema[key].default
+
+      if (key === 'resources') {
+        let resources = new ACLMatrix(output[key])
+
+        output[key] = resources.getAll({
+          addFalsyTypes: true
+        })
+      }
+    }
+
+    return output
+  }, {})
+
+  return sanitisedRole
+}
+
+/**
  * Retrieves the roles that match `name` if it is
  * supplied; otherwise, all roles are returned.
  *
@@ -154,6 +180,7 @@ Role.prototype.resourceAdd = function (role, resource, access) {
       )
     }
 
+    resources.validate(access)
     resources.set(resource, access)
 
     return this.model.update({
@@ -163,7 +190,7 @@ Role.prototype.resourceAdd = function (role, resource, access) {
       rawOutput: true,
       update: {
         resources: resources.getAll({
-          formatForInput: true
+          stringifyObjects: true
         })
       },
       validate: false
@@ -172,7 +199,7 @@ Role.prototype.resourceAdd = function (role, resource, access) {
     return this.broadcastWrite(result)
   }).then(({results}) => {
     return {
-      results: results.map(client => this.sanitise(client))
+      results: results.map(client => this.formatForOutput(client))
     }
   })
 }
@@ -227,7 +254,7 @@ Role.prototype.resourceRemove = function (role, resource) {
     return this.broadcastWrite(result)
   }).then(({results}) => {
     return {
-      results: results.map(client => this.sanitise(client))
+      results: results.map(client => this.formatForOutput(client))
     }
   })
 }
@@ -267,6 +294,7 @@ Role.prototype.resourceUpdate = function (role, resource, access) {
       )
     }
 
+    resources.validate(access)
     resources.set(resource, access)
 
     return this.model.update({
@@ -276,7 +304,7 @@ Role.prototype.resourceUpdate = function (role, resource, access) {
       rawOutput: true,
       update: {
         resources: resources.getAll({
-          formatForInput: true
+          stringifyObjects: true
         })
       },
       validate: false
@@ -285,35 +313,9 @@ Role.prototype.resourceUpdate = function (role, resource, access) {
     return this.broadcastWrite(result)
   }).then(({results}) => {
     return {
-      results: results.map(client => this.sanitise(client))
+      results: results.map(client => this.formatForOutput(client))
     }
   })
-}
-
-/**
- * Sanitises a role, preparing it for output.
- *
- * @param  {Object} role
- * @return {Object}
- */
-Role.prototype.sanitise = function (role) {
-  let sanitisedRole = Object.keys(this.schema).reduce((output, key) => {
-    if (!this.schema[key].hidden) {
-      output[key] = role[key] || this.schema[key].default
-
-      if (key === 'resources') {
-        let resources = new ACLMatrix(output[key])
-
-        output[key] = resources.getAll({
-          formatForOutput: true
-        })
-      }
-    }
-
-    return output
-  }, {})
-
-  return sanitisedRole
 }
 
 Role.prototype.setModel = function (model) {

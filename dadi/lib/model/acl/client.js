@@ -99,6 +99,36 @@ Client.prototype.delete = function (clientId) {
 }
 
 /**
+ * Sanitises a client, preparing it for output. It removes all
+ * internal properties as well as sensitive information, such as
+ * the client secret.
+ *
+ * @param  {Object} client
+ * @return {Object}
+ */
+Client.prototype.formatForOutput = function (client) {
+  let sanitisedClient = Object.keys(this.schema).reduce((output, key) => {
+    if (!this.schema[key].hidden) {
+      let value = client[key] || this.schema[key].default
+
+      if (key === 'resources') {
+        let resources = new ACLMatrix(value)
+
+        value = resources.getAll({
+          addFalsyTypes: true
+        })
+      }
+
+      output[key] = value
+    }
+
+    return output
+  }, {})
+
+  return sanitisedClient
+}
+
+/**
  * Retrieves clients by ID.
  *
  * @param  {String} clientId
@@ -179,7 +209,7 @@ Client.prototype.resourceAdd = function (clientId, resource, access) {
       rawOutput: true,
       update: {
         resources: resources.getAll({
-          formatForInput: true
+          stringifyObjects: true
         })
       },
       validate: false
@@ -188,7 +218,7 @@ Client.prototype.resourceAdd = function (clientId, resource, access) {
     return this.broadcastWrite(result)
   }).then(({results}) => {
     return {
-      results: results.map(client => this.sanitise(client))
+      results: results.map(client => this.formatForOutput(client))
     }
   })
 }
@@ -243,7 +273,7 @@ Client.prototype.resourceRemove = function (clientId, resource) {
     return this.broadcastWrite(result)
   }).then(({results}) => {
     return {
-      results: results.map(client => this.sanitise(client))
+      results: results.map(client => this.formatForOutput(client))
     }
   })
 }
@@ -293,7 +323,7 @@ Client.prototype.resourceUpdate = function (clientId, resource, access) {
       rawOutput: true,
       update: {
         resources: resources.getAll({
-          formatForInput: true
+          stringifyObjects: true
         })
       },
       validate: false
@@ -302,7 +332,7 @@ Client.prototype.resourceUpdate = function (clientId, resource, access) {
     return this.broadcastWrite(result)
   }).then(({results}) => {
     return {
-      results: results.map(client => this.sanitise(client))
+      results: results.map(client => this.formatForOutput(client))
     }
   })
 }
@@ -366,7 +396,7 @@ Client.prototype.roleAdd = function (clientId, roles) {
     return this.broadcastWrite(result)
   }).then(({results}) => {
     return {
-      results: results.map(client => this.sanitise(client))
+      results: results.map(client => this.formatForOutput(client))
     }
   })
 }
@@ -426,39 +456,9 @@ Client.prototype.roleRemove = function (clientId, roles) {
   }).then(({results}) => {
     return {
       removed: rolesRemoved,
-      results: results.map(client => this.sanitise(client))
+      results: results.map(client => this.formatForOutput(client))
     }
   })
-}
-
-/**
- * Sanitises a client, preparing it for output. It removes all
- * internal properties as well as sensitive information, such as
- * the client secret.
- *
- * @param  {Object} client
- * @return {Object}
- */
-Client.prototype.sanitise = function (client) {
-  let sanitisedClient = Object.keys(this.schema).reduce((output, key) => {
-    if (!this.schema[key].hidden) {
-      let value = client[key] || this.schema[key].default
-
-      if (key === 'resources') {
-        let resources = new ACLMatrix(value)
-
-        value = resources.getAll({
-          formatForOutput: true
-        })
-      }
-
-      output[key] = value
-    }
-
-    return output
-  }, {})
-
-  return sanitisedClient
 }
 
 Client.prototype.setModel = function (model) {

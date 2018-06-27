@@ -78,9 +78,9 @@ describe('Collections endpoint', function () {
         },
         'collection:radio_articles': {
           read: {
-            fields: {
+            fields: JSON.stringify({
               fieldOne: 1
-            }
+            })
           }
         }
       }

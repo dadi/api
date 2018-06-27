@@ -78,27 +78,6 @@ HooksController.prototype._writeHook = function (name, content) {
   })
 }
 
-HooksController.prototype.delete = function (req, res, next) {
-  if (!acl.client.isAdmin(req.dadiApiClient)) {
-    return help.sendBackJSON(null, res, next)(
-      acl.createError(req.dadiApiClient)
-    )
-  }
-
-  let name = req.params.hookName
-  let hook = this._findHooks(name)[0]
-
-  if (!hook) {
-    return help.sendBackJSON(404, res, next)(null)
-  }
-
-  this._deleteHook(name).then(() => {
-    return help.sendBackJSON(204, res, next)(null)
-  }).catch(err => {
-    return help.sendBackJSON(500, res, next)(err)
-  })
-}
-
 HooksController.prototype.get = function (req, res, next) {
   if (!acl.client.isAdmin(req.dadiApiClient)) {
     return help.sendBackJSON(null, res, next)(
@@ -138,58 +117,6 @@ HooksController.prototype.get = function (req, res, next) {
 
     return help.sendBackJSON(200, res, next)(null, {results: hooks})
   }
-}
-
-HooksController.prototype.post = function (req, res, next) {
-  if (!acl.client.isAdmin(req.dadiApiClient)) {
-    return help.sendBackJSON(null, res, next)(
-      acl.createError(req.dadiApiClient)
-    )
-  }
-
-  let name = req.params.hookName
-  let hook = this._findHooks(name)[0]
-
-  if (hook) {
-    return help.sendBackJSON(409, res, next)(null, {
-      err: 'Hook already exists'
-    })
-  }
-
-  return this._writeHook(name, req.body).then(() => {
-    return help.sendBackJSON(201, res, next)(null, {
-      success: true,
-      message: 'Hook created'
-    })
-  }).catch(err => {
-    return help.sendBackJSON(500, res, next)(err)
-  })
-}
-
-HooksController.prototype.put = function (req, res, next) {
-  return acl.access.get(req.dadiApiClient).then(access => {
-    if (access.update !== true) {
-      return help.sendBackJSON(null, res, next)(
-        acl.createError(req.dadiApiClient)
-      )
-    }
-
-    let name = req.params.hookName
-    let hook = this._findHooks(name)[0]
-
-    if (!hook) {
-      return help.sendBackJSON(404, res, next)(null)
-    }
-
-    return this._writeHook(name, req.body).then(() => {
-      return help.sendBackJSON(200, res, next)(null, {
-        success: true,
-        message: 'Hook updated'
-      })
-    }).catch(err => {
-      return help.sendBackJSON(500, res, next)(err)
-    })
-  })
 }
 
 module.exports = (server, hooksPath) => new HooksController(server, hooksPath)

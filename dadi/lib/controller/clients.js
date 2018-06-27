@@ -148,7 +148,7 @@ Clients.prototype.get = function (req, res, next) {
     }
 
     let sanitisedClients = clients.results.map(client => {
-      return model.sanitise(client)
+      return model.formatForOutput(client)
     })
 
     help.sendBackJSON(200, res, next)(null, {
@@ -236,7 +236,7 @@ Clients.prototype.post = function (req, res, next) {
   }).then(({results}) => {
     help.sendBackJSON(201, res, next)(null, {
       results: [
-        model.sanitise(results[0])
+        model.formatForOutput(results[0])
       ]
     })
   }).catch(this.handleError(res, next))
@@ -270,23 +270,27 @@ Clients.prototype.postResource = function (req, res, next) {
       )
     }
 
-    return acl.access.get(req.dadiApiClient, req.body.name).then(access => {
-      let forbiddenType = Object.keys(req.body.access).find(type => {
-        return access[type] !== true
+    // If the client does not have admin access, we need to ensure that
+    // they have each of the access types they are trying to assign.
+    if (!model.isAdmin(req.dadiApiClient)) {
+      return acl.access.get(req.dadiApiClient, req.body.name).then(access => {
+        let forbiddenType = Object.keys(req.body.access).find(type => {
+          return access[type] !== true
+        })
+
+        if (forbiddenType) {
+          return Promise.reject(
+            acl.createError(req.dadiApiClient)
+          )
+        }
       })
-
-      if (forbiddenType) {
-        return Promise.reject(
-          acl.createError(req.dadiApiClient)
-        )
-      }
-
-      return model.resourceAdd(
-        req.params.clientId,
-        req.body.name,
-        req.body.access
-      )
-    })
+    }
+  }).then(() => {
+    return model.resourceAdd(
+      req.params.clientId,
+      req.body.name,
+      req.body.access
+    )
   }).then(({results}) => {
     help.sendBackJSON(201, res, next)(null, {results})
   }).catch(this.handleError(res, next))
@@ -361,23 +365,27 @@ Clients.prototype.putResource = function (req, res, next) {
       )
     }
 
-    return acl.access.get(req.dadiApiClient, req.params.resource).then(access => {
-      let forbiddenType = Object.keys(req.body).find(type => {
-        return access[type] !== true
+    // If the client does not have admin access, we need to ensure that
+    // they have each of the access types they are trying to assign.
+    if (!model.isAdmin(req.dadiApiClient)) {
+      return acl.access.get(req.dadiApiClient, req.params.resource).then(access => {
+        let forbiddenType = Object.keys(req.body).find(type => {
+          return access[type] !== true
+        })
+
+        if (forbiddenType) {
+          return Promise.reject(
+            acl.createError(req.dadiApiClient)
+          )
+        }
       })
-
-      if (forbiddenType) {
-        return Promise.reject(
-          acl.createError(req.dadiApiClient)
-        )
-      }
-
-      return model.resourceUpdate(
-        req.params.clientId,
-        req.params.resource,
-        req.body
-      )
-    })
+    }
+  }).then(() => {
+    return model.resourceUpdate(
+      req.params.clientId,
+      req.params.resource,
+      req.body
+    )
   }).then(({results}) => {
     help.sendBackJSON(200, res, next)(null, {results})
   }).catch(this.handleError(res, next))

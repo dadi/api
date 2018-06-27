@@ -183,15 +183,7 @@ module.exports = () => {
       let testClient = {
         clientId: 'apiClient',
         secret: 'someSecret',
-        resources: {
-          clients: {
-            update: true
-          },            
-          [resource]: {
-            invalidType: true,
-            read: true
-          }
-        }
+        accessType: 'admin'
       }
 
       help.createACLClient(testClient).then(() => {

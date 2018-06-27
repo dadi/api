@@ -100,7 +100,7 @@ AuthMiddleware.prototype.generateToken = function (req, res, next) {
       return this.handleInvalidCredentials(req, res, next)
     }
 
-    let client = clientModel.sanitise(results[0])
+    let client = clientModel.formatForOutput(results[0])
     let payload = {
       clientId,
       accessType: client.accessType

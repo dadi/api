@@ -12,8 +12,7 @@ const PERMISSIONS = {
   UPDATE: { create: false, read: false, update: true, delete: false },
   DELETE: { create: false, read: false, update: false, delete: true },
   READ_EXCLUDE_FIELDS: { read: { fields: { title: 0 } } },
-  NO_FILTER: { filter: { } },
-  FILTER: { read: { filter: { title: 'very long title' } } }
+  FILTER: { read: { filter: '{"title":"very long title"}' } }
 }
 
 let client = request(`http://${config.get('server.host')}:${config.get('server.port')}`)
@@ -365,43 +364,6 @@ describe('Collections API', () => {
           })
         })        
       })
-    })    
-
-    it('should return 403 with an empty filter permission', function (done) {
-      let testClient = {
-        clientId: 'apiClient',
-        secret: 'someSecret',
-        resources: { 'collection:testdb_test-schema': PERMISSIONS.NO_FILTER }
-      }
-
-      let params = {
-        filter: JSON.stringify({ title: { '$ne': 'xyz' } })
-      }
-
-      help.createACLClient(testClient).then(() => {
-        client
-        .post(config.get('auth.tokenUrl'))
-        .set('content-type', 'application/json')
-        .send(testClient)
-        .expect(200)
-        .end((err, res) => {
-          if (err) return done(err)
-
-          let bearerToken = res.body.accessToken
-          let query = require('querystring').stringify(params)
-
-          client
-          .get(`/vtest/testdb/test-schema/?${query}`)
-          .set('content-type', 'application/json')
-          .set('Authorization', `Bearer ${bearerToken}`)
-          .end((err, res) => {
-            if (err) return done(err)
-            res.statusCode.should.eql(403)
-
-            done()
-          })
-        })
-      })
     })
 
     it('should return 200 with a filter permission', function (done) {
@@ -728,9 +690,9 @@ describe('Collections API', () => {
         resources: {
           'collection:testdb_test-schema': {
             read: {
-              filter: {
+              filter: JSON.stringify({
                 field1: 'Value one'
-              }
+              })
             }
           }
         }
@@ -795,9 +757,9 @@ describe('Collections API', () => {
         resources: {
           'collection:testdb_test-schema': {
             read: {
-              filter: {
+              filter: JSON.stringify({
                 field1: 'Value one'
-              }
+              })
             }
           }
         }
@@ -1330,9 +1292,9 @@ describe('Collections API', () => {
           'collection:testdb_test-schema': {
             read: true,
             update: {
-              filter: {
+              filter: JSON.stringify({
                 title: 'some title'
-              }
+              })
             }
           }
         }
@@ -1645,9 +1607,9 @@ describe('Collections API', () => {
           'collection:testdb_test-schema': {
             read: true,
             delete: {
-              filter: {
+              filter: JSON.stringify({
                 title: 'some title'
-              }
+              })
             }
           }
         }

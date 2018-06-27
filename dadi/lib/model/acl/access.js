@@ -1,6 +1,8 @@
-const ACCESS_TYPES = require('./matrix').ACCESS_TYPES
+const ACLMatrix = require('./matrix')
 const clientModel = require('./client')
 const roleModel = require('./role')
+
+const ACCESS_TYPES = ACLMatrix.ACCESS_TYPES
 
 const Access = function () {
   clientModel.setWriteCallback(
@@ -152,30 +154,25 @@ Access.prototype.get = function ({clientId = null, accessType = null} = {}, reso
   return this.model.get({
     query
   }).then(({results}) => {
-    if (!resource) {
-      let accessByResource = results.reduce((output, result) => {
-        output[result.resource] = resolveOwnTypes
-          ? this.resolveOwnTypes(result.access, clientId)
-          : result.access
-
-        return output
-      }, {})
-
-      return accessByResource
+    if (results.length === 0) {
+      return {}
     }
 
-    if (
-      results.length > 0 &&
-      typeof results[0].access === 'object'
-    ) {
-      if (resolveOwnTypes) {
-        return this.resolveOwnTypes(results[0].access, clientId)
-      }
+    let accessMap = new ACLMatrix()
 
-      return results[0].access
+    results.forEach(result => {
+      accessMap.set(result.resource, result.access)
+    })
+
+    if (resource) {
+      let matrix = accessMap.get(resource)
+
+      return resolveOwnTypes
+        ? this.resolveOwnTypes(matrix, clientId)
+        : matrix
     }
 
-    return {}
+    return accessMap.getAll()
   })
 }
 
@@ -389,6 +386,7 @@ Access.prototype.write = function () {
         return this.getRoleChain(client.roles, roleCache).then(chain => {
           // Start with the resources assigned to the client directly.
           let clientResources = client.resources || {}
+          let clientResourcesMap = new ACLMatrix(clientResources)
 
           // Take the resources associated with each role and extend
           // the corresponding entry in `clientResources`.
@@ -397,19 +395,31 @@ Access.prototype.write = function () {
 
             if (!role) return
 
+            let roleMap = new ACLMatrix(role)
+
             Object.keys(role).forEach(resource => {
-              clientResources[resource] = this.combineAccessMatrices(
-                clientResources[resource],
-                role[resource]
+              let combinedMatrix = this.combineAccessMatrices(
+                clientResourcesMap.get(resource, {
+                  parseObjects: true
+                }),
+                roleMap.get(resource, {
+                  parseObjects: true
+                })
               )
+
+              clientResourcesMap.set(resource, combinedMatrix)
             })
           })
 
-          Object.keys(clientResources).forEach(resource => {
+          let combinedResources = clientResourcesMap.getAll({
+            stringifyObjects: true
+          })
+
+          Object.keys(combinedResources).forEach(resource => {
             entries.push({
               client: client.clientId,
               resource,
-              access: clientResources[resource]
+              access: combinedResources[resource]
             })
           })
         })

@@ -11,24 +11,9 @@ const ACCESS_TYPES = [
 ]
 
 const Matrix = function (map) {
-  this.map = map || {}
-}
-
-/**
- * Returns the resource map with access matrices formatted
- * for insertion in the database.
- *
- * @param  {Object} map
- * @return {Object}
- */
-Matrix.prototype._formatForInput = function (map) {
-  return Object.keys(map).reduce((output, resource) => {
-    output[resource] = this._formatMatrixForInput(
-      this.map[resource]
-    )
-
-    return output
-  }, {})
+  this.map = this._convertACLObjects(map || {}, {
+    shouldStringify: false
+  })
 }
 
 /**
@@ -40,34 +25,12 @@ Matrix.prototype._formatForInput = function (map) {
  * @param  {Object} map
  * @return {Object}
  */
-Matrix.prototype._formatForOutput = function (map) {
+Matrix.prototype._addFalsyTypes = function (map) {
   return Object.keys(map).reduce((output, resource) => {
     let formattedResource = {}
 
     ACCESS_TYPES.forEach(type => {
-      let value = map[resource][type]
-
-      if (typeof value === 'object') {
-        value = Object.keys(value).reduce((sanitised, key) => {
-          if (typeof value[key] === 'string') {
-            try {
-              let parsedValue = JSON.parse(value[key])
-
-              sanitised[key] = parsedValue
-            } catch (error) {
-              log.error({
-                module: 'ACL matrix'
-              }, error)
-            }
-          } else {
-            sanitised[key] = value[key]
-          }
-
-          return sanitised
-        }, {})
-      }
-
-      formattedResource[type] = value || false
+      formattedResource[type] = map[resource][type] || false
     })
 
     output[resource] = formattedResource
@@ -77,18 +40,64 @@ Matrix.prototype._formatForOutput = function (map) {
 }
 
 /**
- * Returns the access matrix formatted for insertion in the database.
+ * Takes a map and converts any ACL objects (e.g. `fields` or `filter`)
+ * inside each matrix from their object form to a JSON string if
+ * `shouldStringify` is `true`, or vice-versa if it's `false`.
  *
- * @param  {Object} map
+ * @param  {Object}  map
+ * @param  {Boolean} options.shouldStringify
  * @return {Object}
  */
-Matrix.prototype._formatMatrixForInput = function (matrix) {
+Matrix.prototype._convertACLObjects = function (map, {
+  shouldStringify
+} = {}) {
+  return Object.keys(map).reduce((output, resource) => {
+    output[resource] = this._convertACLObjectsInMatrix(
+      map[resource],
+      {shouldStringify}
+    )
+
+    return output
+  }, {})
+}
+
+/**
+ * Takes a matrix and converts any ACL objects (e.g. `fields` or
+ * `filter`) from their object form to a JSON string if `shouldStringify`
+ * is `true`, or vice-versa if it's `false`.
+ *
+ * @param  {Object}  matrix
+ * @param  {Boolean} options.shouldStringify
+ * @return {Object}
+ */
+Matrix.prototype._convertACLObjectsInMatrix = function (matrix, {
+  shouldStringify
+} = {}) {
+  let fromType = shouldStringify ? 'object' : 'string'
+  let transformFn = shouldStringify ? JSON.stringify : JSON.parse
+
   return Object.keys(matrix).reduce((sanitised, accessType) => {
     if (typeof matrix[accessType] === 'object') {
       sanitised[accessType] = Object.keys(matrix[accessType]).reduce((value, key) => {
-        value[key] = typeof matrix[accessType][key] === 'object'
-          ? JSON.stringify(matrix[accessType][key])
-          : matrix[accessType][key]
+        if (value === false) {
+          return value
+        }
+
+        if (typeof matrix[accessType][key] === fromType) {
+          try {
+            let transformedValue = transformFn(matrix[accessType][key])
+
+            value[key] = transformedValue
+          } catch (error) {
+            log.error({
+              module: 'ACL matrix'
+            }, error)
+
+            value = false
+          }
+        } else {
+          value[key] = matrix[accessType][key]
+        }
 
         return value
       }, {})
@@ -103,22 +112,22 @@ Matrix.prototype._formatMatrixForInput = function (matrix) {
 /**
  * Returns the access matrix for a particular resource.
  *
- * @param  {String}  name                      The name of the resource to retrieve
- * @param  {Boolean} options.formatForInput   Whether to format the result for input
- * @param  {Boolean} options.formatForOutput} Whether to format the result for input
+ * @param  {String}  name                     The name of the resource to retrieve
+ * @param  {Boolean} options.addFalsyTypes    Add `false` to missing access types
+ * @param  {Boolean} options.parseObjects     Get parsed version of ACL objects
+ * @param  {Boolean} options.stringifyObjects Get stringified version of ACL objects
  * @return {Object}
  */
 Matrix.prototype.get = function (name, {
-  formatForInput,
-  formatForOutput
+  addFalsyTypes,
+  parseObjects,
+  stringifyObjects
 } = {}) {
-  let map = this.map
-
-  if (formatForInput) {
-    map = this._formatForInput(map)
-  } else if (formatForOutput) {
-    map = this._formatForOutput(map)
-  }
+  let map = this.getAll({
+    addFalsyTypes,
+    parseObjects,
+    stringifyObjects
+  })
 
   return map[name]
 }
@@ -126,23 +135,33 @@ Matrix.prototype.get = function (name, {
 /**
  * Returns the entire resource map.
  *
- * @param  {Boolean} options.formatForInput   Whether to format the result for input
- * @param  {Boolean} options.formatForOutput} Whether to format the result for input
+ * @param  {Boolean} options.addFalsyTypes    Add `false` to missing access types
+ * @param  {Boolean} options.parseObjects     Get parsed version of ACL objects
+ * @param  {Boolean} options.stringifyObjects Get stringified version of ACL objects
  * @return {Object}
  */
 Matrix.prototype.getAll = function ({
-  formatForInput,
-  formatForOutput
+  addFalsyTypes,
+  parseObjects,
+  stringifyObjects
 } = {}) {
-  if (formatForInput) {
-    return this._formatForInput(this.map)
+  let map = this.map
+
+  if (addFalsyTypes) {
+    map = this._addFalsyTypes(map)
   }
 
-  if (formatForOutput) {
-    return this._formatForOutput(this.map)
+  if (parseObjects) {
+    map = this._convertACLObjects(map, {
+      shouldStringify: false
+    })
+  } else if (stringifyObjects) {
+    map = this._convertACLObjects(map, {
+      shouldStringify: true
+    })
   }
 
-  return this.map
+  return map
 }
 
 /**
@@ -161,9 +180,16 @@ Matrix.prototype.remove = function (name) {
  * @param {Object} matrix
  */
 Matrix.prototype.set = function (name, matrix) {
-  this.validate(matrix)
+  let sanitisedMatrix = this._convertACLObjectsInMatrix(
+    matrix,
+    {shouldStringify: false}
+  )
 
-  this.map[name] = Object.assign({}, this.map[name], matrix)
+  this.map[name] = Object.assign(
+    {},
+    this.map[name],
+    sanitisedMatrix
+  )
 }
 
 /**

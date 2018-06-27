@@ -132,7 +132,7 @@ Roles.prototype.get = function (req, res, next) {
 
     help.sendBackJSON(200, res, next)(null, {
       results: roles.results.map(client => {
-        return acl.role.sanitise(client)
+        return acl.role.formatForOutput(client)
       }).sort((a, b) => {
         return a.name < b.name
           ? -1
@@ -214,7 +214,7 @@ Roles.prototype.post = function (req, res, next) {
   }).then(({results}) => {
     help.sendBackJSON(201, res, next)(null, {
       results: [
-        acl.role.sanitise(results[0])
+        acl.role.formatForOutput(results[0])
       ]
     })
   }).catch(this.handleError(res, next))
@@ -329,7 +329,7 @@ Roles.prototype.put = function (req, res, next) {
   }).then(({results}) => {
     help.sendBackJSON(200, res, next)(null, {
       results: [
-        acl.role.sanitise(results[0])
+        acl.role.formatForOutput(results[0])
       ]
     })
   }).catch(this.handleError(res, next))

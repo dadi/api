@@ -255,11 +255,6 @@ DataStore.prototype.find = function ({ query, collection, options = {}, schema, 
   return new Promise((resolve, reject) => {
     const collName = collection
     this.getCollection(collection).then(collection => {
-      this._debug('find', {
-        collection: collName,
-        query
-      })
-
       let results
 
       const sort = this.getSortParameters(options)
@@ -287,6 +282,12 @@ DataStore.prototype.find = function ({ query, collection, options = {}, schema, 
           .map(result => { return _.pick(result, fields) })
           .value()
       }
+
+      this._debug('find', {
+        collection: collName,
+        query,
+        results
+      })      
 
       let returnData = {}
       returnData.results = results.map(this.formatDocumentForOutput.bind(this))

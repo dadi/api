@@ -203,7 +203,8 @@ Server.prototype.start = function (done) {
 
   app.use(bodyParser.json({ limit: '50mb',
     type: req => {
-      if (['text/plain', 'text/plain; charset=utf-8', 'application/json'].includes(req.headers['content-type'])) {
+      let contentType = req.headers['content-type'] || ''
+      if (['text/plain', 'text/plain; charset=utf-8', 'application/json', 'application/json; charset=utf-8'].includes(contentType.toLowerCase())) {
         let parts = req.url.split('/').filter(Boolean)
 
         // don't allow parsing into JSON if:

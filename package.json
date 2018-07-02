@@ -28,7 +28,7 @@
     "aws-sdk": "2.249.1",
     "body-parser": "^1.18.3",
     "busboy": "^0.2.13",
-    "chokidar": "^2.0.3",
+    "chokidar": "^2.0.4",
     "cli-prompt": "^0.6.0",
     "colors": "1.1.2",
     "concat-stream": "^1.6.2",

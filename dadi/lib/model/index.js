@@ -684,7 +684,7 @@ Model.prototype.validateAccess = function ({
 
   // If the collection has an `authenticate` property and it's set to
   // `false`, then access is granted.
-  if (this.settings.authenticate === false) {
+  if (this.settings && this.settings.authenticate === false) {
     return Promise.resolve({
       fields,
       query,

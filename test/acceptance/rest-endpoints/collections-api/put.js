@@ -47,7 +47,8 @@ describe('Collections API – PUT', function () {
                 "type": "Object",
                 "required": false
               }
-            }
+            },
+            "settings": {}
           }
 
           let schemaNoHistory = Object.assign({}, schema, {

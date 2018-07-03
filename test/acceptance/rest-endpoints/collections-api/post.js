@@ -46,7 +46,8 @@ describe('Collections API – POST', function () {
                 "type": "Object",
                 "required": false
               }
-            }
+            },
+            "settings": {}
           }
 
           help.writeTempFile(
@@ -85,9 +86,8 @@ describe('Collections API – POST', function () {
       .post('/vtest/testdb/test-schema')
       .set('Authorization', 'Bearer ' + bearerToken)
       .send({field1: 'foo!'})
-      //.expect(200)
+      .expect(200)
       .end(function (err, res) {
-        console.log('----> ERROR:', err, res.body)
         if (err) return done(err)
 
         should.exist(res.body.results)

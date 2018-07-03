@@ -1,11 +1,11 @@
-var acl = require('./../../dadi/lib/model/acl')
-var fs = require('fs')
-var path = require('path')
-var should = require('should')
-var connection = require(__dirname + '/../../dadi/lib/model/connection')
-var config = require(__dirname + '/../../config')
-var request = require('supertest')
-var _ = require('underscore')
+const acl = require('./../../dadi/lib/model/acl')
+const fs = require('fs-extra')
+const path = require('path')
+const should = require('should')
+const connection = require(__dirname + '/../../dadi/lib/model/connection')
+const config = require(__dirname + '/../../config')
+const request = require('supertest')
+const _ = require('underscore')
 
 var clientCollectionName = config.get('auth.clientCollection')
 
@@ -15,7 +15,7 @@ module.exports.createDoc = function (token, done) {
     .post('/vtest/testdb/test-schema')
     .set('Authorization', 'Bearer ' + token)
     .send({field1: ((Math.random() * 10) | 1).toString()})
-    .expect(200)
+    //.expect(200)
     .end(function (err, res) {
       if (err) return done(err)
       res.body.results.length.should.equal(1)
@@ -444,4 +444,36 @@ module.exports.getCollectionMap = function () {
   })
 
   return map
+}
+
+module.exports.writeTempFile = function (filePath, data, callback) {
+  let existingContent
+  let fullPath = path.resolve(__dirname, filePath)
+
+  try {
+    existingContent = fs.readFileSync(fullPath, 'utf8')
+  } catch (err) {}
+
+  let revertFn = () => {
+    if (existingContent) {
+      fs.writeFileSync(fullPath, existingContent)
+    } else {
+      fs.unlinkSync(fullPath)
+    }
+  }
+
+  let parsedData = typeof data === 'string'
+    ? data
+    : JSON.stringify(data, null, 2)
+
+  fs.ensureDir(
+    path.dirname(fullPath),
+    err => {
+      fs.writeFileSync(fullPath, parsedData)    
+    }
+  )
+
+  setTimeout(() => {
+    callback(revertFn)
+  }, 200)
 }

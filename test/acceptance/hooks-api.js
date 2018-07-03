@@ -71,7 +71,7 @@ describe('Hooks API', function () {
     })
 
     describe('POST', () => {
-      it('should return 401 if the request does not contain a valid bearer token', done => {
+      it('should return 405 if the request does not contain a valid bearer token', done => {
         const hookName = 'myHook1'
         const hookContent = `
           module.exports = (obj, type, data) => {
@@ -84,13 +84,13 @@ describe('Hooks API', function () {
         .send(hookContent)
         .set('content-type', 'text/plain')
         .end((err, res) => {
-          res.statusCode.should.eql(401)
+          res.statusCode.should.eql(405)
 
           done()
         })
       })
 
-      it('should return 403 if the request contains a valid bearer token without enough permissions', done => {
+      it('should return 405 if the request contains a valid bearer token without enough permissions', done => {
         const hookName = 'myHook1'
         const hookContent = `
           module.exports = (obj, type, data) => {
@@ -104,7 +104,7 @@ describe('Hooks API', function () {
         .send(hookContent)
         .set('content-type', 'text/plain')
         .end((err, res) => {
-          res.statusCode.should.eql(403)
+          res.statusCode.should.eql(405)
 
           done()
         })
@@ -112,7 +112,7 @@ describe('Hooks API', function () {
     })
 
     describe('PUT', () => {
-      it('should return 401 if the request does not contain a valid bearer token', done => {
+      it('should return 405 if the request does not contain a valid bearer token', done => {
         const hookName = 'myHook1'
         const hookContent = `
           module.exports = (obj, type, data) => {
@@ -125,13 +125,13 @@ describe('Hooks API', function () {
         .send(hookContent)
         .set('content-type', 'text/plain')
         .end((err, res) => {
-          res.statusCode.should.eql(401)
+          res.statusCode.should.eql(405)
 
           done()
         })
       })
 
-      it('should return 403 if the request contains a valid bearer token without enough permissions', done => {
+      it('should return 405 if the request contains a valid bearer token without enough permissions', done => {
         const hookName = 'myHook1'
         const hookContent = `
           module.exports = (obj, type, data) => {
@@ -145,7 +145,7 @@ describe('Hooks API', function () {
         .send(hookContent)
         .set('content-type', 'text/plain')
         .end((err, res) => {
-          res.statusCode.should.eql(403)
+          res.statusCode.should.eql(405)
 
           done()
         })
@@ -153,7 +153,7 @@ describe('Hooks API', function () {
     })
 
     describe('DELETE', () => {
-      it('should return 401 if the request does not contain a valid bearer token', done => {
+      it('should return 405 if the request does not contain a valid bearer token', done => {
         const hookName = 'myHook1'
         const hookContent = `
           module.exports = (obj, type, data) => {
@@ -165,13 +165,13 @@ describe('Hooks API', function () {
         .delete(`/api/hooks/${hookName}/config`)
         .set('content-type', 'text/plain')
         .end((err, res) => {
-          res.statusCode.should.eql(401)
+          res.statusCode.should.eql(405)
 
           done()
         })
       })
 
-      it('should return 403 if the request contains a valid bearer token without enough permissions', done => {
+      it('should return 405 if the request contains a valid bearer token without enough permissions', done => {
         const hookName = 'myHook1'
         const hookContent = `
           module.exports = (obj, type, data) => {
@@ -184,7 +184,7 @@ describe('Hooks API', function () {
         .set('Authorization', `Bearer ${bearerToken}`)
         .set('content-type', 'text/plain')
         .end((err, res) => {
-          res.statusCode.should.eql(403)
+          res.statusCode.should.eql(405)
 
           done()
         })
@@ -259,7 +259,7 @@ describe('Hooks API', function () {
     })
 
     describe('POST', () => {
-      it('should create a hook with a POST request', function (done) {
+      it('should not create a hook with a POST request', function (done) {
         const hookName = 'myHook1'
         const hookContent = `
           module.exports = (obj, type, data) => {
@@ -273,34 +273,22 @@ describe('Hooks API', function () {
         .set('content-type', 'text/plain')
         .set('Authorization', `Bearer ${bearerToken}`)
         .end((err, res) => {
-          res.statusCode.should.eql(201)
-          res.body.success.should.eql(true)
-          res.body.message.should.eql('Hook created')
+          res.statusCode.should.eql(405)
 
           setTimeout(() => {
             client
             .get(`/api/hooks/${hookName}/config`)
             .set('Authorization', `Bearer ${bearerToken}`)
             .end((err, res) => {
-              res.statusCode.should.eql(200)
-              res.text.should.eql(hookContent)
+              res.statusCode.should.eql(404)
 
-              const hooksPath = config.get('paths.hooks')
-
-              // Deleting hook file
-              fs.unlinkSync(path.join(hooksPath, `${hookName}.js`))
-
-              // Give it some time for the monitor to kick in
-              setTimeout(() => {
-                done()
-              }, 200)
+              done()
             })
           }, 200)
         })
       })
 
-      it('should return 409 when sending a POST request to a hook that already exists', function (done) {
-        const hookName = 'myHook1'
+      it('should return 405 when sending a POST request to a hook that already exists', function (done) {
         const hookContent = `
           module.exports = (obj, type, data) => {
             return obj
@@ -308,43 +296,20 @@ describe('Hooks API', function () {
         `.trim()
 
         client
-        .post(`/api/hooks/${hookName}/config`)
+        .post(`/api/hooks/layout/config`)
         .send(hookContent)
         .set('content-type', 'text/plain')
         .set('Authorization', `Bearer ${bearerToken}`)
         .end((err, res) => {
-          setTimeout(() => {
-            client
-            .post(`/api/hooks/${hookName}/config`)
-            .send(hookContent)
-            .set('content-type', 'text/plain')
-            .set('Authorization', `Bearer ${bearerToken}`)
-            .end((err, res) => {
-              res.statusCode.should.eql(409)
+          res.statusCode.should.eql(405)
 
-              const hooksPath = config.get('paths.hooks')
-
-              // Deleting hook file
-              fs.unlinkSync(path.join(hooksPath, `${hookName}.js`))
-
-              // Give it some time for the monitor to kick in
-              setTimeout(() => {
-                done()
-              }, 200)
-            })
-          }, 200)
+          done()
         })
       })
     })
 
     describe('PUT', () => {
-      it('should update a hook with a PUT request', function (done) {
-        const hookName = 'myHook1'
-        const hookOriginalContent = `
-          module.exports = (obj, type, data) => {
-            return obj
-          }
-        `.trim()
+      it('should not update a hook with a PUT request', function (done) {
         const hookUpdatedContent = `
           module.exports = (obj, type, data) => {
             obj = 'Something else'
@@ -354,47 +319,28 @@ describe('Hooks API', function () {
         `.trim()
 
         client
-        .post(`/api/hooks/${hookName}/config`)
-        .send(hookOriginalContent)
+        .put(`/api/hooks/layout/config`)
         .set('content-type', 'text/plain')
+        .send(hookUpdatedContent)
         .set('Authorization', `Bearer ${bearerToken}`)
         .end((err, res) => {
+          res.statusCode.should.eql(405)
+
           setTimeout(() => {
             client
-            .put(`/api/hooks/${hookName}/config`)
-            .set('content-type', 'text/plain')
-            .send(hookUpdatedContent)
+            .get(`/api/hooks/layout/config`)
             .set('Authorization', `Bearer ${bearerToken}`)
             .end((err, res) => {
               res.statusCode.should.eql(200)
-              res.body.success.should.eql(true)
-              res.body.message.should.eql('Hook updated')
+              res.text.should.not.eql(hookUpdatedContent)
 
-              setTimeout(() => {
-                client
-                .get(`/api/hooks/${hookName}/config`)
-                .set('Authorization', `Bearer ${bearerToken}`)
-                .end((err, res) => {
-                  res.statusCode.should.eql(200)
-                  res.text.should.eql(hookUpdatedContent)
-
-                  const hooksPath = config.get('paths.hooks')
-
-                  // Deleting hook file
-                  fs.unlinkSync(path.join(hooksPath, `${hookName}.js`))
-
-                  // Give it some time for the monitor to kick in
-                  setTimeout(() => {
-                    done()
-                  }, 200)
-                })
-              }, 200)
+              done()
             })
           }, 200)
         })
       })
 
-      it('should return 404 when sending a PUT request to a hook that does not exist', function (done) {
+      it('should return 405 when sending a PUT request to a hook that does not exist', function (done) {
         const hookName = 'myHook1'
         const hookUpdatedContent = `
           module.exports = (obj, type, data) => {
@@ -408,7 +354,7 @@ describe('Hooks API', function () {
         .set('content-type', 'text/plain')
         .set('Authorization', `Bearer ${bearerToken}`)
         .end((err, res) => {
-          res.statusCode.should.eql(404)
+          res.statusCode.should.eql(405)
 
           done()
         })
@@ -416,51 +362,34 @@ describe('Hooks API', function () {
     })    
 
     describe('DELETE', () => {
-      it('should delete a hook with a DELETE request', function (done) {
-        const hookName = 'myHook1'
-        const hookContent = `
-          module.exports = (obj, type, data) => {
-            return obj
-          }
-        `.trim()
-
+      it('should not delete a hook with a DELETE request', function (done) {
         client
-        .post(`/api/hooks/${hookName}/config`)
-        .send(hookContent)
-        .set('content-type', 'text/plain')
+        .delete(`/api/hooks/layout/config`)
         .set('Authorization', `Bearer ${bearerToken}`)
         .end((err, res) => {
+          res.statusCode.should.eql(405)
+
           setTimeout(() => {
             client
-            .delete(`/api/hooks/${hookName}/config`)
+            .get(`/api/hooks/layout/config`)
             .set('Authorization', `Bearer ${bearerToken}`)
             .end((err, res) => {
-              res.statusCode.should.eql(204)
-              res.text.should.eql('')
+              res.statusCode.should.eql(200)
 
-              setTimeout(() => {
-                client
-                .get(`/api/hooks/${hookName}/config`)
-                .set('Authorization', `Bearer ${bearerToken}`)
-                .end((err, res) => {
-                  res.statusCode.should.eql(404)
-
-                  done()
-                })
-              }, 200)
+              done()
             })
           }, 200)
         })
       })
 
-      it('should return 404 when sending a DELETE request to a hook that does not exist', function (done) {
+      it('should return 405 when sending a DELETE request to a hook that does not exist', function (done) {
         const hookName = 'myHook1'
 
         client
         .delete(`/api/hooks/${hookName}/config`)
         .set('Authorization', `Bearer ${bearerToken}`)
         .end((err, res) => {
-          res.statusCode.should.eql(404)
+          res.statusCode.should.eql(405)
 
           done()
         })

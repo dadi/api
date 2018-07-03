@@ -101,7 +101,6 @@ describe('Collections API – GET', function () {
         .expect(200)
         .expect('content-type', 'application/json')
         .end(function (err, res) {
-          console.log('--->', res.body)
           if (err) return done(err)
 
           res.body['results'].should.exist

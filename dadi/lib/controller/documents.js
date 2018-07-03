@@ -176,6 +176,7 @@ Collection.prototype.post = function (req, res, next) {
   }).then(result => {
     return help.sendBackJSON(200, res, next)(null, result)
   }).catch(error => {
+    console.log('----> ERROR IN MODEL:', error)
     return help.sendBackJSON(200, res, next)(error)
   })
 }

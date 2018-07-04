@@ -44,16 +44,6 @@ module.exports.sendBackJSON = function (successCode, res, next) {
 
     if (err) {
       switch (err.message) {
-        case 'BAD_REQUEST':
-          body = {
-            success: false,
-            errors: err.errors,
-            statusCode: 400
-          }
-          statusCode = body.statusCode
-
-          break
-
         case 'DB_DISCONNECTED':
           body = formatError.createError('api', '0004', null, ERROR_CODES)
           statusCode = 503
@@ -96,7 +86,7 @@ module.exports.sendBackJSON = function (successCode, res, next) {
 
 module.exports.sendBackJSONP = function (callbackName, res, next) {
   return function (err, results) {
-    if (err) console.log(err)
+    if (err) return next(err)
 
     // callback MUST be made up of letters only
     if (!callbackName.match(/^[a-zA-Z]+$/)) return res.send(400)
@@ -140,10 +130,6 @@ module.exports.parseQuery = function (queryStr) {
   // handle case where queryStr is "null" or some other malicious string
   if (typeof ret !== 'object' || ret === null) ret = {}
   return ret
-}
-
-module.exports.regExpEscape = function (str) {
-  return str.replace(/([.?*+^$[\]\\(){}|-])/g, '\\$1')
 }
 
 function getKeys (obj, keyName, result) {

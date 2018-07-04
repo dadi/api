@@ -83,10 +83,11 @@ Collection.prototype.delete = function (req, res, next) {
 Collection.prototype.get = function (req, res, next) {
   let path = url.parse(req.url, true)
   let options = path.query
+  let callback = options.callback || this.model.settings.callback
 
-  // determine if this is jsonp
-  let done = options.callback
-    ? help.sendBackJSONP(options.callback, res, next)
+  // Determine if this is JSONP.
+  let done = callback
+    ? help.sendBackJSONP(callback, res, next)
     : help.sendBackJSON(200, res, next)
   let query = this._prepareQuery(req)
   let queryOptions = this._prepareQueryOptions(options)

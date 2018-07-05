@@ -6,24 +6,20 @@ const ID_PATTERN = '[a-fA-F0-9-]*'
 
 const Controller = function () {}
 
+Controller.prototype._getURLParameters = function (requestUrl) {
+  let parsedUrl = url.parse(requestUrl, true)
+
+  return parsedUrl.query
+}
+
 Controller.prototype._prepareQuery = function (req) {
   let path = url.parse(req.url, true)
   let apiVersion = path.pathname.split('/')[1]
-  let options = path.query
+  let options = this._getURLParameters(req.url)
   let query = help.parseQuery(options.filter)
 
   // Formatting query
   query = this.model.formatQuery(query)
-
-  // Remove filter params that don't exist in
-  // the model schema.
-  // if (!Array.isArray(query)) {
-  //   Object.keys(query).forEach(key => {
-  //     if (!this.model.isKeyValid(key)) {
-  //       delete query[key]
-  //     }
-  //   })
-  // }
 
   // If id is present in the url, add to the query.
   if (req.params && req.params.id) {

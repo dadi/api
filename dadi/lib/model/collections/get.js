@@ -24,6 +24,8 @@ const logger = require('@dadi/logger')
  * Finds documents in the database, running any configured hooks
  * and formatting the result set for final output.
  *
+ * @param  {Object} client - client to check permissions for
+ * @param  {String} language - ISO code for the language to translate documents to
  * @param  {Object} query - query to match documents against
  * @param  {Object} options
  * @param  {Object} req - request object to pass to hooks
@@ -31,6 +33,7 @@ const logger = require('@dadi/logger')
  */
 function get ({
   client,
+  language,
   query = {},
   options = {},
   req
@@ -68,6 +71,7 @@ function get ({
   }).then(query => {
     return this.find({
       client,
+      language,
       query,
       options
     })
@@ -113,6 +117,7 @@ function get ({
       {
         client,
         composeOverride: options.compose,
+        language,
         urlFields: options.fields
       }
     ).then(results => {

@@ -44,6 +44,39 @@ function sanitiseString (string, schema = {}) {
   return sanitisedString
 }
 
-module.exports.beforeQuery = ({field, input, schema}) => {
+module.exports.beforeOutput = function ({
+  config,
+  document,
+  field,
+  input,
+  language
+}) {
+  // If there is no language parameter, we return
+  // the sub-document untransformed.
+  if (typeof language !== 'string') {
+    return input
+  }
+
+  let value
+  let valueLanguage
+  let languageField = field + config.get('i18n.fieldCharacter') + language
+
+  if (input[languageField] !== undefined) {
+    value = input[languageField]
+    valueLanguage = language
+  } else {
+    value = input[field]
+    valueLanguage = config.get('i18n.defaultLanguage')
+  }
+
+  return {
+    _i18n: {
+      [field]: valueLanguage
+    },
+    [field]: value
+  }
+}
+
+module.exports.beforeQuery = ({field, input, options, schema}) => {
   return sanitiseString(input, schema)
 }

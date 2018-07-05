@@ -370,6 +370,23 @@ var conf = convict({
       format: Number,
       default: 10
     }
+  },
+  i18n: {
+    defaultLanguage: {
+      doc: 'ISO-639-1 code of the default language',
+      format: String,
+      default: 'en'
+    },
+    languages: {
+      doc: 'List of ISO-639-1 codes for the supported languages',
+      format: Array,
+      default: []
+    },
+    fieldCharacter: {
+      doc: 'Special character to denote a translated field',
+      format: String,
+      default: ':'
+    }
   }
 })
 

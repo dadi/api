@@ -682,35 +682,37 @@ Model.prototype.validateAccess = function ({
     return Promise.resolve({fields, query})
   }
 
-  // If the collection has an `authenticate` property and it's set to
-  // `false`, then access is granted.
-  if (this.settings.authenticate === false) {
-    return Promise.resolve({
-      fields,
-      query,
-      schema
-    })
-  }
-
-  // If the collection has an `authenticate` property and it's an array,
-  // we must check the type of access that is being attempted against the
-  // list of HTTP verbs that must be authenticated.
-  if (Array.isArray(this.settings.authenticate)) {
-    let authenticatedVerbs = this.settings.authenticate.map(
-      s => s.toLowerCase()
-    )
-
-    if (
-      (type === 'create' && !authenticatedVerbs.includes('post')) ||
-      (type === 'delete' && !authenticatedVerbs.includes('delete')) ||
-      (type === 'read' && !authenticatedVerbs.includes('get')) ||
-      (type === 'update' && !authenticatedVerbs.includes('put'))
-    ) {
+  if (this.settings) {
+    // If the collection has an `authenticate` property and it's set to
+    // `false`, then access is granted.
+    if (this.settings.authenticate === false) {
       return Promise.resolve({
         fields,
         query,
         schema
       })
+    }
+
+    // If the collection has an `authenticate` property and it's an array,
+    // we must check the type of access that is being attempted against the
+    // list of HTTP verbs that must be authenticated.
+    if (Array.isArray(this.settings.authenticate)) {
+      let authenticatedVerbs = this.settings.authenticate.map(
+        s => s.toLowerCase()
+      )
+
+      if (
+        (type === 'create' && !authenticatedVerbs.includes('post')) ||
+        (type === 'delete' && !authenticatedVerbs.includes('delete')) ||
+        (type === 'read' && !authenticatedVerbs.includes('get')) ||
+        (type === 'update' && !authenticatedVerbs.includes('put'))
+      ) {
+        return Promise.resolve({
+          fields,
+          query,
+          schema
+        })
+      }
     }
   }
 

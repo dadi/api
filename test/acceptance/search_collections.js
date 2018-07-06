@@ -9,6 +9,8 @@ var should = require('should')
 var bearerToken
 var connectionString = 'http://' + config.get('server.host') + ':' + config.get('server.port')
 
+let cleanupFn
+
 describe('Search', function () {
   this.timeout(5000)
 
@@ -17,72 +19,53 @@ describe('Search', function () {
       help.dropDatabase('testdb', function (err) {
         if (err) return done(err)
 
-        app.start(function () {
-          help.getBearerTokenWithAccessType('admin', function (err, token) {
-            if (err) return done(err)
+        let schema = {
+          "fields": {
+            "field1": {
+              "type": "String",
+              "required": false
+            },
+            "field2": {
+              "type": "Number",
+              "required": false
+            },
+            "field3": {
+              "type": "ObjectID",
+              "required": false
+            }
+          },
+          "settings": {
+            "count": 40,
+            "displayName": "Test Collection",
+            "description": "Test Collection"
+          }
+        }
 
-            bearerToken = token
+        help.writeTempFile(
+          'temp-workspace/collections/vtest/testdb/collection.test-schema.json',
+          schema,
+          callback => {
+            cleanupFn = callback
 
-              // add a new field to the schema
-            var jsSchemaString = fs.readFileSync(__dirname + '/../new-schema.json', {encoding: 'utf8'})
-            jsSchemaString = jsSchemaString.replace('newField', 'field1')
-            var schema = JSON.parse(jsSchemaString)
-
-            schema.fields.field2 = Object.assign({}, schema.fields.newField, {
-              type: 'Number',
-              required: true,
-              message: 'Provide a value here, please!'
-            })
-
-            schema.fields.field3 = Object.assign({}, schema.fields.newField, {
-              type: 'ObjectID',
-              required: false
-            })
-
-            schema.settings.displayName = 'Test Collection'
-            schema.settings.description = 'Test Collection'
-
-            var client = request(connectionString)
-
-            client
-              .post('/vtest/testdb/test-schema/config')
-              .send(JSON.stringify(schema, null, 2))
-              .set('content-type', 'text/plain')
-              .set('Authorization', 'Bearer ' + bearerToken)
-              .expect(200)
-              .expect('content-type', 'application/json')
-              .end(function (err, res) {
+            app.start(function () {
+              help.getBearerTokenWithAccessType('admin', function (err, token) {
                 if (err) return done(err)
 
-                setTimeout(function () {
-                  done()
-                }, 1000)
+                bearerToken = token
+
+                done()
               })
-          })
-        })
+            })            
+          }
+        )          
       })
     })
 
     after(function (done) {
-        // reset the schema
-      var jsSchemaString = fs.readFileSync(__dirname + '/../new-schema.json', {encoding: 'utf8'})
-      jsSchemaString = jsSchemaString.replace('newField', 'field1')
-      var schema = JSON.parse(jsSchemaString)
-
-      var client = request(connectionString)
-
-      client
-        .post('/vtest/testdb/test-schema/config')
-        .send(JSON.stringify(schema, null, 2))
-        .set('content-type', 'text/plain')
-        .set('Authorization', 'Bearer ' + bearerToken)
-        .expect(200)
-        .expect('content-type', 'application/json')
-        .end(function (err, res) {
-          if (err) return done(err)
-
-          app.stop(done)
-        })
+      app.stop(() => {
+        cleanupFn()
+        done()
+      })
     })
 
     it('should return docs from specified collections', function (done) {

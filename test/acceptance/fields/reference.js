@@ -21,11 +21,16 @@ describe('Reference Field', () => {
         help.dropDatabase('library', 'event', err => {
           if (err) return done(err)
           help.dropDatabase('library', 'misc', err => {
-            app.start(() => {
-              help.getBearerToken(function (err, token) {
-                if (err) return done(err)
-                bearerToken = token
-                done()
+            if (err) return done(err)
+            help.dropDatabase('library', 'taxonomy', err => {
+              if (err) return done(err)
+
+              app.start(() => {
+                help.getBearerToken(function (err, token) {
+                  if (err) return done(err)
+                  bearerToken = token
+                  done()
+                })
               })
             })
           })
@@ -714,81 +719,65 @@ describe('Reference Field', () => {
   describe('update', () => {
     it('should compose updated document and return when history is on', done => {
       help.getBearerTokenWithAccessType('admin', function (err, token) {
-        // modify schema settings
-        let jsSchemaString = fs.readFileSync(__dirname + '/../temp-workspace/collections/v1/library/collection.book.json', {encoding: 'utf8'})
-        let schema = JSON.parse(jsSchemaString)
-        schema.settings.storeRevisions = true
-
         config.set('query.useVersionFilter', true)
 
-        let book
+        let parent
 
-        let client = request(connectionString)
-        client
-          .post('/v1/library/book/config')
-          .send(JSON.stringify(schema, null, 2))
-          .set('content-type', 'text/plain')
-          .set('Authorization', 'Bearer ' + token)
-          .expect(200)
-          .expect('content-type', 'application/json')
+        setTimeout(() => {
+          request(connectionString)
+          .post('/v1/library/taxonomy')
+          .set('Authorization', 'Bearer ' + bearerToken)
+          .send({word: 'parent'})
           .end((err, res) => {
-            setTimeout(() => {
-              client
-                .post('/v1/library/book')
-                .set('Authorization', 'Bearer ' + bearerToken)
-                .send({title: 'For Whom The Bell Tolls'})
-                .end((err, res) => {
-                  if (err) return done(err)
+            if (err) return done(err)
 
-                  book = res.body.results[0]
+            parent = res.body.results[0]
 
-                  client
-                    .post('/v1/library/person')
-                    .set('Authorization', 'Bearer ' + bearerToken)
-                    .send({name: 'Ernest H.'})
-                    .expect(200)
-                    .end((err, res) => {
-                      if (err) return done(err)
+            request(connectionString)
+            .post('/v1/library/taxonomy')
+            .set('Authorization', 'Bearer ' + bearerToken)
+            .send({word: 'child'})
+            .expect(200)
+            .end((err, res) => {
+              if (err) return done(err)
 
-                      let doc = res.body.results[0]
-                      should.exist(doc)
+              let doc = res.body.results[0]
+              should.exist(doc)
 
-                      let body = {
-                        query: { _id: book._id },
-                        update: { author: doc._id.toString() }
-                      }
+              let body = {
+                query: { _id: parent._id },
+                update: { children: doc._id.toString() }
+              }
 
-                      client
-                        .put('/v1/library/book/')
-                        .set('Authorization', 'Bearer ' + bearerToken)
-                        .send(body)
-                        .expect(200)
-                        .end((err, res) => {
-                          if (err) return done(err)
+              request(connectionString)
+              .put('/v1/library/taxonomy/')
+              .set('Authorization', 'Bearer ' + bearerToken)
+              .send(body)
+              .expect(200)
+              .end((err, res) => {
+                if (err) return done(err)
 
-                          let results = res.body['results']
-                          results.should.be.Array
-                          results.length.should.equal(1)
+                let results = res.body['results']
+                results.should.be.Array
+                results.length.should.equal(1)
 
-                          should.exist(results[0].author.name)
+                should.exist(results[0].children.word)
 
-                          config.set('query.useVersionFilter', false)
+                config.set('query.useVersionFilter', false)
 
-                          done()
-                        })
-                    })
-                })
-            }, 1000)
+                done()
+              })
+            })
           })
+        }, 1000)
       })
     })
 
     it('should compose updated document and return when history is off', done => {
       help.getBearerTokenWithAccessType('admin', function (err, token) {
-        // modify schema settings
-        let jsSchemaString = fs.readFileSync(__dirname + '/../temp-workspace/collections/v1/library/collection.book.json', {encoding: 'utf8'})
-        let schema = JSON.parse(jsSchemaString)
-        schema.settings.storeRevisions = false
+        let settingsBackup = Object.assign({}, app.components['/v1/library/book'].model.settings)
+
+        app.components['/v1/library/book'].model.settings.storeRevisions = true
 
         config.set('query.useVersionFilter', true)
 
@@ -796,60 +785,51 @@ describe('Reference Field', () => {
 
         let client = request(connectionString)
         client
-          .post('/v1/library/book/config')
-          .send(JSON.stringify(schema, null, 2))
-          .set('content-type', 'text/plain')
-          .set('Authorization', 'Bearer ' + token)
+        .post('/v1/library/book')
+        .set('Authorization', 'Bearer ' + bearerToken)
+        .send({title: 'For Whom The Bell Tolls'})
+        .end((err, res) => {
+          if (err) return done(err)
+
+          book = res.body.results[0]
+
+          client
+          .post('/v1/library/person')
+          .set('Authorization', 'Bearer ' + bearerToken)
+          .send({name: 'Ernest H.'})
           .expect(200)
-          .expect('content-type', 'application/json')
           .end((err, res) => {
-            setTimeout(() => {
-              client
-                .post('/v1/library/book')
-                .set('Authorization', 'Bearer ' + bearerToken)
-                .send({title: 'For Whom The Bell Tolls'})
-                .end((err, res) => {
-                  if (err) return done(err)
+            if (err) return done(err)
 
-                  book = res.body.results[0]
+            let doc = res.body.results[0]
+            should.exist(doc)
 
-                  client
-                    .post('/v1/library/person')
-                    .set('Authorization', 'Bearer ' + bearerToken)
-                    .send({name: 'Ernest H.'})
-                    .expect(200)
-                    .end((err, res) => {
-                      if (err) return done(err)
+            let body = {
+              query: { _id: book._id },
+              update: { author: doc._id.toString() }
+            }
 
-                      let doc = res.body.results[0]
-                      should.exist(doc)
+            client
+            .put('/v1/library/book/')
+            .set('Authorization', 'Bearer ' + bearerToken)
+            .send(body)
+            .expect(200)
+            .end((err, res) => {
+              if (err) return done(err)
 
-                      let body = {
-                        query: { _id: book._id },
-                        update: { author: doc._id.toString() }
-                      }
+              let results = res.body['results']
+              results.should.be.Array
+              results.length.should.equal(1)
+              should.exist(results[0].author.name)
 
-                      client
-                        .put('/v1/library/book/')
-                        .set('Authorization', 'Bearer ' + bearerToken)
-                        .send(body)
-                        .expect(200)
-                        .end((err, res) => {
-                          if (err) return done(err)
+              config.set('query.useVersionFilter', false)
 
-                          let results = res.body['results']
-                          results.should.be.Array
-                          results.length.should.equal(1)
-                          should.exist(results[0].author.name)
+              app.components['/v1/library/book'].model.settings.storeRevisions = settingsBackup
 
-                          config.set('query.useVersionFilter', false)
-
-                          done()
-                        })
-                    })
-                })
-            }, 1000)
+              done()
+            })
           })
+        })
       })
     })
 

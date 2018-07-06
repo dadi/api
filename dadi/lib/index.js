@@ -22,8 +22,6 @@ var ApiConfigController = require(path.join(__dirname, '/controller/apiConfig'))
 var CacheFlushController = require(path.join(__dirname, '/controller/cacheFlush'))
 var ClientsController = require(path.join(__dirname, '/controller/clients'))
 var CollectionsController = require(path.join(__dirname, '/controller/collections'))
-var CreateCollectionController = require(path.join(__dirname, '/controller/createCollection'))
-var CreateEndpointController = require(path.join(__dirname, '/controller/createEndpoint'))
 var DocumentController = require(path.join(__dirname, '/controller/documents'))
 var EndpointController = require(path.join(__dirname, '/controller/endpoint'))
 var EndpointsController = require(path.join(__dirname, '/controller/endpoints'))
@@ -377,8 +375,6 @@ Server.prototype.loadApi = function (options) {
 
 Server.prototype.loadConfigApi = function () {
   ApiConfigController(this)
-  CreateCollectionController(this)
-  CreateEndpointController(this)
 }
 
 Server.prototype.updateVersions = function (versionsPath) {

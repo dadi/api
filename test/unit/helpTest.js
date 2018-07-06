@@ -3,6 +3,99 @@ var sinon = require('sinon')
 var help = require(__dirname + '/../../dadi/lib/help')
 
 describe('Help', function (done) {
+  describe('sendBackErrorTrace', function () {
+    it('should send a 500 with the error trace', done => {
+      let mockError
+
+      try {
+        thisWillBreak()
+      } catch (error) {
+        mockError = error
+      }
+
+      let res = {
+        end: sinon.stub(),
+        setHeader: sinon.stub()
+      }
+
+      help.sendBackErrorTrace(res, {})(mockError)
+
+      res.setHeader.callCount.should.eql(2)
+      res.setHeader.args[0][0].should.eql('content-type')
+      res.setHeader.args[0][1].should.eql('application/json')
+      res.setHeader.args[1][0].should.eql('content-length')
+      res.setHeader.args[1][1].should.be.Number
+
+      res.end.callCount.should.eql(1)
+      
+      let body = JSON.parse(res.end.args[0][0])
+
+      body.success.should.eql(false)
+      body.error.includes('ReferenceError: thisWillBreak is not defined').should.eql(true)
+      res.statusCode.should.eql(500)
+
+      done()
+    })
+  })
+
+  describe('sendBackJSONP', function () {
+    it('should call the next handler if there is an error', done => {
+      let nextFn = sinon.stub()
+
+      help.sendBackJSONP('foobar', {}, nextFn)(
+        new Error('Something')
+      )
+
+      nextFn.callCount.should.eql(1)
+
+      done()
+    })
+
+    it('should throw a 404 is the callback name contains non-letter characters', done => {
+      let res = {
+        send: sinon.stub()
+      }
+
+      help.sendBackJSONP('foobar123', res)(
+        null,
+        {}
+      )
+
+      res.send.callCount.should.eql(1)
+      res.send.args[0][0].should.eql(400)
+
+      done()
+    })
+
+    it('should send a response with the given callback and JSON-stringified results', done => {
+      let res = {
+        end: sinon.stub(),
+        setHeader: sinon.stub()
+      }
+      let data = {
+        results: [
+          { _id: '123', name: 'Restful Jim' }
+        ]
+      }
+
+      help.sendBackJSONP('foobar', res)(
+        null,
+        data
+      )
+
+      res.setHeader.callCount.should.eql(2)
+      res.setHeader.args[0][0].should.eql('content-type')
+      res.setHeader.args[0][1].should.eql('text/javascript')
+      res.setHeader.args[1][0].should.eql('content-length')
+      res.setHeader.args[1][1].should.be.Number
+
+      res.end.callCount.should.eql(1)
+      res.end.args[0][0].should.eql(`foobar(${JSON.stringify(data)});`)
+
+      done()
+    })
+  })
+
   describe('validateCollectionSchema', function () {
     it('should inform of missing sections', function (done) {
       var schema = {

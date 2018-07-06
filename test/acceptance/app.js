@@ -199,393 +199,18 @@ describe('Application', function () {
     })
 
     describe('POST', function () {
-      beforeEach(function (done) {
-        help.getBearerToken(function (err, token) {
-          if (err) return done(err)
-
-          bearerToken = token
-
-          done()
-        })
-      })
-
-      afterEach(function (done) {
-        help.removeTestClients(function (err) {
-          if (err) return done(err)
-          done()
-        })
-      })
-
-      it('should validate schema', function (done) {
+      it('should not accept the creation of a new collection', function (done) {
         var client = request(connectionString)
         var schema = JSON.parse(jsSchemaString)
         delete schema.fields
         var newString = JSON.stringify(schema)
 
         client
-          .post('/vapicreate/testdb/api-create/config')
-          .send(newString)
-          .set('content-type', 'text/plain')
-          .set('Authorization', 'Bearer ' + bearerToken)
-          .expect(400)
-          .expect('content-type', 'application/json')
-          .end(function (err, res) {
-            if (err) return done(err)
-
-            res.body.should.be.Object
-            res.body.should.not.be.Array
-            should.exist(res.body.errors)
-
-            done()
-          })
-      })
-
-      it('should error when sort field is specified with no indexes specified', function (done) {
-        var client = request(connectionString)
-        var schema = JSON.parse(jsSchemaString)
-        schema.settings.sort = 'newField'
-        var newString = JSON.stringify(schema)
-
-        client
-          .post('/vapicreate/testdb/api-create/config')
-          .send(newString)
-          .set('content-type', 'text/plain')
-          .set('Authorization', 'Bearer ' + bearerToken)
-          .expect(400)
-          .expect('content-type', 'application/json')
-          .end(function (err, res) {
-            if (err) return done(err)
-
-            res.body.should.be.Object
-            res.body.should.not.be.Array
-            should.exist(res.body.errors)
-            res.body.errors.should.be.Array
-
-            res.body.errors[0].title.should.eql('Missing Index Key')
-
-            done()
-          })
-      })
-
-      it('should error when sort field is specified but indexes doesn\'t include it (index style 1)', function (done) {
-        var client = request(connectionString)
-        var schema = JSON.parse(jsSchemaString)
-        schema.settings.sort = 'newField'
-        schema.settings.index = {
-          'keys': {
-            '_createdAt': 1
-          }
-        }
-
-        var newString = JSON.stringify(schema)
-
-        client
-          .post('/vapicreate/testdb/api-create/config')
-          .send(newString)
-          .set('content-type', 'text/plain')
-          .set('Authorization', 'Bearer ' + bearerToken)
-          .expect(400)
-          .expect('content-type', 'application/json')
-          .end(function (err, res) {
-            if (err) return done(err)
-
-            res.body.should.be.Object
-            res.body.should.not.be.Array
-            should.exist(res.body.errors)
-            res.body.errors.should.be.Array
-
-            res.body.errors[0].title.should.eql('Missing Index Key')
-
-            done()
-          })
-      })
-
-      it('should error when sort field is specified but indexes doesn\'t include it (index style 2)', function (done) {
-        var client = request(connectionString)
-        var schema = JSON.parse(jsSchemaString)
-        schema.settings.sort = 'newField'
-        schema.settings.index = [{
-          'keys': {
-            '_createdAt': 1
-          }
-        }]
-
-        var newString = JSON.stringify(schema)
-
-        client
-          .post('/vapicreate/testdb/api-create/config')
-          .send(newString)
-          .set('content-type', 'text/plain')
-          .set('Authorization', 'Bearer ' + bearerToken)
-          .expect(400)
-          .expect('content-type', 'application/json')
-          .end(function (err, res) {
-            if (err) return done(err)
-
-            res.body.should.be.Object
-            res.body.should.not.be.Array
-            should.exist(res.body.errors)
-            res.body.errors.should.be.Array
-
-            res.body.errors[0].title.should.eql('Missing Index Key')
-
-            done()
-          })
-      })
-
-      it('should not error when sort field is specified and indexes includes it (index style 2)', function (done) {
-        var client = request(connectionString)
-        var schema = JSON.parse(jsSchemaString)
-        schema.settings.sort = 'newField'
-        schema.settings.index = [{
-          'keys': {
-            'newField': 1
-          }
-        }]
-
-        var newString = JSON.stringify(schema)
-
-        client
-          .post('/vapicreate/testdb/api-create/config')
-          .send(newString)
-          .set('content-type', 'text/plain')
-          .set('Authorization', 'Bearer ' + bearerToken)
-          .expect(201)
-          .expect('content-type', 'application/json')
-          .end(function (err, res) {
-            if (err) return done(err)
-
-            res.body.success.should.eql(true)
-
-            done()
-          })
-      })
-
-      it('should allow creating a new collection endpoint', function (done) {
-        var client = request(connectionString)
-
-        client
-          .post('/vapicreate/testdb/api-create/config')
-          .send(jsSchemaString)
-          .set('content-type', 'text/plain')
-          .set('Authorization', 'Bearer ' + bearerToken)
-          .expect(201)
-          .expect('content-type', 'application/json')
-          .end(function (err, res) {
-            if (err) return done(err)
-
-            // Wait for a few seconds then make request to test that the new endpoint is working
-            setTimeout(function () {
-              client
-                .get('/vapicreate/testdb/api-create')
-                .set('Authorization', 'Bearer ' + bearerToken)
-                .expect(200)
-                .expect('content-type', 'application/json')
-                .end((err, res) => {
-                  done()
-                })
-            }, 300)
-          })
-      })
-
-      it('should allow creating a new collection without a settings block', function (done) {
-        let client = request(connectionString)
-        let schemaWithoutSettings = JSON.parse(jsSchemaString)
-
-        delete schemaWithoutSettings.settings
-
-        schemaWithoutSettings = JSON.stringify(schemaWithoutSettings)
-
-        client
-          .post('/vapicreate/testdb/api-create-no-settings/config')
-          .send(schemaWithoutSettings)
-          .set('content-type', 'text/plain')
-          .set('Authorization', 'Bearer ' + bearerToken)
-          .expect(201)
-          .expect('content-type', 'application/json')
-          .end((err, res) => {
-            if (err) return done(err)
-
-            // Wait for a few seconds then make request to test that the new endpoint is working
-            setTimeout(function () {
-              client
-              .post('/vapicreate/testdb/api-create-no-settings')
-              .send({newField: 'hello'})
-              .set('Authorization', 'Bearer ' + bearerToken)
-              .expect(200)
-              .expect('content-type', 'application/json')
-              .end((err, res) => {
-                client
-                .get('/vapicreate/testdb/api-create-no-settings')
-                .set('Authorization', 'Bearer ' + bearerToken)
-                .expect(200)
-                .expect('content-type', 'application/json')
-                .end((err, res) => {
-                  res.body.results.length.should.eql(1)
-                  res.body.results[0].newField.should.eql('hello')
-
-                  done()
-                })
-              })
-            }, 300)
-          })
-      })
-
-      it('should use collection schema filename as model name', function (done) {
-        var client = request(connectionString)
-
-        client
-          .post('/vapicreate/testdb/api-create-model-name/config')
-          .send(jsSchemaString)
-          .set('content-type', 'text/plain')
-          .set('Authorization', 'Bearer ' + bearerToken)
-          .expect(201)
-          .expect('content-type', 'application/json')
-          .end(function (err, res) {
-            if (err) return done(err)
-
-            res.body.success.should.eql(true)
-            res.body.message.includes('api-create-model-name').should.eql(true)
-
-            done()
-          })
-      })
-
-      it('should use property from schema file as model name', function (done) {
-        var client = request(connectionString)
-
-        var schema = JSON.parse(jsSchemaString)
-        schema['model'] = 'modelNameFromSchema'
-        jsSchemaString = JSON.stringify(schema)
-
-        client
-          .post('/vapicreate/testdb/api-create-model-name/config')
-          .send(jsSchemaString)
-          .set('content-type', 'text/plain')
-          .set('Authorization', 'Bearer ' + bearerToken)
-          .expect(201)
-          .expect('content-type', 'application/json')
-          .end(function (err, res) {
-            if (err) return done(err)
-
-            res.body.success.should.eql(true)
-            res.body.message.includes('modelNameFromSchema').should.eql(true)
-
-            done()
-          })
-      })
-
-      it('should add lastModifiedAt to schema', function (done) {
-        var client = request(connectionString)
-
-        var schema = JSON.parse(jsSchemaString)
-        delete schema.model
-        jsSchemaString = JSON.stringify(schema)
-
-        client
-          .post('/vapicreate/testdb/api-create-last-modified/config')
-          .send(jsSchemaString)
-          .set('content-type', 'text/plain')
-          .set('Authorization', 'Bearer ' + bearerToken)
-          .expect(201)
-          .end(function (err, res) {
-            if (err) return done(err)
-
-            setTimeout(function () {
-              client
-                .get('/vapicreate/testdb/api-create-last-modified/config')
-                .set('Authorization', 'Bearer ' + bearerToken)
-                .expect(200)
-                .end(function (err, res) {
-                  if (err) return done(err)
-
-                  res.body.settings.lastModifiedAt.should.exist
-
-                  done()
-                })
-            }, 1000)
-          })
-      })
-
-      it('should allow updating a new collection endpoint', function (done) {
-        var client = request(connectionString)
-
-        client
-          .post('/vapicreate/testdb/api-create/config')
-          .send(jsSchemaString)
-          .set('content-type', 'text/plain')
-          .set('Authorization', 'Bearer ' + bearerToken)
-          .expect(201)
-          .expect('content-type', 'application/json')
-          .end(function (err, res) {
-            if (err) return done(err)
-
-            setTimeout(() => {
-              // First make sure the current schema is working. At this
-              // point, `updatedField` doesn't exist in the schema.
-              client
-                .post('/vapicreate/testdb/api-create')
-                .send({
-                  updatedField: 123
-                })
-                .set('Authorization', 'Bearer ' + bearerToken)
-                .expect(400)
-                .end(function (err, res) {
-                  if (err) return done(err)
-
-                  // view the schema
-                  client
-                    .get('/vapicreate/testdb/api-create/config')
-                    .set('Authorization', 'Bearer ' + bearerToken)
-                    .end(function (err, res) {
-                      var modifiedDate = res.body.settings.lastModifiedAt
-
-                      // add a new field to the schema
-                      var schema = JSON.parse(jsSchemaString)
-                      schema.fields.updatedField = _.extend({}, schema.fields.newField, {
-                        type: 'Number',
-                        required: true
-                      })
-
-                      client
-                        .post('/vapicreate/testdb/api-create/config')
-                        .send(JSON.stringify(schema))
-                        .set('content-type', 'text/plain')
-                        .set('Authorization', 'Bearer ' + bearerToken)
-                        .expect(200)
-                        .expect('content-type', 'application/json')
-                        .end(function (err, res) {
-                          if (err) return done(err)
-
-                          // Wait, then test that the schema was updated
-                          setTimeout(function () {
-                            client
-                              .post('/vapicreate/testdb/api-create')
-                              .send({
-                                updatedField: 123
-                              })
-                              .set('Authorization', 'Bearer ' + bearerToken)
-                              .expect(200)
-                              .expect('content-type', 'application/json')
-                              .end(function (err, res) {
-                                res.body.results[0].updatedField.should.eql(123)
-
-                                // view the updated schema
-                                client
-                                  .get('/vapicreate/testdb/api-create/config')
-                                  .set('Authorization', 'Bearer ' + bearerToken)
-                                  .end(function (err, res) {
-                                    (modifiedDate !== res.body.settings.lastModifiedAt).should.eql(true)
-
-                                    done()
-                                  })
-                              })
-                          }, 300)
-                        })
-                    })
-                })
-            }, 500)
-          })
+        .post('/vapicreate/testdb/api-create/config')
+        .send(newString)
+        .set('content-type', 'text/plain')
+        .set('Authorization', 'Bearer ' + bearerToken)
+        .expect(404, done)
       })
     })
 
@@ -619,52 +244,13 @@ describe('Application', function () {
     })
 
     describe('DELETE', function () {
-      it('should allow removing endpoints', function (done) {
+      it('should not allow removing endpoints', function (done) {
         var client = request(connectionString)
 
         client
-          .post('/vapicreate/testdb/api-create/config')
-          .send(jsSchemaString)
-          .set('content-type', 'text/plain')
-          .set('Authorization', 'Bearer ' + bearerToken)
-          .expect(201)
-          .expect('content-type', 'application/json')
-          .end(function (err, res) {
-            if (err) return done(err)
-
-            setTimeout(() => {
-              client
-                .post('/vapicreate/testdb/api-create')
-                .send({
-                  updatedField: 123
-                })
-                .set('Authorization', 'Bearer ' + bearerToken)
-                .expect(200)
-                .expect('content-type', 'application/json')
-                .end(function (err, res) {
-                  if (err) return done(err)
-
-                  // send request to remove the endpoint
-                  client
-                    .delete('/vapicreate/testdb/api-create/config')
-                    .set('Authorization', 'Bearer ' + bearerToken)
-                    .expect(200)
-                    .expect('content-type', 'application/json')
-                    .end(function (err, res) {
-                      if (err) return done(err)
-
-                      setTimeout(function () {
-                        client
-                          // NOTE: cache invalidation is done via ttl, so this endpoint will be removed after ttl has elapsed
-                          .get('/vapicreate/testdb/api-create?cache=false')
-                          .set('Authorization', 'Bearer ' + bearerToken)
-                          .expect(404)
-                          .end(done)
-                      }, 300)
-                    })
-                })
-            }, 500)
-          })
+        .delete('/vapicreate/testdb/api-create/config')
+        .set('Authorization', 'Bearer ' + bearerToken)
+        .expect(404, done)
       })
     })
   })
@@ -774,7 +360,7 @@ describe('Application', function () {
     })
 
     describe('POST', function () {
-      it('should allow creating a new custom endpoint', function (done) {
+      it('should not allow creating a new custom endpoint', function (done) {
         help.getBearerToken(function (err, bearerToken) {
           var client = request(connectionString)
           // make sure the endpoint is not already there
@@ -787,31 +373,11 @@ describe('Application', function () {
 
             // create endpoint
             client
-              .post('/v1/new-endpoint/config')
-              .send(jsSchemaString)
-              .set('content-type', 'text/plain')
-              .set('Authorization', 'Bearer ' + bearerToken)
-              .expect(200)
-              .end(function (err, res) {
-                if (err) return done(err)
-
-                res.body.message.should.equal('Endpoint "v1:new-endpoint" created')
-
-                // wait, then test that endpoint was created
-                setTimeout(function () {
-                  client
-                    .get('/v1/new-endpoint?cache=false')
-                    .set('Authorization', 'Bearer ' + bearerToken)
-                    .expect(200)
-                    // .expect('content-type', 'application/json')
-                    .end(function (err, res) {
-                      if (err) return done(err)
-
-                      res.body.message.should.equal('endpoint created through the API')
-                      done()
-                    })
-                }, 1500)
-              })
+            .post('/v1/new-endpoint/config')
+            .send(jsSchemaString)
+            .set('content-type', 'text/plain')
+            .set('Authorization', 'Bearer ' + bearerToken)
+            .expect(404, done)
           })
         })
       })
@@ -837,13 +403,12 @@ describe('Application', function () {
         })
       })
 
-      it('should allow updating an endpoint', function (done) {
+      it('should not allow updating an endpoint', function (done) {
         this.timeout(8000)
         help.getBearerToken(function (err, bearerToken) {
           var client = request(connectionString)
-          // make sure the endpoint exists from last test
           client
-          .get('/v1/new-endpoint?cache=false')
+          .get('/v1/test-endpoint?cache=false')
           .set('Authorization', 'Bearer ' + bearerToken)
           .expect(200)
           .end(function (err, res) {
@@ -856,70 +421,11 @@ describe('Application', function () {
 
             // update endpoint
             client
-              .post('/v1/new-endpoint/config')
-              .send(jsSchemaString)
-              .set('content-type', 'text/plain')
-              .set('Authorization', 'Bearer ' + bearerToken)
-              .expect(200)
-              .end(function (err, res) {
-                if (err) return done(err)
-
-                // wait, then test that endpoint was created
-                setTimeout(function () {
-                  client
-                    .get('/v1/new-endpoint?cache=false')
-                    .set('Authorization', 'Bearer ' + bearerToken)
-                    .end(function (err, res) {
-                      if (err) return done(err)
-
-                      res.statusCode.should.eql(200)
-                      res.body.message.should.equal('endpoint updated through the API')
-                      done()
-                    })
-                }, 3000)
-              })
-          })
-        })
-      })
-
-      it('should allow creating a new endpoint for a new version number', function (done) {
-        help.getBearerToken(function (err, bearerToken) {
-          var client = request(connectionString)
-          // make sure the endpoint is not already there
-          client
-          .get('/v2/new-endpoint?cache=false')
-          .set('Authorization', 'Bearer ' + bearerToken)
-          .expect(404)
-          .end(function (err) {
-            if (err) return done(err)
-
-            // create endpoint
-            client
-              .post('/v2/new-endpoint/config')
-              .send(jsSchemaString)
-              .set('content-type', 'text/plain')
-              .set('Authorization', 'Bearer ' + bearerToken)
-              .expect(200)
-              .end(function (err, res) {
-                if (err) return done(err)
-
-                res.body.message.should.equal('Endpoint "v2:new-endpoint" created')
-
-                // wait, then test that endpoint was created
-                setTimeout(function () {
-                  client
-                    .get('/v2/new-endpoint?cache=false')
-                    .set('Authorization', 'Bearer ' + bearerToken)
-                    .expect(200)
-                    .expect('content-type', 'application/json')
-                    .end(function (err, res) {
-                      if (err) return done(err)
-
-                      res.body.message.should.equal('endpoint updated through the API')
-                      done()
-                    })
-                }, 1500)
-              })
+            .post('/v1/test-endpoint/config')
+            .send(jsSchemaString)
+            .set('content-type', 'text/plain')
+            .set('Authorization', 'Bearer ' + bearerToken)
+            .expect(404, done)
           })
         })
       })
@@ -1130,40 +636,37 @@ describe('Application', function () {
     })
 
     describe('POST', function () {
-      it('should allow updating the main config file', function (done) {
-        var client = request(connectionString)
+      it('should not allow updating the main config file', function (done) {
+        let client = request(connectionString)
+        let currentTtl = config.get('auth.tokenTtl')
 
         client
-          .get('/api/config')
+        .get('/api/config')
+        .set('Authorization', 'Bearer ' + bearerToken)
+        .expect(200)
+        .expect('content-type', 'application/json')
+        .end(function (err, res) {
+          if (err) return done(err)
+
+          should.exist(res.body)
+          res.body.auth.tokenTtl = 100
+
+          client
+          .post('/api/config')
           .set('Authorization', 'Bearer ' + bearerToken)
-          .expect(200)
-          .expect('content-type', 'application/json')
+          .set('content-type', 'application/json')
+          .send(res.body)
+          .expect(404)
           .end(function (err, res) {
             if (err) return done(err)
 
-            should.exist(res.body)
-            res.body.auth.tokenTtl = 100
+            delete require.cache[configPath]
+            config.loadFile(configPath)
 
-            client
-              .post('/api/config')
-              .set('Authorization', 'Bearer ' + bearerToken)
-              .set('content-type', 'application/json')
-              .send(res.body)
-              .expect(200)
-              .expect('content-type', 'application/json')
-              .end(function (err, res) {
-                if (err) return done(err)
-
-                res.body.success.should.eql(true)
-
-                // reload the config file and see that it is updated
-                delete require.cache[configPath]
-                config.loadFile(configPath)
-
-                config.get('auth.tokenTtl').should.equal(100)
-                done()
-              })
+            config.get('auth.tokenTtl').should.equal(currentTtl)
+            done()
           })
+        })
       })
     })
   })

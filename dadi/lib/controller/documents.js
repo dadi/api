@@ -2,7 +2,6 @@ const acl = require('./../model/acl')
 const config = require('./../../../config')
 const Controller = require('./index')
 const debug = require('debug')('api:controller')
-const fs = require('fs')
 const help = require('./../help')
 const url = require('url')
 
@@ -84,10 +83,11 @@ Collection.prototype.delete = function (req, res, next) {
 Collection.prototype.get = function (req, res, next) {
   let path = url.parse(req.url, true)
   let options = path.query
+  let callback = options.callback || this.model.settings.callback
 
-  // determine if this is jsonp
-  let done = options.callback
-    ? help.sendBackJSONP(options.callback, res, next)
+  // Determine if this is JSONP.
+  let done = callback
+    ? help.sendBackJSONP(callback, res, next)
     : help.sendBackJSON(200, res, next)
   let query = this._prepareQuery(req)
   let queryOptions = this._prepareQueryOptions(options)
@@ -194,66 +194,23 @@ Collection.prototype.registerRoutes = function (route, filePath) {
 
     let method = req.method && req.method.toLowerCase()
 
-    switch (method) {
-      case 'get':
-        // The client can read the schema if they have any type of access (i.e. create,
-        // delete, read or update) to the collection resource.
-        let aclKey = this.model.aclKey
-
-        return acl.access.get(req.dadiApiClient, aclKey).then(access => {
-          if (!access.create || !access.delete || !access.read || !access.update) {
-            return help.sendBackJSON(401, res, next)(
-              new Error('UNAUTHORISED')
-            )
-          }
-
-          return help.sendBackJSON(200, res, next)(null, require(filePath))
-        })
-
-      case 'delete':
-        // A client can delete the collection schema if they have root access.
-        if (!acl.client.isAdmin(req.dadiApiClient)) {
-          return help.sendBackJSON(null, res, next)(
-            acl.createError(req.dadiApiClient)
-          )
-        }
-
-        this.server.removeComponent(route)
-        this.unregisterRoutes(route)
-
-        return fs.unlink(filePath, err => {
-          help.sendBackJSON(200, res, next)(err, {
-            success: false,
-            message: `Collection deleted: ${this.model.name}`
-          })
-        })
-
-      case 'post':
-        // A client can update the collection schema if they have root access.
-        if (!acl.client.isAdmin(req.dadiApiClient)) {
-          return help.sendBackJSON(null, res, next)(
-            acl.createError(req.dadiApiClient)
-          )
-        }
-
-        let schema = typeof req.body === 'object'
-          ? req.body
-          : JSON.parse(req.body)
-
-        schema.settings.lastModifiedAt = Date.now()
-
-        let payload = JSON.stringify(schema, null, 2)
-
-        return fs.writeFile(filePath, payload, err => {
-          help.sendBackJSON(200, res, next)(err, {
-            success: true,
-            message: `Collection updated: ${this.model.name}`
-          })
-        })
-
-      default:
-        next()
+    if (method !== 'get') {
+      return next()
     }
+
+    // The client can read the schema if they have any type of access (i.e. create,
+    // delete, read or update) to the collection resource.
+    let aclKey = this.model.aclKey
+
+    return acl.access.get(req.dadiApiClient, aclKey).then(access => {
+      if (!access.create || !access.delete || !access.read || !access.update) {
+        return help.sendBackJSON(401, res, next)(
+          new Error('UNAUTHORISED')
+        )
+      }
+
+      return help.sendBackJSON(200, res, next)(null, require(filePath))
+    })
   })
 
   // Creating generic route.

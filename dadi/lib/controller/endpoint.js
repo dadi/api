@@ -1,5 +1,4 @@
 const acl = require('./../model/acl')
-const fs = require('fs')
 const help = require('./../help')
 
 const Endpoint = function (component, server, aclKey) {
@@ -51,35 +50,6 @@ Endpoint.prototype.isAuthenticated = function () {
 }
 
 Endpoint.prototype.registerRoutes = function (route, filePath) {
-  // Creating config route.
-  this.server.app.use(`${route}/config`, (req, res, next) => {
-    if (!filePath) {
-      return next()
-    }
-
-    let method = req.method && req.method.toLowerCase()
-
-    if (method !== 'post') {
-      return next()
-    }
-
-    if (!acl.client.isAdmin(req.dadiApiClient)) {
-      return help.sendBackJSON(null, res, next)(
-        acl.createError(req.dadiApiClient)
-      )
-    }
-
-    return fs.writeFile(filePath, req.body, err => {
-      if (err) return next(err)
-
-      help.sendBackJSON(200, res, next)(null, {
-        success: true,
-        message: 'Endpoint updated'
-      })
-    })
-  })
-
-  // Creating generic route.
   this.server.app.use(route, (req, res, next) => {
     try {
       // Map request method to controller method.

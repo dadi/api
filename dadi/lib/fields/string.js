@@ -62,7 +62,7 @@ module.exports.beforeOutput = function ({
   let languageField = field + config.get('i18n.fieldCharacter') + language
   let supportedLanguages = config.get('i18n.languages')
 
-  // If the languages requested is one of the supported languages
+  // If the language requested is one of the supported languages
   // and the document contains a field translation for it, we'll
   // use the translated value. If not, we use the original one.
   if (

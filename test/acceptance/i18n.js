@@ -504,4 +504,117 @@ describe('Multi-language', function () {
       })
     })
   })
+
+  it('should handle translations with special characters', done => {
+    let original = {
+      name: 'I can eat glass and it doesn\'t hurt me.'
+    }
+    let translations = {
+      'name:af': 'Ek kan glas eet, maar dit doen my nie skade nie.',
+      'name:an': 'Puedo minchar beire, no me\'n fa mal .',
+      'name:ar': 'أنا قادر على أكل الزجاج و هذا لا يؤلمني.',
+      'name:bg': 'Мога да ям стъкло, то не ми вреди.',
+      'name:bo': 'ཤེལ་སྒོ་ཟ་ནས་ང་ན་གི་མ་རེད།',
+      'name:ca': 'Puc menjar vidre, que no em fa mal.',
+      'name:cs': 'Mohu jíst sklo, neublíží mi.',
+      'name:cy': 'Dw i\'n gallu bwyta gwydr, \'dyw e ddim yn gwneud dolur i mi.',
+      'name:da': 'Jeg kan spise glas, det gør ikke ondt på mig.',
+      'name:de': 'Ich kann Glas essen, ohne mir zu schaden.',
+      'name:el': 'Μπορώ να φάω σπασμένα γυαλιά χωρίς να πάθω τίποτα.',
+      'name:eo': 'Mi povas manĝi vitron, ĝi ne damaĝas min.',
+      'name:es': 'Puedo comer vidrio, no me hace daño.',
+      'name:eu': 'Kristala jan dezaket, ez dit minik ematen.',
+      'name:fa': '.من می توانم بدونِ احساس درد شيشه بخورم',
+      'name:fi': 'Voin syödä lasia, se ei vahingoita minua.',
+      'name:fo': 'Eg kann eta glas, skaðaleysur.',
+      'name:fr': 'Je peux manger du verre, ça ne me fait pas mal.',
+      'name:ga': 'Is féidir liom gloinne a ithe. Ní dhéanann sí dochar ar bith dom.',
+      'name:gd': 'S urrainn dhomh gloinne ithe; cha ghoirtich i mi.',
+      'name:gl': 'Eu podo xantar cristais e non cortarme.',
+      'name:he': 'אני יכול לאכול זכוכית וזה לא מזיק לי.',
+      'name:hi': 'मैं काँच खा सकता हूँ और मुझे उससे कोई चोट नहीं पहुंचती.',
+      'name:ht': 'Mwen kap manje vè, li pa blese\'m.',
+      'name:hu': 'Meg tudom enni az üveget, nem lesz tőle bajom.',
+      'name:is': 'Ég get etið gler án þess að meiða mig.',
+      'name:it': 'Posso mangiare il vetro e non mi fa male.',
+      'name:ja': '私はガラスを食べられます。それは私を傷つけません。',
+      'name:km': 'ខ្ញុំអាចញុំកញ្ចក់បាន ដោយគ្មានបញ្ហារ',
+      'name:ko': '나는 유리를 먹을 수 있어요. 그래도 아프지 않아요',
+      'name:kw': 'Mý a yl dybry gwéder hag éf ny wra ow ankenya.',
+      'name:lb': 'Ech kan Glas iessen, daat deet mir nët wei.',
+      'name:lo': 'ຂອ້ຍກິນແກ້ວໄດ້ໂດຍທີ່ມັນບໍ່ໄດ້ເຮັດໃຫ້ຂອ້ຍເຈັບ.',
+      'name:mk': 'Можам да јадам стакло, а не ме штета.',
+      'name:mn': 'Би шил идэй чадна, надад хортой биш',
+      'name:nb': 'Jeg kan spise glass uten å skade meg.',
+      'name:ne': 'म काँच खान सक्छू र मलाई केहि नी हुन्‍न् ।',
+      'name:nl': 'Ik kan glas eten, het doet mĳ geen kwaad.',
+      'name:nn': 'Eg kan eta glas utan å skada meg.',
+      'name:oc': 'Pòdi manjar de veire, me nafrariá pas.',
+      'name:pl': 'Mogę jeść szkło i mi nie szkodzi.',
+      'name:pt': 'Posso comer vidro, não me faz mal.',
+      'name:rm': 'Jau sai mangiar vaider, senza che quai fa donn a mai.',
+      'name:ro': 'Pot să mănânc sticlă și ea nu mă rănește.',
+      'name:ru': 'Я могу есть стекло, оно мне не вредит.',
+      'name:sa': 'काचं शक्नोम्यत्तुम् । नोपहिनस्ति माम् ॥',
+      'name:sk': 'Môžem jesť sklo. Nezraní ma.',
+      'name:sv': 'Jag kan äta glas utan att skada mig.',
+      'name:th': 'ฉันกินกระจกได้ แต่มันไม่ทำให้ฉันเจ็บ',
+      'name:tr': 'Cam yiyebilirim, bana zararı dokunmaz.',
+      'name:uk': 'Я можу їсти скло, і воно мені не зашкодить.',
+      'name:ur': 'میں کانچ کھا سکتا ہوں اور مجھے تکلیف نہیں ہوتی ۔',
+      'name:vi': 'Tôi có thể ăn thủy tinh mà không hại gì.',
+      'name:wa': 'Dji pou magnî do vêre, çoula m\' freut nén må.',
+      'name:zh': '我能吞下玻璃而不伤身体。'
+    }
+
+    client
+    .post('/v1/library/person')
+    .set('Authorization', `Bearer ${bearerToken}`)
+    .send(
+      Object.assign(original, translations)
+    )
+    .expect(200)
+    .end((err, res) => {
+      if (err) return done(err)
+
+      let id = res.body.results[0]._id
+      let i = 0
+
+      client
+      .get(`/v1/library/person/${id}`)
+      .set('Authorization', `Bearer ${bearerToken}`)
+      .expect(200)
+      .end((err, res) => {
+        res.body.results.length.should.eql(1)
+
+        res.body.results[0].name.should.eql(
+          original.name
+        )
+        should.not.exist(res.body.results[0]._i18n)
+
+        Object.keys(translations).forEach(field => {
+          should.exist(res.body.results[0][field])
+
+          let lang = field.split(':')[1]
+
+          client
+          .get(`/v1/library/person/${id}?lang=${lang}`)
+          .set('Authorization', `Bearer ${bearerToken}`)
+          .expect(200)
+          .end((err, res) => {
+            res.body.results.length.should.eql(1)
+
+            res.body.results[0].name.should.eql(
+              translations[`name:${lang}`]
+            )
+            res.body.results[0]._i18n.name.should.eql(lang)
+
+            if (++i === Object.keys(translations).length) {
+              done()  
+            }
+          })
+        })
+      })
+    })
+  })
 })

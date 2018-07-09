@@ -176,11 +176,37 @@ describe('Multi-language', function () {
       res.body.results[0].title.should.eql(document.title)
       res.body.results[0]['title=pt'].should.eql(document['title=pt'])
 
-      config.get('i18n.fieldCharacter', configBackup.i18n.fieldCharacter)
+      config.set('i18n.fieldCharacter', configBackup.i18n.fieldCharacter)
 
       done()
     })
-  })  
+  })
+
+  it('should accept a language variation of a field, even if the language in question is not part of `i18n.languages`', done => {
+    config.set('i18n.languages', ['es', 'fr'])
+
+    let document = {
+      title: 'The Little Prince',
+      'title:pt': 'O Principezinho'
+    }
+
+    client
+    .post('/v1/library/book')
+    .set('Authorization', `Bearer ${bearerToken}`)
+    .send(document)
+    .expect(200)
+    .end((err, res) => {
+      if (err) return done(err)
+
+      res.body.results.length.should.eql(1)
+      res.body.results[0].title.should.eql(document.title)
+      res.body.results[0]['title:pt'].should.eql(document['title:pt'])
+
+      config.set('i18n.languages', configBackup.i18n.languages)
+
+      done()
+    })
+  })
 
   it('should validate language variation of a field in the same way as the main field', done => {
     config.set('i18n.fieldCharacter', ':')
@@ -244,6 +270,8 @@ describe('Multi-language', function () {
   })
 
   it('should return the translation version of a field when there is one set for the language in the `lang` parameter, falling back to the default language', done => {
+    config.set('i18n.languages', ['pt', 'fr'])
+
     let documents = [
       {
         title: 'The Little Prince',
@@ -284,12 +312,16 @@ describe('Multi-language', function () {
         should.not.exist(results[1]['title:pt'])
         should.not.exist(results[1]['title:fr'])
 
+        config.set('i18n.languages', configBackup.i18n.languages)
+
         done()
       })
     })
   })
 
   it('should return the translation version of a field when the fields projection is set to include the field in question', done => {
+    config.set('i18n.languages', ['pt', 'fr'])
+
     let documents = [
       {
         title: 'The Little Prince',
@@ -330,12 +362,54 @@ describe('Multi-language', function () {
         should.not.exist(results[1]['title:pt'])
         should.not.exist(results[1]['title:fr'])
 
+        config.set('i18n.languages', configBackup.i18n.languages)
+
         done()
       })
     })
   })
 
+  it('should return the original version of a field when the requested language is not part of `i18n.languages`', done => {
+    config.set('i18n.languages', ['fr'])
+
+    let document = {
+      title: 'The Little Prince',
+      'title:pt': 'O Principezinho',
+      'title:fr': 'Le Petit Prince'
+    }
+
+    client
+    .post('/v1/library/book')
+    .set('Authorization', `Bearer ${bearerToken}`)
+    .send(document)
+    .expect(200)
+    .end((err, res) => {
+      if (err) return done(err)
+
+      client
+      .get(`/v1/library/book?fields={"title":1}&lang=pt`)
+      .set('Authorization', `Bearer ${bearerToken}`)
+      .expect(200)
+      .end((err, res) => {
+        res.body.results.length.should.eql(1)
+
+        let results = res.body.results
+
+        results[0].title.should.eql(document.title)
+        results[0]._i18n.title.should.eql('en')
+        should.not.exist(results[0]['title:pt'])
+        should.not.exist(results[0]['title:fr'])
+
+        config.set('i18n.languages', configBackup.i18n.languages)
+
+        done()
+      })
+    })
+  })  
+
   it('should populate a `_i18n` field with a mapping of the language used for each translatable field', done => {
+    config.set('i18n.languages', ['pt', 'fr'])
+
     let document = {
       name: 'Eduardo Bouças',
       occupation: 'Software engineer',
@@ -376,12 +450,16 @@ describe('Multi-language', function () {
         result._i18n.nationality.should.eql(defaultLanguage)
         result._i18n.education.should.eql('pt')
 
+        config.set('i18n.languages', configBackup.i18n.languages)
+
         done()
       })
     })
   })
 
   it('should translate fields and create a `_i18n` map in referenced documents', done => {
+    config.set('i18n.languages', ['pt', 'fr'])
+
     let document = {
       name: 'Eduardo Bouças',
       occupation: 'Software engineer',
@@ -442,7 +520,9 @@ describe('Multi-language', function () {
         referencedResult._i18n.name.should.eql(defaultLanguage)
         referencedResult._i18n.occupation.should.eql('pt')
         referencedResult._i18n.nationality.should.eql(defaultLanguage)
-        referencedResult._i18n.education.should.eql('pt')        
+        referencedResult._i18n.education.should.eql('pt')
+
+        config.set('i18n.languages', configBackup.i18n.languages)
 
         done()
       })
@@ -450,6 +530,8 @@ describe('Multi-language', function () {
   })
 
   it('should return the translation version of a referenced field when the fields projection is set to include the field in question', done => {
+    config.set('i18n.languages', ['pt', 'fr'])
+
     let document = {
       name: 'Eduardo Bouças',
       occupation: 'Software engineer',
@@ -499,6 +581,8 @@ describe('Multi-language', function () {
         should.exist(referencedResult._i18n)
 
         referencedResult._i18n.occupation.should.eql('pt')
+
+        config.set('i18n.languages', configBackup.i18n.languages)
 
         done()
       })
@@ -566,6 +650,11 @@ describe('Multi-language', function () {
       'name:wa': 'Dji pou magnî do vêre, çoula m\' freut nén må.',
       'name:zh': '我能吞下玻璃而不伤身体。'
     }
+    let languages = Object.keys(translations).map(field => {
+      return field.split(':')[1]
+    })
+
+    config.set('i18n.languages', languages)
 
     client
     .post('/v1/library/person')
@@ -592,24 +681,24 @@ describe('Multi-language', function () {
         )
         should.not.exist(res.body.results[0]._i18n)
 
-        Object.keys(translations).forEach(field => {
-          should.exist(res.body.results[0][field])
-
-          let lang = field.split(':')[1]
+        languages.forEach(language => {
+          should.exist(res.body.results[0][`name:${language}`])
 
           client
-          .get(`/v1/library/person/${id}?lang=${lang}`)
+          .get(`/v1/library/person/${id}?lang=${language}`)
           .set('Authorization', `Bearer ${bearerToken}`)
           .expect(200)
           .end((err, res) => {
             res.body.results.length.should.eql(1)
 
             res.body.results[0].name.should.eql(
-              translations[`name:${lang}`]
+              translations[`name:${language}`]
             )
-            res.body.results[0]._i18n.name.should.eql(lang)
+            res.body.results[0]._i18n.name.should.eql(language)
 
             if (++i === Object.keys(translations).length) {
+              config.set('i18n.languages', configBackup.i18n.languages)
+
               done()  
             }
           })

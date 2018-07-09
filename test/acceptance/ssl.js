@@ -11,7 +11,7 @@ var secureClient = request(secureClientHost)
 
 var server
 
-var defaultResponse = function defaultResponse(req, res, next) {
+var defaultResponse = function defaultResponse (req, res, next) {
   var body = JSON.stringify({ foo: 'bar' })
   res.writeHead(200, {
     'content-length': body.length,
@@ -22,7 +22,6 @@ var defaultResponse = function defaultResponse(req, res, next) {
 }
 
 describe('SSL', () => {
-
   before((done) => {
     // avoid [Error: self signed certificate] code: 'DEPTH_ZERO_SELF_SIGNED_CERT'
     process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0'
@@ -66,7 +65,7 @@ describe('SSL', () => {
       .end((err, res) => {
         if (err) done(err)
         done()
-    })
+      })
   })
 
   it('should redirect http request to https when redirectPort is set', (done) => {
@@ -88,7 +87,6 @@ describe('SSL', () => {
         done()
       })
   })
-
 
   it('should respond to a https request when using unprotected ssl key without a passphrase', (done) => {
     config.set('server.protocol', 'https')

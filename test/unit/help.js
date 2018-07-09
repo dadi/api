@@ -107,7 +107,7 @@ module.exports.cleanUpDB = function (done) {
         module.exports.clearCollection('categories', (err) => {
           module.exports.clearCollection('book', (err) => {
             module.exports.clearCollection('person', (err) => {
-               done()
+              done()
             })
           })
         })
@@ -165,7 +165,7 @@ module.exports.clearCollection = function (collectionName, done) {
     conn.datastore.dropDatabase(collectionName).then(() => {
       return done()
     }).catch((err) => {
-      //console.log('clearCollection error:', err)
+      // console.log('clearCollection error:', err)
       done(err)
     })
   } else {
@@ -216,6 +216,6 @@ module.exports.whenModelsConnect = function (models, callback) {
       } else {
         model.connection.once('connect', processModel)
       }
-    })    
+    })
   })
 }

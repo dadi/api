@@ -1,11 +1,11 @@
-var fs = require('fs')
-var path = require('path')
-var should = require('should')
-var connection = require(__dirname + '/../../dadi/lib/model/connection')
-var tokenStore = require(__dirname + '/../../dadi/lib/auth/tokenStore')()
-var config = require(__dirname + '/../../config')
-var request = require('supertest')
-var _ = require('underscore')
+const acl = require('./../../dadi/lib/model/acl')
+const fs = require('fs-extra')
+const path = require('path')
+const should = require('should')
+const connection = require(__dirname + '/../../dadi/lib/model/connection')
+const config = require(__dirname + '/../../config')
+const request = require('supertest')
+const _ = require('underscore')
 
 var clientCollectionName = config.get('auth.clientCollection')
 
@@ -15,7 +15,7 @@ module.exports.createDoc = function (token, done) {
     .post('/vtest/testdb/test-schema')
     .set('Authorization', 'Bearer ' + token)
     .send({field1: ((Math.random() * 10) | 1).toString()})
-    .expect(200)
+    //.expect(200)
     .end(function (err, res) {
       if (err) return done(err)
       res.body.results.length.should.equal(1)
@@ -34,6 +34,26 @@ module.exports.createDocWithParams = function (token, doc, done) {
       res.body.results.length.should.equal(1)
       done(null, res.body.results[0])
     })
+}
+
+module.exports.createDocument = function ({
+  version,
+  database,
+  collection,
+  document,
+  token
+}) {
+  return new Promise((resolve, reject) => {
+    request(`http://${config.get('server.host')}:${config.get('server.port')}`)
+    .post(`/${version}/${database}/${collection}`)
+    .set('Authorization', `Bearer ${token}`)
+    .send(document)
+    .end((err, res) => {
+      if (err) return reject(err)
+
+      resolve(res.body)
+    })
+  })
 }
 
 // create a document with random string via the api
@@ -89,6 +109,7 @@ module.exports.dropDatabase = function (database, collectionName, done) {
 module.exports.createClient = function (client, done) {
   if (!client) {
     client = {
+      accessType: 'admin',
       clientId: 'test123',
       secret: 'superSecret'
     }
@@ -105,9 +126,20 @@ module.exports.createClient = function (client, done) {
     conn.datastore.insert({
       data: client,
       collection: collectionName,
-      schema: tokenStore.schema
+      schema: {}
     }).then(result => {
-      return done()
+      return conn.datastore.find({
+        query: {
+          clientId: client.clientId,
+          secret: client.secret
+        },
+        collection: collectionName,
+        schema: {}
+      }).then(res => {
+        res.results.length.should.eql(1)
+
+        done()
+      })
     }).catch((err) => {
       done(err)
     })
@@ -118,6 +150,114 @@ module.exports.createClient = function (client, done) {
   } else {
     conn.on('connect', createClient)
   }
+}
+
+module.exports.createACLClient = function (client, callback) {
+  let clientsConnection = connection(
+    {
+      override: true,
+      database: config.get('auth.database'),
+      collection: config.get('auth.clientCollection')
+    },
+    null,
+    config.get('datastore')
+  )
+
+  return clientsConnection.datastore.insert({
+    data: client,
+    collection: config.get('auth.clientCollection'),
+    schema: {}
+  }).then(result => {
+    return acl.access.write().then(w => {
+      if (typeof callback === 'function') {
+        done(null, result)
+      }
+
+      return result
+    })
+  }).catch(err => {
+    if (typeof callback === 'function') {
+      done(err)
+    }
+
+    return Promise.reject(err)
+  })
+}
+
+module.exports.createACLRole = function (role, callback) {
+  let rolesConnection = connection(
+    {
+      override: true,
+      database: config.get('auth.database'),
+      collection: config.get('auth.roleCollection')
+    },
+    null,
+    config.get('datastore')
+  )
+
+  return rolesConnection.datastore.insert({
+    data: role,
+    collection: config.get('auth.roleCollection'),
+    schema: {}
+  }).then(result => {
+    return acl.access.write().then(() => {
+      if (typeof callback === 'function') {
+        done(null, result)
+      }
+
+      return result
+    })
+  }).catch(err => {
+    if (typeof callback === 'function') {
+      done(err)
+    }
+
+    return Promise.reject(err)
+  })
+}
+
+module.exports.removeACLData = function (done) {
+  let accessConnection = connection(
+    {
+      override: true,
+      database: config.get('auth.database'),
+      collection: config.get('auth.accessCollection')
+    },
+    null,
+    config.get('datastore')
+  )
+
+  let clientsConnection = connection(
+    {
+      override: true,
+      database: config.get('auth.database'),
+      collection: config.get('auth.clientCollection')
+    },
+    null,
+    config.get('datastore')
+  )
+
+  let rolesConnection = connection(
+    {
+      override: true,
+      database: config.get('auth.database'),
+      collection: config.get('auth.roleCollection')
+    },
+    null,
+    config.get('datastore')
+  )
+
+  return accessConnection.datastore.dropDatabase(
+    config.get('auth.accessCollection')
+  ).then(() => {
+    return clientsConnection.datastore.dropDatabase(
+      config.get('auth.clientCollection')
+    )
+  }).then(() => {
+    return rolesConnection.datastore.dropDatabase(
+      config.get('auth.roleCollection')
+    )
+  }).then(() => done()).catch(err => done(err))
 }
 
 module.exports.removeTestClients = function (done) {
@@ -191,32 +331,49 @@ module.exports.getBearerToken = function (done) {
   })
 }
 
-module.exports.getBearerTokenWithPermissions = function (permissions, done) {
-  var client = {
+module.exports.getBearerTokenWithPermissions = function (permissions, done = (() => {})) {
+  let client = Object.assign({}, {
     clientId: 'test123',
     secret: 'superSecret'
-  }
+  }, permissions)
 
-  var clientWithPermissions = _.extend(client, permissions)
+  return new Promise((resolve, reject) => {
+    module.exports.removeTestClients(err => {
+      if (err) {
+        reject(err)
 
-  module.exports.removeTestClients(function (err) {
-    if (err) return done(err)
+        return done(err)
+      }
 
-    module.exports.createClient(clientWithPermissions, function (err) {
-      if (err) return done(err)
+      module.exports.createClient(client, err => {
+        if (err) {
+          reject(err)
 
-      request('http://' + config.get('server.host') + ':' + config.get('server.port'))
-      .post(config.get('auth.tokenUrl'))
-      .send(client)
-      .expect(200)
-      // .expect('content-type', 'application/json')
-      .end(function (err, res) {
-        if (err) return done(err)
+          return done(err)
+        }
 
-        var bearerToken = res.body.accessToken
+        request(`http://${config.get('server.host')}:${config.get('server.port')}`)
+        .post(config.get('auth.tokenUrl'))
+        .send(client)
+        .expect(200)
+        .expect('content-type', 'application/json')
+        .end((err, res) => {
+          if (err) {
+            reject(err)
 
-        should.exist(bearerToken)
-        done(null, bearerToken)
+            return done(err)
+          }
+
+          let bearerToken = res.body.accessToken
+
+          should.exist(bearerToken)
+
+          return acl.access.write().then(() => {
+            done(null, bearerToken)
+
+            resolve(bearerToken)
+          })
+        })
       })
     })
   })
@@ -250,4 +407,73 @@ module.exports.getBearerTokenWithAccessType = function (accessType, done) {
       })
     })
   })
+}
+
+module.exports.getCollectionMap = function () {
+  let collectionsPath = path.resolve(
+    config.get('paths.collections')
+  )
+  let versions = fs.readdirSync(collectionsPath)
+  let map = {}
+
+  versions.forEach(version => {
+    let versionPath = path.join(collectionsPath, version)
+    let databases = fs.readdirSync(versionPath)
+
+    databases.forEach(database => {
+      let databasePath = path.join(versionPath, database)
+      let stats = fs.statSync(databasePath)
+      
+      if (stats.isDirectory()) {
+        let collections = fs.readdirSync(databasePath)
+
+        collections.forEach(collection => {
+          let match = collection.match(/^collection.(.*).json$/)
+
+          if (!match) {
+            return
+          }
+
+          let collectionName = match[1]
+          let collectionPath = path.join(databasePath, collection)
+
+          map[`/${version}/${database}/${collectionName}`] = require(collectionPath)
+        })
+      }      
+    })
+  })
+
+  return map
+}
+
+module.exports.writeTempFile = function (filePath, data, callback) {
+  let existingContent
+  let fullPath = path.resolve(__dirname, filePath)
+
+  try {
+    existingContent = fs.readFileSync(fullPath, 'utf8')
+  } catch (err) {}
+
+  let revertFn = () => {
+    if (existingContent) {
+      fs.writeFileSync(fullPath, existingContent)
+    } else {
+      fs.unlinkSync(fullPath)
+    }
+  }
+
+  let parsedData = typeof data === 'string'
+    ? data
+    : JSON.stringify(data, null, 2)
+
+  fs.ensureDir(
+    path.dirname(fullPath),
+    err => {
+      fs.writeFileSync(fullPath, parsedData)    
+    }
+  )
+
+  setTimeout(() => {
+    callback(revertFn)
+  }, 200)
 }

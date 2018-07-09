@@ -1,15 +1,35 @@
 'use strict'
 
+const acl = require('./../model/acl')
 const fs = require('fs')
+const help = require('./../help')
 const path = require('path')
-const help = require(path.join(__dirname, '/../help'))
 
 const HOOK_PREFIX = 'hook:'
 
-const HooksController = function (parameters) {
-  this.components = parameters.components
-  this.docs = parameters.docs
-  this.path = parameters.path
+const HooksController = function (server, hooksPath) {
+  this.path = hooksPath
+  this.server = server
+
+  server.app.use('/api/hooks', (req, res, next) => {
+    let method = req.method && req.method.toLowerCase()
+
+    if (method === 'get') {
+      return this.get(req, res, next)
+    }
+
+    return help.sendBackJSON(405, res, next)(null, {'error': 'Invalid method'})
+  })
+
+  server.app.use('/api/hooks/:hookName/config', (req, res, next) => {
+    let method = req.method && req.method.toLowerCase()
+
+    if (typeof this[method] === 'function') {
+      return this[method](req, res, next)
+    }
+
+    return help.sendBackJSON(405, res, next)(null, {'error': 'Invalid method'})
+  })
 }
 
 HooksController.prototype._deleteHook = function (name) {
@@ -27,7 +47,7 @@ HooksController.prototype._deleteHook = function (name) {
 HooksController.prototype._findHooks = function (filterByName) {
   let hooks = []
 
-  Object.keys(this.components).find(key => {
+  Object.keys(this.server.components).find(key => {
     if (key.indexOf(HOOK_PREFIX) === 0) {
       const hookName = key.replace(HOOK_PREFIX, '')
 
@@ -58,42 +78,33 @@ HooksController.prototype._writeHook = function (name, content) {
   })
 }
 
-HooksController.prototype.delete = function (req, res, next) {
-  const name = req.params.hookName
-  const hook = this._findHooks(name)[0]
-
-  if (!hook) {
-    return help.sendBackText(404, res, next)(null, '')
+HooksController.prototype.get = function (req, res, next) {
+  if (!acl.client.isAdmin(req.dadiApiClient)) {
+    return help.sendBackJSON(null, res, next)(
+      acl.createError(req.dadiApiClient)
+    )
   }
 
-  this._deleteHook(name).then(() => {
-    return help.sendBackText(200, res, next)(null, '')
-  }).catch(err => {
-    return help.sendBackText(200, res, next)(err, '')
-  })
-}
-
-HooksController.prototype.get = function (req, res, next) {
   // Return the content of a specific hook
   if (req.params.hookName) {
-    const name = req.params.hookName
-    const hook = this._findHooks(name)[0]
+    let name = req.params.hookName
+    let hook = this._findHooks(name)[0]
 
     if (!hook) {
       return help.sendBackText(404, res, next)(null, '')
     }
 
-    fs.readFile(this.components[HOOK_PREFIX + name], (err, content) => {
+    fs.readFile(this.server.components[HOOK_PREFIX + name], (err, content) => {
       return help.sendBackText(200, res, next)(err, content.toString())
     })
   } else {
     // List all hooks
-    const hooks = this._findHooks().map(key => {
+    let hooks = this._findHooks().map(key => {
       let hook = {
         name: key
       }
 
-      const docs = this.docs[HOOK_PREFIX + key]
+      let docs = this.server.docs[HOOK_PREFIX + key]
 
       if (docs && docs[0]) {
         hook.description = docs[0].description
@@ -104,44 +115,8 @@ HooksController.prototype.get = function (req, res, next) {
       return hook
     })
 
-    const data = {
-      hooks: hooks
-    }
-
-    return help.sendBackJSON(200, res, next)(null, data)
+    return help.sendBackJSON(200, res, next)(null, {results: hooks})
   }
 }
 
-HooksController.prototype.post = function (req, res, next) {
-  const name = req.params.hookName
-  const hook = this._findHooks(name)[0]
-
-  if (hook) {
-    return help.sendBackJSON(409, res, next)(null, {
-      err: 'Hook already exists'
-    })
-  }
-
-  return this._writeHook(name, req.body).then(() => {
-    return help.sendBackText(200, res, next)(null, '')
-  }).catch(err => {
-    return help.sendBackText(200, res, next)(err, '')
-  })
-}
-
-HooksController.prototype.put = function (req, res, next) {
-  const name = req.params.hookName
-  const hook = this._findHooks(name)[0]
-
-  if (!hook) {
-    return help.sendBackText(404, res, next)(null, '')
-  }
-
-  return this._writeHook(name, req.body).then(() => {
-    return help.sendBackText(200, res, next)(null, '')
-  }).catch(err => {
-    return help.sendBackText(200, res, next)(err, '')
-  })
-}
-
-module.exports = HooksController
+module.exports = (server, hooksPath) => new HooksController(server, hooksPath)

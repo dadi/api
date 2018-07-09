@@ -92,7 +92,7 @@ describe('History', function () {
               if (err) return done(err)
 
               mod.history.createEach(docs['results'], 'delete', mod).then(() => {
-                mod.find({ fieldName: { '$regex' : '^foo-' } }, function (err, docs) {
+                mod.find({ fieldName: { '$regex': '^foo-' } }, function (err, docs) {
                   if (err) return done(err)
 
                   docs.results[0]._history.length.should.equal(1)
@@ -176,9 +176,8 @@ describe('History', function () {
         mod.create({ fieldName: 'foo-1' }, function (err, result) {
           const doc = result.results[0]
           mod.delete({ _id: { '$in': [ doc._id ] } }, function (err, result) {
-            
             const modHistory = model('testModelNameHistory', help.getModelSchema(), null, { database: 'testdb', storeRevisions: false })
-            
+
             help.whenModelsConnect([modHistory], () => {
               return modHistory.find({}, {}, function (err, docs) {
                 should.exist(docs.results)

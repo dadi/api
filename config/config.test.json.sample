@@ -32,9 +32,9 @@
     }
   },
   "paths": {
-    "collections": "test/acceptance/workspace/collections",
-    "endpoints": "test/acceptance/workspace/endpoints",
-    "hooks": "test/acceptance/workspace/hooks"
+    "collections": "test/acceptance/temp-workspace/collections",
+    "endpoints": "test/acceptance/temp-workspace/endpoints",
+    "hooks": "test/acceptance/temp-workspace/hooks"
   },
   "logging": {
     "enabled": true,
@@ -45,7 +45,7 @@
   },
   "media": {
     "defaultBucket": "mediaStore",
-    "basePath": "test/acceptance/workspace/media"
+    "basePath": "test/acceptance/temp-workspace/media"
   },
   "search": {
     "enabled": false,

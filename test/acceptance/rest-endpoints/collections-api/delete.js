@@ -9,6 +9,7 @@ const app = require(__dirname + '/../../../../dadi/lib/')
 
 // variables scoped for use throughout tests
 const connectionString = 'http://' + config.get('server.host') + ':' + config.get('server.port')
+let configBackup = config.get()
 let bearerToken
 let lastModifiedAt = 0
 
@@ -119,17 +120,9 @@ describe('Collections API – DELETE', function () {
           client
             .get('/vtest/testdb/test-schema/' + doc._id)
             .set('Authorization', 'Bearer ' + bearerToken)
-            .expect(200)
             .expect('content-type', 'application/json')
-            .end(function (err, res) {
-              if (err) return done(err)
-
-              res.body.results.should.exist
-              res.body.results.should.be.Array
-              res.body.results.length.should.equal(0)
-
-              done()
-            })
+            .expect(404)
+            .end(done)
         })
     })
   })
@@ -159,16 +152,10 @@ describe('Collections API – DELETE', function () {
           client
             .get('/vtest/testdb/test-schema/' + doc.$id)
             .set('Authorization', 'Bearer ' + bearerToken)
-            .expect(200)
+            .expect(404)
             .expect('content-type', 'application/json')
-            .end(function (err, res) {
-              if (err) return done(err)
-
-              res.body.results.should.exist
-              res.body.results.should.be.Array
-              res.body.results.length.should.equal(0)
-
-              config.set('internalFieldsPrefix', originalPrefix)
+            .end((err, res) => {
+              config.set('internalFieldsPrefix', configBackup.internalFieldsPrefix)
 
               done()
             })

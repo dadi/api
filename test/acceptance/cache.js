@@ -1,49 +1,52 @@
-var crypto = require('crypto')
-var fs = require('fs')
-var path = require('path')
-var should = require('should')
-var request = require('supertest')
-// var redis = require('redis');
-var fakeredis = require('fakeredis')
-var sinon = require('sinon')
-var proxyquire = require('proxyquire')
-var url = require('url')
-var _ = require('underscore')
+const crypto = require('crypto')
+const fs = require('fs')
+const path = require('path')
+const should = require('should')
+const request = require('supertest')
+// const redis = require('redis');
+const fakeredis = require('fakeredis')
+const sinon = require('sinon')
+const proxyquire = require('proxyquire')
+const url = require('url')
+const _ = require('underscore')
 
-var config = require(__dirname + '/../../config.js')
-var app = require(__dirname + '/../../dadi/lib/')
-var api = require(__dirname + '/../../dadi/lib/api')
-var Server = require(__dirname + '/../../dadi/lib')
-var cache = require(__dirname + '/../../dadi/lib/cache')
-var help = require(__dirname + '/help')
+const config = require(__dirname + '/../../config.js')
+const app = require(__dirname + '/../../dadi/lib/')
+const api = require(__dirname + '/../../dadi/lib/api')
+const Server = require(__dirname + '/../../dadi/lib')
+const cache = require(__dirname + '/../../dadi/lib/cache')
+const help = require(__dirname + '/help')
 
-var testConfigString
-var cacheKeys = []
-var bearerToken
+let configBackup
+let testConfigString
+let cacheKeys = []
+let bearerToken
 
 describe('Cache', function (done) {
   this.timeout(4000)
 
-  after(function (done) {
-    testConfigString = fs.readFileSync(config.configPath())
+  before(() => {
+    configBackup = config.get()
+  })
 
-    var newTestConfig = JSON.parse(testConfigString)
-    newTestConfig.caching.directory.enabled = true
-    newTestConfig.caching.redis.enabled = false
-    fs.writeFileSync(config.configPath(), JSON.stringify(newTestConfig, null, 2))
+  after(function (done) {
+    config.set('caching.directory.enabled', configBackup.caching.directory.enabled)
+    config.set('caching.redis.enabled', configBackup.caching.redis.enabled)
+
     done()
   })
 
   beforeEach(function (done) {
     try {
       cache.reset()
-      done()
-    } catch (err) {
-      done()
-    }
+    } catch (err) {}
+
+    done()
   })
 
-  it.skip('should use cache if available', function (done) {
+  it('should use cache if available', function (done) {
+    config.set('caching.directory.enabled', true)
+
     app.start(function () {
       help.dropDatabase('testdb', function (err) {
         if (err) return done(err)
@@ -78,23 +81,25 @@ describe('Cache', function (done) {
               .end(function (err, res2) {
                 if (err) return done(err)
 
-                client
-                .get('/vtest/testdb/test-schema')
-                .set('Authorization', 'Bearer ' + bearerToken)
-                .expect(200)
-                .end(function (err, res3) {
-                  if (err) return done(err)
+                setTimeout(() => {
+                  client
+                  .get('/vtest/testdb/test-schema')
+                  .set('Authorization', 'Bearer ' + bearerToken)
+                  .expect(200)
+                  .end(function (err, res3) {
+                    if (err) return done(err)
 
-                  res2.text.should.equal(res3.text)
+                    res2.text.should.equal(res3.text)
 
-                  should.exist(res3.headers['x-cache'])
-                  res3.headers['x-cache'].should.eql('HIT')
+                    should.exist(res3.headers['x-cache'])
+                    res3.headers['x-cache'].should.eql('HIT')
 
-                  help.removeTestClients(function () {
-                    help.clearCache()
-                    app.stop(done)
+                    help.removeTestClients(function () {
+                      help.clearCache()
+                      app.stop(done)
+                    })
                   })
-                })
+                }, 300)
               })
             })
           })
@@ -103,7 +108,9 @@ describe('Cache', function (done) {
     })
   })
 
-  it.skip('should allow bypassing cache with query string flag', function (done) {
+  it('should allow bypassing cache with query string flag', function (done) {
+    config.set('caching.directory.enabled', true)
+
     app.start(function () {
       help.dropDatabase('testdb', function (err) {
         if (err) return done(err)
@@ -158,20 +165,8 @@ describe('Cache', function (done) {
   })
 
   it('should allow disabling through config', function (done) {
-    testConfigString = fs.readFileSync(config.configPath())
-
-    var newTestConfig = JSON.parse(testConfigString)
-    newTestConfig.caching.directory.enabled = false
-    newTestConfig.caching.redis.enabled = false
-
-    fs.writeFileSync(config.configPath(), JSON.stringify(newTestConfig, null, 2))
-
-    cache.reset()
-
-    delete require.cache[__dirname + '/../../config']
-    delete require.cache[__dirname + '/../../dadi/lib/']
-    config = require(__dirname + '/../../config')
-    config.loadFile(config.configPath())
+    config.set('caching.directory.enabled', false)
+    config.set('caching.redis.enabled', false)
 
     var spy = sinon.spy(fs, 'createWriteStream')
 
@@ -186,45 +181,39 @@ describe('Cache', function (done) {
           var client = request('http://' + config.get('server.host') + ':' + config.get('server.port'))
 
           client
-        .get('/vtest/testdb/test-schema')
-        .set('Authorization', 'Bearer ' + bearerToken)
-        .expect(200)
-        .end(function (err, res1) {
-          if (err) return done(err)
-
-          res1.body['results'].length.should.equal(0)
-
-          client
-          .post('/vtest/testdb/test-schema')
+          .get('/vtest/testdb/test-schema')
           .set('Authorization', 'Bearer ' + bearerToken)
-          .send({field1: 'foo!'})
           .expect(200)
-          .end(function (err, res) {
+          .end(function (err, res1) {
             if (err) return done(err)
 
+            res1.body['results'].length.should.equal(0)
+
             client
-            .get('/vtest/testdb/test-schema')
+            .post('/vtest/testdb/test-schema')
             .set('Authorization', 'Bearer ' + bearerToken)
+            .send({field1: 'foo!'})
             .expect(200)
-            .end(function (err, res2) {
+            .end(function (err, res) {
               if (err) return done(err)
 
-              res2.body['results'].length.should.equal(1)
+              client
+              .get('/vtest/testdb/test-schema')
+              .set('Authorization', 'Bearer ' + bearerToken)
+              .expect(200)
+              .end(function (err, res2) {
+                if (err) return done(err)
 
-              var called = spy.called
-              spy.restore()
-              called.should.be.false
+                res2.body['results'].length.should.equal(1)
 
-              fs.writeFileSync(config.configPath(), testConfigString)
-              cache.reset()
-              delete require.cache[__dirname + '/../../config']
-              config = require(__dirname + '/../../config')
-              config.loadFile(config.configPath())
+                var called = spy.called
+                spy.restore()
+                called.should.be.false
 
-              app.stop(done)
+                app.stop(done)
+              })
             })
           })
-        })
         })
       })
     })
@@ -232,17 +221,10 @@ describe('Cache', function (done) {
 
   describe('Filesystem', function (done) {
     beforeEach(function (done) {
-      var testConfigString = fs.readFileSync(config.configPath())
+      config.set('caching.directory.enabled', true)
+      config.set('caching.redis.enabled', false)
 
-      var newTestConfig = JSON.parse(testConfigString)
-      newTestConfig.caching.directory.enabled = true
-      newTestConfig.caching.redis.enabled = false
-
-      fs.writeFileSync(config.configPath(), JSON.stringify(newTestConfig, null, 2))
-      delete require.cache[__dirname + '/../../config']
       cache.reset()
-
-      config.loadFile(config.configPath())
 
       app.start(function () {
         help.dropDatabase('testdb', function (err) {
@@ -261,7 +243,6 @@ describe('Cache', function (done) {
 
     afterEach(function (done) {
       help.removeTestClients(function () {
-        // help.clearCache();
         app.stop(done)
       })
     })
@@ -348,38 +329,40 @@ describe('Cache', function (done) {
 
           var client = request('http://' + config.get('server.host') + ':' + config.get('server.port'))
 
-          client
-          .get('/vtest/testdb/test-schema')
-          .set('Authorization', 'Bearer ' + bearerToken)
-          .expect(200)
-          .end(function (err, res1) {
-            if (err) return done(err)
-
+          setTimeout(() => {
             client
-            .post('/vtest/testdb/test-schema')
+            .get('/vtest/testdb/test-schema')
             .set('Authorization', 'Bearer ' + bearerToken)
-            .send({field1: 'foo!'})
             .expect(200)
-            .end(function (err, res2) {
+            .end(function (err, res1) {
               if (err) return done(err)
 
-              setTimeout(function () {
-                client
-                .get('/vtest/testdb/test-schema')
-                .set('Authorization', 'Bearer ' + bearerToken)
-                .expect(200)
-                .end(function (err, res3) {
-                  if (err) return done(err)
+              client
+              .post('/vtest/testdb/test-schema')
+              .set('Authorization', 'Bearer ' + bearerToken)
+              .send({field1: 'foo!'})
+              .expect(200)
+              .end(function (err, res2) {
+                if (err) return done(err)
 
-                  res1.body.results.length.should.eql(2)
-                  res3.body.results.length.should.eql(3)
-                  res3.text.should.not.equal(res1.text)
+                setTimeout(function () {
+                  client
+                  .get('/vtest/testdb/test-schema')
+                  .set('Authorization', 'Bearer ' + bearerToken)
+                  .expect(200)
+                  .end(function (err, res3) {
+                    if (err) return done(err)
 
-                  done()
-                })
-              }, 300)
+                    res1.body.results.length.should.eql(2)
+                    res3.body.results.length.should.eql(3)
+                    res3.text.should.not.equal(res1.text)
+
+                    done()
+                  })
+                }, 300)
+              })
             })
-          })
+          }, 300)
         })
       })
     })
@@ -395,65 +378,69 @@ describe('Cache', function (done) {
 
           var client = request('http://' + config.get('server.host') + ':' + config.get('server.port'))
 
-          // GET
-          client
-          .get('/vtest/testdb/test-schema')
-          .set('Authorization', 'Bearer ' + bearerToken)
-          .expect(200)
-          .end(function (err, getRes1) {
-            if (err) return done(err)
-
-            // CREATE
+          setTimeout(() => {
+            // GET
             client
-            .post('/vtest/testdb/test-schema')
+            .get('/vtest/testdb/test-schema')
             .set('Authorization', 'Bearer ' + bearerToken)
-            .send({field1: 'foo!'})
             .expect(200)
-            .end(function (err, postRes1) {
+            .end(function (err, getRes1) {
               if (err) return done(err)
 
-              // save id for updating
-              var id = postRes1.body.results[0]._id
-
-              // GET AGAIN - should cache new results
+              // CREATE
               client
-              .get('/vtest/testdb/test-schema')
+              .post('/vtest/testdb/test-schema')
               .set('Authorization', 'Bearer ' + bearerToken)
+              .send({field1: 'foo!'})
               .expect(200)
-              .end(function (err, getRes2) {
+              .end(function (err, postRes1) {
                 if (err) return done(err)
 
-                setTimeout(function () {
-                  // UPDATE again
+                // save id for updating
+                var id = postRes1.body.results[0]._id
+
+                setTimeout(() => {
+                  // GET AGAIN - should cache new results
                   client
-                  .put('/vtest/testdb/test-schema/' + id)
+                  .get('/vtest/testdb/test-schema')
                   .set('Authorization', 'Bearer ' + bearerToken)
-                  .send({field1: 'foo bar baz!'})
                   .expect(200)
-                  .end(function (err, postRes2) {
+                  .end(function (err, getRes2) {
                     if (err) return done(err)
 
-                    // WAIT, then GET again
                     setTimeout(function () {
+                      // UPDATE again
                       client
-                      .get('/vtest/testdb/test-schema')
+                      .put('/vtest/testdb/test-schema/' + id)
                       .set('Authorization', 'Bearer ' + bearerToken)
+                      .send({field1: 'foo bar baz!'})
                       .expect(200)
-                      .end(function (err, getRes3) {
+                      .end(function (err, postRes2) {
                         if (err) return done(err)
 
-                        var result = _.findWhere(getRes3.body.results, { '_id': id })
+                        // WAIT, then GET again
+                        setTimeout(function () {
+                          client
+                          .get('/vtest/testdb/test-schema')
+                          .set('Authorization', 'Bearer ' + bearerToken)
+                          .expect(200)
+                          .end(function (err, getRes3) {
+                            if (err) return done(err)
 
-                        result.field1.should.eql('foo bar baz!')
+                            var result = _.findWhere(getRes3.body.results, { '_id': id })
 
-                        done()
+                            result.field1.should.eql('foo bar baz!')
+
+                            done()
+                          })
+                        }, 200)
                       })
-                    }, 200)
+                    }, 300)
                   })
                 }, 300)
               })
             })
-          })
+          }, 300)
         })
       })
     })
@@ -468,64 +455,68 @@ describe('Cache', function (done) {
 
           var client = request('http://' + config.get('server.host') + ':' + config.get('server.port'))
 
-          // GET
-          client
-          .get('/vtest/testdb/test-schema')
-          .set('Authorization', 'Bearer ' + bearerToken)
-          .expect(200)
-          .end(function (err, getRes1) {
-            if (err) return done(err)
-
-            // CREATE
+          setTimeout(() => {
+            // GET
             client
-            .post('/vtest/testdb/test-schema')
+            .get('/vtest/testdb/test-schema')
             .set('Authorization', 'Bearer ' + bearerToken)
-            .send({field1: 'foo!'})
             .expect(200)
-            .end(function (err, postRes1) {
+            .end(function (err, getRes1) {
               if (err) return done(err)
 
-              // save id for deleting
-              var id = postRes1.body.results[0]._id
-
-              // GET AGAIN - should cache new results
+              // CREATE
               client
-              .get('/vtest/testdb/test-schema')
+              .post('/vtest/testdb/test-schema')
               .set('Authorization', 'Bearer ' + bearerToken)
+              .send({field1: 'foo!'})
               .expect(200)
-              .end(function (err, getRes2) {
+              .end(function (err, postRes1) {
                 if (err) return done(err)
 
-                setTimeout(function () {
-                  // DELETE
+                // save id for deleting
+                var id = postRes1.body.results[0]._id
+
+                setTimeout(() => {
+                  // GET AGAIN - should cache new results
                   client
-                  .delete('/vtest/testdb/test-schema/' + id)
+                  .get('/vtest/testdb/test-schema')
                   .set('Authorization', 'Bearer ' + bearerToken)
-                  .expect(204)
-                  .end(function (err, postRes2) {
+                  .expect(200)
+                  .end(function (err, getRes2) {
                     if (err) return done(err)
 
-                    // WAIT, then GET again
                     setTimeout(function () {
+                      // DELETE
                       client
-                      .get('/vtest/testdb/test-schema')
+                      .delete('/vtest/testdb/test-schema/' + id)
                       .set('Authorization', 'Bearer ' + bearerToken)
-                      .expect(200)
-                      .end(function (err, getRes3) {
+                      .expect(204)
+                      .end(function (err, postRes2) {
                         if (err) return done(err)
 
-                        var result = _.findWhere(getRes3.body.results, { '_id': id })
+                        // WAIT, then GET again
+                        setTimeout(function () {
+                          client
+                          .get('/vtest/testdb/test-schema')
+                          .set('Authorization', 'Bearer ' + bearerToken)
+                          .expect(200)
+                          .end(function (err, getRes3) {
+                            if (err) return done(err)
 
-                        should.not.exist(result)
+                            var result = _.findWhere(getRes3.body.results, { '_id': id })
 
-                        done()
+                            should.not.exist(result)
+
+                            done()
+                          })
+                        }, 300)
                       })
-                    }, 300)
+                    }, 700)
                   })
-                }, 700)
+                }, 300)
               })
             })
-          })
+          }, 300)
         })
       })
     })
@@ -549,17 +540,19 @@ describe('Cache', function (done) {
         .end(function (err, res) {
           if (err) return done(err)
 
-          client
-          .get('/vtest/testdb/test-schema?callback=myCallback')
-          .set('Authorization', 'Bearer ' + bearerToken)
-          .expect(200)
-          .expect('content-type', 'text/javascript')
-          .end(function (err, res2) {
-            if (err) return done(err)
+          setTimeout(() => {
+            client
+            .get('/vtest/testdb/test-schema?callback=myCallback')
+            .set('Authorization', 'Bearer ' + bearerToken)
+            .expect(200)
+            .expect('content-type', 'text/javascript')
+            .end(function (err, res2) {
+              if (err) return done(err)
 
-            res2.text.should.not.equal(res1.text)
-            done()
-          })
+              res2.text.should.not.equal(res1.text)
+              done()
+            })
+          }, 300)
         })
       })
     })
@@ -567,29 +560,14 @@ describe('Cache', function (done) {
 
   describe('Redis', function (done) {
     beforeEach(function (done) {
-      testConfigString = fs.readFileSync(config.configPath())
+      config.set('caching.directory.enabled', false)
+      config.set('caching.redis.enabled', true)
+      config.set('caching.ttl', configBackup.caching.ttl)
 
-      var newTestConfig = JSON.parse(testConfigString)
-      newTestConfig.caching.directory.enabled = false
-      newTestConfig.caching.redis.enabled = true
-
-      fs.writeFileSync(config.configPath(), JSON.stringify(newTestConfig, null, 2))
-      delete require.cache[__dirname + '/../../config']
       cache.reset()
 
       cacheKeys = []
 
-      config.loadFile(config.configPath())
-
-      // delete require.cache[__dirname + '/../../dadi/lib/cache'];
-      // cache = require(__dirname + '/../../dadi/lib/cache');
-      // delete require.cache[__dirname + '/../../config'];
-      // config = require(__dirname + '/../../config');
-      done()
-    })
-
-    afterEach(function (done) {
-      fs.writeFileSync(config.configPath(), testConfigString)
       done()
     })
 
@@ -666,9 +644,6 @@ describe('Cache', function (done) {
     })
 
     it('should check key exists in Redis', function (done) {
-      delete require.cache[__dirname + '/../../config.js']
-      config.loadFile(config.configPath())
-
       delete require.cache[__dirname + '/../../dadi/lib/']
 
       cache.reset()
@@ -714,9 +689,6 @@ describe('Cache', function (done) {
     })
 
     it('should return data if key exists in Redis, with correct headers', function (done) {
-      delete require.cache[__dirname + '/../../config.js']
-      config.loadFile(config.configPath())
-
       delete require.cache[__dirname + '/../../dadi/lib/']
 
       // generate expected cacheKey
@@ -763,17 +735,8 @@ describe('Cache', function (done) {
     it('should invalidate based on TTL', function (done) {
       this.timeout(6000)
 
-      var configString = fs.readFileSync(config.configPath())
-      var newTestConfig = JSON.parse(configString)
-      newTestConfig.caching.ttl = 1
-      fs.writeFileSync(config.configPath(), JSON.stringify(newTestConfig, null, 2))
-      delete require.cache[__dirname + '/../../config']
-      // config = require(__dirname + '/../../config');
-
-      delete require.cache[__dirname + '/../../config.js']
+      config.set('caching.ttl', 1)
       delete require.cache[__dirname + '/../../dadi/lib/']
-
-      config.loadFile(config.configPath())
 
       cache.reset()
       var c = cache(app)

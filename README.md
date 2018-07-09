@@ -1,7 +1,7 @@
 <img src="https://dadi.cloud/assets/products/dadi-api-full.png" alt="DADI API" height="65"/>
 
 [![npm (scoped)](https://img.shields.io/npm/v/@dadi/api.svg?maxAge=10800&style=flat-square)](https://www.npmjs.com/package/@dadi/api)
-[![coverage](https://img.shields.io/badge/coverage-84%25-yellow.svg?style=flat)](https://github.com/dadi/api)
+[![coverage](https://img.shields.io/badge/coverage-89%25-yellow.svg?style=flat)](https://github.com/dadi/api)
 [![Build Status](https://travis-ci.org/dadi/api.svg?branch=master)](https://travis-ci.org/dadi/api)
 [![JavaScript Style Guide](https://img.shields.io/badge/code%20style-standard-brightgreen.svg?style=flat-square)](http://standardjs.com/)
 
@@ -35,7 +35,7 @@ It is part of DADI, a suite of components covering the full development stack, b
 
 ### Install API
 
-The quickest way to get started with *API* is to use [DADI CLI](https://github.com/dadi/cli). See [Creating an API](https://docs.dadicloud/api) for full installation details.
+The quickest way to get started with *API* is to use [DADI CLI](https://github.com/dadi/cli). See [Creating an API](https://docs.dadi.cloud/api#creating-an-api) for full installation details.
 
 
 ### Configuration

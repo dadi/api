@@ -7,11 +7,12 @@ const help = require(__dirname + '/../help')
 const app = require(__dirname + '/../../../dadi/lib/')
 
 let bearerToken
+let configBackup = config.get()
 let connectionString = 'http://' + config.get('server.host') + ':' + config.get('server.port')
 
 describe('Reference Field', () => {
   beforeEach(done => {
-    config.set('paths.collections', 'test/acceptance/workspace/collections')
+    config.set('paths.collections', 'test/acceptance/temp-workspace/collections')
 
     help.dropDatabase('library', 'book', err => {
       if (err) return done(err)
@@ -20,11 +21,16 @@ describe('Reference Field', () => {
         help.dropDatabase('library', 'event', err => {
           if (err) return done(err)
           help.dropDatabase('library', 'misc', err => {
-            app.start(() => {
-              help.getBearerToken(function (err, token) {
-                if (err) return done(err)
-                bearerToken = token
-                done()
+            if (err) return done(err)
+            help.dropDatabase('library', 'taxonomy', err => {
+              if (err) return done(err)
+
+              app.start(() => {
+                help.getBearerToken(function (err, token) {
+                  if (err) return done(err)
+                  bearerToken = token
+                  done()
+                })
               })
             })
           })
@@ -34,7 +40,7 @@ describe('Reference Field', () => {
   })
 
   afterEach(done => {
-    config.set('paths.collections', 'workspace/collections')
+    config.set('paths.collections', configBackup.paths.collections)
     app.stop(done)
   })
 
@@ -713,81 +719,65 @@ describe('Reference Field', () => {
   describe('update', () => {
     it('should compose updated document and return when history is on', done => {
       help.getBearerTokenWithAccessType('admin', function (err, token) {
-        // modify schema settings
-        let jsSchemaString = fs.readFileSync(__dirname + '/../workspace/collections/v1/library/collection.book.json', {encoding: 'utf8'})
-        let schema = JSON.parse(jsSchemaString)
-        schema.settings.storeRevisions = true
-
         config.set('query.useVersionFilter', true)
 
-        let book
+        let parent
 
-        let client = request(connectionString)
-        client
-          .post('/v1/library/book/config')
-          .send(JSON.stringify(schema, null, 2))
-          .set('content-type', 'text/plain')
-          .set('Authorization', 'Bearer ' + token)
-          .expect(200)
-          .expect('content-type', 'application/json')
+        setTimeout(() => {
+          request(connectionString)
+          .post('/v1/library/taxonomy')
+          .set('Authorization', 'Bearer ' + bearerToken)
+          .send({word: 'parent'})
           .end((err, res) => {
-            setTimeout(() => {
-              client
-                .post('/v1/library/book')
-                .set('Authorization', 'Bearer ' + bearerToken)
-                .send({title: 'For Whom The Bell Tolls'})
-                .end((err, res) => {
-                  if (err) return done(err)
+            if (err) return done(err)
 
-                  book = res.body.results[0]
+            parent = res.body.results[0]
 
-                  client
-                    .post('/v1/library/person')
-                    .set('Authorization', 'Bearer ' + bearerToken)
-                    .send({name: 'Ernest H.'})
-                    .expect(200)
-                    .end((err, res) => {
-                      if (err) return done(err)
+            request(connectionString)
+            .post('/v1/library/taxonomy')
+            .set('Authorization', 'Bearer ' + bearerToken)
+            .send({word: 'child'})
+            .expect(200)
+            .end((err, res) => {
+              if (err) return done(err)
 
-                      let doc = res.body.results[0]
-                      should.exist(doc)
+              let doc = res.body.results[0]
+              should.exist(doc)
 
-                      let body = {
-                        query: { _id: book._id },
-                        update: { author: doc._id.toString() }
-                      }
+              let body = {
+                query: { _id: parent._id },
+                update: { children: doc._id.toString() }
+              }
 
-                      client
-                        .put('/v1/library/book/')
-                        .set('Authorization', 'Bearer ' + bearerToken)
-                        .send(body)
-                        .expect(200)
-                        .end((err, res) => {
-                          if (err) return done(err)
+              request(connectionString)
+              .put('/v1/library/taxonomy/')
+              .set('Authorization', 'Bearer ' + bearerToken)
+              .send(body)
+              .expect(200)
+              .end((err, res) => {
+                if (err) return done(err)
 
-                          let results = res.body['results']
-                          results.should.be.Array
-                          results.length.should.equal(1)
+                let results = res.body['results']
+                results.should.be.Array
+                results.length.should.equal(1)
 
-                          should.exist(results[0].author.name)
+                should.exist(results[0].children.word)
 
-                          config.set('query.useVersionFilter', false)
+                config.set('query.useVersionFilter', false)
 
-                          done()
-                        })
-                    })
-                })
-            }, 1000)
+                done()
+              })
+            })
           })
+        }, 1000)
       })
     })
 
     it('should compose updated document and return when history is off', done => {
       help.getBearerTokenWithAccessType('admin', function (err, token) {
-        // modify schema settings
-        let jsSchemaString = fs.readFileSync(__dirname + '/../workspace/collections/v1/library/collection.book.json', {encoding: 'utf8'})
-        let schema = JSON.parse(jsSchemaString)
-        schema.settings.storeRevisions = false
+        let settingsBackup = Object.assign({}, app.components['/v1/library/book'].model.settings)
+
+        app.components['/v1/library/book'].model.settings.storeRevisions = true
 
         config.set('query.useVersionFilter', true)
 
@@ -795,60 +785,51 @@ describe('Reference Field', () => {
 
         let client = request(connectionString)
         client
-          .post('/v1/library/book/config')
-          .send(JSON.stringify(schema, null, 2))
-          .set('content-type', 'text/plain')
-          .set('Authorization', 'Bearer ' + token)
+        .post('/v1/library/book')
+        .set('Authorization', 'Bearer ' + bearerToken)
+        .send({title: 'For Whom The Bell Tolls'})
+        .end((err, res) => {
+          if (err) return done(err)
+
+          book = res.body.results[0]
+
+          client
+          .post('/v1/library/person')
+          .set('Authorization', 'Bearer ' + bearerToken)
+          .send({name: 'Ernest H.'})
           .expect(200)
-          .expect('content-type', 'application/json')
           .end((err, res) => {
-            setTimeout(() => {
-              client
-                .post('/v1/library/book')
-                .set('Authorization', 'Bearer ' + bearerToken)
-                .send({title: 'For Whom The Bell Tolls'})
-                .end((err, res) => {
-                  if (err) return done(err)
+            if (err) return done(err)
 
-                  book = res.body.results[0]
+            let doc = res.body.results[0]
+            should.exist(doc)
 
-                  client
-                    .post('/v1/library/person')
-                    .set('Authorization', 'Bearer ' + bearerToken)
-                    .send({name: 'Ernest H.'})
-                    .expect(200)
-                    .end((err, res) => {
-                      if (err) return done(err)
+            let body = {
+              query: { _id: book._id },
+              update: { author: doc._id.toString() }
+            }
 
-                      let doc = res.body.results[0]
-                      should.exist(doc)
+            client
+            .put('/v1/library/book/')
+            .set('Authorization', 'Bearer ' + bearerToken)
+            .send(body)
+            .expect(200)
+            .end((err, res) => {
+              if (err) return done(err)
 
-                      let body = {
-                        query: { _id: book._id },
-                        update: { author: doc._id.toString() }
-                      }
+              let results = res.body['results']
+              results.should.be.Array
+              results.length.should.equal(1)
+              should.exist(results[0].author.name)
 
-                      client
-                        .put('/v1/library/book/')
-                        .set('Authorization', 'Bearer ' + bearerToken)
-                        .send(body)
-                        .expect(200)
-                        .end((err, res) => {
-                          if (err) return done(err)
+              config.set('query.useVersionFilter', false)
 
-                          let results = res.body['results']
-                          results.should.be.Array
-                          results.length.should.equal(1)
-                          should.exist(results[0].author.name)
+              app.components['/v1/library/book'].model.settings.storeRevisions = settingsBackup
 
-                          config.set('query.useVersionFilter', false)
-
-                          done()
-                        })
-                    })
-                })
-            }, 1000)
+              done()
+            })
           })
+        })
       })
     })
 
@@ -1429,6 +1410,57 @@ describe('Reference Field', () => {
         })
       })
     })
+
+    it('should filter documents by nested objects properties', done => {
+      let event = {
+        type: 'Book status',
+        book: {
+          title: 'For Whom The Bell Tolls',
+          publishStatus: {
+            status: "published",
+            rights: "public domain"
+          },
+          author: {
+            name: 'Ernest Hemingway'
+          }
+        }
+      }
+
+      config.set('query.useVersionFilter', true)
+
+      let client = request(connectionString)
+      client
+      .post('/v1/library/event')
+      .set('Authorization', 'Bearer ' + bearerToken)
+      .send(event)
+      .expect(200)
+      .end((err, res) => {
+        if (err) return done(err)
+
+        client
+        .get('/v1/library/event?filter={"book.publishStatus.status":"draft"}')
+        .set('Authorization', 'Bearer ' + bearerToken)
+        .expect(200)
+        .end((err, res) => {
+          if (err) return done(err)
+
+          res.body.results.length.should.eql(0)
+
+          client
+          .get('/v1/library/event?filter={"book.publishStatus.status":"published"}')
+          .set('Authorization', 'Bearer ' + bearerToken)
+          .expect(200)
+          .end((err, res) => {
+            if (err) return done(err)
+
+            res.body.results.length.should.eql(1)
+            res.body.results[0].type.should.eql(event.type)
+
+            done()
+          })
+        })  
+      })
+    })    
 
     it('should filter documents by nested properties in multi-collection references', done => {
       let miscItem = {

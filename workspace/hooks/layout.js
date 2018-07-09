@@ -125,7 +125,7 @@ function validate (layoutSchema, layoutField, document) {
         }
 
         // Check if `index` is within bounds
-        if (!document[block.source] instanceof Array || (document[block.source].length <= block.index)) {
+        if (!(document[block.source] instanceof Array) || (document[block.source].length <= block.index)) {
           return errors.push({field: 'layout', message: block.index + ' is not a valid index for field ' + block.source})
         }
 

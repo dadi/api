@@ -1,5 +1,5 @@
 module.exports = app = require(__dirname + '/index.js')
 module.exports.Config = require(__dirname + '/config')
 module.exports.Connection = require(__dirname + '/dadi/lib/model/connection')
-module.exports.Controller = require(__dirname + '/dadi/lib/controller/')
+module.exports.Controller = require(__dirname + '/dadi/lib/controller/documents')
 module.exports.Model = require(__dirname + '/dadi/lib/model/')

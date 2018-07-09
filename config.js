@@ -86,46 +86,51 @@ var conf = convict({
     }
   },
   datastore: {
-    doc: '',
+    doc: 'The name of the npm module that implements the data connector used for storing documents',
     format: String,
     default: '@dadi/api-mongodb'
   },
   auth: {
     tokenUrl: {
-      doc: '',
+      doc: 'The endpoint used for token generation',
       format: String,
       default: '/token'
     },
     tokenTtl: {
-      doc: '',
+      doc: 'The amount of time (in seconds) which bearer tokens are valid for',
       format: Number,
       default: 1800
     },
+    tokenKey: {
+      doc: 'The private key used to sign JWT tokens',
+      format: String,
+      default: 'YOU-MUST-CHANGE-ME!'
+    },
+    accessCollection: {
+      doc: 'The name of the internal collection used to store aggregate permissions data',
+      format: String,
+      default: 'accessStore'
+    },
     clientCollection: {
-      doc: '',
+      doc: 'The name of the internal collection used to store clients',
       format: String,
       default: 'clientStore'
     },
-    tokenCollection: {
-      doc: '',
+    roleCollection: {
+      doc: 'The name of the internal collection used to store roles',
       format: String,
-      default: 'tokenStore'
+      default: 'roleStore'
     },
     datastore: {
-      doc: '',
+      doc: 'The name of the npm module that implements the data connector used for authentication',
       format: String,
       default: '@dadi/api-mongodb'
     },
     database: {
-      doc: '',
+      doc: 'The name of the database used to store authentication data',
       format: String,
       default: 'test',
       env: 'DB_AUTH_NAME'
-    },
-    cleanupInterval: {
-      doc: 'The interval (in seconds) at which the token store will delete expired tokens from the database',
-      format: Number,
-      default: 3600
     }
   },
   search: {
@@ -380,7 +385,7 @@ var conf = convict({
   cors: {
     doc: 'If true, responses will include headers for cross-domain resource sharing',
     format: Boolean,
-    default: false
+    default: true
   },
   internalFieldsPrefix: {
     doc: 'The character to be used for prefixing internal fields',

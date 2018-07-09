@@ -20,10 +20,23 @@ const mockDocument = {
 }
 
 describe('Database connection', () => {
+  let bearerToken
+
+  before(done => {
+    app.start(err => {
+      help.getBearerToken((err, token) => {
+        if (err) return done(err)
+
+        bearerToken = token
+
+        app.stop(done)
+      })        
+    })
+  })  
+
   describe('when available at app boot', function () {
     this.timeout(6000)
 
-    let bearerToken
     let datastore
     let savedDocument
 
@@ -34,28 +47,24 @@ describe('Database connection', () => {
         if (err) return done(err)
 
         help.dropDatabase('noauthdb', null, err => {
-          help.getBearerTokenWithAccessType('admin', (err, token) => {
-            if (err) return done(err)
+          if (err) return done(err)
 
-            bearerToken = token
+          datastore = app.components['/vtest/noauthdb/articles'].model.connection.datastore
 
-            datastore = app.components['/vtest/noauthdb/articles/:id([a-fA-F0-9-]*)?'].model.connection.datastore
+          client
+            .post('/vtest/noauthdb/articles')
+            .send(mockDocument)
+            .set('content-type', 'application/json')
+            .set('Authorization', 'Bearer ' + bearerToken)
+            .expect(200)
+            .expect('content-type', 'application/json')
+            .end(function (err, res) {
+              if (err) return done(err)
 
-            client
-              .post('/vtest/noauthdb/articles')
-              .send(mockDocument)
-              .set('content-type', 'application/json')
-              .set('Authorization', 'Bearer ' + bearerToken)
-              .expect(200)
-              .expect('content-type', 'application/json')
-              .end(function (err, res) {
-                if (err) return done(err)
+              savedDocument = res.body.results[0]
 
-                savedDocument = res.body.results[0]
-
-                done()
-              })
-          })
+              done()
+            })
         })
       })
     })
@@ -93,7 +102,7 @@ describe('Database connection', () => {
 
                 done()
               })
-            }, 1000)
+          }, 1000)
         })
     })
 
@@ -120,7 +129,6 @@ describe('Database connection', () => {
               if (err) return done(err)
 
               res.statusCode.should.eql(503)
-              res.body.statusCode.should.eql(503)
               res.body.code.should.eql('API-0004')
               res.body.title.should.eql('Database unavailable')
 
@@ -160,7 +168,7 @@ describe('Database connection', () => {
 
                 done()
               })
-            }, 1000)
+          }, 1000)
         })
     })
 
@@ -192,7 +200,6 @@ describe('Database connection', () => {
               if (err) return done(err)
 
               res.statusCode.should.eql(503)
-              res.body.statusCode.should.eql(503)
               res.body.code.should.eql('API-0004')
               res.body.title.should.eql('Database unavailable')
 
@@ -240,7 +247,7 @@ describe('Database connection', () => {
 
                 done()
               })
-            }, 1000)
+          }, 1000)
         })
     })
 
@@ -280,7 +287,6 @@ describe('Database connection', () => {
                 if (err) return done(err)
 
                 res.statusCode.should.eql(503)
-                res.body.statusCode.should.eql(503)
                 res.body.code.should.eql('API-0004')
                 res.body.title.should.eql('Database unavailable')
 
@@ -302,7 +308,7 @@ describe('Database connection', () => {
           if (err) return done(err)
 
           const savedDocument2 = res.body.results[0]
-        
+
           client
             .delete('/vtest/noauthdb/articles/' + savedDocument._id + '?cache=false')
             .set('content-type', 'application/json')
@@ -327,7 +333,7 @@ describe('Database connection', () => {
 
                     done()
                   })
-                }, 1000)
+              }, 1000)
             })
         })
     })
@@ -354,7 +360,6 @@ describe('Database connection', () => {
               if (err) return done(err)
 
               res.statusCode.should.eql(503)
-              res.body.statusCode.should.eql(503)
               res.body.code.should.eql('API-0004')
               res.body.title.should.eql('Database unavailable')
 
@@ -367,7 +372,6 @@ describe('Database connection', () => {
   describe('when not available at app boot', function () {
     this.timeout(10000)
 
-    let bearerToken
     let datastore
 
     beforeEach(done => {
@@ -376,7 +380,7 @@ describe('Database connection', () => {
       app.start(err => {
         if (err) return done(err)
 
-        datastore = app.components['/vtest/noauthdb/articles/:id([a-fA-F0-9-]*)?'].model.connection.datastore
+        datastore = app.components['/vtest/noauthdb/articles'].model.connection.datastore
 
         done()
       })
@@ -397,7 +401,6 @@ describe('Database connection', () => {
           datastore._spies.index.called.should.eql(false)
 
           res.statusCode.should.eql(503)
-          res.body.statusCode.should.eql(503)
           res.body.code.should.eql('API-0004')
           res.body.title.should.eql('Database unavailable')
 
@@ -408,7 +411,6 @@ describe('Database connection', () => {
               .set('Authorization', 'Bearer ' + bearerToken)
               .end((err, res) => {
                 res.statusCode.should.eql(503)
-                res.body.statusCode.should.eql(503)
                 res.body.code.should.eql('API-0004')
                 res.body.title.should.eql('Database unavailable')
 
@@ -429,7 +431,6 @@ describe('Database connection', () => {
           datastore._spies.index.called.should.eql(false)
 
           res.statusCode.should.eql(503)
-          res.body.statusCode.should.eql(503)
           res.body.code.should.eql('API-0004')
           res.body.title.should.eql('Database unavailable')
 
@@ -453,7 +454,7 @@ describe('Database connection', () => {
 
     it('should return 503 for PUT requests whilst the connection is unavailable', done => {
       client
-        .put('/vtest/noauthdb/articles/1q2w3e4r?cache=false')
+        .put('/vtest/noauthdb/articles/5b0d57d04ee2a8387c83439c?cache=false')
         .send({
           title: 'Dadi'
         })
@@ -465,13 +466,12 @@ describe('Database connection', () => {
           datastore._spies.index.called.should.eql(false)
 
           res.statusCode.should.eql(503)
-          res.body.statusCode.should.eql(503)
           res.body.code.should.eql('API-0004')
           res.body.title.should.eql('Database unavailable')
 
           setTimeout(() => {
             client
-              .put('/vtest/noauthdb/articles/1q2w3e4r?cache=false')
+              .put('/vtest/noauthdb/articles/5b0d57d04ee2a8387c83439c?cache=false')
               .send({
                 title: 'Dadi'
               })
@@ -479,7 +479,6 @@ describe('Database connection', () => {
               .set('Authorization', 'Bearer ' + bearerToken)
               .end((err, res) => {
                 res.statusCode.should.eql(503)
-                res.body.statusCode.should.eql(503)
                 res.body.code.should.eql('API-0004')
                 res.body.title.should.eql('Database unavailable')
 
@@ -491,7 +490,7 @@ describe('Database connection', () => {
 
     it('should return 200 for PUT requests once the database becomes available', done => {
       client
-        .put('/vtest/noauthdb/articles/1q2w3e4r?cache=false')
+        .put('/vtest/noauthdb/articles/5b0d57d04ee2a8387c83439c?cache=false')
         .send({
           title: 'Dadi'
         })
@@ -503,7 +502,6 @@ describe('Database connection', () => {
           datastore._spies.index.called.should.eql(false)
 
           res.statusCode.should.eql(503)
-          res.body.statusCode.should.eql(503)
           res.body.code.should.eql('API-0004')
           res.body.title.should.eql('Database unavailable')
 
@@ -553,7 +551,6 @@ describe('Database connection', () => {
           datastore._spies.index.called.should.eql(false)
 
           res.statusCode.should.eql(503)
-          res.body.statusCode.should.eql(503)
           res.body.code.should.eql('API-0004')
           res.body.title.should.eql('Database unavailable')
 
@@ -570,7 +567,6 @@ describe('Database connection', () => {
               .set('Authorization', 'Bearer ' + bearerToken)
               .end((err, res) => {
                 res.statusCode.should.eql(503)
-                res.body.statusCode.should.eql(503)
                 res.body.code.should.eql('API-0004')
                 res.body.title.should.eql('Database unavailable')
 
@@ -597,7 +593,6 @@ describe('Database connection', () => {
           datastore._spies.index.called.should.eql(false)
 
           res.statusCode.should.eql(503)
-          res.body.statusCode.should.eql(503)
           res.body.code.should.eql('API-0004')
           res.body.title.should.eql('Database unavailable')
 
@@ -628,7 +623,7 @@ describe('Database connection', () => {
 
     it('should return 503 for DELETE requests whilst the connection is unavailable', done => {
       client
-        .delete('/vtest/noauthdb/articles/1q2w3e4r?cache=false')
+        .delete('/vtest/noauthdb/articles/5b0d57d04ee2a8387c83439c?cache=false')
         .set('content-type', 'application/json')
         .set('Authorization', 'Bearer ' + bearerToken)
         .end((err, res) => {
@@ -637,18 +632,16 @@ describe('Database connection', () => {
           datastore._spies.index.called.should.eql(false)
 
           res.statusCode.should.eql(503)
-          res.body.statusCode.should.eql(503)
           res.body.code.should.eql('API-0004')
           res.body.title.should.eql('Database unavailable')
 
           setTimeout(() => {
             client
-              .delete('/vtest/noauthdb/articles/1q2w3e4r?cache=false')
+              .delete('/vtest/noauthdb/articles/5b0d57d04ee2a8387c83439c?cache=false')
               .set('content-type', 'application/json')
               .set('Authorization', 'Bearer ' + bearerToken)
               .end((err, res) => {
                 res.statusCode.should.eql(503)
-                res.body.statusCode.should.eql(503)
                 res.body.code.should.eql('API-0004')
                 res.body.title.should.eql('Database unavailable')
 
@@ -660,7 +653,7 @@ describe('Database connection', () => {
 
     it('should return 204 for DELETE requests once the database becomes available', done => {
       client
-        .delete('/vtest/noauthdb/articles/1q2w3e4r?cache=false')
+        .delete('/vtest/noauthdb/articles/5b0d57d04ee2a8387c83439c?cache=false')
         .set('content-type', 'application/json')
         .set('Authorization', 'Bearer ' + bearerToken)
         .end((err, res) => {
@@ -669,7 +662,6 @@ describe('Database connection', () => {
           datastore._spies.index.called.should.eql(false)
 
           res.statusCode.should.eql(503)
-          res.body.statusCode.should.eql(503)
           res.body.code.should.eql('API-0004')
           res.body.title.should.eql('Database unavailable')
 

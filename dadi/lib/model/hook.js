@@ -29,7 +29,7 @@ const Hook = function (data, type) {
     this.options = data.options
   }
 
-  this.hook = function (arg, type) {
+  this.hook = function (obj, type) {
     let result
 
     try {

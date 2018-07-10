@@ -15,31 +15,87 @@ var request = require('supertest')
 var bearerToken
 var connectionString = 'http://' + config.get('server.host') + ':' + config.get('server.port')
 
-describe('Hooks', function () {
-  // reset database
-  before(function (done) {
-    app.start((err) => {
-      if (err) return done(err)
+let cleanupFn = []
 
-      // get access token
+let startApp = function (done) {
+  app.start((err) => {
+    if (err) return done(err)
+
+    help.dropDatabase('testdb', function (err) {
       help.getBearerTokenWithAccessType('admin', (err, token) => {
         if (err) return done(err)
+
         bearerToken = token
+
         done()
       })
     })
   })
+}
 
-  after(function (done) {
-    app.stop(done)
+let stopApp = function (done) {
+  cleanupFn.forEach(fn => {
+    fn()
   })
 
-//   var newSchema = JSON.parse(JSON.stringify(require(path.resolve(dirs.collections + '/../schemas/collection.new-test-schema.json'))))
-//   fs.writeFileSync(newSchemaPath, JSON.stringify(newSchema))
-//
-//   app.start(done)
+  app.stop(done)
+}
 
-//   if (fs.existsSync(newSchemaPath)) fs.unlinkSync(newSchemaPath)
+const hookOne = `
+  module.exports = function (obj, type, data) {
+    console.log('Inside the hook')
+  }
+`
+
+const hookTwo = `
+  module.exports = function (obj, type, data) {
+    obj.name = 'Modified by hook'
+  }
+`
+
+const schemaNotReturning = {
+  fields: {
+    name: {
+      type: 'String'
+    }
+  },
+  settings: {
+    hooks: {
+      beforeCreate: ['hook1', 'hook2']
+    }
+  }
+}
+
+describe('Hooks', function () {
+  beforeEach(done => {
+    cleanupFn = []
+
+    help.writeTempFile(
+      'temp-workspace/hooks/hook1.js',
+      hookOne,
+      callback => {
+        cleanupFn.push(callback)
+
+        help.writeTempFile(
+          'temp-workspace/hooks/hook2.js',
+          hookTwo,
+          callback => {
+            cleanupFn.push(callback)
+
+            help.writeTempFile(
+              'temp-workspace/collections/vtest/testdb/collection.schema-not-returning.json',
+              schemaNotReturning,
+              callback => {
+                cleanupFn.push(callback)
+
+                done()
+              }
+            )
+          }
+        )
+      }
+    )
+  })
 
   it('testing failure when specifying _layout as a field in a GET request', function (done) {
     var article = {
@@ -162,47 +218,29 @@ describe('Hooks', function () {
     	'trackingPixel': '57b550451afba38e182619dc',
     	'sponsor': '57b550451afba38e182619dd'
     }
+    startApp(() => {
+      sinon.stub(hook.Hook.prototype, 'load').returns(require(__dirname + '/temp-workspace/hooks/layout.js'))
 
-  //  config.set('query.useVersionFilter', true)
+      var client = request(connectionString)
 
-    sinon.stub(hook.Hook.prototype, 'load').returns(require(__dirname + '/temp-workspace/hooks/layout.js'))
-
-    var client = request(connectionString)
-
-    // create article
-    client
-    .post('/3rdparty/radio/articles')
-    .send(article)
-    .set('content-type', 'application/json')
-    .set('Authorization', 'Bearer ' + bearerToken)
-    .end(function (err, res) {
-      if (err) return done(err)
-
-      var newArticle = res.body.results[0]
-
-      // GET the article
+      // create article
       client
-      .get('/3rdparty/radio/articles/' + newArticle._id)
+      .post('/3rdparty/radio/articles')
+      .send(article)
       .set('content-type', 'application/json')
       .set('Authorization', 'Bearer ' + bearerToken)
       .end(function (err, res) {
         if (err) return done(err)
 
-        should.exist(res.body.results)
-        should.exist(res.body.results[0])
+        var newArticle = res.body.results[0]
 
-        var articleResponse = res.body.results[0]
-        should.exist(articleResponse._layout)
-
-        // GET the article with qs params
+        // GET the article
         client
-        .get('/3rdparty/radio/articles/' + newArticle._id + '?fields={"_layout":1}')
+        .get('/3rdparty/radio/articles/' + newArticle._id)
         .set('content-type', 'application/json')
         .set('Authorization', 'Bearer ' + bearerToken)
         .end(function (err, res) {
           if (err) return done(err)
-
-          hook.Hook.prototype.load.restore()
 
           should.exist(res.body.results)
           should.exist(res.body.results[0])
@@ -210,7 +248,24 @@ describe('Hooks', function () {
           var articleResponse = res.body.results[0]
           should.exist(articleResponse._layout)
 
-          done()
+          // GET the article with qs params
+          client
+          .get('/3rdparty/radio/articles/' + newArticle._id + '?fields={"_layout":1}')
+          .set('content-type', 'application/json')
+          .set('Authorization', 'Bearer ' + bearerToken)
+          .end(function (err, res) {
+            if (err) return done(err)
+
+            hook.Hook.prototype.load.restore()
+
+            should.exist(res.body.results)
+            should.exist(res.body.results[0])
+
+            var articleResponse = res.body.results[0]
+            should.exist(articleResponse._layout)
+
+            stopApp(done)
+          })
         })
       })
     })
@@ -221,19 +276,10 @@ describe('Hooks', function () {
 
     var client = request(connectionString)
 
-    // create publications schema
-    client
-    .post('/vtest/testdb/publications/config')
-    .send(JSON.stringify(publicationSchema, null, 2))
-    .set('content-type', 'text/plain')
-    .set('Authorization', 'Bearer ' + bearerToken)
-    .end(function (err, res) {
-      if (err) return done(err)
-
-      // create articles schema
+    startApp(() => {
       client
-      .post('/vtest/testdb/articles/config')
-      .send(JSON.stringify(articleSchema, null, 2))
+      .post('/vtest/testdb/publications/config')
+      .send(JSON.stringify(publicationSchema, null, 2))
       .set('content-type', 'text/plain')
       .set('Authorization', 'Bearer ' + bearerToken)
       .end(function (err, res) {
@@ -304,12 +350,33 @@ describe('Hooks', function () {
 
                   hook.Hook.prototype.load.restore()
 
-                  done()
+                  stopApp(done)
                 })
               })
             })
           })
         })
+      })
+    })
+  })
+
+  it('should throw a meaningful error message when a before* hook fails to return', done => {
+    startApp(() => {
+      var client = request(connectionString)
+
+      client
+      .post('/vtest/testdb/schema-not-returning')
+      .send({ name: 'John Doe' })
+      .expect(500)
+      .set('Authorization', 'Bearer ' + bearerToken)
+      .end(function (err, res) {
+        if (err) return done(err)
+
+        res.body[0].code.should.eql('API-0002')
+        res.body[0].title.should.eql('Hook Error')
+        res.body[0].details.should.eql('hook1 - Missing return statement on beforeCreate hook')
+
+        stopApp(done)
       })
     })
   })

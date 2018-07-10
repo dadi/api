@@ -29,7 +29,7 @@ const Hook = function (data, type) {
     this.options = data.options
   }
 
-  this.hook = function () {
+  this.hook = function (obj, type) {
     let result
 
     try {
@@ -38,6 +38,12 @@ const Hook = function (data, type) {
       result = hookFn.apply(this, arguments)
     } catch (error) {
       result = Promise.reject(error)
+    }
+
+    if (result === undefined && type.indexOf('before') === 0) {
+      return Promise.reject(
+        `Missing return statement on ${type} hook`
+      )
     }
 
     return result

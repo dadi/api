@@ -318,6 +318,8 @@ describe('Hook', function () {
       var inspectFunction = function (obj, type, data) {
         JSON.stringify(data.schema).should.eql(JSON.stringify(schema))
         data.collection.should.eql('testModelName')
+
+        return obj
       }
 
       sinon.stub(hook.Hook.prototype, 'load').returns(inspectFunction)
@@ -544,6 +546,8 @@ describe('Hook', function () {
       var inspectFunction = function (obj, type, data) {
         JSON.stringify(data.schema).should.eql(JSON.stringify(schema))
         data.collection.should.eql('testModelName')
+
+        return obj
       }
 
       sinon.stub(hook.Hook.prototype, 'load').returns(inspectFunction)
@@ -714,6 +718,8 @@ describe('Hook', function () {
       var inspectFunction = function (obj, type, data) {
         JSON.stringify(data.schema).should.eql(JSON.stringify(schema))
         data.collection.should.eql('testModelName')
+
+        return obj
       }
 
       sinon.stub(hook.Hook.prototype, 'load').returns(inspectFunction)
@@ -820,6 +826,8 @@ describe('Hook', function () {
       var inspectFunction = function (obj, type, data) {
         JSON.stringify(data.schema).should.eql(JSON.stringify(schema))
         data.collection.should.eql('testModelName')
+
+        return obj
       }
 
       sinon.stub(hook.Hook.prototype, 'load').returns(inspectFunction)
@@ -932,6 +940,8 @@ describe('Hook', function () {
       var inspectFunction = function (obj, type, data) {
         JSON.stringify(data.schema).should.eql(JSON.stringify(schema))
         data.collection.should.eql('testModelName')
+
+        return obj
       }
 
       sinon.stub(hook.Hook.prototype, 'load').returns(inspectFunction)
@@ -990,6 +1000,8 @@ describe('Hook', function () {
         data.deletedDocs.should.be.Array
         data.deletedDocs.length.should.eql(1)
         data.deletedDocs[0].fieldName.should.eql('foo')
+
+        return obj
       }
 
       sinon.stub(hook.Hook.prototype, 'load').returns(inspectFunction)
@@ -1111,6 +1123,8 @@ describe('Hook', function () {
       var inspectFunction = function (obj, type, data) {
         JSON.stringify(data.schema).should.eql(JSON.stringify(schema))
         data.collection.should.eql('testModelName')
+
+        return obj
       }
 
       sinon.stub(hook.Hook.prototype, 'load').returns(inspectFunction)
@@ -1162,6 +1176,8 @@ describe('Hook', function () {
         data.deletedDocs.should.be.Array
         data.deletedDocs.length.should.eql(1)
         data.deletedDocs[0].fieldName.should.eql('foo')
+
+        return obj
       }
 
       sinon.stub(hook.Hook.prototype, 'load').returns(inspectFunction)
@@ -1283,6 +1299,8 @@ describe('Hook', function () {
       var inspectFunction = function (obj, type, data) {
         JSON.stringify(data.schema).should.eql(JSON.stringify(schema))
         data.collection.should.eql('testModelName')
+
+        return obj
       }
 
       sinon.stub(hook.Hook.prototype, 'load').returns(inspectFunction)
@@ -1381,6 +1399,8 @@ describe('Hook', function () {
       var inspectFunction = function (obj, type, data) {
         JSON.stringify(data.schema).should.eql(JSON.stringify(schema))
         data.collection.should.eql('testModelName')
+
+        return obj
       }
 
       sinon.stub(hook.Hook.prototype, 'load').returns(inspectFunction)

@@ -1,27 +1,24 @@
-var should = require('should')
-var request = require('supertest')
-var help = require(__dirname + '/help')
-var config = require(__dirname + '/../../config')
-var app = require(__dirname + '/../../dadi/lib/')
+const app = require('./../../dadi/lib/')
+const config = require('./../../config')
+const help = require('./help')
+const request = require('supertest')
+const should = require('should')
 
 describe('Status', function () {
   this.timeout(8000)
-  before(function (done) {
+
+  before(done => {
     help.createClient(null, function () {
       app.start(function (err) {
         if (err) return done(err)
 
-        // give it a moment for http.Server to finish starting
-        setTimeout(function () {
-          done()
-        }, 500)
+        setTimeout(done, 500)
       })
     })
   })
 
-  beforeEach(function (done) {
+  beforeEach(() => {
     config.set('status.enabled', true)
-    done()
   })
 
   after(function (done) {

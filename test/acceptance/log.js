@@ -36,6 +36,8 @@ describe('logger', function () {
       done()
     }
 
+    let cleanupFn
+
     before(function (done) {
       help.dropDatabase('testdb', function (err) {
         if (err) return done(err)
@@ -46,52 +48,33 @@ describe('logger', function () {
 
             bearerToken = token
 
-            // add a new field to the schema
-            var jsSchemaString = fs.readFileSync(__dirname + '/../new-schema.json', {encoding: 'utf8'})
-            jsSchemaString = jsSchemaString.replace('newField', 'field1')
-            var schema = JSON.parse(jsSchemaString)
+            let schema = Object.assign({}, require('./../new-schema.json'))
 
-            var client = request(connectionString)
+            schema.fields.field1 = Object.assign({}, schema.fields.newField)
+            delete schema.fields.newField
 
-            client
-            .post('/vtest/testdb/test-schema/config')
-            .send(JSON.stringify(schema, null, 4))
-            .set('content-type', 'text/plain')
-            .set('Authorization', 'Bearer ' + bearerToken)
-            .expect(200)
-            .expect('content-type', 'application/json')
-            .end(function (err, res) {
-              if (err) return done(err)
+            help.writeTempFile(
+              'temp-workspace/collections/vtest/testdb/collection.test-schema.json',
+              schema,
+              callback => {
+                cleanupFn = callback
 
-              done()
-            })
+                done()
+              }
+            )
           })
         })
       })
     })
 
     after(function (done) {
-        // reset the schema
-      var jsSchemaString = fs.readFileSync(__dirname + '/../new-schema.json', {encoding: 'utf8'})
-      jsSchemaString = jsSchemaString.replace('newField', 'field1')
-      var schema = JSON.parse(jsSchemaString)
+      cleanup(function () {
+        app.stop(() => {
+          cleanupFn()
 
-      var client = request(connectionString)
-
-      client
-        .post('/vtest/testdb/test-schema/config')
-        .send(JSON.stringify(schema, null, 4))
-        .set('content-type', 'text/plain')
-        .set('Authorization', 'Bearer ' + bearerToken)
-        .expect(200)
-        .expect('content-type', 'application/json')
-        .end(function (err, res) {
-          if (err) return done(err)
-
-          cleanup(function () {
-            app.stop(done)
-          })
+          done()
         })
+      })
     })
 
     it('should log to the access log when collection endpoint is requested', function (done) {
@@ -135,11 +118,13 @@ describe('logger', function () {
         .end(function (err, res) {
           if (err) return done(err)
 
-          var logEntry = fs.readFileSync(logpath, {encoding: 'utf8'})
+          setTimeout(() => {
+            var logEntry = fs.readFileSync(logpath, {encoding: 'utf8'})
 
-          logEntry.indexOf('52.101.34.175').should.be.above(0)
+            logEntry.indexOf('52.101.34.175').should.be.above(0)
 
-          done()
+            done()
+          }, 300)
         })
       })
     })

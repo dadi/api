@@ -1,19 +1,18 @@
-var _ = require('underscore')
-var assert = require('assert')
-var fakeredis = require('fakeredis');
-var fs = require('fs')
-var should = require('should')
-var request = require('supertest')
-var Readable = require('stream').Readable
+const app = require('./../../dadi/lib/')
+const assert = require('assert')
+const cache = require('./../../dadi/lib/cache')
+const config = require('./../../config')
+const fakeredis = require('fakeredis')
+const fs = require('fs')
+const help = require('./help')
+const request = require('supertest')
+const Readable = require('stream').Readable
+const should = require('should')
 
-var app = require(__dirname + '/../../dadi/lib/')
-var config = require(__dirname + '/../../config')
-var cache = require(__dirname + '/../../dadi/lib/cache')
-var help = require(__dirname + '/help')
-
-var bearerToken
-var c
-var cacheKeys = []
+let bearerToken
+let adminBearerToken
+let c
+let cacheKeys = []
 
 describe('Cache', function (done) {
   this.timeout(5000)
@@ -43,32 +42,43 @@ describe('Cache', function (done) {
           help.getBearerToken(function (err, token) {
             if (err) return done(err)
 
-            bearerToken = token
+            adminBearerToken = token
 
-            help.clearCache()
-
-            cacheKeys = [] // resets the array for the next test
-
-            help.createDoc(bearerToken, function (err, doc) {
-              if (err) return done(err)
-
-              help.createDoc(bearerToken, function (err, doc) {
+            help.getBearerTokenWithPermissions(
+              { roles: ['some-role'] },
+              (err, token) => {
                 if (err) return done(err)
 
-                var client = request('http://' + config.get('server.host') + ':' + config.get('server.port'))
+                bearerToken = token
 
-                client
-                .get('/vtest/testdb/test-schema')
-                .set('Authorization', 'Bearer ' + bearerToken)
-                .expect(200)
-                .end(function (err, res1) {
+                help.clearCache()
+
+                cacheKeys = [] // resets the array for the next test
+
+                help.createDoc(adminBearerToken, function (err, doc) {
                   if (err) return done(err)
-                  res1.headers['x-cache'].should.exist
-                  res1.headers['x-cache'].should.eql('MISS')
-                  done()
+
+                  setTimeout(() => {
+                    help.createDoc(adminBearerToken, function (err, doc) {
+                      if (err) return done(err)
+
+                      var client = request('http://' + config.get('server.host') + ':' + config.get('server.port'))
+
+                      client
+                      .get('/vtest/testdb/test-schema')
+                      .set('Authorization', `Bearer ${adminBearerToken}`)
+                      .expect(200)
+                      .end(function (err, res1) {
+                        if (err) return done(err)
+                        res1.headers['x-cache'].should.exist
+                        res1.headers['x-cache'].should.eql('MISS')
+                        done()
+                      })
+                    })                    
+                  }, 300)
                 })
-              })
-            })
+              }
+            )
           })
         })
       })
@@ -80,13 +90,70 @@ describe('Cache', function (done) {
       })
     })
 
+    it('should return 401 if the request does not contain a valid bearer token', done => {
+      var client = request('http://' + config.get('server.host') + ':' + config.get('server.port'))
+
+      client
+      .post('/api/flush')
+      .send({path: '/vtest/testdb/test-schema'})
+      .end((err, res) => {
+        if (err) return done(err)
+
+        res.statusCode.should.eql(401)
+
+        setTimeout(() => {
+          // test that cache documents still exist for /vtest/testdb/test-schema
+          client
+          .get('/vtest/testdb/test-schema')
+          .set('Authorization', `Bearer ${adminBearerToken}`)
+          .expect(200)
+          .end(function (err, res) {
+            if (err) return done(err)
+            res.headers['x-cache'].should.exist
+            res.headers['x-cache'].should.eql('HIT')
+
+            done()
+          })
+        }, 500)
+      })
+    })
+
+    it('should return 403 if the request contain a valid bearer token that does not have sufficient permissions to perform the operation', done => {
+      var client = request('http://' + config.get('server.host') + ':' + config.get('server.port'))
+
+      client
+      .post('/api/flush')
+      .set('Authorization', `Bearer ${bearerToken}`)
+      .send({path: '/vtest/testdb/test-schema'})
+      .end((err, res) => {
+        if (err) return done(err)
+
+        res.statusCode.should.eql(403)
+
+        setTimeout(() => {
+          // test that cache documents still exist for /vtest/testdb/test-schema
+          client
+          .get('/vtest/testdb/test-schema')
+          .set('Authorization', `Bearer ${adminBearerToken}`)
+          .expect(200)
+          .end(function (err, res) {
+            if (err) return done(err)
+            res.headers['x-cache'].should.exist
+            res.headers['x-cache'].should.eql('HIT')
+
+            done()
+          })
+        }, 500)
+      })
+    })    
+
     it("should not flush cached items that don't match the specified path", function (done) {
       var client = request('http://' + config.get('server.host') + ':' + config.get('server.port'))
 
       // create a document in another collection
       client
       .post('/v1/library/book')
-      .set('Authorization', 'Bearer ' + bearerToken)
+      .set('Authorization', `Bearer ${adminBearerToken}`)
       .send({'title': 'War and Peace', 'author': require('uuid').v4().toString() })
       .expect(200)
       .end(function (err, res) {
@@ -95,7 +162,7 @@ describe('Cache', function (done) {
         // get first time, uncached version of /v1/library/book
         client
         .get('/v1/library/book')
-        .set('Authorization', 'Bearer ' + bearerToken)
+        .set('Authorization', `Bearer ${adminBearerToken}`)
         .expect(200)
         .end(function (err, res) {
           if (err) return done(err)
@@ -106,7 +173,7 @@ describe('Cache', function (done) {
             // get cached version of /v1/library/book
             client
             .get('/v1/library/book')
-            .set('Authorization', 'Bearer ' + bearerToken)
+            .set('Authorization', `Bearer ${adminBearerToken}`)
             .expect(200)
             .end(function (err, res) {
               if (err) return done(err)
@@ -116,14 +183,14 @@ describe('Cache', function (done) {
               // get cached version of /vtest/testdb/test-schema
               client
               .get('/vtest/testdb/test-schema')
-              .set('Authorization', 'Bearer ' + bearerToken)
+              .set('Authorization', `Bearer ${adminBearerToken}`)
               .expect(200)
               .end(function (err, res) {
                 if (err) return done(err)
 
                 client
                 .get('/vtest/testdb/test-schema')
-                .set('Authorization', 'Bearer ' + bearerToken)
+                .set('Authorization', `Bearer ${adminBearerToken}`)
                 .expect(200)
                 .end(function (err, res) {
                   if (err) return done(err)
@@ -134,7 +201,7 @@ describe('Cache', function (done) {
                   // flush cache for /vtest/testdb/test-schema
                   client
                   .post('/api/flush')
-                  .set('Authorization', 'Bearer ' + bearerToken)
+                  .set('Authorization', `Bearer ${adminBearerToken}`)
                   .send({path: '/vtest/testdb/test-schema'})
                   .expect(200)
                   .end(function (err, res) {
@@ -143,11 +210,10 @@ describe('Cache', function (done) {
                     res.body.result.should.equal('success')
 
                     setTimeout(function () {
-
                       // test that cache documents still exist for /v1/library/book
                       client
                       .get('/v1/library/book')
-                      .set('Authorization', 'Bearer ' + bearerToken)
+                      .set('Authorization', `Bearer ${adminBearerToken}`)
                       .expect(200)
                       .end(function (err, res) {
                         if (err) return done(err)
@@ -158,7 +224,7 @@ describe('Cache', function (done) {
                           // test that cache has been flushed for /vtest/testdb/test-schema
                           client
                           .get('/vtest/testdb/test-schema')
-                          .set('Authorization', 'Bearer ' + bearerToken)
+                          .set('Authorization', `Bearer ${adminBearerToken}`)
                           .expect(200)
                           .end(function (err, res) {
                             if (err) return done(err)
@@ -184,7 +250,7 @@ describe('Cache', function (done) {
 
       client
         .get('/vtest/testdb/test-schema')
-        .set('Authorization', 'Bearer ' + bearerToken)
+        .set('Authorization', `Bearer ${adminBearerToken}`)
         .expect(200)
         .end(function (err, res1) {
           if (err) return done(err)
@@ -193,7 +259,7 @@ describe('Cache', function (done) {
 
           client
             .post('/api/flush')
-            .set('Authorization', 'Bearer ' + bearerToken)
+            .set('Authorization', `Bearer ${adminBearerToken}`)
             .send({path: '/vtest/testdb/test-schema'})
             .expect(200)
             .end(function (err, res) {
@@ -204,7 +270,7 @@ describe('Cache', function (done) {
               setTimeout(function () {
                 client
                   .get('/vtest/testdb/test-schema')
-                  .set('Authorization', 'Bearer ' + bearerToken)
+                  .set('Authorization', `Bearer ${adminBearerToken}`)
                   .expect(200)
                   .end(function (err, res1) {
                     if (err) return done(err)
@@ -225,7 +291,7 @@ describe('Cache', function (done) {
       // create a document in another collection
       client
         .post('/v1/library/book')
-        .set('Authorization', 'Bearer ' + bearerToken)
+        .set('Authorization', `Bearer ${adminBearerToken}`)
         .send({'title': 'War and Peace', 'author': require('uuid').v4().toString() })
         .expect(200)
         .end(function (err, res) {
@@ -234,7 +300,7 @@ describe('Cache', function (done) {
           // get first tine, uncached version of /v1/library/book
           client
             .get('/v1/library/book')
-            .set('Authorization', 'Bearer ' + bearerToken)
+            .set('Authorization', `Bearer ${adminBearerToken}`)
             .expect(200)
             .end(function (err, res) {
               if (err) return done(err)
@@ -244,7 +310,7 @@ describe('Cache', function (done) {
               // get cached version of /v1/library/book
               client
                 .get('/v1/library/book')
-                .set('Authorization', 'Bearer ' + bearerToken)
+                .set('Authorization', `Bearer ${adminBearerToken}`)
                 .expect(200)
                 .end(function (err, res) {
                   if (err) return done(err)
@@ -254,7 +320,7 @@ describe('Cache', function (done) {
                   // get cached version of /vtest/testdb/test-schema
                   client
                     .get('/vtest/testdb/test-schema')
-                    .set('Authorization', 'Bearer ' + bearerToken)
+                    .set('Authorization', `Bearer ${adminBearerToken}`)
                     .expect(200)
                     .end(function (err, res) {
                       if (err) return done(err)
@@ -265,7 +331,7 @@ describe('Cache', function (done) {
                       // flush cache for /vtest/testdb/test-schema
                       client
                         .post('/api/flush')
-                        .set('Authorization', 'Bearer ' + bearerToken)
+                        .set('Authorization', `Bearer ${adminBearerToken}`)
                         .send({path: '*'})
                         .expect(200)
                         .end(function (err, res) {
@@ -274,11 +340,10 @@ describe('Cache', function (done) {
                           res.body.result.should.equal('success')
 
                           setTimeout(function () {
-
                             // test that cache has been flushed for /v1/library/book
                             client
                               .get('/v1/library/book')
-                              .set('Authorization', 'Bearer ' + bearerToken)
+                              .set('Authorization', `Bearer ${adminBearerToken}`)
                               .expect(200)
                               .end(function (err, res) {
                                 if (err) return done(err)
@@ -286,11 +351,10 @@ describe('Cache', function (done) {
                                 assert(res.headers['x-cache'] === 'MISS', 'Expected /v1/library/book to have no cached documents')
 
                                 setTimeout(function () {
-
                                   // test that cache has been flushed for /vtest/testdb/test-schema
                                   client
                                     .get('/vtest/testdb/test-schema')
-                                    .set('Authorization', 'Bearer ' + bearerToken)
+                                    .set('Authorization', `Bearer ${adminBearerToken}`)
                                     .expect(200)
                                     .end(function (err, res) {
                                       if (err) return done(err)
@@ -336,7 +400,7 @@ describe('Cache', function (done) {
         var stream = new Readable({objectMode: true})
 
         for (var i = 0; i < cacheKeys.length; i++) {
-          if (pattern.match === '*' || cacheKeys[i].indexOf(pattern.match.substring(0, pattern.match.length-1)) === 0) {
+          if (pattern.match === '*' || cacheKeys[i].indexOf(pattern.match.substring(0, pattern.match.length - 1)) === 0) {
             stream.push([cacheKeys[i]])
           } else {
             // console.log('rejected key: ', cacheKeys[i])
@@ -354,30 +418,39 @@ describe('Cache', function (done) {
           help.getBearerToken(function (err, token) {
             if (err) return done(err)
 
-            bearerToken = token
+            adminBearerToken = token
 
-            help.clearCache()
-
-            help.createDoc(bearerToken, function (err, doc) {
-              if (err) return done(err)
-
-              help.createDoc(bearerToken, function (err, doc) {
+            help.getBearerTokenWithPermissions(
+              { roles: ['some-role'] },
+              (err, token) => {
                 if (err) return done(err)
 
-                var client = request('http://' + config.get('server.host') + ':' + config.get('server.port'))
+                bearerToken = token
 
-                client
-                .get('/vtest/testdb/test-schema')
-                .set('Authorization', 'Bearer ' + bearerToken)
-                .expect(200)
-                .end(function (err, res1) {
+                help.clearCache()
+
+                help.createDoc(adminBearerToken, function (err, doc) {
                   if (err) return done(err)
-                  res1.headers['x-cache'].should.exist
-                  res1.headers['x-cache'].should.eql('MISS')
-                  done()
+
+                  help.createDoc(adminBearerToken, function (err, doc) {
+                    if (err) return done(err)
+
+                    var client = request('http://' + config.get('server.host') + ':' + config.get('server.port'))
+
+                    client
+                    .get('/vtest/testdb/test-schema')
+                    .set('Authorization', `Bearer ${adminBearerToken}`)
+                    .expect(200)
+                    .end(function (err, res1) {
+                      if (err) return done(err)
+                      res1.headers['x-cache'].should.exist
+                      res1.headers['x-cache'].should.eql('MISS')
+                      done()
+                    })
+                  })
                 })
-              })
-            })
+              }
+            )
           })
         })
       })
@@ -389,6 +462,63 @@ describe('Cache', function (done) {
       })
     })
 
+    it('should return 401 if the request does not contain a valid bearer token', done => {
+      var client = request('http://' + config.get('server.host') + ':' + config.get('server.port'))
+
+      client
+      .post('/api/flush')
+      .send({path: '/vtest/testdb/test-schema'})
+      .end((err, res) => {
+        if (err) return done(err)
+
+        res.statusCode.should.eql(401)
+
+        setTimeout(() => {
+          // test that cache documents still exist for /vtest/testdb/test-schema
+          client
+          .get('/vtest/testdb/test-schema')
+          .set('Authorization', `Bearer ${adminBearerToken}`)
+          .expect(200)
+          .end(function (err, res) {
+            if (err) return done(err)
+            res.headers['x-cache'].should.exist
+            res.headers['x-cache'].should.eql('HIT')
+
+            done()
+          })
+        }, 500)
+      })
+    })
+
+    it('should return 403 if the request contain a valid bearer token that does not have sufficient permissions to perform the operation', done => {
+      var client = request('http://' + config.get('server.host') + ':' + config.get('server.port'))
+
+      client
+      .post('/api/flush')
+      .set('Authorization', `Bearer ${bearerToken}`)
+      .send({path: '/vtest/testdb/test-schema'})
+      .end((err, res) => {
+        if (err) return done(err)
+
+        res.statusCode.should.eql(403)
+
+        setTimeout(() => {
+          // test that cache documents still exist for /vtest/testdb/test-schema
+          client
+          .get('/vtest/testdb/test-schema')
+          .set('Authorization', `Bearer ${adminBearerToken}`)
+          .expect(200)
+          .end(function (err, res) {
+            if (err) return done(err)
+            res.headers['x-cache'].should.exist
+            res.headers['x-cache'].should.eql('HIT')
+
+            done()
+          })
+        }, 500)
+      })
+    })    
+
     it("should not flush cached items that don't match the specified path", function (done) {
       this.timeout(4000)
 
@@ -397,7 +527,7 @@ describe('Cache', function (done) {
       // create a document in another collection
       client
       .post('/v1/library/book')
-      .set('Authorization', 'Bearer ' + bearerToken)
+      .set('Authorization', `Bearer ${adminBearerToken}`)
       .send({'title': 'War and Peace', 'author': require('uuid').v4().toString() })
       .expect(200)
       .end(function (err, res) {
@@ -406,7 +536,7 @@ describe('Cache', function (done) {
         // get first time, uncached version of /v1/library/book
         client
         .get('/v1/library/book')
-        .set('Authorization', 'Bearer ' + bearerToken)
+        .set('Authorization', `Bearer ${adminBearerToken}`)
         .expect(200)
         .end(function (err, res) {
           if (err) return done(err)
@@ -417,7 +547,7 @@ describe('Cache', function (done) {
             // get cached version of /v1/library/book
             client
             .get('/v1/library/book')
-            .set('Authorization', 'Bearer ' + bearerToken)
+            .set('Authorization', `Bearer ${adminBearerToken}`)
             .expect(200)
             .end(function (err, res) {
               if (err) return done(err)
@@ -427,14 +557,14 @@ describe('Cache', function (done) {
               // get cached version of /vtest/testdb/test-schema
               client
               .get('/vtest/testdb/test-schema')
-              .set('Authorization', 'Bearer ' + bearerToken)
+              .set('Authorization', `Bearer ${adminBearerToken}`)
               .expect(200)
               .end(function (err, res) {
                 if (err) return done(err)
 
                 client
                 .get('/vtest/testdb/test-schema')
-                .set('Authorization', 'Bearer ' + bearerToken)
+                .set('Authorization', `Bearer ${adminBearerToken}`)
                 .expect(200)
                 .end(function (err, res) {
                   if (err) return done(err)
@@ -449,7 +579,7 @@ describe('Cache', function (done) {
                     // flush cache for /vtest/testdb/test-schema
                     client
                     .post('/api/flush')
-                    .set('Authorization', 'Bearer ' + bearerToken)
+                    .set('Authorization', `Bearer ${adminBearerToken}`)
                     .send({path: '/vtest/testdb/test-schema'})
                     .expect(200)
                     .end(function (err, res) {
@@ -460,7 +590,7 @@ describe('Cache', function (done) {
                         // test that cache documents still exist for /v1/library/book
                         client
                         .get('/v1/library/book')
-                        .set('Authorization', 'Bearer ' + bearerToken)
+                        .set('Authorization', `Bearer ${adminBearerToken}`)
                         .expect(200)
                         .end(function (err, res) {
                           if (err) return done(err)
@@ -471,7 +601,7 @@ describe('Cache', function (done) {
                             // test that cache has been flushed for /vtest/testdb/test-schema
                             client
                             .get('/vtest/testdb/test-schema')
-                            .set('Authorization', 'Bearer ' + bearerToken)
+                            .set('Authorization', `Bearer ${adminBearerToken}`)
                             .expect(200)
                             .end(function (err, res) {
                               if (err) return done(err)
@@ -499,13 +629,13 @@ describe('Cache', function (done) {
       setTimeout(function () {
         client
         .get('/vtest/testdb/test-schema')
-        .set('Authorization', 'Bearer ' + bearerToken)
+        .set('Authorization', `Bearer ${adminBearerToken}`)
         .expect(200)
         .end(function (err, res) {
           setTimeout(function () {
             client
             .get('/vtest/testdb/test-schema')
-            .set('Authorization', 'Bearer ' + bearerToken)
+            .set('Authorization', `Bearer ${adminBearerToken}`)
             .expect(200)
             .end(function (err, res1) {
               res1.headers['x-cache'].should.exist
@@ -517,7 +647,7 @@ describe('Cache', function (done) {
 
                 client
                 .post('/api/flush')
-                .set('Authorization', 'Bearer ' + bearerToken)
+                .set('Authorization', `Bearer ${adminBearerToken}`)
                 .send({path: '/vtest/testdb/test-schema'})
                 .expect(200)
                 .end(function (err, res) {
@@ -528,7 +658,7 @@ describe('Cache', function (done) {
                   setTimeout(function () {
                     client
                     .get('/vtest/testdb/test-schema')
-                    .set('Authorization', 'Bearer ' + bearerToken)
+                    .set('Authorization', `Bearer ${adminBearerToken}`)
                     .expect(200)
                     .end(function (err, res1) {
                       if (err) return done(err)
@@ -553,7 +683,7 @@ describe('Cache', function (done) {
       // create a document in another collection
       client
       .post('/v1/library/book')
-      .set('Authorization', 'Bearer ' + bearerToken)
+      .set('Authorization', `Bearer ${adminBearerToken}`)
       .send({'title': 'War and Peace', 'author': require('uuid').v4().toString() })
       .expect(200)
       .end(function (err, res) {
@@ -562,29 +692,29 @@ describe('Cache', function (done) {
         // get first tine, uncached version of /v1/library/book
         client
         .get('/v1/library/book')
-        .set('Authorization', 'Bearer ' + bearerToken)
+        .set('Authorization', `Bearer ${adminBearerToken}`)
         .expect(200)
         .end(function (err, res) {
           if (err) return done(err)
           res.headers['x-cache'].should.exist
           res.headers['x-cache'].should.eql('MISS')
 
-          setTimeout(function() {
+          setTimeout(function () {
             // get cached version of /v1/library/book
             client
             .get('/v1/library/book')
-            .set('Authorization', 'Bearer ' + bearerToken)
+            .set('Authorization', `Bearer ${adminBearerToken}`)
             .expect(200)
             .end(function (err, res) {
               if (err) return done(err)
               res.headers['x-cache'].should.exist
               res.headers['x-cache'].should.eql('HIT')
 
-              setTimeout(function() {
+              setTimeout(function () {
                 // get cached version of /vtest/testdb/test-schema
                 client
                 .get('/vtest/testdb/test-schema')
-                .set('Authorization', 'Bearer ' + bearerToken)
+                .set('Authorization', `Bearer ${adminBearerToken}`)
                 .expect(200)
                 .end(function (err, res) {
                   if (err) return done(err)
@@ -599,7 +729,7 @@ describe('Cache', function (done) {
                     // flush cache for /vtest/testdb/test-schema
                     client
                     .post('/api/flush')
-                    .set('Authorization', 'Bearer ' + bearerToken)
+                    .set('Authorization', `Bearer ${adminBearerToken}`)
                     .send({path: '*'})
                     .expect(200)
                     .end(function (err, res) {
@@ -611,7 +741,7 @@ describe('Cache', function (done) {
                         // test that cache has been flushed for /v1/library/book
                         client
                         .get('/v1/library/book')
-                        .set('Authorization', 'Bearer ' + bearerToken)
+                        .set('Authorization', `Bearer ${adminBearerToken}`)
                         .expect(200)
                         .end(function (err, res) {
                           if (err) return done(err)
@@ -622,7 +752,7 @@ describe('Cache', function (done) {
                             // test that cache has been flushed for /vtest/testdb/test-schema
                             client
                             .get('/vtest/testdb/test-schema')
-                            .set('Authorization', 'Bearer ' + bearerToken)
+                            .set('Authorization', `Bearer ${adminBearerToken}`)
                             .expect(200)
                             .end(function (err, res) {
                               if (err) return done(err)

@@ -177,7 +177,7 @@ module.exports = function (options, collection, storeName) {
 
 module.exports.Connection = Connection
 module.exports.resetConnections = () => {
-  const queue = Object.keys(connectionPool).map(connectionKey => {
+  let queue = Object.keys(connectionPool).map(connectionKey => {
     return connectionPool[connectionKey].destroy()
   })
 

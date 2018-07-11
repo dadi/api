@@ -48,6 +48,7 @@ function createModelChain (rootModel, fields) {
 }
 
 module.exports.beforeOutput = function ({
+  client,
   composeOverride,
   document,
   dotNotationPath = [],
@@ -154,6 +155,7 @@ module.exports.beforeOutput = function ({
       if (!model) return
 
       return model.find({
+        client,
         options: queryOptions,
         query: {
           _id: {
@@ -173,6 +175,7 @@ module.exports.beforeOutput = function ({
             }
 
             return model.formatForOutput(result, {
+              client,
               composeOverride,
               dotNotationPath: newDotNotationPath,
               level: level + 1,
@@ -182,6 +185,17 @@ module.exports.beforeOutput = function ({
             })
           })
         )
+      }).catch(err => {
+        // If the `find` has failed due to insufficient permissions,
+        // we swallow the error because we don't want the main request
+        // to fail completely due to a 403 in one of the referenced
+        // collections. If we do nothing here, the document ID will
+        // be left untouched, which is what we want.
+        if (err.message === 'FORBIDDEN') {
+          return
+        }
+
+        return Promise.reject(err)
       })
     })
   ).then(() => {
@@ -366,6 +380,7 @@ module.exports.beforeQuery = function ({config, field, input, options}) {
 }
 
 module.exports.beforeSave = function ({
+  client,
   config,
   field,
   internals,
@@ -422,6 +437,7 @@ module.exports.beforeSave = function ({
       // The document has an ID, so it's an update.
       if (document._id) {
         return model.update({
+          client,
           internals: Object.assign({}, internals, {
             _lastModifiedBy: internals._createdBy
           }),
@@ -434,6 +450,7 @@ module.exports.beforeSave = function ({
       }
 
       return model.create({
+        client,
         documents: document,
         internals,
         rawOutput: true

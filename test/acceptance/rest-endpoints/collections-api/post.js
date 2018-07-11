@@ -16,74 +16,68 @@ let lastModifiedAt = 0
 describe('Collections API – POST', function () {
   this.timeout(4000)
 
-  before(function (done) {
-    app.start(() => {
-      help.dropDatabase('testdb', function (err) {
-        if (err) return done(err)
+  let cleanupFn
 
+  before(function (done) {
+    help.dropDatabase('testdb', function (err) {
+      if (err) return done(err)
+
+      app.start(function () {
         help.getBearerTokenWithAccessType('admin', function (err, token) {
           if (err) return done(err)
 
           bearerToken = token
 
-          // add a new field to the schema
-          var jsSchemaString = fs.readFileSync(__dirname + '/../../../new-schema.json', {encoding: 'utf8'})
-          jsSchemaString = jsSchemaString.replace('newField', 'field1')
-          var schema = JSON.parse(jsSchemaString)
+          let schema = {
+            "fields": {
+              "field1": {
+                "type": "String",
+                "required": false
+              },
+              "field2": {
+                "type": "Number",
+                "required": false
+              },
+              "field3": {
+                "type": "ObjectID",
+                "required": false
+              },
+              "_fieldWithUnderscore": {
+                "type": "Object",
+                "required": false
+              }
+            },
+            "settings": {}
+          }
 
-          schema.fields.field2 = _.extend({}, schema.fields.newField, {
-            type: 'Number',
-            required: false
-          })
+          help.writeTempFile(
+            'temp-workspace/collections/vtest/testdb/collection.test-schema.json',
+            schema,
+            callback1 => {
+              help.writeTempFile(
+                'temp-workspace/collections/v1/testdb/collection.test-schema.json',
+                schema,
+                callback2 => {
+                  cleanupFn = () => {
+                    callback1()
+                    callback2()
+                  }
 
-          schema.fields.field3 = _.extend({}, schema.fields.newField, {
-            type: 'ObjectID',
-            required: false
-          })
-
-          var client = request(connectionString)
-
-          client
-            .post('/vtest/testdb/test-schema/config')
-            .send(JSON.stringify(schema, null, 2))
-            .set('content-type', 'text/plain')
-            .set('Authorization', 'Bearer ' + bearerToken)
-            // .expect(200)
-            .expect('content-type', 'application/json')
-            .end(function (err, res) {
-              if (err) return done(err)
-
-              // let's wait a bit
-              setTimeout(function () {
-                done()
-              }, 500)
-            })
+                  done()
+                }
+              )
+            }
+          )
         })
       })
     })
-    
   })
 
   after(function (done) {
-    // reset the schema
-    var jsSchemaString = fs.readFileSync(__dirname + '/../../../new-schema.json', {encoding: 'utf8'})
-    jsSchemaString = jsSchemaString.replace('newField', 'field1')
-    var schema = JSON.parse(jsSchemaString)
-
-    var client = request(connectionString)
-
-    client
-      .post('/vtest/testdb/test-schema/config')
-      .send(JSON.stringify(schema, null, 4))
-      .set('content-type', 'text/plain')
-      .set('Authorization', 'Bearer ' + bearerToken)
-      .expect(200)
-      .expect('content-type', 'application/json')
-      .end(function (err, res) {
-        if (err) return done(err)
-
-        app.stop(done)
-      })
+    app.stop(() => {
+      cleanupFn()
+      done()
+    })
   })
 
   it('should create new documents', function (done) {
@@ -167,6 +161,33 @@ describe('Collections API – POST', function () {
       .post('/vtest/testdb/test-schema')
       .set('Authorization', 'Bearer ' + bearerToken)
       .set('content-type', 'text/plain')
+      .send(body)
+      .expect(200)
+      .end(function (err, res) {
+        if (err) return done(err)
+
+        should.exist(res.body.results)
+
+        res.body.results.should.be.Array
+        res.body.results.length.should.equal(1)
+        should.exist(res.body.results[0]._id)
+        should.exist(res.body.results[0].field1)
+        res.body.results[0].field1.should.equal('foo!')
+        done()
+      })
+  })
+
+  it('should create new documents when content-type includes a charset', function (done) {
+    var body = JSON.stringify({
+      field1: 'foo!'
+    })
+
+    var client = request(connectionString)
+
+    client
+      .post('/vtest/testdb/test-schema')
+      .set('Authorization', 'Bearer ' + bearerToken)
+      .set('content-type', 'application/json; charset=UTF-8')
       .send(body)
       .expect(200)
       .end(function (err, res) {
@@ -276,7 +297,7 @@ describe('Collections API – POST', function () {
       .set('Authorization', 'Bearer ' + bearerToken)
       .send({
         query: {
-          _id: '59f1b3e038ad765e669ac47f',
+          _id: '59f1b3e038ad765e669ac47f'
         },
         update: {
           field1: 'updated doc'

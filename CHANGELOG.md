@@ -4,6 +4,34 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## [4.0.0] (2018-07-11)
+
+### Added
+
+- [#396](https://github.com/dadi/api/issues/396): add access control list (see https://docs.dadi.cloud/api/4.0#authorisation-and-permissions)
+- [#449](https://github.com/dadi/api/pull/449): remove `/config` endpoints
+
+### Changed
+
+- [#438](https://github.com/dadi/api/issues/438): make CORS enabled by default
+- [#447](https://github.com/dadi/api/pull/447):  adds an additional content type check when determining if the current request should be parsed by the JSON parsing middleware
+
+### BREAKING CHANGES
+
+#### Access control list
+
+The main change from version 3 to 4 is the introduction of the [access control list](https://docs.dadi.cloud/api/4.0#authorisation-and-permissions). It's technically a breaking change, since any clients without `{"accessType": "admin"}` will lose access to everything by default. They need to be assigned permissions for the individual resources they should be able to access, either directly or via roles.
+
+If you don't want to use the new advanced permissions and instead keep your clients with unrestricted access to API resources, make sure to set `{"accessType": "admin"}` in their database records. API doesn't currently offer a way to change this property via the endpoints, so you'll need to manually make this change in the database.
+
+#### Removal of write mode on configuration endpoints
+
+Version 4 removes the ability for clients to create, modify and delete collections, custom endpoints or update the main API configuration. The *read* endpoints were kept – e.g. `GET /api/config` is valid, but `POST /api/config` is not.
+
+#### Other breaking changes
+
+- Requesting a document by ID (e.g. `/version/database/collection/doc123456`) now returns a 404 if the given ID does not correspond to a valid document, instead of returning a 200 with an empty result set. This behaviour is consistent with the `DELETE` and `PUT` verbs.
+
 ## [3.2.1] (2018-06-13)
 
 ### Changed

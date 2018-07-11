@@ -101,8 +101,8 @@ describe('Model composer', function () {
             }
           }).then(response => {
             if (++insertedDocuments === 5) {
-              return done()  
-            }          
+              return done()
+            }
           }).catch(done)
         }
       })
@@ -232,7 +232,7 @@ describe('Model composer', function () {
         let doc = results[0]
 
         should.exist(doc.author.name)
-        doc.author.name.should.equal('J K Rowling')        
+        doc.author.name.should.equal('J K Rowling')
       })
   })
 
@@ -338,7 +338,7 @@ describe('Model composer', function () {
       let doc = results[0]
 
       should.exist(doc.author.name)
-      should.exist(doc.author.spouse.name)      
+      should.exist(doc.author.spouse.name)
     })
   })
 
@@ -384,7 +384,7 @@ describe('Model composer', function () {
   describe('Reference field nested query', () => {
     it('should allow querying nested Reference field properties', () => {
       let bookSchemaString = JSON.stringify(bookSchema)
-      bookSchemaString = bookSchemaString.replace('author','person')
+      bookSchemaString = bookSchemaString.replace('author', 'person')
 
       let book = model(
         'book',
@@ -411,7 +411,7 @@ describe('Model composer', function () {
 
         return person.create({
           documents: { name: 'J K Rowling', spouse: neil }
-        })        
+        })
       }).then(({results}) => {
         rowling = results[0]._id
 
@@ -436,7 +436,7 @@ describe('Model composer', function () {
           query: {
             'person.name': 'J K Rowling'
           }
-        }) 
+        })
       }).then(({results}) => {
         results.length.should.eql(1)
 
@@ -448,7 +448,7 @@ describe('Model composer', function () {
 
     it('should allow querying second level nested Reference field properties', () => {
       let bookSchemaString = JSON.stringify(bookSchema)
-      bookSchemaString = bookSchemaString.replace('author','person')
+      bookSchemaString = bookSchemaString.replace('author', 'person')
 
       let book = model(
         'book',
@@ -487,7 +487,7 @@ describe('Model composer', function () {
 
         let doc = results[0]
         should.exist(doc.person.spouse)
-        doc.person.name.should.equal('J K Rowling')        
+        doc.person.name.should.equal('J K Rowling')
       })
     })
 
@@ -619,7 +619,7 @@ describe('Model composer', function () {
         let doc = results[0]
 
         doc.categories[0].name.should.equal('Sports News')
-        doc.categories[0].parent.name.should.equal('Sports')        
+        doc.categories[0].parent.name.should.equal('Sports')
       })
     })
 
@@ -650,7 +650,7 @@ describe('Model composer', function () {
 
         return person.create({
           documents: { name: 'J K Rowling', spouse: neil }
-        })        
+        })
       }).then(({results}) => {
         rowling = results[0]._id
 
@@ -675,7 +675,7 @@ describe('Model composer', function () {
           query: {
             'author.name': 'J K Rowling'
           }
-        }) 
+        })
       }).then(({results}) => {
         results.length.should.eql(1)
 
@@ -711,7 +711,7 @@ describe('Model composer', function () {
 
         return person.create({
           documents: { name: 'J K Rowling', spouse: neil }
-        })        
+        })
       }).then(({results}) => {
         rowling = results[0]._id
 
@@ -739,7 +739,7 @@ describe('Model composer', function () {
           query: {
             'author.name': 'J K Rowling'
           }
-        }) 
+        })
       }).then(({results}) => {
         results.length.should.eql(1)
 
@@ -778,7 +778,7 @@ describe('Model composer', function () {
 
         return person.create({
           documents: { name: 'J K Rowling', spouse: neil }
-        })        
+        })
       }).then(({results}) => {
         rowling = results[0]._id
 
@@ -811,7 +811,7 @@ describe('Model composer', function () {
             title: 'Harry Potter 1',
             'author.name': 'J K Rowling'
           }
-        }) 
+        })
       }).then(({results}) => {
         results.length.should.eql(1)
 
@@ -847,7 +847,7 @@ describe('Model composer', function () {
 
         return person.create({
           documents: { name: 'J K Rowling', spouse: neil }
-        })        
+        })
       }).then(({results}) => {
         rowling = results[0]._id
 
@@ -880,7 +880,7 @@ describe('Model composer', function () {
             title: 'Harry Potter 1',
             'author.name': 'A B Cowling'
           }
-        }) 
+        })
       }).then(({results}) => {
         results.length.should.eql(0)
       })

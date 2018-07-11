@@ -99,6 +99,27 @@ Api.prototype.use = function (path, handler) {
 }
 
 /**
+ *  Connects a set of handlers, one per HTTP verb, to
+ *  a given path.
+ *
+ *  @param {String} path
+ *  @param {Object} handlers
+ *  @return undefined
+ *  @api public
+ */
+Api.prototype.routeMethods = function (path, handlers) {
+  return this.use(path, function (req, res, next) {
+    let method = req.method && req.method.toLowerCase()
+
+    if (typeof handlers[method] === 'function') {
+      return handlers[method](req, res, next)
+    }
+
+    next()
+  })
+}
+
+/**
  *  Removes a handler or removes the handler attached to a specific path
  *  @param {String} path
  *  @return undefined

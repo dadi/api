@@ -6,7 +6,7 @@ var config = require(__dirname + '/../config.js')
 
 var _configs = []
 
-var TestHelper = function() {
+var TestHelper = function () {
   this.baseConfigPath = path.join(__dirname, '../config')
 }
 
@@ -30,7 +30,7 @@ TestHelper.prototype.updateConfig = function (configFile, configBlock) {
     var newConfig = _.extend(JSON.parse(this.originalConfigString), configBlock)
 
     fs.writeFileSync(configPath, JSON.stringify(newConfig, null, 2))
-    //config.loadFile(path.resolve(config.configPath()))
+    // config.loadFile(path.resolve(config.configPath()))
 
     _.each(Object.keys(require.cache), (key) => {
       if (key.indexOf('datastore/') > -1) {
@@ -57,14 +57,14 @@ TestHelper.prototype.resetConfig = function (configFile) {
     var configPath = path.join(this.baseConfigPath, configFile + '.' + config.get('env') + '.json')
 
     fs.writeFileSync(configPath, JSON.stringify(JSON.parse(this.originalConfigString), null, 2))
-    //config.loadFile(path.resolve(config.configPath()))
+    // config.loadFile(path.resolve(config.configPath()))
     delete require.cache[configPath]
     return resolve('')
   })
 }
 
 var instance
-module.exports = function() {
+module.exports = function () {
   if (!instance) {
     instance = new TestHelper()
   }

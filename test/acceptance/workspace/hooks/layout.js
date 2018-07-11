@@ -54,7 +54,7 @@ module.exports = function (obj, type, data) {
 // Layout resolve
 // --------------------------
 
-function resolve(layoutSchema, layoutField, document) {
+function resolve (layoutSchema, layoutField, document) {
   var result = []
   var freeSections = []
 
@@ -110,7 +110,7 @@ function resolve(layoutSchema, layoutField, document) {
 // Layout validation
 // --------------------------
 
-function validate(layoutSchema, layoutField, document, type) {
+function validate (layoutSchema, layoutField, document, type) {
   var errors = []
   var fieldCount = []
   var freeFieldsSections = layoutSchema.filter(function (elem) {
@@ -118,7 +118,7 @@ function validate(layoutSchema, layoutField, document, type) {
   })
 
   if (document[layoutField]) {
-    Object.keys(document[layoutField]).forEach((function (section) {
+    Object.keys(document[layoutField]).forEach(function (section) {
       var schemaSection = freeFieldsSections.find(function (obj) {
         return (obj.name === section)
       })
@@ -129,7 +129,7 @@ function validate(layoutSchema, layoutField, document, type) {
         fieldCount[section] = {}
       }
 
-      document[layoutField][section].forEach((function (block, blockIndex) {
+      document[layoutField][section].forEach(function (block, blockIndex) {
         var freeField = schemaSection.fields.find(function (elem) {
           return elem.source === block.source
         })
@@ -140,7 +140,7 @@ function validate(layoutSchema, layoutField, document, type) {
         }
 
         // Check if `index` is within bounds
-        if (!document[block.source] instanceof Array || (document[block.source].length <= block.index)) {
+        if (!(document[block.source] instanceof Array) || (document[block.source].length <= block.index)) {
           return errors.push({field: 'layout', message: block.index + ' is not a valid index for field ' + block.source})
         }
 
@@ -150,15 +150,14 @@ function validate(layoutSchema, layoutField, document, type) {
         } else {
           fieldCount[section][block.source] = 1
         }
-      }).bind(this))
-    }).bind(this))
+      })
+    })
 
     var free = layoutSchema.filter(function (elem) {
       return elem.free
     })
 
     free.forEach(function (section) {
-
       section.fields.forEach(function (field) {
         var count = (fieldCount[section.name] && fieldCount[section.name][field.source]) ? fieldCount[section.name][field.source] : 0
 

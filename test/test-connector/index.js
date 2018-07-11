@@ -63,6 +63,27 @@ const DataStore = function (options) {
 
 util.inherits(DataStore, EventEmitter)
 
+DataStore.prototype._debug = function (title, data = {}) {
+  if (!DEBUG) return
+
+  if (this.database.___id.name !== 'testdb') return
+
+  data.id = this.database.___id
+
+  console.log('')
+  console.log('////////////////////////////////////////////////')
+  console.log(title.toUpperCase())
+  console.log('')
+
+  Object.keys(data).forEach(key => {
+    console.log(`- ${key}: ${JSON.stringify(data[key])}`)
+  })
+
+  console.log('')
+  console.log('\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\')
+  console.log('')
+}
+
 DataStore.prototype._mockConnect = function () {
   this.readyState = STATE_CONNECTED
 
@@ -120,9 +141,16 @@ DataStore.prototype.connect = function ({database, collection}) {
       adapter: new Loki.LokiMemoryAdapter()
     })
 
-    if (DEBUG) {
-      this.database.___id = Math.random()  
+    // For debugging
+    this.database.___id = {
+      name: database,
+      uuid: Math.random()
     }
+
+    this._debug('connect: new db', {
+      database,
+      collection
+    })
 
     databasePool[connectionKey] = this.database
   }
@@ -159,12 +187,11 @@ DataStore.prototype.delete = function ({query, collection, schema}) {
 
       const count = results.data().length
 
-      if (DEBUG) {
-        console.log('')
-        console.log('* (Test connector) Delete:', this.database.___id, query, results.data(), count)
-        console.log('')  
-      }
-      
+      this._debug('delete', {
+        count,
+        results: results.data(),
+        query
+      })
 
       results.remove()
 
@@ -184,18 +211,22 @@ DataStore.prototype.dropDatabase = function (collectionName) {
     return Promise.reject(new Error('DB_DISCONNECTED'))
   }
 
-  if (DEBUG) {
-    console.log('')
-    console.log('* (Test connector) Drop:', this.database.___id, collectionName, this.database.collections.map(c => c.name))
-    console.log('')
-  }
-
   if (!this.database) return Promise.resolve()
+
+  let collectionsCleared = []
 
   this.database.collections.forEach(collection => {
     if (!collectionName || collectionName === collection.name) {
+      collectionsCleared.push(collection.name)
+
       collection.clear()
     }
+  })
+
+  this._debug('drop database', {
+    collection: collectionName,
+    collections: this.database.collections.map(c => c.name),
+    collectionsCleared
   })
 
   return Promise.resolve()
@@ -224,13 +255,6 @@ DataStore.prototype.find = function ({ query, collection, options = {}, schema, 
   return new Promise((resolve, reject) => {
     const collName = collection
     this.getCollection(collection).then(collection => {
-      if (DEBUG) {
-        console.log('')
-        console.log('* (Test connector) Find: ', this.database.___id, collName, JSON.stringify(query))
-        console.log('---> Results:', collection.chain().find(query).data())
-        console.log('')
-      }
-
       let results
 
       const sort = this.getSortParameters(options)
@@ -258,6 +282,12 @@ DataStore.prototype.find = function ({ query, collection, options = {}, schema, 
           .map(result => { return _.pick(result, fields) })
           .value()
       }
+
+      this._debug('find', {
+        collection: collName,
+        query,
+        results
+      })      
 
       let returnData = {}
       returnData.results = results.map(this.formatDocumentForOutput.bind(this))
@@ -441,11 +471,14 @@ DataStore.prototype.insert = function ({data, collection, options = {}, schema, 
     data = [data]
   }
 
-  if (DEBUG) {
-    console.log('')
-    console.log('* (Test connector) Inserting:', this.database.___id, collection, data)
-    console.log('')
-  }
+  // Cheap trick to make data immutable. We wouldn't use this in a real
+  // data connector, but it's acceptable for the test connector.
+  data = JSON.parse(JSON.stringify(data))
+
+  this._debug('insert', {
+    collection,
+    data
+  })
 
   // add an _id if the document doesn't come with one
   data.forEach(document => {
@@ -568,11 +601,11 @@ DataStore.prototype.update = function ({query, collection, update, options = {},
 
   query = this.prepareQuery(query)
 
-  if (DEBUG) {
-    console.log('')
-    console.log('* (Test connector) Updating:', this.database.___id, query, collection, update)
-    console.log('')
-  }
+  this._debug('update', {
+    collection,
+    query,
+    update
+  })
 
   return new Promise((resolve, reject) => {
     this.getCollection(collection).then(collection => {

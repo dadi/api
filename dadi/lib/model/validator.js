@@ -51,7 +51,7 @@ Validator.prototype.query = function (query) {
   return response
 }
 
-Validator.prototype.schema = function (obj, update) {
+Validator.prototype.schema = function (obj, update, schema = this.model.schema) {
   update = update || false
 
   // `obj` must be a "hash type object", i.e. { ... }
@@ -61,8 +61,6 @@ Validator.prototype.schema = function (obj, update) {
     success: true,
     errors: []
   }
-
-  var schema = this.model.schema
 
   // check for default fields, assign them if the obj didn't
   // provide a value (unless we're updating a document)

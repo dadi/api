@@ -3,17 +3,11 @@ const url = require('url')
 const help = require(path.join(__dirname, '/../help'))
 const model = require(path.join(__dirname, '/../model'))
 /*
-
 Search middleware allowing cross-collection querying
-
 Search query URI format:
-
 http://host[:port]/version/search?collections=database/collection[,database2/collection2,...[,databaseN/collectionN]]&query={"title":{"$regex":"brother"}}
-
 Example search query:
-
 http://api.example.com/1.0/search?collections=library/books,library/films&query={"title":{"$regex":"brother"}}
-
 */
 module.exports = function (server) {
   server.app.use('/:version/search', (req, res, next) => {

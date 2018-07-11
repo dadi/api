@@ -16,80 +16,20 @@ let lastModifiedAt = 0
 describe('Collections API – Stats endpoint', function () {
   this.timeout(4000)
 
-  var cleanup = function (done) {
-    // try to cleanup these tests directory tree
-    // don't catch errors here, since the paths may not exist
-
-    var dirs = config.get('paths')
-
-    try {
-      fs.unlinkSync(dirs.collections + '/v1/testdb/collection.test-schema.json')
-    } catch (e) {}
-
-    try {
-      fs.rmdirSync(dirs.collections + '/v1/testdb')
-    } catch (e) {}
-
-    done()
-  }
-
   before(function (done) {
-    app.start(() => {
-      help.dropDatabase('testdb', function (err) {
+    app.start(function () {
+      help.getBearerTokenWithAccessType('admin', function (err, token) {
         if (err) return done(err)
 
-        help.getBearerTokenWithAccessType('admin', function (err, token) {
-          if (err) return done(err)
+        bearerToken = token
 
-          bearerToken = token
-
-          // add a new field to the schema
-          var jsSchemaString = fs.readFileSync(__dirname + '/../../../new-schema.json', {encoding: 'utf8'})
-          jsSchemaString = jsSchemaString.replace('newField', 'field1')
-          var schema = JSON.parse(jsSchemaString)
-
-          schema.fields.field2 = _.extend({}, schema.fields.newField, { type: 'Number', required: false })
-
-          var client = request(connectionString)
-
-          client
-            .post('/vtest/testdb/test-schema/config')
-            .send(JSON.stringify(schema, null, 4))
-            .set('content-type', 'text/plain')
-            .set('Authorization', 'Bearer ' + bearerToken)
-            .expect(200)
-            .expect('content-type', 'application/json')
-            .end(function (err, res) {
-              if (err) return done(err)
-              done()
-            })
-        })
+        done()
       })
     })
   })
 
   after(function (done) {
-    // reset the schema
-    var jsSchemaString = fs.readFileSync(__dirname + '/../../../new-schema.json', {encoding: 'utf8'})
-    jsSchemaString = jsSchemaString.replace('newField', 'field1')
-    var schema = JSON.parse(jsSchemaString)
-
-    var client = request(connectionString)
-
-    client
-      .post('/vtest/testdb/test-schema/config')
-      .send(JSON.stringify(schema, null, 4))
-      .set('content-type', 'text/plain')
-      .set('Authorization', 'Bearer ' + bearerToken)
-      .expect(200)
-      .expect('content-type', 'application/json')
-      .end(function (err, res) {
-        if (err) return done(err)
-
-        app.stop(() => {
-          cleanup(done)  
-        })
-      })
+    app.stop(done)
   })
 
   it('should respond to a stats method', function (done) {

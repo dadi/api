@@ -214,6 +214,7 @@ module.exports = () => {
         secret: 'someSecret',
         resources: {
           clients: {
+            read: true,
             update: true
           }
         },

@@ -202,27 +202,22 @@ describe('Collections API', () => {
         fields: JSON.stringify({ field1: 1, title: 1 })
       }
 
-      console.log('---> 1')
       help.createACLClient(testClient).then(() => {
-        console.log('---> 2')
         client
         .post(config.get('auth.tokenUrl'))
         .set('content-type', 'application/json')
         .send(testClient)
         .expect(200)
         .end((err, res) => {
-          console.log('---> 3', err, res.statusCode, res.body)
           if (err) return done(err)
 
           let bearerToken = res.body.accessToken
-          let query = require('querystring').stringify(params)
 
           client
-          .get(`/vtest/testdb/test-schema/?${query}`)
+          .get('/vtest/testdb/test-schema/?fields={"field1":1,"title":1}')
           .set('content-type', 'application/json')
           .set('Authorization', `Bearer ${bearerToken}`)
           .end((err, res) => {
-            console.log('---> 4', err, res.statusCode, res.body)
             if (err) return done(err)
             res.statusCode.should.eql(200)
 

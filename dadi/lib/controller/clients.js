@@ -104,9 +104,8 @@ Clients.prototype.deleteRole = function (req, res, next) {
     // they have the role they are trying to remove.
     if (!model.isAdmin(req.dadiApiClient)) {
       return model.get(req.dadiApiClient.clientId).then(({results}) => {
-        let requestingClientHasRole = Boolean(
-          results.find(dbRole => dbRole.name === role)
-        )
+        let user = results[0]
+        let requestingClientHasRole = user.roles && user.roles.includes(role)
 
         return requestingClientHasRole
       })
@@ -129,7 +128,7 @@ Clients.prototype.deleteRole = function (req, res, next) {
       return help.sendBackJSON(404, res, next)(null)
     }
 
-    help.sendBackJSON(200, res, next)(null, {results})
+    help.sendBackJSON(204, res, next)(null, {results})
   }).catch(this.handleError(res, next))
 }
 

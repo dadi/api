@@ -191,15 +191,11 @@ describe('Collections API', () => {
       })
     })
 
-    it('should return 200 with read permission and a field excluded', function (done) {
+    it.only('should return 200 with read permission and a field excluded', function (done) {
       let testClient = {
         clientId: 'apiClient',
         secret: 'someSecret',
         resources: { 'collection:testdb_test-schema': PERMISSIONS.READ_EXCLUDE_FIELDS }
-      }
-
-      let params = {
-        fields: JSON.stringify({ field1: 1, title: 1 })
       }
 
       help.createACLClient(testClient).then(() => {

@@ -252,7 +252,7 @@ Collection.prototype.stats = function (req, res, next) {
 
 Collection.prototype.unregisterRoutes = function (route) {
   this.server.app.unuse(`${route}/config`)
-  this.server.app.unuse(`${route}/:id(${this.ID_PATTERN})?/:action(count|stats)?`)
+  this.server.app.unuse(`${route}/:id(${this.ID_PATTERN})?/:action(count|search|stats)?`)
 }
 
 module.exports = function (model, server) {

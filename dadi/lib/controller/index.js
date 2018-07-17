@@ -204,8 +204,6 @@ Controller.prototype.search = function (req, res, next) {
       })
 
       return help.sendBackJSON(200, res, next)(null, results)
-    }).catch(error => {
-      return next(error)
     })
   }).catch(error => {
     return next(error)

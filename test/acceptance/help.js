@@ -15,7 +15,7 @@ module.exports.createDoc = function (token, done) {
     .post('/vtest/testdb/test-schema')
     .set('Authorization', 'Bearer ' + token)
     .send({field1: ((Math.random() * 10) | 1).toString()})
-    //.expect(200)
+    // .expect(200)
     .end(function (err, res) {
       if (err) return done(err)
       res.body.results.length.should.equal(1)
@@ -423,7 +423,7 @@ module.exports.getCollectionMap = function () {
     databases.forEach(database => {
       let databasePath = path.join(versionPath, database)
       let stats = fs.statSync(databasePath)
-      
+
       if (stats.isDirectory()) {
         let collections = fs.readdirSync(databasePath)
 
@@ -439,7 +439,7 @@ module.exports.getCollectionMap = function () {
 
           map[`/${version}/${database}/${collectionName}`] = require(collectionPath)
         })
-      }      
+      }
     })
   })
 
@@ -469,7 +469,7 @@ module.exports.writeTempFile = function (filePath, data, callback) {
   fs.ensureDir(
     path.dirname(fullPath),
     err => {
-      fs.writeFileSync(fullPath, parsedData)    
+      fs.writeFileSync(fullPath, parsedData)
     }
   )
 

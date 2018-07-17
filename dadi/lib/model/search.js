@@ -2,7 +2,7 @@ const config = require('./../../../config')
 const debug = require('debug')('api:model:search')
 
 /**
- * Searchs for documents in the datbase and returns a
+ * Searches for documents in the database and returns a
  * metadata object.
  *
  * @param {Object} query - the search query

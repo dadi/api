@@ -181,7 +181,7 @@ Controller.prototype.search = function (req, res, next) {
   let queryOptions = this._prepareQueryOptions(options)
 
   if (queryOptions.errors.length !== 0) {
-    sendBackJSON(400, res, next)(null, queryOptions)
+    return help.sendBackJSON(400, res, next)(null, queryOptions)
   } else {
     queryOptions = queryOptions.queryOptions
   }

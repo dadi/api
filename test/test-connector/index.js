@@ -287,7 +287,7 @@ DataStore.prototype.find = function ({ query, collection, options = {}, schema, 
         collection: collName,
         query,
         results
-      })      
+      })
 
       let returnData = {}
       returnData.results = results.map(this.formatDocumentForOutput.bind(this))
@@ -520,35 +520,62 @@ DataStore.prototype.search = function ({ words, collection, options = {}, schema
 
   debug('search in %s for %o', collection, words)
 
-  let query = [
-    {
-      $match: {
+  function mapFn (document) {
+    return {
+      document: document.document,
+      word: document.word,
+      weight: document.weight
+    }
+  }
+
+  function reduceFn (documents) {
+    let matches = documents.reduce((groups, document) => {
+      let key = document.document
+
+      groups[key] = groups[key] || {
+        count: 0,
+        weight: 0
+      }
+
+      groups[key].count++
+      groups[key].weight = groups[key].weight + document.weight
+      return groups
+    }, {})
+
+    let output = []
+
+    Object.keys(matches).forEach(function (match) {
+      output.push({
+        _id: {
+          document: match
+        },
+        count: matches[match].count,
+        weight: matches[match].weight
+      })
+    })
+
+    output.sort(function (a, b) {
+      if (a.weight === b.weight) return 0
+      return a.weight < b.weight ? 1 : -1
+    })
+
+    return output
+  }
+
+  return new Promise((resolve, reject) => {
+    this.getCollection(collection).then(collection => {
+      let results
+
+      let query = {
         word: {
-          $in: words
+          '$containsAny': words
         }
       }
-    },
-    {
-      $group: {
-        _id: { document: '$document' },
-        count: { $sum: 1 },
-        weight: { $sum: '$weight' }
-      }
-    },
-    {
-      $sort: {
-        weight: -1
-      }
-    },
-    { $limit: options.limit || 100 }
-  ]
 
-  return this.find({
-    query,
-    collection,
-    options,
-    schema,
-    settings
+      let baseResultset = collection.chain().find(query)
+
+      return resolve(baseResultset.mapReduce(mapFn, reduceFn))
+    })
   })
 }
 

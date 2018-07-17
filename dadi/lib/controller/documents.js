@@ -214,7 +214,7 @@ Collection.prototype.registerRoutes = function (route, filePath) {
   })
 
   // Creating generic route.
-  this.server.app.use(`${route}/:id(${this.ID_PATTERN})?/:action(count|stats)?`, (req, res, next) => {
+  this.server.app.use(`${route}/:id(${this.ID_PATTERN})?/:action(count|search|stats)?`, (req, res, next) => {
     try {
       // Map request method to controller method.
       let method = req.params.action || (req.method && req.method.toLowerCase())

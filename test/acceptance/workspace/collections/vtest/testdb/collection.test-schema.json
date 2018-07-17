@@ -6,6 +6,13 @@
       "comments": "The title of the entry",
       "validation": {},
       "required": false
+    },
+    "title": {
+      "type": "String",
+      "label": "Title",
+      "comments": "The title of the entry",
+      "validation": {},
+      "required": false
     }
   },
   "settings": {

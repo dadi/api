@@ -71,8 +71,8 @@ Search.prototype.initialiseConnections = function () {
 
   this.wordConnection = Connection(
     {
-      database: searchConfig.database,
       collection: this.wordCollection,
+      database: searchConfig.database,
       override: true
     },
     this.wordCollection,
@@ -81,8 +81,8 @@ Search.prototype.initialiseConnections = function () {
 
   this.searchConnection = Connection(
     {
-      database: searchConfig.database,
       collection: this.searchCollection,
+      database: searchConfig.database,
       override: true
     },
     this.searchCollection,
@@ -135,11 +135,15 @@ Search.prototype.find = function (searchTerm) {
       settings: this.getSearchSchema().settings,
       opions: { limit: pageLimit }
     }).then(wordInstances => {
+      wordInstances = wordInstances.map(instance => instance._id.document)
+
       return {
         _id: {
-          '$containsAny': wordInstances.map(instance => instance._id.document)
+          '$containsAny': wordInstances
         }
       }
+    }).catch(err => {
+      console.log(err)
     })
   })
 }
@@ -183,7 +187,7 @@ Search.prototype.getWords = function (words) {
     settings: this.getWordSchema().settings
   }).then(response => {
     // Try a second pass with regular expressions
-    if (!response.length) {
+    if (response.results.length === 0) {
       let regexWords = words.map(word => new RegExp(word))
       let regexQuery = { word: { '$containsAny': regexWords } }
 
@@ -446,22 +450,6 @@ Search.prototype.clearDocumentInstances = function (docId) {
 }
 
 /**
- * Insert documents into the database
- *
- * @param {Connection} database - the database connection
- * @param {Object|Array} data - the data to insert into the database
- * @param {String} collection - the name of the collection to insert into
- * @param {Object} schema - the collection schema
- * @param {Object} options - options to use in the query
- * @return {Promise}
- */
-// Search.prototype.insert = function (datastore, data, collection, schema, options = {}) {
-//   console.log(this.datastore)
-//   if (!data.length) return Promise.resolve()
-//   return datastore.insert({data, collection, options, schema})
-// }
-
-/**
  * Index an entire collection, in batches of documents
  *
  * @param  {Number} page - the current page of documents to process
@@ -471,7 +459,6 @@ Search.prototype.batchIndex = function (page = 1, limit = 1000) {
   if (!Object.keys(this.indexableFields).length) return
 
   let skip = (page - 1) * limit
-  console.log(`Indexing page ${page} (${limit} per page)`)
 
   let fields = Object.assign({}, ...Object.keys(this.indexableFields).map(key => {
     return {[key]: 1}
@@ -483,6 +470,8 @@ Search.prototype.batchIndex = function (page = 1, limit = 1000) {
     limit,
     fields
   }
+
+  debug(`Indexing page ${page} (${limit} per page)`)
 
   if (this.model.connection.db) {
     this.runBatchIndex(options)
@@ -507,11 +496,11 @@ Search.prototype.runBatchIndex = function (options) {
     settings: this.model.settings
   }).then(results => {
     if (results.results && results.results.length) {
-      console.log(`Indexed ${results.results.length} ${results.results.length === 1 ? 'record' : 'records'} for ${this.model.name}`)
+      debug(`Indexed ${results.results.length} ${results.results.length === 1 ? 'record' : 'records'} for ${this.model.name}`)
 
       if (results.results.length > 0) {
         this.index(results.results).then(response => {
-          console.log(`Indexed page ${options.page}/${results.metadata.totalPages}`)
+          debug(`Indexed page ${options.page}/${results.metadata.totalPages}`)
 
           if (options.page * options.limit < results.metadata.totalCount) {
             return this.batchIndex(options.page + 1, options.limit)

@@ -3,7 +3,17 @@ const config = require('./../../../config')
 const help = require('./../help')
 const langs = require('langs')
 
+const FORBIDDEN_FIELD_CHARACTERS = ['.', '@']
+
 const Languages = function (server) {
+  FORBIDDEN_FIELD_CHARACTERS.forEach(character => {
+    if (config.get('i18n.fieldCharacter').includes(character)) {
+      throw new Error(
+        `Fatal error in configuration: character "${character}" is not allowed in "i18n.fieldCharacter" value`
+      )
+    }
+  })
+
   server.app.routeMethods('/api/languages', {
     get: this.get.bind(this)
   })

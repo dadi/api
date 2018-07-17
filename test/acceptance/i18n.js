@@ -706,4 +706,36 @@ describe('Multi-language', function () {
       })
     })
   })
+
+  it('should throw an error at startup if `i18n.fieldCharacter` contains a `.`', done => {
+    app.stop(() => {
+      config.set('i18n.fieldCharacter', '.')
+
+      try {
+        app.start()
+      } catch (err) {
+        err.message.includes('character "." is not allowed in "i18n.fieldCharacter" value')
+
+        config.set('i18n.fieldCharacter', configBackup.i18n.fieldCharacter)
+
+        done()
+      }
+    })
+  })
+
+  it('should throw an error at startup if `i18n.fieldCharacter` contains a `@`', done => {
+    app.stop(() => {
+      config.set('i18n.fieldCharacter', '@')
+
+      try {
+        app.start()
+      } catch (err) {
+        err.message.includes('character "@" is not allowed in "i18n.fieldCharacter" value')
+
+        config.set('i18n.fieldCharacter', configBackup.i18n.fieldCharacter)
+
+        done()
+      }
+    })
+  })
 })

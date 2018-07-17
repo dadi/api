@@ -31,6 +31,10 @@ module.exports = () => {
     })
   })
 
+  afterEach(done => {
+    help.removeACLData(done)
+  })
+
   describe('error states', () => {
     it('should return 401 if the request does not include a valid bearer token', done => {
       client
@@ -208,7 +212,7 @@ module.exports = () => {
   })
 
   describe('success states (the client has "update" access to the "clients" resource and has all the roles they are trying to assign)', () => {
-    it('should remove a role from a client', () => {
+    it('should remove a role from a client', done => {
       let testClient = {
         clientId: 'apiClient',
         secret: 'someSecret',

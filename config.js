@@ -145,19 +145,19 @@ var conf = convict({
       default: 3
     },
     wordCollection: {
-      doc: '',
+      doc: 'The name of the datastore collection that will hold tokenized words',
       format: String,
       default: 'words'
     },
     datastore: {
-      doc: "",
+      doc: 'The datastore to use for storing and querying indexed documents',
       format: String,
       default: '@dadi/api-mongodb'
     },
     database: {
-      doc: '',
+      doc: 'The name of the database to use for storing and querying indexed documents',
       format: String,
-      default: 'test',
+      default: 'search',
       env: 'DB_SEARCH_NAME'
     }
   },

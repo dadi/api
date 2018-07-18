@@ -45,7 +45,7 @@ Collections.prototype.get = function (req, res, next) {
         version: parts[1],
         database: parts[2],
         name: (model.settings && model.settings.displayName) || model.name,
-        slug: model.slug,
+        slug: model.name,
         path: key
       }
 

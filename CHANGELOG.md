@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## [4.0.1] (2018-07-18)
+
+### Fixed
+
+- [#457](https://github.com/dadi/api/issues/457): reinstate `slug` property in /api/collections endpoint
+- [#460](https://github.com/dadi/api/pull/460): use correct permissions and status code when a role is revoked from a client
+
 ## [4.0.0] (2018-07-11)
 
 ### Added

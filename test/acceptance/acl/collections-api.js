@@ -191,7 +191,7 @@ describe('Collections API', () => {
       })
     })
 
-    it.only('should return 200 with read permission and a field excluded', function (done) {
+    it('should return 200 with read permission and a field excluded', function (done) {
       let testClient = {
         clientId: 'apiClient',
         secret: 'someSecret',

@@ -100,8 +100,6 @@ Collection.prototype.get = function (req, res, next) {
     queryOptions = queryOptions.queryOptions
   }
 
-  console.log('---> Getting...')
-
   return this.model.get({
     client: req.dadiApiClient,
     query,
@@ -110,7 +108,6 @@ Collection.prototype.get = function (req, res, next) {
   }).then(results => {
     return done(null, results)
   }).catch(error => {
-    console.log('---> ERROR:', error)
     return done(error)
   })
 }

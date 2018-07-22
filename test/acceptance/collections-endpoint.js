@@ -117,4 +117,38 @@ describe('Collections endpoint', function () {
       })
     })
   })
+
+  it('should return all the collections if the requesting client has admin access', done => {
+    help.getBearerTokenWithPermissions({
+      accessType: 'admin'
+    }).then(token => {
+      client
+      .get(`/api/collections`)
+      .set('content-type', 'application/json')
+      .set('Authorization', `Bearer ${token}`)
+      .end((err, res) => {
+        let allCollections = help.getCollectionMap()
+
+        res.body.collections.length.should.eql(
+          Object.keys(allCollections).length
+        )
+
+        Object.keys(allCollections).forEach(key => {
+          let match = res.body.collections.some(collection => {
+            collection.version.should.be.String
+            collection.database.should.be.String
+            collection.name.should.be.String
+            collection.slug.should.be.String
+            collection.path.should.be.String
+
+            return collection.path === key
+          })
+
+          match.should.eql(true)
+        })
+
+        done()
+      })
+    })
+  })  
 })

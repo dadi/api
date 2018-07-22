@@ -246,12 +246,26 @@ Model.prototype._formatResultSet = function (
             ? 'beforeSave'
             : 'beforeOutput'
 
+          // The hook will receive the portion of the document that
+          // corresponds to the field in question, including any language
+          // variations.
+          let subDocument = Object.keys(document)
+            .reduce((subDocument, rawField) => {
+              let canonicalField = rawField.split(
+                config.get('i18n.fieldCharacter')
+              )[0]
+
+              if (canonicalField === field) {
+                subDocument[rawField] = document[rawField]
+              }
+
+              return subDocument
+            }, {})
+
           return this.runFieldHooks({
             config,
             data: Object.assign({}, data, { document }),
-            input: {
-              [field]: document[field]
-            },
+            input: subDocument,
             field,
             name: hookName
           }).then(subDocument => {

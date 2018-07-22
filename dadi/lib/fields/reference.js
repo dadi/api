@@ -53,6 +53,7 @@ module.exports.beforeOutput = function ({
   document,
   dotNotationPath = [],
   field,
+  language,
   input,
   level = 1,
   urlFields = {}
@@ -156,6 +157,7 @@ module.exports.beforeOutput = function ({
 
       return model.find({
         client,
+        language,
         options: queryOptions,
         query: {
           _id: {
@@ -174,13 +176,15 @@ module.exports.beforeOutput = function ({
               ).formatDocuments(result)
             }
 
-            return model.formatForOutput(result, {
-              client,
-              composeOverride,
+            let nextData = Object.assign({}, arguments[0], {
               dotNotationPath: newDotNotationPath,
-              level: level + 1,
-              urlFields
-            }).then(formattedResult => {
+              level: level + 1
+            })
+
+            return model.formatForOutput(
+              result,
+              nextData
+            ).then(formattedResult => {
               documents[result._id] = formattedResult
             })
           })

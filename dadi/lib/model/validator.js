@@ -6,6 +6,7 @@
 //   ensure that field validation passes for inserts and updates
 
 var _ = require('underscore')
+var config = require('./../../../config')
 var path = require('path')
 var datastore = require(path.join(__dirname, '../datastore'))()
 var validator = require('validator')
@@ -99,39 +100,43 @@ Validator.prototype._parseDocument = function (obj, schema, response) {
   var err = false
 
   keys.forEach(key => {
+    let canonicalKey = key.split(
+      config.get('i18n.fieldCharacter')
+    )[0]
+
     // Ignore internal fields.
     if (key.indexOf('_') === 0) return
 
-    if (!schema[key]) {
+    if (!schema[canonicalKey]) {
       response.success = false
       response.errors.push({
         collection: this.model.name,
-        field: key,
+        field: canonicalKey,
         message: "doesn't exist in the collection schema",
         data: obj
       })
     } else {
       // handle objects first
       if (typeof obj[key] === 'object') {
-        if (schema[key] && (schema[key].type === 'Mixed' || schema[key].type === 'Object')) {
+        if (schema[canonicalKey] && (schema[canonicalKey].type === 'Mixed' || schema[canonicalKey].type === 'Object')) {
           // do nothing
-        } else if (schema[key] && schema[key].type === 'Reference') {
+        } else if (schema[canonicalKey] && schema[canonicalKey].type === 'Reference') {
           // bah!
         } else if (obj[key] !== null && !Array.isArray(obj[key])) {
           this._parseDocument(obj[key], schema, response)
-        } else if (obj[key] !== null && schema[key] && schema[key].type === 'ObjectID' && Array.isArray(obj[key])) {
-          err = this._validate(obj[key], schema[key], key)
+        } else if (obj[key] !== null && schema[canonicalKey] && schema[canonicalKey].type === 'ObjectID' && Array.isArray(obj[key])) {
+          err = this._validate(obj[key], schema[canonicalKey], key)
 
           if (err) {
             response.success = false
             response.errors.push({field: key, message: err})
           }
-        } else if (Array.isArray(obj[key]) && schema[key] && (schema[key].type === 'String')) {
+        } else if (Array.isArray(obj[key]) && schema[canonicalKey] && (schema[canonicalKey].type === 'String')) {
           // We allow type `String` to actually be an array of Strings. When this
           // happens, we run the validation against the combination of all strings
           // glued together.
 
-          err = this._validate(obj[key].join(''), schema[key], key)
+          err = this._validate(obj[key].join(''), schema[canonicalKey], key)
 
           if (err) {
             response.success = false
@@ -139,7 +144,7 @@ Validator.prototype._parseDocument = function (obj, schema, response) {
           }
         }
       } else {
-        err = this._validate(obj[key], schema[key], key)
+        err = this._validate(obj[key], schema[canonicalKey], key)
 
         if (err) {
           response.success = false

@@ -81,8 +81,7 @@ Collection.prototype.delete = function (req, res, next) {
 }
 
 Collection.prototype.get = function (req, res, next) {
-  let path = url.parse(req.url, true)
-  let options = path.query
+  let options = this._getURLParameters(req.url)
   let callback = options.callback || this.model.settings.callback
 
   // Determine if this is JSONP.
@@ -102,6 +101,7 @@ Collection.prototype.get = function (req, res, next) {
 
   return this.model.get({
     client: req.dadiApiClient,
+    language: options.lang,
     query,
     options: queryOptions,
     req

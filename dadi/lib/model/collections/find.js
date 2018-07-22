@@ -1,5 +1,6 @@
 'use strict'
 
+const config = require('./../../../../config')
 const debug = require('debug')('api:model')
 
 /**
@@ -24,12 +25,14 @@ const debug = require('debug')('api:model')
  * Finds documents in the database.
  *
  * @param  {Object} client - client to check permissions for
+ * @param  {String} language - ISO code for the language to translate documents to
  * @param  {Object} query - query to match documents against
  * @param  {Object} options
  * @return {Promise<ResultSet>}
  */
 function find ({
   client,
+  language,
   query = {},
   options = {}
 } = {}) {
@@ -43,23 +46,46 @@ function find ({
 
   let queryFields = {}
 
-  // Transforming elements of the `fields` parameter that contain
-  // dot-notation paths so that the base field is requested.
+  // Transforming the fields projection, if one is present. It
+  // involves transforming reference fields with dot-notation,
+  // as well as language variations of fields.
   if (options.fields && Object.keys(options.fields).length) {
     Object.keys(options.fields).forEach(field => {
       let baseField = field.split('.')[0]
       let [name, collection] = baseField.split('@')
 
+      // If the projected field specifies a collection to search on
+      // (e.g. author@people.name) and that collection is not the
+      // one we're operating one, we exclude the field from the
+      // projection.
       if (collection && (collection !== this.name)) {
         return
       }
 
       queryFields[name] = options.fields[field]
 
+      // We must ensure that language variations are included/excluded
+      // appropriately. We'll add a language variation to the projection
+      // if we're dealing with an exclusion projection (i.e. if we exclude
+      // a field, we can also exclude all its language variations) or if
+      // the variation in question is the language requested (i.e. if we
+      // include a field and request a certain language, we must also include
+      // that corresponding variation).
+      config.get('i18n.languages').forEach(supportedLanguage => {
+        if (options.fields[field] === 0 || supportedLanguage === language) {
+          let langField = name + config.get('i18n.fieldCharacter') + supportedLanguage
+
+          queryFields[langField] = options.fields[field]
+        }
+      })
+
       // If we're limiting the fields we're requesting, we need to
       // ensure that any reference fields are accompanied by their
       // auxiliary collection mapping field.
-      if (this.getFieldType(name) === 'reference') {
+      if (
+        this.getFieldType(name) === 'reference' &&
+        options.fields[field] === 1
+      ) {
         let mappingField = this._getIdMappingName(name)
 
         queryFields[mappingField] = 1

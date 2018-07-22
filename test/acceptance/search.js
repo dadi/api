@@ -1,20 +1,17 @@
-var _ = require('underscore')
-var should = require('should')
-var sinon = require('sinon')
-var fs = require('fs')
-var path = require('path')
-var request = require('supertest')
-var EventEmitter = require('events').EventEmitter
-var connection = require(__dirname + '/../../dadi/lib/model/connection')
-var config = require(__dirname + '/../../config')
-var help = require(__dirname + '/help')
-var app = require(__dirname + '/../../dadi/lib/')
-var model = require(__dirname + '/../../dadi/lib/model/')
+const app = require(__dirname + '/../../dadi/lib/')
+const config = require(__dirname + '/../../config')
+const fs = require('fs')
+const help = require(__dirname + '/help')
+const model = require(__dirname + '/../../dadi/lib/model/')
+const should = require('should')
+const sinon = require('sinon')
+const path = require('path')
+const request = require('supertest')
 
 // variables scoped for use throughout tests
-var bearerToken
-var connectionString = 'http://' + config.get('server.host') + ':' + config.get('server.port')
-var lastModifiedAt = 0
+let bearerToken
+let connectionString = 'http://' + config.get('server.host') + ':' + config.get('server.port')
+let lastModifiedAt = 0
 
 describe('Search', function () {
   this.timeout(4000)

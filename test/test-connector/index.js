@@ -520,48 +520,6 @@ DataStore.prototype.search = function ({ words, collection, options = {}, schema
 
   debug('search in %s for %o', collection, words)
 
-  function mapFn (document) {
-    return {
-      document: document.document,
-      word: document.word,
-      weight: document.weight
-    }
-  }
-
-  function reduceFn (documents) {
-    let matches = documents.reduce((groups, document) => {
-      let key = document.document
-
-      groups[key] = groups[key] || {
-        count: 0,
-        weight: 0
-      }
-
-      groups[key].count++
-      groups[key].weight = groups[key].weight + document.weight
-      return groups
-    }, {})
-
-    let output = []
-
-    Object.keys(matches).forEach(function (match) {
-      output.push({
-        _id: {
-          document: match
-        },
-        count: matches[match].count,
-        weight: matches[match].weight
-      })
-    })
-
-    output.sort(function (a, b) {
-      if (a.weight === b.weight) return 0
-      return a.weight < b.weight ? 1 : -1
-    })
-
-    return output
-  }
-
   return new Promise((resolve, reject) => {
     this.getCollection(collection).then(collection => {
       let results
@@ -574,7 +532,7 @@ DataStore.prototype.search = function ({ words, collection, options = {}, schema
 
       let baseResultset = collection.chain().find(query)
 
-      return resolve(baseResultset.mapReduce(mapFn, reduceFn))
+      return resolve(baseResultset.mapReduce(searchMapFn, searchReduceFn))
     })
   })
 }
@@ -696,6 +654,48 @@ DataStore.prototype.update = function ({query, collection, update, options = {},
       })
     })
   })
+}
+
+function searchMapFn (document) {
+  return {
+    document: document.document,
+    word: document.word,
+    weight: document.weight
+  }
+}
+
+function searchReduceFn (documents) {
+  let matches = documents.reduce((groups, document) => {
+    let key = document.document
+
+    groups[key] = groups[key] || {
+      count: 0,
+      weight: 0
+    }
+
+    groups[key].count++
+    groups[key].weight = groups[key].weight + document.weight
+    return groups
+  }, {})
+
+  let output = []
+
+  Object.keys(matches).forEach(function (match) {
+    output.push({
+      _id: {
+        document: match
+      },
+      count: matches[match].count,
+      weight: matches[match].weight
+    })
+  })
+
+  output.sort(function (a, b) {
+    if (a.weight === b.weight) return 0
+    return a.weight < b.weight ? 1 : -1
+  })
+
+  return output
 }
 
 module.exports = DataStore

@@ -433,8 +433,6 @@ Access.prototype.write = function () {
     return this.model.delete({
       query: {}
     }).then(() => {
-      if (entries.length === 0) return
-
       return this.model.create({
         documents: entries,
         rawOutput: true,

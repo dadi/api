@@ -257,7 +257,15 @@ module.exports.removeACLData = function (done) {
     return rolesConnection.datastore.dropDatabase(
       config.get('auth.roleCollection')
     )
-  }).then(() => done()).catch(err => done(err))
+  }).then(() => {
+    if (typeof done === 'function') {
+      done()
+    }
+  }).catch(err => {
+    if (typeof done === 'function') {
+      done(err)
+    }
+  })
 }
 
 module.exports.removeTestClients = function (done) {

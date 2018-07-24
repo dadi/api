@@ -208,12 +208,13 @@ module.exports = () => {
   })
 
   describe('success states (the client has "update" access to the "clients" resource and has all the roles they are trying to assign)', () => {
-    it('should remove a role from a client', () => {
+    it('should remove a role from a client', done => {
       let testClient = {
         clientId: 'apiClient',
         secret: 'someSecret',
         resources: {
           clients: {
+            read: true,
             update: true
           }
         },

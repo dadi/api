@@ -163,6 +163,19 @@ module.exports.createACLClient = function (client, callback) {
     config.get('datastore')
   )
 
+  let resources = client.resources
+
+  if (resources && !Array.isArray(resources)) {
+    resources = Object.keys(resources).map(resource => {
+      return {
+        r: resource,
+        a: resources[resource]
+      }
+    })
+
+    client.resources = resources
+  }
+
   return clientsConnection.datastore.insert({
     data: client,
     collection: config.get('auth.clientCollection'),
@@ -194,6 +207,19 @@ module.exports.createACLRole = function (role, callback) {
     null,
     config.get('datastore')
   )
+
+  let resources = role.resources
+
+  if (resources && !Array.isArray(resources)) {
+    resources = Object.keys(resources).map(resource => {
+      return {
+        r: resource,
+        a: resources[resource]
+      }
+    })
+
+    role.resources = resources
+  }  
 
   return rolesConnection.datastore.insert({
     data: role,

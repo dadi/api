@@ -519,4 +519,114 @@ describe('ACL access matrix', function () {
       }
     })
   })
+
+  describe('array and object notations', () => {
+    it('should leave the map untouched when trying to convert from array notation to object notation a map that is not an array', () => {
+      let matrix = new Matrix()
+      let input = {
+        'resource:one': {
+          create: true,
+          read: true,
+          update: true
+        },
+        'resource:two': {
+          delete: true,
+          update: true
+        }
+      }
+
+      matrix._convertArrayNotationToObjectNotation(input).should.eql(input)
+    })
+
+    it('should convert an empty map from array notation to object notation', () => {
+      let matrix = new Matrix()
+      let input = []
+
+      matrix._convertArrayNotationToObjectNotation(input).should.eql({})
+    })
+
+    it('should convert a map from array notation to object notation', () => {
+      let matrix = new Matrix()
+      let input = [
+        {
+          r: 'resource:one',
+          a: {
+            create: true,
+            read: true,
+            update: true
+          }
+        },
+        {
+          r: 'resource:two',
+          a: {
+            delete: true,
+            update: true
+          }
+        }
+      ]
+
+      matrix._convertArrayNotationToObjectNotation(input).should.eql({
+        [input[0].r]: input[0].a,
+        [input[1].r]: input[1].a
+      })
+    })
+
+    it('should leave the map untouched when trying to convert from object notation to array notation a map that is already an array', () => {
+      let matrix = new Matrix()
+      let input = [
+        {
+          r: 'resource:one',
+          a: {
+            create: true,
+            read: true,
+            update: true
+          }
+        },
+        {
+          r: 'resource:two',
+          a: {
+            delete: true,
+            update: true
+          }
+        }
+      ]
+
+      matrix._convertObjectNotationToArrayNotation(input).should.eql(input)
+    })    
+
+    it('should convert an empty map from object notation to array notation', () => {
+      let matrix = new Matrix()
+      let input = {}
+
+      matrix._convertArrayNotationToObjectNotation(input).should.eql([])
+    })
+
+    it('should convert a map from object notation to array notation', () => {
+      let matrix = new Matrix()
+      let input = {
+        'resource:one': {
+          create: true,
+          read: true,
+          update: true
+        },
+        'resource:two': {
+          delete: true,
+          update: true
+        }
+      }
+
+      matrix._convertObjectNotationToArrayNotation(input).should.eql(
+        [
+          {
+            r: 'resource:one',
+            a: input['resource:one']
+          },
+          {
+            r: 'resource:two',
+            a: input['resource:two']
+          }
+        ]
+      )
+    })    
+  })
 })

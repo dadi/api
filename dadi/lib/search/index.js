@@ -46,8 +46,6 @@ Search.prototype.canUse = function () {
 
   this.datastore = DataStore(searchConfig.datastore)
 
-  console.log(this.indexableFields)
-
   return (typeof this.datastore.search !== 'undefined') &&
     searchConfig.enabled &&
     Object.keys(this.indexableFields).length > 0
@@ -146,8 +144,6 @@ Search.prototype.find = function (searchTerm) {
           '$containsAny': wordInstances
         }
       }
-    }).catch(err => {
-      console.log(err)
     })
   })
 }
@@ -163,7 +159,7 @@ Search.prototype.delete = function (documents) {
   }
 
   if (!Array.isArray(documents)) {
-    return
+    return Promise.resolve()
   }
 
   debug('deleting documents from the %s index', this.searchCollection)

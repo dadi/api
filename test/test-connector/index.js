@@ -14,7 +14,7 @@ const util = require('util')
 const Update = require('./lib/update')
 const uuid = require('uuid')
 
-const DEBUG = false
+const DEBUG = Boolean(process.env.DEBUG_DB)
 const STATE_DISCONNECTED = 0
 const STATE_CONNECTED = 1
 

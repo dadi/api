@@ -55,8 +55,11 @@ class StandardAnalyzer {
   }
 
   areValidWords (words) {
-    return Array.isArray(words) &&
-    words.every(word => {
+    if (!Array.isArray(words)) {
+      return false
+    }
+
+    return words.every(word => {
       return typeof word === 'object' &&
         word.hasOwnProperty('weight') &&
         word.hasOwnProperty('word')
@@ -93,7 +96,7 @@ class StandardAnalyzer {
 
     let docWords = this.tfidf.documents
       .map((doc, index) => {
-        let rules = this.fieldRules[doc.__key]
+        let rules = this.fieldRules[doc.__key.split(':')[0]]
 
         return words
           .filter(word => doc[word])

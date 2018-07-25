@@ -17,7 +17,9 @@ const pageLimit = 20
  * N.B. May only be used with the MongoDB Data Connector.
  */
 const Search = function (model) {
-  if (!model || model.constructor.name !== 'Model') throw new Error('model should be an instance of Model')
+  if (!model || model.constructor.name !== 'Model') {
+    throw new Error('model should be an instance of Model')
+  }
 
   this.model = model
   this.indexableFields = this.getIndexableFields()
@@ -43,6 +45,8 @@ Search.prototype.canUse = function () {
   let searchConfig = config.get('search')
 
   this.datastore = DataStore(searchConfig.datastore)
+
+  console.log(this.indexableFields)
 
   return (typeof this.datastore.search !== 'undefined') &&
     searchConfig.enabled &&
@@ -164,7 +168,9 @@ Search.prototype.delete = function (documents) {
 
   debug('deleting documents from the %s index', this.searchCollection)
 
-  let deleteQueue = documents.map(document => this.clearDocumentInstances(document._id.toString()))
+  let deleteQueue = documents.map(document => {
+    return this.clearDocumentInstances(document._id.toString())
+  })
 
   return Promise.all(deleteQueue)
 }
@@ -246,11 +252,17 @@ Search.prototype.getInstancesOfWords = function (words) {
 Search.prototype.getIndexableFields = function () {
   let schema = this.model.schema
 
-  return Object.assign({}, ...Object.keys(schema)
-    .filter(key => this.hasSearchField(schema[key]))
-    .map(key => {
-      return {[key]: schema[key].search}
-    }))
+  let indexableFields = Object.keys(schema).filter(key => {
+    return this.hasSearchField(schema[key])
+  })
+
+  let fields = {}
+
+  indexableFields.forEach(key => {
+    fields[key] = schema[key].search
+  })
+
+  return fields
 }
 
 /**
@@ -273,11 +285,27 @@ Search.prototype.hasSearchField = function (field) {
 Search.prototype.removeNonIndexableFields = function (document) {
   if (typeof document !== 'object') return {}
 
-  return Object.assign({}, ...Object.keys(document)
-    .filter(key => this.indexableFields[key])
-    .map(key => {
-      return {[key]: document[key]}
-    }))
+  // set of languages configured for API, so we can keep translation fields
+  // in the document for indexing
+  let supportedLanguages = config.get('i18n.languages')
+  let fieldSeparator = config.get('i18n.fieldCharacter')
+
+  let indexableFields = Object.keys(document).filter(key => {
+    if (key.indexOf(fieldSeparator) > 0) {
+      let keyParts = key.split(fieldSeparator)
+      return this.indexableFields[keyParts[0]] && supportedLanguages.includes(keyParts[1])
+    } else {
+      return this.indexableFields[key]
+    }
+  })
+
+  let sanitisedDocument = {}
+
+  indexableFields.forEach(key => {
+    sanitisedDocument[key] = document[key]
+  })
+
+  return sanitisedDocument
 }
 
 /**
@@ -387,12 +415,12 @@ Search.prototype.clearAndInsertWordInstances = function (words, docId) {
     settings: this.getWordSchema().settings
   }).then(results => {
     // Get all word instances from Analyser
-    this.clearDocumentInstances(docId).then(response => {
+    return this.clearDocumentInstances(docId).then(response => {
       if (response.deletedCount) {
         debug('Removed %s documents from the %s index', response.deletedCount, this.searchCollection)
       }
 
-      this.insertWordInstances(results.results, docId)
+      return this.insertWordInstances(results.results, docId)
     })
   })
   .catch(err => {
@@ -494,15 +522,15 @@ Search.prototype.runBatchIndex = function (options) {
     options: options,
     schema: this.model.schema,
     settings: this.model.settings
-  }).then(results => {
-    if (results.results && results.results.length) {
-      debug(`Indexed ${results.results.length} ${results.results.length === 1 ? 'record' : 'records'} for ${this.model.name}`)
+  }).then(({metadata, results}) => {
+    if (results && results.length) {
+      debug(`Indexed ${results.length} ${results.length === 1 ? 'record' : 'records'} for ${this.model.name}`)
 
-      if (results.results.length > 0) {
-        this.index(results.results).then(response => {
-          debug(`Indexed page ${options.page}/${results.metadata.totalPages}`)
+      if (results.length > 0) {
+        this.index(results).then(response => {
+          debug(`Indexed page ${options.page}/${metadata.totalPages}`)
 
-          if (options.page * options.limit < results.metadata.totalCount) {
+          if (options.page * options.limit < metadata.totalCount) {
             return this.batchIndex(options.page + 1, options.limit)
           }
         })

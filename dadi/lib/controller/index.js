@@ -182,13 +182,17 @@ Controller.prototype.search = function (req, res, next) {
     queryOptions = queryOptions.queryOptions
   }
 
-  return this.model.search(queryOptions).then(query => {
+  return this.model.search({
+    client: req.dadiApiClient,
+    options: queryOptions
+  }).then(query => {
     let ids = query._id['$containsAny'].map(id => id.toString())
 
-    return this.model.get({
+    return this.model.find({
+      client: req.dadiApiClient,
+      language: options.lang,
       query,
-      options: queryOptions,
-      req
+      options: queryOptions
     }).then(results => {
       results.results = results.results.sort((a, b) => {
         let aIndex = ids.indexOf(a._id.toString())
@@ -199,7 +203,18 @@ Controller.prototype.search = function (req, res, next) {
         return aIndex > bIndex ? 1 : -1
       })
 
-      return help.sendBackJSON(200, res, next)(null, results)
+      return this.model.formatForOutput(
+        results.results,
+        {
+          client: req.dadiApiClient,
+          composeOverride: queryOptions.compose,
+          language: options.lang,
+          urlFields: queryOptions.fields
+        }
+      ).then(formattedResults => {
+        results.results = formattedResults
+        return help.sendBackJSON(200, res, next)(null, results)
+      })
     })
   }).catch(error => {
     return next(error)

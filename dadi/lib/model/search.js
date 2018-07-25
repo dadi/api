@@ -9,13 +9,11 @@ const debug = require('debug')('api:model:search')
  * @param {Object} options - an options object
  * @returns {Promise<Metadata>}
  */
-module.exports = function (options = {}) {
+module.exports = function ({
+  client,
+  options = {}
+} = {}) {
   let err
-
-  if (typeof options === 'function') {
-    // done = options
-    options = {}
-  }
 
   if (!this.searchHandler.canUse()) {
     err = new Error('Not Implemented')
@@ -39,7 +37,11 @@ module.exports = function (options = {}) {
     return Promise.reject(err)
   }
 
-  debug(options.search)
-
-  return this.searchHandler.find(options.search)
+  return this.validateAccess({
+    client,
+    type: 'read'
+  }).then(() => {
+    debug(options.search)
+    return this.searchHandler.find(options.search)
+  })
 }

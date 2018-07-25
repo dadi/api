@@ -405,7 +405,7 @@ describe('Multi-language', function () {
         done()
       })
     })
-  })  
+  })
 
   it('should populate a `_i18n` field with a mapping of the language used for each translatable field', done => {
     config.set('i18n.languages', ['pt', 'fr'])
@@ -699,7 +699,7 @@ describe('Multi-language', function () {
             if (++i === Object.keys(translations).length) {
               config.set('i18n.languages', configBackup.i18n.languages)
 
-              done()  
+              done()
             }
           })
         })

@@ -1,17 +1,14 @@
-const app = require(__dirname + '/../../dadi/lib/')
-const config = require(__dirname + '/../../config')
-const fs = require('fs')
-const help = require(__dirname + '/help')
-const model = require(__dirname + '/../../dadi/lib/model/')
+const app = require('../../dadi/lib/')
+const config = require('../../config')
+const help = require('./help')
+const model = require('../../dadi/lib/model/')
 const should = require('should')
-const sinon = require('sinon')
-const path = require('path')
 const request = require('supertest')
 
 // variables scoped for use throughout tests
 let bearerToken
 let connectionString = 'http://' + config.get('server.host') + ':' + config.get('server.port')
-let lastModifiedAt = 0
+let configBackup = config.get()
 
 describe('Search', function () {
   this.timeout(4000)
@@ -29,6 +26,8 @@ describe('Search', function () {
         'datastore': './../../../test/test-connector',
         'database': 'testdb'
       })
+
+      config.set('i18n.languages', ['fr', 'pt'])
 
       app.start(function () {
         help.getBearerTokenWithAccessType('admin', function (err, token) {
@@ -94,6 +93,8 @@ describe('Search', function () {
     config.set('search', {
       'enabled': false
     })
+
+    config.set('i18n.languages', configBackup.i18n.languages)
 
     app.stop(() => {
       cleanupFn()
@@ -224,6 +225,187 @@ describe('Search', function () {
           should.exist(res.body.metadata)
           should.exist(res.body.metadata.search)
           res.body.metadata.search.should.eql('quick brown')
+
+          done()
+        })
+      })
+    })
+  })
+
+  describe('Multi-language', function () {
+    it('should retrieve all language variations if no `lang` parameter is supplied', done => {
+      let document = {
+        title: 'The Little Prince',
+        'title:pt': 'O Principezinho',
+        'title:fr': 'Le Petit Prince'
+      }
+
+      var client = request(connectionString)
+
+      client
+      .post('/vtest/testdb/test-schema')
+      .set('Authorization', `Bearer ${bearerToken}`)
+      .send(document)
+      .expect(200)
+      .end((err, res) => {
+        if (err) return done(err)
+
+        client
+        .get(`/vtest/testdb/test-schema/search?q=Prince`)
+        .set('Authorization', `Bearer ${bearerToken}`)
+        .expect(200)
+        .end((err, res) => {
+          res.body.results.length.should.eql(1)
+
+          let result = res.body.results[0]
+
+          result.title.should.eql(document.title)
+          result['title:pt'].should.eql(document['title:pt'])
+          result['title:fr'].should.eql(document['title:fr'])
+
+          should.not.exist(result._i18n)
+
+          done()
+        })
+      })
+    })
+
+    it('should return the translation version of a field when there is one set for the language in the `lang` parameter, falling back to the default language', done => {
+      config.set('i18n.languages', ['pt', 'fr'])
+
+      let documents = [
+        {
+          title: 'The Little Prince',
+          'title:pt': 'O Principezinho',
+          'title:fr': 'Le Petit Prince'
+        },
+        {
+          title: 'The Untranslatable'
+        }
+      ]
+
+      var client = request(connectionString)
+
+      client
+      .post(`/vtest/testdb/test-schema`)
+      .set('Authorization', `Bearer ${bearerToken}`)
+      .send(documents)
+      .expect(200)
+      .end((err, res) => {
+        if (err) return done(err)
+
+        client
+        .get('/vtest/testdb/test-schema/search?q=Principezinho&lang=pt')
+        .set('Authorization', `Bearer ${bearerToken}`)
+        .expect(200)
+        .end((err, res) => {
+          res.body.results.length.should.eql(2)
+
+          let results = res.body.results
+
+          results[0].title.should.eql(documents[0]['title:pt'])
+          results[0]._i18n.title.should.eql('pt')
+          should.not.exist(results[0]['title:pt'])
+          should.not.exist(results[0]['title:fr'])
+
+          // results[1].title.should.eql(documents[1].title)
+          // results[1]._i18n.title.should.eql(
+          //   config.get('i18n.defaultLanguage')
+          // )
+          // should.not.exist(results[1]['title:pt'])
+          // should.not.exist(results[1]['title:fr'])
+
+          config.set('i18n.languages', configBackup.i18n.languages)
+
+          done()
+        })
+      })
+    })
+
+    it('should return the translation version of a field when the fields projection is set to include the field in question', done => {
+      config.set('i18n.languages', ['pt', 'fr'])
+
+      let documents = [
+        {
+          title: 'The Little Prince',
+          'title:pt': 'O Principezinho',
+          'title:fr': 'Le Petit Prince'
+        },
+        {
+          title: 'The Untranslatable'
+        }
+      ]
+
+      var client = request(connectionString)
+
+      client
+      .post('/vtest/testdb/test-schema')
+      .set('Authorization', `Bearer ${bearerToken}`)
+      .send(documents)
+      .expect(200)
+      .end((err, res) => {
+        if (err) return done(err)
+
+        client
+        .get(`/vtest/testdb/test-schema/search?q=Principezinho&fields={"title":1}&lang=pt`)
+        .set('Authorization', `Bearer ${bearerToken}`)
+        .expect(200)
+        .end((err, res) => {
+          let results = res.body.results
+
+          results[0].title.should.eql(documents[0]['title:pt'])
+          results[0]._i18n.title.should.eql('pt')
+          should.not.exist(results[0]['title:pt'])
+          should.not.exist(results[0]['title:fr'])
+
+          // results[1].title.should.eql(documents[1].title)
+          // results[1]._i18n.title.should.eql(
+          //   config.get('i18n.defaultLanguage')
+          // )
+          // should.not.exist(results[1]['title:pt'])
+          // should.not.exist(results[1]['title:fr'])
+
+          config.set('i18n.languages', configBackup.i18n.languages)
+
+          done()
+        })
+      })
+    })
+
+    it('should return the original version of a field when the requested language is not part of `i18n.languages`', done => {
+      config.set('i18n.languages', ['fr'])
+
+      let document = {
+        title: 'The Little Prince',
+        'title:pt': 'O Principezinho',
+        'title:fr': 'Le Petit Prince'
+      }
+
+      var client = request(connectionString)
+
+      client
+      .post('/vtest/testdb/test-schema')
+      .set('Authorization', `Bearer ${bearerToken}`)
+      .send(document)
+      .expect(200)
+      .end((err, res) => {
+        if (err) return done(err)
+
+        client
+        .get(`/vtest/testdb/test-schema/search?q=Prince&fields={"title":1}&lang=pt`)
+        .set('Authorization', `Bearer ${bearerToken}`)
+        .expect(200)
+        .end((err, res) => {
+          // res.body.results.length.should.eql(1)
+
+          let results = res.body.results
+
+          results[0].title.should.eql(document.title)
+          results[0]._i18n.title.should.eql('en')
+          should.not.exist(results[0]['title:pt'])
+          should.not.exist(results[0]['title:fr'])
+
+          config.set('i18n.languages', configBackup.i18n.languages)
 
           done()
         })

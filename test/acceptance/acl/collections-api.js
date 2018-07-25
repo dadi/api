@@ -20,6 +20,14 @@ let docs
 
 describe('Collections API', () => {
   before(done => {
+    config.set('search', {
+      'enabled': true,
+      'minQueryLength': 3,
+      'wordCollection': 'words',
+      'datastore': './../../../test/test-connector',
+      'database': 'testdb'
+    })
+
     app.start(err => {
       if (err) return done(err)
 
@@ -62,7 +70,111 @@ describe('Collections API', () => {
 
   after(done => {
     help.removeACLData(() => {
+      config.set('search', {
+        'enabled': false,
+        'minQueryLength': 3,
+        'wordCollection': 'words',
+        'datastore': './../../../test/test-connector',
+        'database': 'testdb'
+      })
+
       app.stop(done)
+    })
+  })
+
+  describe('Search', function () {
+    it('should return 403 with no permissions', function (done) {
+      let testClient = {
+        clientId: 'apiClient',
+        secret: 'someSecret',
+        resources: { 'collection:testdb_test-schema': {} }
+      }
+
+      help.createACLClient(testClient).then(() => {
+        client
+        .post(config.get('auth.tokenUrl'))
+        .set('content-type', 'application/json')
+        .send(testClient)
+        .expect(200)
+        .end((err, res) => {
+          if (err) return done(err)
+
+          let bearerToken = res.body.accessToken
+
+          client
+          .get(`/vtest/testdb/test-schema/search?q=xyz`)
+          .set('content-type', 'application/json')
+          .set('Authorization', `Bearer ${bearerToken}`)
+          .end((err, res) => {
+            if (err) return done(err)
+            console.log(res)
+            res.statusCode.should.eql(403)
+            done()
+          })
+        })
+      })
+    })
+
+    it('should return 403 with no read permission', function (done) {
+      let testClient = {
+        clientId: 'apiClient',
+        secret: 'someSecret',
+        resources: { 'collection:testdb_test-schema': PERMISSIONS.NO_READ }
+      }
+
+      help.createACLClient(testClient).then(() => {
+        client
+        .post(config.get('auth.tokenUrl'))
+        .set('content-type', 'application/json')
+        .send(testClient)
+        .expect(200)
+        .end((err, res) => {
+          if (err) return done(err)
+
+          let bearerToken = res.body.accessToken
+
+          client
+          .get(`/vtest/testdb/test-schema/search?q=xyz`)
+          .set('content-type', 'application/json')
+          .set('Authorization', `Bearer ${bearerToken}`)
+          .end((err, res) => {
+            if (err) return done(err)
+            res.statusCode.should.eql(403)
+            done()
+          })
+        })
+      })
+    })
+
+    it('should return 200 with read permission', function (done) {
+      let testClient = {
+        clientId: 'apiClient',
+        secret: 'someSecret',
+        resources: { 'collection:testdb_test-schema': PERMISSIONS.READ }
+      }
+
+      help.createACLClient(testClient).then(() => {
+        client
+        .post(config.get('auth.tokenUrl'))
+        .set('content-type', 'application/json')
+        .send(testClient)
+        .expect(200)
+        .end((err, res) => {
+          if (err) return done(err)
+
+          let bearerToken = res.body.accessToken
+
+          client
+          .get(`/vtest/testdb/test-schema/search?q=fghj`)
+          .set('content-type', 'application/json')
+          .set('Authorization', `Bearer ${bearerToken}`)
+          .end((err, res) => {
+            if (err) return done(err)
+            res.statusCode.should.eql(200)
+            done()
+          })
+        })
+      })
     })
   })
 
@@ -289,7 +401,7 @@ describe('Collections API', () => {
               done()
             })
           })
-        })        
+        })
       })
     })
 
@@ -357,7 +469,7 @@ describe('Collections API', () => {
               done()
             })
           })
-        })        
+        })
       })
     })
 
@@ -510,9 +622,9 @@ describe('Collections API', () => {
       let modelSettings = Object.assign({}, app.components['/vtest/testdb/test-schema'].model.settings)
 
       app.components['/vtest/testdb/test-schema'].model.settings.authenticate = [
-        "POST",
-        "PUT",
-        "DELETE"
+        'POST',
+        'PUT',
+        'DELETE'
       ]
 
       client
@@ -532,10 +644,10 @@ describe('Collections API', () => {
       let modelSettings = Object.assign({}, app.components['/vtest/testdb/test-schema'].model.settings)
 
       app.components['/vtest/testdb/test-schema'].model.settings.authenticate = [
-        "GET",
-        "POST",
-        "PUT",
-        "DELETE"
+        'GET',
+        'POST',
+        'PUT',
+        'DELETE'
       ]
 
       client
@@ -699,7 +811,7 @@ describe('Collections API', () => {
         { field1: 'Value one' },
         { field1: 'Value two' },
         { field1: 'Value three' }
-      ]      
+      ]
 
       help.getBearerTokenWithPermissions({
         accessType: 'admin'
@@ -764,7 +876,7 @@ describe('Collections API', () => {
         { field1: 'Value two' },
         { field1: 'Value three' },
         { field1: 'Value four' }
-      ]      
+      ]
 
       help.getBearerTokenWithPermissions({
         accessType: 'admin'
@@ -804,9 +916,9 @@ describe('Collections API', () => {
               })
             })
           })
-        })        
+        })
       })
-    })    
+    })
   })
 
   describe('POST', function () {
@@ -938,9 +1050,9 @@ describe('Collections API', () => {
       let modelSettings = Object.assign({}, app.components['/vtest/testdb/test-schema'].model.settings)
 
       app.components['/vtest/testdb/test-schema'].model.settings.authenticate = [
-        "GET",
-        "PUT",
-        "DELETE"
+        'GET',
+        'PUT',
+        'DELETE'
       ]
 
       client
@@ -963,10 +1075,10 @@ describe('Collections API', () => {
       let modelSettings = Object.assign({}, app.components['/vtest/testdb/test-schema'].model.settings)
 
       app.components['/vtest/testdb/test-schema'].model.settings.authenticate = [
-        "GET",
-        "POST",
-        "PUT",
-        "DELETE"
+        'GET',
+        'POST',
+        'PUT',
+        'DELETE'
       ]
 
       client
@@ -985,7 +1097,7 @@ describe('Collections API', () => {
 
         done()
       })
-    })    
+    })
   })
 
   describe('PUT', function () {
@@ -1277,7 +1389,7 @@ describe('Collections API', () => {
           })
         })
       })
-    })    
+    })
 
     it('should return 200 and not update any documents when the query differs from the filter permission', function (done) {
       let testClient = {
@@ -1373,9 +1485,9 @@ describe('Collections API', () => {
       let modelSettings = Object.assign({}, app.components['/vtest/testdb/test-schema'].model.settings)
 
       app.components['/vtest/testdb/test-schema'].model.settings.authenticate = [
-        "GET",
-        "POST",
-        "DELETE"
+        'GET',
+        'POST',
+        'DELETE'
       ]
 
       client
@@ -1402,10 +1514,10 @@ describe('Collections API', () => {
       let modelSettings = Object.assign({}, app.components['/vtest/testdb/test-schema'].model.settings)
 
       app.components['/vtest/testdb/test-schema'].model.settings.authenticate = [
-        "GET",
-        "POST",
-        "PUT",
-        "DELETE"
+        'GET',
+        'POST',
+        'PUT',
+        'DELETE'
       ]
 
       client
@@ -1428,7 +1540,7 @@ describe('Collections API', () => {
 
         done()
       })
-    })    
+    })
   })
 
   describe('DELETE', function () {
@@ -1676,9 +1788,9 @@ describe('Collections API', () => {
       let modelSettings = Object.assign({}, app.components['/vtest/testdb/test-schema'].model.settings)
 
       app.components['/vtest/testdb/test-schema'].model.settings.authenticate = [
-        "GET",
-        "POST",
-        "PUT"
+        'GET',
+        'POST',
+        'PUT'
       ]
 
       client
@@ -1705,10 +1817,10 @@ describe('Collections API', () => {
       let modelSettings = Object.assign({}, app.components['/vtest/testdb/test-schema'].model.settings)
 
       app.components['/vtest/testdb/test-schema'].model.settings.authenticate = [
-        "GET",
-        "POST",
-        "PUT",
-        "DELETE"
+        'GET',
+        'POST',
+        'PUT',
+        'DELETE'
       ]
 
       client
@@ -1731,6 +1843,6 @@ describe('Collections API', () => {
 
         done()
       })
-    })    
+    })
   })
 })

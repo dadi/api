@@ -12,7 +12,10 @@
       "label": "Title",
       "comments": "The title of the entry",
       "validation": {},
-      "required": false
+      "required": false,
+      "search": {
+        "weight": 2
+      }
     }
   },
   "settings": {

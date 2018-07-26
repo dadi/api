@@ -148,9 +148,19 @@ Client.prototype.get = function (clientId, secret) {
 
   return this.model.find({
     query
-  }).then(response => ({
-    results: response.results
-  }))
+  }).then(response => {
+    let formattedResults = response.results.map(result => {
+      let resources = new ACLMatrix(result.resources)
+
+      return Object.assign({}, result, {
+        resources: resources.getAll()
+      })
+    })
+
+    return {
+      results: formattedResults
+    }
+  })
 }
 
 /**
@@ -209,6 +219,7 @@ Client.prototype.resourceAdd = function (clientId, resource, access) {
       rawOutput: true,
       update: {
         resources: resources.getAll({
+          getArrayNotation: true,
           stringifyObjects: true
         })
       },
@@ -323,6 +334,7 @@ Client.prototype.resourceUpdate = function (clientId, resource, access) {
       rawOutput: true,
       update: {
         resources: resources.getAll({
+          getArrayNotation: true,
           stringifyObjects: true
         })
       },

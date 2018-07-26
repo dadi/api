@@ -39,6 +39,12 @@ Version 4 removes the ability for clients to create, modify and delete collectio
 
 - Requesting a document by ID (e.g. `/version/database/collection/doc123456`) now returns a 404 if the given ID does not correspond to a valid document, instead of returning a 200 with an empty result set. This behaviour is consistent with the `DELETE` and `PUT` verbs.
 
+## [3.2.1] (2018-06-13)
+
+### Changed
+
+* [#435](https://github.com/dadi/api/issues/435): Fix issue where filtering `Object` fields with nested queries would return a 400 error.
+
 ## [3.2.0] (2018-06-08)
 
 See release notes at https://github.com/dadi/api/releases/tag/v3.2.0

@@ -19,6 +19,7 @@ const url = require('url')
 const MediaController = function (model, server) {
   this.model = model
   this.server = server
+  this.tokenPayloads = {}
 }
 
 MediaController.prototype = new Controller()
@@ -149,9 +150,10 @@ MediaController.prototype.put = function (req, res, next) {
 
 MediaController.prototype.post = function (req, res, next) {
   let method = req.method.toLowerCase()
+  let token = req.params.token
   let aclCheck
 
-  if (!req.params.token) {
+  if (!token) {
     let accessRequired = method === 'put'
       ? 'update'
       : 'create'
@@ -165,43 +167,46 @@ MediaController.prototype.post = function (req, res, next) {
     })
   }
 
+  let data = []
+  let fileName = ''
+
   return Promise.resolve(aclCheck).then(() => {
     return new Promise((resolve, reject) => {
       let busboy = new Busboy({
         headers: req.headers
       })
 
-      this.data = []
-      this.fileName = ''
-
       // Listen for event when Busboy finds a file to stream
       busboy.on('file', (fieldname, file, filename, encoding, mimetype) => {
-        if (method === 'post' && this.tokenPayload) {
-          if (this.tokenPayload.fileName && this.tokenPayload.fileName !== filename) {
+        if (method === 'post' && this.tokenPayloads[token]) {
+          if (this.tokenPayloads[token].fileName &&
+            this.tokenPayloads[token].fileName !== filename) {
             return reject(
               new Error('UNEXPECTED_FILENAME')
             )
           }
 
-          if (this.tokenPayload.mimetype && this.tokenPayload.mimetype !== mimetype) {
+          if (this.tokenPayloads[token].mimetype &&
+            this.tokenPayloads[token].mimetype !== mimetype) {
             return reject(
               new Error('UNEXPECTED_MIMETYPE')
             )
           }
         }
 
-        this.fileName = filename
-        this.mimetype = mimetype
+        delete this.tokenPayloads[token]
+
+        fileName = filename
 
         file.on('data', chunk => {
-          this.data.push(chunk)
+          data.push(chunk)
         })
       })
 
       // Listen for event when Busboy is finished parsing the form
       busboy.on('finish', () => {
-        let data = Buffer.concat(this.data)
-        let stream = streamifier.createReadStream(data)
+        let concatenatedData = Buffer.concat(data)
+        let stream = streamifier.createReadStream(concatenatedData)
 
         let imageSizeStream = new PassThrough()
         let dataStream = new PassThrough()
@@ -219,11 +224,11 @@ MediaController.prototype.post = function (req, res, next) {
 
           let fields = Object.keys(this.model.schema)
           let obj = {
-            fileName: this.fileName
+            fileName: fileName
           }
 
           if (fields.includes('mimetype')) {
-            obj.mimetype = mime.getType(this.fileName)
+            obj.mimetype = mime.getType(fileName)
           }
 
           // Is `imageInfo` available?
@@ -240,8 +245,8 @@ MediaController.prototype.post = function (req, res, next) {
           // Write the physical file.
           this.writeFile(
             req,
-            this.fileName,
-            this.mimetype,
+            fileName,
+            mime.getType(fileName),
             dataStream
           ).then(result => {
             if (fields.includes('contentLength')) {
@@ -312,7 +317,7 @@ MediaController.prototype.post = function (req, res, next) {
         return help.sendBackJSON(400, res, next)(null, {
           success: false,
           errors: [
-            `Unexpected filename. Expected: ${this.tokenPayload.fileName}`
+            `Unexpected filename. Expected: ${this.tokenPayloads[token].fileName}`
           ]
         })
 
@@ -320,7 +325,7 @@ MediaController.prototype.post = function (req, res, next) {
         return help.sendBackJSON(400, res, next)(null, {
           success: false,
           errors: [
-            `Unexpected MIME type. Expected: ${this.tokenPayload.mimetype}`
+            `Unexpected MIME type. Expected: ${this.tokenPayloads[token].mimetype}`
           ]
         })
 
@@ -479,7 +484,7 @@ MediaController.prototype.registerRoutes = function (route) {
           }
         }
 
-        this.tokenPayload = payload
+        this.tokenPayloads[req.params.token] = payload
 
         return this[method](req, res, next)
       })

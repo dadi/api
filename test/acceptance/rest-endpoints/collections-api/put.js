@@ -179,7 +179,7 @@ describe('Collections API – PUT', function () {
       .set('Authorization', 'Bearer ' + bearerToken)
       .send({
         query: {
-          _id: '59f1b3e038ad765e669ac47f',
+          _id: '59f1b3e038ad765e669ac47f'
         },
         update: {
           field1: 'updated doc'
@@ -604,7 +604,7 @@ describe('Collections API – PUT', function () {
                       .post('/vjoin/testdb/test-schema-no-history')
                       .set('Authorization', 'Bearer ' + token)
                       .send({field1: 'doc'})
-                      // .expect(200)
+                      .expect(200)
                       .end(function (err, res) {
                         if (err) return done(err)
 

@@ -11,6 +11,8 @@ const ACCESS_TYPES = [
 ]
 
 const Matrix = function (map) {
+  map = this._convertArrayNotationToObjectNotation(map)
+
   this.map = this._convertACLObjects(map || {}, {
     shouldStringify: false
   })
@@ -110,21 +112,67 @@ Matrix.prototype._convertACLObjectsInMatrix = function (matrix, {
 }
 
 /**
+ * Takes an access map in array notation and converts it to
+ * the corresponding object notation.
+ *
+ * @param  {Array} input
+ * @return {Object}
+ */
+Matrix.prototype._convertArrayNotationToObjectNotation = function (input) {
+  if (!Array.isArray(input)) {
+    return input
+  }
+
+  let output = input.reduce((mapObject, entry) => {
+    mapObject[entry.r] = entry.a
+
+    return mapObject
+  }, {})
+
+  return output
+}
+
+/**
+ * Takes an access map in object notation and converts it to
+ * the corresponding array notation.
+ *
+ * @param  {Object} input
+ * @return {Array}
+ */
+Matrix.prototype._convertObjectNotationToArrayNotation = function (input) {
+  if (Array.isArray(input)) {
+    return input
+  }
+
+  let output = Object.keys(input).map(resource => {
+    return {
+      r: resource,
+      a: input[resource]
+    }
+  })
+
+  return output
+}
+
+/**
  * Returns the access matrix for a particular resource.
  *
  * @param  {String}  name                     The name of the resource to retrieve
  * @param  {Boolean} options.addFalsyTypes    Add `false` to missing access types
+ * @param  {Boolean} options.getArrayNotation Return map as array notation
  * @param  {Boolean} options.parseObjects     Get parsed version of ACL objects
  * @param  {Boolean} options.stringifyObjects Get stringified version of ACL objects
  * @return {Object}
  */
 Matrix.prototype.get = function (name, {
   addFalsyTypes,
+  getArrayNotation,
   parseObjects,
   stringifyObjects
 } = {}) {
   let map = this.getAll({
     addFalsyTypes,
+    getArrayNotation,
     parseObjects,
     stringifyObjects
   })
@@ -136,12 +184,14 @@ Matrix.prototype.get = function (name, {
  * Returns the entire resource map.
  *
  * @param  {Boolean} options.addFalsyTypes    Add `false` to missing access types
+ * @param  {Boolean} options.getArrayNotation Return map as array notation
  * @param  {Boolean} options.parseObjects     Get parsed version of ACL objects
  * @param  {Boolean} options.stringifyObjects Get stringified version of ACL objects
  * @return {Object}
  */
 Matrix.prototype.getAll = function ({
   addFalsyTypes,
+  getArrayNotation,
   parseObjects,
   stringifyObjects
 } = {}) {
@@ -151,14 +201,18 @@ Matrix.prototype.getAll = function ({
     map = this._addFalsyTypes(map)
   }
 
-  if (parseObjects) {
-    map = this._convertACLObjects(map, {
-      shouldStringify: false
-    })
-  } else if (stringifyObjects) {
+  if (stringifyObjects) {
     map = this._convertACLObjects(map, {
       shouldStringify: true
     })
+  } else if (parseObjects) {
+    map = this._convertACLObjects(map, {
+      shouldStringify: false
+    })
+  }
+
+  if (getArrayNotation) {
+    map = this._convertObjectNotationToArrayNotation(map)
   }
 
   return map

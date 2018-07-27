@@ -23,74 +23,74 @@ describe('Collections API – PUT', function () {
     help.dropDatabase('testdb', function (err) {
       if (err) return done(err)
 
-      app.start(function () {
-        help.getBearerTokenWithAccessType('admin', function (err, token) {
-          if (err) return done(err)
-
-          bearerToken = token
-
-          let schema = {
-            "fields": {
-              "field1": {
-                "type": "String",
-                "required": false
-              },
-              "field2": {
-                "type": "Number",
-                "required": false
-              },
-              "field3": {
-                "type": "ObjectID",
-                "required": false
-              },
-              "_fieldWithUnderscore": {
-                "type": "Object",
-                "required": false
-              }
-            },
-            "settings": {}
+      let schema = {
+        'fields': {
+          'field1': {
+            'type': 'String',
+            'required': false
+          },
+          'field2': {
+            'type': 'Number',
+            'required': false
+          },
+          'field3': {
+            'type': 'ObjectID',
+            'required': false
+          },
+          '_fieldWithUnderscore': {
+            'type': 'Object',
+            'required': false
           }
+        },
+        'settings': {}
+      }
 
-          let schemaNoHistory = Object.assign({}, schema, {
-            settings: {
-              storeRevisions: false
-            }
-          })
+      let schemaNoHistory = Object.assign({}, schema, {
+        settings: {
+          storeRevisions: false
+        }
+      })
 
+      help.writeTempFile(
+        'temp-workspace/collections/vtest/testdb/collection.put-test-schema.json',
+        schema,
+        callback1 => {
           help.writeTempFile(
-            'temp-workspace/collections/vtest/testdb/collection.put-test-schema.json',
+            'temp-workspace/collections/vjoin/testdb/collection.put-test-schema.json',
             schema,
-            callback1 => {
+            callback2 => {
               help.writeTempFile(
-                'temp-workspace/collections/vjoin/testdb/collection.put-test-schema.json',
+                'temp-workspace/collections/vtest/testdb/collection.put-test-schema-no-history.json',
                 schema,
-                callback2 => {
+                callback3 => {
                   help.writeTempFile(
-                    'temp-workspace/collections/vtest/testdb/collection.put-test-schema-no-history.json',
+                    'temp-workspace/collections/vjoin/testdb/collection.put-test-schema-no-history.json',
                     schema,
-                    callback3 => {
-                      help.writeTempFile(
-                        'temp-workspace/collections/vjoin/testdb/collection.put-test-schema-no-history.json',
-                        schema,
-                        callback4 => {
-                          cleanupFn = () => {
-                            callback1()
-                            callback2()
-                            callback3()
-                            callback4()
-                          }
+                    callback4 => {
+                      cleanupFn = () => {
+                        callback1()
+                        callback2()
+                        callback3()
+                        callback4()
+                      }
+
+                      app.start(function () {
+                        help.getBearerTokenWithAccessType('admin', function (err, token) {
+                          if (err) return done(err)
+
+                          bearerToken = token
 
                           done()
-                        }
-                      )
+                        })
+                      })
                     }
                   )
                 }
               )
             }
           )
-        })
-      })
+        }
+      )
     })
   })
 
@@ -560,10 +560,9 @@ describe('Collections API – PUT', function () {
             .post('/vjoin/testdb/put-test-schema-no-history')
             .set('Authorization', 'Bearer ' + token)
             .send({field1: 'doc'})
-            // .expect(200)
+            .expect(200)
             .end(function (err, res) {
               if (err) return done(err)
-
               var doc = res.body.results[0]
               should.exist(doc)
               doc.field1.should.equal('doc')
@@ -607,7 +606,7 @@ describe('Collections API – PUT', function () {
                     })
                 })
             })
-        })      
+        })
     })
   })
 })

@@ -16,6 +16,7 @@ const url = require('url')
 
 const MediaController = function (model) {
   this.model = model
+  this.tokenPayloads = {}
 }
 
 MediaController.prototype = new Controller({})
@@ -116,36 +117,41 @@ MediaController.prototype.put = function (req, res, next) {
 }
 
 MediaController.prototype.post = function (req, res, next) {
+  let token = req.params.token
+  let data = []
+  let fileName = ''
+
   if (req.method.toLowerCase() === 'post') {
-    let busboy = new Busboy({ headers: req.headers })
-    this.data = []
-    this.fileName = ''
+    let busboy = new Busboy({
+      headers: req.headers
+    })
 
     // Listen for event when Busboy finds a file to stream
     busboy.on('file', (fieldname, file, filename, encoding, mimetype) => {
-      if (this.tokenPayload) {
-        if (this.tokenPayload.fileName && this.tokenPayload.fileName !== filename) {
+      if (this.tokenPayloads[token]) {
+        if (this.tokenPayloads[token].fileName && this.tokenPayloads[token].fileName !== filename) {
           return next({
             statusCode: 400,
             name: 'Unexpected filename',
-            message: 'Expected a file named "' + this.tokenPayload.fileName + '"'
+            message: 'Expected a file named "' + this.tokenPayloads[token].fileName + '"'
           })
         }
 
-        if (this.tokenPayload.mimetype && this.tokenPayload.mimetype !== mimetype) {
+        if (this.tokenPayloads[token].mimetype && this.tokenPayloads[token].mimetype !== mimetype) {
           return next({
             statusCode: 400,
             name: 'Unexpected mimetype',
-            message: 'Expected a mimetype of "' + this.tokenPayload.mimetype + '"'
+            message: 'Expected a mimetype of "' + this.tokenPayloads[token].mimetype + '"'
           })
         }
       }
 
-      this.fileName = filename
-      this.mimetype = mimetype
+      delete this.tokenPayloads[token]
+
+      fileName = filename
 
       file.on('data', (chunk) => {
-        this.data.push(chunk)
+        data.push(chunk)
       })
 
       file.on('end', () => {
@@ -160,8 +166,8 @@ MediaController.prototype.post = function (req, res, next) {
 
     // Listen for event when Busboy is finished parsing the form
     busboy.on('finish', () => {
-      let data = Buffer.concat(this.data)
-      let stream = streamifier.createReadStream(data)
+      let concatenatedData = Buffer.concat(data)
+      let stream = streamifier.createReadStream(concatenatedData)
 
       let imageSizeStream = new PassThrough()
       let dataStream = new PassThrough()
@@ -180,11 +186,11 @@ MediaController.prototype.post = function (req, res, next) {
         let fields = Object.keys(this.model.schema)
 
         let obj = {
-          fileName: this.fileName
+          fileName: fileName
         }
 
         if (fields.includes('mimetype')) {
-          obj.mimetype = mime.getType(this.fileName)
+          obj.mimetype = mime.getType(fileName)
         }
 
         // Is `imageInfo` available?
@@ -204,7 +210,7 @@ MediaController.prototype.post = function (req, res, next) {
           _createdBy: req.client && req.client.clientId
         }
 
-        return this.writeFile(req, this.fileName, this.mimetype, dataStream).then(result => {
+        return this.writeFile(req, fileName, mime.getType(fileName), dataStream).then(result => {
           if (fields.includes('contentLength')) {
             obj.contentLength = result.contentLength
           }
@@ -301,8 +307,8 @@ MediaController.prototype.delete = function (req, res, next) {
 /**
  *
  */
-MediaController.prototype.setPayload = function (payload) {
-  this.tokenPayload = payload
+MediaController.prototype.setPayload = function (token, payload) {
+  this.tokenPayloads[token] = payload
 }
 
 /**

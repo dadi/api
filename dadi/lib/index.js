@@ -1146,7 +1146,7 @@ Server.prototype.addComponent = function (options) {
           }
 
           if (options.component.setPayload) {
-            options.component.setPayload(payload)
+            options.component.setPayload(req.params.token, payload)
           }
 
           return options.component[method](req, res, next)

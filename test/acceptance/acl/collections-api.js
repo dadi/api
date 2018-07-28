@@ -107,7 +107,6 @@ describe('Collections API', () => {
           .set('Authorization', `Bearer ${bearerToken}`)
           .end((err, res) => {
             if (err) return done(err)
-            console.log(res)
             res.statusCode.should.eql(403)
             done()
           })

@@ -217,7 +217,7 @@ Controller.prototype.search = function (req, res, next) {
       })
     })
   }).catch(error => {
-    return next(error)
+    return help.sendBackJSON(null, res, next)(error)
   })
 }
 

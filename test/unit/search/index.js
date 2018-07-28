@@ -144,19 +144,6 @@ describe('Search', () => {
     })
   })
 
-  describe.skip('`runFind` method', () => {
-    it('should search the database based on the query', done => {
-      const dbFindStub = sinon.spy(store.prototype, 'find')
-
-      searchInstance.runFind(searchInstance.model.connection.db, {foo: 'bar'}, searchInstance.model.name, searchInstance.model.schema, {})
-      dbFindStub.called.should.be.true
-      dbFindStub.lastCall.args[0].should.have.property('query', {foo: 'bar'})
-      dbFindStub.restore()
-
-      done()
-    })
-  })
-
   describe('`clearDocumentInstances` method', () => {
     it('should delete all search instance documents with filtered query', done => {
       const dbDeleteStub = sinon.spy(store.prototype, 'delete')
@@ -188,18 +175,6 @@ describe('Search', () => {
       dbDeleteStub.called.should.be.true
       dbDeleteStub.lastCall.args[0].should.eql('mockDocId')
       dbDeleteStub.restore()
-
-      done()
-    })
-  })
-
-  describe.skip('`insert` method', () => {
-    it('should not execute the database insert if no data is provided', done => {
-      const dbInsertStub = sinon.spy(store.prototype, 'insert')
-
-      searchInstance.insert({}, {}, {}, {}, {})
-      dbInsertStub.called.should.be.false
-      dbInsertStub.restore()
 
       done()
     })

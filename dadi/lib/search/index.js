@@ -368,11 +368,21 @@ Search.prototype.indexDocument = function (document) {
  * @return {Array} A list of analysed words.
  */
 Search.prototype.analyseDocumentWords = function (doc) {
+  // add the document to the analyser index
   Object.keys(doc).map(key => {
     this.analyser.add(key, doc[key])
   })
 
-  return this.analyser.getAllWords()
+  // add the document to a fresh analyser instance so we can get only the
+  // indexable words from THIS DOCUMENT
+  let analyser = new DefaultAnalyser(this.indexableFields)
+
+  Object.keys(doc).map(key => {
+    analyser.add(key, doc[key])
+  })
+
+  // return indexable words from THIS DOCUMENT only
+  return analyser.getAllWords()
 }
 
 /**
@@ -425,7 +435,6 @@ Search.prototype.clearAndInsertWordInstances = function (words, docId) {
 }
 
 /**
- * Insert Word Instance
  * Insert Document word instances.
  * @param  {Class} analyser Instance of document populated analyser class.
  * @param  {[type]} words Results from database query for word list.

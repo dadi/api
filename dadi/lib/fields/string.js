@@ -4,44 +4,26 @@ function escapeRegExp (string) {
   return string.replace(/([.?*+^$[\]\\(){}|-])/g, '\\$1')
 }
 
-function sanitiseString (string, schema = {}) {
-  // Do nothing for falsy values.
-  if (string === null || string === undefined || string === false) {
-    return string
-  }
-
-  // If the string is representing a number, we leave it alone.
-  // This retains backward-compatibility for situations where the
-  // value of a String field is treated as a number, and operated on
-  // with expressions like $gt or $lt. It raises the question as to
-  // why you'd do something like that, worth revisiting in the future.
-  if (parseFloat(string).toString() === string) {
-    return string
-  }
-
-  if (typeof string === 'string') {
+function sanitise (input, schema = {}) {
+  if (typeof input === 'string') {
     switch (schema.matchType) {
       case undefined:
       case 'ignoreCase':
-        return new RegExp(['^', escapeRegExp(string), '$'].join(''), 'i')
+        return new RegExp(['^', escapeRegExp(input), '$'].join(''), 'i')
 
       case 'exact':
-        return string
+        return input
 
       default:
-        return new RegExp(['^', escapeRegExp(string), '$'].join(''))
+        return new RegExp(['^', escapeRegExp(input), '$'].join(''))
     }
   }
 
-  let sanitisedString = {}
+  if (input.$regex) {
+    return new RegExp(input.$regex, 'i')
+  }
 
-  Object.keys(string).forEach(key => {
-    sanitisedString[key] = key === '$regex'
-      ? new RegExp(string[key], 'i')
-      : sanitiseString(string[key], schema)
-  })
-
-  return sanitisedString
+  return input
 }
 
 module.exports.beforeOutput = function ({
@@ -84,6 +66,17 @@ module.exports.beforeOutput = function ({
   }
 }
 
-module.exports.beforeQuery = ({field, input, options, schema}) => {
-  return sanitiseString(input, schema)
+module.exports.beforeQuery = ({field, input, schema}) => {
+  // Do nothing for falsy values.
+  if (input === null || input === undefined || input === false) {
+    return input
+  }
+
+  let sanitisedInput = Object.keys(input).reduce((result, key) => {
+    result[key] = sanitise(input[key], schema)
+
+    return result
+  }, {})
+
+  return sanitisedInput
 }

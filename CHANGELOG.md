@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## [4.0.4] (2018-07-30)
+
+### Fixed
+
+- [#469](https://github.com/dadi/api/issues/469): fix issue where querying String fields with a `$ne` operator causes the request to hang
+
 ## [4.0.3] (2018-07-27)
 
 ### Fixed

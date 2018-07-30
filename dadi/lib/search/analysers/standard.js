@@ -2,12 +2,16 @@
 
 const natural = require('natural')
 const TfIdf = natural.TfIdf
-const tokenizer = new natural.WordTokenizer()
+const tokenizer = new natural.RegexpTokenizer({
+  // pattern: new RegExp(/[^A-Za-zÅåÀÈÌÒÙàèìòùÁÉÍÓÚÝáéíóúýÂÊÎÔÛâêîôûÃÑÕãñõÄËÏÖÜŸäëïöüÿŠŽšžÇç]/i)
+  pattern: new RegExp(/[^a-zA-Z\u00C0-\u017F]/i)
+})
 
 class StandardAnalyzer {
   constructor (fieldRules) {
     this.fieldRules = fieldRules
     this.tfidf = new TfIdf()
+    this.tfidf.setTokenizer(tokenizer)
   }
 
   add (field, value) {

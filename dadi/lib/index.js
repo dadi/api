@@ -30,6 +30,7 @@ var LanguagesController = require(path.join(__dirname, '/controller/languages'))
 var MediaController = require(path.join(__dirname, '/controller/media'))
 var ResourcesController = require(path.join(__dirname, '/controller/resources'))
 var RolesController = require(path.join(__dirname, '/controller/roles'))
+var SearchIndexController = require(path.join(__dirname, '/controller/searchIndex'))
 var StatusEndpointController = require(path.join(__dirname, '/controller/status'))
 var dadiBoot = require('@dadi/boot')
 var help = require(path.join(__dirname, '/help'))
@@ -262,6 +263,7 @@ Server.prototype.start = function (done) {
   LanguagesController(this)
   ResourcesController(this)
   RolesController(this)
+  SearchIndexController(this)
 
   this.readyState = 1
 

@@ -505,6 +505,7 @@ Search.prototype.batchIndex = function (page = 1, limit = 1000) {
   }
 
   debug(`Indexing page ${page} (${limit} per page)`)
+  console.log(`Indexing page ${page} (${limit} per page)`)
 
   if (this.model.connection.db) {
     this.runBatchIndex(options)

@@ -154,11 +154,7 @@ Search.prototype.find = function (searchTerm) {
  * @return {Promise} - Query to delete instances with matching document ids.
  */
 Search.prototype.delete = function (documents) {
-  if (!this.canUse()) {
-    return Promise.resolve()
-  }
-
-  if (!Array.isArray(documents)) {
+  if (!this.canUse() || !Array.isArray(documents)) {
     return Promise.resolve()
   }
 

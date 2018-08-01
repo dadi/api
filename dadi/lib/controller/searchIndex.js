@@ -18,7 +18,7 @@ SearchIndex.prototype.post = function (req, res, next) {
   }
 
   // 404 if Search is not enabled
-  if (config.get('search.enabled') === false) {
+  if (config.get('search.enabled') !== true) {
     return next()
   }
 

@@ -135,7 +135,7 @@ var conf = convict({
   },
   search: {
     enabled: {
-      doc: 'If enabled, search will index content',
+      doc: 'If true, API responds to collection /search endpoints',
       format: Boolean,
       default: false
     },

@@ -4,6 +4,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## [4.1.0] (2018-08-01)
+
+### Added
+
+Two new features in this version of API, see https://docs.dadi.cloud/api for full details:
+
+- Multi-language support
+- Document indexing and Search
+
 ## [4.0.4] (2018-07-30)
 
 ### Fixed

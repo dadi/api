@@ -23,6 +23,7 @@
     "@dadi/et": "^2.0.0",
     "@dadi/format-error": "^1.7.0",
     "@dadi/logger": "^1.4.1",
+    "@dadi/metadata": "^2.0.0",
     "@dadi/status": "latest",
     "async": "^2.6.1",
     "aws-sdk": "2.249.1",
@@ -65,7 +66,6 @@
   "devDependencies": {
     "@commitlint/cli": "~4.1.1",
     "@commitlint/config-angular": "~3.1.1",
-    "@dadi/metadata": "^2.0.0",
     "aws-sdk-mock": "1.6.1",
     "coveralls": "^3.0.1",
     "env-test": "1.0.0",

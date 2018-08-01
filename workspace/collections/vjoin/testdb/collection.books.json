@@ -5,38 +5,27 @@
       "label": "name",
       "example": "War and Peace",
       "comments": "This is the book's name",
-      "placement": "Main content",
       "required": true,
-      "message": "",
-      "display": {
-        "index": true,
-        "edit": false
+      "search": {
+        "weight": 2
       }
     },
-    "author": {
-      "type": "Reference",
+    "authorId": {
+      "type": "String",
       "label": "author",
       "example": "b8b285ae-53d1-47a5-9e69-ec04",
       "comments": "This is the _id of the book's author",
-      "placement": "Main content",
-      "required": true,
-      "message": "",
-      "display": {
-        "index": true,
-        "edit": true
+      "validation": {
+        "regex": {
+          "pattern": "^[0-9a-fA-F]{24}$"
+        }
       },
-      "settings": {
-        "collection": "users",
-        "strictCompose": true
-      }
+      "required": true
     }
   },
   "settings": {
     "cache": true,
     "authenticate": true,
-    "callback": null,
-    "defaultFilters": null,
-    "fieldLimiters": null,
     "count": 40,
     "sort": "name",
     "sortOrder": 1,

@@ -12,7 +12,30 @@
   "ssl": false,
   "replicaSet": "",
   "enableCollectionDatabases": false,
-  "testdb": {
+  "databases": {
+    "test_auth_db": {
+      "hosts": [
+        {
+          "host": "127.0.0.1",
+          "port": 27017
+        }
+      ],
+      "username": "",
+      "password": "",
+      "replicaSet": "",
+      "ssl": false
+    },
+    "testdb": {
+      "hosts": [
+        {
+          "host": "127.0.0.1",
+          "port": 27017
+        }
+      ],
+      "username": "",
+      "password": "",
+  },
+  "search": {
     "hosts": [
       {
         "host": "127.0.0.1",
@@ -20,28 +43,4 @@
       }
     ]
   },
-  "test_auth_db": {
-    "hosts": [
-      {
-        "host": "127.0.0.1",
-        "port": 27017
-      }
-    ],
-    "username": "",
-    "password": "",
-    "replicaSet": "",
-    "ssl": false
-  },
-  "testdb": {
-    "hosts": [
-      {
-        "host": "127.0.0.1",
-        "port": 27017
-      }
-    ],
-    "username": "",
-    "password": "",
-    "replicaSet": "",
-    "ssl": false
-  }
 }

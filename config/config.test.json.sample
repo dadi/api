@@ -47,6 +47,13 @@
     "defaultBucket": "mediaStore",
     "basePath": "test/acceptance/temp-workspace/media"
   },
+  "search": {
+    "enabled": false,
+    "minQueryLength": 3,
+    "wordCollection": "words",
+    "datastore": "./../../../test/test-connector",
+    "database": "search"
+  },
   "feedback": false,
   "cors": false,
   "cluster": false

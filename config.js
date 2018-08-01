@@ -133,6 +133,34 @@ var conf = convict({
       env: 'DB_AUTH_NAME'
     }
   },
+  search: {
+    enabled: {
+      doc: 'If true, API responds to collection /search endpoints',
+      format: Boolean,
+      default: false
+    },
+    minQueryLength: {
+      doc: 'Minimum search string length',
+      format: Number,
+      default: 3
+    },
+    wordCollection: {
+      doc: 'The name of the datastore collection that will hold tokenized words',
+      format: String,
+      default: 'words'
+    },
+    datastore: {
+      doc: 'The datastore to use for storing and querying indexed documents',
+      format: String,
+      default: '@dadi/api-mongodb'
+    },
+    database: {
+      doc: 'The name of the database to use for storing and querying indexed documents',
+      format: String,
+      default: 'search',
+      env: 'DB_SEARCH_NAME'
+    }
+  },
   caching: {
     ttl: {
       doc: '',
@@ -369,6 +397,23 @@ var conf = convict({
       doc: 'The maximum number of times to reconnection attempts after a database fails',
       format: Number,
       default: 10
+    }
+  },
+  i18n: {
+    defaultLanguage: {
+      doc: 'ISO-639-1 code of the default language',
+      format: String,
+      default: 'en'
+    },
+    languages: {
+      doc: 'List of ISO-639-1 codes for the supported languages',
+      format: Array,
+      default: []
+    },
+    fieldCharacter: {
+      doc: 'Special character to denote a translated field',
+      format: String,
+      default: ':'
     }
   }
 })

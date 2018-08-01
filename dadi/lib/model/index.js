@@ -7,6 +7,7 @@ const deepMerge = require('deepmerge')
 const fields = require('./../fields')
 const History = require('./history')
 const logger = require('@dadi/logger')
+const Search = require('./../search')
 const Validator = require('./validator')
 
 /**
@@ -74,6 +75,13 @@ const Model = function (name, schema, connection, settings) {
   // Composable reference fields.
   if (this.settings.compose) {
     this.compose = this.settings.compose
+  }
+
+  // setup search context
+  this.searchHandler = new Search(this)
+
+  if (this.searchHandler.canUse()) {
+    this.searchHandler.init()
   }
 
   // Add any configured indexes.
@@ -238,12 +246,26 @@ Model.prototype._formatResultSet = function (
             ? 'beforeSave'
             : 'beforeOutput'
 
+          // The hook will receive the portion of the document that
+          // corresponds to the field in question, including any language
+          // variations.
+          let subDocument = Object.keys(document)
+            .reduce((subDocument, rawField) => {
+              let canonicalField = rawField.split(
+                config.get('i18n.fieldCharacter')
+              )[0]
+
+              if (canonicalField === field) {
+                subDocument[rawField] = document[rawField]
+              }
+
+              return subDocument
+            }, {})
+
           return this.runFieldHooks({
             config,
             data: Object.assign({}, data, { document }),
-            input: {
-              [field]: document[field]
-            },
+            input: subDocument,
             field,
             name: hookName
           }).then(subDocument => {
@@ -767,6 +789,7 @@ Model.prototype.getStats = require('./collections/getStats')
 Model.prototype.revisions = require('./collections/getRevisions') // (!) Deprecated in favour of `getRevisions`
 Model.prototype.stats = require('./collections/getStats') // (!) Deprecated in favour of `getStats`
 Model.prototype.update = require('./collections/update')
+Model.prototype.search = require('./search')
 
 module.exports = function (name, schema, connection, settings) {
   if (schema) {

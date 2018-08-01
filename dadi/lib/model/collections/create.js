@@ -156,6 +156,9 @@ function create ({
         results
       }
 
+      // Asynchronous search index.
+      this.searchHandler.index(returnData.results)
+
       // Run any `afterCreate` hooks.
       if (this.settings.hooks && (typeof this.settings.hooks.afterCreate === 'object')) {
         returnData.results.forEach(document => {

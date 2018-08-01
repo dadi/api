@@ -1357,6 +1357,53 @@ describe('Reference Field', () => {
       })
     })
 
+    it('should filter documents by nested properties including escaped characters', done => {
+      let event = {
+        type: 'Book release',
+        book: {
+          title: 'A book written by an email address. Odd, right?',
+          author: {
+            name: 'email+address@gmail.com'
+          }
+        }
+      }
+
+      config.set('query.useVersionFilter', true)
+
+      let client = request(connectionString)
+      client
+      .post('/v1/library/event')
+      .set('Authorization', 'Bearer ' + bearerToken)
+      .send(event)
+      .expect(200)
+      .end((err, res) => {
+        if (err) return done(err)
+
+        client
+        .get('/v1/library/event?filter={"book.author.name":"Some dude"}')
+        .set('Authorization', 'Bearer ' + bearerToken)
+        .expect(200)
+        .end((err, res) => {
+          if (err) return done(err)
+
+          res.body.results.length.should.eql(0)
+
+          client
+          .get('/v1/library/event?filter={"book.author.name":"email%2Baddress@gmail.com"}')
+          .set('Authorization', 'Bearer ' + bearerToken)
+          .expect(200)
+          .end((err, res) => {
+            if (err) return done(err)
+
+            res.body.results.length.should.eql(1)
+            res.body.results[0].type.should.eql(event.type)
+
+            done()
+          })
+        })
+      })
+    })    
+
     it('should filter documents by nested objects properties', done => {
       let event = {
         type: 'Book status',

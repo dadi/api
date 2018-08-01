@@ -6,24 +6,20 @@ const ID_PATTERN = '[a-fA-F0-9-]*'
 
 const Controller = function () {}
 
+Controller.prototype._getURLParameters = function (requestUrl) {
+  let parsedUrl = url.parse(requestUrl, true)
+
+  return parsedUrl.query
+}
+
 Controller.prototype._prepareQuery = function (req) {
   let path = url.parse(req.url, true)
   let apiVersion = path.pathname.split('/')[1]
-  let options = path.query
+  let options = this._getURLParameters(req.url)
   let query = help.parseQuery(options.filter)
 
   // Formatting query
   query = this.model.formatQuery(query)
-
-  // Remove filter params that don't exist in
-  // the model schema.
-  // if (!Array.isArray(query)) {
-  //   Object.keys(query).forEach(key => {
-  //     if (!this.model.isKeyValid(key)) {
-  //       delete query[key]
-  //     }
-  //   })
-  // }
 
   // If id is present in the url, add to the query.
   if (req.params && req.params.id) {
@@ -106,6 +102,11 @@ Controller.prototype._prepareQueryOptions = function (options) {
     )
   }
 
+  // `q` represents a search query, e.g. `?q=foo bar baz`.
+  if (options.q) {
+    queryOptions.search = options.q
+  }
+
   // Specified / default number of records to return.
   let limit = parseInt(options.count || settings.count) || 50
 
@@ -164,6 +165,61 @@ Controller.prototype._prepareQueryOptions = function (options) {
 }
 
 Controller.prototype.ID_PATTERN = ID_PATTERN
+
+/**
+ * Handle collection search endpoints
+ * Example: /1.0/library/books/search?q=title
+ */
+Controller.prototype.search = function (req, res, next) {
+  let path = url.parse(req.url, true)
+  let options = path.query
+
+  let queryOptions = this._prepareQueryOptions(options)
+
+  if (queryOptions.errors.length !== 0) {
+    return help.sendBackJSON(400, res, next)(null, queryOptions)
+  } else {
+    queryOptions = queryOptions.queryOptions
+  }
+
+  return this.model.search({
+    client: req.dadiApiClient,
+    options: queryOptions
+  }).then(query => {
+    let ids = query._id['$containsAny'].map(id => id.toString())
+
+    return this.model.find({
+      client: req.dadiApiClient,
+      language: options.lang,
+      query,
+      options: queryOptions
+    }).then(results => {
+      results.results = results.results.sort((a, b) => {
+        let aIndex = ids.indexOf(a._id.toString())
+        let bIndex = ids.indexOf(b._id.toString())
+
+        if (aIndex === bIndex) return 0
+
+        return aIndex > bIndex ? 1 : -1
+      })
+
+      return this.model.formatForOutput(
+        results.results,
+        {
+          client: req.dadiApiClient,
+          composeOverride: queryOptions.compose,
+          language: options.lang,
+          urlFields: queryOptions.fields
+        }
+      ).then(formattedResults => {
+        results.results = formattedResults
+        return help.sendBackJSON(200, res, next)(null, results)
+      })
+    })
+  }).catch(error => {
+    return help.sendBackJSON(null, res, next)(error)
+  })
+}
 
 module.exports = function (model) {
   return new Controller(model)

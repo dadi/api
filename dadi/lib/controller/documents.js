@@ -81,8 +81,7 @@ Collection.prototype.delete = function (req, res, next) {
 }
 
 Collection.prototype.get = function (req, res, next) {
-  let path = url.parse(req.url, true)
-  let options = path.query
+  let options = this._getURLParameters(req.url)
   let callback = options.callback || this.model.settings.callback
 
   // Determine if this is JSONP.
@@ -102,6 +101,7 @@ Collection.prototype.get = function (req, res, next) {
 
   return this.model.get({
     client: req.dadiApiClient,
+    language: options.lang,
     query,
     options: queryOptions,
     req
@@ -214,7 +214,7 @@ Collection.prototype.registerRoutes = function (route, filePath) {
   })
 
   // Creating generic route.
-  this.server.app.use(`${route}/:id(${this.ID_PATTERN})?/:action(count|stats)?`, (req, res, next) => {
+  this.server.app.use(`${route}/:id(${this.ID_PATTERN})?/:action(count|search|stats)?`, (req, res, next) => {
     try {
       // Map request method to controller method.
       let method = req.params.action || (req.method && req.method.toLowerCase())
@@ -252,7 +252,7 @@ Collection.prototype.stats = function (req, res, next) {
 
 Collection.prototype.unregisterRoutes = function (route) {
   this.server.app.unuse(`${route}/config`)
-  this.server.app.unuse(`${route}/:id(${this.ID_PATTERN})?/:action(count|stats)?`)
+  this.server.app.unuse(`${route}/:id(${this.ID_PATTERN})?/:action(count|search|stats)?`)
 }
 
 module.exports = function (model, server) {

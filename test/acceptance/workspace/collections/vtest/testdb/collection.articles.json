@@ -178,12 +178,12 @@
     "allowDelete": true,
     "count": 20,
     "sortOrder": 1,
-    "sort": "publicationDate",
     "index": {
       "enabled": true,
       "keys": {
         "_id": 1,
-        "urls": 1
+        "urls": 1,
+        "publicationDate": 1
       }
     },
     "hooks": {
@@ -211,6 +211,6 @@
       ],
       "afterUpdate": []
     },
-    "lastModifiedAt": 1472947876485
+    "lastModifiedAt": 1509474495923
   }
 }

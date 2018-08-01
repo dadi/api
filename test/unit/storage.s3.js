@@ -85,7 +85,7 @@ describe('Storage', function (done) {
       })
     })
 
-    it.skip('should call S3 API with the correct parameters when deleting media', function (done) {
+    it('should call S3 API with the correct parameters when deleting media', function (done) {
       config.set('media.enabled', true)
       config.set('media.storage', 's3')
       config.set('media.s3.bucketName', 'testbucket')
@@ -118,7 +118,7 @@ describe('Storage', function (done) {
       })
     })
 
-    it.skip('should call S3 API with the correct parameters when requesting media', function (done) {
+    it('should call S3 API with the correct parameters when requesting media', function (done) {
       config.set('media.enabled', true)
       config.set('media.storage', 's3')
       config.set('media.s3.bucketName', 'testbucket')

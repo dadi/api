@@ -10,15 +10,48 @@ module.exports.getModelSchema = function () {
       'type': 'String',
       'label': 'Title',
       'comments': 'The title of the entry',
-      'placement': 'Main content',
       'validation': {},
       'required': false,
-      'message': '',
-      'display': {
-        'index': true,
-        'edit': true
+      'message': ''
+    }
+  }
+}
+
+module.exports.getSearchModelSchema = function () {
+  return {
+    'fieldName': {
+      'type': 'String',
+      'label': 'Title',
+      'comments': 'The title of the entry',
+      'validation': {},
+      'required': false
+    },
+    'invalidSearchableFieldName': {
+      'type': 'String',
+      'label': 'Title',
+      'comments': 'The title of the entry',
+      'validation': {},
+      'required': false,
+      'search': true
+    },
+    'searchableFieldName': {
+      'type': 'String',
+      'label': 'Title',
+      'comments': 'The title of the entry',
+      'validation': {},
+      'required': false,
+      'search': {
+        'weight': 2
       }
     }
+  }
+}
+
+module.exports.getSampleSearchDocument = () => {
+  return {
+    fieldName: 'foo',
+    invalidSearchableFieldName: 'bar',
+    searchableFieldName: 'baz'
   }
 }
 

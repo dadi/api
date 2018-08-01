@@ -70,36 +70,6 @@ describe('Model', function () {
       done()
     })
 
-    it.skip('should accept database connection as third argument', function (done) {
-      config.set('database.enableCollectionDatabases', true)
-      connection.resetConnections()
-
-      const conn = connection({
-        'username': '',
-        'password': '',
-        'database': 'test',
-        'replicaSet': '',
-        'hosts': [
-          {
-            'host': 'localhost',
-            'port': 27020
-          }
-        ]
-      })
-
-      // TODO: stub the connect method so this doesn't cause a connection attempt
-
-      const mod = model('testModelName', help.getModelSchema(), conn)
-      should.exist(mod.connection)
-      mod.connection.connectionOptions.hosts[0].host.should.equal('localhost')
-      mod.connection.connectionOptions.hosts[0].port.should.equal(27020)
-      mod.connection.connectionOptions.database.should.equal('test')
-
-      config.set('database.enableCollectionDatabases', false)
-
-      done()
-    })
-
     it('should accept model settings as fourth argument', function (done) {
       const mod = model(
         'testModelName',

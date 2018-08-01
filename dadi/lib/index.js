@@ -30,13 +30,13 @@ var LanguagesController = require(path.join(__dirname, '/controller/languages'))
 var MediaController = require(path.join(__dirname, '/controller/media'))
 var ResourcesController = require(path.join(__dirname, '/controller/resources'))
 var RolesController = require(path.join(__dirname, '/controller/roles'))
+var SearchIndexController = require(path.join(__dirname, '/controller/searchIndex'))
 var StatusEndpointController = require(path.join(__dirname, '/controller/status'))
 var dadiBoot = require('@dadi/boot')
 var help = require(path.join(__dirname, '/help'))
 var Model = require(path.join(__dirname, '/model'))
 var mediaModel = require(path.join(__dirname, '/model/media'))
 var monitor = require(path.join(__dirname, '/monitor'))
-var search = require(path.join(__dirname, '/search'))
 
 var config = require(path.join(__dirname, '/../../config'))
 
@@ -248,9 +248,6 @@ Server.prototype.start = function (done) {
   // caching layer
   cache(this).init()
 
-  // search layer
-  search(this)
-
   // start listening
   var server = this.server = app.listen()
 
@@ -266,6 +263,7 @@ Server.prototype.start = function (done) {
   LanguagesController(this)
   ResourcesController(this)
   RolesController(this)
+  SearchIndexController(this)
 
   this.readyState = 1
 

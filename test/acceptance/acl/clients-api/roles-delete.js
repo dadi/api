@@ -31,6 +31,10 @@ module.exports = () => {
     })
   })
 
+  afterEach(done => {
+    help.removeACLData(done)
+  })
+
   describe('error states', () => {
     it('should return 401 if the request does not include a valid bearer token', done => {
       client

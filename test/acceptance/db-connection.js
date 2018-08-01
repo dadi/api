@@ -86,6 +86,8 @@ describe('Database connection', () => {
           res.body.results[0].title.should.eql(mockDocument.title)
           datastore._spies.index.calledOnce.should.eql(true)
 
+          datastore._spies.index.callCount.should.be.above(0)
+
           setTimeout(() => {
             client
               .get('/vtest/noauthdb/articles?cache=false')
@@ -115,7 +117,7 @@ describe('Database connection', () => {
           res.statusCode.should.eql(200)
           res.body.results.length.should.eql(1)
           res.body.results[0].title.should.eql(mockDocument.title)
-          datastore._spies.index.calledOnce.should.eql(true)
+          datastore._spies.index.callCount.should.be.above(0)
 
           testConnector._mock.disconnect()
 
@@ -223,7 +225,7 @@ describe('Database connection', () => {
           res.statusCode.should.eql(200)
           res.body.results[0].title.should.eql('Dadi')
           res.body.results[0].published.state.should.eql(1)
-          datastore._spies.index.calledOnce.should.eql(true)
+          datastore._spies.index.callCount.should.be.above(0)
 
           setTimeout(() => {
             client
@@ -266,7 +268,7 @@ describe('Database connection', () => {
           res.statusCode.should.eql(200)
           res.body.results[0].title.should.eql('Dadi')
           res.body.results[0].published.state.should.eql(1)
-          datastore._spies.index.calledOnce.should.eql(true)
+          datastore._spies.index.callCount.should.be.above(0)
 
           testConnector._mock.disconnect()
 
@@ -346,7 +348,7 @@ describe('Database connection', () => {
 
           res.statusCode.should.eql(204)
           res.body.should.eql('')
-          datastore._spies.index.calledOnce.should.eql(true)
+          datastore._spies.index.callCount.should.be.above(0)
 
           testConnector._mock.disconnect()
 
@@ -611,7 +613,7 @@ describe('Database connection', () => {
                 res.statusCode.should.eql(200)
                 res.body.results[0].title.should.eql('A brand new title')
                 res.body.results[0].published.state.should.eql(1)
-                datastore._spies.index.calledOnce.should.eql(true)
+                datastore._spies.index.callCount.should.be.above(0)
 
                 done()
               })

@@ -43,13 +43,15 @@ const Clients = function (server) {
 
 Clients.prototype.bindOwn = function (handler) {
   return (req, res, next) => {
-    let modifiedRequest = {
-      ...req,
-      params: {
-        ...req.params,
+    let modifiedRequest = Object.assign(
+      {},
+      req,
+      params: Object.assign(
+        {},
+        req.params,
         clientId: req.dadiApiClient && req.dadiApiClient.clientId
-      }
-    }
+      )
+    )
 
     return handler(modifiedRequest, res, next)
   }

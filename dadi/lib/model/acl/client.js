@@ -26,6 +26,10 @@ const Client = function () {
       hidden: true,
       required: true,
       type: 'string'
+    },
+    data: {
+      default: {},
+      type: 'object'
     }
   }
 }
@@ -488,6 +492,64 @@ Client.prototype.setWriteCallback = function (callback) {
 }
 
 /**
+ * Updates a client. If the update object contains a `data` property,
+ * it will be merged with the current data object associated with the
+ * client.
+ *
+ * @param  {String} clientId
+ * @param  {Object} update
+ * @return {Promise<Object>}
+ */
+Client.prototype.update = function (clientId, update) {
+  return this.validate(update, {
+    blockedFields: ['clientId'],
+    partial: true
+  }).then(() => {
+    let dataMerge = Promise.resolve({})
+
+    if (update.data) {
+      dataMerge = this.model.find({
+        options: {
+          data: 1
+        },
+        query: {
+          clientId
+        }
+      }).then(({results}) => {
+        if (results.length > 0) {
+          return results[0].data || {}
+        }
+
+        return {}
+      })
+    }
+
+    return dataMerge.then(data => {
+      let mergedData = Object.assign({}, data, update.data)
+
+      Object.keys(mergedData).forEach(key => {
+        if (mergedData[key] === null) {
+          delete mergedData[key]
+        }
+      })
+
+      let newUpdate = Object.assign({}, update, {
+        data: mergedData
+      })
+
+      return this.model.update({
+        query: {
+          clientId
+        },
+        rawOutput: true,
+        update: newUpdate,
+        validate: false
+      })
+    })
+  })
+}
+
+/**
  * Performs validation on a candidate client. It returns a Promise
  * that is rejected with an error object if validation fails, or
  * resolved with `undefined` otherwise.
@@ -496,7 +558,10 @@ Client.prototype.setWriteCallback = function (callback) {
  * @param  {Boolean}  options.partial Whether this is a partial value
  * @return {Promise}
  */
-Client.prototype.validate = function (client, {partial = false} = {}) {
+Client.prototype.validate = function (client, {
+  blockedFields = [],
+  partial = false
+} = {}) {
   let missingFields = Object.keys(this.schema).filter(field => {
     return this.schema[field].required && client[field] === undefined
   })

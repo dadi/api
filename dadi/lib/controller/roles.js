@@ -145,6 +145,12 @@ Roles.prototype.get = function (req, res, next) {
 Roles.prototype.handleError = function (res, next) {
   return err => {
     switch (err.message) {
+      case 'INVALID_FIELDS':
+        return help.sendBackJSON(400, res, next)(null, {
+          success: false,
+          errors: err.data.map(field => `Invalid field: ${field}`)
+        })
+
       case 'FORBIDDEN':
       case 'UNAUTHORISED':
         return help.sendBackJSON(null, res, next)(err)

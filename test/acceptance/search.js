@@ -251,31 +251,6 @@ describe('Search', function () {
   })
 
   describe('Indexing', function () {
-    it('should return 404 when calling the index endpoint', function (done) {
-      let searchModel = model('test-schema')
-      searchModel.searchHandler.init()
-
-      let client = request(connectionString)
-      let stub = sinon.spy(searchModel.searchHandler, 'runBatchIndex')
-
-      client
-      .post('/api/index')
-      .set('Authorization', 'Bearer ' + bearerToken)
-      .set('content-type', 'application/json')
-      .expect(204)
-      .end((err, res) => {
-        stub.called.should.be.true
-        let args = stub.lastCall.args[0]
-        args.page.should.eql(1)
-        args.limit.should.eql(1000)
-        args.skip.should.eql(0)
-        args.fields.should.eql({title: 1})
-        stub.restore()
-
-        done()
-      })
-    })
-
     it('should return 204 when calling the index endpoint', function (done) {
       let searchModel = model('test-schema')
       searchModel.searchHandler.init()

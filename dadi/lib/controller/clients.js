@@ -8,13 +8,19 @@ const Clients = function (server) {
     'API clients'
   )
 
+  server.app.routeMethods('/api/client', {
+    get: this.bindOwn(this.get.bind(this)),
+    put: this.bindOwn(this.put.bind(this))
+  })
+
   server.app.routeMethods('/api/clients', {
     post: this.post.bind(this)
   })
 
   server.app.routeMethods('/api/clients/:clientId?', {
     delete: this.delete.bind(this),
-    get: this.get.bind(this)
+    get: this.get.bind(this),
+    put: this.put.bind(this)
   })
 
   server.app.routeMethods('/api/clients/:clientId/roles', {
@@ -33,6 +39,20 @@ const Clients = function (server) {
     delete: this.deleteResource.bind(this),
     put: this.putResource.bind(this)
   })
+}
+
+Clients.prototype.bindOwn = function (handler) {
+  return (req, res, next) => {
+    let modifiedRequest = {
+      ...req,
+      params: {
+        ...req.params,
+        clientId: req.dadiApiClient && req.dadiApiClient.clientId
+      }
+    }
+
+    return handler(modifiedRequest, res, next)
+  }
 }
 
 Clients.prototype.delete = function (req, res, next) {
@@ -133,16 +153,24 @@ Clients.prototype.deleteRole = function (req, res, next) {
 }
 
 Clients.prototype.get = function (req, res, next) {
-  return acl.access.get(req.dadiApiClient, 'clients').then(access => {
-    if (access.read !== true) {
-      return Promise.reject(
-        acl.createError(req.dadiApiClient)
-      )
-    }
+  let aclCheck = Promise.resolve()
+  let clientId = req.params.clientId
 
-    return model.get(req.params.clientId)
+  // Clients will always have read access to their own endpoint.
+  if (!clientId || req.dadiApiClient.clientId !== clientId) {
+    aclCheck = acl.access.get(req.dadiApiClient, 'clients').then(access => {
+      if (access.read !== true) {
+        return Promise.reject(
+          acl.createError(req.dadiApiClient)
+        )
+      }
+    })
+  }
+
+  return aclCheck.then(() => {
+    return model.get(clientId)
   }).then(clients => {
-    if (req.params.clientId && (clients.results.length === 0)) {
+    if (clientId && (clients.results.length === 0)) {
       return help.sendBackJSON(404, res, next)(null, null)
     }
 

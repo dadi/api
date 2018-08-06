@@ -3,6 +3,7 @@ const config = require('../../config')
 const help = require('./help')
 const model = require('../../dadi/lib/model/')
 const should = require('should')
+const sinon = require('sinon')
 const request = require('supertest')
 
 // variables scoped for use throughout tests
@@ -114,6 +115,23 @@ describe('Search', function () {
       .end((err, res) => {
         config.set('search.enabled', true)
         done()
+      })
+    })
+
+    describe('Indexing', function () {
+      it('should return 404 when calling the index endpoint', function (done) {
+        config.set('search.enabled', false)
+        let client = request(connectionString)
+
+        client
+        .post('/api/index')
+        .set('Authorization', 'Bearer ' + bearerToken)
+        .set('content-type', 'application/json')
+        .expect(404)
+        .end((err, res) => {
+          config.set('search.enabled', true)
+          done()
+        })
       })
     })
   })
@@ -228,6 +246,58 @@ describe('Search', function () {
 
           done()
         })
+      })
+    })
+  })
+
+  describe('Indexing', function () {
+    it('should return 404 when calling the index endpoint', function (done) {
+      let searchModel = model('test-schema')
+      searchModel.searchHandler.init()
+
+      let client = request(connectionString)
+      let stub = sinon.spy(searchModel.searchHandler, 'runBatchIndex')
+
+      client
+      .post('/api/index')
+      .set('Authorization', 'Bearer ' + bearerToken)
+      .set('content-type', 'application/json')
+      .expect(204)
+      .end((err, res) => {
+        stub.called.should.be.true
+        let args = stub.lastCall.args[0]
+        args.page.should.eql(1)
+        args.limit.should.eql(1000)
+        args.skip.should.eql(0)
+        args.fields.should.eql({title: 1})
+        stub.restore()
+
+        done()
+      })
+    })
+
+    it('should return 204 when calling the index endpoint', function (done) {
+      let searchModel = model('test-schema')
+      searchModel.searchHandler.init()
+
+      let client = request(connectionString)
+      let stub = sinon.spy(searchModel.searchHandler, 'runBatchIndex')
+
+      client
+      .post('/api/index')
+      .set('Authorization', 'Bearer ' + bearerToken)
+      .set('content-type', 'application/json')
+      .expect(204)
+      .end((err, res) => {
+        stub.called.should.be.true
+        let args = stub.lastCall.args[0]
+        args.page.should.eql(1)
+        args.limit.should.eql(1000)
+        args.skip.should.eql(0)
+        args.fields.should.eql({title: 1})
+        stub.restore()
+
+        done()
       })
     })
   })

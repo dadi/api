@@ -524,6 +524,12 @@ Client.prototype.validate = function (client, {partial = false} = {}) {
     )
   })
 
+  Object.keys(client).forEach(field => {
+    if (!this.schema[field] || blockedFields.includes(field)) {
+      invalidFields.push(field)
+    }
+  })
+
   if (invalidFields.length > 0) {
     let error = new Error('INVALID_FIELDS')
 

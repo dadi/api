@@ -256,7 +256,7 @@ describe('Search', function () {
       searchModel.searchHandler.init()
 
       let client = request(connectionString)
-      let stub = sinon.spy(searchModel.searchHandler, 'runBatchIndex')
+      let stub = sinon.spy(searchModel.searchHandler, 'batchIndex')
 
       client
       .post('/api/index')
@@ -265,13 +265,7 @@ describe('Search', function () {
       .expect(204)
       .end((err, res) => {
         stub.called.should.be.true
-        let args = stub.lastCall.args[0]
-        args.page.should.eql(1)
-        args.limit.should.eql(1000)
-        args.skip.should.eql(0)
-        args.fields.should.eql({title: 1})
         stub.restore()
-
         done()
       })
     })

@@ -229,6 +229,57 @@ module.exports = () => {
       })
     })
 
+    it('should return 400 if the request body contains an unknown property', done => {
+      let testClient = {
+        clientId: 'apiClient',
+        secret: 'someSecret',
+        resources: {
+          roles: {
+            create: true
+          }
+        },
+        roles: ['some-other-role']
+      }
+
+      help.createACLClient(testClient).then(() => {
+        client
+        .post(config.get('auth.tokenUrl'))
+        .set('content-type', 'application/json')
+        .send({
+          clientId: testClient.clientId,
+          secret: testClient.secret
+        })
+        .expect(200)
+        .expect('content-type', 'application/json')
+        .end((err, res) => {
+          if (err) return done(err)
+
+          res.body.accessToken.should.be.String
+
+          let bearerToken = res.body.accessToken
+
+          client
+          .post('/api/roles')
+          .send({
+            name: 'a-brand-new-role',
+            something: 'hello'
+          })
+          .set('content-type', 'application/json')
+          .set('Authorization', `Bearer ${bearerToken}`)
+          .expect('content-type', 'application/json')
+          .end((err, res) => {
+            res.statusCode.should.eql(400)
+            res.body.success.should.eql(false)
+            res.body.errors.should.be.Array
+            res.body.errors[0].should.eql(
+              'Invalid field: something'
+            )
+            done()
+          })
+        })
+      })
+    })    
+
     it('should return 400 if the request body contains an `extends` property referencing a role that does not exist', done => {
       let testClient = {
         clientId: 'apiClient',

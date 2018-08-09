@@ -192,54 +192,7 @@ describe('Token store', () => {
             )
           })
       })
-    })
-
-    it('should return a data object in the response if one is set for the client, but not encode it in the JWT', done => {
-      let nonAdminUser = {
-        clientId: 'soldier',
-        secret: 'nobody',
-        data: {
-          first_name: 'John',
-          last_name: 'Doe'
-        }
-      }
-
-      help.createClient(nonAdminUser, () => {
-        client
-          .post(tokenRoute)
-          .send({
-            clientId: nonAdminUser.clientId,
-            secret: nonAdminUser.secret
-          })
-          .expect('content-type', 'application/json')
-          .expect('pragma', 'no-cache')
-          .expect('Cache-Control', 'no-store')
-          .expect(200, (err, res) => {
-            res.body.data.should.eql(nonAdminUser.data)
-
-            jwt.verify(
-              res.body.accessToken,
-              config.get('auth.tokenKey'),
-              (err, decoded) => {
-                if (err) {
-                  return done(err)
-                }
-
-                let now = Math.floor(Date.now() / 1000)
-
-                decoded.clientId.should.eql(nonAdminUser.clientId)
-                decoded.accessType.should.eql('user')
-                decoded.iat.should.eql(now)
-                decoded.exp.should.eql(now + config.get('auth.tokenTtl'))
-
-                should.not.exist(decoded.data)
-
-                done()
-              }
-            )
-          })
-      })
-    })
+    })    
   })
 
   describe('Endpoint customisation', () => {

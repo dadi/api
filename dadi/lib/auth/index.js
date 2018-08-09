@@ -115,7 +115,6 @@ AuthMiddleware.prototype.generateToken = function (req, res, next) {
 
       let response = {
         accessToken: token,
-        data: client.data,
         tokenType: 'Bearer',
         expiresIn: config.get('auth.tokenTtl'),
         permissions: {

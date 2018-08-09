@@ -505,7 +505,7 @@ Client.prototype.update = function (clientId, update) {
     blockedFields: ['clientId'],
     partial: true
   }).then(() => {
-    let dataMerge = Promise.resolve({})
+    let dataMerge = Promise.resolve(null)
 
     if (update.data) {
       dataMerge = this.model.find({
@@ -525,24 +525,24 @@ Client.prototype.update = function (clientId, update) {
     }
 
     return dataMerge.then(data => {
-      let mergedData = Object.assign({}, data, update.data)
+      if (data) {
+        let mergedData = Object.assign({}, data, update.data)
 
-      Object.keys(mergedData).forEach(key => {
-        if (mergedData[key] === null) {
-          delete mergedData[key]
-        }
-      })
+        Object.keys(mergedData).forEach(key => {
+          if (mergedData[key] === null) {
+            delete mergedData[key]
+          }
+        })
 
-      let newUpdate = Object.assign({}, update, {
-        data: mergedData
-      })
+        update.data = mergedData
+      }
 
       return this.model.update({
         query: {
           clientId
         },
         rawOutput: true,
-        update: newUpdate,
+        update,
         validate: false
       })
     })

@@ -19,19 +19,23 @@ describe('Token store', () => {
 
   describe('Bearer token issuing', () => {
     before(done => {
-      help.createClient(testClient, () => {
-        app.start(err => {
-          if (err) return done(err)
+      app.start(err => {
+        if (err) return done(err)
 
-          setTimeout(done, 500)
-        })
+        setTimeout(done, 500)
       })
     })
 
+    beforeEach(done => {
+      help.createClient(testClient, done)
+    })
+
     after(done => {
-      help.removeTestClients(() => {
-        app.stop(done)
-      })
+      app.stop(done)
+    })
+
+    afterEach(done => {
+      help.removeTestClients(done)
     })
 
     it('should return 401 if the client ID or secret are incorrect', done => {

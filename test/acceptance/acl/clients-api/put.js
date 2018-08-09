@@ -1036,6 +1036,70 @@ module.exports = () => {
           })
         })
       })
+
+      it('should leave the data object untouched if the payload of the update request does not contain a `data` property', done => {
+        let testClient = {
+          clientId: 'apiClient',
+          secret: 'someSecret',
+          data: {
+            keyOne: 1,
+            keyTwo: 2
+          }
+        }
+
+        help.createACLClient(testClient).then(() => {
+          client
+          .post(config.get('auth.tokenUrl'))
+          .set('content-type', 'application/json')
+          .send({
+            clientId: testClient.clientId,
+            secret: testClient.secret
+          })
+          .expect(200)
+          .expect('content-type', 'application/json')
+          .end((err, res) => {
+            if (err) return done(err)
+
+            res.body.accessToken.should.be.String
+
+            let bearerToken = res.body.accessToken
+
+            client
+            .put('/api/client')
+            .send({
+              secret: 'something'
+            })
+            .set('content-type', 'application/json')
+            .set('Authorization', `Bearer ${bearerToken}`)
+            .expect('content-type', 'application/json')
+            .end((err, res) => {
+              res.statusCode.should.eql(200)
+
+              res.body.results.should.be.Array
+              res.body.results.length.should.eql(1)
+              res.body.results[0].clientId.should.eql(testClient.clientId)
+
+              should.not.exist(res.body.results[0].secret)
+
+              client
+              .get(`/api/clients/${testClient.clientId}`)
+              .set('content-type', 'application/json')
+              .set('Authorization', `Bearer ${bearerToken}`)
+              .expect('content-type', 'application/json')
+              .end((err, res) => {
+                res.statusCode.should.eql(200)
+
+                res.body.results.should.be.Array
+                res.body.results.length.should.eql(1)
+                res.body.results[0].clientId.should.eql(testClient.clientId)
+                res.body.results[0].data.should.eql(testClient.data)
+
+                done()
+              })
+            })
+          })
+        })
+      })
     })
   })
 }

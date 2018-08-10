@@ -246,10 +246,7 @@ Clients.prototype.handleError = function (res, next) {
         })
 
       default:
-        return help.sendBackJSON(400, res, next)(null, {
-          success: false,
-          errors: ['Could not perform operation']
-        })
+        return help.sendBackJSON(400, res, next)(err)
     }
   }
 }

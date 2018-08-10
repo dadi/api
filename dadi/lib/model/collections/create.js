@@ -10,7 +10,7 @@ const Hook = require('./../hook')
  * @param {Object|Array} documents - the document(s) to insert
  * @param {Object} internals - internal properties to attach to documents
  * @param {Boolean} rawOutput - whether to bypass formatting routine
- * @param {String}  removeInternalProperties - removes internal properties
+ * @param {Boolean} removeInternalProperties - whether to remove internal properties
  * @param {Object} req - request
  * @returns {Promise<Array>} array of created documents
  */

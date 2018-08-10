@@ -38,7 +38,7 @@ const logger = require('@dadi/logger')
  * @param  {Object}  update - properties to update documents with
  * @param  {Object}  internals - internal properties to inject in documents
  * @param  {Boolean} rawOutput - whether to bypass output formatting
- * @param  {String}  removeInternalProperties - removes internal properties
+ * @param  {Boolean} removeInternalProperties - whether to remove internal properties
  * @param  {Object}  req - request object to pass to hooks
  * @param  {Boolean} validate - whether to run validation
  * @return {Promise<Array.ResultSet>} set of updated documents

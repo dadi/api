@@ -425,7 +425,124 @@ module.exports = () => {
           })
         })
       })
-    })    
+    })
+
+    it('should return 400 when a non-admin client tries to update their secret without supplying the current secret', done => {
+      let testClient = {
+        clientId: 'apiClient',
+        secret: 'someSecret'
+      }
+
+      help.createACLClient(testClient).then(() => {
+        client
+        .post(config.get('auth.tokenUrl'))
+        .set('content-type', 'application/json')
+        .send({
+          clientId: testClient.clientId,
+          secret: testClient.secret
+        })
+        .expect(200)
+        .expect('content-type', 'application/json')
+        .end((err, res) => {
+          if (err) return done(err)
+
+          res.body.accessToken.should.be.String
+
+          let bearerToken = res.body.accessToken
+
+          client
+          .put(`/api/clients/${testClient.clientId}`)
+          .send({
+            secret: 'aNewSecret'
+          })
+          .set('content-type', 'application/json')
+          .set('Authorization', `Bearer ${bearerToken}`)
+          .expect('content-type', 'application/json')
+          .end((err, res) => {
+            res.statusCode.should.eql(400)
+
+            res.body.success.should.eql(false)
+            res.body.errors[0].should.eql('The current secret must be supplied via a `currentSecret` property')
+
+            client
+            .post(config.get('auth.tokenUrl'))
+            .set('content-type', 'application/json')
+            .send({
+              clientId: testClient.clientId,
+              secret: 'someSecret'
+            })
+            .expect(200)
+            .expect('content-type', 'application/json')
+            .end((err, res) => {
+              if (err) return done(err)
+
+              res.body.accessToken.should.be.String
+
+              done()
+            })
+          })
+        })
+      })
+    })
+
+    it('should return 400 when a non-admin client tries to update their secret and the current secret supplied is incorrect', done => {
+      let testClient = {
+        clientId: 'apiClient',
+        secret: 'someSecret'
+      }
+
+      help.createACLClient(testClient).then(() => {
+        client
+        .post(config.get('auth.tokenUrl'))
+        .set('content-type', 'application/json')
+        .send({
+          clientId: testClient.clientId,
+          secret: testClient.secret
+        })
+        .expect(200)
+        .expect('content-type', 'application/json')
+        .end((err, res) => {
+          if (err) return done(err)
+
+          res.body.accessToken.should.be.String
+
+          let bearerToken = res.body.accessToken
+
+          client
+          .put(`/api/clients/${testClient.clientId}`)
+          .send({
+            currentSecret: 'this does not look right',
+            secret: 'aNewSecret'
+          })
+          .set('content-type', 'application/json')
+          .set('Authorization', `Bearer ${bearerToken}`)
+          .expect('content-type', 'application/json')
+          .end((err, res) => {
+            res.statusCode.should.eql(400)
+
+            res.body.success.should.eql(false)
+            res.body.errors[0].should.eql('The current secret supplied is not valid')
+
+            client
+            .post(config.get('auth.tokenUrl'))
+            .set('content-type', 'application/json')
+            .send({
+              clientId: testClient.clientId,
+              secret: 'someSecret'
+            })
+            .expect(200)
+            .expect('content-type', 'application/json')
+            .end((err, res) => {
+              if (err) return done(err)
+
+              res.body.accessToken.should.be.String
+
+              done()
+            })
+          })
+        })
+      })
+    })
   })
 
   describe('success states', () => {
@@ -456,6 +573,7 @@ module.exports = () => {
             client
             .put(`/api/clients/${testClient.clientId}`)
             .send({
+              currentSecret: 'someSecret',
               secret: 'aNewSecret'
             })
             .set('content-type', 'application/json')
@@ -517,6 +635,7 @@ module.exports = () => {
             client
             .put('/api/client')
             .send({
+              currentSecret: 'someSecret',
               secret: 'aNewSecret'
             })
             .set('content-type', 'application/json')
@@ -1067,6 +1186,7 @@ module.exports = () => {
             client
             .put('/api/client')
             .send({
+              currentSecret: 'someSecret',
               secret: 'something'
             })
             .set('content-type', 'application/json')

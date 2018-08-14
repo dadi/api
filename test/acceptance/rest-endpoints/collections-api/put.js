@@ -481,6 +481,87 @@ describe('Collections API – PUT', function () {
       })
   })
 
+  it('should ignore any internal properties supplied by the client when updating a document', function (done) {
+    let initial = {
+      field1: 'initial'
+    }
+    let update = {
+      _id: 12345,
+      _createdBy: 'johndoe',
+      _createdAt: 1010101,
+      _version: 10,
+      field1: 'modified'
+    }
+
+    client
+      .post('/vtest/testdb/put-test-schema')
+      .set('Authorization', 'Bearer ' + bearerToken)
+      .send(initial)
+      .expect(200)
+      .end(function (err, res) {
+        if (err) return done(err)
+
+        var doc = res.body.results[0]
+        should.exist(doc)
+        doc.field1.should.equal(initial.field1)
+
+        client
+          .put('/vtest/testdb/put-test-schema/' + doc._id)
+          .set('Authorization', 'Bearer ' + bearerToken)
+          .send(update)
+          .expect(200)
+          .end(function (err, res) {
+            if (err) return done(err)
+
+            res.body.results[0]._id.should.equal(doc._id)
+            res.body.results[0].field1.should.equal(update.field1)
+
+            should.exist(res.body.results[0]._createdBy)
+            res.body.results[0]._createdBy.should.not.eql(update._createdBy)
+            
+            should.exist(res.body.results[0]._createdAt)
+            res.body.results[0]._createdAt.should.not.eql(update._createdAt)
+
+            should.exist(res.body.results[0]._id)
+            res.body.results[0]._id.should.not.eql(update._id)
+
+            should.exist(res.body.results[0]._version)
+            res.body.results[0]._version.should.not.eql(update._version)            
+
+            client
+              .get('/vtest/testdb/put-test-schema?filter={"_id": "' + doc._id + '"}')
+              .set('Authorization', 'Bearer ' + bearerToken)
+              .expect(200)
+              .expect('content-type', 'application/json')
+              .end(function (err, res) {
+                if (err) return done(err)
+
+                res.body['results'].should.exist
+                res.body['results'].should.be.Array
+                res.body['results'].length.should.equal(1)
+                res.body['results'][0]._lastModifiedBy.should.equal('test123')
+                res.body['results'][0]._lastModifiedAt.should.be.Number
+                res.body['results'][0]._lastModifiedAt.should.not.be.above(Date.now())
+                res.body['results'][0]._apiVersion.should.equal('vtest')
+
+                should.exist(res.body.results[0]._createdBy)
+                res.body.results[0]._createdBy.should.not.eql(update._createdBy)
+                
+                should.exist(res.body.results[0]._createdAt)
+                res.body.results[0]._createdAt.should.not.eql(update._createdAt)
+
+                should.exist(res.body.results[0]._id)
+                res.body.results[0]._id.should.not.eql(update._id)
+
+                should.exist(res.body.results[0]._version)
+                res.body.results[0]._version.should.not.eql(update._version)                
+
+                done()
+              })
+          })
+      })
+  })
+
   it('should use apiVersion to filter when selecting update documents if configured', function (done) {
     this.timeout(6000)
     config.set('query.useVersionFilter', true)

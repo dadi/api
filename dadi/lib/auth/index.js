@@ -1,5 +1,6 @@
 const clientModel = require('./../model/acl/client')
 const config = require('./../../../config')
+const help = require('./../help')
 const jwt = require('jsonwebtoken')
 
 const AuthMiddleware = function (server) {
@@ -125,6 +126,8 @@ AuthMiddleware.prototype.generateToken = function (req, res, next) {
 
       return res.end(JSON.stringify(response))
     })
+  }).catch(error => {
+    return help.sendBackJSON(null, res, next)(error)
   })
 }
 

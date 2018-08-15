@@ -462,4 +462,27 @@ describe('DateTime Field', function () {
       })
     })
   })
+
+  it('should return an error when the value supplied is not valid', done => {
+    let client = request(connectionString)
+
+    config.set('query.useVersionFilter', true)
+
+    let event = { type: 'borrow', datetime: {} }
+
+    client
+    .post('/v1/library/event')
+    .set('Authorization', 'Bearer ' + bearerToken)
+    .send(event)
+    .end((err, res) => {
+      if (err) return done(err)
+
+      res.statusCode.should.eql(500)
+      res.body.success.should.eql(false)
+      res.body.errors[0].field.should.eql('datetime')
+      res.body.errors[0].message.should.eql('Not a valid DateTime value')
+
+      done()
+    })
+  })
 })

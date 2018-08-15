@@ -236,7 +236,7 @@ Clients.prototype.handleError = function (res, next) {
       case 'INVALID_SECRET':
         return help.sendBackJSON(400, res, next)(null, {
           success: false,
-          errors: ['The current secret supplied is not valid']
+          errors: ['The supplied current secret is not valid']
         })
 
       case 'MISSING_FIELDS':

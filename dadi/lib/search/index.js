@@ -42,13 +42,11 @@ const Search = function (model) {
  * @returns {Boolean} - boolean value indicating whether Search is enabled for this collection
  */
 Search.prototype.canUse = function () {
-  let searchConfig = config.get('search')
-
-  if (!searchConfig.enabled) {
+  if (!config.get('search.enabled')) {
     return false
   }
 
-  this.datastore = DataStore(searchConfig.datastore)
+  this.datastore = DataStore(config.get('search.datastore'))
 
   // Return true if there is at least one indexable field and the
   // selected data connector has a "search()" function

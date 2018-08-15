@@ -501,50 +501,61 @@ Client.prototype.setWriteCallback = function (callback) {
  * @return {Promise<Object>}
  */
 Client.prototype.update = function (clientId, update) {
+  let findQuery = {
+    clientId
+  }
+  let isUpdatingSecret = typeof update.currentSecret === 'string'
+
+  if (isUpdatingSecret) {
+    findQuery.secret = update.currentSecret
+
+    delete update.currentSecret
+  }
+
   return this.validate(update, {
     blockedFields: ['clientId'],
     partial: true
   }).then(() => {
-    let dataMerge = Promise.resolve(null)
-
-    if (update.data) {
-      dataMerge = this.model.find({
-        options: {
+    return this.model.find({
+      options: {
+        fields: {
           data: 1
-        },
-        query: {
-          clientId
         }
-      }).then(({results}) => {
-        if (results.length > 0) {
-          return results[0].data || {}
-        }
-
-        return {}
-      })
-    }
-
-    return dataMerge.then(data => {
-      if (data) {
-        let mergedData = Object.assign({}, data, update.data)
-
-        Object.keys(mergedData).forEach(key => {
-          if (mergedData[key] === null) {
-            delete mergedData[key]
-          }
-        })
-
-        update.data = mergedData
+      },
+      query: findQuery
+    })
+  }).then(({results}) => {
+    if (results.length === 0) {
+      if (isUpdatingSecret) {
+        return Promise.reject(
+          new Error('INVALID_SECRET')
+        )
       }
 
-      return this.model.update({
-        query: {
-          clientId
-        },
-        rawOutput: true,
-        update,
-        validate: false
+      return Promise.reject(
+        new Error('CLIENT_NOT_FOUND')
+      )
+    }
+
+    if (update.data) {
+      let mergedData = Object.assign({}, results[0].data, update.data)
+
+      Object.keys(mergedData).forEach(key => {
+        if (mergedData[key] === null) {
+          delete mergedData[key]
+        }
       })
+
+      update.data = mergedData
+    }
+
+    return this.model.update({
+      query: {
+        clientId
+      },
+      rawOutput: true,
+      update,
+      validate: false
     })
   })
 }

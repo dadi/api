@@ -233,10 +233,22 @@ Clients.prototype.handleError = function (res, next) {
           errors: err.data.map(role => `Invalid role: ${role}`)
         })
 
+      case 'INVALID_SECRET':
+        return help.sendBackJSON(400, res, next)(null, {
+          success: false,
+          errors: ['The supplied current secret is not valid']
+        })
+
       case 'MISSING_FIELDS':
         return help.sendBackJSON(400, res, next)(null, {
           success: false,
           errors: err.data.map(field => `Missing field: ${field}`)
+        })
+
+      case 'MISSING_SECRET':
+        return help.sendBackJSON(400, res, next)(null, {
+          success: false,
+          errors: ['The current secret must be supplied via a `currentSecret` property']
         })
 
       case 'PROTECTED_DATA_FIELDS':
@@ -383,18 +395,28 @@ Clients.prototype.postRole = function (req, res, next) {
 }
 
 Clients.prototype.put = function (req, res, next) {
+  let clientIsAdmin = acl.client.isAdmin(req.dadiApiClient)
+  let update = req.body
+
   // A client can only be updated by themselves or by an admin.
-  if (
-    !acl.client.isAdmin(req.dadiApiClient) &&
-    req.params.clientId !== req.dadiApiClient.clientId
-  ) {
+  if (!clientIsAdmin && req.params.clientId !== req.dadiApiClient.clientId) {
     return this.handleError(res, next)(
       acl.createError(req.dadiApiClient)
     )
   }
 
-  return this.validateDataObject(req.body.data, req.dadiApiClient).then(() => {
-    return model.update(req.params.clientId, req.body)
+  return this.validateDataObject(update.data, req.dadiApiClient).then(() => {
+    if (
+      !clientIsAdmin &&
+      typeof update.secret === 'string' &&
+      typeof update.currentSecret !== 'string'
+    ) {
+      return Promise.reject(
+        new Error('MISSING_SECRET')
+      )
+    }
+
+    return model.update(req.params.clientId, update)
   }).then(({results}) => {
     if (results.length === 0) {
       return Promise.reject(

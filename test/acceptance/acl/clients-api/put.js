@@ -461,8 +461,8 @@ module.exports = () => {
           .end((err, res) => {
             res.statusCode.should.eql(400)
 
-            res.body.success.should.eql(false)
-            res.body.errors[0].should.eql('The current secret must be supplied via a `currentSecret` property')
+            res.body.code.should.eql('API-0007')
+            res.body.title.should.be.String
 
             client
             .post(config.get('auth.tokenUrl'))
@@ -520,8 +520,8 @@ module.exports = () => {
           .end((err, res) => {
             res.statusCode.should.eql(400)
 
-            res.body.success.should.eql(false)
-            res.body.errors[0].should.eql('The current secret supplied is not valid')
+            res.body.code.should.eql('API-0008')
+            res.body.title.should.be.String
 
             client
             .post(config.get('auth.tokenUrl'))

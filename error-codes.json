@@ -34,5 +34,17 @@
     "title": "Access denied",
     "details": "The bearer token supplied in the request does not have sufficient permissions to perform the operation.",
     "params": []
-  }  
+  },
+  "0007": {
+    "code": "API-0007",
+    "title": "Current secret missing",
+    "details": "To update the client secret, the current secret must be supplied via the `currentSecret` property.",
+    "params": []
+  },
+  "0008": {
+    "code": "API-0008",
+    "title": "Current secret not valid",
+    "details": "The supplied current secret is not valid.",
+    "params": []
+  }
 }

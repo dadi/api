@@ -234,10 +234,7 @@ Clients.prototype.handleError = function (res, next) {
         })
 
       case 'INVALID_SECRET':
-        return help.sendBackJSON(400, res, next)(null, {
-          success: false,
-          errors: ['The supplied current secret is not valid']
-        })
+        return help.sendBackErrorWithCode('0008', 400, res, next)
 
       case 'MISSING_FIELDS':
         return help.sendBackJSON(400, res, next)(null, {
@@ -246,10 +243,7 @@ Clients.prototype.handleError = function (res, next) {
         })
 
       case 'MISSING_SECRET':
-        return help.sendBackJSON(400, res, next)(null, {
-          success: false,
-          errors: ['The current secret must be supplied via a `currentSecret` property']
-        })
+        return help.sendBackErrorWithCode('0007', 400, res, next)
 
       case 'PROTECTED_DATA_FIELDS':
         return help.sendBackJSON(400, res, next)(null, {

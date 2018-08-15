@@ -44,10 +44,15 @@ const Search = function (model) {
 Search.prototype.canUse = function () {
   let searchConfig = config.get('search')
 
+  if (!searchConfig.enabled) {
+    return false
+  }
+
   this.datastore = DataStore(searchConfig.datastore)
 
+  // Return true if there is at least one indexable field and the
+  // selected data connector has a "search()" function
   return (typeof this.datastore.search !== 'undefined') &&
-    searchConfig.enabled &&
     Object.keys(this.indexableFields).length > 0
 }
 

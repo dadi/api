@@ -1,6 +1,8 @@
-var should = require('should')
-var sinon = require('sinon')
-var help = require(__dirname + '/../../dadi/lib/help')
+const ERROR_CODES = require('./../../error-codes')
+const formatError = require('@dadi/format-error')
+const should = require('should')
+const sinon = require('sinon')
+const help = require(__dirname + '/../../dadi/lib/help')
 
 describe('Help', function (done) {
   describe('sendBackErrorTrace', function () {
@@ -32,6 +34,60 @@ describe('Help', function (done) {
 
       body.success.should.eql(false)
       body.error.includes('ReferenceError: thisWillBreak is not defined').should.eql(true)
+      res.statusCode.should.eql(500)
+
+      done()
+    })
+  })
+
+  describe('sendBackErrorWithCode', function () {
+    it('should send an error with the formatted message corresponding to the API error code with the status code provided', done => {
+      let res = {
+        end: sinon.stub(),
+        setHeader: sinon.stub()
+      }
+
+      help.sendBackErrorWithCode('0006', 403, res, {})
+
+      res.setHeader.callCount.should.eql(2)
+      res.setHeader.args[0][0].should.eql('content-type')
+      res.setHeader.args[0][1].should.eql('application/json')
+      res.setHeader.args[1][0].should.eql('content-length')
+      res.setHeader.args[1][1].should.be.Number
+
+      res.end.callCount.should.eql(1)
+      
+      let body = JSON.parse(res.end.args[0][0])
+
+      body.should.eql(
+        formatError.createError('api', '0006', null, ERROR_CODES)
+      )
+      res.statusCode.should.eql(403)
+
+      done()
+    })
+
+    it('should send an error with the formatted message corresponding to the API error code with the status code 500 if one is not provided', done => {
+      let res = {
+        end: sinon.stub(),
+        setHeader: sinon.stub()
+      }
+
+      help.sendBackErrorWithCode('0006', res, {})
+
+      res.setHeader.callCount.should.eql(2)
+      res.setHeader.args[0][0].should.eql('content-type')
+      res.setHeader.args[0][1].should.eql('application/json')
+      res.setHeader.args[1][0].should.eql('content-length')
+      res.setHeader.args[1][1].should.be.Number
+
+      res.end.callCount.should.eql(1)
+      
+      let body = JSON.parse(res.end.args[0][0])
+
+      body.should.eql(
+        formatError.createError('api', '0006', null, ERROR_CODES)
+      )
       res.statusCode.should.eql(500)
 
       done()

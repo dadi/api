@@ -23,6 +23,7 @@ var CacheFlushController = require(path.join(__dirname, '/controller/cacheFlush'
 var ClientsController = require(path.join(__dirname, '/controller/clients'))
 var CollectionsController = require(path.join(__dirname, '/controller/collections'))
 var DocumentController = require(path.join(__dirname, '/controller/documents'))
+var FeatureQueryHandler = require(path.join(__dirname, '/controller/featureQueryHandler'))
 var EndpointController = require(path.join(__dirname, '/controller/endpoint'))
 var EndpointsController = require(path.join(__dirname, '/controller/endpoints'))
 var HooksController = require(path.join(__dirname, '/controller/hooks'))
@@ -236,6 +237,9 @@ Server.prototype.start = function (done) {
     domainConfigLoaded = true
     return next()
   })
+
+  // Attach feature query handler.
+  FeatureQueryHandler(app)
 
   // configure authentication middleware
   AuthMiddleware(app)

@@ -415,6 +415,13 @@ var conf = convict({
       format: String,
       default: ':'
     }
+  },
+  featureQuery: {
+    enabled: {
+      doc: 'Whether feature query via custom headers is enabled',
+      format: Boolean,
+      default: true
+    }
   }
 })
 

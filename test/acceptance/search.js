@@ -216,6 +216,80 @@ describe('Search', function () {
       })
     })
 
+    it('should update the index on update of documents', function (done) {
+      let searchModel = model('test-schema')
+      searchModel.searchHandler.init()
+
+      var client = request(connectionString)
+
+      var doc = {
+        field1: 'Tycho - Elsewhere',
+        title: 'Burning Man Sunrise Set 2015'
+      }
+
+      client
+      .post('/vtest/testdb/test-schema')
+      .set('Authorization', 'Bearer ' + bearerToken)
+      .set('content-type', 'application/json')
+      .send(doc)
+      .expect(200)
+      .end((err, res) => {
+        let insertedDocument = res.body.results[0]
+
+        client
+        .get('/vtest/testdb/test-schema/search?q=sunrise')
+        .set('Authorization', 'Bearer ' + bearerToken)
+        .expect(200)
+        .end((err, res) => {
+          if (err) return done(err)
+          should.exist(res.body.results)
+
+          res.body.results.should.be.Array
+          res.body.results.length.should.eql(1)
+
+          // update the document
+          doc.field1 = 'The Big Friendly Giant'
+          doc.title = 'You Never Saw Such a Thing'
+
+          client
+          .put('/vtest/testdb/test-schema/' + insertedDocument._id)
+          .set('Authorization', 'Bearer ' + bearerToken)
+          .set('content-type', 'application/json')
+          .send(doc)
+          .expect(200)
+          .end((err, res) => {
+            client
+            .get('/vtest/testdb/test-schema/search?q=sunrise')
+            .set('Authorization', 'Bearer ' + bearerToken)
+            .expect(200)
+            .end((err, res) => {
+              if (err) return done(err)
+              should.exist(res.body.results)
+
+              res.body.results.should.be.Array
+              res.body.results.length.should.eql(0)
+
+              client
+              .get('/vtest/testdb/test-schema/search?q=thing')
+              .set('Authorization', 'Bearer ' + bearerToken)
+              .expect(200)
+              .end((err, res) => {
+                if (err) return done(err)
+                should.exist(res.body.results)
+
+                res.body.results.should.be.Array
+                res.body.results.length.should.eql(1)
+
+                res.body.results[0]._id.should.eql(insertedDocument._id)
+
+                done()
+              })
+            })
+          })
+        })
+      })
+    })
+
     it('should return metadata containing the search term', function (done) {
       let searchModel = model('test-schema')
       searchModel.searchHandler.init()

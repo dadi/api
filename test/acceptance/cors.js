@@ -54,7 +54,7 @@ describe('CORS', () => {
       .end(done)
   })
 
-  it('should pemit all HTTP methods for OPTIONS requests', done => {
+  it('should permit all HTTP methods for OPTIONS requests', done => {
     client
       .options('/')
       .expect('Access-Control-Allow-Methods', 'GET,HEAD,PUT,PATCH,POST,DELETE')

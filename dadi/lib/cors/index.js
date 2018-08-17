@@ -42,6 +42,11 @@ module.exports = function cors (server) {
       return res.end()
     }
 
+    // Exposing the feature support header if enabled in config.
+    if (config.get('featureQuery.enabled')) {
+      res.setHeader('Access-Control-Expose-Headers', 'X-DADI-Supports')
+    }
+
     // All other requests reflect the requesting `Origin` back to the client,
     // effectively enabling CORS for all endpoints and HTTP methods.
     if (req.headers.origin) {

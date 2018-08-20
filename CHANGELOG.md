@@ -4,6 +4,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## [4.2.0] (2018-08-20)
+
+### Added
+
+- [#453](https://github.com/dadi/api/issues/453): add support for arbitrary data against client records
+- [#462](https://github.com/dadi/api/issues/462): introduce `/api/client` endpoints
+- [#482](https://github.com/dadi/api/issues/482): add support for feature queries
+
+### Changed
+
+- [#474](https://github.com/dadi/api/issues/474): require current client secret when setting a new one
+- [#476](https://github.com/dadi/api/issues/476): remove internal properties from POST and PUT payloads
+
 ## [4.1.1] (2018-08-01)
 
 ### Added

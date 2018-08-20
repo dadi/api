@@ -29,6 +29,7 @@ describe('Clients API', () => {
   describe('DELETE', require('./delete'))
   describe('GET', require('./get'))
   describe('POST', require('./post'))
+  describe('PUT', require('./put'))
 
   describe('Resources', () => {
     describe('DELETE', require('./resources-delete'))

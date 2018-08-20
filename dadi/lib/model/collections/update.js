@@ -38,6 +38,7 @@ const logger = require('@dadi/logger')
  * @param  {Object}  update - properties to update documents with
  * @param  {Object}  internals - internal properties to inject in documents
  * @param  {Boolean} rawOutput - whether to bypass output formatting
+ * @param  {Boolean} removeInternalProperties - whether to remove internal properties
  * @param  {Object}  req - request object to pass to hooks
  * @param  {Boolean} validate - whether to run validation
  * @return {Promise<Array.ResultSet>} set of updated documents
@@ -49,6 +50,7 @@ function update ({
   update,
   internals = {},
   rawOutput = false,
+  removeInternalProperties = true,
   req,
   validate = true
 }) {
@@ -88,6 +90,11 @@ function update ({
       aclQuery.message === 'EMPTY_RESULT_SET'
     ) {
       return this._buildEmptyResponse()
+    }
+
+    // Removing internal API properties from the update object.
+    if (removeInternalProperties) {
+      update = this.removeInternalProperties(update)
     }
 
     if (validate) {
@@ -231,6 +238,9 @@ function update ({
           return hook.apply(data.results, this.schema, this.name)
         })
       }
+
+      // Asynchronous search index.
+      this.searchHandler.index(data.results)
 
       // Format result set for output.
       if (!rawOutput) {

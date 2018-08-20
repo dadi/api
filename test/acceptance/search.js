@@ -3,6 +3,7 @@ const config = require('../../config')
 const help = require('./help')
 const model = require('../../dadi/lib/model/')
 const should = require('should')
+const sinon = require('sinon')
 const request = require('supertest')
 
 // variables scoped for use throughout tests
@@ -116,6 +117,23 @@ describe('Search', function () {
         done()
       })
     })
+
+    describe('Indexing', function () {
+      it('should return 404 when calling the index endpoint', function (done) {
+        config.set('search.enabled', false)
+        let client = request(connectionString)
+
+        client
+        .post('/api/index')
+        .set('Authorization', 'Bearer ' + bearerToken)
+        .set('content-type', 'application/json')
+        .expect(404)
+        .end((err, res) => {
+          config.set('search.enabled', true)
+          done()
+        })
+      })
+    })
   })
 
   describe('Enabled', function () {
@@ -198,6 +216,80 @@ describe('Search', function () {
       })
     })
 
+    it('should update the index on update of documents', function (done) {
+      let searchModel = model('test-schema')
+      searchModel.searchHandler.init()
+
+      var client = request(connectionString)
+
+      var doc = {
+        field1: 'Tycho - Elsewhere',
+        title: 'Burning Man Sunrise Set 2015'
+      }
+
+      client
+      .post('/vtest/testdb/test-schema')
+      .set('Authorization', 'Bearer ' + bearerToken)
+      .set('content-type', 'application/json')
+      .send(doc)
+      .expect(200)
+      .end((err, res) => {
+        let insertedDocument = res.body.results[0]
+
+        client
+        .get('/vtest/testdb/test-schema/search?q=sunrise')
+        .set('Authorization', 'Bearer ' + bearerToken)
+        .expect(200)
+        .end((err, res) => {
+          if (err) return done(err)
+          should.exist(res.body.results)
+
+          res.body.results.should.be.Array
+          res.body.results.length.should.eql(1)
+
+          // update the document
+          doc.field1 = 'The Big Friendly Giant'
+          doc.title = 'You Never Saw Such a Thing'
+
+          client
+          .put('/vtest/testdb/test-schema/' + insertedDocument._id)
+          .set('Authorization', 'Bearer ' + bearerToken)
+          .set('content-type', 'application/json')
+          .send(doc)
+          .expect(200)
+          .end((err, res) => {
+            client
+            .get('/vtest/testdb/test-schema/search?q=sunrise')
+            .set('Authorization', 'Bearer ' + bearerToken)
+            .expect(200)
+            .end((err, res) => {
+              if (err) return done(err)
+              should.exist(res.body.results)
+
+              res.body.results.should.be.Array
+              res.body.results.length.should.eql(0)
+
+              client
+              .get('/vtest/testdb/test-schema/search?q=thing')
+              .set('Authorization', 'Bearer ' + bearerToken)
+              .expect(200)
+              .end((err, res) => {
+                if (err) return done(err)
+                should.exist(res.body.results)
+
+                res.body.results.should.be.Array
+                res.body.results.length.should.eql(1)
+
+                res.body.results[0]._id.should.eql(insertedDocument._id)
+
+                done()
+              })
+            })
+          })
+        })
+      })
+    })
+
     it('should return metadata containing the search term', function (done) {
       let searchModel = model('test-schema')
       searchModel.searchHandler.init()
@@ -228,6 +320,27 @@ describe('Search', function () {
 
           done()
         })
+      })
+    })
+  })
+
+  describe('Indexing', function () {
+    it('should return 204 when calling the index endpoint', function (done) {
+      let searchModel = model('test-schema')
+      searchModel.searchHandler.init()
+
+      let client = request(connectionString)
+      let stub = sinon.spy(searchModel.searchHandler, 'batchIndex')
+
+      client
+      .post('/api/index')
+      .set('Authorization', 'Bearer ' + bearerToken)
+      .set('content-type', 'application/json')
+      .expect(204)
+      .end((err, res) => {
+        stub.called.should.be.true
+        stub.restore()
+        done()
       })
     })
   })

@@ -8,13 +8,19 @@ const Clients = function (server) {
     'API clients'
   )
 
+  server.app.routeMethods('/api/client', {
+    get: this.bindOwn(this.get.bind(this)),
+    put: this.bindOwn(this.put.bind(this))
+  })
+
   server.app.routeMethods('/api/clients', {
     post: this.post.bind(this)
   })
 
   server.app.routeMethods('/api/clients/:clientId?', {
     delete: this.delete.bind(this),
-    get: this.get.bind(this)
+    get: this.get.bind(this),
+    put: this.put.bind(this)
   })
 
   server.app.routeMethods('/api/clients/:clientId/roles', {
@@ -33,6 +39,26 @@ const Clients = function (server) {
     delete: this.deleteResource.bind(this),
     put: this.putResource.bind(this)
   })
+}
+
+Clients.prototype.bindOwn = function (handler) {
+  return (req, res, next) => {
+    let modifiedRequest = Object.assign(
+      {},
+      req,
+      {
+        params: Object.assign(
+          {},
+          req.params,
+          {
+            clientId: req.dadiApiClient && req.dadiApiClient.clientId
+          }
+        )
+      }
+    )
+
+    return handler(modifiedRequest, res, next)
+  }
 }
 
 Clients.prototype.delete = function (req, res, next) {
@@ -133,16 +159,24 @@ Clients.prototype.deleteRole = function (req, res, next) {
 }
 
 Clients.prototype.get = function (req, res, next) {
-  return acl.access.get(req.dadiApiClient, 'clients').then(access => {
-    if (access.read !== true) {
-      return Promise.reject(
-        acl.createError(req.dadiApiClient)
-      )
-    }
+  let aclCheck = Promise.resolve()
+  let clientId = req.params.clientId
 
-    return model.get(req.params.clientId)
+  // Clients will always have read access to their own endpoint.
+  if (!clientId || req.dadiApiClient.clientId !== clientId) {
+    aclCheck = acl.access.get(req.dadiApiClient, 'clients').then(access => {
+      if (access.read !== true) {
+        return Promise.reject(
+          acl.createError(req.dadiApiClient)
+        )
+      }
+    })
+  }
+
+  return aclCheck.then(() => {
+    return model.get(clientId)
   }).then(clients => {
-    if (req.params.clientId && (clients.results.length === 0)) {
+    if (clientId && (clients.results.length === 0)) {
       return help.sendBackJSON(404, res, next)(null, null)
     }
 
@@ -199,39 +233,51 @@ Clients.prototype.handleError = function (res, next) {
           errors: err.data.map(role => `Invalid role: ${role}`)
         })
 
+      case 'INVALID_SECRET':
+        return help.sendBackErrorWithCode('0008', 400, res, next)
+
       case 'MISSING_FIELDS':
         return help.sendBackJSON(400, res, next)(null, {
           success: false,
           errors: err.data.map(field => `Missing field: ${field}`)
         })
 
-      default:
+      case 'MISSING_SECRET':
+        return help.sendBackErrorWithCode('0007', 400, res, next)
+
+      case 'PROTECTED_DATA_FIELDS':
         return help.sendBackJSON(400, res, next)(null, {
           success: false,
-          errors: ['Could not perform operation']
+          errors: err.data.map(field => `Cannot set internal data property: data.${field}`)
         })
+
+      default:
+        return help.sendBackJSON(400, res, next)(err)
     }
   }
 }
 
 Clients.prototype.post = function (req, res, next) {
-  let {clientId, secret} = req.body || {}
-
-  if (typeof clientId !== 'string' || typeof secret !== 'string') {
+  if (
+    typeof req.body.clientId !== 'string' ||
+    typeof req.body.secret !== 'string'
+  ) {
     return help.sendBackJSON(400, res, next)(null, {
       success: false,
-      errors: ['Invalid input. Expected: {"clientId": String, "secret": String}']
+      errors: ['Invalid input. Expected: {"clientId": String, "secret": String, "data": Object (optional)}']
     })
   }
 
   return acl.access.get(req.dadiApiClient, 'clients').then(access => {
-    if (access.create !== true) {
-      return Promise.reject(
-        acl.createError(req.dadiApiClient)
-      )
-    }
+    return this.validateDataObject(req.body.data, req.dadiApiClient).then(() => {
+      if (access.create !== true) {
+        return Promise.reject(
+          acl.createError(req.dadiApiClient)
+        )
+      }
 
-    return model.create(req.body)
+      return model.create(req.body)
+    })
   }).then(({results}) => {
     help.sendBackJSON(201, res, next)(null, {
       results: [
@@ -342,6 +388,44 @@ Clients.prototype.postRole = function (req, res, next) {
   }).catch(this.handleError(res, next))
 }
 
+Clients.prototype.put = function (req, res, next) {
+  let clientIsAdmin = acl.client.isAdmin(req.dadiApiClient)
+  let update = req.body
+
+  // A client can only be updated by themselves or by an admin.
+  if (!clientIsAdmin && req.params.clientId !== req.dadiApiClient.clientId) {
+    return this.handleError(res, next)(
+      acl.createError(req.dadiApiClient)
+    )
+  }
+
+  return this.validateDataObject(update.data, req.dadiApiClient).then(() => {
+    if (
+      !clientIsAdmin &&
+      typeof update.secret === 'string' &&
+      typeof update.currentSecret !== 'string'
+    ) {
+      return Promise.reject(
+        new Error('MISSING_SECRET')
+      )
+    }
+
+    return model.update(req.params.clientId, update)
+  }).then(({results}) => {
+    if (results.length === 0) {
+      return Promise.reject(
+        new Error('CLIENT_NOT_FOUND')
+      )
+    }
+
+    help.sendBackJSON(200, res, next)(null, {
+      results: [
+        model.formatForOutput(results[0])
+      ]
+    })
+  }).catch(this.handleError(res, next))
+}
+
 Clients.prototype.putResource = function (req, res, next) {
   if (
     typeof req.params.clientId !== 'string' ||
@@ -388,6 +472,26 @@ Clients.prototype.putResource = function (req, res, next) {
   }).then(({results}) => {
     help.sendBackJSON(200, res, next)(null, {results})
   }).catch(this.handleError(res, next))
+}
+
+Clients.prototype.validateDataObject = function (data = {}, requestingClient) {
+  let isAdmin = model.isAdmin(requestingClient)
+  let protectedDataFields = Object.keys(data).filter(key => {
+    return key.indexOf('_') === 0
+  })
+
+  // If the request contains an update to protected data properties
+  // (i.e. prefixed with an underscore) *and* the requesting client
+  // is not an admin, we abort the operation.
+  if (!isAdmin && protectedDataFields.length) {
+    let error = new Error('PROTECTED_DATA_FIELDS')
+
+    error.data = protectedDataFields
+
+    return Promise.reject(error)
+  }
+
+  return Promise.resolve()
 }
 
 module.exports = server => new Clients(server)

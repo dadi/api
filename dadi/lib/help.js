@@ -36,6 +36,18 @@ module.exports.sendBackErrorTrace = function (res, next) {
   }
 }
 
+module.exports.sendBackErrorWithCode = function (errorCode, statusCode, res, next) {
+  if (typeof statusCode !== 'number') {
+    next = res
+    res = statusCode
+    statusCode = 500
+  }
+
+  let errorObject = formatError.createError('api', errorCode, null, ERROR_CODES)
+
+  return module.exports.sendBackJSON(statusCode, res, next)(null, errorObject)
+}
+
 // helper that sends json response
 module.exports.sendBackJSON = function (successCode, res, next) {
   return function (err, results) {

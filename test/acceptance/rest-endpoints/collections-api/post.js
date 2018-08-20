@@ -272,6 +272,47 @@ describe('Collections API – POST', function () {
       })
   })
 
+  it('should ignore any internal properties supplied by the client when creating a new document', function (done) {
+    var client = request(connectionString)
+
+    let input = {
+      _id: 12345,
+      _createdBy: 'johndoe',
+      _createdAt: 1010101,
+      _version: 10,
+      field1: 'foo!'
+    }
+
+    client
+      .post('/vtest/testdb/test-schema')
+      .set('Authorization', 'Bearer ' + bearerToken)
+      .send(input)
+      .expect(200)
+      .end(function (err, res) {
+        if (err) return done(err)
+
+        should.exist(res.body.results)
+        res.body.results.should.be.Array
+        res.body.results.length.should.equal(1)
+        
+        res.body.results[0].field1.should.equal(input.field1)
+
+        should.exist(res.body.results[0]._createdBy)
+        res.body.results[0]._createdBy.should.not.eql(input._createdBy)
+        
+        should.exist(res.body.results[0]._createdAt)
+        res.body.results[0]._createdAt.should.not.eql(input._createdAt)
+
+        should.exist(res.body.results[0]._id)
+        res.body.results[0]._id.should.not.eql(input._id)
+
+        should.exist(res.body.results[0]._version)
+        res.body.results[0]._version.should.not.eql(input._version)
+
+        done()
+      })
+  })
+
   it('should return 404 when updating a non-existing document by ID (RESTful)', function (done) {
     var client = request(connectionString)
 

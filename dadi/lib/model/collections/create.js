@@ -10,6 +10,7 @@ const Hook = require('./../hook')
  * @param {Object|Array} documents - the document(s) to insert
  * @param {Object} internals - internal properties to attach to documents
  * @param {Boolean} rawOutput - whether to bypass formatting routine
+ * @param {Boolean} removeInternalProperties - whether to remove internal properties
  * @param {Object} req - request
  * @returns {Promise<Array>} array of created documents
  */
@@ -19,6 +20,7 @@ function create ({
   documents,
   internals = {},
   rawOutput = false,
+  removeInternalProperties = true,
   req,
   validate = true
 }) {
@@ -35,6 +37,13 @@ function create ({
 
   if (!Array.isArray(documents)) {
     documents = [documents]
+  }
+
+  // Removing internal API properties from the documents.
+  if (removeInternalProperties) {
+    documents = documents.map(document => {
+      return this.removeInternalProperties(document)
+    })
   }
 
   return this.validateAccess({

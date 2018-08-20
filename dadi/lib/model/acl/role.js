@@ -423,6 +423,12 @@ Role.prototype.validate = function (role, {partial = false} = {}) {
     )
   })
 
+  Object.keys(role).forEach(field => {
+    if (!this.schema[field]) {
+      invalidFields.push(field)
+    }
+  })
+
   if (invalidFields.length > 0) {
     let error = new Error('INVALID_FIELDS')
 

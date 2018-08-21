@@ -72,7 +72,7 @@ connection.on('connect', db => {
           schema: getSchema().fields,
           settings: getSchema().settings
         }).then(existingClients => {
-          if (existingClients.length > 0) {
+          if (existingClients.results.length > 0) {
             console.log(`(x) The identifier ${options.clientId} already exists. Exiting...`)
             return
           }

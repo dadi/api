@@ -1,19 +1,19 @@
+/* global before after describe it */
 const should = require('should')
 const sinon = require('sinon')
-const fs = require('fs')
 const path = require('path')
 const request = require('supertest')
 const _ = require('underscore')
 const EventEmitter = require('events').EventEmitter
-const config = require(__dirname + '/../../../../config')
-const help = require(__dirname + '/../../help')
-const app = require(__dirname + '/../../../../dadi/lib/')
+const config = require(path.join(__dirname, '/../../../../config'))
+const help = require(path.join(__dirname, '/../../help'))
+const app = require(path.join(__dirname, '/../../../../dadi/lib/'))
 
 // variables scoped for use throughout tests
 const connectionString = 'http://' + config.get('server.host') + ':' + config.get('server.port')
 const client = request(connectionString)
 let bearerToken
-let lastModifiedAt = 0
+// let lastModifiedAt = 0
 
 describe('Collections API – GET', function () {
   this.timeout(4000)
@@ -31,26 +31,26 @@ describe('Collections API – GET', function () {
           bearerToken = token
 
           let schema = {
-            "fields": {
-              "field1": {
-                "type": "String",
-                "required": false
+            'fields': {
+              'field1': {
+                'type': 'String',
+                'required': false
               },
-              "field2": {
-                "type": "Number",
-                "required": false
+              'field2': {
+                'type': 'Number',
+                'required': false
               },
-              "field3": {
-                "type": "ObjectID",
-                "required": false
+              'field3': {
+                'type': 'ObjectID',
+                'required': false
               },
-              "_fieldWithUnderscore": {
-                "type": "Object",
-                "required": false
+              '_fieldWithUnderscore': {
+                'type': 'Object',
+                'required': false
               }
             },
-            "settings": {
-              "count": 40
+            'settings': {
+              'count': 40
             }
           }
 
@@ -149,7 +149,7 @@ describe('Collections API – GET', function () {
     .set('content-type', 'application/json')
     .set('Authorization', 'Bearer ' + bearerToken)
     .expect(200)
-    .end((err, res) => {
+    .end((_err, res) => {
       var id = res.body.results[0]._id
 
       client
@@ -158,7 +158,7 @@ describe('Collections API – GET', function () {
       .set('content-type', 'application/json')
       .set('Authorization', 'Bearer ' + bearerToken)
       .expect(200)
-      .end((err, res) => {
+      .end((_err, res) => {
         id = res.body.results[0]._id
 
         client
@@ -167,7 +167,7 @@ describe('Collections API – GET', function () {
         .set('content-type', 'application/json')
         .set('Authorization', 'Bearer ' + bearerToken)
         .expect(200)
-        .end((err, res) => {
+        .end((_err, res) => {
           var bookid = res.body.results[0]._id
           var books = []
           books.push(bookid)
@@ -178,10 +178,10 @@ describe('Collections API – GET', function () {
           .set('content-type', 'application/json')
           .set('Authorization', 'Bearer ' + bearerToken)
           .expect(200)
-          .end((err, res) => {
+          .end((_err, res) => {
             // find a book
 
-            var Model = require(__dirname + '/../../../../dadi/lib/model/index.js')
+            var Model = require(path.join(__dirname, '/../../../../dadi/lib/model/index.js'))
             var spy = sinon.spy(Model.Model.prototype, 'find')
 
             client
@@ -190,7 +190,7 @@ describe('Collections API – GET', function () {
             .set('content-type', 'application/json')
             .set('Authorization', 'Bearer ' + bearerToken)
             .expect(200)
-            .end((err, res) => {
+            .end((_err, res) => {
               var args = spy.args
               spy.restore()
               config.set('query.useVersionFilter', false)
@@ -215,38 +215,38 @@ describe('Collections API – GET', function () {
   it('should not use apiVersion when getting reference documents if useVersionFilter is set to false', function (done) {
     config.set('query.useVersionFilter', false)
 
-    var bookSchema = {
-      fields: {
-        'title': { 'type': 'String', 'required': true },
-        'author': { 'type': 'Reference',
-          'settings': { 'collection': 'person', 'fields': ['name', 'spouse'] }
-        },
-        'booksInSeries': {
-          'type': 'Reference',
-          'settings': { 'collection': 'book', 'multiple': true }
-        }
-      },
-      settings: {
-        cache: false,
-        authenticate: true,
-        count: 40
-      }
-    }
+    // var bookSchema = {
+    //   fields: {
+    //     'title': { 'type': 'String', 'required': true },
+    //     'author': { 'type': 'Reference',
+    //       'settings': { 'collection': 'person', 'fields': ['name', 'spouse'] }
+    //     },
+    //     'booksInSeries': {
+    //       'type': 'Reference',
+    //       'settings': { 'collection': 'book', 'multiple': true }
+    //     }
+    //   },
+    //   settings: {
+    //     cache: false,
+    //     authenticate: true,
+    //     count: 40
+    //   }
+    // }
 
-    var personSchema = {
-      fields: {
-        'name': { 'type': 'String', 'required': true },
-        'occupation': { 'type': 'String', 'required': false },
-        'nationality': { 'type': 'String', 'required': false },
-        'education': { 'type': 'String', 'required': false },
-        'spouse': { 'type': 'Reference' }
-      },
-      settings: {
-        cache: false,
-        authenticate: true,
-        count: 40
-      }
-    }
+    // var personSchema = {
+    //   fields: {
+    //     'name': { 'type': 'String', 'required': true },
+    //     'occupation': { 'type': 'String', 'required': false },
+    //     'nationality': { 'type': 'String', 'required': false },
+    //     'education': { 'type': 'String', 'required': false },
+    //     'spouse': { 'type': 'Reference' }
+    //   },
+    //   settings: {
+    //     cache: false,
+    //     authenticate: true,
+    //     count: 40
+    //   }
+    // }
 
     // create some docs
     client
@@ -255,7 +255,7 @@ describe('Collections API – GET', function () {
     .set('content-type', 'application/json')
     .set('Authorization', 'Bearer ' + bearerToken)
     .expect(200)
-    .end((err, res) => {
+    .end((_err, res) => {
       var id = res.body.results[0]._id
 
       client
@@ -264,7 +264,7 @@ describe('Collections API – GET', function () {
       .set('content-type', 'application/json')
       .set('Authorization', 'Bearer ' + bearerToken)
       .expect(200)
-      .end((err, res) => {
+      .end((_err, res) => {
         id = res.body.results[0]._id
 
         client
@@ -273,7 +273,7 @@ describe('Collections API – GET', function () {
         .set('content-type', 'application/json')
         .set('Authorization', 'Bearer ' + bearerToken)
         .expect(200)
-        .end((err, res) => {
+        .end((_err, res) => {
           var bookid = res.body.results[0]._id
           var books = []
           books.push(bookid)
@@ -284,10 +284,10 @@ describe('Collections API – GET', function () {
           .set('content-type', 'application/json')
           .set('Authorization', 'Bearer ' + bearerToken)
           .expect(200)
-          .end((err, res) => {
+          .end((_err, res) => {
             // find a book
 
-            var Model = require(__dirname + '/../../../../dadi/lib/model/index.js')
+            var Model = require(path.join(__dirname, '/../../../../dadi/lib/model/index.js'))
             var spy = sinon.spy(Model.Model.prototype, 'find')
 
             client
@@ -296,7 +296,7 @@ describe('Collections API – GET', function () {
             .set('content-type', 'application/json')
             .set('Authorization', 'Bearer ' + bearerToken)
             .expect(200)
-            .end((err, res) => {
+            .end((_err, res) => {
               var args = spy.args
               spy.restore()
 
@@ -353,7 +353,7 @@ describe('Collections API – GET', function () {
   it('should get documents from correct API version when useVersionFilter is set', function (done) {
     config.set('query.useVersionFilter', true)
 
-    var jsSchemaString = fs.readFileSync(__dirname + '/../../../new-schema.json', {encoding: 'utf8'})
+    // var jsSchemaString = fs.readFileSync(__dirname + '/../../../new-schema.json', {encoding: 'utf8'})
 
     help.createDoc(bearerToken, function (err, doc) {
       if (err) return done(err)
@@ -505,8 +505,6 @@ describe('Collections API – GET', function () {
         .end(function (err, res) {
           if (err) return done(err)
 
-          var found = false
-
           res.body.results.should.exist
           res.body.results.should.be.Array
           res.body.results[0].should.exist
@@ -530,7 +528,7 @@ describe('Collections API – GET', function () {
         'field1': 1
       }
 
-      query = encodeURIComponent(JSON.stringify(fields))
+      let query = encodeURIComponent(JSON.stringify(fields))
       client
         .get('/vtest/testdb/test-schema?cache=false&fields=' + query)
         .set('Authorization', 'Bearer ' + bearerToken)
@@ -566,7 +564,7 @@ describe('Collections API – GET', function () {
         '_fieldWithUnderscore': 1
       }
 
-      query = encodeURIComponent(JSON.stringify(fields))
+      let query = encodeURIComponent(JSON.stringify(fields))
       client
         .get('/vtest/testdb/test-schema?cache=false&fields=' + query)
         .set('Authorization', 'Bearer ' + bearerToken)
@@ -583,6 +581,37 @@ describe('Collections API – GET', function () {
 
           done()
         })
+    })
+  })
+
+  it('should return empty results when using unknown filter params', function (done) {
+    help.createDoc(bearerToken, function (err, doc1) {
+      if (err) return done(err)
+      help.createDoc(bearerToken, function (err, doc2) {
+        if (err) return done(err)
+
+        var client = request(connectionString)
+
+        var query = {
+          uncle: 'bob'
+        }
+
+        query = encodeURIComponent(JSON.stringify(query))
+
+        client
+          .get('/vtest/testdb/test-schema?filter=' + query)
+          .set('Authorization', 'Bearer ' + bearerToken)
+          .expect(200)
+          .expect('content-type', 'application/json')
+          .end(function (err, res) {
+            if (err) return done(err)
+
+            res.body['results'].should.exist
+            res.body['results'].should.be.Array
+            res.body['results'].length.should.equal(0)
+            done()
+          })
+      })
     })
   })
 
@@ -752,7 +781,6 @@ describe('Collections API – GET', function () {
         if (err) return done(err)
 
         var client = request(connectionString)
-        var docId = doc2._id
         var query = {
 
         }
@@ -782,7 +810,6 @@ describe('Collections API – GET', function () {
         if (err) return done(err)
 
         var client = request(connectionString)
-        var docId = doc2._id
 
         client
           .get('/vtest/testdb/test-schema?count=1&cache=false')
@@ -880,7 +907,7 @@ describe('Collections API – GET', function () {
         res.body.results[0].field1.should.equal('updated')
 
         client
-        .get('/vtest/testdb/test-schema/' +  doc.$id + '?includeHistory=true')
+        .get('/vtest/testdb/test-schema/' + doc.$id + '?includeHistory=true')
         .set('Authorization', 'Bearer ' + bearerToken)
         .expect(200)
         .expect('content-type', 'application/json')
@@ -907,7 +934,7 @@ describe('Collections API – GET', function () {
     client
     .post('/vtest/testdb/test-schema')
     .set('Authorization', 'Bearer ' + bearerToken)
-    .send({field1: 'ABCDEF', field2: 2001 })
+    .send({ field1: 'ABCDEF', field2: 2001 })
     .expect(200)
     .end(function (err, res) {
       if (err) return done(err)
@@ -967,9 +994,6 @@ describe('Collections API – GET', function () {
     ac.on('ready', function () {
       // documents are loaded and test can start
       var client = request(connectionString)
-
-      var query = {}
-      query = encodeURIComponent(JSON.stringify(query))
 
       client
         .get('/vtest/testdb/test-schema?count=1')

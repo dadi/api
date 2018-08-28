@@ -319,7 +319,7 @@ describe('Multi-language', function () {
     })
   })
 
-  it('should return the translation version of a field when the fields projection is set to include the field in question', done => {
+  it('should return the translation version of a field when the fields projection is set to include the field in question (with `lang` param)', done => {
     config.set('i18n.languages', ['pt', 'fr'])
 
     let documents = [
@@ -359,6 +359,54 @@ describe('Multi-language', function () {
         results[1]._i18n.title.should.eql(
           config.get('i18n.defaultLanguage')
         )
+        should.not.exist(results[1]['title:pt'])
+        should.not.exist(results[1]['title:fr'])
+
+        config.set('i18n.languages', configBackup.i18n.languages)
+
+        done()
+      })
+    })
+  })
+
+  it('should return the translation version of a field when the fields projection is set to include the field in question (without `lang` param)', done => {
+    config.set('i18n.languages', ['pt', 'fr'])
+
+    let documents = [
+      {
+        title: 'The Little Prince',
+        'title:pt': 'O Principezinho',
+        'title:fr': 'Le Petit Prince'
+      },
+      {
+        title: 'The Untranslatable'
+      }
+    ]
+
+    client
+    .post('/v1/library/book')
+    .set('Authorization', `Bearer ${bearerToken}`)
+    .send(documents)
+    .expect(200)
+    .end((err, res) => {
+      if (err) return done(err)
+
+      client
+      .get(`/v1/library/book?fields={"title":1}`)
+      .set('Authorization', `Bearer ${bearerToken}`)
+      .expect(200)
+      .end((err, res) => {
+        res.body.results.length.should.eql(2)
+
+        let results = res.body.results
+
+        results[0].title.should.eql(documents[0]['title'])
+        should.not.exist(results[0]._i18n)
+        results[0]['title:pt'].should.eql(documents[0]['title:pt'])
+        results[0]['title:fr'].should.eql(documents[0]['title:fr'])
+
+        results[1].title.should.eql(documents[1].title)
+        should.not.exist(results[1]._i18n)
         should.not.exist(results[1]['title:pt'])
         should.not.exist(results[1]['title:fr'])
 

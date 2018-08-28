@@ -72,11 +72,9 @@ function find ({
       // include a field and request a certain language, we must also include
       // that corresponding variation).
       config.get('i18n.languages').forEach(supportedLanguage => {
-        if (options.fields[field] === 0 || supportedLanguage === language) {
-          let langField = name + config.get('i18n.fieldCharacter') + supportedLanguage
+        let langField = name + config.get('i18n.fieldCharacter') + supportedLanguage
 
-          queryFields[langField] = options.fields[field]
-        }
+        queryFields[langField] = options.fields[field]
       })
 
       // If we're limiting the fields we're requesting, we need to

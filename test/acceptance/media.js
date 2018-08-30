@@ -903,6 +903,96 @@ describe('Media', function () {
       })
     })
 
+    describe('Disk Storage', () => {
+      let bearerToken
+      let defaultBucket = config.get('media.defaultBucket')
+
+      beforeEach(done => {
+        config.set('media.storage', 'disk')
+
+        help.getBearerTokenWithPermissions({
+          resources: {
+            'collection:library_person': {
+              create: true,
+              read: true
+            },
+            [`media:${defaultBucket}`]: {
+              create: true,
+              read: true
+            }
+          }
+        }, (err, token) => {
+          if (err) return done(err)
+
+          bearerToken = token
+
+          done()
+        })
+      })
+
+      afterEach(() => {
+        config.set('media.storage', configBackup.media.storage)
+      })
+
+      describe('GET', function () {
+        it('should return 404 when image is not found', function (done) {
+          client
+          .get('/media/mock/logo.png')
+          .set('Authorization', `Bearer ${bearerToken}`)
+          .end((err, res) => {
+            res.statusCode.should.eql(404)
+            done()
+          })
+        })
+
+        it('should return 200 when image is returned', function (done) {
+          var obj = {
+            fileName: '1f525.png',
+            mimetype: 'image/png'
+          }
+
+          let defaultBucket = config.get('media.defaultBucket')
+
+          client
+          .post(`/media/${defaultBucket}/sign`)
+          .set('Authorization', `Bearer ${bearerToken}`)
+          .set('content-type', 'application/json')
+          .send(obj)
+          .end((err, res) => {
+            if (err) return done(err)
+
+            var url = res.body.url
+
+            client
+            .post(url)
+            .set('content-type', 'application/json')
+            .attach('avatar', 'test/acceptance/temp-workspace/media/1f525.png')
+            .end((err, res) => {
+              if (err) return done(err)
+
+              should.exist(res.body.results)
+              res.body.results.should.be.Array
+              res.body.results.length.should.eql(1)
+              res.body.results[0].fileName.should.eql('1f525.png')
+
+              client
+              .get(res.body.results[0].path)
+              .set('Authorization', `Bearer ${bearerToken}`)
+              .end((err, res) => {
+                if (err) return done(err)
+
+                res.body.should.be.instanceof(Buffer)
+                res.headers['content-type'].should.eql('image/png')
+                res.statusCode.should.eql(200)
+
+                done()
+              })
+            })
+          })
+        })
+      })
+    })
+
     describe('S3 Storage', () => {
       beforeEach(() => {
         config.set('media.storage', 's3')
@@ -917,7 +1007,7 @@ describe('Media', function () {
 
       describe('GET', function () {
         it('should return 200 when image is returned', function (done) {
-        // return a buffer from the S3 request
+          // return a buffer from the S3 request
           let stream = fs.createReadStream('./test/acceptance/temp-workspace/media/1f525.png')
           let buffers = []
 

@@ -39,7 +39,14 @@ DiskStorage.prototype.get = function (filePath, route, req, res, next) {
     url: `${route}/${req.params.filename}`
   })
 
-  return serveStatic(config.get('media.basePath'))(modifiedReq, res, next)
+  return new Promise((resolve, reject) => {
+    try {
+      serveStatic(config.get('media.basePath'))(modifiedReq, res, next)
+      resolve()
+    } catch (err) {
+      return reject(err)
+    }
+  })
 }
 
 /**

@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## [4.2.2] (2018-09-04)
+
+### Changed
+
+- [#487](https://github.com/dadi/api/pull/487): return Promise from disk storage handler, resolves crash on media GET requests
+
 ## [4.2.1] (2018-08-28)
 
 ### Changed

@@ -417,7 +417,7 @@ describe('Multi-language', function () {
     })
   })
 
-  it('should return the original version of a field when the requested language is not part of `i18n.languages`', done => {
+  it.skip('should return the original version of a field when the requested language is not part of `i18n.languages`', done => {
     config.set('i18n.languages', ['fr'])
 
     let document = {

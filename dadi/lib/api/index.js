@@ -1,7 +1,9 @@
-var _ = require('underscore')
-var fs = require('fs')
 var http = require('http')
 var https = require('https')
+var http2 = require('http2')
+
+var _ = require('underscore')
+var fs = require('fs')
 var path = require('path')
 var pathToRegexp = require('path-to-regexp')
 var url = require('url')
@@ -61,7 +63,12 @@ var Api = function () {
     // we need to catch any errors resulting from bad parameters
     // such as incorrect passphrase or no passphrase provided
     try {
-      this.httpsInstance = https.createServer(serverOptions, this.listener)
+      if (config.get('server.enableHTTP2')) {
+        serverOptions['allowHTTP1'] = true // fallback to http1
+        this.httpsInstance = http2.createSecureServer(serverOptions, this.listener)
+      } else {
+        this.httpsInstance = https.createServer(serverOptions, this.listener)
+      }
     } catch (ex) {
       var exPrefix = 'error starting https server: '
       switch (ex.message) {

@@ -160,3 +160,55 @@ describe('SSL', () => {
     done()
   })
 })
+
+describe('http2', () => {
+    before((done) => {
+    // avoid [Error: self signed certificate] code: 'DEPTH_ZERO_SELF_SIGNED_CERT'
+    process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0'
+    done()
+  })
+
+  beforeEach((done) => {
+    // give the server a chance to close & release the port
+    setTimeout(done, 500)
+  })
+
+  afterEach((done) => {
+    config.set('server.protocol', 'http')
+    config.set('server.redirectPort', '')
+    config.set('server.sslPassphrase', '')
+    config.set('server.sslPrivateKeyPath', '')
+    config.set('server.sslCertificatePath', '')
+
+    server.close((err) => {
+      if (err) {
+        console.log(err) // error if server not running
+      }
+
+      done()
+    })
+  })
+
+  after((done) => {
+    done()
+  })
+
+  it('should respond to a http1 request even if http2 is enabled', (done) => {
+    server = api()
+    server.use(defaultResponse)
+    server.listen()
+
+    client
+      .get('/')
+      .expect('Content-Type', /json/)
+      .end((err, res) => {
+        if (err) done(err)
+
+        // We're assuming here that the 'supertest' module doesn't support http2
+        // If they ever add it this test might need to be changed!
+        res.httpVersion.should.eql('1.1')
+
+        done()
+      })
+  })
+})

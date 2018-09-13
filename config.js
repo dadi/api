@@ -83,6 +83,11 @@ var conf = convict({
       format: Array,
       default: [],
       env: 'SSL_INTERMEDIATE_CERTIFICATE_PATHS'
+    },
+    enableHTTP2: {
+      doc: 'When `server.protocol = https` use http2 as the primary response method. Fallback to http1 for unsupported clients.',
+      format: Boolean,
+      default: true
     }
   },
   datastore: {

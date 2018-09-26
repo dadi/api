@@ -143,9 +143,6 @@ describe('Multi-language', function () {
       .end((err, res) => {
         if (err) return done(err)
 
-        let defaultLanguage = config.get('i18n.defaultLanguage')
-        let supportedLanguages = config.get('i18n.languages')
-
         res.body.metadata.fieldCharacter.should.eql('@')
 
         config.set('i18n.fieldCharacter', configBackup.i18n.fieldCharacter)

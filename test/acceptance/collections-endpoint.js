@@ -64,6 +64,43 @@ describe('Collections endpoint', function () {
     })
   })
 
+  it('should include the fields and settings for each collection', done => {
+    help.getBearerTokenWithPermissions({
+      accessType: 'admin'
+    }).then(token => {
+      client
+      .get(`/api/collections`)
+      .set('content-type', 'application/json')
+      .set('Authorization', `Bearer ${token}`)
+      .end((err, res) => {
+        let allCollections = help.getCollectionMap()
+
+        res.body.collections.length.should.eql(
+          Object.keys(allCollections).length
+        )
+
+        Object.keys(allCollections).forEach(key => {
+          let match = res.body.collections.some(collection => {
+            if (collection.path === key) {
+              collection.fields.should.eql(allCollections[key].fields)
+              Object.keys(collection.settings).should.eql(
+                Object.keys(allCollections[key].settings)
+              )
+
+              return true
+            }
+
+            return false
+          })
+
+          match.should.eql(true)
+        })
+
+        done()
+      })
+    })
+  })
+
   it('should return only the collections the requesting client has read access to', done => {
     help.getBearerTokenWithPermissions({
       resources: {

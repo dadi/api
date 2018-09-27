@@ -46,7 +46,11 @@ Collections.prototype.get = function (req, res, next) {
         database: parts[2],
         name: (model.settings && model.settings.displayName) || model.name,
         slug: model.name,
-        path: key
+        path: key,
+        fields: model.schema,
+        settings: Object.assign({}, model.settings, {
+          database: undefined
+        })
       }
 
       if (model.settings) {

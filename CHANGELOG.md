@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## [4.3.0] (2018-09-27)
+
+### Changed
+
+- [#490](https://github.com/dadi/api/issues/490): add i18n field character to /api/languages endpoint
+- [#492](https://github.com/dadi/api/issues/492): add collection schemas and settings to /api/collections endpoint
+
 ## [4.2.2] (2018-09-04)
 
 ### Changed

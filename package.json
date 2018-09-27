@@ -1,6 +1,6 @@
 {
   "name": "@dadi/api",
-  "version": "4.2.2",
+  "version": "4.3.0",
   "main": "main.js",
   "scripts": {
     "create-client": "cd ../../.. && node ./node_modules/@dadi/api/utils/create-client.js",
@@ -9,6 +9,7 @@
     "test:prepare": "rm -rf cache && rm -rf config/config.test.json && rm -rf test/acceptance/temp-workspace && cp -R test/acceptance/workspace test/acceptance/temp-workspace",
     "test": "npm run test:prepare && standard --fix 'dadi/**/*.js' | snazzy && env NODE_ENV=test ./node_modules/.bin/istanbul cover  --report cobertura --report text --report html --report lcov ./node_modules/mocha/bin/_mocha && npm run test:cleanup",
     "test:cleanup": "rm -rf test/acceptance/temp-workspace",
+    "precommit": "node scripts/precommit.js",
     "posttest": "./scripts/coverage.js",
     "start": "node start.js --node_env=development"
   },

@@ -50,9 +50,9 @@ Languages.prototype.get = function (req, res, next) {
   }
 
   let languages = supportedLanguages.map(this._getLanguageDetails)
-
   let metadata = {
     defaultLanguage: this._getLanguageDetails(defaultLanguage),
+    fieldCharacter: config.get('i18n.fieldCharacter'),
     totalCount: supportedLanguages.length
   }
 

@@ -132,6 +132,24 @@ describe('Multi-language', function () {
         done()
       })
     })
+
+    it('should include a `fieldCharacter` property in the metadata block', done => {
+      config.set('i18n.fieldCharacter', '@')
+
+      client
+      .get('/api/languages')
+      .set('Authorization', `Bearer ${bearerToken}`)
+      .expect(200)
+      .end((err, res) => {
+        if (err) return done(err)
+
+        res.body.metadata.fieldCharacter.should.eql('@')
+
+        config.set('i18n.fieldCharacter', configBackup.i18n.fieldCharacter)
+
+        done()
+      })
+    })
   })
 
   it('should accept a language variation of a field, separated by the character configured in `i18n.fieldCharacter` (using default)', done => {

@@ -11,7 +11,9 @@
     "test:cleanup": "rm -rf test/acceptance/temp-workspace",
     "precommit": "node scripts/precommit.js",
     "posttest": "./scripts/coverage.js",
-    "start": "node start.js --node_env=development"
+    "start": "node start.js --node_env=development",
+    "snyk-protect": "snyk protect",
+    "prepare": "npm run snyk-protect"
   },
   "commitlint": {
     "extends": [
@@ -35,7 +37,7 @@
     "colors": "1.1.2",
     "concat-stream": "^1.6.2",
     "console-stamp": "^0.2.0",
-    "convict": "4.0.2",
+    "convict": "4.3.2",
     "debug": "3.1.0",
     "deep-clone": "^3.0.2",
     "deepmerge": "^2.1.0",
@@ -62,7 +64,8 @@
     "underscore": "1.8.3",
     "underscore-contrib": "^0.3.0",
     "validator": "9.4.1",
-    "vary": "^1.1.2"
+    "vary": "^1.1.2",
+    "snyk": "^1.104.1"
   },
   "devDependencies": {
     "@commitlint/cli": "~4.1.1",
@@ -112,5 +115,6 @@
   "description": "A high performance RESTful API layer designed in support of API-first development and the principle of COPE.",
   "directories": {
     "test": "test"
-  }
+  },
+  "snyk": true
 }

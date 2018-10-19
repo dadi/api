@@ -64,8 +64,7 @@
     "underscore": "1.8.3",
     "underscore-contrib": "^0.3.0",
     "validator": "9.4.1",
-    "vary": "^1.1.2",
-    "snyk": "^1.104.1"
+    "vary": "^1.1.2"
   },
   "devDependencies": {
     "@commitlint/cli": "~4.1.1",
@@ -87,6 +86,7 @@
     "should": "4.0.4",
     "sinon": "2.3.2",
     "snazzy": "7.0.0",
+    "snyk": "^1.104.1",
     "standard": "8.6.0",
     "supertest": "^3.1.0",
     "uuid": "^3.3.2"

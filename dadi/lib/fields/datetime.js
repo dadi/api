@@ -43,6 +43,12 @@ function convertDateTimeInQuery (input, schema, recursive) {
 }
 
 module.exports.beforeOutput = function ({field, input, schema}) {
+  if (!input[field]) {
+    return {
+      [field]: null
+    }
+  }
+
   let dateTime = moment.utc(input[field])
   let value
 

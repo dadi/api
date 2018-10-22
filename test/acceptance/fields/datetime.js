@@ -13,7 +13,7 @@ let bearerToken
 let configBackup = config.get()
 let connectionString = 'http://' + config.get('server.host') + ':' + config.get('server.port')
 
-describe('DateTime Field', function () {
+describe.only('DateTime Field', function () {
   before(() => {
     config.set('paths.collections', 'test/acceptance/temp-workspace/collections')
   })
@@ -40,6 +40,57 @@ describe('DateTime Field', function () {
 
   after(() => {
     config.set('paths.collections', configBackup.paths.collections)
+  })
+
+  it('should not attempt to process a null/undefined value', done => {
+    let person = { name: 'Ernest Hemingway' }
+
+    config.set('query.useVersionFilter', true)
+
+    let client = request(connectionString)
+    client
+    .post('/v1/library/person')
+    .set('Authorization', 'Bearer ' + bearerToken)
+    .send(person)
+    .expect(200)
+    .end((err, res) => {
+      if (err) return done(err)
+
+      let personId = res.body.results[0]._id
+      let book = { title: 'For Whom The Bell Tolls', author: personId }
+
+      client
+      .post('/v1/library/book')
+      .set('Authorization', 'Bearer ' + bearerToken)
+      .send(book)
+      .expect(200)
+      .end((err, res) => {
+        if (err) return done(err)
+
+        let bookId = res.body.results[0]._id
+        let event = { type: 'borrow', book: bookId, datetime: null }
+
+        client
+        .post('/v1/library/event')
+        .set('Authorization', 'Bearer ' + bearerToken)
+        .send(event)
+        .expect(200)
+        .end((err, res) => {
+          if (err) return done(err)
+
+          client
+          .get('/v1/library/event?compose=true')
+          .set('Authorization', 'Bearer ' + bearerToken)
+          .expect(200)
+          .end((err, res) => {
+            if (err) return done(err)
+
+            should.not.exist(res.body.results[0].datetime)
+            done()
+          })
+        })
+      })
+    })
   })
 
   it('should format a DateTime field as ISO when no format is specified', done => {

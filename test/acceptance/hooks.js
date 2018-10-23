@@ -414,6 +414,8 @@ describe('Hooks', function () {
             var publicationResults = res.body.results
             publicationResults.length.should.eql(1)
 
+            console.log(publicationResults)
+
             publicationResults[0]['url'].should.eql('/vtest/testdb/publications')
 
             hook.Hook.prototype.load.restore()

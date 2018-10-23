@@ -2,7 +2,6 @@ var should = require('should')
 var sinon = require('sinon')
 var model = require(__dirname + '/../../../dadi/lib/model')
 var apiHelp = require(__dirname + '/../../../dadi/lib/help')
-var Validator = require(__dirname + '/../../../dadi/lib/model/validator')
 var connection = require(__dirname + '/../../../dadi/lib/model/connection')
 var _ = require('underscore')
 var help = require(__dirname + '/../help')
@@ -1431,25 +1430,23 @@ describe('Model', function () {
     })
   })
 
-  describe('validator', function () {
+  describe('validateQuery', function () {
     it('should be attached to Model', function (done) {
       var mod = model('testModelName', help.getModelSchema(), null, { database: 'testdb' })
-      mod.validate.should.be.Object
-      mod.validate.query.should.be.Function
-      mod.validate.schema.should.be.Function
+      mod.validateQuery.should.be.Function
       done()
     })
 
     describe('query', function () {
       it('should not allow the use of `$where` in queries', function (done) {
         var mod = model('testModelName', help.getModelSchema(), null, { database: 'testdb' })
-        mod.validate.query({$where: 'throw new Error("Insertion Attack!")'}).success.should.be.false
+        mod.validateQuery({$where: 'throw new Error("Insertion Attack!")'}).success.should.be.false
         done()
       })
 
       it('should allow querying with key values', function (done) {
         var mod = model('testModelName', help.getModelSchema(), null, { database: 'testdb' })
-        mod.validate.query({fieldName: 'foo'}).success.should.be.true
+        mod.validateQuery({fieldName: 'foo'}).success.should.be.true
         done()
       })
 
@@ -1466,51 +1463,7 @@ describe('Model', function () {
         )
 
         var mod = model('schemaTest', schema, null, { database: 'testdb' })
-        mod.validate.query({'fieldMixed.innerProperty': 'foo'}).success.should.be.true
-        done()
-      })
-    })
-
-    describe('schema', function () {
-      it('should return true for object that matches schema', function (done) {
-        var schema = help.getModelSchema()
-        var mod = model('schemaTest', schema, null, { database: 'testdb' })
-        mod.validate.schema({fieldName: 'foobar'}).success.should.be.true
-        done()
-      })
-
-      it('should return false for object that contains undefined field', function (done) {
-        var schema = help.getModelSchema()
-        var mod = model('schemaTest', schema, null, { database: 'testdb' })
-        mod.validate.schema({nonSchemaField: 'foobar', fieldName: 'baz'}).success.should.be.false
-        done()
-      })
-
-      it('should check length limit for field', function (done) {
-        var schema = help.getModelSchema()
-        _.extend(schema.fieldName, {validation: { maxLength: 5}})
-        var mod = model('schemaTest', schema, null, { database: 'testdb' })
-        mod.validate.schema({fieldName: '123456'}).success.should.be.false
-        done()
-      })
-
-      it('should ensure all required fields are present', function (done) {
-        var schema = help.getModelSchema()
-        schema.requiredField = _.extend({}, schema.fieldName, {required: true})
-
-        var mod = model('schemaTest', schema, null, { database: 'testdb' })
-        var v = mod.validate.schema({fieldName: 'foo'})
-        v.errors[0].field.should.eql('requiredField')
-        v.success.should.be.false
-        done()
-      })
-
-      it('should check `validation` if available', function (done) {
-        var schema = help.getModelSchema()
-        _.extend(schema.fieldName, {validation: { regex: { pattern: /[a-z]+/} } })
-        var mod = model('schemaTest', schema, null, { database: 'testdb' })
-        mod.validate.schema({fieldName: '0123'}).success.should.be.false
-        mod.validate.schema({fieldName: 'qwerty'}).success.should.be.true
+        mod.validateQuery({'fieldMixed.innerProperty': 'foo'}).success.should.be.true
         done()
       })
     })

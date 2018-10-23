@@ -175,28 +175,38 @@ describe('Multi-language', function () {
   })
 
   it('should accept a language variation of a field, separated by the character configured in `i18n.fieldCharacter`', done => {
-    config.set('i18n.fieldCharacter', '=')
-
     let document = {
       title: 'The Little Prince',
       'title=pt': 'O Principezinho'
     }
 
-    client
-    .post('/v1/library/book')
-    .set('Authorization', `Bearer ${bearerToken}`)
-    .send(document)
-    .expect(200)
-    .end((err, res) => {
-      if (err) return done(err)
+    app.stop(() => {
+      config.set('i18n.fieldCharacter', '=')
 
-      res.body.results.length.should.eql(1)
-      res.body.results[0].title.should.eql(document.title)
-      res.body.results[0]['title=pt'].should.eql(document['title=pt'])
+      app.start(() => {
+        help.getBearerTokenWithAccessType('admin', (err, token) => {
+          if (err) return done(err)
 
-      config.set('i18n.fieldCharacter', configBackup.i18n.fieldCharacter)
+          bearerToken = token
 
-      done()
+          client
+          .post('/v1/library/book')
+          .set('Authorization', `Bearer ${bearerToken}`)
+          .send(document)
+          .expect(200)
+          .end((err, res) => {
+            if (err) return done(err)
+
+            res.body.results.length.should.eql(1)
+            res.body.results[0].title.should.eql(document.title)
+            res.body.results[0]['title=pt'].should.eql(document['title=pt'])
+
+            config.set('i18n.fieldCharacter', configBackup.i18n.fieldCharacter)
+
+            done()
+          })
+        })
+      })
     })
   })
 

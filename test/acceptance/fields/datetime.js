@@ -13,7 +13,7 @@ let bearerToken
 let configBackup = config.get()
 let connectionString = 'http://' + config.get('server.host') + ':' + config.get('server.port')
 
-describe.only('DateTime Field', function () {
+describe('DateTime Field', function () {
   before(() => {
     config.set('paths.collections', 'test/acceptance/temp-workspace/collections')
   })

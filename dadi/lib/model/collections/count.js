@@ -29,7 +29,7 @@ function count ({
     query,
     type: 'read'
   }).then(({query}) => {
-    let validation = this.validate.query(query)
+    let validation = this.validateQuery(query)
 
     if (!validation.success) {
       let err = this._createValidationError('Bad Query')

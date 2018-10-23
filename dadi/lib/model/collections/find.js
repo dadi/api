@@ -92,7 +92,7 @@ function find ({
   }
 
   // Run validation.
-  const validation = this.validate.query(query)
+  const validation = this.validateQuery(query)
 
   if (!validation.success) {
     const err = this._createValidationError('Bad Query')

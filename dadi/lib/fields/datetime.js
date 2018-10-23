@@ -15,7 +15,11 @@ function convertDateTimeInQuery (input, schema, recursive) {
   ) {
     let format
 
-    if (schema.format !== 'iso' && schema.format !== 'unix') {
+    if (
+      typeof input !== 'number' &&
+      schema.format !== 'iso' &&
+      schema.format !== 'unix'
+    ) {
       format = schema.format
     }
 

@@ -807,7 +807,7 @@ Model.prototype.validateQuery = function (query) {
     if (key === '$where') {
       response.success = false
       response.errors.push({
-        message: 'Bad query'
+        message: `'$where' is not a valid query operator`
       })
     }
   })

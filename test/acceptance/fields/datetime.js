@@ -528,10 +528,10 @@ describe.only('DateTime Field', function () {
     .end((err, res) => {
       if (err) return done(err)
 
-      res.statusCode.should.eql(500)
+      res.statusCode.should.eql(400)
       res.body.success.should.eql(false)
       res.body.errors[0].field.should.eql('datetime')
-      res.body.errors[0].message.should.eql('Not a valid DateTime value')
+      res.body.errors[0].code.should.eql('ERROR_VALUE_INVALID')
 
       done()
     })

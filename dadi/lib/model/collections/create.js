@@ -39,40 +39,43 @@ function create ({
     documents = [documents]
   }
 
-  // Removing internal API properties from the documents.
-  if (removeInternalProperties) {
-    documents = documents.map(document => {
-      return this.removeInternalProperties(document)
+  documents = documents.map(document => {
+    // Add default value for missing fields.
+    Object.keys(this.schema).forEach(field => {
+      if (
+        this.schema[field].default !== undefined &&
+        document[field] === undefined
+      ) {
+        document[field] = this.schema[field].default
+      }
     })
-  }
+
+    // Removing internal API properties from the documents.
+    if (removeInternalProperties) {
+      document = this.removeInternalProperties(document)
+    }
+
+    return document
+  })
 
   return this.validateAccess({
     client,
     type: 'create'
   }).then(({schema}) => {
-    if (validate) {
-      // Validate each document.
-      let validation
+    if (!validate) return
 
-      documents.forEach(document => {
-        if (validation === undefined || validation.success) {
-          // We validate the document against the schema returned by
-          // `validateAccess`, which may be the original schema or a
-          // subset of it determined by ACL restrictions.
-          validation = this.validate.schema(document, null, schema)
-        }
-      })
+    return this.validator.validateDocuments({
+      documents,
+      schema
+    }).catch(errors => {
+      let error = this._createValidationError('Validation Failed')
 
-      if (!validation.success) {
-        let error = this._createValidationError('Validation Failed')
+      error.success = false
+      error.errors = errors
 
-        error.success = validation.success
-        error.errors = validation.errors
-
-        return Promise.reject(error)
-      }
-    }
-
+      return Promise.reject(error)
+    })
+  }).then(() => {
     let transformQueue = Promise.all(documents.map(document => {
       // Add internal properties to documents
       if (typeof internals === 'object' && internals !== null) {

@@ -58,13 +58,6 @@ function create ({
     return document
   })
 
-  // Removing internal API properties from the documents.
-  if (removeInternalProperties) {
-    documents = documents.map(document => {
-      return this.removeInternalProperties(document)
-    })
-  }
-
   return this.validateAccess({
     client,
     type: 'create'

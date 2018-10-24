@@ -16,6 +16,24 @@ const StorageFactory = require('./../storage/factory')
 const streamifier = require('streamifier')
 const url = require('url')
 
+/**
+ * Block with metadata pertaining to an API collection.
+ *
+ * @typedef {Object} Metadata
+ * @property {Number} page - current page
+ * @property {Number} offset - offset from start of collection
+ * @property {Number} totalCount - total number of documents
+ * @property {Number} totalPages - total number of pages
+ * @property {Number} nextPage - number of next available page
+ * @property {Number} prevPage - number of previous available page
+ */
+
+/**
+ * @typedef {Object} ResultSet
+ * @property {Metadata} metadata - object with collection metadata
+ * @property {Array} results - list of documents
+ */
+
 const MediaController = function (model, server) {
   this.model = model
   this.server = server
@@ -24,6 +42,13 @@ const MediaController = function (model, server) {
 
 MediaController.prototype = new Controller()
 
+/**
+ * Formats the current date as a YYYY/MM/DD(/HH/MM/SS) string,
+ * with the time portion being optional.
+ *
+ * @param  {Boolean} includeTime Whether to include the time
+ * @return {String}
+ */
 MediaController.prototype._formatDate = function (includeTime) {
   let d = new Date()
   let dateParts = [
@@ -58,7 +83,13 @@ MediaController.prototype._signToken = function (obj) {
 }
 
 /**
+ * Searchs for documents in the datbase and returns a
+ * metadata object.
  *
+ * @param   {Object}   req
+ * @param   {Object}   res
+ * @param   {Function} next
+ * @returns {Promise<Metadata>}
  */
 MediaController.prototype.count = function (req, res, next) {
   let path = url.parse(req.url, true)
@@ -81,7 +112,70 @@ MediaController.prototype.count = function (req, res, next) {
 }
 
 /**
+ * Deletes media files and removes their reference from the database.
  *
+ * @param  {Object}   req
+ * @param  {Object}   res
+ * @param  {Function} next
+ * @return {Promise<ResultSet>}
+ */
+MediaController.prototype.delete = function (req, res, next) {
+  let query = req.params.id ? { _id: req.params.id } : req.body.query
+
+  if (!query) return next()
+
+  return acl.access.get(req.dadiApiClient, this.model.aclKey).then(access => {
+    if (access.delete !== true) {
+      return help.sendBackJSON(null, res, next)(
+        acl.createError(req.dadiApiClient)
+      )
+    }
+
+    return this.model.get({
+      query, req
+    })
+  }).then(results => {
+    if (!results.results[0]) {
+      return help.sendBackJSON(404, res, next)()
+    }
+
+    let file = results.results[0]
+
+    // remove physical file
+    let storageHandler = StorageFactory.create(file.fileName)
+
+    return storageHandler.delete(file).then(result => {
+      return this.model.delete({
+        query,
+        req
+      })
+    }).then(({deletedCount, totalCount}) => {
+      if (config.get('feedback')) {
+        // Send 200 with JSON payload.
+        return help.sendBackJSON(200, res, next)(null, {
+          success: true,
+          message: 'Document(s) deleted successfully',
+          deleted: deletedCount,
+          totalCount
+        })
+      }
+
+      // Send 204 with no content.
+      res.statusCode = 204
+      res.end()
+    })
+  }).catch(error => {
+    return help.sendBackJSON(200, res, next)(error)
+  })
+}
+
+/**
+ * Finds documents in the database.
+ *
+ * @param  {Object}   req
+ * @param  {Object}   res
+ * @param  {Function} next
+ * @return {Promise<ResultSet>}
  */
 MediaController.prototype.get = function (req, res, next) {
   let path = url.parse(req.url, true)
@@ -109,7 +203,12 @@ MediaController.prototype.get = function (req, res, next) {
 }
 
 /**
- * Serve a media file from its location.
+ * Serves a media file from its location.
+ *
+ * @param  {Object}   req
+ * @param  {Object}   res
+ * @param  {Function} next
+ * @return {Promise<Stream>}
  */
 MediaController.prototype.getFile = function (req, res, next, route) {
   let storageHandler = StorageFactory.create(req.params.filename)
@@ -144,10 +243,14 @@ MediaController.prototype.getPath = function (fileName) {
   }
 }
 
-MediaController.prototype.put = function (req, res, next) {
-  return this.post(req, res, next)
-}
-
+/**
+ * Processes media uploads and adds their references to the database.
+ *
+ * @param  {Object}   req
+ * @param  {Object}   res
+ * @param  {Function} next
+ * @return {Promise<ResultSet>}
+ */
 MediaController.prototype.post = function (req, res, next) {
   let method = req.method.toLowerCase()
   let token = req.params.token
@@ -340,56 +443,25 @@ MediaController.prototype.post = function (req, res, next) {
   })
 }
 
-MediaController.prototype.delete = function (req, res, next) {
-  let query = req.params.id ? { _id: req.params.id } : req.body.query
-
-  if (!query) return next()
-
-  return acl.access.get(req.dadiApiClient, this.model.aclKey).then(access => {
-    if (access.delete !== true) {
-      return help.sendBackJSON(null, res, next)(
-        acl.createError(req.dadiApiClient)
-      )
-    }
-
-    return this.model.get({
-      query, req
-    })
-  }).then(results => {
-    if (!results.results[0]) {
-      return help.sendBackJSON(404, res, next)()
-    }
-
-    let file = results.results[0]
-
-    // remove physical file
-    let storageHandler = StorageFactory.create(file.fileName)
-
-    return storageHandler.delete(file).then(result => {
-      return this.model.delete({
-        query,
-        req
-      })
-    }).then(({deletedCount, totalCount}) => {
-      if (config.get('feedback')) {
-        // Send 200 with JSON payload.
-        return help.sendBackJSON(200, res, next)(null, {
-          success: true,
-          message: 'Document(s) deleted successfully',
-          deleted: deletedCount,
-          totalCount
-        })
-      }
-
-      // Send 204 with no content.
-      res.statusCode = 204
-      res.end()
-    })
-  }).catch(error => {
-    return help.sendBackJSON(200, res, next)(error)
-  })
+/**
+ * Processes media uploads and adds their references to the database.
+ * This is an alias for `MediaController.prototype.post`.
+ *
+ * @param  {Object}   req
+ * @param  {Object}   res
+ * @param  {Function} next
+ * @return {Promise<ResultSet>}
+ */
+MediaController.prototype.put = function (req, res, next) {
+  return this.post(req, res, next)
 }
 
+/**
+ * Takes a raw media bucket route (e.g. /media/myBucket) and registers
+ * all the associated routes, for signing, uploading and retrieving files.
+ *
+ * @param  {String}   route
+ */
 MediaController.prototype.registerRoutes = function (route) {
   this.route = route
 

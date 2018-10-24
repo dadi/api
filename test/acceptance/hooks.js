@@ -394,7 +394,7 @@ describe('Hooks', function () {
 
         // create a publication
         var publication = {
-          name: 'Test'
+          name: 'Test Hook'
         }
 
         client
@@ -402,25 +402,16 @@ describe('Hooks', function () {
         .send(publication)
         .set('content-type', 'application/json')
         .set('Authorization', 'Bearer ' + bearerToken)
-        .end(function (err, res) {
+        .end((err, res) => {
           if (err) return done(err)
 
-          client
-          .get('/vtest/testdb/publications')
-          .set('Authorization', 'Bearer ' + bearerToken)
-          .end(function (err, res) {
-            if (err) return done(err)
+          var publicationResults = res.body.results
+          publicationResults.length.should.eql(1)
 
-            var publicationResults = res.body.results
-            publicationResults.length.should.eql(1)
+          publicationResults[0]['url'].should.eql('/vtest/testdb/publications')
 
-            console.log(publicationResults)
-
-            publicationResults[0]['url'].should.eql('/vtest/testdb/publications')
-
-            hook.Hook.prototype.load.restore()
-            stopApp(done)
-          })
+          hook.Hook.prototype.load.restore()
+          stopApp(done)
         })
       })
     })

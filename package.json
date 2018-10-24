@@ -46,7 +46,6 @@
     "jsonwebtoken": "^8.0.0",
     "langs": "^2.0.0",
     "length-stream": "^0.1.1",
-    "mime": "^2.3.1",
     "mkdirp": "^0.5.1",
     "moment": "2.19.3",
     "natural": "^0.6.1",

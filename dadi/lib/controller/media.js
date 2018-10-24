@@ -8,7 +8,6 @@ const help = require('./../help')
 const imagesize = require('imagesize')
 const jwt = require('jsonwebtoken')
 const mediaModel = require('./../model/media')
-const mime = require('mime')
 const PassThrough = require('stream').PassThrough
 const path = require('path')
 const sha1 = require('sha1')
@@ -271,7 +270,8 @@ MediaController.prototype.post = function (req, res, next) {
   }
 
   let data = []
-  let fileName = ''
+  let fileName
+  let mimeType
 
   return Promise.resolve(aclCheck).then(() => {
     return new Promise((resolve, reject) => {
@@ -280,17 +280,21 @@ MediaController.prototype.post = function (req, res, next) {
       })
 
       // Listen for event when Busboy finds a file to stream
-      busboy.on('file', (fieldname, file, filename, encoding, mimetype) => {
+      busboy.on('file', (fieldname, file, inputFileName, encoding, inputMimeType) => {
         if (method === 'post' && this.tokenPayloads[token]) {
-          if (this.tokenPayloads[token].fileName &&
-            this.tokenPayloads[token].fileName !== filename) {
+          if (
+            this.tokenPayloads[token].fileName &&
+            this.tokenPayloads[token].fileName !== inputFileName
+          ) {
             return reject(
               new Error('UNEXPECTED_FILENAME')
             )
           }
 
-          if (this.tokenPayloads[token].mimetype &&
-            this.tokenPayloads[token].mimetype !== mimetype) {
+          if (
+            this.tokenPayloads[token].mimetype &&
+            this.tokenPayloads[token].mimetype !== inputMimeType
+          ) {
             return reject(
               new Error('UNEXPECTED_MIMETYPE')
             )
@@ -299,113 +303,70 @@ MediaController.prototype.post = function (req, res, next) {
 
         delete this.tokenPayloads[token]
 
-        fileName = filename
+        fileName = inputFileName
+        mimeType = inputMimeType
 
         file.on('data', chunk => {
           data.push(chunk)
         })
       })
 
-      // Listen for event when Busboy is finished parsing the form
+      // Listen for event when Busboy is finished parsing the form.
       busboy.on('finish', () => {
         let concatenatedData = Buffer.concat(data)
-        let stream = streamifier.createReadStream(concatenatedData)
 
-        let imageSizeStream = new PassThrough()
-        let dataStream = new PassThrough()
-
-        // duplicate the stream so we can use it for the imagesize() request and the
-        // response. this saves requesting the same data a second time.
-        stream.pipe(imageSizeStream)
-        stream.pipe(dataStream)
-
-        // get the image size and format
-        imagesize(imageSizeStream, (err, imageInfo) => {
-          if (err && err !== 'invalid') {
-            return reject(err)
-          }
-
-          let fields = Object.keys(this.model.schema)
-          let obj = {
-            fileName: fileName
-          }
-
-          if (fields.includes('mimetype')) {
-            obj.mimetype = mime.getType(fileName)
-          }
-
-          // Is `imageInfo` available?
-          if (!err) {
-            if (fields.includes('width')) {
-              obj.width = imageInfo.width
-            }
-
-            if (fields.includes('height')) {
-              obj.height = imageInfo.height
-            }
-          }
-
-          // Write the physical file.
-          this.writeFile(
-            req,
-            fileName,
-            mime.getType(fileName),
-            dataStream
-          ).then(result => {
-            if (fields.includes('contentLength')) {
-              obj.contentLength = result.contentLength
-            }
-
-            obj.path = result.path
-
-            // If the method is POST, we are creating a new document.
-            // If not, it's an update.
-            if (method === 'post') {
-              let internals = {
+        this.processFile({
+          data: concatenatedData,
+          fileName,
+          mimeType,
+          req
+        }).then(response => {
+          // If the method is POST, we are creating a new document.
+          // If not, it's an update.
+          if (method === 'post') {
+            return this.model.create({
+              documents: response,
+              internals: {
                 _apiVersion: req.url.split('/')[1],
                 _createdAt: Date.now(),
                 _createdBy: req.dadiApiClient && req.dadiApiClient.clientId
-              }
+              },
+              req,
+              validate: false
+            })
+          }
 
-              return this.model.create({
-                documents: obj,
-                internals,
-                req
-              })
-            }
+          if (!req.params.id) {
+            return reject(
+              new Error('UPDATE_ID_MISSING')
+            )
+          }
 
-            if (!req.params.id) {
-              return reject(
-                new Error('UPDATE_ID_MISSING')
-              )
-            }
-
-            let internals = {
+          return this.model.update({
+            query: {
+              _id: req.params.id
+            },
+            internals: {
               _lastModifiedAt: Date.now(),
               _lastModifiedBy: req.dadiApiClient && req.dadiApiClient.clientId
-            }
-
-            return this.model.update({
-              query: {
-                _id: req.params.id
-              },
-              update: obj,
-              internals,
-              req
-            })
-          }).then(response => {
-            response.results = response.results.map(document => {
-              return mediaModel.formatDocuments(document)
-            })
-
-            resolve(response)
-          }).catch(err => {
-            return help.sendBackJSON(err.statusCode, res, next)(err)
+            },
+            req,
+            update: response,
+            validate: false
+          })          
+        }).then(response => {
+          response.results = response.results.map(document => {
+            return mediaModel.formatDocuments(document)
           })
+
+          resolve(response)
+        }).catch(err => {
+          resolve(
+            help.sendBackJSON(err.statusCode, res, next)(err)
+          )
         })
       })
 
-      // Pipe the HTTP Request into Busboy
       req.pipe(busboy)
     })
   }).then(response => {
@@ -440,6 +401,72 @@ MediaController.prototype.post = function (req, res, next) {
           ]
         })
     }
+  })
+}
+
+/**
+ * Processes the uploaded file and returns a response object containing any
+ * metadata properties that are global to all file types as well as any
+ * additional properties specific to the MIME type in question.
+ *
+ * @param  {Stream} options.data     Uploaded file
+ * @param  {String} options.fileName File name
+ * @param  {String} options.mimeType MIME type
+ * @param  {Object} options.req      Request
+ * @return {Promise<Object>}
+ */
+MediaController.prototype.processFile = function ({
+  data,
+  fileName,
+  mimeType,
+  req
+}) {
+  let stream = streamifier.createReadStream(data)
+  let queue = Promise.resolve({
+    contentLength: data.length,
+    fileName,
+    mimeType
+  })
+  let outputStream = new PassThrough()
+  
+  stream.pipe(outputStream)
+
+  // Setting up any additional streams based on MIME type.
+  switch (mimeType) {
+    case 'image/jpeg':
+    case 'image/png':
+      let imageSizeStream = new PassThrough()
+
+      stream.pipe(imageSizeStream)
+
+      queue = queue.then(response => new Promise((resolve, reject) => {
+        imagesize(imageSizeStream, (error, imageInfo) => {
+          if (error) {
+            return resolve(response)
+          }
+
+          resolve(
+            Object.assign(response, {
+              width: imageInfo.width,
+              height: imageInfo.height
+            })
+          )
+        })
+      }))
+  }
+
+  return queue.then(response => {
+    // Write the physical file.
+    return this.writeFile(
+      req,
+      fileName,
+      mimeType,
+      outputStream
+    ).then(result => {
+      return Object.assign(response, {
+        path: result.path
+      })
+    })
   })
 }
 

@@ -353,7 +353,7 @@ MediaController.prototype.post = function (req, res, next) {
             req,
             update: response,
             validate: false
-          })          
+          })
         }).then(response => {
           response.results = response.results.map(document => {
             return mediaModel.formatDocuments(document)
@@ -428,7 +428,7 @@ MediaController.prototype.processFile = function ({
     mimeType
   })
   let outputStream = new PassThrough()
-  
+
   stream.pipe(outputStream)
 
   // Setting up any additional streams based on MIME type.

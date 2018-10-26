@@ -12,7 +12,7 @@ let bearerToken
 let configBackup = config.get()
 let client = request(`http://${config.get('server.host')}:${config.get('server.port')}`)
 
-describe.only('Media field', () => {
+describe('Media field', () => {
   beforeEach(done => {
     help.dropDatabase('testdb', err => {
       app.start(() => {

@@ -61,7 +61,6 @@
     "streamifier": "^0.1.1",
     "underscore": "1.8.3",
     "underscore-contrib": "^0.3.0",
-    "validator": "9.4.1",
     "vary": "^1.1.2"
   },
   "devDependencies": {

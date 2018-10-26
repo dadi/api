@@ -425,7 +425,11 @@ MediaController.prototype.processFile = function ({
   let queue = Promise.resolve({
     contentLength: data.length,
     fileName,
-    mimeType
+    mimeType,
+
+    // (!) For backward compatibility. To be removed in
+    // version 5.0.0. ¯\_(ツ)_/¯
+    mimetype: mimeType
   })
   let outputStream = new PassThrough()
 

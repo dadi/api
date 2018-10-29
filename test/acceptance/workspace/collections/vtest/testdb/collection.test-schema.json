@@ -16,7 +16,10 @@
       "search": {
         "weight": 2
       }
-    }
+    },
+    "leadImage": {
+      "type": "Media"
+    }    
   },
   "settings": {
     "cache": true,

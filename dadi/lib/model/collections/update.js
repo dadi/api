@@ -115,16 +115,22 @@ function update ({
       isUpdate: true,
       schema
     }).catch(errors => {
-      let error = this._createValidationError('Validation Failed')
-
-      error.success = false
-      error.errors = errors
+      let error = this._createValidationError('Validation Failed', errors)
 
       return Promise.reject(error)
     })
   }).then(() => {
     // Format the query.
     query = this.formatQuery(query)
+
+    return this.find({
+      query
+    })
+  }).then(({results}) => {
+    // Create a copy of the documents that matched the find
+    // query, as these will be updated and we need to send back
+    // to the client a full result set of modified documents.
+    updatedDocuments = results
 
     // Add any internal fields to the update.
     Object.assign(update, internals)
@@ -138,7 +144,8 @@ function update ({
       return result.then(transformedUpdate => {
         return this.runFieldHooks({
           data: {
-            internals
+            internals,
+            updatedDocuments
           },
           field,
           input: {
@@ -151,15 +158,6 @@ function update ({
       })
     }, Promise.resolve({})).then(transformedUpdate => {
       update = transformedUpdate
-
-      return this.find({
-        query
-      })
-    }).then(result => {
-      // Create a copy of the documents that matched the find
-      // query, as these will be updated and we need to send back
-      // to the client a full result set of modified documents.
-      updatedDocuments = result.results
 
       // Run any `beforeUpdate` hooks.
       if (this.settings.hooks && this.settings.hooks.beforeUpdate) {

@@ -302,7 +302,7 @@ describe('Media', function () {
           res.body.results.length.should.eql(1)
 
           res.body.results[0].fileName.should.eql(obj.fileName)
-          res.body.results[0].mimetype.should.eql(obj.mimetype)
+          res.body.results[0].mimeType.should.eql(obj.mimetype)
           res.body.results[0].width.should.eql(512)
           res.body.results[0].height.should.eql(512)
 
@@ -315,7 +315,7 @@ describe('Media', function () {
           .attach('avatar', 'test/acceptance/temp-workspace/media/flowers.jpg')
           .end((err, res) => {
             res.body.results[0].fileName.should.eql('flowers.jpg')
-            res.body.results[0].mimetype.should.eql('image/jpeg')
+            res.body.results[0].mimeType.should.eql('image/jpeg')
             res.body.results[0].width.should.eql(1600)
             res.body.results[0].height.should.eql(1086)
 
@@ -325,7 +325,7 @@ describe('Media', function () {
             .set('Authorization', `Bearer ${bearerToken}`)
             .end((err, res) => {
               res.body.results[0].fileName.should.eql('flowers.jpg')
-              res.body.results[0].mimetype.should.eql('image/jpeg')
+              res.body.results[0].mimeType.should.eql('image/jpeg')
               res.body.results[0].width.should.eql(1600)
               res.body.results[0].height.should.eql(1086)
 

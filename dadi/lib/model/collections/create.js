@@ -68,10 +68,7 @@ function create ({
       documents,
       schema
     }).catch(errors => {
-      let error = this._createValidationError('Validation Failed')
-
-      error.success = false
-      error.errors = errors
+      let error = this._createValidationError('Validation Failed', errors)
 
       return Promise.reject(error)
     })

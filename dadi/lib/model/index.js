@@ -204,10 +204,16 @@ Model.prototype._compileFieldHooks = function () {
  * @api private
  */
 Model.prototype._createValidationError = function (message, data) {
-  const err = new Error(message || 'Model Validation Failed')
-  err.statusCode = 400
+  const error = new Error(message || 'Model Validation Failed')
 
-  return err
+  error.statusCode = 400
+  error.success = false
+
+  if (data) {
+    error.errors = data
+  }
+
+  return error
 }
 
 /**
@@ -637,7 +643,20 @@ Model.prototype.runFieldHooks = function ({
     }
   })
 
-  return queue
+  return queue.catch(error => {
+    let errorData = [
+      {
+        field,
+        message: error.message
+      }
+    ]
+
+    logger.error({module: 'field hooks'}, error)
+
+    return Promise.reject(
+      this._createValidationError('Validation failed', errorData)
+    )
+  })
 }
 
 /**

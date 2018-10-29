@@ -8,13 +8,30 @@ const help = require('./../help')
 const imagesize = require('imagesize')
 const jwt = require('jsonwebtoken')
 const mediaModel = require('./../model/media')
-const mime = require('mime')
 const PassThrough = require('stream').PassThrough
 const path = require('path')
 const sha1 = require('sha1')
 const StorageFactory = require('./../storage/factory')
 const streamifier = require('streamifier')
 const url = require('url')
+
+/**
+ * Block with metadata pertaining to an API collection.
+ *
+ * @typedef {Object} Metadata
+ * @property {Number} page - current page
+ * @property {Number} offset - offset from start of collection
+ * @property {Number} totalCount - total number of documents
+ * @property {Number} totalPages - total number of pages
+ * @property {Number} nextPage - number of next available page
+ * @property {Number} prevPage - number of previous available page
+ */
+
+/**
+ * @typedef {Object} ResultSet
+ * @property {Metadata} metadata - object with collection metadata
+ * @property {Array} results - list of documents
+ */
 
 const MediaController = function (model, server) {
   this.model = model
@@ -24,6 +41,13 @@ const MediaController = function (model, server) {
 
 MediaController.prototype = new Controller()
 
+/**
+ * Formats the current date as a YYYY/MM/DD(/HH/MM/SS) string,
+ * with the time portion being optional.
+ *
+ * @param  {Boolean} includeTime Whether to include the time
+ * @return {String}
+ */
 MediaController.prototype._formatDate = function (includeTime) {
   let d = new Date()
   let dateParts = [
@@ -58,7 +82,13 @@ MediaController.prototype._signToken = function (obj) {
 }
 
 /**
+ * Searchs for documents in the datbase and returns a
+ * metadata object.
  *
+ * @param   {Object}   req
+ * @param   {Object}   res
+ * @param   {Function} next
+ * @returns {Promise<Metadata>}
  */
 MediaController.prototype.count = function (req, res, next) {
   let path = url.parse(req.url, true)
@@ -81,265 +111,13 @@ MediaController.prototype.count = function (req, res, next) {
 }
 
 /**
+ * Deletes media files and removes their reference from the database.
  *
+ * @param  {Object}   req
+ * @param  {Object}   res
+ * @param  {Function} next
+ * @return {Promise<ResultSet>}
  */
-MediaController.prototype.get = function (req, res, next) {
-  let path = url.parse(req.url, true)
-  let query = this._prepareQuery(req, this.model)
-  let parsedOptions = this._prepareQueryOptions(path.query, this.model.settings)
-
-  if (parsedOptions.errors.length > 0) {
-    return help.sendBackJSON(400, res, next)(null, parsedOptions)
-  }
-
-  return this.model.get({
-    client: req.dadiApiClient,
-    options: parsedOptions.queryOptions,
-    query,
-    req
-  }).then(response => {
-    response.results = response.results.map(document => {
-      return mediaModel.formatDocuments(document)
-    })
-
-    help.sendBackJSON(200, res, next)(null, response)
-  }).catch(err => {
-    help.sendBackJSON(500, res, next)(err)
-  })
-}
-
-/**
- * Serve a media file from its location.
- */
-MediaController.prototype.getFile = function (req, res, next, route) {
-  let storageHandler = StorageFactory.create(req.params.filename)
-
-  return storageHandler.get(req.params.filename, route, req, res, next)
-}
-
-/**
- * Generate a folder hierarchy for a file, based on a configuration property
- *
- * @param {string} fileName - the name of the file being uploaded
- */
-MediaController.prototype.getPath = function (fileName) {
-  let reSplitter
-
-  switch (config.get('media.pathFormat')) {
-    case 'sha1/4':
-      reSplitter = new RegExp('.{1,4}', 'g')
-      return sha1(fileName).match(reSplitter).join('/')
-    case 'sha1/5':
-      reSplitter = new RegExp('.{1,5}', 'g')
-      return sha1(fileName).match(reSplitter).join('/')
-    case 'sha1/8':
-      reSplitter = new RegExp('.{1,8}', 'g')
-      return sha1(fileName).match(reSplitter).join('/')
-    case 'date':
-      return this._formatDate()
-    case 'datetime':
-      return this._formatDate(true)
-    default:
-      return ''
-  }
-}
-
-MediaController.prototype.put = function (req, res, next) {
-  return this.post(req, res, next)
-}
-
-MediaController.prototype.post = function (req, res, next) {
-  let method = req.method.toLowerCase()
-  let token = req.params.token
-  let aclCheck
-
-  if (!token) {
-    let accessRequired = method === 'put'
-      ? 'update'
-      : 'create'
-
-    aclCheck = acl.access.get(req.dadiApiClient, this.model.aclKey).then(access => {
-      if (access[accessRequired] !== true) {
-        return Promise.reject(
-          acl.createError(req.dadiApiClient)
-        )
-      }
-    })
-  }
-
-  let data = []
-  let fileName = ''
-
-  return Promise.resolve(aclCheck).then(() => {
-    return new Promise((resolve, reject) => {
-      let busboy = new Busboy({
-        headers: req.headers
-      })
-
-      // Listen for event when Busboy finds a file to stream
-      busboy.on('file', (fieldname, file, filename, encoding, mimetype) => {
-        if (method === 'post' && this.tokenPayloads[token]) {
-          if (this.tokenPayloads[token].fileName &&
-            this.tokenPayloads[token].fileName !== filename) {
-            return reject(
-              new Error('UNEXPECTED_FILENAME')
-            )
-          }
-
-          if (this.tokenPayloads[token].mimetype &&
-            this.tokenPayloads[token].mimetype !== mimetype) {
-            return reject(
-              new Error('UNEXPECTED_MIMETYPE')
-            )
-          }
-        }
-
-        delete this.tokenPayloads[token]
-
-        fileName = filename
-
-        file.on('data', chunk => {
-          data.push(chunk)
-        })
-      })
-
-      // Listen for event when Busboy is finished parsing the form
-      busboy.on('finish', () => {
-        let concatenatedData = Buffer.concat(data)
-        let stream = streamifier.createReadStream(concatenatedData)
-
-        let imageSizeStream = new PassThrough()
-        let dataStream = new PassThrough()
-
-        // duplicate the stream so we can use it for the imagesize() request and the
-        // response. this saves requesting the same data a second time.
-        stream.pipe(imageSizeStream)
-        stream.pipe(dataStream)
-
-        // get the image size and format
-        imagesize(imageSizeStream, (err, imageInfo) => {
-          if (err && err !== 'invalid') {
-            return reject(err)
-          }
-
-          let fields = Object.keys(this.model.schema)
-          let obj = {
-            fileName: fileName
-          }
-
-          if (fields.includes('mimetype')) {
-            obj.mimetype = mime.getType(fileName)
-          }
-
-          // Is `imageInfo` available?
-          if (!err) {
-            if (fields.includes('width')) {
-              obj.width = imageInfo.width
-            }
-
-            if (fields.includes('height')) {
-              obj.height = imageInfo.height
-            }
-          }
-
-          // Write the physical file.
-          this.writeFile(
-            req,
-            fileName,
-            mime.getType(fileName),
-            dataStream
-          ).then(result => {
-            if (fields.includes('contentLength')) {
-              obj.contentLength = result.contentLength
-            }
-
-            obj.path = result.path
-
-            // If the method is POST, we are creating a new document.
-            // If not, it's an update.
-            if (method === 'post') {
-              let internals = {
-                _apiVersion: req.url.split('/')[1],
-                _createdAt: Date.now(),
-                _createdBy: req.dadiApiClient && req.dadiApiClient.clientId
-              }
-
-              return this.model.create({
-                documents: obj,
-                internals,
-                req
-              })
-            }
-
-            if (!req.params.id) {
-              return reject(
-                new Error('UPDATE_ID_MISSING')
-              )
-            }
-
-            let internals = {
-              _lastModifiedAt: Date.now(),
-              _lastModifiedBy: req.dadiApiClient && req.dadiApiClient.clientId
-            }
-
-            return this.model.update({
-              query: {
-                _id: req.params.id
-              },
-              update: obj,
-              internals,
-              req
-            })
-          }).then(response => {
-            response.results = response.results.map(document => {
-              return mediaModel.formatDocuments(document)
-            })
-
-            resolve(response)
-          }).catch(err => {
-            return help.sendBackJSON(err.statusCode, res, next)(err)
-          })
-        })
-      })
-
-      // Pipe the HTTP Request into Busboy
-      req.pipe(busboy)
-    })
-  }).then(response => {
-    help.sendBackJSON(201, res, next)(null, response)
-  }).catch(err => {
-    switch (err.message) {
-      case 'FORBIDDEN':
-      case 'UNAUTHORISED':
-        return help.sendBackJSON(null, res, next)(err)
-
-      case 'UNEXPECTED_FILENAME':
-        return help.sendBackJSON(400, res, next)(null, {
-          success: false,
-          errors: [
-            `Unexpected filename. Expected: ${this.tokenPayloads[token].fileName}`
-          ]
-        })
-
-      case 'UNEXPECTED_MIMETYPE':
-        return help.sendBackJSON(400, res, next)(null, {
-          success: false,
-          errors: [
-            `Unexpected MIME type. Expected: ${this.tokenPayloads[token].mimetype}`
-          ]
-        })
-
-      case 'UPDATE_ID_MISSING':
-        return help.sendBackJSON(405, res, next)({
-          success: false,
-          errors: [
-            'Invalid method. Use POST to upload a new asset or PUT to /{DOCUMENT ID} to update existing'
-          ]
-        })
-    }
-  })
-}
-
 MediaController.prototype.delete = function (req, res, next) {
   let query = req.params.id ? { _id: req.params.id } : req.body.query
 
@@ -390,6 +168,331 @@ MediaController.prototype.delete = function (req, res, next) {
   })
 }
 
+/**
+ * Finds documents in the database.
+ *
+ * @param  {Object}   req
+ * @param  {Object}   res
+ * @param  {Function} next
+ * @return {Promise<ResultSet>}
+ */
+MediaController.prototype.get = function (req, res, next) {
+  let path = url.parse(req.url, true)
+  let query = this._prepareQuery(req, this.model)
+  let parsedOptions = this._prepareQueryOptions(path.query, this.model.settings)
+
+  if (parsedOptions.errors.length > 0) {
+    return help.sendBackJSON(400, res, next)(null, parsedOptions)
+  }
+
+  return this.model.get({
+    client: req.dadiApiClient,
+    options: parsedOptions.queryOptions,
+    query,
+    req
+  }).then(response => {
+    response.results = response.results.map(document => {
+      return mediaModel.formatDocuments(document)
+    })
+
+    help.sendBackJSON(200, res, next)(null, response)
+  }).catch(err => {
+    help.sendBackJSON(500, res, next)(err)
+  })
+}
+
+/**
+ * Serves a media file from its location.
+ *
+ * @param  {Object}   req
+ * @param  {Object}   res
+ * @param  {Function} next
+ * @return {Promise<Stream>}
+ */
+MediaController.prototype.getFile = function (req, res, next, route) {
+  let storageHandler = StorageFactory.create(req.params.filename)
+
+  return storageHandler.get(req.params.filename, route, req, res, next)
+}
+
+/**
+ * Generate a folder hierarchy for a file, based on a configuration property
+ *
+ * @param {string} fileName - the name of the file being uploaded
+ */
+MediaController.prototype.getPath = function (fileName) {
+  let reSplitter
+
+  switch (config.get('media.pathFormat')) {
+    case 'sha1/4':
+      reSplitter = new RegExp('.{1,4}', 'g')
+      return sha1(fileName).match(reSplitter).join('/')
+    case 'sha1/5':
+      reSplitter = new RegExp('.{1,5}', 'g')
+      return sha1(fileName).match(reSplitter).join('/')
+    case 'sha1/8':
+      reSplitter = new RegExp('.{1,8}', 'g')
+      return sha1(fileName).match(reSplitter).join('/')
+    case 'date':
+      return this._formatDate()
+    case 'datetime':
+      return this._formatDate(true)
+    default:
+      return ''
+  }
+}
+
+/**
+ * Processes media uploads and adds their references to the database.
+ *
+ * @param  {Object}   req
+ * @param  {Object}   res
+ * @param  {Function} next
+ * @return {Promise<ResultSet>}
+ */
+MediaController.prototype.post = function (req, res, next) {
+  let method = req.method.toLowerCase()
+  let token = req.params.token
+  let aclCheck
+
+  if (!token) {
+    let accessRequired = method === 'put'
+      ? 'update'
+      : 'create'
+
+    aclCheck = acl.access.get(req.dadiApiClient, this.model.aclKey).then(access => {
+      if (access[accessRequired] !== true) {
+        return Promise.reject(
+          acl.createError(req.dadiApiClient)
+        )
+      }
+    })
+  }
+
+  let data = []
+  let fileName
+  let mimeType
+
+  return Promise.resolve(aclCheck).then(() => {
+    return new Promise((resolve, reject) => {
+      let busboy = new Busboy({
+        headers: req.headers
+      })
+
+      // Listen for event when Busboy finds a file to stream
+      busboy.on('file', (fieldname, file, inputFileName, encoding, inputMimeType) => {
+        if (method === 'post' && this.tokenPayloads[token]) {
+          if (
+            this.tokenPayloads[token].fileName &&
+            this.tokenPayloads[token].fileName !== inputFileName
+          ) {
+            return reject(
+              new Error('UNEXPECTED_FILENAME')
+            )
+          }
+
+          if (
+            this.tokenPayloads[token].mimetype &&
+            this.tokenPayloads[token].mimetype !== inputMimeType
+          ) {
+            return reject(
+              new Error('UNEXPECTED_MIMETYPE')
+            )
+          }
+        }
+
+        delete this.tokenPayloads[token]
+
+        fileName = inputFileName
+        mimeType = inputMimeType
+
+        file.on('data', chunk => {
+          data.push(chunk)
+        })
+      })
+
+      // Listen for event when Busboy is finished parsing the form.
+      busboy.on('finish', () => {
+        let concatenatedData = Buffer.concat(data)
+
+        this.processFile({
+          data: concatenatedData,
+          fileName,
+          mimeType,
+          req
+        }).then(response => {
+          // If the method is POST, we are creating a new document.
+          // If not, it's an update.
+          if (method === 'post') {
+            return this.model.create({
+              documents: response,
+              internals: {
+                _apiVersion: req.url.split('/')[1],
+                _createdAt: Date.now(),
+                _createdBy: req.dadiApiClient && req.dadiApiClient.clientId
+              },
+              req,
+              validate: false
+            })
+          }
+
+          if (!req.params.id) {
+            return reject(
+              new Error('UPDATE_ID_MISSING')
+            )
+          }
+
+          return this.model.update({
+            query: {
+              _id: req.params.id
+            },
+            internals: {
+              _lastModifiedAt: Date.now(),
+              _lastModifiedBy: req.dadiApiClient && req.dadiApiClient.clientId
+            },
+            req,
+            update: response,
+            validate: false
+          })
+        }).then(response => {
+          response.results = response.results.map(document => {
+            return mediaModel.formatDocuments(document)
+          })
+
+          resolve(response)
+        }).catch(err => {
+          resolve(
+            help.sendBackJSON(err.statusCode, res, next)(err)
+          )
+        })
+      })
+
+      req.pipe(busboy)
+    })
+  }).then(response => {
+    help.sendBackJSON(201, res, next)(null, response)
+  }).catch(err => {
+    switch (err.message) {
+      case 'FORBIDDEN':
+      case 'UNAUTHORISED':
+        return help.sendBackJSON(null, res, next)(err)
+
+      case 'UNEXPECTED_FILENAME':
+        return help.sendBackJSON(400, res, next)(null, {
+          success: false,
+          errors: [
+            `Unexpected filename. Expected: ${this.tokenPayloads[token].fileName}`
+          ]
+        })
+
+      case 'UNEXPECTED_MIMETYPE':
+        return help.sendBackJSON(400, res, next)(null, {
+          success: false,
+          errors: [
+            `Unexpected MIME type. Expected: ${this.tokenPayloads[token].mimetype}`
+          ]
+        })
+
+      case 'UPDATE_ID_MISSING':
+        return help.sendBackJSON(405, res, next)({
+          success: false,
+          errors: [
+            'Invalid method. Use POST to upload a new asset or PUT to /{DOCUMENT ID} to update existing'
+          ]
+        })
+    }
+  })
+}
+
+/**
+ * Processes the uploaded file and returns a response object containing any
+ * metadata properties that are global to all file types as well as any
+ * additional properties specific to the MIME type in question.
+ *
+ * @param  {Stream} options.data     Uploaded file
+ * @param  {String} options.fileName File name
+ * @param  {String} options.mimeType MIME type
+ * @param  {Object} options.req      Request
+ * @return {Promise<Object>}
+ */
+MediaController.prototype.processFile = function ({
+  data,
+  fileName,
+  mimeType,
+  req
+}) {
+  let stream = streamifier.createReadStream(data)
+  let queue = Promise.resolve({
+    contentLength: data.length,
+    fileName,
+    mimeType,
+
+    // (!) For backward compatibility. To be removed in
+    // version 5.0.0. ¯\_(ツ)_/¯
+    mimetype: mimeType
+  })
+  let outputStream = new PassThrough()
+
+  stream.pipe(outputStream)
+
+  // Setting up any additional streams based on MIME type.
+  switch (mimeType) {
+    case 'image/jpeg':
+    case 'image/png':
+      let imageSizeStream = new PassThrough()
+
+      stream.pipe(imageSizeStream)
+
+      queue = queue.then(response => new Promise((resolve, reject) => {
+        imagesize(imageSizeStream, (error, imageInfo) => {
+          if (error) {
+            return resolve(response)
+          }
+
+          resolve(
+            Object.assign(response, {
+              width: imageInfo.width,
+              height: imageInfo.height
+            })
+          )
+        })
+      }))
+  }
+
+  return queue.then(response => {
+    // Write the physical file.
+    return this.writeFile(
+      req,
+      fileName,
+      mimeType,
+      outputStream
+    ).then(result => {
+      return Object.assign(response, {
+        path: result.path
+      })
+    })
+  })
+}
+
+/**
+ * Processes media uploads and adds their references to the database.
+ * This is an alias for `MediaController.prototype.post`.
+ *
+ * @param  {Object}   req
+ * @param  {Object}   res
+ * @param  {Function} next
+ * @return {Promise<ResultSet>}
+ */
+MediaController.prototype.put = function (req, res, next) {
+  return this.post(req, res, next)
+}
+
+/**
+ * Takes a raw media bucket route (e.g. /media/myBucket) and registers
+ * all the associated routes, for signing, uploading and retrieving files.
+ *
+ * @param  {String}   route
+ */
 MediaController.prototype.registerRoutes = function (route) {
   this.route = route
 

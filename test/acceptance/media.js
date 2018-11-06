@@ -287,6 +287,29 @@ describe('Media', function () {
             done()
           })
         })
+
+        it('should return an error when uploading multiple files', function (done) {
+          client
+          .post('/media/sign')
+          .set('Authorization', `Bearer ${bearerToken}`)
+          .set('content-type', 'application/json')
+          .send({})
+          .end((err, res) => {
+            if (err) return (err)
+
+            client
+            .post(res.body.url)
+            .set('content-type', 'application/json')
+            .attach('avatar', 'test/acceptance/temp-workspace/media/1f525.png')
+            .attach('avatar', 'test/acceptance/temp-workspace/media/flowers.jpg')
+            .end((err, res) => {
+              res.statusCode.should.eql(400)
+              res.body.errors[0].should.eql('Multiple file upload with signed URLs not supported')
+
+              done(err)
+            })
+          })
+        })
       })
 
       describe('with access token', () => {

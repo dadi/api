@@ -133,17 +133,19 @@ MediaController.prototype.delete = function (req, res, next) {
     return this.model.get({
       query, req
     })
-  }).then(results => {
-    if (!results.results[0]) {
+  }).then(({results}) => {
+    if (results.length === 0) {
       return help.sendBackJSON(404, res, next)()
     }
 
-    let file = results.results[0]
+    let deleteQueue = results.map(file => {
+      // Remove physical file.
+      let storageHandler = StorageFactory.create(file.fileName)
 
-    // remove physical file
-    let storageHandler = StorageFactory.create(file.fileName)
+      return storageHandler.delete(file)
+    })
 
-    return storageHandler.delete(file).then(result => {
+    return Promise.all(deleteQueue).then(result => {
       return this.model.delete({
         query,
         req
@@ -269,9 +271,7 @@ MediaController.prototype.post = function (req, res, next) {
     })
   }
 
-  let data = []
-  let fileName
-  let mimeType
+  let files = []
 
   return Promise.resolve(aclCheck).then(() => {
     return new Promise((resolve, reject) => {
@@ -280,78 +280,116 @@ MediaController.prototype.post = function (req, res, next) {
       })
 
       // Listen for event when Busboy finds a file to stream
-      busboy.on('file', (fieldname, file, inputFileName, encoding, inputMimeType) => {
+      busboy.on('file', (fieldName, file, inputFileName, encoding, inputMimeType) => {
         if (method === 'post' && this.tokenPayloads[token]) {
-          if (
-            this.tokenPayloads[token].fileName &&
-            this.tokenPayloads[token].fileName !== inputFileName
-          ) {
+          let tokenFileName = this.tokenPayloads[token].fileName
+          let tokenMimeType = this.tokenPayloads[token].mimeType || this.tokenPayloads[token].mimetype
+
+          if (tokenFileName && tokenFileName !== inputFileName) {
             return reject(
               new Error('UNEXPECTED_FILENAME')
             )
           }
 
-          if (
-            this.tokenPayloads[token].mimetype &&
-            this.tokenPayloads[token].mimetype !== inputMimeType
-          ) {
+          if (tokenMimeType && tokenMimeType !== inputMimeType) {
             return reject(
               new Error('UNEXPECTED_MIMETYPE')
             )
           }
+
+          if (files.length > 0) {
+            return reject(
+              new Error('UNEXPECTED_NUMBER_OF_FILES')
+            )
+          }
         }
 
-        delete this.tokenPayloads[token]
+        // This array will be used to store the data chunks for this particular
+        // file. We'll keep a reference to it so that we can write to it on the
+        // "data" event, but we'll also add it to the files array so that we can
+        // reference it later.
+        let data = []
 
-        fileName = inputFileName
-        mimeType = inputMimeType
+        files.push({
+          data,
+          fileName: inputFileName,
+          mimeType: inputMimeType
+        })
 
         file.on('data', chunk => {
           data.push(chunk)
         })
       })
 
-      // Listen for event when Busboy is finished parsing the form.
       busboy.on('finish', () => {
-        let concatenatedData = Buffer.concat(data)
+        delete this.tokenPayloads[token]
 
-        this.processFile({
-          data: concatenatedData,
-          fileName,
-          mimeType,
-          req
-        }).then(response => {
-          // If the method is POST, we are creating a new document.
-          // If not, it's an update.
-          if (method === 'post') {
-            return this.model.create({
-              documents: response,
-              internals: {
-                _apiVersion: req.url.split('/')[1],
-                _createdAt: Date.now(),
-                _createdBy: req.dadiApiClient && req.dadiApiClient.clientId
-              },
-              req,
-              validate: false
-            })
-          }
-
+        // If the method is PUT, we are updating a media document. As such,
+        // we don't support the upload of multiple files and consider the
+        // first one only.
+        if (method === 'put') {
           if (!req.params.id) {
             return reject(
               new Error('UPDATE_ID_MISSING')
             )
           }
 
-          return this.model.update({
-            query: {
-              _id: req.params.id
-            },
+          let {data, fileName, mimeType} = files[0]
+
+          return this.processFile({
+            data: Buffer.concat(data),
+            fileName,
+            mimeType,
+            req
+          }).then(response => {
+            return this.model.update({
+              query: {
+                _id: req.params.id
+              },
+              internals: {
+                _lastModifiedAt: Date.now(),
+                _lastModifiedBy: req.dadiApiClient && req.dadiApiClient.clientId
+              },
+              req,
+              update: response,
+              validate: false
+            })
+          }).then(response => {
+            response.results = response.results.map(document => {
+              return mediaModel.formatDocuments(document)
+            })
+
+            resolve(response)
+          }).catch(err => {
+            resolve(
+              help.sendBackJSON(err.statusCode, res, next)(err)
+            )
+          })
+        }
+
+        // If we're here, it means we're dealing with the creation of new media
+        // documents, in which case we can accept the upload of multiple files.
+        // We'll process them one by one and then craft the response at the end.
+        let processedFiles = files.map(file => {
+          let {data, fileName, mimeType} = file
+
+          return this.processFile({
+            data: Buffer.concat(data),
+            fileName,
+            mimeType,
+            req
+          })
+        })
+
+        return Promise.all(processedFiles).then(documents => {
+          return this.model.create({
+            documents,
             internals: {
-              _lastModifiedAt: Date.now(),
-              _lastModifiedBy: req.dadiApiClient && req.dadiApiClient.clientId
+              _apiVersion: req.url.split('/')[1],
+              _createdAt: Date.now(),
+              _createdBy: req.dadiApiClient && req.dadiApiClient.clientId
             },
             req,
-            update: response,
             validate: false
           })
         }).then(response => {
@@ -382,6 +420,14 @@ MediaController.prototype.post = function (req, res, next) {
           success: false,
           errors: [
             `Unexpected filename. Expected: ${this.tokenPayloads[token].fileName}`
+          ]
+        })
+
+      case 'UNEXPECTED_NUMBER_OF_FILES':
+        return help.sendBackJSON(400, res, next)(null, {
+          success: false,
+          errors: [
+            'Multiple file upload with signed URLs not supported'
           ]
         })
 
@@ -596,13 +642,15 @@ MediaController.prototype.registerRoutes = function (route) {
     }
   })
 
-  // Retrieve media documents.
+  // Retrieve or delete media documents.
   this.server.app.use(route, (req, res, next) => {
-    if (req.method.toLowerCase() !== 'get') {
+    let method = req.method && req.method.toLowerCase()
+
+    if (method !== 'get' && method !== 'delete') {
       return help.sendBackJSON(405, res, next)()
     }
 
-    return this.get(req, res, next)
+    return this[method](req, res, next)
   })
 
   // Serve media files.

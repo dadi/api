@@ -245,47 +245,85 @@ describe('Media', function () {
     })
 
     describe('POST', function () {
-      it('should return an error if specified token has expired', function (done) {
-        var obj = {
-          fileName: '1f525.png'
-        }
+      describe('with signed URL', () => {
+        it('should return an error if specified token has expired', function (done) {
+          var obj = {
+            fileName: '1f525.png'
+          }
 
-        sinon.stub(MediaController.MediaController.prototype, '_signToken').callsFake(function (obj) {
-          return jwt.sign(obj, config.get('media.tokenSecret'), { expiresIn: 0 })
+          sinon.stub(MediaController.MediaController.prototype, '_signToken').callsFake(function (obj) {
+            return jwt.sign(obj, config.get('media.tokenSecret'), { expiresIn: 0 })
+          })
+
+          signAndUpload(obj, (err, res) => {
+            MediaController.MediaController.prototype._signToken.restore()
+            res.statusCode.should.eql(400)
+            res.body.name.should.eql('TokenExpiredError')
+            done()
+          })
         })
 
-        signAndUpload(obj, (err, res) => {
-          MediaController.MediaController.prototype._signToken.restore()
-          res.statusCode.should.eql(400)
-          res.body.name.should.eql('TokenExpiredError')
-          done()
+        it('should return an error if posted filename does not match token payload', function (done) {
+          var obj = {
+            fileName: 'test.jpg'
+          }
+
+          signAndUpload(obj, (err, res) => {
+            res.statusCode.should.eql(400)
+            res.body.errors[0].includes('Unexpected filename').should.eql(true)
+            done()
+          })
+        })
+
+        it('should return an error if posted mimetype does not match token payload', function (done) {
+          var obj = {
+            fileName: '1f525.png',
+            mimetype: 'image/jpeg'
+          }
+
+          signAndUpload(obj, (err, res) => {
+            res.statusCode.should.eql(400)
+            res.body.errors[0].includes('Unexpected MIME type').should.eql(true)
+            done()
+          })
         })
       })
 
-      it('should return an error if posted filename does not match token payload', function (done) {
-        var obj = {
-          fileName: 'test.jpg'
-        }
+      describe('with access token', () => {
+        it('should handle the upload of a single file', done => {
+          client
+          .post('/media/upload')
+          .set('Authorization', `Bearer ${bearerToken}`)
+          .set('content-type', 'application/json')
+          .attach('file1', 'test/acceptance/temp-workspace/media/1f525.png')
+          .end((err, res) => {
+            res.body.results.length.should.eql(1)
+            res.body.results[0].fileName.should.eql('1f525.png')
+            res.body.results[0].mimeType.should.eql('image/png')
 
-        signAndUpload(obj, (err, res) => {
-          res.statusCode.should.eql(400)
-          res.body.errors[0].includes('Unexpected filename').should.eql(true)
-          done()
+            done(err)
+          })
+        })
+
+        it('should handle the upload of multiple files', done => {
+          client
+          .post('/media/upload')
+          .set('Authorization', `Bearer ${bearerToken}`)
+          .set('content-type', 'application/json')
+          .attach('file1', 'test/acceptance/temp-workspace/media/1f525.png')
+          .attach('file2', 'test/acceptance/temp-workspace/media/flowers.jpg')
+          .end((err, res) => {
+            res.body.results.length.should.eql(2)
+            res.body.results[0].fileName.should.eql('1f525.png')
+            res.body.results[0].mimeType.should.eql('image/png')
+            res.body.results[1].fileName.should.eql('flowers.jpg')
+            res.body.results[1].mimeType.should.eql('image/jpeg')
+
+            done(err)
+          })
         })
       })
 
-      it('should return an error if posted mimetype does not match token payload', function (done) {
-        var obj = {
-          fileName: '1f525.png',
-          mimetype: 'image/jpeg'
-        }
-
-        signAndUpload(obj, (err, res) => {
-          res.statusCode.should.eql(400)
-          res.body.errors[0].includes('Unexpected MIME type').should.eql(true)
-          done()
-        })
-      })
     })
 
     describe('PUT', function () {
@@ -772,19 +810,20 @@ describe('Media', function () {
     })
 
     describe('DELETE', function () {
-      let bearerToken
+      let deleteBearerToken
 
       beforeEach(done => {
         help.getBearerTokenWithPermissions({
           resources: {
             'media:mediaStore': {
-              delete: true
+              delete: true,
+              read: true
             }
           }
         }, (err, token) => {
           if (err) return done(err)
 
-          bearerToken = token
+          deleteBearerToken = token
 
           done()
         })
@@ -863,7 +902,7 @@ describe('Media', function () {
 
           client
           .delete('/media/' + res.body.results[0]._id)
-          .set('Authorization', `Bearer ${bearerToken}`)
+          .set('Authorization', `Bearer ${deleteBearerToken}`)
           .set('content-type', 'application/json')
           .expect(200)
           .end((err, res) => {
@@ -871,6 +910,64 @@ describe('Media', function () {
             res.body.success.should.eql(true)
             res.body.deleted.should.eql(1)
             done()
+          })
+        })
+      })
+
+      it('should allow deleting media by query', function (done) {
+        config.set('feedback', true)
+
+        let objects = [
+          {
+            fileName: '1f525.png',
+            mimeType: 'image/png'
+          },
+          {
+            fileName: 'flowers.jpg',
+            mimeType: 'image/jpeg'
+          }
+        ]
+
+        client
+        .post('/media/upload')
+        .set('Authorization', `Bearer ${bearerToken}`)
+        .set('content-type', 'application/json')
+        .attach('file1', 'test/acceptance/temp-workspace/media/1f525.png')
+        .attach('file2', 'test/acceptance/temp-workspace/media/flowers.jpg')
+        .end((err, res) => {
+          res.body.results.length.should.eql(2)
+          res.body.results[0].fileName.should.eql('1f525.png')
+          res.body.results[0].mimeType.should.eql('image/png')
+          res.body.results[1].fileName.should.eql('flowers.jpg')
+          res.body.results[1].mimeType.should.eql('image/jpeg')
+
+          client
+          .delete('/media')
+          .send({
+            query: {
+              mimeType: {
+                $in: ['image/jpeg', 'image/png']
+              }
+            }
+          })
+          .set('Authorization', `Bearer ${deleteBearerToken}`)
+          .set('content-type', 'application/json')
+          .expect(200)
+          .end((err, res) => {
+            console.log(res.body)
+            res.body.success.should.eql(true)
+            res.body.deleted.should.eql(2)
+
+            client
+            .get('/media')
+            .set('Authorization', `Bearer ${bearerToken}`)
+            .set('content-type', 'application/json')
+            .expect(200)
+            .end((err, res) => {
+              res.body.results.length.should.eql(0)
+
+              done(err)
+            })
           })
         })
       })

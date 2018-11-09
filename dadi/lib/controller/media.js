@@ -276,8 +276,19 @@ MediaController.prototype.post = function (req, res, next) {
 
   return Promise.resolve(aclCheck).then(() => {
     return new Promise((resolve, reject) => {
+      // This variable will be used to track whether something has thrown
+      // an error that should stop the request in its tracks. Calling the
+      // `rejectAndAbort` function will take care of rejecting the Promise
+      // and setting `hasErrors` accordingly.
+      let hasErrors = false
+      let rejectAndAbort = error => {
+        hasErrors = true
+
+        reject(error)
+      }
+
       if (method === 'put' && !req.params.id) {
-        return reject(
+        return rejectAndAbort(
           new Error('UPDATE_ID_MISSING')
         )
       }
@@ -292,7 +303,7 @@ MediaController.prototype.post = function (req, res, next) {
           let parsedUpdate = JSON.parse(value)
 
           if (!mediaModel.isValidUpdate(parsedUpdate)) {
-            return reject(
+            return rejectAndAbort(
               new Error('UPDATE_INVALID_FIELDS')
             )
           }
@@ -310,19 +321,19 @@ MediaController.prototype.post = function (req, res, next) {
           let tokenMimeType = this.tokenPayloads[token].mimeType || this.tokenPayloads[token].mimetype
 
           if (tokenFileName && tokenFileName !== inputFileName) {
-            return reject(
+            return rejectAndAbort(
               new Error('UNEXPECTED_FILENAME')
             )
           }
 
           if (tokenMimeType && tokenMimeType !== inputMimeType) {
-            return reject(
+            return rejectAndAbort(
               new Error('UNEXPECTED_MIMETYPE')
             )
           }
 
           if (files.length > 0) {
-            return reject(
+            return rejectAndAbort(
               new Error('UNEXPECTED_NUMBER_OF_FILES')
             )
           }
@@ -347,6 +358,10 @@ MediaController.prototype.post = function (req, res, next) {
 
       busboy.on('finish', () => {
         delete this.tokenPayloads[token]
+
+        // If there's something upstream that has thrown an error, there's
+        // nothing left to do here.
+        if (hasErrors) return
 
         // If the method is PUT, we are updating a media document. As such,
         // we don't support the upload of multiple files and consider the

@@ -287,10 +287,39 @@ MediaController.prototype.post = function (req, res, next) {
         reject(error)
       }
 
-      if (method === 'put' && !req.params.id) {
-        return rejectAndAbort(
-          new Error('UPDATE_ID_MISSING')
-        )
+      if (method === 'put') {
+        if (!req.params.id) {
+          return rejectAndAbort(
+            new Error('UPDATE_ID_MISSING')
+          )
+        }
+
+        // If we're updating a document, we can accept an application/json
+        // request. We treat it as an update to the metadata properties only.
+        if (req.headers['content-type'] === 'application/json') {
+          let update = req.body
+
+          if (!mediaModel.isValidUpdate(update)) {
+            return rejectAndAbort(
+              new Error('UPDATE_INVALID_FIELDS')
+            )
+          }
+
+          return resolve(
+            this.model.update({
+              query: {
+                _id: req.params.id
+              },
+              internals: {
+                _lastModifiedAt: Date.now(),
+                _lastModifiedBy: req.dadiApiClient && req.dadiApiClient.clientId
+              },
+              req,
+              update,
+              validate: false
+            })
+          )
+        }
       }
 
       let busboy = new Busboy({
@@ -437,6 +466,8 @@ MediaController.prototype.post = function (req, res, next) {
 
     help.sendBackJSON(201, res, next)(null, response)
   }).catch(err => {
+    log.error({module: 'media controller'}, err)
+
     switch (err.message) {
       case 'FORBIDDEN':
       case 'UNAUTHORISED':
@@ -488,6 +519,20 @@ MediaController.prototype.post = function (req, res, next) {
         })
 
       default:
+        if (err.message.includes('Unsupported content type')) {
+          let expectedContentTypes = method === 'put'
+            ? ['application/json', 'multipart/form-data']
+            : ['multipart/form-data']
+
+          return help.sendBackJSON(400, res, next)({
+            statusCode: 400,
+            success: false,
+            errors: [
+              `Unexpected content type: ${req.headers['content-type']}. Expected: ${expectedContentTypes.join(', ')}`
+            ]
+          })
+        }
+
         help.sendBackJSON(err.statusCode || 400, res, next)(err)
     }
   })

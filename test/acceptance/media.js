@@ -494,10 +494,8 @@ describe('Media', function () {
             .set('content-type', 'application/json')
             .set('Authorization', `Bearer ${bearerToken}`)
             .end((err, res) => {
-              res.body.results[0].fileName.should.eql('flowers.jpg')
-              res.body.results[0].mimeType.should.eql('image/jpeg')
-              res.body.results[0].width.should.eql(1600)
-              res.body.results[0].height.should.eql(1086)
+              res.body.results[0].fileName.should.eql(obj.fileName)
+              res.body.results[0].mimeType.should.eql(obj.mimetype)
               should.not.exist(res.body.results[0].altText)
               res.body.results[0]._createdBy.should.not.eql(metadataUpdate._createdBy)
 

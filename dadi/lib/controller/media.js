@@ -458,13 +458,15 @@ MediaController.prototype.post = function (req, res, next) {
       req.pipe(busboy)
     })
   }).then(response => {
+    let statusCode = method === 'post' ? 201 : 200
+
     if (response.results) {
       response.results = response.results.map(document => {
         return mediaModel.formatDocuments(document)
       })
     }
 
-    help.sendBackJSON(201, res, next)(null, response)
+    help.sendBackJSON(statusCode, res, next)(null, response)
   }).catch(err => {
     log.error({module: 'media controller'}, err)
 

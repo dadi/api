@@ -7,6 +7,29 @@ const MediaModel = function (document) {
   this.document = document
 }
 
+MediaModel.prototype.formatDocuments = function (documents) {
+  const multiple = documents instanceof Array
+  const output = (multiple ? documents : [documents]).map(document => {
+    const formattedDocument = Object.assign({}, document)
+
+    // Is this a relative path to a file in the disk? If so, we need to prepend
+    // the API URL.
+    if (formattedDocument.path && formattedDocument.path.indexOf('/') === 0) {
+      formattedDocument.url = this.getURLForPath(formattedDocument.path)
+    }
+
+    // To maintain backwards compatibility.
+    formattedDocument.mimeType = formattedDocument.mimeType ||
+      formattedDocument.mimetype
+
+    delete formattedDocument._apiVersion
+
+    return formattedDocument
+  })
+
+  return multiple ? output : output[0]
+}
+
 // At some point we'll return a different schema based on MIME type, but for
 // now we hardcode this one.
 MediaModel.prototype.getSchema = function () {
@@ -42,7 +65,7 @@ MediaModel.prototype.getSchema = function () {
         comments: 'The asset height',
         required: false
       },
-      mimetype: {
+      mimeType: {
         type: 'String',
         label: 'MIME type',
         comments: 'The asset mime type',
@@ -61,29 +84,25 @@ MediaModel.prototype.getSchema = function () {
   }
 }
 
-MediaModel.prototype.formatDocuments = function (documents) {
-  const multiple = documents instanceof Array
-  const output = (multiple ? documents : [documents]).map(document => {
-    const formattedDocument = Object.assign({}, document)
-
-    // Is this a relative path to a file in the disk? If so, we need to prepend
-    // the API URL.
-    if (formattedDocument.path && formattedDocument.path.indexOf('/') === 0) {
-      formattedDocument.url = this.getURLForPath(formattedDocument.path)
-    }
-
-    delete formattedDocument._apiVersion
-
-    return formattedDocument
-  })
-
-  return multiple ? output : output[0]
-}
-
 MediaModel.prototype.getURLForPath = function (path) {
-  const portString = config.get('publicUrl.port') ? `:${config.get('publicUrl.port')}` : ''
+  const portString = config.get('publicUrl.port')
+    ? `:${config.get('publicUrl.port')}`
+    : ''
 
   return `${config.get('publicUrl.protocol')}://${config.get('publicUrl.host')}${portString}${path}`
+}
+
+MediaModel.prototype.isValidUpdate = function (update) {
+  let reservedProperties = Object.keys(this.getSchema().fields)
+  let hasReservedFields = Object.keys(update).some(field => {
+    if (field.indexOf(config.get('internalFieldsPrefix')) === 0) {
+      return true
+    }
+
+    return Boolean(reservedProperties[field])
+  })
+
+  return !hasReservedFields
 }
 
 module.exports = new MediaModel()

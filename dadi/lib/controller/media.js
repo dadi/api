@@ -7,6 +7,7 @@ const Controller = require('./index')
 const help = require('./../help')
 const imagesize = require('imagesize')
 const jwt = require('jsonwebtoken')
+const log = require('@dadi/logger')
 const mediaModel = require('./../model/media')
 const PassThrough = require('stream').PassThrough
 const path = require('path')
@@ -275,8 +276,31 @@ MediaController.prototype.post = function (req, res, next) {
 
   return Promise.resolve(aclCheck).then(() => {
     return new Promise((resolve, reject) => {
+      if (method === 'put' && !req.params.id) {
+        return reject(
+          new Error('UPDATE_ID_MISSING')
+        )
+      }
+
       let busboy = new Busboy({
         headers: req.headers
+      })
+      let userData = {}
+
+      busboy.on('field', (fieldName, value) => {
+        try {
+          let parsedUpdate = JSON.parse(value)
+
+          if (!mediaModel.isValidUpdate(parsedUpdate)) {
+            return reject(
+              new Error('UPDATE_INVALID_FIELDS')
+            )
+          }
+
+          Object.assign(userData, parsedUpdate)
+        } catch (error) {
+          log.error({module: 'media controller'}, error)
+        }
       })
 
       // Listen for event when Busboy finds a file to stream
@@ -328,43 +352,29 @@ MediaController.prototype.post = function (req, res, next) {
         // we don't support the upload of multiple files and consider the
         // first one only.
         if (method === 'put') {
-          if (!req.params.id) {
-            return reject(
-              new Error('UPDATE_ID_MISSING')
-            )
-          }
-
           let {data, fileName, mimeType} = files[0]
 
-          return this.processFile({
-            data: Buffer.concat(data),
-            fileName,
-            mimeType,
-            req
-          }).then(response => {
-            return this.model.update({
-              query: {
-                _id: req.params.id
-              },
-              internals: {
-                _lastModifiedAt: Date.now(),
-                _lastModifiedBy: req.dadiApiClient && req.dadiApiClient.clientId
-              },
-              req,
-              update: response,
-              validate: false
+          return resolve(
+            this.processFile({
+              data: Buffer.concat(data),
+              fileName,
+              mimeType,
+              req
+            }).then(response => {
+              return this.model.update({
+                query: {
+                  _id: req.params.id
+                },
+                internals: {
+                  _lastModifiedAt: Date.now(),
+                  _lastModifiedBy: req.dadiApiClient && req.dadiApiClient.clientId
+                },
+                req,
+                update: Object.assign({}, userData, response),
+                validate: false
+              })
             })
-          }).then(response => {
-            response.results = response.results.map(document => {
-              return mediaModel.formatDocuments(document)
-            })
-
-            resolve(response)
-          }).catch(err => {
-            resolve(
-              help.sendBackJSON(err.statusCode, res, next)(err)
-            )
-          })
+          )
         }
 
         // If we're here, it means we're dealing with the creation of new media
@@ -382,25 +392,21 @@ MediaController.prototype.post = function (req, res, next) {
         })
 
         return Promise.all(processedFiles).then(documents => {
-          return this.model.create({
-            documents,
-            internals: {
-              _apiVersion: req.url.split('/')[1],
-              _createdAt: Date.now(),
-              _createdBy: req.dadiApiClient && req.dadiApiClient.clientId
-            },
-            req,
-            validate: false
-          })
-        }).then(response => {
-          response.results = response.results.map(document => {
-            return mediaModel.formatDocuments(document)
+          let documentsWithUserData = documents.map(document => {
+            return Object.assign({}, userData, document)
           })
 
-          resolve(response)
-        }).catch(err => {
           resolve(
-            help.sendBackJSON(err.statusCode, res, next)(err)
+            this.model.create({
+              documents: documentsWithUserData,
+              internals: {
+                _apiVersion: req.url.split('/')[1],
+                _createdAt: Date.now(),
+                _createdBy: req.dadiApiClient && req.dadiApiClient.clientId
+              },
+              req,
+              validate: false
+            })
           )
         })
       })
@@ -408,6 +414,12 @@ MediaController.prototype.post = function (req, res, next) {
       req.pipe(busboy)
     })
   }).then(response => {
+    if (response.results) {
+      response.results = response.results.map(document => {
+        return mediaModel.formatDocuments(document)
+      })
+    }
+
     help.sendBackJSON(201, res, next)(null, response)
   }).catch(err => {
     switch (err.message) {
@@ -417,6 +429,7 @@ MediaController.prototype.post = function (req, res, next) {
 
       case 'UNEXPECTED_FILENAME':
         return help.sendBackJSON(400, res, next)(null, {
+          statusCode: 400,
           success: false,
           errors: [
             `Unexpected filename. Expected: ${this.tokenPayloads[token].fileName}`
@@ -425,6 +438,7 @@ MediaController.prototype.post = function (req, res, next) {
 
       case 'UNEXPECTED_NUMBER_OF_FILES':
         return help.sendBackJSON(400, res, next)(null, {
+          statusCode: 400,
           success: false,
           errors: [
             'Multiple file upload with signed URLs not supported'
@@ -433,19 +447,33 @@ MediaController.prototype.post = function (req, res, next) {
 
       case 'UNEXPECTED_MIMETYPE':
         return help.sendBackJSON(400, res, next)(null, {
+          statusCode: 400,
           success: false,
           errors: [
-            `Unexpected MIME type. Expected: ${this.tokenPayloads[token].mimetype}`
+            `Unexpected MIME type. Expected: ${this.tokenPayloads[token].mimeType}`
           ]
         })
 
       case 'UPDATE_ID_MISSING':
         return help.sendBackJSON(405, res, next)({
+          statusCode: 405,
           success: false,
           errors: [
             'Invalid method. Use POST to upload a new asset or PUT to /{DOCUMENT ID} to update existing'
           ]
         })
+
+      case 'UPDATE_INVALID_FIELDS':
+        return help.sendBackJSON(400, res, next)({
+          statusCode: 400,
+          success: false,
+          errors: [
+            'Invalid update object. One or more fields are reserved and cannot be updated'
+          ]
+        })
+
+      default:
+        help.sendBackJSON(err.statusCode || 400, res, next)(err)
     }
   })
 }

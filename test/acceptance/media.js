@@ -328,7 +328,32 @@ describe('Media', function () {
           })
         })
 
+        it('should accept metadata properties alongside the file and add them to the created object', done => {
+          let metadata = {
+            caption: 'A thousand words'
+          }
+
+          client
+          .post('/media/upload')
+          .set('Authorization', `Bearer ${bearerToken}`)
+          .set('content-type', 'application/json')
+          .attach('file1', 'test/acceptance/temp-workspace/media/1f525.png')
+          .field('meta', JSON.stringify(metadata))
+          .end((err, res) => {
+            res.body.results.length.should.eql(1)
+            res.body.results[0].fileName.should.eql('1f525.png')
+            res.body.results[0].mimeType.should.eql('image/png')
+            res.body.results[0].caption.should.eql(metadata.caption)
+
+            done(err)
+          })
+        })
+
         it('should handle the upload of multiple files', done => {
+          let metadata = {
+            caption: 'A thousand words'
+          }
+
           client
           .post('/media/upload')
           .set('Authorization', `Bearer ${bearerToken}`)
@@ -341,6 +366,31 @@ describe('Media', function () {
             res.body.results[0].mimeType.should.eql('image/png')
             res.body.results[1].fileName.should.eql('flowers.jpg')
             res.body.results[1].mimeType.should.eql('image/jpeg')
+
+            done(err)
+          })
+        })
+
+        it('should accept metadata properties alongside the files and add them to all created objects', done => {
+          let metadata = {
+            caption: 'A thousand words'
+          }
+
+          client
+          .post('/media/upload')
+          .set('Authorization', `Bearer ${bearerToken}`)
+          .set('content-type', 'application/json')
+          .attach('file1', 'test/acceptance/temp-workspace/media/1f525.png')
+          .attach('file2', 'test/acceptance/temp-workspace/media/flowers.jpg')
+          .field('meta', JSON.stringify(metadata))
+          .end((err, res) => {
+            res.body.results.length.should.eql(2)
+            res.body.results[0].fileName.should.eql('1f525.png')
+            res.body.results[0].mimeType.should.eql('image/png')
+            res.body.results[0].caption.should.eql(metadata.caption)
+            res.body.results[1].fileName.should.eql('flowers.jpg')
+            res.body.results[1].mimeType.should.eql('image/jpeg')
+            res.body.results[1].caption.should.eql(metadata.caption)
 
             done(err)
           })
@@ -368,12 +418,17 @@ describe('Media', function () {
           res.body.results[0].height.should.eql(512)
 
           let id = res.body.results[0]._id
+          let metadataUpdate = {
+            altText: 'A lovely flower',
+            someNumericValue: 1337
+          }
 
           client
           .put(`/media/${id}`)
           .set('content-type', 'application/json')
           .set('Authorization', `Bearer ${bearerToken}`)
           .attach('avatar', 'test/acceptance/temp-workspace/media/flowers.jpg')
+          .field('someUpdate', JSON.stringify(metadataUpdate))
           .end((err, res) => {
             res.body.results[0].fileName.should.eql('flowers.jpg')
             res.body.results[0].mimeType.should.eql('image/jpeg')
@@ -389,6 +444,62 @@ describe('Media', function () {
               res.body.results[0].mimeType.should.eql('image/jpeg')
               res.body.results[0].width.should.eql(1600)
               res.body.results[0].height.should.eql(1086)
+              res.body.results[0].altText.should.eql(metadataUpdate.altText)
+              res.body.results[0].someNumericValue.should.eql(metadataUpdate.someNumericValue)
+
+              done(err)
+            })
+          })
+        })
+      })
+
+      it('should return a 400 when trying to update a reserved property', done => {
+        let obj = {
+          fileName: '1f525.png',
+          mimetype: 'image/png'
+        }
+
+        signAndUpload(obj, (err, res) => {
+          res.statusCode.should.eql(201)
+
+          res.body.results.should.be.Array
+          res.body.results.length.should.eql(1)
+
+          res.body.results[0].fileName.should.eql(obj.fileName)
+          res.body.results[0].mimeType.should.eql(obj.mimetype)
+          res.body.results[0].width.should.eql(512)
+          res.body.results[0].height.should.eql(512)
+
+          let id = res.body.results[0]._id
+          let metadataUpdate = {
+            altText: 'A lovely flower',
+            _createdBy: 'johnDoe'
+          }
+
+          client
+          .put(`/media/${id}`)
+          .set('content-type', 'application/json')
+          .set('Authorization', `Bearer ${bearerToken}`)
+          .attach('avatar', 'test/acceptance/temp-workspace/media/flowers.jpg')
+          .field('someUpdate', JSON.stringify(metadataUpdate))
+          .expect(400)
+          .end((err, res) => {
+            if (err) return done(err)
+
+            res.body.success.should.eql(false)
+            res.body.errors[0].includes('Invalid update object').should.eql(true)
+
+            client
+            .get(`/media/${id}`)
+            .set('content-type', 'application/json')
+            .set('Authorization', `Bearer ${bearerToken}`)
+            .end((err, res) => {
+              res.body.results[0].fileName.should.eql('flowers.jpg')
+              res.body.results[0].mimeType.should.eql('image/jpeg')
+              res.body.results[0].width.should.eql(1600)
+              res.body.results[0].height.should.eql(1086)
+              should.not.exist(res.body.results[0].altText)
+              res.body.results[0]._createdBy.should.not.eql(metadataUpdate._createdBy)
 
               done(err)
             })

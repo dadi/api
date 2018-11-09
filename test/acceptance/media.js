@@ -397,6 +397,23 @@ describe('Media', function () {
         })
       })
 
+      it('should return 400 if the content type is not `multipart/form-data`', done => {
+        let metadata = {
+          caption: 'A thousand words'
+        }
+
+        client
+        .post('/media/upload')
+        .set('Authorization', `Bearer ${bearerToken}`)
+        .set('content-type', 'application/json')
+        .expect(400)
+        .end((err, res) => {
+          res.body.success.should.eql(false)
+          res.body.errors[0].should.eql('Unexpected content type: application/json. Expected: multipart/form-data')
+
+          done(err)
+        })
+      })
     })
 
     describe('PUT', function () {
@@ -444,6 +461,54 @@ describe('Media', function () {
               res.body.results[0].mimeType.should.eql('image/jpeg')
               res.body.results[0].width.should.eql(1600)
               res.body.results[0].height.should.eql(1086)
+              res.body.results[0].altText.should.eql(metadataUpdate.altText)
+              res.body.results[0].someNumericValue.should.eql(metadataUpdate.someNumericValue)
+
+              done(err)
+            })
+          })
+        })
+      })
+
+      it('should accept application/json to update metadata on document by ID', done => {
+        let obj = {
+          fileName: '1f525.png',
+          mimetype: 'image/png'
+        }
+
+        signAndUpload(obj, (err, res) => {
+          res.statusCode.should.eql(201)
+
+          res.body.results.should.be.Array
+          res.body.results.length.should.eql(1)
+
+          res.body.results[0].fileName.should.eql(obj.fileName)
+          res.body.results[0].mimeType.should.eql(obj.mimetype)
+          res.body.results[0].width.should.eql(512)
+          res.body.results[0].height.should.eql(512)
+
+          let id = res.body.results[0]._id
+          let metadataUpdate = {
+            altText: 'A lovely flower',
+            someNumericValue: 1337
+          }
+
+          client
+          .put(`/media/${id}`)
+          .set('content-type', 'application/json')
+          .set('Authorization', `Bearer ${bearerToken}`)
+          .send(metadataUpdate)
+          .end((err, res) => {
+            res.body.results[0].fileName.should.eql(obj.fileName)
+            res.body.results[0].mimeType.should.eql(obj.mimetype)
+
+            client
+            .get(`/media/${id}`)
+            .set('content-type', 'application/json')
+            .set('Authorization', `Bearer ${bearerToken}`)
+            .end((err, res) => {
+              res.body.results[0].fileName.should.eql(obj.fileName)
+              res.body.results[0].mimeType.should.eql(obj.mimetype)
               res.body.results[0].altText.should.eql(metadataUpdate.altText)
               res.body.results[0].someNumericValue.should.eql(metadataUpdate.someNumericValue)
 

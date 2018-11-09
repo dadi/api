@@ -395,6 +395,31 @@ describe('Media', function () {
             done(err)
           })
         })
+
+        it('should should replace spaces with underscores in the file name', done => {
+          client
+          .post('/media/upload')
+          .set('Authorization', `Bearer ${bearerToken}`)
+          .set('content-type', 'application/json')
+          .attach('file1', 'test/acceptance/temp-workspace/media/a girl on a bridge.jpg')
+          .end((err, res) => {
+            if (err) return err
+
+            res.body.results.length.should.eql(1)
+            res.body.results[0].fileName.should.eql('a_girl_on_a_bridge.jpg')
+            res.body.results[0].path.includes('a_girl_on_a_bridge.jpg').should.eql(true)
+            res.body.results[0].mimeType.should.eql('image/jpeg')
+
+            client
+            .get(res.body.results[0].path)
+            .expect(200)
+            .end((err, res) => {
+              res.headers['content-type'].should.eql('image/jpeg')
+
+              done(err)
+            })
+          })
+        })
       })
 
       it('should return 400 if the content type is not `multipart/form-data`', done => {

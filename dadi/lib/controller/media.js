@@ -376,7 +376,7 @@ MediaController.prototype.post = function (req, res, next) {
 
         files.push({
           data,
-          fileName: inputFileName,
+          fileName: inputFileName.replace(/ /g, '_'),
           mimeType: inputMimeType
         })
 

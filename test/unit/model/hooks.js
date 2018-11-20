@@ -84,7 +84,7 @@ hijackNameHook += '  return obj;\n'
 hijackNameHook += '}\n'
 var hijackFunction = eval(hijackNameHook)
 
-describe.only('Hook', function () {
+describe('Hook', function () {
   it('should export a constructor', function (done) {
     hook.should.be.Function
     done()

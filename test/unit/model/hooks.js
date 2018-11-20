@@ -90,7 +90,7 @@ notInstalledHook += '  let x = notAPackage("X")\n'
 notInstalledHook += '}\n'
 var notInstalledFunction = eval(notInstalledHook)
 
-describe.only('Hook', function () {
+describe('Hook', function () {
   it('should export a constructor', function (done) {
     hook.should.be.Function
     done()

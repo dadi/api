@@ -102,6 +102,7 @@ function get ({
           (error, resultsAfterHooks) => {
             if (error) {
               logger.error({ module: 'model' }, error)
+              error.hook = this.settings.hooks.afterGet
               return reject(error)
             }
 

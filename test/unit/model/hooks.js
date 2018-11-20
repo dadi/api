@@ -1500,7 +1500,7 @@ describe('Hook', function () {
 
           hook.Hook.prototype.load.restore()
 
-          doc[0].code.indexOf('Cannot find module').should.be.above(0)
+          doc.results[0].details.indexOf('Cannot find module').should.be.above(0)
 
           done()
         })

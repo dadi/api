@@ -101,10 +101,16 @@ function get ({
           },
           (error, resultsAfterHooks) => {
             if (error) {
-              error.hook = this.settings.hooks.afterGet
+              let hook = new Hook({
+                hook: this.settings.hooks.afterGet[0]
+              }, 'afterGet')
 
               logger.error({ module: 'model' }, error)
-              return reject(error)
+
+              return resolve({
+                results: hook.formatError(error[0].code),
+                metadata: {}
+              })
             }
 
             resolve(resultsAfterHooks)
@@ -126,8 +132,6 @@ function get ({
     ).then(results => {
       return {results, metadata}
     })
-  }).catch(err => {
-    return err
   })
 }
 

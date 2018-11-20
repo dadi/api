@@ -2,7 +2,6 @@
 
 var sinon = require('sinon')
 var should = require('should')
-var _ = require('underscore')
 
 var model = require(__dirname + '/../../../dadi/lib/model')
 var hook = require(__dirname + '/../../../dadi/lib/model/hook')
@@ -84,7 +83,14 @@ hijackNameHook += '  return obj;\n'
 hijackNameHook += '}\n'
 var hijackFunction = eval(hijackNameHook)
 
-describe('Hook', function () {
+var notInstalledHook = ''
+notInstalledHook += 'module.exports = function (obj, type, data) { \n'
+notInstalledHook += '  const notAPackage = require("not-a-package")\n'
+notInstalledHook += '  let x = notAPackage("X")\n'
+notInstalledHook += '}\n'
+var notInstalledFunction = eval(notInstalledHook)
+
+describe.only('Hook', function () {
   it('should export a constructor', function (done) {
     hook.should.be.Function
     done()
@@ -1455,6 +1461,46 @@ describe('Hook', function () {
           hook.Hook.prototype.load.restore()
 
           doc.results[0].name.should.eql('Modified by hook')
+
+          done()
+        })
+      })
+    })
+
+    it('should return an error if the hook fails', function (done) {
+      var schema = help.getModelSchema()
+      schema.title = {
+        type: 'String',
+        required: false
+      }
+
+      schema.slug = {
+        type: 'String',
+        required: false
+      }
+
+      var settings = {
+        database: 'testdb',
+        storeRevisions: false,
+        hooks: {
+          afterGet: ['notInstalled']
+        }
+      }
+
+      sinon.stub(hook.Hook.prototype, 'load').returns(notInstalledFunction)
+
+      var mod = model('testModelName', schema, null, settings)
+
+      mod.create({fieldName: 'foo', title: 'Article One', slug: ''}, function (err, result) {
+        if (err) return done(err)
+
+        // find the obj we just created
+        mod.get({fieldName: 'foo'}, function (err, doc) {
+          if (err) return done(err)
+
+          hook.Hook.prototype.load.restore()
+
+          doc[0].code.indexOf('Cannot find module').should.be.above(0)
 
           done()
         })

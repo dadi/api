@@ -102,6 +102,7 @@ function get ({
           (error, resultsAfterHooks) => {
             if (error) {
               logger.error({ module: 'model' }, error)
+              return reject(error)
             }
 
             resolve(resultsAfterHooks)
@@ -123,6 +124,8 @@ function get ({
     ).then(results => {
       return {results, metadata}
     })
+  }).catch(err => {
+    return err
   })
 }
 

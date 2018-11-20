@@ -6,6 +6,9 @@
     "mixed": {
       "type": "Mixed"
     },
+    "number": {
+      "type": "Number"
+    },
     "object": {
       "type": "Object"
     },

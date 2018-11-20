@@ -84,7 +84,7 @@ hijackNameHook += '  return obj;\n'
 hijackNameHook += '}\n'
 var hijackFunction = eval(hijackNameHook)
 
-describe('Hook', function () {
+describe.only('Hook', function () {
   it('should export a constructor', function (done) {
     hook.should.be.Function
     done()
@@ -719,6 +719,8 @@ describe('Hook', function () {
         JSON.stringify(data.schema).should.eql(JSON.stringify(schema))
         data.collection.should.eql('testModelName')
 
+        obj.title.should.eql('Article Two')
+
         return obj
       }
 
@@ -729,11 +731,12 @@ describe('Hook', function () {
       mod.create({fieldName: 'foo', title: 'Article One', slug: ''}, function (err, result) {
         if (err) return done(err)
 
-        hook.Hook.prototype.load.restore()
-
-        // find the obj we just created
-        mod.find({fieldName: 'foo'}, function (err, doc) {
+        var id = result.results[0]._id.toString()
+        mod.update({ _id: id }, {title: 'Article Two'}, function (err, doc) {
           if (err) return done(err)
+
+          hook.Hook.prototype.load.restore()
+
           done()
         })
       })
@@ -824,6 +827,7 @@ describe('Hook', function () {
       }
 
       var inspectFunction = function (obj, type, data) {
+        console.log('obj :', obj);
         JSON.stringify(data.schema).should.eql(JSON.stringify(schema))
         data.collection.should.eql('testModelName')
 

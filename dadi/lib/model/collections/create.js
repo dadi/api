@@ -105,16 +105,6 @@ function create ({
             name: 'beforeSave'
           }).then(subDocument => {
             return Object.assign({}, transformedDocument, subDocument)
-          }).catch(error => {
-            error.success = false
-            error.errors = [
-              {
-                field,
-                message: error.message
-              }
-            ]
-
-            return Promise.reject(error)
           })
         })
       }, Promise.resolve({}))

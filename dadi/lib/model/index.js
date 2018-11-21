@@ -644,17 +644,19 @@ Model.prototype.runFieldHooks = function ({
   })
 
   return queue.catch(error => {
-    let errorData = [
-      {
-        field,
-        message: error.message
-      }
-    ]
+    let errorObject = {
+      field,
+      message: error.message
+    }
+
+    if (error.code) {
+      errorObject.code = error.code
+    }
 
     logger.error({module: 'field hooks'}, error)
 
     return Promise.reject(
-      this._createValidationError('Validation failed', errorData)
+      this._createValidationError('Validation failed', [errorObject])
     )
   })
 }

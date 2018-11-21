@@ -19,7 +19,13 @@
     },
     "leadImage": {
       "type": "Media"
-    }    
+    },
+    "leadImageJPEG": {
+      "type": "Media",
+      "validation": {
+        "mimeTypes": ["image/jpeg"]
+      }
+    }
   },
   "settings": {
     "cache": true,

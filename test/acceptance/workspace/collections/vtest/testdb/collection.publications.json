@@ -80,6 +80,14 @@
             "override": "urlOverride",
             "to": "furl"
           }
+        },
+        {
+          "hook": "urlHook"
+        }
+      ],
+      "beforeGet": [
+        {
+          "hook": "urlHook"
         }
       ],
       "beforeUpdate": [

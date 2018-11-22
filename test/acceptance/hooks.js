@@ -1,12 +1,7 @@
-var _ = require('underscore')
 var app = require(__dirname + '/../../dadi/lib/')
 var config = require(__dirname + '/../../config')
-var connection = require(__dirname + '/../../dadi/lib/model/connection')
-var fs = require('fs')
 var help = require(__dirname + '/help')
 var hook = require(__dirname + '/../../dadi/lib/model/hook')
-var model = require(__dirname + '/../../dadi/lib/model')
-var path = require('path')
 var should = require('should')
 var sinon = require('sinon')
 var request = require('supertest')
@@ -380,6 +375,47 @@ describe('Hooks', function () {
       })
     })
   })
+
+  it('should allow obtaining data from the request within beforeCreate & beforeGet hooks', function (done) {
+    config.set('query.useVersionFilter', true)
+
+    var client = request(connectionString)
+
+    startApp(() => {
+      client
+      .post('/vtest/testdb/publications/config')
+      .send(JSON.stringify(publicationSchema, null, 2))
+      .set('content-type', 'text/plain')
+      .set('Authorization', 'Bearer ' + bearerToken)
+      .end(function (err, res) {
+        if (err) return done(err)
+
+        sinon.stub(hook.Hook.prototype, 'load').returns(urlHookFunction)
+
+        // create a publication
+        var publication = {
+          name: 'Test Hook'
+        }
+
+        client
+        .post('/vtest/testdb/publications')
+        .send(publication)
+        .set('content-type', 'application/json')
+        .set('Authorization', 'Bearer ' + bearerToken)
+        .end((err, res) => {
+          if (err) return done(err)
+
+          var publicationResults = res.body.results
+          publicationResults.length.should.eql(1)
+
+          publicationResults[0]['url'].should.eql('/vtest/testdb/publications')
+
+          hook.Hook.prototype.load.restore()
+          stopApp(done)
+        })
+      })
+    })
+  })
 })
 
 var publicationSchema = {
@@ -446,15 +482,12 @@ var publicationSchema = {
   'settings': {
     'cache': true,
     'compose': true,
-    'cacheTTL': 300,
     'authenticate': true,
     'publish': {
       'group': 'Taxonomy'
     },
-    'allowExtension': true,
     'displayName': 'Publications',
     'count': 100,
-    'sortOrder': 1,
     'hooks': {
       'beforeCreate': [
         {
@@ -464,6 +497,14 @@ var publicationSchema = {
             'override': 'urlOverride',
             'to': 'furl'
           }
+        },
+        {
+          'hook': 'urlHook'
+        }
+      ],
+      'beforeGet': [
+        {
+          'hook': 'urlHook'
         }
       ],
       'beforeUpdate': [
@@ -696,13 +737,11 @@ var articleSchema = {
 }
 
 var slugifyHook = ''
-slugifyHook += 'var _ = require("underscore")\n'
-slugifyHook += '\n'
 slugifyHook += 'var getFieldValue = function(fieldName, object) {\n'
 slugifyHook += '  if (!fieldName) return\n'
 slugifyHook += '    fieldName = fieldName.split(".")\n'
-slugifyHook += '  _.each(fieldName, (child) => {\n'
-slugifyHook += '    if (!_.isUndefined(object[child])) {\n'
+slugifyHook += '    fieldName.forEach(child => {\n'
+slugifyHook += '    if (object[child]) {\n'
 slugifyHook += '      object = object[child]\n'
 slugifyHook += '    } else {\n'
 slugifyHook += '      return\n'
@@ -713,9 +752,8 @@ slugifyHook += '}\n'
 slugifyHook += '\n'
 slugifyHook += 'module.exports = function (obj, type, data) {\n'
 slugifyHook += '  // if (type === "beforeUpdate" || type === "beforeCreate") {\n'
-slugifyHook += '    var object = _.clone(obj)\n'
-slugifyHook += '    //console.log(obj)\n'
-slugifyHook += '    var field = getFieldValue(data.options.override, object) || getFieldValue(data.options.from, object)\n'
+slugifyHook += '    var object = Object.assign({}, obj)\n'
+slugifyHook += '    var field = data.options ? getFieldValue(data.options.override, object) || getFieldValue(data.options.from, object) : null\n'
 slugifyHook += '    if (field) {\n'
 slugifyHook += '      obj[data.options.to] = field.toLowerCase()\n'
 slugifyHook += '    }\n'
@@ -723,3 +761,13 @@ slugifyHook += '    return obj\n'
 slugifyHook += '}\n'
 
 var hookFunction = eval(slugifyHook)
+
+var urlHook = ''
+urlHook += 'module.exports = function (obj, type, data) {\n'
+urlHook += '  if (type === "beforeCreate" || type === "beforeGet") {\n'
+urlHook += '    obj["url"] = data.req.url\n'
+urlHook += '  }\n'
+urlHook += '  return obj\n'
+urlHook += '}\n'
+
+var urlHookFunction = eval(urlHook)

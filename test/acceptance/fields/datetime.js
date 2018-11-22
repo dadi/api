@@ -42,6 +42,57 @@ describe('DateTime Field', function () {
     config.set('paths.collections', configBackup.paths.collections)
   })
 
+  it('should not attempt to process a null/undefined value', done => {
+    let person = { name: 'Ernest Hemingway' }
+
+    config.set('query.useVersionFilter', true)
+
+    let client = request(connectionString)
+    client
+    .post('/v1/library/person')
+    .set('Authorization', 'Bearer ' + bearerToken)
+    .send(person)
+    .expect(200)
+    .end((err, res) => {
+      if (err) return done(err)
+
+      let personId = res.body.results[0]._id
+      let book = { title: 'For Whom The Bell Tolls', author: personId }
+
+      client
+      .post('/v1/library/book')
+      .set('Authorization', 'Bearer ' + bearerToken)
+      .send(book)
+      .expect(200)
+      .end((err, res) => {
+        if (err) return done(err)
+
+        let bookId = res.body.results[0]._id
+        let event = { type: 'borrow', book: bookId, datetime: null }
+
+        client
+        .post('/v1/library/event')
+        .set('Authorization', 'Bearer ' + bearerToken)
+        .send(event)
+        .expect(200)
+        .end((err, res) => {
+          if (err) return done(err)
+
+          client
+          .get('/v1/library/event?compose=true')
+          .set('Authorization', 'Bearer ' + bearerToken)
+          .expect(200)
+          .end((err, res) => {
+            if (err) return done(err)
+
+            should.not.exist(res.body.results[0].datetime)
+            done()
+          })
+        })
+      })
+    })
+  })
+
   it('should format a DateTime field as ISO when no format is specified', done => {
     let person = { name: 'Ernest Hemingway' }
 
@@ -477,10 +528,10 @@ describe('DateTime Field', function () {
     .end((err, res) => {
       if (err) return done(err)
 
-      res.statusCode.should.eql(500)
+      res.statusCode.should.eql(400)
       res.body.success.should.eql(false)
       res.body.errors[0].field.should.eql('datetime')
-      res.body.errors[0].message.should.eql('Not a valid DateTime value')
+      res.body.errors[0].code.should.eql('ERROR_VALUE_INVALID')
 
       done()
     })

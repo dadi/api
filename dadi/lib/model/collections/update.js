@@ -82,14 +82,14 @@ function update ({
     query,
     type: 'update'
   }).then(({query: aclQuery, schema}) => {
+    query = aclQuery
+
     // If merging the request query with ACL data resulted in
     // an impossible query, we can simply return an empty result
-    // set without even going to the database.
-    if (
-      aclQuery instanceof Error &&
-      aclQuery.message === 'EMPTY_RESULT_SET'
-    ) {
-      return this._buildEmptyResponse()
+    // set without even going to the database. We'll reject the
+    // Promise now and catch this case at the end of the chain.
+    if (query instanceof Error) {
+      return Promise.reject(query)
     }
 
     // Removing internal API properties from the update object.
@@ -97,32 +97,40 @@ function update ({
       update = this.removeInternalProperties(update)
     }
 
-    if (validate) {
-      // Validate the query.
-      let validation = this.validate.query(aclQuery)
+    if (!validate) return
 
-      if (!validation.success) {
-        let error = this._createValidationError('Bad Query')
+    // Validating the query.
+    let queryValidation = this.validateQuery(query)
 
-        error.json = validation
+    if (!queryValidation.success) {
+      let error = this._createValidationError('Bad Query')
 
-        return Promise.reject(error)
-      }
+      error.json = queryValidation
 
-      // Validate the update.
-      validation = this.validate.schema(update, true, schema)
-
-      if (!validation.success) {
-        let error = this._createValidationError()
-
-        error.json = validation
-
-        return Promise.reject(error)
-      }
+      return Promise.reject(error)
     }
 
+    return this.validator.validateDocument({
+      document: update,
+      isUpdate: true,
+      schema
+    }).catch(errors => {
+      let error = this._createValidationError('Validation Failed', errors)
+
+      return Promise.reject(error)
+    })
+  }).then(() => {
     // Format the query.
-    query = this.formatQuery(aclQuery)
+    query = this.formatQuery(query)
+
+    return this.find({
+      query
+    })
+  }).then(({results}) => {
+    // Create a copy of the documents that matched the find
+    // query, as these will be updated and we need to send back
+    // to the client a full result set of modified documents.
+    updatedDocuments = results
 
     // Add any internal fields to the update.
     Object.assign(update, internals)
@@ -136,7 +144,8 @@ function update ({
       return result.then(transformedUpdate => {
         return this.runFieldHooks({
           data: {
-            internals
+            internals,
+            updatedDocuments
           },
           field,
           input: {
@@ -149,15 +158,6 @@ function update ({
       })
     }, Promise.resolve({})).then(transformedUpdate => {
       update = transformedUpdate
-
-      return this.find({
-        query
-      })
-    }).then(result => {
-      // Create a copy of the documents that matched the find
-      // query, as these will be updated and we need to send back
-      // to the client a full result set of modified documents.
-      updatedDocuments = result.results
 
       // Run any `beforeUpdate` hooks.
       if (this.settings.hooks && this.settings.hooks.beforeUpdate) {
@@ -257,6 +257,12 @@ function update ({
       return data
     })
   }).catch(error => {
+    // Dealing with the case of an impossible query. We can simply return
+    // an empty result set here.
+    if (error.message === 'EMPTY_RESULT_SET') {
+      return this._buildEmptyResponse()
+    }
+
     logger.error({ module: 'model' }, error)
 
     return Promise.reject(error)

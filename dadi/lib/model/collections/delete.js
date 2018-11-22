@@ -44,7 +44,7 @@ function deleteFn ({
     query,
     type: 'delete'
   }).then(({query: aclQuery}) => {
-    let validation = this.validate.query(aclQuery)
+    let validation = this.validateQuery(aclQuery)
 
     if (!validation.success) {
       let error = this._createValidationError('Validation Failed')

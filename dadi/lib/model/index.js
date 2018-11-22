@@ -8,7 +8,7 @@ const fields = require('./../fields')
 const History = require('./history')
 const logger = require('@dadi/logger')
 const Search = require('./../search')
-const Validator = require('./validator')
+const Validator = require('@dadi/api-validator')
 
 /**
  * Block with metadata pertaining to an API collection.
@@ -137,7 +137,10 @@ const Model = function (name, schema, connection, settings) {
   _models[name] = this
 
   // Setup validatior.
-  this.validate = new Validator(this)
+  this.validator = new Validator({
+    i18nFieldCharacter: config.get('i18n.fieldCharacter'),
+    internalFieldsPrefix: config.get('internalFieldsPrefix')
+  })
 
   // Create indexes.
   if (this.settings.index) {
@@ -201,10 +204,16 @@ Model.prototype._compileFieldHooks = function () {
  * @api private
  */
 Model.prototype._createValidationError = function (message, data) {
-  const err = new Error(message || 'Model Validation Failed')
-  err.statusCode = 400
+  const error = new Error(message || 'Model Validation Failed')
 
-  return err
+  error.statusCode = 400
+  error.success = false
+
+  if (data) {
+    error.errors = data
+  }
+
+  return error
 }
 
 /**
@@ -634,7 +643,22 @@ Model.prototype.runFieldHooks = function ({
     }
   })
 
-  return queue
+  return queue.catch(error => {
+    let errorObject = {
+      field,
+      message: error.message
+    }
+
+    if (error.code) {
+      errorObject.code = error.code
+    }
+
+    logger.error({module: 'field hooks'}, error)
+
+    return Promise.reject(
+      this._createValidationError('Validation failed', [errorObject])
+    )
+  })
 }
 
 /**
@@ -701,7 +725,7 @@ Model.prototype.validateAccess = function ({
   type
 }) {
   if (!client) {
-    return Promise.resolve({fields, query})
+    return Promise.resolve({fields, query, schema})
   }
 
   if (this.settings) {
@@ -775,6 +799,41 @@ Model.prototype.validateAccess = function ({
 
     return {fields, query, schema: newSchema}
   })
+}
+
+/**
+ * Validates a query object and returns an object with `success`
+ * indicating whether validation has failed or passed, and an
+ * `errors` array with any resulting validation errors.
+ *
+ * @param  {Object} query
+ * @return {Object}
+ */
+Model.prototype.validateQuery = function (query) {
+  let response = {
+    success: true,
+    errors: []
+  }
+
+  if (!Array.isArray(query) && Object(query) !== query) {
+    response.success = false
+    response.errors.push({
+      message: 'Query must be either a JSON array or a JSON object.'
+    })
+
+    return response
+  }
+
+  Object.keys(query).every(key => {
+    if (key === '$where') {
+      response.success = false
+      response.errors.push({
+        message: `'$where' is not a valid query operator`
+      })
+    }
+  })
+
+  return response
 }
 
 Model.prototype.count = require('./collections/count')

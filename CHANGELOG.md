@@ -4,6 +4,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## [4.4.0] (2018-11-22)
+
+### Added
+
+- [#415](https://github.com/dadi/api/issues/415): add Media field
+- [#451](https://github.com/dadi/api/issues/451): add new validation module and operators
+- [#498](https://github.com/dadi/api/issues/498): allow bulk upload and deletion of media documents
+- [#507](https://github.com/dadi/api/pull/507): allow arbitrary metadata on media documents
+- [#508](https://github.com/dadi/api/pull/508): support application/json content type when updating media documents
+- [#514](https://github.com/dadi/api/pull/514): add mimeType validation operator and `_composed` property to media documents
+
+### Changed
+
+- [#510](https://github.com/dadi/api/pull/510): replace spaces with underscores in media document filenames
+
+### Fixed
+
+- [#509](https://github.com/dadi/api/pull/509): use correct response codes when creating and updating media documents
+
 ## [4.3.0] (2018-09-27)
 
 ### Changed

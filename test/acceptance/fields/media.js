@@ -660,7 +660,7 @@ describe('Media field', () => {
       })
     })
 
-    it.only('should resolve a legacy value created by a Reference field', done => {
+    it('should resolve a legacy value created by a Reference field', done => {
       client
       .post('/media/upload')
       .set('content-type', 'application/json')

@@ -659,6 +659,89 @@ describe('Media field', () => {
         })
       })
     })
+
+    it('should resolve a legacy value created by a Reference field', done => {
+      client
+      .post('/media/upload')
+      .set('content-type', 'application/json')
+      .set('Authorization', `Bearer ${bearerToken}`)
+      .attach('avatar', 'test/acceptance/temp-workspace/media/1f525.png')
+      .end((err, res) => {
+        let mediaObject = res.body.results[0]
+        let payload = {
+          title: 'Media support in DADI API',
+          legacyImage: mediaObject._id
+        }
+
+        client
+        .post('/vtest/testdb/test-schema')
+        .set('content-type', 'application/json')
+        .set('Authorization', `Bearer ${bearerToken}`)
+        .send(payload)
+        .end((err, res) => {
+          let {results} = res.body
+          
+          results.should.be.instanceOf(Array)
+          results.length.should.eql(1)
+          results[0].title.should.eql(payload.title)
+          results[0].legacyImage._id.should.eql(mediaObject._id)
+          results[0].legacyImage.fileName.should.eql('1f525.png')
+          results[0]._composed.legacyImage.should.eql(mediaObject._id)
+
+          client
+          .get(`/vtest/testdb/test-schema/${results[0]._id}?compose=true`)
+          .set('content-type', 'application/json')
+          .set('Authorization', `Bearer ${bearerToken}`)
+          .end((err, res) => {
+            let {results} = res.body
+            
+            results.should.be.instanceOf(Array)
+            results.length.should.eql(1)
+            results[0].title.should.eql(payload.title)
+            results[0].legacyImage._id.should.eql(mediaObject._id)
+            results[0].legacyImage.fileName.should.eql('1f525.png')
+            results[0]._composed.legacyImage.should.eql(mediaObject._id)
+
+            let collectionSchemaPath = path.join(
+              __dirname,
+              '/../temp-workspace/collections/vtest/testdb/collection.test-schema.json'
+            )
+            let collectionSchema = require(collectionSchemaPath)
+
+            // Convert the field to use the Media type.
+            collectionSchema.fields.legacyImage.type = 'Media'
+            delete collectionSchema.fields.legacyImage.settings
+
+            help.writeTempFile(
+              collectionSchemaPath,
+              JSON.stringify(collectionSchema, null, 2),
+              restoreCollection => {
+                setTimeout(() => {
+                  client
+                  .get(`/vtest/testdb/test-schema/${results[0]._id}?cache=false`)
+                  .set('content-type', 'application/json')
+                  .set('Authorization', `Bearer ${bearerToken}`)
+                  .end((err, res) => {
+                    let {results} = res.body
+
+                    results.should.be.instanceOf(Array)
+                    results.length.should.eql(1)
+                    results[0].title.should.eql(payload.title)
+                    results[0].legacyImage._id.should.eql(mediaObject._id)
+                    results[0].legacyImage.fileName.should.eql('1f525.png')
+                    results[0]._composed.legacyImage.should.eql(mediaObject._id)
+
+                    restoreCollection()
+
+                    done(err)
+                  })
+                }, 1000)
+              }
+            )
+          })
+        })
+      })
+    })
   })
 
   describe('PUT', () => {

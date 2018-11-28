@@ -43,21 +43,25 @@ module.exports.beforeOutput = function ({
       return mediaObjects
     }, {})
   }).then(mediaObjects => {
-    return normalisedValue.map(value => {
-      if (mediaObjects[value._id]) {
-        let mergedValue = Object.assign({}, mediaObjects[value._id], value)
+    return mediaObjectIDs.map((id, index) => {
+      let value = typeof normalisedValue[index] === 'object'
+        ? normalisedValue[index]
+        : {}
+
+      if (mediaObjects[id]) {
+        let mergedValue = Object.assign({}, mediaObjects[id], value)
         let sortedValue = Object.keys(mergedValue).sort().reduce((sortedValue, field) => {
           sortedValue[field] = mergedValue[field]
 
           return sortedValue
         }, {})
 
-        composedIDs.push(value._id)
+        composedIDs.push(id.toString())
 
         return sortedValue
       }
 
-      return value._id
+      return id
     })
   }).then(composedValue => {
     let output = Object.assign(input, {

@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## [4.4.1] (2018-11-28)
+
+### Fixed
+
+- [#516](https://github.com/dadi/api/issues/516): make media field handle legacy values
+
 ## [4.4.0] (2018-11-22)
 
 ### Added

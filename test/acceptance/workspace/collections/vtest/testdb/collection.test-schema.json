@@ -25,6 +25,12 @@
       "validation": {
         "mimeTypes": ["image/jpeg"]
       }
+    },
+    "legacyImage": {
+      "type": "Reference",
+      "settings": {
+        "collection": "mediaStore"
+      }
     }
   },
   "settings": {

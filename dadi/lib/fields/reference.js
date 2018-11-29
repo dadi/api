@@ -1,4 +1,7 @@
 const path = require('path')
+const mediaModel = require(
+  path.join(__dirname, '/../model/media')
+)
 
 module.exports.type = 'reference'
 
@@ -170,10 +173,11 @@ module.exports.beforeOutput = function ({
             // This isn't great. I'd like to move away from the
             // `mediaStore` magic string in favour of an `Image`
             // field type (https://github.com/dadi/api/issues/415).
+            //
+            // Update (Nov 18): We have the Media field in place now,
+            // but we must keep this for backwards-compatibility.
             if (collection === 'mediaStore') {
-              result = require(
-                path.join(__dirname, '/../model/media')
-              ).formatDocuments(result)
+              result = mediaModel.formatDocuments(result)
             }
 
             let nextData = Object.assign({}, arguments[0], {

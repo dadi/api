@@ -213,6 +213,28 @@ describe('Media field', () => {
       })
     })
 
+    it('should accept `null` as a value', done => {
+      let payload = {
+        title: 'Media support in DADI API',
+        leadImage: null
+      }
+
+      client
+      .post('/vtest/testdb/test-schema')
+      .set('content-type', 'application/json')
+      .set('Authorization', `Bearer ${bearerToken}`)
+      .expect(200)
+      .send(payload)
+      .end((err, res) => {
+        res.body.results.should.be.instanceOf(Array)
+        res.body.results.length.should.eql(1)
+        res.body.results[0].title.should.eql(payload.title)
+        should.not.exist(res.body.results[0].leadImage)
+
+        done(err)
+      })
+    })
+
     it('should accept an ID that does not correspond to a valid media object', done => {
       let payload = {
         title: 'Media support in DADI API',

@@ -284,6 +284,7 @@ describe('Media field', () => {
           results[0].title.should.eql(payload.title)
           results[0].leadImage._id.should.eql(mediaObject._id)
           results[0].leadImage.fileName.should.eql('1f525.png')
+          results[0].leadImage.url.should.be.instanceOf(String)
           results[0]._composed.leadImage.should.eql(mediaObject._id)
 
           client
@@ -298,6 +299,7 @@ describe('Media field', () => {
             results[0].title.should.eql(payload.title)
             results[0].leadImage._id.should.eql(mediaObject._id)
             results[0].leadImage.fileName.should.eql('1f525.png')
+            results[0].leadImage.url.should.be.instanceOf(String)
             results[0]._composed.leadImage.should.eql(mediaObject._id)
 
             done(err)
@@ -345,8 +347,10 @@ describe('Media field', () => {
             results[0].leadImage.length.should.eql(2)
             results[0].leadImage[0]._id.should.eql(mediaObject1._id)
             results[0].leadImage[0].fileName.should.eql('1f525.png')
+            results[0].leadImage[0].url.should.be.instanceOf(String)
             results[0].leadImage[1]._id.should.eql(mediaObject2._id)
             results[0].leadImage[1].fileName.should.eql('flowers.jpg')
+            results[0].leadImage[1].url.should.be.instanceOf(String)
             results[0]._composed.leadImage.should.eql([
               mediaObject1._id,
               mediaObject2._id
@@ -366,8 +370,10 @@ describe('Media field', () => {
               results[0].leadImage.length.should.eql(2)
               results[0].leadImage[0]._id.should.eql(mediaObject1._id)
               results[0].leadImage[0].fileName.should.eql('1f525.png')
+              results[0].leadImage[0].url.should.be.instanceOf(String)
               results[0].leadImage[1]._id.should.eql(mediaObject2._id)
               results[0].leadImage[1].fileName.should.eql('flowers.jpg')
+              results[0].leadImage[1].url.should.be.instanceOf(String)
               results[0]._composed.leadImage.should.eql([
                 mediaObject1._id,
                 mediaObject2._id
@@ -445,6 +451,7 @@ describe('Media field', () => {
           results[0].title.should.eql(payload.title)
           results[0].leadImage._id.should.eql(mediaObject._id)
           results[0].leadImage.fileName.should.eql('1f525.png')
+          results[0].leadImage.url.should.be.instanceOf(String)
           results[0]._composed.leadImage.should.eql(mediaObject._id)
 
           client
@@ -459,6 +466,7 @@ describe('Media field', () => {
             results[0].title.should.eql(payload.title)
             results[0].leadImage._id.should.eql(mediaObject._id)
             results[0].leadImage.fileName.should.eql('1f525.png')
+            results[0].leadImage.url.should.be.instanceOf(String)
             results[0]._composed.leadImage.should.eql(mediaObject._id)
 
             done(err)
@@ -506,8 +514,10 @@ describe('Media field', () => {
             results[0].leadImage.length.should.eql(2)
             results[0].leadImage[0]._id.should.eql(mediaObject1._id)
             results[0].leadImage[0].fileName.should.eql('1f525.png')
+            results[0].leadImage[0].url.should.be.instanceOf(String)
             results[0].leadImage[1]._id.should.eql(mediaObject2._id)
             results[0].leadImage[1].fileName.should.eql('flowers.jpg')
+            results[0].leadImage[1].url.should.be.instanceOf(String)
             results[0]._composed.leadImage.should.eql([
               mediaObject1._id,
               mediaObject2._id
@@ -527,8 +537,10 @@ describe('Media field', () => {
               results[0].leadImage.length.should.eql(2)
               results[0].leadImage[0]._id.should.eql(mediaObject1._id)
               results[0].leadImage[0].fileName.should.eql('1f525.png')
+              results[0].leadImage[0].url.should.be.instanceOf(String)
               results[0].leadImage[1]._id.should.eql(mediaObject2._id)
               results[0].leadImage[1].fileName.should.eql('flowers.jpg')
+              results[0].leadImage[1].url.should.be.instanceOf(String)
               results[0]._composed.leadImage.should.eql([
                 mediaObject1._id,
                 mediaObject2._id
@@ -573,6 +585,7 @@ describe('Media field', () => {
           results[0].leadImage.altText.should.eql(payload.leadImage.altText)
           results[0].leadImage.crop.should.eql(payload.leadImage.crop)
           results[0].leadImage.fileName.should.eql('1f525.png')
+          results[0].leadImage.url.should.be.instanceOf(String)
           results[0]._composed.leadImage.should.eql(mediaObject._id)
 
           client
@@ -590,6 +603,7 @@ describe('Media field', () => {
             results[0].leadImage.altText.should.eql(payload.leadImage.altText)
             results[0].leadImage.crop.should.eql(payload.leadImage.crop)
             results[0].leadImage.fileName.should.eql('1f525.png')
+            results[0].leadImage.url.should.be.instanceOf(String)
             results[0]._composed.leadImage.should.eql(mediaObject._id)
 
             done(err)
@@ -643,9 +657,11 @@ describe('Media field', () => {
             results[0].leadImage.length.should.eql(2)
             results[0].leadImage[0]._id.should.eql(mediaObject1._id)
             results[0].leadImage[0].fileName.should.eql('1f525.png')
+            results[0].leadImage[0].url.should.be.instanceOf(String)
             results[0].leadImage[0].caption.should.eql(payload.leadImage[0].caption)
             results[0].leadImage[1]._id.should.eql(mediaObject2._id)
             results[0].leadImage[1].fileName.should.eql('flowers.jpg')
+            results[0].leadImage[1].url.should.be.instanceOf(String)
             results[0].leadImage[1].caption.should.eql(payload.leadImage[1].caption)
             results[0]._composed.leadImage.should.eql([
               mediaObject1._id,
@@ -666,9 +682,11 @@ describe('Media field', () => {
               results[0].leadImage.length.should.eql(2)
               results[0].leadImage[0]._id.should.eql(mediaObject1._id)
               results[0].leadImage[0].fileName.should.eql('1f525.png')
+              results[0].leadImage[0].url.should.be.instanceOf(String)
               results[0].leadImage[0].caption.should.eql(payload.leadImage[0].caption)
               results[0].leadImage[1]._id.should.eql(mediaObject2._id)
               results[0].leadImage[1].fileName.should.eql('flowers.jpg')
+              results[0].leadImage[1].url.should.be.instanceOf(String)
               results[0].leadImage[1].caption.should.eql(payload.leadImage[1].caption)
               results[0]._composed.leadImage.should.eql([
                 mediaObject1._id,
@@ -708,6 +726,7 @@ describe('Media field', () => {
           results[0].title.should.eql(payload.title)
           results[0].legacyImage._id.should.eql(mediaObject._id)
           results[0].legacyImage.fileName.should.eql('1f525.png')
+          results[0].legacyImage.url.should.be.instanceOf(String)
           results[0]._composed.legacyImage.should.eql(mediaObject._id)
 
           client
@@ -722,6 +741,7 @@ describe('Media field', () => {
             results[0].title.should.eql(payload.title)
             results[0].legacyImage._id.should.eql(mediaObject._id)
             results[0].legacyImage.fileName.should.eql('1f525.png')
+            results[0].legacyImage.url.should.be.instanceOf(String)
             results[0]._composed.legacyImage.should.eql(mediaObject._id)
 
             let collectionSchemaPath = path.join(
@@ -751,6 +771,7 @@ describe('Media field', () => {
                     results[0].title.should.eql(payload.title)
                     results[0].legacyImage._id.should.eql(mediaObject._id)
                     results[0].legacyImage.fileName.should.eql('1f525.png')
+                    results[0].legacyImage.url.should.be.instanceOf(String)
                     results[0]._composed.legacyImage.should.eql(mediaObject._id)
 
                     restoreCollection()
@@ -910,6 +931,7 @@ describe('Media field', () => {
                 res.body.results[0].title.should.eql(payload1.title)
                 res.body.results[0].leadImageJPEG._id.should.eql(mediaObject._id)
                 res.body.results[0].leadImageJPEG.fileName.should.eql('flowers.jpg')
+                res.body.results[0].leadImageJPEG.url.should.be.instanceOf(String)
                 res.body.results[0]._composed.leadImageJPEG.should.eql(mediaObject._id)
 
                 done(err)
@@ -1046,6 +1068,7 @@ describe('Media field', () => {
           results[0].title.should.eql(payload.title)
           results[0].leadImage._id.should.eql(mediaObject._id)
           results[0].leadImage.fileName.should.eql('1f525.png')
+          results[0].leadImage.url.should.be.instanceOf(String)
 
           let updatePayload = {
             leadImage: 'QWERTYUIOP'
@@ -1102,6 +1125,7 @@ describe('Media field', () => {
             results[0].title.should.eql(payload.title)
             results[0].leadImage._id.should.eql(mediaObject1._id)
             results[0].leadImage.fileName.should.eql('1f525.png')
+            results[0].leadImage.url.should.be.instanceOf(String)
             results[0]._composed.leadImage.should.eql(mediaObject1._id)
 
             let updatePayload = {
@@ -1126,6 +1150,7 @@ describe('Media field', () => {
                 results[0].title.should.eql(payload.title)
                 results[0].leadImage._id.should.eql(mediaObject2._id)
                 results[0].leadImage.fileName.should.eql('flowers.jpg')
+                results[0].leadImage.url.should.be.instanceOf(String)
                 results[0]._composed.leadImage.should.eql(mediaObject2._id)
 
                 done(err)
@@ -1162,6 +1187,7 @@ describe('Media field', () => {
           results[0].title.should.eql(payload.title)
           results[0].leadImage._id.should.eql(mediaObject._id)
           results[0].leadImage.fileName.should.eql('1f525.png')
+          results[0].leadImage.url.should.be.instanceOf(String)
 
           let updatePayload = {
             leadImage: {
@@ -1220,6 +1246,7 @@ describe('Media field', () => {
             results[0].title.should.eql(payload.title)
             results[0].leadImage._id.should.eql(mediaObject1._id)
             results[0].leadImage.fileName.should.eql('1f525.png')
+            results[0].leadImage.url.should.be.instanceOf(String)
             results[0]._composed.leadImage.should.eql(mediaObject1._id)
 
             let updatePayload = {
@@ -1246,6 +1273,7 @@ describe('Media field', () => {
                 results[0].title.should.eql(payload.title)
                 results[0].leadImage._id.should.eql(mediaObject2._id)
                 results[0].leadImage.fileName.should.eql('flowers.jpg')
+                results[0].leadImage.url.should.be.instanceOf(String)
                 results[0]._composed.leadImage.should.eql(mediaObject2._id)
 
                 done(err)
@@ -1296,6 +1324,7 @@ describe('Media field', () => {
             results[0].leadImage.altText.should.eql(payload.leadImage.altText)
             results[0].leadImage.caption.should.eql(payload.leadImage.caption)
             results[0].leadImage.fileName.should.eql('1f525.png')
+            results[0].leadImage.url.should.be.instanceOf(String)
             results[0]._composed.leadImage.should.eql(mediaObject1._id)
 
             let updatePayload = {
@@ -1327,6 +1356,7 @@ describe('Media field', () => {
                 results[0].leadImage.crop.should.eql(updatePayload.leadImage.crop)
                 should.not.exist(results[0].leadImage.caption)
                 results[0].leadImage.fileName.should.eql('flowers.jpg')
+                results[0].leadImage.url.should.be.instanceOf(String)
                 results[0]._composed.leadImage.should.eql(mediaObject2._id)
 
                 done(err)

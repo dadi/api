@@ -1,6 +1,6 @@
 {
   "name": "@dadi/api",
-  "version": "4.4.1",
+  "version": "4.4.2",
   "main": "main.js",
   "scripts": {
     "create-client": "cd ../../.. && node ./node_modules/@dadi/api/utils/create-client.js",
@@ -21,7 +21,7 @@
     ]
   },
   "dependencies": {
-    "@dadi/api-validator": "^1.1.0",
+    "@dadi/api-validator": "^1.1.1",
     "@dadi/boot": "^1.1.3",
     "@dadi/cache": "^3.0.0",
     "@dadi/et": "^2.0.0",

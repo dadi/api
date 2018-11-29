@@ -17,7 +17,7 @@ module.exports.beforeOutput = function ({
   let isArraySyntax = Array.isArray(input[field])
   let normalisedValue = isArraySyntax ? input[field] : [input[field]]
   let mediaObjectIDs = normalisedValue.map(value => {
-    if (typeof value !== 'string') {
+    if (value && typeof value !== 'string') {
       return value._id
     }
 
@@ -93,7 +93,15 @@ module.exports.beforeSave = function ({
     }
 
     return value
-  })
+  }).filter(Boolean)
+
+  // Are we just setting the field to null?
+  if (normalisedValue.length === 0) {
+    return Promise.resolve({
+      [field]: null
+    })
+  }
+
   let queue = Promise.resolve()
 
   // If there is a validation block with a `mimeTypes` property, it means we

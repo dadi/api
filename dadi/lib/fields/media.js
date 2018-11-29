@@ -1,3 +1,8 @@
+const path = require('path')
+const mediaModel = require(
+  path.join(__dirname, '/../model/media')
+)
+
 module.exports.type = 'media'
 
 module.exports.beforeOutput = function ({
@@ -64,8 +69,9 @@ module.exports.beforeOutput = function ({
       return id
     })
   }).then(composedValue => {
+    let formattedValue = mediaModel.formatDocuments(composedValue)
     let output = Object.assign(input, {
-      [field]: isArraySyntax ? composedValue : composedValue[0]
+      [field]: isArraySyntax ? formattedValue : formattedValue[0]
     })
 
     if (composedIDs.length > 0) {

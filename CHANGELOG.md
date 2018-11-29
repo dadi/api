@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## [4.4.3] (2018-11-29)
+
+### Fixed
+
+- [#519](https://github.com/dadi/api/pull/519): add URL property to composed Media values
+
 ## [4.4.2] (2018-11-29)
 
 ### Fixed

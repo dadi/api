@@ -7,9 +7,9 @@ const should = require('should')
 const PERMISSIONS = {
   ALL: { create: true, read: true, update: true, delete: true },
   NO_READ: { read: false },
-  CREATE: { create: true, read: false, update: false, delete: false },
+  CREATE: { create: true, read: true, update: false, delete: false },
   READ: { create: false, read: true, update: false, delete: false },
-  UPDATE: { create: false, read: false, update: true, delete: false },
+  UPDATE: { create: false, read: true, update: true, delete: false },
   DELETE: { create: false, read: false, update: false, delete: true },
   READ_EXCLUDE_FIELDS: { read: { fields: { title: 0 } } },
   FILTER: { read: { filter: '{"title":"very long title"}' } }
@@ -948,7 +948,9 @@ describe('Collections API', () => {
           .set('Authorization', `Bearer ${bearerToken}`)
           .end((err, res) => {
             if (err) return done(err)
+
             res.statusCode.should.eql(400)
+
             done()
           })
         })
@@ -982,7 +984,9 @@ describe('Collections API', () => {
           .set('Authorization', `Bearer ${bearerToken}`)
           .end((err, res) => {
             if (err) return done(err)
+
             res.statusCode.should.eql(403)
+
             done()
           })
         })
@@ -1016,7 +1020,12 @@ describe('Collections API', () => {
           .set('Authorization', `Bearer ${bearerToken}`)
           .end((err, res) => {
             if (err) return done(err)
+
             res.statusCode.should.eql(200)
+            res.body.results.length.should.eql(1)
+            res.body.results[0].field1.should.eql(payload.field1)
+            res.body.results[0].title.should.eql(payload.title)
+
             done()
           })
         })
@@ -1028,16 +1037,22 @@ describe('Collections API', () => {
 
       app.components['/vtest/testdb/test-schema'].model.settings.authenticate = false
 
-      client
-      .post(`/vtest/testdb/test-schema`)
-      .send({
+      let payload = {
         field1: 'fieldValue',
         title: 'title'
-      })
+      }
+
+      client
+      .post(`/vtest/testdb/test-schema`)
+      .send(payload)
       .set('content-type', 'application/json')
       .end((err, res) => {
         if (err) return done(err)
+
         res.statusCode.should.eql(200)
+        res.body.results.length.should.eql(1)
+        res.body.results[0].field1.should.eql(payload.field1)
+        res.body.results[0].title.should.eql(payload.title)
 
         app.components['/vtest/testdb/test-schema'].model.settings = modelSettings
 
@@ -1054,19 +1069,486 @@ describe('Collections API', () => {
         'DELETE'
       ]
 
-      client
-      .post(`/vtest/testdb/test-schema`)
-      .send({
+      let payload = {
         field1: 'fieldValue',
         title: 'title'
-      })
+      }
+
+      client
+      .post(`/vtest/testdb/test-schema`)
+      .send(payload)
       .end((err, res) => {
         if (err) return done(err)
+
         res.statusCode.should.eql(200)
+        res.body.results.length.should.eql(1)
+        res.body.results[0].field1.should.eql(payload.field1)
+        res.body.results[0].title.should.eql(payload.title)
 
         app.components['/vtest/testdb/test-schema'].model.settings = modelSettings
 
         done()
+      })
+    })
+
+    it('should create the document but return just the IDs if the client does not have read permissions on the collection', function (done) {
+      let testClient = {
+        clientId: 'apiClient',
+        secret: 'someSecret',
+        resources: {
+          'collection:testdb_test-schema': {
+            create: true,
+            read: false
+          }
+        }
+      }
+
+      let payload = { field1: 'fieldValue', title: 'title' }
+
+      help.getBearerTokenWithPermissions({
+        accessType: 'admin'
+      }).then(adminToken => {
+        help.createACLClient(testClient).then(() => {
+          client
+          .post(config.get('auth.tokenUrl'))
+          .set('content-type', 'application/json')
+          .send(testClient)
+          .expect(200)
+          .end((err, res) => {
+            if (err) return done(err)
+
+            let bearerToken = res.body.accessToken
+
+            client
+            .post(`/vtest/testdb/test-schema/`)
+            .send(payload)
+            .set('content-type', 'application/json')
+            .set('Authorization', `Bearer ${bearerToken}`)
+            .end((err, res) => {
+              if (err) return done(err)
+
+              res.statusCode.should.eql(200)
+              res.body.results.length.should.eql(1)
+              Object.keys(res.body.results[0]).should.eql(['_id'])
+
+              let id = res.body.results[0]._id
+
+              client
+              .get(`/vtest/testdb/test-schema/${id}`)
+              .set('content-type', 'application/json')
+              .set('Authorization', `Bearer ${adminToken}`)
+              .end((err, res) => {
+                res.body.results.length.should.eql(1)
+                res.body.results[0]._id.should.eql(id)
+                res.body.results[0].field1.should.eql(payload.field1)
+                res.body.results[0].title.should.eql(payload.title)
+
+                done(err)
+              })
+            })
+          })
+        })
+      })
+    })
+
+    it('should create the document but return just the fields defined in the client\'s read permissions (projection of type "includes")', function (done) {
+      let testClient = {
+        clientId: 'apiClient',
+        secret: 'someSecret',
+        resources: {
+          'collection:testdb_test-schema': {
+            create: true,
+            read: {
+              fields: {
+                _createdAt: 1,
+                field1: 1
+              }
+            }
+          }
+        }
+      }
+
+      let payload = { field1: 'fieldValue', title: 'title' }
+
+      help.getBearerTokenWithPermissions({
+        accessType: 'admin'
+      }).then(adminToken => {
+        help.createACLClient(testClient).then(() => {
+          client
+          .post(config.get('auth.tokenUrl'))
+          .set('content-type', 'application/json')
+          .send(testClient)
+          .expect(200)
+          .end((err, res) => {
+            if (err) return done(err)
+
+            let bearerToken = res.body.accessToken
+
+            client
+            .post(`/vtest/testdb/test-schema/`)
+            .send(payload)
+            .set('content-type', 'application/json')
+            .set('Authorization', `Bearer ${bearerToken}`)
+            .end((err, res) => {
+              if (err) return done(err)
+
+              res.statusCode.should.eql(200)
+              res.body.results.length.should.eql(1)
+              Object.keys(res.body.results[0]).length.should.eql(3)
+              res.body.results[0]._createdAt.should.be.instanceOf(Number)
+              res.body.results[0]._id.should.be.instanceOf(String)
+              res.body.results[0].field1.should.eql(payload.field1)
+
+              let id = res.body.results[0]._id
+
+              client
+              .get(`/vtest/testdb/test-schema/${id}`)
+              .set('content-type', 'application/json')
+              .set('Authorization', `Bearer ${adminToken}`)
+              .end((err, res) => {
+                res.body.results.length.should.eql(1)
+                res.body.results[0]._id.should.eql(id)
+                res.body.results[0].field1.should.eql(payload.field1)
+                res.body.results[0].title.should.eql(payload.title)
+
+                done(err)
+              })
+            })
+          })
+        })
+      })
+    })
+
+    it('should create the document but return just the fields defined in the client\'s read permissions (projection of type "excludes")', function (done) {
+      let testClient = {
+        clientId: 'apiClient',
+        secret: 'someSecret',
+        resources: {
+          'collection:testdb_test-schema': {
+            create: true,
+            read: {
+              fields: {
+                _createdAt: 0,
+                field1: 0
+              }
+            }
+          }
+        }
+      }
+
+      let payload = { field1: 'fieldValue', title: 'title' }
+
+      help.getBearerTokenWithPermissions({
+        accessType: 'admin'
+      }).then(adminToken => {
+        help.createACLClient(testClient).then(() => {
+          client
+          .post(config.get('auth.tokenUrl'))
+          .set('content-type', 'application/json')
+          .send(testClient)
+          .expect(200)
+          .end((err, res) => {
+            if (err) return done(err)
+
+            let bearerToken = res.body.accessToken
+
+            client
+            .post(`/vtest/testdb/test-schema/`)
+            .send(payload)
+            .set('content-type', 'application/json')
+            .set('Authorization', `Bearer ${bearerToken}`)
+            .end((err, res) => {
+              if (err) return done(err)
+
+              res.statusCode.should.eql(200)
+              res.body.results.length.should.eql(1)
+              res.body.results[0]._createdBy.should.be.instanceOf(String)
+              res.body.results[0]._id.should.be.instanceOf(String)
+              res.body.results[0].title.should.eql(payload.title)
+              should.not.exist(res.body.results[0]._createdAt)
+              should.not.exist(res.body.results[0].field1)
+
+              let id = res.body.results[0]._id
+
+              client
+              .get(`/vtest/testdb/test-schema/${id}`)
+              .set('content-type', 'application/json')
+              .set('Authorization', `Bearer ${adminToken}`)
+              .end((err, res) => {
+                res.body.results.length.should.eql(1)
+                res.body.results[0]._id.should.eql(id)
+                res.body.results[0].field1.should.eql(payload.field1)
+                res.body.results[0].title.should.eql(payload.title)
+
+                done(err)
+              })
+            })
+          })
+        })
+      })
+    })
+
+    it('should create the document but not compose a reference field if the client does not have read permissions on the referenced collection', function (done) {
+      let testClient = {
+        clientId: 'apiClient',
+        secret: 'someSecret',
+        resources: {
+          'collection:testdb_test-schema': {
+            create: true,
+            read: true
+          },
+          'collection:testdb_test-reference-schema': {
+            read: false
+          }
+        }
+      }
+
+      let referencePayload = {
+        refField1: 'hello',
+        refField2: 123
+      }
+
+      help.getBearerTokenWithPermissions({
+        accessType: 'admin'
+      }).then(adminToken => {
+        client
+        .post(`/vtest/testdb/test-reference-schema/`)
+        .send(referencePayload)
+        .set('content-type', 'application/json')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .expect(200)
+        .end((err, res) => {
+          if (err) return done(err)
+
+          let id = res.body.results[0]._id
+          let payload = {
+            field1: 'something',
+            title: 'hello',
+            fieldReference: id
+          }
+
+          help.createACLClient(testClient).then(() => {
+            client
+            .post(config.get('auth.tokenUrl'))
+            .set('content-type', 'application/json')
+            .send(testClient)
+            .expect(200)
+            .end((err, res) => {
+              if (err) return done(err)
+
+              let bearerToken = res.body.accessToken
+
+              client
+              .post(`/vtest/testdb/test-schema?compose=true`)
+              .send(payload)
+              .set('content-type', 'application/json')
+              .set('Authorization', `Bearer ${bearerToken}`)
+              .end((err, res) => {
+                if (err) return done(err)
+
+                res.statusCode.should.eql(200)
+                res.body.results.length.should.eql(1)
+                res.body.results[0].field1.should.eql(payload.field1)
+                res.body.results[0].title.should.eql(payload.title)
+                res.body.results[0].fieldReference.should.eql(payload.fieldReference)
+
+                let id = res.body.results[0]._id
+
+                client
+                .get(`/vtest/testdb/test-schema/${id}?compose=true`)
+                .set('content-type', 'application/json')
+                .set('Authorization', `Bearer ${adminToken}`)
+                .end((err, res) => {
+                  res.body.results[0].fieldReference.refField1.should.eql(referencePayload.refField1)
+                  res.body.results[0].fieldReference.refField2.should.eql(referencePayload.refField2)
+
+                  done(err)
+                })
+              })
+            })
+          })
+        })
+      })
+    })
+
+    it('should create the document and compose a reference field so that the response respects the `fields` object defined in the read permissions of the referenced collection (projection of type "includes")', function (done) {
+      let testClient = {
+        clientId: 'apiClient',
+        secret: 'someSecret',
+        resources: {
+          'collection:testdb_test-schema': {
+            create: true,
+            read: true
+          },
+          'collection:testdb_test-reference-schema': {
+            read: {
+              fields: {
+                refField2: 1
+              }
+            }
+          }
+        }
+      }
+
+      let referencePayload = {
+        refField1: 'hello',
+        refField2: 123
+      }
+
+      help.getBearerTokenWithPermissions({
+        accessType: 'admin'
+      }).then(adminToken => {
+        client
+        .post(`/vtest/testdb/test-reference-schema/`)
+        .send(referencePayload)
+        .set('content-type', 'application/json')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .expect(200)
+        .end((err, res) => {
+          if (err) return done(err)
+
+          let id = res.body.results[0]._id
+          let payload = {
+            field1: 'something',
+            title: 'hello',
+            fieldReference: id
+          }
+
+          help.createACLClient(testClient).then(() => {
+            client
+            .post(config.get('auth.tokenUrl'))
+            .set('content-type', 'application/json')
+            .send(testClient)
+            .expect(200)
+            .end((err, res) => {
+              if (err) return done(err)
+
+              let bearerToken = res.body.accessToken
+
+              client
+              .post(`/vtest/testdb/test-schema?compose=true`)
+              .send(payload)
+              .set('content-type', 'application/json')
+              .set('Authorization', `Bearer ${bearerToken}`)
+              .end((err, res) => {
+                if (err) return done(err)
+
+                res.statusCode.should.eql(200)
+                res.body.results.length.should.eql(1)
+                res.body.results[0].field1.should.eql(payload.field1)
+                res.body.results[0].title.should.eql(payload.title)
+                Object.keys(res.body.results[0].fieldReference).length.should.eql(2)
+                res.body.results[0].fieldReference._id.should.eql(payload.fieldReference)
+                res.body.results[0].fieldReference.refField2.should.eql(referencePayload.refField2)
+
+                let id = res.body.results[0]._id
+
+                client
+                .get(`/vtest/testdb/test-schema/${id}?compose=true`)
+                .set('content-type', 'application/json')
+                .set('Authorization', `Bearer ${adminToken}`)
+                .end((err, res) => {
+                  res.body.results[0].fieldReference.refField1.should.eql(referencePayload.refField1)
+                  res.body.results[0].fieldReference.refField2.should.eql(referencePayload.refField2)
+
+                  done(err)
+                })
+              })
+            })
+          })
+        })
+      })
+    })
+
+    it('should create the document and compose a reference field so that the response respects the `fields` object defined in the read permissions of the referenced collection (projection of type "excludes")', function (done) {
+      let testClient = {
+        clientId: 'apiClient',
+        secret: 'someSecret',
+        resources: {
+          'collection:testdb_test-schema': {
+            create: true,
+            read: true
+          },
+          'collection:testdb_test-reference-schema': {
+            read: {
+              fields: {
+                refField2: 0
+              }
+            }
+          }
+        }
+      }
+
+      let referencePayload = {
+        refField1: 'hello',
+        refField2: 123
+      }
+
+      help.getBearerTokenWithPermissions({
+        accessType: 'admin'
+      }).then(adminToken => {
+        client
+        .post(`/vtest/testdb/test-reference-schema/`)
+        .send(referencePayload)
+        .set('content-type', 'application/json')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .expect(200)
+        .end((err, res) => {
+          if (err) return done(err)
+
+          let id = res.body.results[0]._id
+          let payload = {
+            field1: 'something',
+            title: 'hello',
+            fieldReference: id
+          }
+
+          help.createACLClient(testClient).then(() => {
+            client
+            .post(config.get('auth.tokenUrl'))
+            .set('content-type', 'application/json')
+            .send(testClient)
+            .expect(200)
+            .end((err, res) => {
+              if (err) return done(err)
+
+              let bearerToken = res.body.accessToken
+
+              client
+              .post(`/vtest/testdb/test-schema?compose=true`)
+              .send(payload)
+              .set('content-type', 'application/json')
+              .set('Authorization', `Bearer ${bearerToken}`)
+              .end((err, res) => {
+                if (err) return done(err)
+
+                res.statusCode.should.eql(200)
+                res.body.results.length.should.eql(1)
+                res.body.results[0].field1.should.eql(payload.field1)
+                res.body.results[0].title.should.eql(payload.title)
+                res.body.results[0].fieldReference._id.should.eql(payload.fieldReference)
+                res.body.results[0].fieldReference.refField1.should.eql(referencePayload.refField1)
+                should.exist(res.body.results[0].fieldReference._createdAt)
+                should.exist(res.body.results[0].fieldReference._createdBy)
+                should.exist(res.body.results[0].fieldReference._apiVersion)
+                should.not.exist(res.body.results[0].fieldReference.refField2)
+
+                let id = res.body.results[0]._id
+
+                client
+                .get(`/vtest/testdb/test-schema/${id}?compose=true`)
+                .set('content-type', 'application/json')
+                .set('Authorization', `Bearer ${adminToken}`)
+                .end((err, res) => {
+                  res.body.results[0].fieldReference.refField1.should.eql(referencePayload.refField1)
+                  res.body.results[0].fieldReference.refField2.should.eql(referencePayload.refField2)
+
+                  done(err)
+                })
+              })
+            })
+          })
+        })
       })
     })
 
@@ -1506,6 +1988,544 @@ describe('Collections API', () => {
         app.components['/vtest/testdb/test-schema'].model.settings = modelSettings
 
         done()
+      })
+    })
+
+    it('should update the document but return just the IDs if the client does not have read permissions on the collection', function (done) {
+      let testClient = {
+        clientId: 'apiClient',
+        secret: 'someSecret',
+        resources: {
+          'collection:testdb_test-schema': {
+            read: false,
+            update: true
+          }
+        }
+      }
+
+      let original = {
+        field1: 'fieldValue',
+        title: 'title'
+      }
+
+      help.getBearerTokenWithPermissions({
+        accessType: 'admin'
+      }).then(adminToken => {
+        client
+        .post(`/vtest/testdb/test-schema/`)
+        .send(original)
+        .set('content-type', 'application/json')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .expect(200)
+        .end((err, res) => {
+          if (err) return done(err)
+
+          let id = res.body.results[0]._id
+
+          help.createACLClient(testClient).then(() => {
+            client
+            .post(config.get('auth.tokenUrl'))
+            .set('content-type', 'application/json')
+            .send(testClient)
+            .expect(200)
+            .end((err, res) => {
+              if (err) return done(err)
+
+              let bearerToken = res.body.accessToken
+              let update = {
+                title: 'new title'
+              }
+
+              client
+              .put(`/vtest/testdb/test-schema/${id}`)
+              .send(update)
+              .set('content-type', 'application/json')
+              .set('Authorization', `Bearer ${bearerToken}`)
+              .expect(200)
+              .end((err, res) => {
+                res.body.results.length.should.eql(1)
+                res.body.results[0].should.eql({
+                  _id: id
+                })
+
+                client
+                .get(`/vtest/testdb/test-schema/${id}`)
+                .set('content-type', 'application/json')
+                .set('Authorization', `Bearer ${adminToken}`)
+                .expect(200)
+                .end((err, res) => {
+                  res.body.results.length.should.eql(1)
+                  res.body.results[0]._id.should.eql(id)
+                  res.body.results[0].field1.should.eql(original.field1)
+                  res.body.results[0].title.should.eql(update.title)
+
+                  done(err)
+                })
+              })
+            })
+          })
+        })
+      })
+    })
+
+    it('should update the document but return just the fields defined in the client\'s read permissions (projection of type "includes")', function (done) {
+      let testClient = {
+        clientId: 'apiClient',
+        secret: 'someSecret',
+        resources: {
+          'collection:testdb_test-schema': {
+            read: {
+              fields: {
+                _createdAt: 1,
+                field1: 1
+              }
+            },
+            update: true
+          }
+        }
+      }
+
+      let original = {
+        field1: 'fieldValue',
+        title: 'title'
+      }
+
+      help.getBearerTokenWithPermissions({
+        accessType: 'admin'
+      }).then(adminToken => {
+        client
+        .post(`/vtest/testdb/test-schema/`)
+        .send(original)
+        .set('content-type', 'application/json')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .expect(200)
+        .end((err, res) => {
+          if (err) return done(err)
+
+          let id = res.body.results[0]._id
+
+          help.createACLClient(testClient).then(() => {
+            client
+            .post(config.get('auth.tokenUrl'))
+            .set('content-type', 'application/json')
+            .send(testClient)
+            .expect(200)
+            .end((err, res) => {
+              if (err) return done(err)
+
+              let bearerToken = res.body.accessToken
+              let update = {
+                title: 'new title'
+              }
+
+              client
+              .put(`/vtest/testdb/test-schema/${id}`)
+              .send(update)
+              .set('content-type', 'application/json')
+              .set('Authorization', `Bearer ${bearerToken}`)
+              .expect(200)
+              .end((err, res) => {
+                res.body.results.length.should.eql(1)
+                Object.keys(res.body.results[0]).length.should.eql(3)
+                res.body.results[0]._createdAt.should.be.instanceOf(Number)
+                res.body.results[0]._id.should.be.instanceOf(String)
+                res.body.results[0].field1.should.eql(original.field1)
+
+                client
+                .get(`/vtest/testdb/test-schema/${id}`)
+                .set('content-type', 'application/json')
+                .set('Authorization', `Bearer ${adminToken}`)
+                .expect(200)
+                .end((err, res) => {
+                  res.body.results.length.should.eql(1)
+                  res.body.results[0]._id.should.eql(id)
+                  res.body.results[0].field1.should.eql(original.field1)
+                  res.body.results[0].title.should.eql(update.title)
+
+                  done(err)
+                })
+              })
+            })
+          })
+        })
+      })
+    })
+
+    it('should update the document but return just the fields defined in the client\'s read permissions (projection of type "excludes")', function (done) {
+      let testClient = {
+        clientId: 'apiClient',
+        secret: 'someSecret',
+        resources: {
+          'collection:testdb_test-schema': {
+            read: {
+              fields: {
+                _createdAt: 0,
+                field1: 0
+              }
+            },
+            update: true
+          }
+        }
+      }
+
+      let original = {
+        field1: 'fieldValue',
+        title: 'title'
+      }
+
+      help.getBearerTokenWithPermissions({
+        accessType: 'admin'
+      }).then(adminToken => {
+        client
+        .post(`/vtest/testdb/test-schema/`)
+        .send(original)
+        .set('content-type', 'application/json')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .expect(200)
+        .end((err, res) => {
+          if (err) return done(err)
+
+          let id = res.body.results[0]._id
+
+          help.createACLClient(testClient).then(() => {
+            client
+            .post(config.get('auth.tokenUrl'))
+            .set('content-type', 'application/json')
+            .send(testClient)
+            .expect(200)
+            .end((err, res) => {
+              if (err) return done(err)
+
+              let bearerToken = res.body.accessToken
+              let update = {
+                title: 'new title'
+              }
+
+              client
+              .put(`/vtest/testdb/test-schema/${id}`)
+              .send(update)
+              .set('content-type', 'application/json')
+              .set('Authorization', `Bearer ${bearerToken}`)
+              .expect(200)
+              .end((err, res) => {
+                res.body.results.length.should.eql(1)
+                res.body.results[0]._createdBy.should.be.instanceOf(String)
+                res.body.results[0]._id.should.be.instanceOf(String)
+                res.body.results[0].title.should.eql(update.title)
+                should.not.exist(res.body.results[0]._createdAt)
+                should.not.exist(res.body.results[0].field1)
+
+                client
+                .get(`/vtest/testdb/test-schema/${id}`)
+                .set('content-type', 'application/json')
+                .set('Authorization', `Bearer ${adminToken}`)
+                .expect(200)
+                .end((err, res) => {
+                  res.body.results.length.should.eql(1)
+                  res.body.results[0]._id.should.eql(id)
+                  res.body.results[0].field1.should.eql(original.field1)
+                  res.body.results[0].title.should.eql(update.title)
+
+                  done(err)
+                })
+              })
+            })
+          })
+        })
+      })
+    })
+
+    it('should update the document but not compose a reference field if the client does not have read permissions on the referenced collection', function (done) {
+      let testClient = {
+        clientId: 'apiClient',
+        secret: 'someSecret',
+        resources: {
+          'collection:testdb_test-schema': {
+            read: true,
+            update: true
+          },
+          'collection:testdb_test-reference-schema': {
+            read: false
+          }
+        }
+      }
+
+      let referencePayload = {
+        refField1: 'hello',
+        refField2: 123
+      }
+
+      help.getBearerTokenWithPermissions({
+        accessType: 'admin'
+      }).then(adminToken => {
+        client
+        .post(`/vtest/testdb/test-reference-schema/`)
+        .send(referencePayload)
+        .set('content-type', 'application/json')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .expect(200)
+        .end((err, res) => {
+          if (err) return done(err)
+
+          let referenceId = res.body.results[0]._id
+          let original = {
+            field1: 'something',
+            title: 'hello',
+            fieldReference: referenceId
+          }
+
+          client
+          .post(`/vtest/testdb/test-schema?compose=true`)
+          .send(original)
+          .set('content-type', 'application/json')
+          .set('Authorization', `Bearer ${adminToken}`)
+          .end((err, res) => {
+            if (err) return done(err)
+
+            let id = res.body.results[0]._id
+
+            help.createACLClient(testClient).then(() => {
+              client
+              .post(config.get('auth.tokenUrl'))
+              .set('content-type', 'application/json')
+              .send(testClient)
+              .expect(200)
+              .end((err, res) => {
+                if (err) return done(err)
+
+                let bearerToken = res.body.accessToken
+                let update = {
+                  title: 'new title'
+                }
+
+                client
+                .put(`/vtest/testdb/test-schema/${id}?compose=true`)
+                .send(update)
+                .set('content-type', 'application/json')
+                .set('Authorization', `Bearer ${bearerToken}`)
+                .expect(200)
+                .end((err, res) => {
+                  res.body.results.length.should.eql(1)
+                  res.body.results[0].field1.should.eql(original.field1)
+                  res.body.results[0].title.should.eql(update.title)
+                  res.body.results[0].fieldReference.should.eql(original.fieldReference)
+
+                  client
+                  .get(`/vtest/testdb/test-schema/${id}?compose=true`)
+                  .set('content-type', 'application/json')
+                  .set('Authorization', `Bearer ${adminToken}`)
+                  .end((err, res) => {
+                    res.body.results[0].fieldReference.refField1.should.eql(referencePayload.refField1)
+                    res.body.results[0].fieldReference.refField2.should.eql(referencePayload.refField2)
+
+                    done(err)
+                  })
+                })
+              })
+            })
+          })
+        })
+      })
+    })
+
+    it('should update the document and compose a reference field so that the response respects the `fields` object defined in the read permissions of the referenced collection (projection of type "includes")', function (done) {
+      let testClient = {
+        clientId: 'apiClient',
+        secret: 'someSecret',
+        resources: {
+          'collection:testdb_test-schema': {
+            read: true,
+            update: true
+          },
+          'collection:testdb_test-reference-schema': {
+            read: {
+              fields: {
+                refField2: 1
+              }
+            }
+          }
+        }
+      }
+
+      let referencePayload = {
+        refField1: 'hello',
+        refField2: 123
+      }
+
+      help.getBearerTokenWithPermissions({
+        accessType: 'admin'
+      }).then(adminToken => {
+        client
+        .post(`/vtest/testdb/test-reference-schema/`)
+        .send(referencePayload)
+        .set('content-type', 'application/json')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .expect(200)
+        .end((err, res) => {
+          if (err) return done(err)
+
+          let referenceId = res.body.results[0]._id
+          let original = {
+            field1: 'something',
+            title: 'hello',
+            fieldReference: referenceId
+          }
+
+          client
+          .post(`/vtest/testdb/test-schema?compose=true`)
+          .send(original)
+          .set('content-type', 'application/json')
+          .set('Authorization', `Bearer ${adminToken}`)
+          .end((err, res) => {
+            if (err) return done(err)
+
+            let id = res.body.results[0]._id
+
+            help.createACLClient(testClient).then(() => {
+              client
+              .post(config.get('auth.tokenUrl'))
+              .set('content-type', 'application/json')
+              .send(testClient)
+              .expect(200)
+              .end((err, res) => {
+                if (err) return done(err)
+
+                let bearerToken = res.body.accessToken
+                let update = {
+                  title: 'new title'
+                }
+
+                client
+                .put(`/vtest/testdb/test-schema/${id}?compose=true`)
+                .send(update)
+                .set('content-type', 'application/json')
+                .set('Authorization', `Bearer ${bearerToken}`)
+                .expect(200)
+                .end((err, res) => {
+                  res.body.results.length.should.eql(1)
+                  res.body.results[0].field1.should.eql(original.field1)
+                  res.body.results[0].title.should.eql(update.title)
+                  Object.keys(res.body.results[0].fieldReference).length.should.eql(2)
+                  res.body.results[0].fieldReference._id.should.eql(original.fieldReference)
+                  res.body.results[0].fieldReference.refField2.should.eql(referencePayload.refField2)
+
+                  client
+                  .get(`/vtest/testdb/test-schema/${id}?compose=true`)
+                  .set('content-type', 'application/json')
+                  .set('Authorization', `Bearer ${adminToken}`)
+                  .end((err, res) => {
+                    res.body.results[0].fieldReference.refField1.should.eql(referencePayload.refField1)
+                    res.body.results[0].fieldReference.refField2.should.eql(referencePayload.refField2)
+
+                    done(err)
+                  })
+                })
+              })
+            })
+          })
+        })
+      })
+    })
+
+    it('should update the document and compose a reference field so that the response respects the `fields` object defined in the read permissions of the referenced collection (projection of type "excludes")', function (done) {
+      let testClient = {
+        clientId: 'apiClient',
+        secret: 'someSecret',
+        resources: {
+          'collection:testdb_test-schema': {
+            read: true,
+            update: true
+          },
+          'collection:testdb_test-reference-schema': {
+            read: {
+              fields: {
+                refField2: 0
+              }
+            }
+          }
+        }
+      }
+
+      let referencePayload = {
+        refField1: 'hello',
+        refField2: 123
+      }
+
+      help.getBearerTokenWithPermissions({
+        accessType: 'admin'
+      }).then(adminToken => {
+        client
+        .post(`/vtest/testdb/test-reference-schema/`)
+        .send(referencePayload)
+        .set('content-type', 'application/json')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .expect(200)
+        .end((err, res) => {
+          if (err) return done(err)
+
+          let referenceId = res.body.results[0]._id
+          let original = {
+            field1: 'something',
+            title: 'hello',
+            fieldReference: referenceId
+          }
+
+          client
+          .post(`/vtest/testdb/test-schema?compose=true`)
+          .send(original)
+          .set('content-type', 'application/json')
+          .set('Authorization', `Bearer ${adminToken}`)
+          .end((err, res) => {
+            if (err) return done(err)
+
+            let id = res.body.results[0]._id
+
+            help.createACLClient(testClient).then(() => {
+              client
+              .post(config.get('auth.tokenUrl'))
+              .set('content-type', 'application/json')
+              .send(testClient)
+              .expect(200)
+              .end((err, res) => {
+                if (err) return done(err)
+
+                let bearerToken = res.body.accessToken
+                let update = {
+                  title: 'new title'
+                }
+
+                client
+                .put(`/vtest/testdb/test-schema/${id}?compose=true`)
+                .send(update)
+                .set('content-type', 'application/json')
+                .set('Authorization', `Bearer ${bearerToken}`)
+                .expect(200)
+                .end((err, res) => {
+                  res.body.results.length.should.eql(1)
+                  res.body.results[0].field1.should.eql(original.field1)
+                  res.body.results[0].title.should.eql(update.title)
+                  res.body.results[0].fieldReference._id.should.eql(original.fieldReference)
+                  res.body.results[0].fieldReference.refField1.should.eql(referencePayload.refField1)
+                  should.exist(res.body.results[0].fieldReference._createdAt)
+                  should.exist(res.body.results[0].fieldReference._createdBy)
+                  should.exist(res.body.results[0].fieldReference._apiVersion)
+                  should.not.exist(res.body.results[0].fieldReference.refField2)
+
+                  client
+                  .get(`/vtest/testdb/test-schema/${id}?compose=true`)
+                  .set('content-type', 'application/json')
+                  .set('Authorization', `Bearer ${adminToken}`)
+                  .end((err, res) => {
+                    res.body.results[0].fieldReference.refField1.should.eql(referencePayload.refField1)
+                    res.body.results[0].fieldReference.refField2.should.eql(referencePayload.refField2)
+
+                    done(err)
+                  })
+                })
+              })
+            })
+          })
+        })
       })
     })
 

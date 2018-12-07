@@ -77,12 +77,26 @@ function update ({
   // Get a reference to the documents that will be updated.
   let updatedDocuments = []
 
+  // Removing internal API properties from the update object.
+  if (removeInternalProperties) {
+    update = this.removeInternalProperties(update)
+  }
+
+  let {hooks} = this.settings
+
+  // If an ACL check is performed, this variable will contain the resulting
+  // access matrix.
+  let aclAccess
+
   return this.validateAccess({
     client,
+    documents: update,
     query,
     type: 'update'
-  }).then(({query: aclQuery, schema}) => {
+  }).then(({access, documents: newUpdate, query: aclQuery, schema}) => {
+    aclAccess = access
     query = aclQuery
+    update = newUpdate
 
     // If merging the request query with ACL data resulted in
     // an impossible query, we can simply return an empty result
@@ -90,11 +104,6 @@ function update ({
     // Promise now and catch this case at the end of the chain.
     if (query instanceof Error) {
       return Promise.reject(query)
-    }
-
-    // Removing internal API properties from the update object.
-    if (removeInternalProperties) {
-      update = this.removeInternalProperties(update)
     }
 
     if (!validate) return
@@ -160,9 +169,9 @@ function update ({
       update = transformedUpdate
 
       // Run any `beforeUpdate` hooks.
-      if (this.settings.hooks && this.settings.hooks.beforeUpdate) {
+      if (hooks && hooks.beforeUpdate) {
         return new Promise((resolve, reject) => {
-          async.reduce(this.settings.hooks.beforeUpdate, update, (current, hookConfig, callback) => {
+          async.reduce(hooks.beforeUpdate, update, (current, hookConfig, callback) => {
             let hook = new Hook(hookConfig, 'beforeUpdate')
 
             Promise.resolve(hook.apply(current, updatedDocuments, this.schema, this.name, req))
@@ -220,10 +229,10 @@ function update ({
       }
 
       return this.find({
-        query: updatedDocumentsQuery,
         options: {
           compose: true
-        }
+        },
+        query: updatedDocumentsQuery
       })
     }).then(data => {
       if (data.results.length === 0) {
@@ -231,9 +240,9 @@ function update ({
       }
 
       // Run any `afterUpdate` hooks.
-      if (this.settings.hooks && (typeof this.settings.hooks.afterUpdate === 'object')) {
-        this.settings.hooks.afterUpdate.forEach((hookConfig, index) => {
-          let hook = new Hook(this.settings.hooks.afterUpdate[index], 'afterUpdate')
+      if (hooks && (typeof hooks.afterUpdate === 'object')) {
+        hooks.afterUpdate.forEach((hookConfig, index) => {
+          let hook = new Hook(hooks.afterUpdate[index], 'afterUpdate')
 
           return hook.apply(data.results, this.schema, this.name)
         })
@@ -245,6 +254,7 @@ function update ({
       // Format result set for output.
       if (!rawOutput) {
         return this.formatForOutput(data.results, {
+          access: aclAccess && aclAccess.read,
           client,
           composeOverride: compose
         }).then(results => {

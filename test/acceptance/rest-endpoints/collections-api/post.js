@@ -53,19 +53,12 @@ describe('Collections API – POST', function () {
           help.writeTempFile(
             'temp-workspace/collections/vtest/testdb/collection.test-schema.json',
             schema,
-            callback1 => {
-              help.writeTempFile(
-                'temp-workspace/collections/v1/testdb/collection.test-schema.json',
-                schema,
-                callback2 => {
-                  cleanupFn = () => {
-                    callback1()
-                    callback2()
-                  }
+            callback => {
+              cleanupFn = () => {
+                callback()
+              }
 
-                  done()
-                }
-              )
+              done()
             }
           )
         })
@@ -221,7 +214,6 @@ describe('Collections API – POST', function () {
         res.body.results.length.should.equal(1)
         should.exist(res.body.results[0]._id)
         should.exist(res.body.results[0].field3)
-        // (typeof res.body.results[0].field3).should.equal('object')
 
         done()
       })
@@ -244,7 +236,6 @@ describe('Collections API – POST', function () {
         res.body.results.length.should.equal(1)
         should.exist(res.body.results[0]._id)
         should.exist(res.body.results[0].field3)
-        // (typeof res.body.results[0].field3).should.equal('object')
 
         done()
       })

@@ -5,6 +5,9 @@ const Connection = require('./../connection')
 const Model = require('./../index')
 const role = require('./role')
 
+const ERROR_FORBIDDEN = 'FORBIDDEN'
+const ERROR_UNAUTHORISED = 'UNAUTHORISED'
+
 const ACL = function () {
   this.resources = {}
 
@@ -86,10 +89,10 @@ ACL.prototype.createError = function (client) {
   // authenticated, just not authorised. That is a 403. In any other case,
   // the request is unauthorised, so a 401 is returned.
   if (client && client.clientId && !client.error) {
-    return new Error('FORBIDDEN')
+    return new Error(ERROR_FORBIDDEN)
   }
 
-  return new Error('UNAUTHORISED')
+  return new Error(ERROR_UNAUTHORISED)
 }
 
 ACL.prototype.getResources = function () {
@@ -108,6 +111,8 @@ ACL.prototype.registerResource = function (name, description = null) {
 
 module.exports = new ACL()
 module.exports.ACL = ACL
+module.exports.ERROR_FORBIDDEN = ERROR_FORBIDDEN
+module.exports.ERROR_UNAUTHORISED = ERROR_UNAUTHORISED
 module.exports.access = access
 module.exports.client = client
 module.exports.role = role

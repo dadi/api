@@ -241,15 +241,53 @@ Model.prototype._formatResultSet = function (
       ? '_'
       : config.get('internalFieldsPrefix')
   }
+  let fields = null
+
+  // Based on the access matrix we may receive, `fields` may contain a field
+  // projection, which the formatted documents will need to comply with.
+  if (data.access !== true) {
+    if (data.access === false) {
+      fields = {
+        _id: 1
+      }
+    } else if (data.access && data.access.fields) {
+      fields = data.access.fields
+    }
+  }
 
   return Promise.all(
     documents.map(document => {
-      if (!document) return null
+      if (!document) {
+        return null
+      }
+
       if (typeof document === 'string') {
         return document
       }
 
+      // A field projection from the actual fields present in the document.
+      let documentFields = Object.keys(document).reduce((result, field) => {
+        result[field] = 1
+
+        return result
+      }, {})
+
+      // If `fields` is defined, we need to filter out any fields that are
+      // not supposed to be there due to ACL permissions.
+      if (fields) {
+        documentFields = this._mergeQueryAndAclFields(
+          fields,
+          documentFields
+        )
+      }
+
       return Object.keys(document).sort().reduce((result, field) => {
+        // If `fields` is defined, we filter out any fields that are not
+        // part of that projection (excluding _id).
+        if (field !== '_id' && documentFields[field] !== 1) {
+          return result
+        }
+
         return result.then(newDocument => {
           let hookName = formatForInput
             ? 'beforeSave'
@@ -703,36 +741,59 @@ Model.prototype.shouldCompose = function ({
  * access to a client resource, as well as creating or augmenting the
  * a series of variables useful for processing a query with ACL.
  *
- * It receives a client object ({clientId, accessType}), a fields and
- * query objects, and an access type (e.g. 'read'). If the client
- * does not have permission to access the resource, the resulting
- * Promise is rejected with an 'UNAUTHORISED' error; otherwise, the
- * Promise is resolved with a {fields, query} object, with the
- * augmented fields and query objects.
+ * It receives a client object ({clientId, accessType}), a document
+ * object (which may be an update object or a new document entirely),
+ * a fields and query objects, and an access type (e.g. 'read'). If
+ * the client does not have permission to access the resource, the
+ * resulting Promise is rejected with an 'UNAUTHORISED' error; otherwise,
+ * the Promise is resolved with a {document, fields, query} object, with
+ * the augmented document, fields and query objects.
  *
+ * Optionally, it can also receive an `access` object, which prevents the
+ * function from getting the access matrix from the database. This can be
+ * useful when calling the method consecutively for different access types,
+ * where the result of the first call can be used as a cached value for the
+ * others.
+ *
+ * @param  {Object}   options.access
  * @param  {Object}   options.client
+ * @param  {Object}   options.documents
  * @param  {Object}   options.fields
  * @param  {Object}   options.query
  * @param  {Object}   options.schema
  * @param  {String}   options.type
+ * @param  {String}   options.value
  * @return {Promise}
  */
 Model.prototype.validateAccess = function ({
+  access,
   client,
+  documents,
   fields = {},
   query = {},
   schema = this.schema,
   type
 }) {
   if (!client) {
-    return Promise.resolve({fields, query, schema})
+    return Promise.resolve({
+      documents,
+      fields,
+      query,
+      schema
+    })
   }
+
+  // Ensuring documents is in array format.
+  let normalisedDocuments = Array.isArray(documents)
+    ? documents
+    : documents && [documents]
 
   if (this.settings) {
     // If the collection has an `authenticate` property and it's set to
     // `false`, then access is granted.
     if (this.settings.authenticate === false) {
       return Promise.resolve({
+        documents,
         fields,
         query,
         schema
@@ -754,6 +815,7 @@ Model.prototype.validateAccess = function ({
         (type === 'update' && !authenticatedVerbs.includes('put'))
       ) {
         return Promise.resolve({
+          documents,
           fields,
           query,
           schema
@@ -762,7 +824,11 @@ Model.prototype.validateAccess = function ({
     }
   }
 
-  return this.acl.access.get(client, this.aclKey).then(access => {
+  let accessQueue = access
+    ? Promise.resolve(access)
+    : this.acl.access.get(client, this.aclKey)
+
+  return accessQueue.then(access => {
     let value = access[type]
 
     if (!value) {
@@ -785,19 +851,67 @@ Model.prototype.validateAccess = function ({
     }
 
     if (value.fields) {
+      let candidateFields = fields
+
+      // If we're dealing with a create or update request, then the candidate
+      // fields are not the ones sent via the `fields` URL parameter (assigned
+      // to `fields`), but the fields present in the actual create/upload
+      // payload.
+      if (normalisedDocuments) {
+        candidateFields = normalisedDocuments.reduce((fields, document) => {
+          if (document && typeof document === 'object') {
+            Object.keys(document).forEach(field => {
+              fields[field] = 1
+            })
+          }
+
+          return fields
+        }, {})
+      }
+
       try {
         fields = this._mergeQueryAndAclFields(
-          fields,
+          candidateFields,
           value.fields
         )
       } catch (err) {
         return Promise.reject(err)
       }
+
+      // If we're dealing with a create or update request, we must filter the
+      // payload to ensure that the document(s) only contain the fields which
+      // the client has access to.
+      if (normalisedDocuments) {
+        normalisedDocuments = normalisedDocuments.map(document => {
+          if (!document || typeof document !== 'object') {
+            return document
+          }
+
+          let newDocument = {}
+
+          Object.keys(document).forEach(field => {
+            if (field === '_id' || fields[field]) {
+              newDocument[field] = document[field]
+            }
+          })
+
+          return newDocument
+        })
+      }
     }
 
+    let newDocuments = Array.isArray(documents)
+      ? normalisedDocuments
+      : documents && normalisedDocuments[0]
     let newSchema = this.acl.access.filterFields(access, schema)
 
-    return {fields, query, schema: newSchema}
+    return {
+      access,
+      documents: newDocuments,
+      fields,
+      query,
+      schema: newSchema
+    }
   })
 }
 

@@ -24,11 +24,12 @@ const logger = require('@dadi/logger')
  * Finds documents in the database, running any configured hooks
  * and formatting the result set for final output.
  *
- * @param  {Object} client - client to check permissions for
- * @param  {String} language - ISO code for the language to translate documents to
- * @param  {Object} query - query to match documents against
- * @param  {Object} options
- * @param  {Object} req - request object to pass to hooks
+ * @param  {Object}  client - client to check permissions for
+ * @param  {String}  language - ISO code for the language to translate documents to
+ * @param  {Object}  query - query to match documents against
+ * @param  {Object}  options
+ * @param  {Boolean} rawOutput - whether to bypass formatting routine
+ * @param  {Object}  req - request object to pass to hooks
  * @return {Promise<ResultSet>}
  */
 function get ({
@@ -36,6 +37,7 @@ function get ({
   language,
   query = {},
   options = {},
+  rawOutput = false,
   req
 }) {
   // Is this a RESTful query by ID?
@@ -112,15 +114,19 @@ function get ({
 
     return response
   }).then(({metadata, results}) => {
-    return this.formatForOutput(
-      results,
-      {
-        client,
-        composeOverride: options.compose,
-        language,
-        urlFields: options.fields
-      }
-    ).then(results => {
+    let formatter = rawOutput
+      ? Promise.resolve(results)
+      : this.formatForOutput(
+          results,
+        {
+          client,
+          composeOverride: options.compose,
+          language,
+          urlFields: options.fields
+        }
+        )
+
+    return formatter.then(results => {
       return {results, metadata}
     })
   })

@@ -59,6 +59,7 @@ function create ({
   })
 
   let {hooks} = this.settings
+  let originalDocuments = documents
 
   // If an ACL check is performed, this variable will contain the resulting
   // access matrix.
@@ -82,7 +83,9 @@ function create ({
       documents,
       schema
     }).catch(errors => {
-      let error = this._createValidationError('Validation Failed', errors)
+      let error = this._createValidationError('Validation Failed', errors, {
+        originalDocuments
+      })
 
       return Promise.reject(error)
     })

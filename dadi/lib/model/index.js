@@ -203,11 +203,49 @@ Model.prototype._compileFieldHooks = function () {
  * @return Error
  * @api private
  */
-Model.prototype._createValidationError = function (message, data) {
+Model.prototype._createValidationError = function (message, data, {
+  originalDocuments
+} = {}) {
   const error = new Error(message || 'Model Validation Failed')
 
   error.statusCode = 400
   error.success = false
+
+  // We're checking for the specific case where the only reason for which the
+  // validation failed was because there are one or more required fields that
+  // were present in the request but the client does not have permissions to
+  // write it (i.e. `create.fields` in ACL). When that happens, we flag the
+  // corresponding error entries as `ERROR_UNAUTHORISED` and change the status
+  // code from 400 (Bad request) to 403 (Forbidden).
+  if (originalDocuments && Array.isArray(data)) {
+    let is403 = true
+
+    data.some(error => {
+      let {code, field} = error
+
+      if (code === 'ERROR_REQUIRED') {
+        let fieldIsInAllDocuments = originalDocuments.every(document => {
+          return document[field] !== undefined && document[field] !== null
+        })
+
+        is403 = is403 && fieldIsInAllDocuments
+
+        if (fieldIsInAllDocuments) {
+          error.code = 'ERROR_UNAUTHORISED'
+          error.message =
+            'is a required field which the client has no permission to write to'
+        }
+      } else {
+        is403 = false
+
+        return true
+      }
+    })
+
+    if (is403) {
+      error.statusCode = 403
+    }
+  }
 
   if (data) {
     error.errors = data

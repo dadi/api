@@ -1,0 +1,13 @@
+{
+  "fields": {
+    "refField1": {
+      "type": "String",
+      "required": false
+    },
+    "refField2": {
+      "type": "Number",
+      "required": false
+    }
+  },
+  "settings": {}
+}

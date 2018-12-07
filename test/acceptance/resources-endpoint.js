@@ -38,7 +38,7 @@ describe('Resources endpoint', function () {
 
   it('should list collection, media and custom endpoint resources', done => {
     help.getBearerTokenWithPermissions({
-      roles: ['some-role']
+      accessType: 'admin'
     }).then(bearerToken => {
       client
       .get(`/api/resources`)
@@ -74,5 +74,515 @@ describe('Resources endpoint', function () {
         done()
       })
     })
-  })  
+  })
+
+  it('should only list collection, media and custom endpoint resources for which the client has any type of access to (no resources)', done => {
+    let testClient = {
+      clientId: 'apiClient',
+      secret: 'someSecret',
+      resources: {
+        'collection:testdb_test-schema': {
+          create: false,
+          read: false,
+          update: false
+        },
+        'collection:testdb_test-required-schema': {
+          delete: false,
+          readOwn: false
+        }
+      }
+    }
+
+    help.createACLClient(testClient).then(() => {
+      client
+      .post(config.get('auth.tokenUrl'))
+      .set('content-type', 'application/json')
+      .send(testClient)
+      .expect(200)
+      .end((err, res) => {
+        if (err) return done(err)
+
+        let bearerToken = res.body.accessToken
+
+        client
+        .get(`/api/resources`)
+        .set('content-type', 'application/json')
+        .set('Authorization', `Bearer ${bearerToken}`)
+        .expect(200)
+        .end((err, res) => {
+          res.body.results.length.should.eql(0)
+
+          done(err)
+        })
+      })
+    })
+  })
+
+  it('should only list collection, media and custom endpoint resources for which the client has any type of access to (create access set to `true`)', done => {
+    let testClient = {
+      clientId: 'apiClient',
+      secret: 'someSecret',
+      resources: {
+        'collection:testdb_test-schema': {
+          create: true
+        },
+        'collection:testdb_test-required-schema': {
+          delete: false
+        }
+      }
+    }
+
+    help.createACLClient(testClient).then(() => {
+      client
+      .post(config.get('auth.tokenUrl'))
+      .set('content-type', 'application/json')
+      .send(testClient)
+      .expect(200)
+      .end((err, res) => {
+        if (err) return done(err)
+
+        let bearerToken = res.body.accessToken
+
+        client
+        .get(`/api/resources`)
+        .set('content-type', 'application/json')
+        .set('Authorization', `Bearer ${bearerToken}`)
+        .expect(200)
+        .end((err, res) => {
+          res.body.results.length.should.eql(1)
+          res.body.results[0].name.should.eql('collection:testdb_test-schema')
+
+          done(err)
+        })
+      })
+    })
+  })
+
+  it('should only list collection, media and custom endpoint resources for which the client has any type of access to (create access with `fields`)', done => {
+    let testClient = {
+      clientId: 'apiClient',
+      secret: 'someSecret',
+      resources: {
+        'collection:testdb_test-schema': {
+          create: {
+            fields: {
+              field1: 1
+            }
+          }
+        },
+        'collection:testdb_test-required-schema': {
+          delete: false
+        }
+      }
+    }
+
+    help.createACLClient(testClient).then(() => {
+      client
+      .post(config.get('auth.tokenUrl'))
+      .set('content-type', 'application/json')
+      .send(testClient)
+      .expect(200)
+      .end((err, res) => {
+        if (err) return done(err)
+
+        let bearerToken = res.body.accessToken
+
+        client
+        .get(`/api/resources`)
+        .set('content-type', 'application/json')
+        .set('Authorization', `Bearer ${bearerToken}`)
+        .expect(200)
+        .end((err, res) => {
+          res.body.results.length.should.eql(1)
+          res.body.results[0].name.should.eql('collection:testdb_test-schema')
+
+          done(err)
+        })
+      })
+    })
+  })
+
+  it('should only list collection, media and custom endpoint resources for which the client has any type of access to (create access with `filter`)', done => {
+    let testClient = {
+      clientId: 'apiClient',
+      secret: 'someSecret',
+      resources: {
+        'collection:testdb_test-schema': {
+          create: {
+            filter: {
+              field1: 'something'
+            }
+          }
+        },
+        'collection:testdb_test-required-schema': {
+          delete: false
+        }
+      }
+    }
+
+    help.createACLClient(testClient).then(() => {
+      client
+      .post(config.get('auth.tokenUrl'))
+      .set('content-type', 'application/json')
+      .send(testClient)
+      .expect(200)
+      .end((err, res) => {
+        if (err) return done(err)
+
+        let bearerToken = res.body.accessToken
+
+        client
+        .get(`/api/resources`)
+        .set('content-type', 'application/json')
+        .set('Authorization', `Bearer ${bearerToken}`)
+        .expect(200)
+        .end((err, res) => {
+          res.body.results.length.should.eql(1)
+          res.body.results[0].name.should.eql('collection:testdb_test-schema')
+
+          done(err)
+        })
+      })
+    })
+  })
+
+  it('should only list collection, media and custom endpoint resources for which the client has any type of access to (delete access set to `true`)', done => {
+    let testClient = {
+      clientId: 'apiClient',
+      secret: 'someSecret',
+      resources: {
+        'collection:testdb_test-schema': {
+          delete: true
+        },
+        'collection:testdb_test-required-schema': {
+          delete: false
+        }
+      }
+    }
+
+    help.createACLClient(testClient).then(() => {
+      client
+      .post(config.get('auth.tokenUrl'))
+      .set('content-type', 'application/json')
+      .send(testClient)
+      .expect(200)
+      .end((err, res) => {
+        if (err) return done(err)
+
+        let bearerToken = res.body.accessToken
+
+        client
+        .get(`/api/resources`)
+        .set('content-type', 'application/json')
+        .set('Authorization', `Bearer ${bearerToken}`)
+        .expect(200)
+        .end((err, res) => {
+          res.body.results.length.should.eql(1)
+          res.body.results[0].name.should.eql('collection:testdb_test-schema')
+
+          done(err)
+        })
+      })
+    })
+  })
+
+  it('should only list collection, media and custom endpoint resources for which the client has any type of access to (delete access with `filter`)', done => {
+    let testClient = {
+      clientId: 'apiClient',
+      secret: 'someSecret',
+      resources: {
+        'collection:testdb_test-schema': {
+          delete: {
+            filter: {
+              field1: 'something'
+            }
+          }
+        },
+        'collection:testdb_test-required-schema': {
+          delete: false
+        }
+      }
+    }
+
+    help.createACLClient(testClient).then(() => {
+      client
+      .post(config.get('auth.tokenUrl'))
+      .set('content-type', 'application/json')
+      .send(testClient)
+      .expect(200)
+      .end((err, res) => {
+        if (err) return done(err)
+
+        let bearerToken = res.body.accessToken
+
+        client
+        .get(`/api/resources`)
+        .set('content-type', 'application/json')
+        .set('Authorization', `Bearer ${bearerToken}`)
+        .expect(200)
+        .end((err, res) => {
+          res.body.results.length.should.eql(1)
+          res.body.results[0].name.should.eql('collection:testdb_test-schema')
+
+          done(err)
+        })
+      })
+    })
+  })
+
+  it('should only list collection, media and custom endpoint resources for which the client has any type of access to (read access set to `true`)', done => {
+    let testClient = {
+      clientId: 'apiClient',
+      secret: 'someSecret',
+      resources: {
+        'collection:testdb_test-schema': {
+          read: true
+        },
+        'collection:testdb_test-required-schema': {
+          delete: false
+        }
+      }
+    }
+
+    help.createACLClient(testClient).then(() => {
+      client
+      .post(config.get('auth.tokenUrl'))
+      .set('content-type', 'application/json')
+      .send(testClient)
+      .expect(200)
+      .end((err, res) => {
+        if (err) return done(err)
+
+        let bearerToken = res.body.accessToken
+
+        client
+        .get(`/api/resources`)
+        .set('content-type', 'application/json')
+        .set('Authorization', `Bearer ${bearerToken}`)
+        .expect(200)
+        .end((err, res) => {
+          res.body.results.length.should.eql(1)
+          res.body.results[0].name.should.eql('collection:testdb_test-schema')
+
+          done(err)
+        })
+      })
+    })
+  })
+
+  it('should only list collection, media and custom endpoint resources for which the client has any type of access to (read access with `fields`)', done => {
+    let testClient = {
+      clientId: 'apiClient',
+      secret: 'someSecret',
+      resources: {
+        'collection:testdb_test-schema': {
+          read: {
+            fields: {
+              field1: 1
+            }
+          }
+        },
+        'collection:testdb_test-required-schema': {
+          delete: false
+        }
+      }
+    }
+
+    help.createACLClient(testClient).then(() => {
+      client
+      .post(config.get('auth.tokenUrl'))
+      .set('content-type', 'application/json')
+      .send(testClient)
+      .expect(200)
+      .end((err, res) => {
+        if (err) return done(err)
+
+        let bearerToken = res.body.accessToken
+
+        client
+        .get(`/api/resources`)
+        .set('content-type', 'application/json')
+        .set('Authorization', `Bearer ${bearerToken}`)
+        .expect(200)
+        .end((err, res) => {
+          res.body.results.length.should.eql(1)
+          res.body.results[0].name.should.eql('collection:testdb_test-schema')
+
+          done(err)
+        })
+      })
+    })
+  })
+
+  it('should only list collection, media and custom endpoint resources for which the client has any type of access to (read access with `filter`)', done => {
+    let testClient = {
+      clientId: 'apiClient',
+      secret: 'someSecret',
+      resources: {
+        'collection:testdb_test-schema': {
+          read: {
+            filter: {
+              field1: 'something'
+            }
+          }
+        },
+        'collection:testdb_test-required-schema': {
+          delete: false
+        }
+      }
+    }
+
+    help.createACLClient(testClient).then(() => {
+      client
+      .post(config.get('auth.tokenUrl'))
+      .set('content-type', 'application/json')
+      .send(testClient)
+      .expect(200)
+      .end((err, res) => {
+        if (err) return done(err)
+
+        let bearerToken = res.body.accessToken
+
+        client
+        .get(`/api/resources`)
+        .set('content-type', 'application/json')
+        .set('Authorization', `Bearer ${bearerToken}`)
+        .expect(200)
+        .end((err, res) => {
+          res.body.results.length.should.eql(1)
+          res.body.results[0].name.should.eql('collection:testdb_test-schema')
+
+          done(err)
+        })
+      })
+    })
+  })
+
+  it('should only list collection, media and custom endpoint resources for which the client has any type of access to (update access set to `true`)', done => {
+    let testClient = {
+      clientId: 'apiClient',
+      secret: 'someSecret',
+      resources: {
+        'collection:testdb_test-schema': {
+          update: true
+        },
+        'collection:testdb_test-required-schema': {
+          delete: false
+        }
+      }
+    }
+
+    help.createACLClient(testClient).then(() => {
+      client
+      .post(config.get('auth.tokenUrl'))
+      .set('content-type', 'application/json')
+      .send(testClient)
+      .expect(200)
+      .end((err, res) => {
+        if (err) return done(err)
+
+        let bearerToken = res.body.accessToken
+
+        client
+        .get(`/api/resources`)
+        .set('content-type', 'application/json')
+        .set('Authorization', `Bearer ${bearerToken}`)
+        .expect(200)
+        .end((err, res) => {
+          res.body.results.length.should.eql(1)
+          res.body.results[0].name.should.eql('collection:testdb_test-schema')
+
+          done(err)
+        })
+      })
+    })
+  })
+
+  it('should only list collection, media and custom endpoint resources for which the client has any type of access to (update access with `fields`)', done => {
+    let testClient = {
+      clientId: 'apiClient',
+      secret: 'someSecret',
+      resources: {
+        'collection:testdb_test-schema': {
+          update: {
+            fields: {
+              field1: 1
+            }
+          }
+        },
+        'collection:testdb_test-required-schema': {
+          delete: false
+        }
+      }
+    }
+
+    help.createACLClient(testClient).then(() => {
+      client
+      .post(config.get('auth.tokenUrl'))
+      .set('content-type', 'application/json')
+      .send(testClient)
+      .expect(200)
+      .end((err, res) => {
+        if (err) return done(err)
+
+        let bearerToken = res.body.accessToken
+
+        client
+        .get(`/api/resources`)
+        .set('content-type', 'application/json')
+        .set('Authorization', `Bearer ${bearerToken}`)
+        .expect(200)
+        .end((err, res) => {
+          res.body.results.length.should.eql(1)
+          res.body.results[0].name.should.eql('collection:testdb_test-schema')
+
+          done(err)
+        })
+      })
+    })
+  })
+
+  it('should only list collection, media and custom endpoint resources for which the client has any type of access to (update access with `filter`)', done => {
+    let testClient = {
+      clientId: 'apiClient',
+      secret: 'someSecret',
+      resources: {
+        'collection:testdb_test-schema': {
+          update: {
+            filter: {
+              field1: 'something'
+            }
+          }
+        },
+        'collection:testdb_test-required-schema': {
+          delete: false
+        }
+      }
+    }
+
+    help.createACLClient(testClient).then(() => {
+      client
+      .post(config.get('auth.tokenUrl'))
+      .set('content-type', 'application/json')
+      .send(testClient)
+      .expect(200)
+      .end((err, res) => {
+        if (err) return done(err)
+
+        let bearerToken = res.body.accessToken
+
+        client
+        .get(`/api/resources`)
+        .set('content-type', 'application/json')
+        .set('Authorization', `Bearer ${bearerToken}`)
+        .expect(200)
+        .end((err, res) => {
+          res.body.results.length.should.eql(1)
+          res.body.results[0].name.should.eql('collection:testdb_test-schema')
+
+          done(err)
+        })
+      })
+    })
+  })
 })

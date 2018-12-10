@@ -172,7 +172,7 @@ function create ({
       this.searchHandler.index(results)
 
       // Run any `afterCreate` hooks.
-      if (hooks && (typeof hooks.afterCreate === 'object')) {
+      if (hooks && Array.isArray(hooks.afterCreate)) {
         results.forEach(document => {
           hooks.afterCreate.forEach((hookConfig, index) => {
             let hook = new Hook(hooks.afterCreate[index], 'afterCreate')

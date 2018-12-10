@@ -240,7 +240,7 @@ function update ({
       }
 
       // Run any `afterUpdate` hooks.
-      if (hooks && (typeof hooks.afterUpdate === 'object')) {
+      if (hooks && Array.isArray(hooks.afterUpdate)) {
         hooks.afterUpdate.forEach((hookConfig, index) => {
           let hook = new Hook(hooks.afterUpdate[index], 'afterUpdate')
 

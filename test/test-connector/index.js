@@ -121,6 +121,46 @@ DataStore.prototype._mockIsDisconnected = function (collection) {
 }
 
 /**
+ * Receives a fields projection (or an array of fields to include) and an array
+ * of documents. Returns the same array of documents after applying the field
+ * projection.
+ *
+ * @param {Array|Object} fields    - an array of field names or a projection
+ * @param {Array}        documents - an array of documents
+ * @returns {Array} an array of filtered documents
+ */
+DataStore.prototype.applyFieldsFilterToResults = function (fields, documents) {
+  if (!fields || Object.keys(fields).length === 0) {
+    return documents
+  }
+
+  let projection = Array.isArray(fields)
+    ? fields.reduce((result, field) => {
+      result[field] = 1
+
+      return result
+    }, {})
+    : fields
+  let isExclusion = Object.keys(projection).some(field => {
+    return projection[field] === 0
+  })
+
+  return documents.map(document => {
+    return Object.keys(document).reduce((result, field) => {
+      if (
+        field === '_id' ||
+        isExclusion && projection[field] === undefined ||
+        !isExclusion && projection[field] === 1
+      ) {
+        result[field] = document[field]
+      }
+
+      return result
+    }, {})
+  })
+}
+
+/**
  * Connect
  *
  * @param {ConnectionOptions} options
@@ -266,22 +306,13 @@ DataStore.prototype.find = function ({ query, collection, options = {}, schema, 
       let count = branchedResultset.count()
 
       results = baseResultset
-      .simplesort(sort.property, sort.descending)
-      .offset(options.skip || 0)
-      .limit(options.limit || 100)
-      .data()
+        .simplesort(sort.property, sort.descending)
+        .offset(options.skip || 0)
+        .limit(options.limit || 100)
+        .data()
 
-      // if specified, return only required fields
-      // 1. create array from the passed object
-      // 2. add _id field if not specified
-      // 3. pick fields from each result if they appear in the array
-      if (options.fields && !_.isEmpty(options.fields)) {
-        const fields = this.getFields(options.fields)
-
-        results = _.chain(results)
-          .map(result => { return _.pick(result, fields) })
-          .value()
-      }
+      // Apply filters projection, if defined.
+      results = this.applyFieldsFilterToResults(options.fields, results)
 
       this._debug('find', {
         collection: collName,
@@ -335,28 +366,6 @@ DataStore.prototype.getFieldOrParentSchema = function (key, schema) {
   const keyOrParent = (key.split('.').length > 1) ? key.split('.')[0] : key
 
   return schema[keyOrParent]
-}
-
-/**
- * Determines the list of properties to select from each document before returning. If an array is specified
- * it is returned. If an object is specified an array is created containing all the keys that have a value equal to 1.
- * The `_id` property is added if not already specified.
- *
- * @param {Array|Object} fields - an array of field names or an object such as `{"title": 1}`
- * @returns {Array} an array of property names to be selected from each document
- */
-DataStore.prototype.getFields = function (fields) {
-  let preparedFields
-
-  if (!Array.isArray(fields)) {
-    preparedFields = Object.keys(fields).filter((field) => { return fields[field] === 1 })
-  } else {
-    preparedFields = fields
-  }
-
-  if (!preparedFields['_id']) preparedFields.push('_id')
-
-  return preparedFields
 }
 
 /**

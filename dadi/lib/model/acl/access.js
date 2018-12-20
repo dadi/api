@@ -152,7 +152,8 @@ Access.prototype.get = function ({clientId = null, accessType = null} = {}, reso
   }
 
   return this.model.get({
-    query
+    query,
+    rawOutput: true
   }).then(({results}) => {
     if (results.length === 0) {
       return {}

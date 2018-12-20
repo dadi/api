@@ -58,17 +58,34 @@ function create ({
     return document
   })
 
+  let {hooks} = this.settings
+  let originalDocuments = documents
+
+  // If an ACL check is performed, this variable will contain the resulting
+  // access matrix.
+  let aclAccess
+
   return this.validateAccess({
     client,
+    documents,
     type: 'create'
-  }).then(({schema}) => {
+  }).then(({access, documents: newDocuments, fields, schema}) => {
     if (!validate) return
+
+    // Storing the access matrix in a variable that is global to the method.
+    aclAccess = access
+
+    // This is now the filtered documents object, containing only the fields
+    // which the client has access to.
+    documents = newDocuments
 
     return this.validator.validateDocuments({
       documents,
       schema
     }).catch(errors => {
-      let error = this._createValidationError('Validation Failed', errors)
+      let error = this._createValidationError('Validation Failed', errors, {
+        originalDocuments
+      })
 
       return Promise.reject(error)
     })
@@ -113,16 +130,16 @@ function create ({
     return transformQueue
   }).then(documents => {
     // Run any `beforeCreate` hooks.
-    if (this.settings.hooks && this.settings.hooks.beforeCreate) {
+    if (hooks && hooks.beforeCreate) {
       return new Promise((resolve, reject) => {
         let processedDocuments = 0
 
         documents.forEach((doc, docIndex) => {
-          async.reduce(this.settings.hooks.beforeCreate, doc, (current, hookConfig, callback) => {
+          async.reduce(hooks.beforeCreate, doc, (current, hookConfig, callback) => {
             let hook = new Hook(hookConfig, 'beforeCreate')
 
             Promise.resolve(hook.apply(current, this.schema, this.name, req))
-              .then((newDoc) => {
+              .then(newDoc => {
                 callback((newDoc === null) ? {} : null, newDoc)
               })
               .catch(err => {
@@ -151,34 +168,31 @@ function create ({
       schema: this.schema,
       settings: this.settings
     }).then(results => {
-      let returnData = {
-        results
-      }
-
       // Asynchronous search index.
-      this.searchHandler.index(returnData.results)
+      this.searchHandler.index(results)
 
       // Run any `afterCreate` hooks.
-      if (this.settings.hooks && (typeof this.settings.hooks.afterCreate === 'object')) {
-        returnData.results.forEach(document => {
-          this.settings.hooks.afterCreate.forEach((hookConfig, index) => {
-            let hook = new Hook(this.settings.hooks.afterCreate[index], 'afterCreate')
+      if (hooks && Array.isArray(hooks.afterCreate)) {
+        results.forEach(document => {
+          hooks.afterCreate.forEach((hookConfig, index) => {
+            let hook = new Hook(hooks.afterCreate[index], 'afterCreate')
 
             return hook.apply(document, this.schema, this.name)
           })
         })
       }
 
-      // Prepare result set for output.
-      if (!rawOutput) {
-        return this.formatForOutput(
-          returnData.results,
-          {
-            composeOverride: compose
-          }).then(results => ({results}))
+      // If `rawOutput` is truthy, we don't need to worry about formatting
+      // the result set for output. We return it as is.
+      if (rawOutput) {
+        return {results}
       }
 
-      return returnData
+      return this.formatForOutput(results, {
+        access: aclAccess && aclAccess.read,
+        client,
+        composeOverride: compose
+      }).then(results => ({results}))
     })
   })
 }

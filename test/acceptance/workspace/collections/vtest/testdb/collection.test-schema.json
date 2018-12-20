@@ -31,6 +31,12 @@
       "settings": {
         "collection": "mediaStore"
       }
+    },
+    "fieldReference": {
+      "type": "Reference",
+      "settings": {
+        "collection": "test-reference-schema"
+      }
     }
   },
   "settings": {

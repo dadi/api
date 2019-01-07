@@ -9,6 +9,32 @@ const _ = require('underscore')
 
 var clientCollectionName = config.get('auth.clientCollection')
 
+module.exports.bulkRequest = function ({method = 'get', requests, token}) {
+  const client = request(`http://${config.get('server.host')}:${config.get('server.port')}`)
+  let results = []
+
+  return requests.reduce((result, request, index) => {
+    return result.then(() => {
+      return new Promise((resolve, reject) => {
+        let endpoint = typeof request === 'string'
+          ? request
+          : request.endpoint
+
+        client[method](endpoint)
+        .set('Authorization', `Bearer ${token}`)
+        .send(request.body)
+        .end((err, res) => {
+          if (err) return reject(err)
+
+          results[index] = res.body
+
+          resolve(results)
+        })
+      })
+    })
+  }, Promise.resolve())
+}
+
 // create a document with random string via the api
 module.exports.createDoc = function (token, done) {
   request('http://' + config.get('server.host') + ':' + config.get('server.port'))

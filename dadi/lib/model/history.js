@@ -1,69 +1,161 @@
-const debug = require('debug')('api:history')
-const deepClone = require('deep-clone')
+const config = require('./../../../config')
+const Connection = require('./connection')
+const diffMatchPatch = require('diff-match-patch')
+const jsonDiff = require('json0-ot-diff')
+const otJson = require('ot-json0')
 
-const History = function (model) {
-  this.model = model
+/**
+ * Document history manager.
+ *
+ * @param {String} options.database Name of the database
+ * @param {String} options.name     Name of the collection
+ */
+const History = function ({database, name}) {
+  this.name = name
+  this.connection = Connection(
+    {
+      collection: name,
+      database
+    },
+    name,
+    config.get('datastore')
+  )
 }
 
-History.prototype.create = function (obj, model, done) {
-  // create copy of original
-  let revisionObj = deepClone(obj)
-
-  revisionObj._originalDocumentId = obj._id
-
-  delete revisionObj._id
-
-  const _done = function (database) {
-    if (Array.isArray(database.settings.internalProperties)) {
-      database.settings.internalProperties.forEach(property => {
-        delete revisionObj[property]
-      })
+/**
+ * Stores a version of a document as a diff.
+ *
+ * @param {String} options.description An optional message describing the operation
+ * @param {Object} options.initial     Original document
+ * @param {Object} options.modified    Modified document
+ */
+History.prototype.addVersion = function ({description, initial, modified}) {
+  let versions = initial.map(initialDocument => {
+    let modifiedDocument = modified.find(modifiedDocument => {
+      return modifiedDocument._id === initialDocument._id
+    })
+    let version = {
+      _document: initialDocument._id,
+      _createdAt: Date.now(),
+      _diff: this.getDiff(initialDocument, modifiedDocument)
     }
 
-    database.insert({
-      data: revisionObj,
-      collection: model.revisionCollection,
-      schema: model.schema,
-      settings: model.settings
-    }).then((doc) => {
-      debug('inserted %o', doc)
+    if (typeof description === 'string') {
+      version._description = description
+    }
 
-      // TODO: remove mongo options
-      database.update({
-        query: { _id: obj._id },
-        collection: model.name,
-        update: { $push: { '_history': doc[0]._id.toString() } },
-        schema: model.schema
-      }).then((result) => {
-        return done(null, obj)
-      }).catch((err) => {
-        done(err)
-      })
-    }).catch((err) => {
-      done(err)
-    })
-  }
+    return version
+  })
 
-  if (model.connection.db) return _done(model.connection.db)
-
-  // if the db is not connected queue the insert
-  model.connection.once('connect', _done)
+  return this.connection.db.insert({
+    data: versions,
+    collection: this.name
+  })
 }
 
-History.prototype.createEach = function (objs, action, model, done) {
-  return new Promise((resolve, reject) => {
-    if (objs.length === 0) return resolve()
+/**
+ * Computes a diff object between two documents.
+ *
+ * @param  {Object} initial  Original document
+ * @param  {Object} modified Modified document
+ * @return {Object}          Diff object
+ */
+History.prototype.getDiff = function (initial, modified) {
+  return jsonDiff(
+    this.getDiffableDocument(initial),
+    this.getDiffableDocument(modified),
+    diffMatchPatch
+  )
+}
 
-    objs.forEach((obj, index, array) => {
-      obj._action = action
+/**
+ * Returns the subset of a document's properties that are taken into account
+ * when producing a diff (e.g. not internal properties).
+ *
+ * @param  {Object} document Original document
+ * @return {Object}          Filtered document
+ */
+History.prototype.getDiffableDocument = function (document) {
+  return document && Object.keys(document).reduce((result, property) => {
+    if (property.indexOf('_') !== 0) {
+      result[property] = document[property]
+    }
 
-      this.create(obj, model, (err, doc) => {
-        if (err) return reject(err)
+    return result
+  }, {})
+}
 
-        if (index === array.length - 1) {
-          return resolve()
+/**
+ * Gets all versions available for a given document.
+ *
+ * @param  {String}         documentId
+ * @return {Array<Object>}
+ */
+History.prototype.getVersions = function (documentId) {
+  return this.connection.db.find({
+    collection: this.name,
+    options: {
+      fields: {
+        _createdAt: 1,
+        _document: 1,
+        _description: 1
+      }
+    },
+    query: {
+      _document: documentId
+    }
+  })
+}
+
+/**
+ * Rolls back a given document to a previous version, by taking all the diffs
+ * that came after it and applying them to the current state of the document.
+ *
+ * @param  {Object} document Current state of the document
+ * @param  {String} version  ID of a previous version
+ * @return {Object}
+ */
+History.prototype.rollback = function (document, version) {
+  return this.connection.db.find({
+    collection: this.name,
+    options: {
+      fields: {
+        _createdAt: 1
+      }
+    },
+    query: {
+      _id: version
+    }
+  }).then(({results: versions}) => {
+    if (versions.length === 0) {
+      throw new Error('Invalid document version')
+    }
+
+    let timestamp = versions[0]._createdAt
+
+    return this.connection.db.find({
+      collection: this.name,
+      options: {
+        fields: {
+          _diff: 1
+        },
+        sort: {
+          _createdAt: -1
         }
-      })
+      },
+      query: {
+        _createdAt: {
+          $gte: timestamp
+        }
+      }
+    }).then(({results: versions}) => {
+      // Because we're working backwards from the latest state of the document,
+      // we must invert the diffs before applying them.
+      let diffs = versions.map(version => otJson.type.invert(version._diff))
+
+      return diffs.reduce((result, diff) => {
+        return otJson.type.apply(result, diff)
+      }, document)
     })
   })
 }

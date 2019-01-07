@@ -104,13 +104,13 @@ function deleteFn ({
       }
 
       // Create a revision for each of the documents about to be deleted.
-      if (this.history && deletedDocuments.length > 0) {
-        return this.history.createEach(
-          deletedDocuments,
-          'delete',
-          this
-        )
-      }
+      // if (this.history && deletedDocuments.length > 0) {
+      //   return this.history.createEach(
+      //     deletedDocuments,
+      //     'delete',
+      //     this
+      //   )
+      // }
     }).then(() => {
       // Run any `beforeDelete` hooks.
       if (this.settings.hooks && this.settings.hooks.beforeDelete) {

@@ -28,13 +28,15 @@ const debug = require('debug')('api:model')
  * @param  {String} language - ISO code for the language to translate documents to
  * @param  {Object} query - query to match documents against
  * @param  {Object} options
+ * @param  {Number}  version - version of the document to retrieve
  * @return {Promise<ResultSet>}
  */
 function find ({
   client,
   language,
   query = {},
-  options = {}
+  options = {},
+  version
 } = {}) {
   if (!this.connection.db) {
     return Promise.reject(
@@ -134,10 +136,24 @@ function find ({
       })
     })
   }).then(response => {
-    if (options.includeHistory) {
-      options.includeHistory = undefined
+    // If `version` is present and history is enabled for this
+    // collection, we rollback the document to the specified
+    // version.
+    if (version !== undefined && this.history) {
+      let ops = response.results.map(document => {
+        return this.history.rollback(document, version)
+      })
 
-      return this._injectHistory(response, options)
+      return Promise.all(ops).then(rolledBackDocuments => {
+        response.results = rolledBackDocuments
+        response.metadata.version = version
+
+        return response
+      }).catch(error => { // eslint-disable-line
+        response.results = []
+
+        return response
+      })
     }
 
     return response

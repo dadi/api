@@ -245,7 +245,7 @@ describe.only('Document versioning', function () {
   })
 
   describe('Rollback to previous versions', () => {
-    it('should rollback to a version where a property was added/removed', done => {
+    it('should rollback to a previous version where a property was added, changed and removed multiple times', done => {
       let original = {
         name: 'John',
         surname: 'Doe'
@@ -287,16 +287,22 @@ describe.only('Document versioning', function () {
           {
             endpoint: `/vtest/testdb/test-history-enabled/${id}`,
             body: {
+              surname: 'Three'
+            }
+          },
+          {
+            endpoint: `/vtest/testdb/test-history-enabled/${id}`,
+            body: {
               surname: null
             }
           },
           {
             endpoint: `/vtest/testdb/test-history-enabled/${id}`,
             body: {
-              surname: 'Three'               
+              surname: 'Four'
             }
           }
-        ]      
+        ]
 
         help.bulkRequest({
           method: 'put',
@@ -324,11 +330,129 @@ describe.only('Document versioning', function () {
               responses[2].results[0].surname.should.eql('One')
               should.not.exist(responses[3].results[0].surname)
               responses[4].results[0].surname.should.eql('Two')
-              should.not.exist(responses[5].results[0].surname)
+              responses[5].results[0].surname.should.eql('Three')
+              should.not.exist(responses[6].results[0].surname)
 
               done()
             })
-          })          
+          })
+        })
+      })
+    })
+
+    it('should rollback to a previous version and compose Reference fields accordingly', done => {
+      const original = {
+        name: 'Eduardo',
+        surname: 'Bouças'
+      }
+      const originalReference = {
+        name: 'James',
+        surname: 'Lambie'
+      }
+      const modifiedReference = {
+        name: 'David',
+        surname: 'Longworth'
+      }
+
+      client
+      .post('/vtest/testdb/test-history-disabled')
+      .set('Authorization', `Bearer ${bearerToken}`)
+      .send(originalReference)
+      .expect(200)
+      .end((err, res) => {
+        if (err) return done(err)
+
+        let originalReferenceID = res.body.results[0]._id
+
+        client
+        .post('/vtest/testdb/test-history-disabled')
+        .set('Authorization', `Bearer ${bearerToken}`)
+        .send(modifiedReference)
+        .expect(200)
+        .end((err, res) => {
+          if (err) return done(err)
+
+          let modifiedReferenceID = res.body.results[0]._id
+          let payload = Object.assign(original, {
+            reference: originalReferenceID
+          })
+
+          client
+          .post('/vtest/testdb/test-history-enabled')
+          .set('Authorization', `Bearer ${bearerToken}`)
+          .send(payload)
+          .end((err, res) => {
+            if (err) return done(err)
+
+            let id = res.body.results[0]._id
+
+            client
+            .get(`/vtest/testdb/test-history-enabled/${id}?compose=true`)
+            .set('Authorization', `Bearer ${bearerToken}`)
+            .end((err, res) => {
+              if (err) return done(err)
+
+              const {results} = res.body
+
+              results.length.should.eql(1)
+              results[0].reference.name.should.eql(originalReference.name)
+              results[0].reference.surname.should.eql(originalReference.surname)
+
+              client
+              .put(`/vtest/testdb/test-history-enabled/${id}`)
+              .set('Authorization', `Bearer ${bearerToken}`)
+              .send({
+                reference: modifiedReferenceID,
+                surname: 'Bouças II'
+              })
+              .end((err, res) => {
+                if (err) return done(err)
+
+                client
+                .get(`/vtest/testdb/test-history-enabled/${id}?compose=true`)
+                .set('Authorization', `Bearer ${bearerToken}`)
+                .end((err, res) => {
+                  if (err) return done(err)
+
+                  const {results} = res.body
+
+                  results.length.should.eql(1)
+                  results[0].surname.should.eql('Bouças II')
+                  results[0].reference.name.should.eql(modifiedReference.name)
+                  results[0].reference.surname.should.eql(modifiedReference.surname)
+
+                  client
+                  .get(`/vtest/testdb/test-history-enabled/${id}/versions`)
+                  .set('Authorization', `Bearer ${bearerToken}`)
+                  .expect(200)
+                  .end((err, res) => {
+                    if (err) return done(err)
+
+                    const {results} = res.body
+                    const versionId = results[0]._id
+
+                    results.length.should.eql(1)
+
+                    client
+                    .get(`/vtest/testdb/test-history-enabled/${id}?compose=true&version=${versionId}`)
+                    .set('Authorization', `Bearer ${bearerToken}`)
+                    .end((err, res) => {
+                      if (err) return done(err)
+
+                      const {metadata, results} = res.body
+
+                      metadata.version.should.eql(versionId)
+                      results[0].surname.should.eql(original.surname)
+                      results[0].reference.name.should.eql(originalReference.name)
+                      results[0].reference.surname.should.eql(originalReference.surname)
+
+                      done()
+                    })
+                  })
+                })
+              })
+            })
+          })
         })
       })
     })

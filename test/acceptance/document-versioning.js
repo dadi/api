@@ -32,6 +32,9 @@ describe.only('Document versioning', function () {
           occupation: {
             type: 'String'
           },
+          object: {
+            type: 'Object'
+          },
           reference: {
             type: 'Reference',
             settings: {
@@ -449,6 +452,114 @@ describe.only('Document versioning', function () {
                       done()
                     })
                   })
+                })
+              })
+            })
+          })
+        })
+      })
+    })
+
+    it('should rollback to a previous version containing Object fields', done => {
+      const original = {
+        name: 'Eduardo',
+        object: {
+          parent: {
+            child1: true,
+            child2: {
+              child3: false
+            },
+            child3: 'The original string'
+          }
+        }
+      }
+      const modified = {
+        name: 'James',
+        object: {
+          parent: {
+            child1: {
+              child2: {
+                child3: 83,
+                child4: 'Some string'
+              }
+            },
+            child5: {
+              child6: false,
+              child7: 1337
+            },
+            child3: 'The modified string'
+          },
+          parent2: {
+            child8: 5000
+          }
+        }
+      }
+
+      client
+      .post('/vtest/testdb/test-history-enabled')
+      .set('Authorization', `Bearer ${bearerToken}`)
+      .send(original)
+      .end((err, res) => {
+        if (err) return done(err)
+
+        let id = res.body.results[0]._id
+
+        client
+        .get(`/vtest/testdb/test-history-enabled/${id}`)
+        .set('Authorization', `Bearer ${bearerToken}`)
+        .end((err, res) => {
+          if (err) return done(err)
+
+          const {results} = res.body
+
+          results.length.should.eql(1)
+          results[0].name.should.eql(original.name)
+          results[0].object.should.eql(original.object)
+
+          client
+          .put(`/vtest/testdb/test-history-enabled/${id}`)
+          .set('Authorization', `Bearer ${bearerToken}`)
+          .send(modified)
+          .end((err, res) => {
+            if (err) return done(err)
+
+            client
+            .get(`/vtest/testdb/test-history-enabled/${id}`)
+            .set('Authorization', `Bearer ${bearerToken}`)
+            .end((err, res) => {
+              if (err) return done(err)
+
+              const {results} = res.body
+
+              results.length.should.eql(1)
+              results[0].name.should.eql(modified.name)
+              results[0].object.should.eql(modified.object)
+
+              client
+              .get(`/vtest/testdb/test-history-enabled/${id}/versions`)
+              .set('Authorization', `Bearer ${bearerToken}`)
+              .expect(200)
+              .end((err, res) => {
+                if (err) return done(err)
+
+                const {results} = res.body
+                const versionId = results[0]._id
+
+                results.length.should.eql(1)
+
+                client
+                .get(`/vtest/testdb/test-history-enabled/${id}?version=${versionId}`)
+                .set('Authorization', `Bearer ${bearerToken}`)
+                .end((err, res) => {
+                  if (err) return done(err)
+
+                  const {metadata, results} = res.body
+
+                  metadata.version.should.eql(versionId)
+                  results[0].name.should.eql(original.name)
+                  results[0].object.should.eql(original.object)
+
+                  done()
                 })
               })
             })

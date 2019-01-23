@@ -140,7 +140,16 @@ function find ({
     // collection, we rollback the document to the specified
     // version.
     if (version !== undefined && this.history) {
-      let ops = response.results.map(document => {
+      // When the results array is empty and the `version` parameter
+      // is present, there's a chance that we're trying to get a
+      // past version of a document that was since deleted. For that
+      // reason, we attempt to rollback to the given version, supplying
+      // an empty object as the current state of the document, so that
+      // applying the stored diffs will reconstruct it.
+      let results = response.results.length > 0
+        ? response.results
+        : [{}]
+      let ops = results.map(document => {
         return this.history.rollback(document, version)
       })
 

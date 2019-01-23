@@ -12,6 +12,7 @@ const logger = require('@dadi/logger')
  * Deletes documents from the database.
  *
  * @param  {Object} client - client to check permissions for
+ * @param  {String}  description - optional update description
  * @param  {Object} query - query to find documents to delete
  * @param  {Object} req - request to be passed to hooks
  * @param  {Boolean} validate - whether to run validation
@@ -19,6 +20,7 @@ const logger = require('@dadi/logger')
  */
 function deleteFn ({
   client,
+  description,
   query,
   req,
   validate = true
@@ -103,14 +105,13 @@ function deleteFn ({
         return Promise.reject(error)
       }
 
-      // Create a revision for each of the documents about to be deleted.
-      // if (this.history && deletedDocuments.length > 0) {
-      //   return this.history.createEach(
-      //     deletedDocuments,
-      //     'delete',
-      //     this
-      //   )
-      // }
+      // Create a revision for each of the updated documents.
+      if (this.history) {
+        return this.history.addVersion({
+          description,
+          initial: deletedDocuments
+        })
+      }
     }).then(() => {
       // Run any `beforeDelete` hooks.
       if (this.settings.hooks && this.settings.hooks.beforeDelete) {

@@ -25,15 +25,15 @@ const History = function ({database, name}) {
 /**
  * Stores a version of a document as a diff.
  *
- * @param {String} options.description An optional message describing the operation
- * @param {Object} options.initial     Original document
- * @param {Object} options.modified    Modified document
+ * @param {String}        options.description An optional message describing the operation
+ * @param {Array<Object>} options.initial     Original document
+ * @param {Array<Object>} options.modified    Modified document
  */
-History.prototype.addVersion = function ({description, initial, modified}) {
+History.prototype.addVersion = function ({description, initial, modified = []}) {
   let versions = initial.map(initialDocument => {
     let modifiedDocument = modified.find(modifiedDocument => {
       return modifiedDocument._id === initialDocument._id
-    })
+    }) || {}
     let version = {
       _document: initialDocument._id,
       _createdAt: Date.now(),
@@ -61,28 +61,7 @@ History.prototype.addVersion = function ({description, initial, modified}) {
  * @return {Object}          Diff object
  */
 History.prototype.getDiff = function (initial, modified) {
-  return jsonDiff(
-    this.getDiffableDocument(initial),
-    this.getDiffableDocument(modified),
-    diffMatchPatch
-  )
-}
-
-/**
- * Returns the subset of a document's properties that are taken into account
- * when producing a diff (e.g. not internal properties).
- *
- * @param  {Object} document Original document
- * @return {Object}          Filtered document
- */
-History.prototype.getDiffableDocument = function (document) {
-  return document && Object.keys(document).reduce((result, property) => {
-    if (property.indexOf('_') !== 0) {
-      result[property] = document[property]
-    }
-
-    return result
-  }, {})
+  return jsonDiff(initial, modified, diffMatchPatch)
 }
 
 /**

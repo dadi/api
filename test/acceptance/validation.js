@@ -87,7 +87,8 @@ describe('Validation', function () {
               res.body.should.be.json
               res.body.success.should.be.false
               res.body.errors[0].field.should.equal('fieldMinLength')
-              res.body.errors[0].message.should.equal('is too short')
+              res.body.errors[0].code.should.equal('ERROR_MIN_LENGTH')
+              res.body.errors[0].message.should.be.instanceOf(String)
 
               done()
             })
@@ -124,7 +125,8 @@ describe('Validation', function () {
               res.body.should.be.json
               res.body.success.should.be.false
               res.body.errors[0].field.should.equal('fieldMaxLength')
-              res.body.errors[0].message.should.equal('is too long')
+              res.body.errors[0].code.should.equal('ERROR_MAX_LENGTH')
+              res.body.errors[0].message.should.be.instanceOf(String)
 
               done()
             })
@@ -161,7 +163,8 @@ describe('Validation', function () {
               res.body.should.be.json
               res.body.success.should.be.false
               res.body.errors[0].field.should.equal('fieldRegex')
-              res.body.errors[0].message.should.equal('should match the pattern ^q+$')
+              res.body.errors[0].code.should.equal('ERROR_REGEX')
+              res.body.errors[0].message.should.be.instanceOf(String)
 
               done()
             })

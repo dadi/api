@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## [4.4.5] (2019-01-24)
+
+### Fixed
+
+- [#530](https://github.com/dadi/api/issues/530): run `afterGet` hooks after field hooks
+
 ## [4.4.4] (2018-12-20)
 
 ### Changed

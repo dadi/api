@@ -77,8 +77,8 @@ function get ({
       query,
       options
     })
-  }).then(response => {
-    if (isRestIDQuery && response.results.length === 0) {
+  }).then(({metadata, results}) => {
+    if (isRestIDQuery && results.length === 0) {
       let error = new Error('Document not found')
 
       error.statusCode = 404
@@ -86,10 +86,28 @@ function get ({
       return Promise.reject(error)
     }
 
-    if (this.settings.hooks && this.settings.hooks.afterGet) {
+    let formatter = rawOutput
+      ? Promise.resolve(results)
+      : this.formatForOutput(
+          results,
+        {
+          client,
+          composeOverride: options.compose,
+          language,
+          urlFields: options.fields
+        }
+        )
+
+    return formatter.then(results => {
+      return {results, metadata}
+    })
+  }).then(response => {
+    const {hooks} = this.settings
+
+    if (hooks && hooks.afterGet) {
       return new Promise((resolve, reject) => {
         async.reduce(
-          this.settings.hooks.afterGet,
+          hooks.afterGet,
           response,
           (current, hookConfig, callback) => {
             let hook = new Hook(hookConfig, 'afterGet')
@@ -113,22 +131,6 @@ function get ({
     }
 
     return response
-  }).then(({metadata, results}) => {
-    let formatter = rawOutput
-      ? Promise.resolve(results)
-      : this.formatForOutput(
-          results,
-        {
-          client,
-          composeOverride: options.compose,
-          language,
-          urlFields: options.fields
-        }
-        )
-
-    return formatter.then(results => {
-      return {results, metadata}
-    })
   })
 }
 

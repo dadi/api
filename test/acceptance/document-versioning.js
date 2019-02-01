@@ -12,7 +12,7 @@ const FAKE_ID = '5c334a60139c7e48eb44a9bb'
 
 let bearerToken
 
-describe.only('Document versioning', function () {
+describe('Document versioning', function () {
   this.timeout(4000)
 
   let cleanupFn
@@ -235,9 +235,9 @@ describe.only('Document versioning', function () {
 
               results.length.should.eql(2)
               results[0]._document.should.eql(id)
-              results[0]._description.should.eql(updates[0].description)
+              results[0]._changeDescription.should.eql(updates[0].description)
               results[1]._document.should.eql(id)
-              results[1]._description.should.eql(updates[1].description)
+              results[1]._changeDescription.should.eql(updates[1].description)
 
               done()
             })

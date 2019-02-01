@@ -102,6 +102,7 @@ const Model = function (name, schema, connection, settings) {
     this.settings.storeRevisions !== false
   ) {
     let historyCollection = this.settings.historyCollection ||
+      this.settings.revisionCollection ||
       this.name + DEFAULT_HISTORY_COLLECTION_SUFFIX
 
     this.history = new History({

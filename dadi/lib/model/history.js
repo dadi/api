@@ -1,8 +1,5 @@
 const config = require('./../../../config')
 const Connection = require('./connection')
-const diffMatchPatch = require('diff-match-patch')
-const jsonDiff = require('json0-ot-diff')
-const otJson = require('ot-json0')
 
 /**
  * Document history manager.
@@ -25,23 +22,19 @@ const History = function ({database, name}) {
 /**
  * Stores a version of a document as a diff.
  *
- * @param {String}        options.description An optional message describing the operation
- * @param {Array<Object>} options.initial     Original document
- * @param {Array<Object>} options.modified    Modified document
+ * @param {Array<Object>} documents           Documents to add
+ * @param {String}        options.description Optional message describing the operation
  */
-History.prototype.addVersion = function ({description, initial, modified = []}) {
-  let versions = initial.map(initialDocument => {
-    let modifiedDocument = modified.find(modifiedDocument => {
-      return modifiedDocument._id === initialDocument._id
-    }) || {}
-    let version = {
-      _document: initialDocument._id,
-      _createdAt: Date.now(),
-      _diff: this.getDiff(initialDocument, modifiedDocument)
-    }
+History.prototype.addVersion = function (documents, {description}) {
+  const versions = documents.map(document => {
+    let version = Object.assign({}, document, {
+      _document: document._id
+    })
 
-    if (typeof description === 'string') {
-      version._description = description
+    delete version._id
+
+    if (typeof description === 'string' && description.length > 0) {
+      version._changeDescription = description
     }
 
     return version
@@ -54,14 +47,30 @@ History.prototype.addVersion = function ({description, initial, modified = []}) 
 }
 
 /**
- * Computes a diff object between two documents.
+ * Returns a previous version of a given document.
  *
- * @param  {Object} initial  Original document
- * @param  {Object} modified Modified document
- * @return {Object}          Diff object
+ * @param  {String} version  ID of a previous version
+ * @return {Object}
  */
-History.prototype.getDiff = function (initial, modified) {
-  return jsonDiff(initial, modified, diffMatchPatch)
+History.prototype.getVersion = function (version, options = {}) {
+  return this.connection.db.find({
+    collection: this.name,
+    options,
+    query: {
+      _id: version
+    }
+  }).then(response => {
+    response.metadata.version = version
+    response.results = response.results.map(result => {
+      result._id = result._document
+
+      delete result._document
+
+      return result
+    })
+
+    return response
+  })
 }
 
 /**
@@ -75,67 +84,13 @@ History.prototype.getVersions = function (documentId) {
     collection: this.name,
     options: {
       fields: {
-        _createdAt: 1,
         _document: 1,
-        _description: 1
+        _changeDescription: 1
       }
     },
     query: {
       _document: documentId
     }
-  })
-}
-
-/**
- * Rolls back a given document to a previous version, by taking all the diffs
- * that came after it and applying them to the current state of the document.
- *
- * @param  {Object} document Current state of the document
- * @param  {String} version  ID of a previous version
- * @return {Object}
- */
-History.prototype.rollback = function (document, version) {
-  return this.connection.db.find({
-    collection: this.name,
-    options: {
-      fields: {
-        _createdAt: 1
-      }
-    },
-    query: {
-      _id: version
-    }
-  }).then(({results: versions}) => {
-    if (versions.length === 0) {
-      throw new Error('Invalid document version')
-    }
-
-    let timestamp = versions[0]._createdAt
-
-    return this.connection.db.find({
-      collection: this.name,
-      options: {
-        fields: {
-          _diff: 1
-        },
-        sort: {
-          _createdAt: -1
-        }
-      },
-      query: {
-        _createdAt: {
-          $gte: timestamp
-        }
-      }
-    }).then(({results: versions}) => {
-      // Because we're working backwards from the latest state of the document,
-      // we must invert the diffs before applying them.
-      let diffs = versions.map(version => otJson.type.invert(version._diff))
-
-      return diffs.reduce((result, diff) => {
-        return otJson.type.apply(result, diff)
-      }, document)
-    })
   })
 }
 

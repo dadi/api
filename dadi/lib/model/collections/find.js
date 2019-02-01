@@ -24,15 +24,17 @@ const debug = require('debug')('api:model')
 /**
  * Finds documents in the database.
  *
- * @param  {Object} client - client to check permissions for
- * @param  {String} language - ISO code for the language to translate documents to
- * @param  {Object} query - query to match documents against
- * @param  {Object} options
+ * @param  {Object}  client - client to check permissions for
+ * @param  {Boolean} isRestIDQuery - whether the query targets a specific document by ID
+ * @param  {String}  language - ISO code for the language to translate documents to
+ * @param  {Object}  query - query to match documents against
+ * @param  {Object}  options
  * @param  {Number}  version - version of the document to retrieve
  * @return {Promise<ResultSet>}
  */
 function find ({
   client,
+  isRestIDQuery,
   language,
   query = {},
   options = {},
@@ -122,50 +124,23 @@ function find ({
 
     queryFields = fields
 
+    const queryOptions = Object.assign({}, options, {
+      fields: queryFields
+    })
+
+    if (isRestIDQuery && version && this.history) {
+      return this.history.getVersion(version, queryOptions)
+    }
+
     return this._transformQuery(query, options).then(query => {
       return this.connection.db.find({
         query,
         collection: this.name,
-        options: Object.assign({}, options, {
-          compose: undefined,
-          fields: queryFields,
-          historyFilters: undefined
-        }),
+        options: queryOptions,
         schema: this.schema,
         settings: this.settings
       })
     })
-  }).then(response => {
-    // If `version` is present and history is enabled for this
-    // collection, we rollback the document to the specified
-    // version.
-    if (version !== undefined && this.history) {
-      // When the results array is empty and the `version` parameter
-      // is present, there's a chance that we're trying to get a
-      // past version of a document that was since deleted. For that
-      // reason, we attempt to rollback to the given version, supplying
-      // an empty object as the current state of the document, so that
-      // applying the stored diffs will reconstruct it.
-      let results = response.results.length > 0
-        ? response.results
-        : [{}]
-      let ops = results.map(document => {
-        return this.history.rollback(document, version)
-      })
-
-      return Promise.all(ops).then(rolledBackDocuments => {
-        response.results = rolledBackDocuments
-        response.metadata.version = version
-
-        return response
-      }).catch(error => { // eslint-disable-line
-        response.results = []
-
-        return response
-      })
-    }
-
-    return response
   })
 }
 

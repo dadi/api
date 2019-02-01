@@ -261,10 +261,8 @@ function update ({
   }).then(response => {
     // Create a revision for each of the updated documents.
     if (this.history && updatedDocuments.length > 0) {
-      return this.history.addVersion({
-        description,
-        initial: updatedDocuments,
-        modified: response.results
+      return this.history.addVersion(updatedDocuments, {
+        description
       }).then(historyResponse => response)
     }
 

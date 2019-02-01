@@ -75,6 +75,7 @@ function get ({
   }).then(query => {
     return this.find({
       client,
+      isRestIDQuery,
       language,
       query,
       options,

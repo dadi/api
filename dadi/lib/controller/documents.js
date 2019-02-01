@@ -59,6 +59,7 @@ Collection.prototype.delete = function (req, res, next) {
 
   this.model.delete({
     client: req.dadiApiClient,
+    description: req.body.description,
     query,
     req
   }).then(({deletedCount, totalCount}) => {

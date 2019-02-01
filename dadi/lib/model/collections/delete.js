@@ -107,9 +107,8 @@ function deleteFn ({
 
       // Create a revision for each of the updated documents.
       if (this.history) {
-        return this.history.addVersion({
-          description,
-          initial: deletedDocuments
+        return this.history.addVersion(deletedDocuments, {
+          description
         })
       }
     }).then(() => {

@@ -23,6 +23,14 @@ function getVersions ({
     client,
     type: 'read'
   }).then(() => {
+    if (!this.history) {
+      const error = new Error('History not enabled for collection')
+
+      error.statusCode = 404
+
+      return Promise.reject(error)
+    }
+
     return this.history.getVersions(documentId).then(({results}) => {
       if (results.length === 0) {
         return this.count({

@@ -95,19 +95,19 @@ const Model = function (name, schema, connection, settings) {
     ]
   }
 
-  // Unless `enableHistory` (or `storeRevisions`, for backward-compatibility)
+  // Unless `enableVersioning` (or `storeRevisions`, for backward-compatibility)
   // is explicitly set to `false`, we enable history.
   if (
-    this.settings.enableHistory !== false &&
+    this.settings.enableVersioning !== false &&
     this.settings.storeRevisions !== false
   ) {
-    let historyCollection = this.settings.historyCollection ||
+    let versioningCollection = this.settings.versioningCollection ||
       this.settings.revisionCollection ||
       this.name + DEFAULT_HISTORY_COLLECTION_SUFFIX
 
     this.history = new History({
       database: this.settings.database,
-      name: historyCollection
+      name: versioningCollection
     })
   }
 

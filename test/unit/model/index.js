@@ -126,7 +126,7 @@ describe('Model', function () {
         null,
         {
           database: 'testdb',
-          historyCollection: 'modelHistory'
+          versioningCollection: 'modelHistory'
         }
       )
       mod.history.name.should.equal('modelHistory')
@@ -167,14 +167,14 @@ describe('Model', function () {
       done()
     })
 
-    it('should attach history collection if `enableHistory` is true', function (done) {
+    it('should attach history collection if `enableVersioning` is true', function (done) {
       var mod = model(
         'testModelName',
         help.getModelSchema(),
         null,
         {
           database: 'testdb',
-          enableHistory: true
+          enableVersioning: true
         }
       )
       should.exist(mod.history)
@@ -183,15 +183,15 @@ describe('Model', function () {
       done()
     })
 
-    it('should attach specified history collection if `enableHistory` is true', function (done) {
+    it('should attach specified history collection if `enableVersioning` is true', function (done) {
       const mod = model(
         'testModelName',
         help.getModelSchema(),
         null,
         {
           database: 'testdb',
-          enableHistory: true,
-          historyCollection: 'modelHistory'
+          enableVersioning: true,
+          versioningCollection: 'modelHistory'
         }
       )
       should.exist(mod.history)

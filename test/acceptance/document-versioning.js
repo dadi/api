@@ -45,7 +45,7 @@ describe('Document versioning', function () {
       }
       let schema2 = Object.assign({}, schema1, {
         settings: {
-          enableHistory: true
+          enableVersioning: true
         }        
       })
 

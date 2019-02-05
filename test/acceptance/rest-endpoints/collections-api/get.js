@@ -1318,5 +1318,53 @@ describe('Collections API – GET', function () {
           done()
         })
     })
+
+    it('should include correct Content-Encoding header for gzipped responses', function (done) {
+      help.createDoc(bearerToken, function (err, doc1) {
+        if (err) return done(err)
+        help.createDoc(bearerToken, function (err, doc2) {
+          if (err) return done(err)
+
+          var client = request(connectionString)
+          client
+            .get('/vtest/testdb/test-schema')
+            .set('Accept-Encoding', 'gzip, deflate')
+            .set('Authorization', 'Bearer ' + bearerToken)
+            .expect(200)
+            .expect('content-type', 'application/json')
+            .end((err, res) => {
+              if (err) return done(err)
+
+              res.headers['content-encoding'].should.exist
+              res.headers['content-encoding'].should.eql('gzip')
+
+              done()
+            })
+        })
+      })
+    })
+
+    it('should not include Content-Encoding header for uncompressed responses', function (done) {
+      help.createDoc(bearerToken, function (err, doc1) {
+        if (err) return done(err)
+        help.createDoc(bearerToken, function (err, doc2) {
+          if (err) return done(err)
+
+          var client = request(connectionString)
+          client
+            .get('/vtest/testdb/test-schema')
+            .set('Accept-Encoding', 'identity')
+            .set('Authorization', 'Bearer ' + bearerToken)
+            .expect(200)
+            .expect('content-type', 'application/json')
+            .end((err, res) => {
+              if (err) return done(err)
+
+              should.not.exist(res.headers['content-encoding'])
+              done()
+            })
+        })
+      })
+    })
   })
 })

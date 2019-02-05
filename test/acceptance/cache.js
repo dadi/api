@@ -585,7 +585,7 @@ describe('Cache', function (done) {
       var query = url.parse(requestUrl, true).query
       var modelDir = crypto.createHash('sha1').update(url.parse(requestUrl).pathname).digest('hex')
       var filename = crypto.createHash('sha1').update(url.parse(requestUrl).pathname + JSON.stringify(query)).digest('hex')
-      var cacheKey = modelDir + '_' + filename
+      var cacheKey = modelDir + '_' + filename + '.gzip'
 
       try {
         app.start(function () {
@@ -642,6 +642,7 @@ describe('Cache', function (done) {
 
             client
             .get(requestUrl)
+            .set('Accept-Encoding', 'identity')
             .set('Authorization', 'Bearer ' + bearerToken)
             .expect(200)
             .end(function (err, res) {

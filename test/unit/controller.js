@@ -173,7 +173,7 @@ describe('Controller', () => {
         stub.restore()
       })
 
-      it('should not call find() if invalid skip option is provided', () => {
+      it('should not call find() if invalid skip option is provided', done => {
         let mod = model(
           'testModel',
           help.getModelSchema(),
@@ -182,27 +182,26 @@ describe('Controller', () => {
         )
         let stub = sinon.stub(mod, 'get').resolves({})
         let req = {
-          url: '/foo/bar?filter={"fieldName":"test"}&skip=-1'
+          url: '/foo/bar?filter={"fieldName":"test"}&skip=-1',
+          headers: {
+            'accept-encoding': 'identity'
+          }
         }
         let res = {
           setHeader: function setHeader (str1, str2) {
           },
           end: function end (body) {
-            this.body = body
+            stub.restore()
+            stub.callCount.should.equal(0)
+            this.statusCode.should.eql(400)
+            done()
           }
         }
 
-        res.body = ''
-        res.statusCode = 200
-
-        controller(mod).get(req, res, {})
-
-        stub.restore()
-        stub.callCount.should.equal(0)
-        res.statusCode.should.eql(400)
+        controller(mod).get(req, res, function () {})
       })
 
-      it('should not call find() if invalid page option is provided', () => {
+      it('should not call find() if invalid page option is provided', done => {
         let mod = model(
           'testModel',
           help.getModelSchema(),
@@ -211,24 +210,23 @@ describe('Controller', () => {
         )
         let stub = sinon.stub(mod, 'get').resolves({})
         let req = {
-          url: '/foo/bar?filter={"fieldName":"test"}&page=-1'
+          url: '/foo/bar?filter={"fieldName":"test"}&page=-1',
+          headers: {
+            'accept-encoding': 'identity'
+          }
         }
         let res = {
           setHeader: function setHeader (str1, str2) {
           },
           end: function end (body) {
-            this.body = body
+            stub.restore()
+            stub.callCount.should.equal(0)
+            this.statusCode.should.eql(400)
+            done()
           }
         }
 
-        res.body = ''
-        res.statusCode = 200
-
-        controller(mod).get(req, res, {})
-
-        stub.restore()
-        stub.callCount.should.equal(0)
-        res.statusCode.should.eql(400)
+        controller(mod).get(req, res, function () {})
       })
 
       it('should not pass apiVersion in query if not configured', () => {
@@ -350,7 +348,9 @@ describe('Controller', () => {
           setHeader: function () {}
         }
 
-        controller(mod).get(req, res)
+        controller(mod).get(req, res, function () {
+
+        })
       })
     })
 

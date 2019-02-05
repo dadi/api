@@ -74,7 +74,7 @@ describe('Cache', function (done) {
                         res1.headers['x-cache'].should.eql('MISS')
                         done()
                       })
-                    })                    
+                    })
                   }, 300)
                 })
               }
@@ -145,7 +145,7 @@ describe('Cache', function (done) {
           })
         }, 500)
       })
-    })    
+    })
 
     it("should not flush cached items that don't match the specified path", function (done) {
       var client = request('http://' + config.get('server.host') + ':' + config.get('server.port'))
@@ -439,6 +439,7 @@ describe('Cache', function (done) {
 
                     client
                     .get('/vtest/testdb/test-schema')
+                    .set('Accept-Encoding', 'identity')
                     .set('Authorization', `Bearer ${adminBearerToken}`)
                     .expect(200)
                     .end(function (err, res1) {
@@ -477,6 +478,7 @@ describe('Cache', function (done) {
           // test that cache documents still exist for /vtest/testdb/test-schema
           client
           .get('/vtest/testdb/test-schema')
+          .set('Accept-Encoding', 'identity')
           .set('Authorization', `Bearer ${adminBearerToken}`)
           .expect(200)
           .end(function (err, res) {
@@ -506,6 +508,7 @@ describe('Cache', function (done) {
           // test that cache documents still exist for /vtest/testdb/test-schema
           client
           .get('/vtest/testdb/test-schema')
+          .set('Accept-Encoding', 'identity')
           .set('Authorization', `Bearer ${adminBearerToken}`)
           .expect(200)
           .end(function (err, res) {
@@ -517,7 +520,7 @@ describe('Cache', function (done) {
           })
         }, 500)
       })
-    })    
+    })
 
     it("should not flush cached items that don't match the specified path", function (done) {
       this.timeout(4000)
@@ -536,6 +539,7 @@ describe('Cache', function (done) {
         // get first time, uncached version of /v1/library/book
         client
         .get('/v1/library/book')
+        .set('Accept-Encoding', 'identity')
         .set('Authorization', `Bearer ${adminBearerToken}`)
         .expect(200)
         .end(function (err, res) {
@@ -547,6 +551,7 @@ describe('Cache', function (done) {
             // get cached version of /v1/library/book
             client
             .get('/v1/library/book')
+            .set('Accept-Encoding', 'identity')
             .set('Authorization', `Bearer ${adminBearerToken}`)
             .expect(200)
             .end(function (err, res) {
@@ -557,6 +562,7 @@ describe('Cache', function (done) {
               // get cached version of /vtest/testdb/test-schema
               client
               .get('/vtest/testdb/test-schema')
+              .set('Accept-Encoding', 'identity')
               .set('Authorization', `Bearer ${adminBearerToken}`)
               .expect(200)
               .end(function (err, res) {
@@ -564,6 +570,7 @@ describe('Cache', function (done) {
 
                 client
                 .get('/vtest/testdb/test-schema')
+                .set('Accept-Encoding', 'identity')
                 .set('Authorization', `Bearer ${adminBearerToken}`)
                 .expect(200)
                 .end(function (err, res) {
@@ -590,6 +597,7 @@ describe('Cache', function (done) {
                         // test that cache documents still exist for /v1/library/book
                         client
                         .get('/v1/library/book')
+                        .set('Accept-Encoding', 'identity')
                         .set('Authorization', `Bearer ${adminBearerToken}`)
                         .expect(200)
                         .end(function (err, res) {
@@ -635,6 +643,7 @@ describe('Cache', function (done) {
           setTimeout(function () {
             client
             .get('/vtest/testdb/test-schema')
+            .set('Accept-Encoding', 'identity')
             .set('Authorization', `Bearer ${adminBearerToken}`)
             .expect(200)
             .end(function (err, res1) {
@@ -658,6 +667,7 @@ describe('Cache', function (done) {
                   setTimeout(function () {
                     client
                     .get('/vtest/testdb/test-schema')
+                    .set('Accept-Encoding', 'identity')
                     .set('Authorization', `Bearer ${adminBearerToken}`)
                     .expect(200)
                     .end(function (err, res1) {
@@ -689,9 +699,10 @@ describe('Cache', function (done) {
       .end(function (err, res) {
         if (err) return done(err)
 
-        // get first tine, uncached version of /v1/library/book
+        // get first time, uncached version of /v1/library/book
         client
         .get('/v1/library/book')
+        .set('Accept-Encoding', 'identity')
         .set('Authorization', `Bearer ${adminBearerToken}`)
         .expect(200)
         .end(function (err, res) {
@@ -703,6 +714,7 @@ describe('Cache', function (done) {
             // get cached version of /v1/library/book
             client
             .get('/v1/library/book')
+            .set('Accept-Encoding', 'identity')
             .set('Authorization', `Bearer ${adminBearerToken}`)
             .expect(200)
             .end(function (err, res) {
@@ -714,6 +726,7 @@ describe('Cache', function (done) {
                 // get cached version of /vtest/testdb/test-schema
                 client
                 .get('/vtest/testdb/test-schema')
+                .set('Accept-Encoding', 'identity')
                 .set('Authorization', `Bearer ${adminBearerToken}`)
                 .expect(200)
                 .end(function (err, res) {
@@ -741,6 +754,7 @@ describe('Cache', function (done) {
                         // test that cache has been flushed for /v1/library/book
                         client
                         .get('/v1/library/book')
+                        .set('Accept-Encoding', 'identity')
                         .set('Authorization', `Bearer ${adminBearerToken}`)
                         .expect(200)
                         .end(function (err, res) {
@@ -752,6 +766,7 @@ describe('Cache', function (done) {
                             // test that cache has been flushed for /vtest/testdb/test-schema
                             client
                             .get('/vtest/testdb/test-schema')
+                            .set('Accept-Encoding', 'identity')
                             .set('Authorization', `Bearer ${adminBearerToken}`)
                             .expect(200)
                             .end(function (err, res) {

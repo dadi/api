@@ -116,10 +116,10 @@ describe('DataStore', function () {
 
       setTimeout(() => {
         app.stop(err => {
-          err.message.should.eql('Not running')
+          ;(err.message.indexOf('not running') > 0).should.eql(true)
 
           done()
-        })        
+        })
       }, 250)
     }
   })
@@ -207,7 +207,7 @@ describe('DataStore', function () {
 
         setTimeout(() => {
           app.stop(err => {
-            err.message.should.eql('Not running')
+            ;(err.message.indexOf('not running') > 0).should.eql(true)
 
             done()
           })
@@ -299,7 +299,7 @@ describe('DataStore', function () {
 
         setTimeout(() => {
           app.stop(err => {
-            err.message.should.eql('Not running')
+            ;(err.message.indexOf('not running') > 0).should.eql(true)
 
             done()
           })

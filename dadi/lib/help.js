@@ -5,6 +5,7 @@ const ERROR_CODES = require('./../../error-codes')
 const formatError = require('@dadi/format-error')
 const log = require('@dadi/logger')
 const stackTrace = require('stack-trace')
+const zlib = require('zlib')
 
 module.exports.sendBackErrorTrace = function (res, next) {
   return err => {
@@ -49,7 +50,15 @@ module.exports.sendBackErrorWithCode = function (errorCode, statusCode, res, nex
 }
 
 // helper that sends json response
-module.exports.sendBackJSON = function (successCode, res, next) {
+module.exports.sendBackJSON = function (successCode, req, res, next) {
+  // If `next` is a function, all 4 arguments were passed,
+  // otherwise reshuffle the arguments.
+  if (typeof next !== 'function') {
+    next = res
+    res = req
+    req = null
+  }
+
   return function (err, results) {
     let body = results
     let statusCode = successCode
@@ -87,13 +96,40 @@ module.exports.sendBackJSON = function (successCode, res, next) {
       return
     }
 
-    res.setHeader('content-type', 'application/json')
-    res.setHeader('content-length', resBody ? Buffer.byteLength(resBody) : 0)
+    if (req && module.exports.shouldCompress(req)) {
+      res.setHeader('Content-Encoding', 'gzip')
 
-    res.statusCode = statusCode
+      resBody = new Promise((resolve, reject) => {
+        zlib.gzip(resBody, (err, compressedData) => {
+          if (err) return reject(err)
 
-    res.end(resBody)
+          res.setHeader('Content-Length', compressedData.byteLength)
+          resolve(compressedData)
+        })
+      })
+    } else {
+      res.setHeader('Content-Length', resBody ? Buffer.byteLength(resBody) : 0)
+    }
+
+    return Promise.resolve(resBody).then(resBody => {
+      res.setHeader('Content-Type', 'application/json')
+      res.statusCode = statusCode
+      res.end(resBody)
+    })
   }
+}
+
+/**
+ * Determines whether the response should be compressed by
+ * inspecting the Accept-Encoding header.
+ *
+ * @param {IncomingMessage} req - the original HTTP request
+ * @returns Boolean
+ */
+module.exports.shouldCompress = function (req) {
+  let acceptHeader = req.headers['accept-encoding'] || ''
+
+  return acceptHeader.split(',').includes('gzip')
 }
 
 module.exports.sendBackJSONP = function (callbackName, res, next) {

@@ -445,7 +445,7 @@ describe('Multi-language', function () {
     })
   })
 
-  it.skip('should return the original version of a field when the requested language is not part of `i18n.languages`', done => {
+  it('should return the original version of a field when the requested language is not part of `i18n.languages`', done => {
     config.set('i18n.languages', ['fr'])
 
     let document = {
@@ -463,10 +463,11 @@ describe('Multi-language', function () {
       if (err) return done(err)
 
       client
-      .get(`/v1/library/book?fields={"title":1}&lang=pt`)
+      .get(`/v1/library/book?cache=false&fields={"title":1}&lang=pt`)
       .set('Authorization', `Bearer ${bearerToken}`)
       .expect(200)
       .end((err, res) => {
+        console.log('err :', err)
         res.body.results.length.should.eql(1)
 
         let results = res.body.results

@@ -1,15 +1,18 @@
-var _ = require('underscore')
-var crypto = require('crypto')
-var path = require('path')
-var pathToRegexp = require('path-to-regexp')
-var url = require('url')
+let _ = require('underscore')
+const crypto = require('crypto')
+const lengthStream = require('length-stream')
+const path = require('path')
+const pathToRegexp = require('path-to-regexp')
+const StreamCache = require('stream-cache')
+const url = require('url')
 
-var config = require(path.join(__dirname, '/../../../config'))
-var log = require('@dadi/logger')
-var DadiCache = require('@dadi/cache')
-var cache
+const config = require(path.join(__dirname, '/../../../config'))
+const help = require(path.join(__dirname, '/../help'))
+const log = require('@dadi/logger')
+const DadiCache = require('@dadi/cache')
+let cache
 
-var Cache = function (server) {
+const Cache = function (server) {
   this.cache = cache = new DadiCache(config.get('caching'))
 
   this.server = server
@@ -18,7 +21,7 @@ var Cache = function (server) {
   this.options = {}
 }
 
-var instance
+let instance
 module.exports = function (server) {
   if (!instance) {
     instance = new Cache(server)
@@ -27,11 +30,11 @@ module.exports = function (server) {
 }
 
 Cache.prototype.cachingEnabled = function (req) {
-  var options = {}
-  var endpoints = this.server.components
-  var requestPath = url.parse(req.url, true).pathname
+  let options = {}
+  let endpoints = this.server.components
+  let requestPath = url.parse(req.url, true).pathname
 
-  var endpointKey = _.find(_.keys(endpoints), function (k) { return pathToRegexp(k).exec(requestPath) })
+  let endpointKey = _.find(_.keys(endpoints), function (k) { return pathToRegexp(k).exec(requestPath) })
 
   if (!endpointKey) return false
 
@@ -44,7 +47,7 @@ Cache.prototype.cachingEnabled = function (req) {
 
 Cache.prototype.getEndpointContentType = function (req) {
   // there are only two possible types javascript or json
-  var query = url.parse(req.url, true).query
+  let query = url.parse(req.url, true).query
   return query.callback ? 'text/javascript' : 'application/json'
 }
 
@@ -52,56 +55,85 @@ Cache.prototype.getEndpointContentType = function (req) {
  * Adds the Cache middleware to the stack
  */
 Cache.prototype.init = function () {
-  var self = this
+  let self = this
 
   this.server.app.use((req, res, next) => {
-    var enabled = self.cachingEnabled(req)
+    let enabled = self.cachingEnabled(req)
     if (!enabled) return next()
 
     // only cache GET requests
     if (req.method && req.method.toLowerCase() !== 'get') return next()
 
-    var query = url.parse(req.url, true).query
+    let query = url.parse(req.url, true).query
 
     // allow query string param to bypass cache
-    var noCache = query.cache && query.cache.toString().toLowerCase() === 'false'
+    let noCache = query.cache && query.cache.toString().toLowerCase() === 'false'
     delete query.cache
 
     // we build the filename with a hashed hex string so we can be unique
     // and avoid using file system reserved characters in the name.
-    var modelDir = crypto.createHash('sha1').update(url.parse(req.url).pathname).digest('hex')
-    var filename = crypto.createHash('sha1').update(url.parse(req.url).pathname + JSON.stringify(query)).digest('hex')
+    let modelDir = crypto.createHash('sha1').update(url.parse(req.url).pathname).digest('hex')
+    let filename = crypto.createHash('sha1').update(url.parse(req.url).pathname + JSON.stringify(query)).digest('hex')
 
-    // Prepend the model's name/folder hierarchy to the filename so it can be used
+    // File extension for cache file
+    let cacheExt = help.shouldCompress(req) ? '.gzip' : ''
+
+        // Prepend the model's name/folder hierarchy to the filename so it can be used
     // later to flush the cache for this model
-    var cacheKey = modelDir + '_' + filename
+    let cacheKey = `${modelDir}_${filename}${cacheExt}`
+
+    // let opts = {
+    //   directory: { extension: `.json${cacheExt}` }
+    // }
 
     // get contentType that current endpoint requires
-    var contentType = self.getEndpointContentType(req)
+    let contentType = self.getEndpointContentType(req)
 
     // attempt to get from the cache
-    cache.get(cacheKey).then((stream) => {
-      res.setHeader('X-Cache-Lookup', 'HIT')
+    cache
+      .get(cacheKey)
+      .then(stream => {
+        res.setHeader('X-Cache-Lookup', 'HIT')
 
-      if (noCache) {
+        if (noCache) {
+          res.setHeader('X-Cache', 'MISS')
+          return next()
+        }
+
+        log.info({module: 'cache'}, `Serving ${req.url} from cache`)
+
+        res.statusCode = 200
+        res.setHeader('X-Cache', 'HIT')
+        res.setHeader('Content-Type', contentType)
+        res.setHeader('Content-Encoding', help.shouldCompress(req) ? 'gzip' : 'utf-8')
+
+        return _streamFile(res, stream, () => {})
+      })
+      .catch(() => {
+        // not found in cache
         res.setHeader('X-Cache', 'MISS')
-        return next()
-      }
+        res.setHeader('X-Cache-Lookup', 'MISS')
+        return cacheResponse()
+      })
 
-      log.info({module: 'cache'}, 'Serving ' + req.url + ' from cache')
+    function _streamFile (res, stream, cb) {
+      let streamCache = new StreamCache()
 
-      res.statusCode = 200
-      res.setHeader('X-Cache', 'HIT')
-      res.setHeader('Content-Type', contentType)
-      // res.setHeader('Content-Length', stats.size)
+      let lstream = lengthStream(length => {
+        res.setHeader('Content-Length', length)
+        streamCache.pipe(res)
+      })
 
-      stream.pipe(res)
-    }).catch(() => {
-      // not found in cache
-      res.setHeader('X-Cache', 'MISS')
-      res.setHeader('X-Cache-Lookup', 'MISS')
-      return cacheResponse()
-    })
+      stream.on('error', err => {
+        return cb(err)
+      })
+
+      stream.on('end', () => {
+        return cb(null, true)
+      })
+
+      return stream.pipe(lstream).pipe(streamCache)
+    }
 
     /**
      * cacheResponse
@@ -110,10 +142,11 @@ Cache.prototype.init = function () {
      */
     function cacheResponse () {
       // file is expired or does not exist, wrap res.end and res.write to save to cache
-      var _end = res.end
-      var _write = res.write
+      let _end = res.end
+      let _write = res.write
 
-      var data = ''
+      let bufs = []
+      let body = ''
 
       res.write = function (chunk) {
         _write.apply(res, arguments)
@@ -123,13 +156,21 @@ Cache.prototype.init = function () {
         // respond before attempting to cache
         _end.apply(res, arguments)
 
-        if (chunk) data += chunk
+        if (chunk) {
+          if (chunk instanceof Buffer) {
+            bufs.push(chunk)
+          } else {
+            body += chunk
+          }
+        }
 
         // if response is not 200 don't cache
         if (res.statusCode !== 200) return
 
+        body = body !== '' ? body : Buffer.concat(bufs)
+
         // cache the content
-        cache.set(cacheKey, data).then(() => {
+        cache.set(cacheKey, body).then(() => {
 
         })
       }

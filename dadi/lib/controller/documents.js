@@ -87,12 +87,12 @@ Collection.prototype.get = function (req, res, next) {
   // Determine if this is JSONP.
   let done = callback
     ? help.sendBackJSONP(callback, res, next)
-    : help.sendBackJSON(200, req, res, next)
+    : help.sendBackJSON(200, res, next)
   let query = this._prepareQuery(req)
   let queryOptions = this._prepareQueryOptions(options)
 
   if (queryOptions.errors.length !== 0) {
-    done = help.sendBackJSON(400, req, res, next)
+    done = help.sendBackJSON(400, res, next)
 
     return done(null, queryOptions)
   } else {
@@ -106,7 +106,7 @@ Collection.prototype.get = function (req, res, next) {
     options: queryOptions,
     req
   }).then(results => {
-    return done(null, results)
+    return done(null, results, req)
   }).catch(error => {
     return done(error)
   })

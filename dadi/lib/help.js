@@ -50,16 +50,8 @@ module.exports.sendBackErrorWithCode = function (errorCode, statusCode, res, nex
 }
 
 // helper that sends json response
-module.exports.sendBackJSON = function (successCode, req, res, next) {
-  // If `next` is a function, all 4 arguments were passed,
-  // otherwise reshuffle the arguments.
-  if (typeof next !== 'function') {
-    next = res
-    res = req
-    req = null
-  }
-
-  return function (err, results) {
+module.exports.sendBackJSON = function (successCode, res, next) {
+  return function (err, results, originalRequest) {
     let body = results
     let statusCode = successCode
 
@@ -96,7 +88,7 @@ module.exports.sendBackJSON = function (successCode, req, res, next) {
       return
     }
 
-    if (req && module.exports.shouldCompress(req)) {
+    if (originalRequest && module.exports.shouldCompress(originalRequest)) {
       res.setHeader('Content-Encoding', 'gzip')
 
       resBody = new Promise((resolve, reject) => {

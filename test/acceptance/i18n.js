@@ -467,7 +467,6 @@ describe('Multi-language', function () {
       .set('Authorization', `Bearer ${bearerToken}`)
       .expect(200)
       .end((err, res) => {
-        console.log('err :', err)
         res.body.results.length.should.eql(1)
 
         let results = res.body.results

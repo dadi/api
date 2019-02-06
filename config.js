@@ -131,6 +131,11 @@ var conf = convict({
       format: String,
       default: 'test',
       env: 'DB_AUTH_NAME'
+    },
+    saltRounds: {
+      doc: 'The number of rounds to go through when hashing a password',
+      format: Number,
+      default: 10
     }
   },
   search: {

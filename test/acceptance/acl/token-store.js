@@ -1,4 +1,5 @@
 const app = require('./../../../dadi/lib')
+const bcrypt = require('bcrypt')
 const config = require('./../../../config')
 const fs = require('fs-extra')
 const help = require('./../help')
@@ -6,6 +7,7 @@ const jwt = require('jsonwebtoken')
 const path = require('path')
 const request = require('supertest')
 const should = require('should')
+const sinon = require('sinon')
 
 describe('Token store', () => {
   let configBackup = config.get()
@@ -255,6 +257,7 @@ describe('Token store', () => {
       __dirname,
       './../../acceptance/temp-workspace/endpoints/v1/endpoint.intercept-client.js'
     )
+    let testClientHash
 
     before(done => {
       let endpointSource = `
@@ -272,14 +275,14 @@ describe('Token store', () => {
       `
 
       fs.writeFile(endpointPath, endpointSource).then(() => {
-        help.createClient(testClient, () => {
+        help.createClient(testClient, (err, client) => {
           app.start(err => {
             if (err) return done(err)
 
             setTimeout(done, 500)
           })
         })
-      }).catch(console.log)
+      }).catch(done)
     })
 
     after(done => {
@@ -291,11 +294,19 @@ describe('Token store', () => {
     })
 
     it('should attach client data to the request object if the bearer token supplied is valid', done => {
-      client
+      const newClient = {
+        clientId: 'testClient1',
+        secret: 'superSecret1',
+        accessType: 'admin'
+      }
+      const spy = sinon.spy(bcrypt, 'compare')
+
+      help.createClient(newClient, (err, clientRecord) => {
+        client
         .post(tokenRoute)
         .send({
-          clientId: testClient.clientId,
-          secret: testClient.secret
+          clientId: newClient.clientId,
+          secret: newClient.secret
         })
         .expect('content-type', 'application/json')
         .expect('pragma', 'no-cache')
@@ -303,17 +314,22 @@ describe('Token store', () => {
         .expect(200, (err, res) => {
           res.body.accessToken.should.be.String
 
+          spy.getCall(0).args[0].should.eql(newClient.secret)
+          spy.getCall(0).args[1].should.eql(clientRecord.secret)
+          spy.restore()
+
           client
             .get('/v1/intercept-client')
             .set('Authorization', `Bearer ${res.body.accessToken}`)
             .expect('content-type', 'application/json')
             .expect(200, (err, res) => {
-              res.body.clientId.should.eql(testClient.clientId)
-              res.body.accessType.should.eql(testClient.accessType)
+              res.body.clientId.should.eql(newClient.clientId)
+              res.body.accessType.should.eql(newClient.accessType)
 
               done()
             })
         })
+      })
     })
 
     it('should attach an error to the request object if the bearer token supplied is invalid', done => {

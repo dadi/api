@@ -1,4 +1,5 @@
 const acl = require('./../../dadi/lib/model/acl')
+const bcrypt = require('bcrypt')
 const fs = require('fs-extra')
 const path = require('path')
 const should = require('should')
@@ -141,6 +142,10 @@ module.exports.createClient = function (client, done) {
     }
   }
 
+  client = Object.assign({}, client, {
+    secret: bcrypt.hashSync(client.secret, config.get('auth.saltRounds'))
+  })
+
   var collectionName = config.get('auth.clientCollection')
   var conn = connection({
     override: true,
@@ -164,7 +169,7 @@ module.exports.createClient = function (client, done) {
       }).then(res => {
         res.results.length.should.eql(1)
 
-        done()
+        done(null, res.results[0])
       })
     }).catch((err) => {
       done(err)
@@ -188,6 +193,10 @@ module.exports.createACLClient = function (client, callback) {
     null,
     config.get('datastore')
   )
+
+  client = Object.assign({}, client, {
+    secret: bcrypt.hashSync(client.secret, config.get('auth.saltRounds'))
+  })
 
   return clientsConnection.datastore.insert({
     data: client,

@@ -5,8 +5,9 @@ cache:
 notifications:
   email: false
 node_js:
-  - '8.9.4'
-  - '6.11.1'
+  - '8'
+  - '10'
+  - 'lts/*'
 before_script:
   - npm prune
 branches:

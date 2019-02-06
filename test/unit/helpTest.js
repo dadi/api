@@ -29,7 +29,7 @@ describe('Help', function (done) {
       res.setHeader.args[1][1].should.be.Number
 
       res.end.callCount.should.eql(1)
-      
+
       let body = JSON.parse(res.end.args[0][0])
 
       body.success.should.eql(false)
@@ -43,54 +43,50 @@ describe('Help', function (done) {
   describe('sendBackErrorWithCode', function () {
     it('should send an error with the formatted message corresponding to the API error code with the status code provided', done => {
       let res = {
-        end: sinon.stub(),
+        end: function end (resBody) {
+          this.setHeader.callCount.should.eql(2)
+          this.setHeader.args[0][0].should.eql('Content-Length')
+          this.setHeader.args[0][1].should.be.Number
+          this.setHeader.args[1][0].should.eql('Content-Type')
+          this.setHeader.args[1][1].should.eql('application/json')
+
+          let body = JSON.parse(resBody)
+
+          body.should.eql(
+            formatError.createError('api', '0006', null, ERROR_CODES)
+          )
+
+          this.statusCode.should.eql(403)
+          done()
+        },
         setHeader: sinon.stub()
       }
 
-      help.sendBackErrorWithCode('0006', 403, res, {})
-
-      res.setHeader.callCount.should.eql(2)
-      res.setHeader.args[0][0].should.eql('content-type')
-      res.setHeader.args[0][1].should.eql('application/json')
-      res.setHeader.args[1][0].should.eql('content-length')
-      res.setHeader.args[1][1].should.be.Number
-
-      res.end.callCount.should.eql(1)
-      
-      let body = JSON.parse(res.end.args[0][0])
-
-      body.should.eql(
-        formatError.createError('api', '0006', null, ERROR_CODES)
-      )
-      res.statusCode.should.eql(403)
-
-      done()
+      help.sendBackErrorWithCode('0006', 403, res, () => {})
     })
 
     it('should send an error with the formatted message corresponding to the API error code with the status code 500 if one is not provided', done => {
       let res = {
-        end: sinon.stub(),
+        end: function end (resBody) {
+          this.setHeader.callCount.should.eql(2)
+          this.setHeader.args[0][0].should.eql('Content-Length')
+          this.setHeader.args[0][1].should.be.Number
+          this.setHeader.args[1][0].should.eql('Content-Type')
+          this.setHeader.args[1][1].should.eql('application/json')
+
+          let body = JSON.parse(resBody)
+
+          body.should.eql(
+            formatError.createError('api', '0006', null, ERROR_CODES)
+          )
+          this.statusCode.should.eql(500)
+
+          done()
+        },
         setHeader: sinon.stub()
       }
 
       help.sendBackErrorWithCode('0006', res, {})
-
-      res.setHeader.callCount.should.eql(2)
-      res.setHeader.args[0][0].should.eql('content-type')
-      res.setHeader.args[0][1].should.eql('application/json')
-      res.setHeader.args[1][0].should.eql('content-length')
-      res.setHeader.args[1][1].should.be.Number
-
-      res.end.callCount.should.eql(1)
-      
-      let body = JSON.parse(res.end.args[0][0])
-
-      body.should.eql(
-        formatError.createError('api', '0006', null, ERROR_CODES)
-      )
-      res.statusCode.should.eql(500)
-
-      done()
     })
   })
 

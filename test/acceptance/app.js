@@ -3,10 +3,6 @@ var sinon = require('sinon')
 var fs = require('fs')
 var path = require('path')
 var request = require('supertest')
-var _ = require('underscore')
-var EventEmitter = require('events').EventEmitter
-var FormData = require('form-data')
-var connection = require(__dirname + '/../../dadi/lib/model/connection')
 var config = require(__dirname + '/../../config')
 var help = require(__dirname + '/help')
 var app = require(__dirname + '/../../dadi/lib/')
@@ -122,19 +118,29 @@ describe('Application', function () {
       })
 
       it('should initialise model using collection schema filename as model name', function (done) {
-        var loadedModels = _.compact(_.pluck(app.components, 'model'))
-        var model = _.where(loadedModels, { name: 'test-schema' })
+        let loadedModels = Object.keys(app.components).map(key => {
+          if (app.components[key].model) {
+            return app.components[key]
+          }
+        }).filter(Boolean)
 
-        model.length.should.equal(1)
+        let component = loadedModels.find(c => c.model.name === 'test-schema')
+
+        component.model.name.should.equal('test-schema')
 
         done()
       })
 
       it('should initialise model using property from schema file as model name', function (done) {
-        var loadedModels = _.compact(_.pluck(app.components, 'model'))
-        var model = _.where(loadedModels, { name: 'modelNameFromSchema' })
+        let loadedModels = Object.keys(app.components).map(key => {
+          if (app.components[key].model) {
+            return app.components[key]
+          }
+        }).filter(Boolean)
 
-        model.length.should.equal(1)
+        let component = loadedModels.find(c => c.model.name === 'modelNameFromSchema')
+
+        component.model.name.should.equal('modelNameFromSchema')
 
         done()
       })
@@ -303,7 +309,7 @@ describe('Application', function () {
         .get('/v1/new-endpoint-routing/55bb8f0a8d76f74b1303a135')
         .set('Authorization', 'Bearer ' + bearerToken)
         .expect(200)
-        //.expect('content-type', 'application/json')
+        // .expect('content-type', 'application/json')
         .end(function (err, res) {
           if (err) return done(err)
           res.body.message.should.equal('Endpoint with custom route provided through config() function...ID passed = 55bb8f0a8d76f74b1303a135')
@@ -514,7 +520,7 @@ describe('Application', function () {
             done()
           })
         })
-      })      
+      })
     })
 
     describe('DELETE', function () {

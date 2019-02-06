@@ -1,14 +1,9 @@
 'use strict'
 
-const _ = require('underscore')
 const debug = require('debug')('api:filestore')
 const EventEmitter = require('events').EventEmitter
-const fs = require('fs')
 const Loki = require('lokijs')
 const metadata = require('@dadi/metadata')
-const mkdirp = require('mkdirp')
-const path = require('path')
-const sha1 = require('sha1')
 const sinon = require('sinon')
 const util = require('util')
 const Update = require('./lib/update')

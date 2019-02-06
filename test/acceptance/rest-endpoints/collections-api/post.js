@@ -1,9 +1,5 @@
 const should = require('should')
-const sinon = require('sinon')
-const fs = require('fs')
-const path = require('path')
 const request = require('supertest')
-const _ = require('underscore')
 const config = require(__dirname + '/../../../../config')
 const help = require(__dirname + '/../../help')
 const app = require(__dirname + '/../../../../dadi/lib/')
@@ -29,25 +25,25 @@ describe('Collections API – POST', function () {
           bearerToken = token
 
           let schema = {
-            "fields": {
-              "field1": {
-                "type": "String",
-                "required": false
+            'fields': {
+              'field1': {
+                'type': 'String',
+                'required': false
               },
-              "field2": {
-                "type": "Number",
-                "required": false
+              'field2': {
+                'type': 'Number',
+                'required': false
               },
-              "field3": {
-                "type": "ObjectID",
-                "required": false
+              'field3': {
+                'type': 'ObjectID',
+                'required': false
               },
-              "_fieldWithUnderscore": {
-                "type": "Object",
-                "required": false
+              '_fieldWithUnderscore': {
+                'type': 'Object',
+                'required': false
               }
             },
-            "settings": {}
+            'settings': {}
           }
 
           help.writeTempFile(
@@ -285,12 +281,12 @@ describe('Collections API – POST', function () {
         should.exist(res.body.results)
         res.body.results.should.be.Array
         res.body.results.length.should.equal(1)
-        
+
         res.body.results[0].field1.should.equal(input.field1)
 
         should.exist(res.body.results[0]._createdBy)
         res.body.results[0]._createdBy.should.not.eql(input._createdBy)
-        
+
         should.exist(res.body.results[0]._createdAt)
         res.body.results[0]._createdAt.should.not.eql(input._createdAt)
 

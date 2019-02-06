@@ -10,7 +10,6 @@ var parsecomments = require('parse-comments')
 var fs = require('fs')
 var mkdirp = require('mkdirp')
 var path = require('path')
-var _ = require('underscore')
 
 var acl = require(path.join(__dirname, '/model/acl'))
 var api = require(path.join(__dirname, '/api'))
@@ -307,9 +306,9 @@ Server.prototype.loadPaths = function (paths, done) {
 
   var idx = 0
 
-  _.each(options, function (path, key) {
+  Object.keys(options).forEach(key => {
     try {
-      var stats = fs.statSync(path) // eslint-disable-line
+      var stats = fs.statSync(options[key]) // eslint-disable-line
     } catch (err) {
       if (err.code === 'ENOENT') {
         self.ensureDirectories(options, function () {
@@ -800,8 +799,8 @@ Server.prototype.ensureDirectories = function (options, done) {
   var _0755 = parseInt('0755', 8)
 
   var idx = 0
-  _.each(options, function (dir) {
-    mkdirp(dir, _0755, function (err, made) {
+  Object.keys(options).forEach(dir => {
+    mkdirp(options[dir], _0755, (err, made) => {
       if (err) {
         log.debug({module: 'server'}, err)
         console.log(err)

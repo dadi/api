@@ -1,24 +1,18 @@
 const crypto = require('crypto')
 const fs = require('fs')
-const path = require('path')
 const should = require('should')
 const request = require('supertest')
 // const redis = require('redis');
 const fakeredis = require('fakeredis')
 const sinon = require('sinon')
-const proxyquire = require('proxyquire')
 const url = require('url')
-const _ = require('underscore')
 
 const config = require(__dirname + '/../../config.js')
 const app = require(__dirname + '/../../dadi/lib/')
-const api = require(__dirname + '/../../dadi/lib/api')
-const Server = require(__dirname + '/../../dadi/lib')
 const cache = require(__dirname + '/../../dadi/lib/cache')
 const help = require(__dirname + '/help')
 
 let configBackup
-let testConfigString
 let cacheKeys = []
 let bearerToken
 
@@ -427,7 +421,7 @@ describe('Cache', function (done) {
                           .end(function (err, getRes3) {
                             if (err) return done(err)
 
-                            var result = _.findWhere(getRes3.body.results, { '_id': id })
+                            var result = getRes3.body.results.find(item => item._id === id)
 
                             result.field1.should.eql('foo bar baz!')
 
@@ -503,7 +497,7 @@ describe('Cache', function (done) {
                           .end(function (err, getRes3) {
                             if (err) return done(err)
 
-                            var result = _.findWhere(getRes3.body.results, { '_id': id })
+                            var result = getRes3.body.results.find(item => item._id === id)
 
                             should.not.exist(result)
 
@@ -585,7 +579,7 @@ describe('Cache', function (done) {
       var query = url.parse(requestUrl, true).query
       var modelDir = crypto.createHash('sha1').update(url.parse(requestUrl).pathname).digest('hex')
       var filename = crypto.createHash('sha1').update(url.parse(requestUrl).pathname + JSON.stringify(query)).digest('hex')
-      var cacheKey = modelDir + '_' + filename
+      var cacheKey = modelDir + '_' + filename + '.gz'
 
       try {
         app.start(function () {
@@ -642,6 +636,7 @@ describe('Cache', function (done) {
 
             client
             .get(requestUrl)
+            .set('Accept-Encoding', 'identity')
             .set('Authorization', 'Bearer ' + bearerToken)
             .expect(200)
             .end(function (err, res) {
@@ -934,7 +929,7 @@ describe('Cache', function (done) {
                                   .set('Authorization', 'Bearer ' + bearerToken)
                                   .expect(200)
                                   .end(function (err, getRes3) {
-                                    var result = _.findWhere(getRes3.body.results, { '_id': id })
+                                    var result = getRes3.body.results.find(item => item._id === id)
                                     result.field1.should.eql('foo bar baz!')
                                     app.stop(done)
                                   })
@@ -1047,7 +1042,7 @@ describe('Cache', function (done) {
                                     .set('Authorization', 'Bearer ' + bearerToken)
                                     .expect(200)
                                     .end(function (err, getRes3) {
-                                      var result = _.findWhere(getRes3.body.results, { '_id': id })
+                                      var result = getRes3.body.results.find(item => item._id === id)
                                       should.not.exist(result)
                                       app.stop(done)
                                     })

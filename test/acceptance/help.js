@@ -6,9 +6,6 @@ const should = require('should')
 const connection = require(__dirname + '/../../dadi/lib/model/connection')
 const config = require(__dirname + '/../../config')
 const request = require('supertest')
-const _ = require('underscore')
-
-var clientCollectionName = config.get('auth.clientCollection')
 
 module.exports.bulkRequest = function ({method = 'get', requests, token}) {
   const client = request(`http://${config.get('server.host')}:${config.get('server.port')}`)

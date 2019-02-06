@@ -108,7 +108,7 @@ Collection.prototype.get = function (req, res, next) {
     req,
     version: req.params.id && options.version
   }).then(results => {
-    return done(null, results)
+    return done(null, results, req)
   }).catch(error => {
     return done(error)
   })

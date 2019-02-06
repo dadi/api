@@ -136,15 +136,6 @@ Controller.prototype._prepareQueryOptions = function (options) {
     queryOptions.compose = options.compose
   }
 
-  // History.
-  if (options.includeHistory) {
-    queryOptions.includeHistory = options.includeHistory === 'true'
-
-    if (options.historyFilters) {
-      queryOptions.historyFilters = options.historyFilters
-    }
-  }
-
   // sorting
   let sort = {}
   let sortOptions = help.isJSON(options.sort)

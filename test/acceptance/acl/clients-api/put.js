@@ -1,8 +1,10 @@
 const app = require('./../../../../dadi/lib')
+const bcrypt = require('bcrypt')
 const config = require('./../../../../config')
 const help = require('./../../help')
 const request = require('supertest')
 const should = require('should')
+const sinon = require('sinon')
 
 module.exports = () => {
   let configBackup = config.get()
@@ -134,6 +136,7 @@ module.exports = () => {
           client
           .put('/api/clients/johnnynobody')
           .send({
+            currentSecret: 'whatevs',
             secret: 'ssshhh!'
           })
           .set('content-type', 'application/json')
@@ -547,6 +550,79 @@ module.exports = () => {
 
   describe('success states', () => {
     describe('updating the secret', () => {
+      it('should hash the new secret and salt it using the number of rounds specified in the `auth.saltRounds` config property', done => {
+        let testClient = {
+          clientId: 'apiClient',
+          secret: 'someSecret'
+        }
+
+        help.createACLClient(testClient).then(() => {
+          client
+          .post(config.get('auth.tokenUrl'))
+          .set('content-type', 'application/json')
+          .send({
+            clientId: testClient.clientId,
+            secret: testClient.secret
+          })
+          .expect(200)
+          .expect('content-type', 'application/json')
+          .end((err, res) => {
+            if (err) return done(err)
+
+            res.body.accessToken.should.be.String
+
+            let bearerToken = res.body.accessToken
+
+            config.set('auth.saltRounds', 9)
+
+            const spy = sinon.spy(bcrypt, 'hash')
+            const update = {
+              currentSecret: 'someSecret',
+              secret: 'aNewSecret'
+            }
+
+            client
+            .put('/api/client')
+            .send(update)
+            .set('content-type', 'application/json')
+            .set('Authorization', `Bearer ${bearerToken}`)
+            .expect('content-type', 'application/json')
+            .end((err, res) => {
+              res.statusCode.should.eql(200)
+
+              res.body.results.should.be.Array
+              res.body.results.length.should.eql(1)
+              res.body.results[0].clientId.should.eql(testClient.clientId)
+
+              spy.getCall(0).args[0].should.eql(update.secret)
+              spy.getCall(0).args[1].should.eql(9)
+              spy.restore()
+
+              config.set('auth.saltRounds', configBackup.auth.saltRounds)
+
+              should.not.exist(res.body.results[0].secret)
+
+              client
+              .post(config.get('auth.tokenUrl'))
+              .set('content-type', 'application/json')
+              .send({
+                clientId: testClient.clientId,
+                secret: 'aNewSecret'
+              })
+              .expect(200)
+              .expect('content-type', 'application/json')
+              .end((err, res) => {
+                if (err) return done(err)
+
+                res.body.accessToken.should.be.String
+
+                done()
+              })
+            })
+          })
+        })
+      })
+      
       it('should allow a client to update their own secret on /api/clients/{ID}', done => {
         let testClient = {
           clientId: 'apiClient',

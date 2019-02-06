@@ -52,7 +52,7 @@
     "moment": "2.19.3",
     "natural": "^0.6.1",
     "object-path": "^0.11.4",
-    "parse-comments": "0.4.3",
+    "parse-comments": "1.0.0",
     "path-to-regexp": "~1.7.0",
     "recovery": "^0.2.6",
     "require-directory": "^2.1.1",

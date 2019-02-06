@@ -1,10 +1,37 @@
 const acl = require('./../../dadi/lib/model/acl')
+const bcrypt = require('bcrypt')
 const fs = require('fs-extra')
 const path = require('path')
 const should = require('should')
 const connection = require(__dirname + '/../../dadi/lib/model/connection')
 const config = require(__dirname + '/../../config')
 const request = require('supertest')
+
+module.exports.bulkRequest = function ({method = 'get', requests, token}) {
+  const client = request(`http://${config.get('server.host')}:${config.get('server.port')}`)
+  let results = []
+
+  return requests.reduce((result, request, index) => {
+    return result.then(() => {
+      return new Promise((resolve, reject) => {
+        let endpoint = typeof request === 'string'
+          ? request
+          : request.endpoint
+
+        client[method](endpoint)
+        .set('Authorization', `Bearer ${token}`)
+        .send(request.body)
+        .end((err, res) => {
+          if (err) return reject(err)
+
+          results[index] = res.body
+
+          resolve(results)
+        })
+      })
+    })
+  }, Promise.resolve())
+}
 
 // create a document with random string via the api
 module.exports.createDoc = function (token, done) {
@@ -112,6 +139,10 @@ module.exports.createClient = function (client, done) {
     }
   }
 
+  client = Object.assign({}, client, {
+    secret: bcrypt.hashSync(client.secret, config.get('auth.saltRounds'))
+  })
+
   var collectionName = config.get('auth.clientCollection')
   var conn = connection({
     override: true,
@@ -135,7 +166,7 @@ module.exports.createClient = function (client, done) {
       }).then(res => {
         res.results.length.should.eql(1)
 
-        done()
+        done(null, res.results[0])
       })
     }).catch((err) => {
       done(err)
@@ -159,6 +190,10 @@ module.exports.createACLClient = function (client, callback) {
     null,
     config.get('datastore')
   )
+
+  client = Object.assign({}, client, {
+    secret: bcrypt.hashSync(client.secret, config.get('auth.saltRounds'))
+  })
 
   return clientsConnection.datastore.insert({
     data: client,

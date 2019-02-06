@@ -65,6 +65,7 @@ describe('Controller', () => {
         )
         let stub = sinon.stub(mod, 'get').resolves({})
         let req = {
+          params: {},
           url: '/foo/bar'
         }
 
@@ -82,6 +83,7 @@ describe('Controller', () => {
         )
         let stub = sinon.stub(mod, 'get').resolves({})
         let req = {
+          params: {},
           url: '/foo/bar?filter={"fieldName":"test", "busted":56488}'
         }
 
@@ -105,6 +107,7 @@ describe('Controller', () => {
         )
         let stub = sinon.stub(mod, 'get').resolves({})
         let req = {
+          params: {},
           url: '/foo/bar?filter={"fieldName": null}'
         }
 
@@ -134,6 +137,7 @@ describe('Controller', () => {
         )
         let stub = sinon.stub(mod, 'get').resolves({})
         let req = {
+          params: {},
           url: '/foo/bar?filter={"fieldName": null, "field2": "xx"}'
         }
 
@@ -161,6 +165,7 @@ describe('Controller', () => {
         let mod = model('schemaTest', schema, null, { database: 'testdb' })
         let stub = sinon.stub(mod, 'get').resolves({})
         let req = {
+          params: {},
           url: '/foo/bar?filter={"fieldMixed.innerProperty":"foo"}'
         }
 
@@ -244,6 +249,7 @@ describe('Controller', () => {
         )
         let stub = sinon.stub(mod, 'get').resolves({})
         let req = {
+          params: {},
           url: '/v1/bar'
         }
 
@@ -272,6 +278,7 @@ describe('Controller', () => {
         )
         let stub = sinon.stub(mod, 'get').resolves({})
         let req = {
+          params: {},
           url: '/v1/bar'
         }
 
@@ -298,6 +305,7 @@ describe('Controller', () => {
         )
         let stub = sinon.stub(mod, 'get').resolves({})
         let req = {
+          params: {},
           url: '/foo/bar'
         }
 
@@ -323,6 +331,7 @@ describe('Controller', () => {
         )
         let stub = sinon.stub(mod, 'get').resolves({})
         let req = {
+          params: {},
           url: '/foo/bar'
         }
 
@@ -339,6 +348,7 @@ describe('Controller', () => {
       it('should send response', () => {
         let mod = model('testModel')
         let req = {
+          params: {},
           url: '/foo/bar'
         }
         let res = {

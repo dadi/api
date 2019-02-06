@@ -293,8 +293,7 @@ describe('Collections API – POST', function () {
         should.exist(res.body.results[0]._id)
         res.body.results[0]._id.should.not.eql(input._id)
 
-        should.exist(res.body.results[0]._version)
-        res.body.results[0]._version.should.not.eql(input._version)
+        should.not.exist(res.body.results[0]._version)
 
         done()
       })

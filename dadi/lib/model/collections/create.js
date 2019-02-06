@@ -96,14 +96,6 @@ function create ({
         Object.assign(document, internals)
       }
 
-      // Add placeholder for document history.
-      if (this.history) {
-        document._history = []
-      }
-
-      // Add initial revision number.
-      document._version = 1
-
       return Object.keys(document).reduce((documentTransform, field) => {
         if (field === '_id') {
           return documentTransform

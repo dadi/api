@@ -30,6 +30,7 @@ const logger = require('@dadi/logger')
  * @param  {Object}  options
  * @param  {Boolean} rawOutput - whether to bypass formatting routine
  * @param  {Object}  req - request object to pass to hooks
+ * @param  {Number}  version - version of the document to retrieve
  * @return {Promise<ResultSet>}
  */
 function get ({
@@ -38,7 +39,8 @@ function get ({
   query = {},
   options = {},
   rawOutput = false,
-  req
+  req,
+  version
 }) {
   // Is this a RESTful query by ID?
   let isRestIDQuery = req && req.params && req.params.id
@@ -73,9 +75,11 @@ function get ({
   }).then(query => {
     return this.find({
       client,
+      isRestIDQuery,
       language,
       query,
-      options
+      options,
+      version
     })
   }).then(({metadata, results}) => {
     if (isRestIDQuery && results.length === 0) {

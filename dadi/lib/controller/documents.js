@@ -59,6 +59,7 @@ Collection.prototype.delete = function (req, res, next) {
 
   this.model.delete({
     client: req.dadiApiClient,
+    description: req.body && req.body.description,
     query,
     req
   }).then(({deletedCount, totalCount}) => {
@@ -104,7 +105,8 @@ Collection.prototype.get = function (req, res, next) {
     language: options.lang,
     query,
     options: queryOptions,
-    req
+    req,
+    version: req.params.id && options.version
   }).then(results => {
     return done(null, results, req)
   }).catch(error => {
@@ -135,6 +137,7 @@ Collection.prototype.post = function (req, res, next) {
   if (req.params.id || req.body.update) {
     internals._lastModifiedBy = req.dadiApiClient && req.dadiApiClient.clientId
 
+    let description
     let query = {}
     let update = {}
 
@@ -142,6 +145,7 @@ Collection.prototype.post = function (req, res, next) {
       query._id = req.params.id
       update = req.body
     } else {
+      description = req.body.description
       query = req.body.query
       update = req.body.update
     }
@@ -154,6 +158,7 @@ Collection.prototype.post = function (req, res, next) {
     return this.model.update({
       client: req.dadiApiClient,
       compose: options.compose,
+      description,
       internals,
       query,
       req,
@@ -214,7 +219,7 @@ Collection.prototype.registerRoutes = function (route, filePath) {
   })
 
   // Creating generic route.
-  this.server.app.use(`${route}/:id(${this.ID_PATTERN})?/:action(count|search|stats)?`, (req, res, next) => {
+  this.server.app.use(`${route}/:id(${this.ID_PATTERN})?/:action(count|search|stats|versions)?`, (req, res, next) => {
     try {
       // Map request method to controller method.
       let method = req.params.action || (req.method && req.method.toLowerCase())
@@ -252,7 +257,24 @@ Collection.prototype.stats = function (req, res, next) {
 
 Collection.prototype.unregisterRoutes = function (route) {
   this.server.app.unuse(`${route}/config`)
-  this.server.app.unuse(`${route}/:id(${this.ID_PATTERN})?/:action(count|search|stats)?`)
+  this.server.app.unuse(`${route}/:id(${this.ID_PATTERN})?/:action(count|search|stats|versions)?`)
+}
+
+Collection.prototype.versions = function (req, res, next) {
+  let method = req.method && req.method.toLowerCase()
+
+  if (method !== 'get') {
+    return next()
+  }
+
+  this.model.getVersions({
+    client: req.dadiApiClient,
+    documentId: req.params.id
+  }).then(response => {
+    return help.sendBackJSON(200, res, next)(null, response)
+  }).catch(error => {
+    return help.sendBackJSON(null, res, next)(error)
+  })
 }
 
 module.exports = function (model, server) {

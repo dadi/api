@@ -1,8 +1,11 @@
 const app = require('./../../../../dadi/lib')
+const client = require('./../../../../dadi/lib/model/acl/client')
+const bcrypt = require('bcrypt')
 const config = require('./../../../../config')
 const help = require('./../../help')
 const request = require('supertest')
 const should = require('should')
+const sinon = require('sinon')
 
 module.exports = () => {
   let configBackup = config.get()
@@ -521,6 +524,80 @@ module.exports = () => {
   })
 
   describe('success states (the client has "create" access to the "clients" resource)', () => {
+    it('should hash client secrets and salt them using the number of rounds specified in the `auth.saltRounds` config property', done => {
+      config.set('auth.saltRounds', 5)
+  
+      const spy = sinon.spy(bcrypt, 'hash')
+      const testClient = {
+        clientId: 'apiClient',
+        secret: 'someSecret',
+        resources: {
+          clients: {
+            create: true
+          }
+        }
+      }
+      const newClient1 = {
+        clientId: 'newClient1',
+        secret: 'aNewSecret1'
+      }
+      const newClient2 = {
+        clientId: 'newClient2',
+        secret: 'aNewSecret2'
+      }
+
+      help.createACLClient(testClient).then(() => {
+        client
+        .post(config.get('auth.tokenUrl'))
+        .set('content-type', 'application/json')
+        .send({
+          clientId: testClient.clientId,
+          secret: testClient.secret
+        })
+        .expect(200)
+        .expect('content-type', 'application/json')
+        .end((err, res) => {
+          if (err) return done(err)
+
+          const {accessToken} = res.body
+
+          client
+          .post('/api/clients')
+          .send(newClient1)
+          .set('content-type', 'application/json')
+          .set('Authorization', `Bearer ${accessToken}`)
+          .expect('content-type', 'application/json')
+          .end((err, res) => {
+            res.statusCode.should.eql(201)
+
+            spy.getCall(0).args[0].should.eql('aNewSecret1')
+            spy.getCall(0).args[1].should.eql(5)
+
+            config.set('auth.saltRounds', 8)
+
+            client
+            .post('/api/clients')
+            .send(newClient2)
+            .set('content-type', 'application/json')
+            .set('Authorization', `Bearer ${accessToken}`)
+            .expect('content-type', 'application/json')
+            .end((err, res) => {
+              res.statusCode.should.eql(201)
+  
+              config.set('auth.saltRounds', configBackup.auth.saltRounds)
+
+              spy.getCall(1).args[0].should.eql('aNewSecret2')
+              spy.getCall(1).args[1].should.eql(8)
+  
+              spy.restore()
+  
+              done(err)
+            })
+          })          
+        })
+      })
+    })
+    
     it('should create a client and return a 201', done => {
       let testClient = {
         clientId: 'apiClient',

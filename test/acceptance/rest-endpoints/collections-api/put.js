@@ -521,8 +521,7 @@ describe('Collections API – PUT', function () {
             should.exist(res.body.results[0]._id)
             res.body.results[0]._id.should.not.eql(update._id)
 
-            should.exist(res.body.results[0]._version)
-            res.body.results[0]._version.should.not.eql(update._version)
+            should.not.exist(res.body.results[0]._version)
 
             client
               .get('/vtest/testdb/put-test-schema?filter={"_id": "' + doc._id + '"}')
@@ -549,8 +548,7 @@ describe('Collections API – PUT', function () {
                 should.exist(res.body.results[0]._id)
                 res.body.results[0]._id.should.not.eql(update._id)
 
-                should.exist(res.body.results[0]._version)
-                res.body.results[0]._version.should.not.eql(update._version)
+                should.not.exist(res.body.results[0]._version)
 
                 done()
               })

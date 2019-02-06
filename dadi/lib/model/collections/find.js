@@ -24,17 +24,21 @@ const debug = require('debug')('api:model')
 /**
  * Finds documents in the database.
  *
- * @param  {Object} client - client to check permissions for
- * @param  {String} language - ISO code for the language to translate documents to
- * @param  {Object} query - query to match documents against
- * @param  {Object} options
+ * @param  {Object}  client - client to check permissions for
+ * @param  {Boolean} isRestIDQuery - whether the query targets a specific document by ID
+ * @param  {String}  language - ISO code for the language to translate documents to
+ * @param  {Object}  query - query to match documents against
+ * @param  {Object}  options
+ * @param  {Number}  version - version of the document to retrieve
  * @return {Promise<ResultSet>}
  */
 function find ({
   client,
+  isRestIDQuery,
   language,
   query = {},
-  options = {}
+  options = {},
+  version
 } = {}) {
   if (!this.connection.db) {
     return Promise.reject(
@@ -120,27 +124,23 @@ function find ({
 
     queryFields = fields
 
+    const queryOptions = Object.assign({}, options, {
+      fields: queryFields
+    })
+
+    if (isRestIDQuery && version && this.history) {
+      return this.history.getVersion(version, queryOptions)
+    }
+
     return this._transformQuery(query, options).then(query => {
       return this.connection.db.find({
         query,
         collection: this.name,
-        options: Object.assign({}, options, {
-          compose: undefined,
-          fields: queryFields,
-          historyFilters: undefined
-        }),
+        options: queryOptions,
         schema: this.schema,
         settings: this.settings
       })
     })
-  }).then(response => {
-    if (options.includeHistory) {
-      options.includeHistory = undefined
-
-      return this._injectHistory(response, options)
-    }
-
-    return response
   })
 }
 

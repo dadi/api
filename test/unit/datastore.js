@@ -116,6 +116,7 @@ describe('DataStore', function () {
 
       setTimeout(() => {
         app.stop(err => {
+          console.log('err :', err)
           ;(err.message.indexOf('not running') > 0).should.eql(true)
 
           done()

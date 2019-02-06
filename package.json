@@ -63,8 +63,6 @@
     "stack-trace": "latest",
     "stream-cache": "0.0.2",
     "streamifier": "^0.1.1",
-    "underscore": "1.8.3",
-    "underscore-contrib": "^0.3.0",
     "vary": "^1.1.2"
   },
   "devDependencies": {

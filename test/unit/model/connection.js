@@ -1,4 +1,3 @@
-var _ = require('underscore')
 var should = require('should')
 var connection = require(__dirname + '/../../../dadi/lib/model/connection')
 var help = require(__dirname + '/../help')

@@ -5,9 +5,6 @@ const should = require('should')
 const connection = require(__dirname + '/../../dadi/lib/model/connection')
 const config = require(__dirname + '/../../config')
 const request = require('supertest')
-const _ = require('underscore')
-
-var clientCollectionName = config.get('auth.clientCollection')
 
 // create a document with random string via the api
 module.exports.createDoc = function (token, done) {

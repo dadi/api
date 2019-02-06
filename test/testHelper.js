@@ -1,4 +1,3 @@
-var _ = require('underscore')
 var debug = require('debug')('api:TestHelper')
 var fs = require('fs')
 var path = require('path')
@@ -13,7 +12,7 @@ var TestHelper = function () {
 TestHelper.prototype.getConfig = function () {
   return new Promise((resolve, reject) => {
     var originalConfig = JSON.parse(this.originalConfigString)
-    return resolve(_.extend({}, originalConfig))
+    return resolve(Object.assign({}, originalConfig))
   })
 }
 
@@ -27,12 +26,12 @@ TestHelper.prototype.updateConfig = function (configFile, configBlock) {
 
     this.originalConfigString = fs.readFileSync(configPath).toString()
 
-    var newConfig = _.extend(JSON.parse(this.originalConfigString), configBlock)
+    var newConfig = Object.assign({}, JSON.parse(this.originalConfigString), configBlock)
 
     fs.writeFileSync(configPath, JSON.stringify(newConfig, null, 2))
     // config.loadFile(path.resolve(config.configPath()))
 
-    _.each(Object.keys(require.cache), (key) => {
+    Object.keys(require.cache).forEach(key => {
       if (key.indexOf('datastore/') > -1) {
         delete require.cache[key]
       }
@@ -44,7 +43,7 @@ TestHelper.prototype.updateConfig = function (configFile, configBlock) {
 }
 
 TestHelper.prototype.resetConfigs = function () {
-  _.each(_configs, (conf) => {
+  _configs.forEach(conf => {
     delete _configs[conf]
     this.resetConfig(conf).then(() => {})
   })

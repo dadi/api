@@ -1,8 +1,7 @@
 var url = require('url')
-var _ = require('underscore')
 
 module.exports = function (obj, type, data) {
-  if (!obj || !obj.results || _.isEmpty(obj.results)) {
+  if (!obj || !obj.results || Object.keys(obj.results).length === 0) {
     return obj
   }
   var queryParameters = data.req && url.parse(data.req.url, true).query

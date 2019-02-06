@@ -3,7 +3,6 @@ const should = require('should')
 const sinon = require('sinon')
 const path = require('path')
 const request = require('supertest')
-const _ = require('underscore')
 const EventEmitter = require('events').EventEmitter
 const config = require(path.join(__dirname, '/../../../../config'))
 const help = require(path.join(__dirname, '/../../help'))
@@ -441,7 +440,7 @@ describe('Collections API – GET', function () {
           res.body['results'].should.exist
           res.body['results'].should.be.Array
 
-          _.each(res.body['results'], function (value, key) {
+          res.body['results'].forEach((value, key) => {
             if (value.field1 === 'Test') found = true
           })
 
@@ -478,7 +477,7 @@ describe('Collections API – GET', function () {
           res.body['results'].should.exist
           res.body['results'].should.be.Array
 
-          _.each(res.body['results'], function (value, key) {
+          res.body['results'].forEach((value, key) => {
             if (value.field1 === 'Test') found = true
           })
 
@@ -540,7 +539,13 @@ describe('Collections API – GET', function () {
           res.body['results'].should.exist
           res.body['results'].should.be.Array
 
-          var obj = _.sample(_.compact(_.filter(res.body['results'], function (x) { return x.hasOwnProperty('field1') })))
+          var obj = res.body['results'].map(x => {
+            if (x.hasOwnProperty('field1')) {
+              return x
+            }
+          }).filter(Boolean)
+
+          obj = obj[0]
 
           delete obj._id
 
@@ -576,7 +581,14 @@ describe('Collections API – GET', function () {
           res.body['results'].should.exist
           res.body['results'].should.be.Array
 
-          var obj = _.sample(_.compact(_.map(res.body['results'], function (x) { if (x.hasOwnProperty('_fieldWithUnderscore')) return x })))
+          var obj = res.body['results'].map(x => {
+            if (x.hasOwnProperty('_fieldWithUnderscore')) {
+              return x
+            }
+          }).filter(Boolean)
+
+          obj = obj[0]
+
           should.exist(obj['_fieldWithUnderscore'])
 
           done()

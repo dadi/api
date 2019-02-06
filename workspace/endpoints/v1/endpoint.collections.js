@@ -1,4 +1,3 @@
-var _ = require('underscore')
 var path = require('path')
 var app = require(path.join(__dirname, '/../../../dadi/lib/'))
 
@@ -7,11 +6,11 @@ module.exports.get = function (req, res, next) {
   var collections = []
   var components = app.App ? app.App.components : app.components
 
-  _.each(components, function (value, key) {
+  components.forEach((value, key) => {
     if (value.model) {
       var model = value.model
       var slug = model.name
-      var parts = _.compact(key.split('/'))
+      var parts = key.split('/').filter(Boolean)
 
       var name = model.settings.displayName || model.name
 

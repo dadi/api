@@ -1,9 +1,5 @@
 const should = require('should')
-const sinon = require('sinon')
-const fs = require('fs')
-const path = require('path')
 const request = require('supertest')
-const _ = require('underscore')
 const config = require(__dirname + '/../../../../config')
 const help = require(__dirname + '/../../help')
 const app = require(__dirname + '/../../../../dadi/lib/')
@@ -518,7 +514,7 @@ describe('Collections API – PUT', function () {
 
             should.exist(res.body.results[0]._createdBy)
             res.body.results[0]._createdBy.should.not.eql(update._createdBy)
-            
+
             should.exist(res.body.results[0]._createdAt)
             res.body.results[0]._createdAt.should.not.eql(update._createdAt)
 
@@ -526,7 +522,7 @@ describe('Collections API – PUT', function () {
             res.body.results[0]._id.should.not.eql(update._id)
 
             should.exist(res.body.results[0]._version)
-            res.body.results[0]._version.should.not.eql(update._version)            
+            res.body.results[0]._version.should.not.eql(update._version)
 
             client
               .get('/vtest/testdb/put-test-schema?filter={"_id": "' + doc._id + '"}')
@@ -546,7 +542,7 @@ describe('Collections API – PUT', function () {
 
                 should.exist(res.body.results[0]._createdBy)
                 res.body.results[0]._createdBy.should.not.eql(update._createdBy)
-                
+
                 should.exist(res.body.results[0]._createdAt)
                 res.body.results[0]._createdAt.should.not.eql(update._createdAt)
 
@@ -554,7 +550,7 @@ describe('Collections API – PUT', function () {
                 res.body.results[0]._id.should.not.eql(update._id)
 
                 should.exist(res.body.results[0]._version)
-                res.body.results[0]._version.should.not.eql(update._version)                
+                res.body.results[0]._version.should.not.eql(update._version)
 
                 done()
               })

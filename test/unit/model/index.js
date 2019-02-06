@@ -3,7 +3,6 @@ var sinon = require('sinon')
 var model = require(__dirname + '/../../../dadi/lib/model')
 var apiHelp = require(__dirname + '/../../../dadi/lib/help')
 var connection = require(__dirname + '/../../../dadi/lib/model/connection')
-var _ = require('underscore')
 var help = require(__dirname + '/../help')
 var acceptanceHelper = require(__dirname + '/../../acceptance/help')
 var config = require(__dirname + '/../../../config')
@@ -649,7 +648,7 @@ describe('Model', function () {
             // mod.connection.db = null
 
             mod.getIndexes(indexes => {
-              var result = _.some(indexes, index => { return index.name.indexOf('fieldName') > -1 })
+              var result = indexes.some(index => { return index.name.indexOf('fieldName') > -1 })
               result.should.eql(true)
               done()
             })
@@ -686,7 +685,7 @@ describe('Model', function () {
 
         setTimeout(function () {
           mod.getIndexes(indexes => {
-            var result = _.some(indexes, index => { return index.name.indexOf('fieldName') > -1 })
+            var result = indexes.some(index => { return index.name.indexOf('fieldName') > -1 })
             result.should.eql(true)
             done()
           })
@@ -700,7 +699,7 @@ describe('Model', function () {
         var schema = {}
         schema.fields = fields
 
-        schema.fields.field2 = _.extend({}, schema.fields.fieldName, {
+        schema.fields.field2 = Object.assign({}, schema.fields.fieldName, {
           type: 'Number',
           required: false
         })
@@ -747,7 +746,7 @@ describe('Model', function () {
         var schema = {}
         schema.fields = fields
 
-        schema.fields.field3 = _.extend({}, schema.fields.fieldName, {
+        schema.fields.field3 = Object.assign({}, schema.fields.fieldName, {
           type: 'String',
           required: false
         })
@@ -788,7 +787,7 @@ describe('Model', function () {
         var schema = {}
         schema.fields = fields
 
-        schema.fields.field3 = _.extend({}, schema.fields.fieldName, {
+        schema.fields.field3 = Object.assign({}, schema.fields.fieldName, {
           type: 'String',
           required: false
         })
@@ -1452,7 +1451,7 @@ describe('Model', function () {
 
       it('should allow querying with key values too', function (done) {
         var schema = help.getModelSchema()
-        schema = _.extend(schema, {
+        schema = Object.assign({}, schema, {
           fieldMixed: {
             type: 'Mixed',
             label: 'Mixed Field',

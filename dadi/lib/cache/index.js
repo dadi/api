@@ -92,32 +92,34 @@ Cache.prototype.init = function () {
     cache
       .get(cacheKey)
       .then(stream => {
-        cache.getMetadata(cacheKey).then(metadata => {
-          res.setHeader('X-Cache-Lookup', 'HIT')
+        return cache
+          .getMetadata(cacheKey)
+          .then(metadata => {
+            res.setHeader('X-Cache-Lookup', 'HIT')
 
-          let compressed = false
+            let compressed = false
 
-          if (metadata && metadata.compression === 'gzip') {
-            compressed = true
-          }
+            if (metadata && metadata.compression === 'gzip') {
+              compressed = true
+            }
 
-          if (noCache) {
-            res.setHeader('X-Cache', 'MISS')
-            return next()
-          }
+            if (noCache) {
+              res.setHeader('X-Cache', 'MISS')
+              return next()
+            }
 
-          log.info({module: 'cache'}, `Serving ${req.url} from cache`)
+            log.info({module: 'cache'}, `Serving ${req.url} from cache`)
 
-          res.statusCode = 200
-          res.setHeader('X-Cache', 'HIT')
-          res.setHeader('Content-Type', contentType)
+            res.statusCode = 200
+            res.setHeader('X-Cache', 'HIT')
+            res.setHeader('Content-Type', contentType)
 
-          if (compressed) {
-            res.setHeader('Content-Encoding', 'gzip')
-          }
+            if (compressed) {
+              res.setHeader('Content-Encoding', 'gzip')
+            }
 
-          return _streamFile(res, stream, () => {})
-        })
+            return _streamFile(res, stream, () => {})
+          })
       })
       .catch(() => {
         res.setHeader('X-Cache', 'MISS')

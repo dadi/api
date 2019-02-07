@@ -50,7 +50,39 @@ describe('Token store', () => {
         .expect('content-type', 'application/json')
         .expect('pragma', 'no-cache')
         .expect('Cache-Control', 'no-store')
-        .expect(401, done)
+        .expect(401, (err, res) => {
+          res.headers['www-authenticate'].includes('error="invalid_credentials"').should.eql(true)
+          res.headers['www-authenticate'].includes('error_description="Invalid credentials supplied"').should.eql(true)
+
+          done(err)
+        })
+    })
+
+    it('should return 401 with a specific error message in the www-authenticate header if the client must be upgraded due to an outdated hashing algorithm', done => {
+      const unhashedClient = {
+        clientId: 'anotherTestClient',
+        secret: 'iShouldBeHashed',
+        accessType: 'admin',
+        _hashVersion: null
+      }
+
+      help.createClient(unhashedClient, () => {
+        client
+        .post(tokenRoute)
+        .send({
+          clientId: unhashedClient.clientId,
+          secret: unhashedClient.secret
+        })
+        .expect('content-type', 'application/json')
+        .expect('pragma', 'no-cache')
+        .expect('Cache-Control', 'no-store')
+        .expect(401, (err, res) => {
+          res.headers['www-authenticate'].includes('error="client_needs_upgrade"').should.eql(true)
+          res.headers['www-authenticate'].includes('error_description="The client record on the server must be upgraded"').should.eql(true)
+
+          done(err)
+        })
+      })
     })
 
     it('should return 401 if the client ID or secret contain non-string values', done => {

@@ -714,22 +714,4 @@ Client.prototype.validateSecret = function (hash, candidate, hashVersion) {
   return bcrypt.compare(candidate, hash)
 }
 
-/**
- * Returns a Promise that is resolved once a database connection has
- * been established.
- *
- * @return {Promise}
- */
-Client.prototype.waitForDatabaseConnection = function () {
-  const {connection} = this.model
-
-  return new Promise((resolve, reject) => {
-    if (connection.readyState === 1) {
-      return resolve()
-    }
-
-    connection.once('connect', resolve)
-  })
-}
-
 module.exports = new Client()

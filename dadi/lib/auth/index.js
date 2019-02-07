@@ -73,6 +73,26 @@ AuthMiddleware.prototype.handleInvalidCredentials = function (req, res, next) {
 }
 
 /**
+ * Handles the case where the client record needs to be upgraded.
+ *
+ * @param  {http.IncomingMessage}   req
+ * @param  {http.ServerResponse}    res
+ * @param  {Function}               next
+ */
+AuthMiddleware.prototype.handleClientInNeedOfUpgrade = function (req, res, next) {
+  let error = new Error('Client must be upgraded')
+
+  error.statusCode = 401
+
+  res.setHeader(
+    'WWW-Authenticate',
+    'Bearer, error="client_needs_upgrade", error_description="The client record on the server must be upgraded"'
+  )
+
+  next(error)
+}
+
+/**
  * Takes the client ID and secret present in the request body and
  * attempts to generate a bearer token with them. If successful,
  * a signed JWT will be sent in the response, as well as some additional
@@ -127,6 +147,10 @@ AuthMiddleware.prototype.generateToken = function (req, res, next) {
       return res.end(JSON.stringify(response))
     })
   }).catch(error => {
+    if (error.message === 'CLIENT_NEEDS_UPGRADE') {
+      return this.handleClientInNeedOfUpgrade(req, res, next)
+    }
+
     return help.sendBackJSON(null, res, next)(error)
   })
 }

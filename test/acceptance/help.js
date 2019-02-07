@@ -7,6 +7,22 @@ const connection = require(__dirname + '/../../dadi/lib/model/connection')
 const config = require(__dirname + '/../../config')
 const request = require('supertest')
 
+function hashClientSecret(client) {
+  switch (client._hashVersion) {
+    case undefined:
+    case 1:
+      return Object.assign({}, client, {
+        _hashVersion: 1,
+        secret: bcrypt.hashSync(client.secret, config.get('auth.saltRounds'))
+      })
+
+    case null:
+      delete client._hashVersion
+
+      return client
+  }
+}
+
 module.exports.bulkRequest = function ({method = 'get', requests, token}) {
   const client = request(`http://${config.get('server.host')}:${config.get('server.port')}`)
   let results = []
@@ -130,7 +146,9 @@ module.exports.dropDatabase = function (database, collectionName, done) {
   }
 }
 
-module.exports.createClient = function (client, done) {
+module.exports.createClient = function (client, done, {
+  hashVersion = 1
+} = {}) {
   if (!client) {
     client = {
       accessType: 'admin',
@@ -139,9 +157,7 @@ module.exports.createClient = function (client, done) {
     }
   }
 
-  client = Object.assign({}, client, {
-    secret: bcrypt.hashSync(client.secret, config.get('auth.saltRounds'))
-  })
+  client = hashClientSecret(client)
 
   var collectionName = config.get('auth.clientCollection')
   var conn = connection({
@@ -191,9 +207,7 @@ module.exports.createACLClient = function (client, callback) {
     config.get('datastore')
   )
 
-  client = Object.assign({}, client, {
-    secret: bcrypt.hashSync(client.secret, config.get('auth.saltRounds'))
-  })
+  client = hashClientSecret(client)
 
   return clientsConnection.datastore.insert({
     data: client,

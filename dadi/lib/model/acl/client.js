@@ -3,6 +3,10 @@ const bcrypt = require('bcrypt')
 const config = require('./../../../../config.js')
 const roleModel = require('./role')
 
+// This value should be incremented if we ever replace bcrypt with another
+// hashing algorithm.
+const HASH_VERSION = 1
+
 const Client = function () {
   this.schema = {
     clientId: {
@@ -87,6 +91,7 @@ Client.prototype.create = function (client, {
 
     return this.hashSecret(client.secret)
   }).then(hashedsecret => {
+    client._hashVersion = HASH_VERSION
     client.secret = hashedsecret
 
     return this.model.create({
@@ -167,8 +172,9 @@ Client.prototype.get = function (clientId, secret) {
     const {results} = response
     const mustValidateSecret = results.length === 1 &&
       typeof secret === 'string'
+    const [record] = results
     const secretValidation = mustValidateSecret
-      ? this.validateSecret(results[0].secret, secret)
+      ? this.validateSecret(record.secret, secret, record._hashVersion)
       : Promise.resolve(true)
 
     return secretValidation.then(secretIsValid => {
@@ -513,6 +519,11 @@ Client.prototype.roleRemove = function (clientId, roles) {
   })
 }
 
+/**
+ * Sets an internal reference to the instance of Model.
+ *
+ * @param {Object} model
+ */
 Client.prototype.setModel = function (model) {
   this.model = model
 }
@@ -552,6 +563,7 @@ Client.prototype.update = function (clientId, update) {
     return this.model.find({
       options: {
         fields: {
+          _hashVersion: 1,
           data: 1,
           secret: 1
         }
@@ -565,12 +577,15 @@ Client.prototype.update = function (clientId, update) {
       )
     }
 
+    const [record] = results
+
     // If a `currentSecret` property was sent, we must validate it against the
     // hashed secret in the database.
     if (typeof currentSecret === 'string') {
       return this.validateSecret(
-        results[0].secret,
-        currentSecret
+        record.secret,
+        currentSecret,
+        record._hashVersion
       ).then(secretIsValid => {
         if (!secretIsValid) {
           return Promise.reject(
@@ -588,6 +603,7 @@ Client.prototype.update = function (clientId, update) {
     // before sending it to the database.
     if (typeof secret === 'string') {
       return this.hashSecret(secret).then(hashedSecret => {
+        update._hashVersion = HASH_VERSION
         update.secret = hashedSecret
 
         return results
@@ -688,7 +704,13 @@ Client.prototype.validate = function (client, {
  * @param  {String}   candidate
  * @return {Promise<Boolean>}
  */
-Client.prototype.validateSecret = function (hash, candidate) {
+Client.prototype.validateSecret = function (hash, candidate, hashVersion) {
+  if (hashVersion !== HASH_VERSION) {
+    return Promise.reject(
+      new Error('CLIENT_NEEDS_UPGRADE')
+    )
+  }
+
   return bcrypt.compare(candidate, hash)
 }
 

@@ -262,6 +262,30 @@ module.exports.createACLRole = function (role, callback) {
   })
 }
 
+module.exports.removeSchemaData = function (done) {
+  let schemaConnection = connection(
+    {
+      override: true,
+      database: config.get('schemas.database'),
+      collection: config.get('schemas.schemaCollection')
+    },
+    null,
+    config.get('datastore')
+  )
+
+  return schemaConnection.datastore.dropDatabase(
+    config.get('schemas.schemaCollection')
+  ).then(() => {
+    if (typeof done === 'function') {
+      done()
+    }
+  }).catch(err => {
+    if (typeof done === 'function') {
+      done(err)
+    }
+  })
+}
+
 module.exports.removeACLData = function (done) {
   let accessConnection = connection(
     {

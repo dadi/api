@@ -36,6 +36,7 @@ var dadiBoot = require('@dadi/boot')
 var help = require(path.join(__dirname, '/help'))
 var Model = require(path.join(__dirname, '/model'))
 var mediaModel = require(path.join(__dirname, '/model/media'))
+var schemaModel = require(path.join(__dirname, '/model/schema'))
 var monitor = require(path.join(__dirname, '/monitor'))
 
 var config = require(path.join(__dirname, '/../../config'))
@@ -329,6 +330,8 @@ Server.prototype.loadApi = function (options) {
   var endpointPath = this.endpointPath = options.endpointPath || path.join(__dirname, '/../../workspace/endpoints')
   var hookPath = this.hookPath = options.hookPath || path.join(__dirname, '/../../workspace/hooks')
 
+  this.loadCollections()
+
   self.updateHooks(hookPath)
   self.addMonitor(hookPath, function (hook) {
     self.updateHooks(hookPath)
@@ -430,6 +433,48 @@ Server.prototype.updateDatabases = function (databasesPath) {
   })
 }
 
+/**
+ * Generates collection routes from schemas in the database.
+ * Called once on application boot, and for each new collection schema
+ * created via the Schemas API.
+ */
+Server.prototype.loadCollections = function (schemaToLoad) {
+  const load = (schema) => {
+    schemaModel.get()
+    .then(response => {
+      let schemas = response.results
+
+      schemas.forEach(schema => {
+        if (!schemaToLoad || schemaToLoad === schema.name) {
+          this.addCollectionResource({
+            database: schema.database,
+            fields: schema.fields,
+            name: schema.name,
+            route: `/${schema.version}/${schema.database}/${schema.name}`,
+            settings: schema.settings
+          })
+        }
+      })
+    })
+    .catch(err => {
+      console.log('err :', err)
+    })
+  }
+
+  if (schemaToLoad) {
+    return load(schemaToLoad)
+  }
+
+  schemaModel.model.connection.on('connect', () => {
+    return load()
+  })
+}
+
+Server.prototype.unloadCollection = function (collection) {
+  let route = `/${collection.version}/${collection.database}/${collection.name}`
+  this.removeComponent(route, this.components[route])
+}
+
 Server.prototype.updateCollections = function (collectionsPath) {
   if (!fs.existsSync(collectionsPath)) return
   if (!fs.lstatSync(collectionsPath).isDirectory()) return
@@ -511,8 +556,8 @@ Server.prototype.loadMediaCollections = function () {
  * req.method` to component methods
  */
 Server.prototype.addCollectionResource = function (options) {
-  let fields = help.getFieldsFromSchema(options.schema)
-  let settings = Object.assign({}, options.schema.settings, { database: options.database })
+  let fields = options.fields ? JSON.stringify(options.fields) : help.getFieldsFromSchema(options.schema)
+  let settings = options.settings ? Object.assign({}, options.settings, { database: options.database }) : Object.assign({}, options.schema.settings, { database: options.database })
   let model = Model(options.name, JSON.parse(fields), null, settings, settings.database)
   let isMediaCollection = settings.type && settings.type === 'mediaCollection'
   let controller = isMediaCollection
@@ -534,24 +579,24 @@ Server.prototype.addCollectionResource = function (options) {
   )
 
   // Watch the schema's file and update it in place.
-  this.addMonitor(options.filepath, filename => {
-    // Invalidate schema file cache then reload.
-    delete require.cache[options.filepath]
+  // this.addMonitor(options.filepath, filename => {
+  //   // Invalidate schema file cache then reload.
+  //   delete require.cache[options.filepath]
 
-    try {
-      let schemaObj = require(options.filepath)
-      let fields = help.getFieldsFromSchema(schemaObj)
+  //   try {
+  //     let schemaObj = require(options.filepath)
+  //     let fields = help.getFieldsFromSchema(schemaObj)
 
-      this.components[options.route].model.schema = JSON.parse(fields)
-      this.components[options.route].model.settings = schemaObj.settings
-    } catch (e) {
-      // If file was removed, "un-use" this component.
-      if (e && e.code === 'ENOENT') {
-        this.removeMonitor(options.filepath)
-        this.removeComponent(options.route, controller)
-      }
-    }
-  })
+  //     this.components[options.route].model.schema = JSON.parse(fields)
+  //     this.components[options.route].model.settings = schemaObj.settings
+  //   } catch (e) {
+  //     // If file was removed, "un-use" this component.
+  //     if (e && e.code === 'ENOENT') {
+  //       this.removeMonitor(options.filepath)
+  //       this.removeComponent(options.route, controller)
+  //     }
+  //   }
+  // })
 }
 
 Server.prototype.addMediaCollectionResource = function (options) {

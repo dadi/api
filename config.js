@@ -166,6 +166,24 @@ var conf = convict({
       env: 'DB_SEARCH_NAME'
     }
   },
+  schemas: {
+    database: {
+      doc: 'The name of the database to use for storing collection schemas',
+      format: String,
+      default: 'search',
+      env: 'DB_SCHEMA_NAME'
+    },
+    datastore: {
+      doc: 'The datastore to use for storing collection schemas',
+      format: String,
+      default: '@dadi/api-mongodb'
+    },
+    schemaCollection: {
+      doc: 'The name of the datastore collection that will hold collection schemas',
+      format: String,
+      default: 'schemaStore'
+    }
+  },
   caching: {
     ttl: {
       doc: '',

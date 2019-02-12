@@ -994,8 +994,8 @@ Model.prototype.getIndexes = require('./collections/getIndexes')
 Model.prototype.getRevisions = require('./collections/getRevisions')
 Model.prototype.getStats = require('./collections/getStats')
 Model.prototype.getVersions = require('./collections/getVersions')
+Model.prototype.search = require('./collections/search')
 Model.prototype.update = require('./collections/update')
-Model.prototype.search = require('./search')
 
 module.exports = function (name, schema, connection, settings) {
   if (schema) {

@@ -1,4 +1,4 @@
-const config = require('./../../../config')
+const config = require('./../../../../config')
 const debug = require('debug')('api:model:search')
 
 /**
@@ -13,27 +13,31 @@ module.exports = function ({
   client,
   options = {}
 } = {}) {
-  let err
+  if (!this.searchHandler.isImplemented()) {
+    const err = new Error('Not Implemented')
 
-  if (!this.searchHandler.canUse()) {
-    err = new Error('Not Implemented')
     err.statusCode = 501
     err.json = {
       errors: [{
         message: `Search is disabled or an invalid data connector has been specified.`
       }]
     }
-  } else if (!options.search || options.search.length < config.get('search.minQueryLength')) {
-    err = new Error('Bad Request')
+
+    return Promise.reject(err)
+  }
+
+  const minLength = config.get('search.minQueryLength')
+
+  if (!options.search || options.search.length < minLength) {
+    const err = new Error('Bad Request')
+
     err.statusCode = 400
     err.json = {
       errors: [{
-        message: `Search query must be at least ${config.get('search.minQueryLength')} characters.`
+        message: `Search query must be at least ${minLength} characters.`
       }]
     }
-  }
 
-  if (err) {
     return Promise.reject(err)
   }
 
@@ -42,6 +46,7 @@ module.exports = function ({
     type: 'read'
   }).then(() => {
     debug(options.search)
+
     return this.searchHandler.find(options.search)
   })
 }

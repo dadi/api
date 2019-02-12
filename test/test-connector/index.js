@@ -506,41 +506,6 @@ DataStore.prototype.insert = function ({data, collection, options = {}, schema, 
   })
 }
 
-/** Search for documents in the database
- *
- * @param {Object|Array} words -
- * @param {string} collection - the name of the collection to search
- * @param {object} options - options to modify the query
- * @param {Object} schema - the JSON schema for the collection
- * @param {Object} settings - the JSON settings configuration for the collection
- * @returns {Promise.<Array, Error>}
- */
-DataStore.prototype.search = function ({ words, collection, options = {}, schema, settings }) {
-  if (this._mockIsDisconnected(collection)) {
-    this.readyState = STATE_DISCONNECTED
-
-    return Promise.reject(new Error('DB_DISCONNECTED'))
-  }
-
-  debug('search in %s for %o', collection, words)
-
-  return new Promise((resolve, reject) => {
-    this.getCollection(collection).then(collection => {
-      let results
-
-      let query = {
-        word: {
-          '$containsAny': words
-        }
-      }
-
-      let baseResultset = collection.chain().find(query)
-
-      return resolve(baseResultset.mapReduce(searchMapFn, searchReduceFn))
-    })
-  })
-}
-
 /**
  *
  */
@@ -658,48 +623,6 @@ DataStore.prototype.update = function ({query, collection, update, options = {},
       })
     })
   })
-}
-
-function searchMapFn (document) {
-  return {
-    document: document.document,
-    word: document.word,
-    weight: document.weight
-  }
-}
-
-function searchReduceFn (documents) {
-  let matches = documents.reduce((groups, document) => {
-    let key = document.document
-
-    groups[key] = groups[key] || {
-      count: 0,
-      weight: 0
-    }
-
-    groups[key].count++
-    groups[key].weight = groups[key].weight + document.weight
-    return groups
-  }, {})
-
-  let output = []
-
-  Object.keys(matches).forEach(function (match) {
-    output.push({
-      _id: {
-        document: match
-      },
-      count: matches[match].count,
-      weight: matches[match].weight
-    })
-  })
-
-  output.sort(function (a, b) {
-    if (a.weight === b.weight) return 0
-    return a.weight < b.weight ? 1 : -1
-  })
-
-  return output
 }
 
 module.exports = DataStore

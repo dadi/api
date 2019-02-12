@@ -81,7 +81,7 @@ const Model = function (name, schema, connection, settings) {
   // setup search context
   this.searchHandler = new Search(this)
 
-  if (this.searchHandler.canUse()) {
+  if (this.searchHandler.isImplemented()) {
     this.searchHandler.init()
   }
 

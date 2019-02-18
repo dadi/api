@@ -7,7 +7,7 @@ const connection = require(__dirname + '/../../dadi/lib/model/connection')
 const config = require(__dirname + '/../../config')
 const request = require('supertest')
 
-function hashClientSecret(client) {
+function hashClientSecret (client) {
   switch (client._hashVersion) {
     case undefined:
     case 1:
@@ -546,7 +546,7 @@ module.exports.writeTempFile = function (filePath, data, callback) {
 
   fs.ensureDir(
     path.dirname(fullPath),
-    err => {
+    _err => {
       fs.writeFileSync(fullPath, parsedData)
     }
   )

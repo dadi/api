@@ -14,14 +14,13 @@ describe('Collections endpoint', function () {
 
   before(done => {
     help.removeACLData(() => {
-      app.start(done)  
+      app.start(done)
     })
-    
   })
 
   after(done => {
     help.removeACLData(() => {
-      app.stop(done)  
+      app.stop(done)
     })
   })
 
@@ -187,5 +186,5 @@ describe('Collections endpoint', function () {
         done()
       })
     })
-  })  
+  })
 })

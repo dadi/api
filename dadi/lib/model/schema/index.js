@@ -34,6 +34,23 @@ const Schema = function () {
   this.connect()
 }
 
+/**
+ * Fires the callback defined in `this.saveCallback`, if any,
+ * returning the value of the input argument after it finishes
+ * executing. If the callback is not defined, a Promise resolved
+ * with the input argument is returned instead.
+ *
+ * @param  {Object} input
+ * @return {Promise}
+ */
+Schema.prototype.broadcastWrite = function (input) {
+  if (typeof this.saveCallback === 'function') {
+    return this.saveCallback().then(() => input)
+  }
+
+  return Promise.resolve(input)
+}
+
 Schema.prototype.connect = function () {
   let schemaConnection = Connection(
     {
@@ -68,37 +85,6 @@ Schema.prototype.createError = function (client) {
   }
 
   return new Error(ERROR_UNAUTHORISED)
-}
-
-// Schema.prototype.getResources = function () {
-//   return this.resources
-// }
-
-// Schema.prototype.hasResource = function (resource) {
-//   return this.resources[resource] !== undefined
-// }
-
-// Schema.prototype.registerResource = function (name, description = null) {
-//   this.resources[name] = {
-//     description
-//   }
-// }
-
-/**
- * Fires the callback defined in `this.saveCallback`, if any,
- * returning the value of the input argument after it finishes
- * executing. If the callback is not defined, a Promise resolved
- * with the input argument is returned instead.
- *
- * @param  {Object} input
- * @return {Promise}
- */
-Schema.prototype.broadcastWrite = function (input) {
-  if (typeof this.saveCallback === 'function') {
-    return this.saveCallback().then(() => input)
-  }
-
-  return Promise.resolve(input)
 }
 
 /**
@@ -200,73 +186,6 @@ Schema.prototype.get = function (collection) {
   })
 }
 
-/**
- * Adds a field to a collection.
- *
- * @param  {String} collection     The collection name
- * @param  {String} resource The name of the resource
- * @param  {Object} access   Access matrix
- * @return {Promise<Object>}
- */
-Schema.prototype.fieldAdd = function (collection, newField, access) {
-  return this.model.find({
-    options: {},
-    query: {
-      name: collection
-    }
-  }).then(({results}) => {
-    if (results.length === 0) {
-      return Promise.reject(
-        new Error('COLLECTION_NOT_FOUND')
-      )
-    }
-
-    // let resources = new ACLMatrix(
-    //   results[0].resources
-    // )
-
-    // let fields = {}
-
-    // if (fields.get(field)) {
-    //   return Promise.reject(
-    //     new Error('COLLECTION_HAS_FIELD')
-    //   )
-    // }
-    newField.collection = collection
-
-    return Fields.create(newField).then(x => {
-      return this.model.update({
-        query: {
-          name: collection
-        },
-        rawOutput: true,
-        update: {
-          // resources: resources.getAll({
-          //   getArrayNotation: true,
-          //   stringifyObjects: true
-          // })
-        },
-        validate: false
-      })
-    }).then(result => {
-      return this.broadcastWrite(result)
-    }).then(({results}) => {
-      let formattedResults = results.map(result => {
-        return this.formatForOutput(result)
-      })
-
-      return Promise.all(formattedResults).then(results => {
-        return {
-          results: results
-        }
-      })
-    })
-  })
-
-  // resources.validate(access)
-  // resources.set(resource, access)
-}
-
 Schema.prototype.setModel = function (model) {
   this.model = model
 }
@@ -288,38 +207,44 @@ Schema.prototype.setWriteCallback = function (callback) {
  * @param  {Object} update
  * @return {Promise<Object>}
  */
-Schema.prototype.update = function (collection, update) {
+Schema.prototype.update = function (collection, update, type) {
+  let query = {
+    name: collection.name
+  }
+
   return this.model.find({
-    options: {
-      fields: {
-        _id: 0,
-        secret: 0
-      }
-    },
-    query: {
-      name: collection.name
-    }
+    query
   }).then(({results}) => {
-    if (results.length > 0) {
+    if (results.length === 0) {
       return Promise.reject(
-        new Error('COLLECTION_EXISTS')
+        new Error('COLLECTION_NOT_FOUND')
       )
     }
 
-    return this.validate(update, {
-      partial: true
-    })
-  }).then(() => {
-    return this.model.update({
-      query: {
-        name: collection
-      },
-      rawOutput: true,
-      update,
-      validate: false
-    })
-  }).then(result => {
-    return this.broadcastWrite(result)
+    let collection = results[0]
+    let validate = Promise.resolve()
+
+    if (type === 'fields') {
+      validate = Fields.validateFields(update)
+    }
+
+    return validate
+      .then(() => {
+        let updateObj = {}
+        updateObj[type] = Object.assign({}, collection[type], update)
+
+        return this.model.update({
+          query: {
+            name: collection.name
+          },
+          rawOutput: true,
+          update: updateObj,
+          validate: false
+        })
+        .then(result => {
+          return this.broadcastWrite(result)
+        })
+      })
   })
 }
 
@@ -374,25 +299,6 @@ Schema.prototype.validate = function (collection, {partial = false} = {}) {
     return Promise.reject(error)
   }
 
-  if (collection.extends) {
-    return this.model.find({
-      options: {
-        fields: {
-          _id: 1
-        }
-      },
-      query: {
-        name: collection.extends
-      }
-    }).then(({results}) => {
-      if (results.length === 0) {
-        return Promise.reject(
-          new Error('INVALID_PARENT_collection')
-        )
-      }
-    })
-  }
-
   return Promise.resolve()
 }
 
@@ -401,5 +307,3 @@ module.exports = new Schema()
 module.exports.Schema = Schema
 module.exports.ERROR_FORBIDDEN = ERROR_FORBIDDEN
 module.exports.ERROR_UNAUTHORISED = ERROR_UNAUTHORISED
-// module.exports.collection = collection
-// module.exports.field = field

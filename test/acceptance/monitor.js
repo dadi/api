@@ -70,7 +70,6 @@ describe('File system watching', function () {
         .post('/vtest/testdb/monitor-test-schema')
         .set('Authorization', 'Bearer ' + bearerToken)
         .send({field1: 'string value'})
-        .expect(200)
         .expect('content-type', 'application/json')
         .end(function (err, res) {
           if (err) return done(err)
@@ -87,10 +86,11 @@ describe('File system watching', function () {
               .post('/vtest/testdb/monitor-test-schema')
               .set('Authorization', 'Bearer ' + bearerToken)
               .send({field1: 31337})
-              .expect(200)
               .expect('content-type', 'application/json')
               .end(function (err, res) {
                 if (err) return done(err)
+
+                res.statusCode.should.eql(200)
 
                 done()
               })

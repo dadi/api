@@ -1,4 +1,3 @@
-const ACLMatrix = require('./../acl/matrix')
 const FieldTypes = require('./../../fields')
 
 const Fields = function () {

@@ -897,49 +897,7 @@ describe('Collections API – GET', function () {
       asyncControl.on('error', function (err) { throw err })
     })
 
-    it('should paginate results', function (done) {
-      var client = request(connectionString)
-      var docCount = 20
-
-      client
-        .get('/vtest/testdb/test-schema?page=1&count=' + docCount)
-        .set('Authorization', 'Bearer ' + bearerToken)
-        .expect(200)
-        .expect('content-type', 'application/json')
-        .end(function (err, res) {
-          if (err) return done(err)
-
-          res.body['results'].should.exist
-          res.body['results'].should.be.Array
-          res.body['results'].length.should.equal(docCount)
-
-          done()
-        })
-    })
-
-    it('should return pagination metadata', function (done) {
-      var client = request(connectionString)
-      var docCount = 20
-
-      client
-        .get('/vtest/testdb/test-schema?page=1&count=' + docCount)
-        .set('Authorization', 'Bearer ' + bearerToken)
-        .expect(200)
-        .expect('content-type', 'application/json')
-        .end(function (err, res) {
-          if (err) return done(err)
-
-          res.body['metadata'].should.exist
-          res.body['metadata'].page.should.equal(1)
-          res.body['metadata'].limit.should.equal(docCount)
-          res.body['metadata'].totalPages.should.be.above(1) // Math.ceil(# documents/20 per page)
-          res.body['metadata'].nextPage.should.equal(2)
-
-          done()
-        })
-    })
-
-    it('should return correct pagination nextPage value', function (done) {
+    it('should paginate results and return pagination metadata', function (done) {
       var client = request(connectionString)
       var docCount = 20
 
@@ -951,11 +909,15 @@ describe('Collections API – GET', function () {
         .end(function (err, res) {
           if (err) return done(err)
 
-          res.body['metadata'].should.exist
+          res.body['results'].should.exist
+          res.body['results'].should.be.Array
+          res.body['results'].length.should.equal(docCount)
+
           res.body['metadata'].page.should.equal(2)
+          res.body['metadata'].limit.should.equal(docCount)
+          res.body['metadata'].totalPages.should.be.above(1) // Math.ceil(# documents/20 per page)
           res.body['metadata'].nextPage.should.equal(3)
           res.body['metadata'].prevPage.should.equal(1)
-
           done()
         })
     })

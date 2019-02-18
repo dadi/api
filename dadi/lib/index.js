@@ -325,31 +325,33 @@ Server.prototype.loadPaths = function (paths, done) {
 }
 
 Server.prototype.loadApi = function (options) {
-  var self = this
-  var collectionPath = this.collectionPath = options.collectionPath || path.join(__dirname, '/../../workspace/collections')
-  var endpointPath = this.endpointPath = options.endpointPath || path.join(__dirname, '/../../workspace/endpoints')
-  var hookPath = this.hookPath = options.hookPath || path.join(__dirname, '/../../workspace/hooks')
+  let collectionPath = this.collectionPath = options.collectionPath || path.join(__dirname, '/../../workspace/collections')
+  let endpointPath = this.endpointPath = options.endpointPath || path.join(__dirname, '/../../workspace/endpoints')
+  let hookPath = this.hookPath = options.hookPath || path.join(__dirname, '/../../workspace/hooks')
 
   this.loadCollections()
 
-  self.updateHooks(hookPath)
-  self.addMonitor(hookPath, function (hook) {
-    self.updateHooks(hookPath)
+  this.updateHooks(hookPath)
+  this.addMonitor(hookPath, hook => {
+    this.updateHooks(hookPath)
   })
 
   // Load initial api descriptions
   this.updateVersions(collectionPath)
 
-  this.addMonitor(collectionPath, function (versionName) {
-    if (path) return self.updateDatabases(path.join(collectionPath, versionName))
-    self.updateVersions(collectionPath)
+  this.addMonitor(collectionPath, versionName => {
+    if (path) {
+      return this.updateDatabases(path.join(collectionPath, versionName))
+    }
+
+    this.updateVersions(collectionPath)
   })
 
   // this.updateEndpoints(endpointPath)
   this.updateVersions(endpointPath)
 
-  this.addMonitor(endpointPath, function (endpointFile) {
-    self.updateVersions(endpointPath)
+  this.addMonitor(endpointPath, endpointFile => {
+    this.updateVersions(endpointPath)
   })
 
   this.loadMediaCollections()
@@ -358,7 +360,7 @@ Server.prototype.loadApi = function (options) {
   StatusEndpointController(this)
 
   this.app.use('/hello', function (req, res, next) {
-    var method = req.method && req.method.toLowerCase()
+    let method = req.method && req.method.toLowerCase()
 
     if (method !== 'get') {
       return next()
@@ -384,36 +386,37 @@ Server.prototype.loadConfigApi = function () {
 }
 
 Server.prototype.updateVersions = function (versionsPath) {
-  var self = this
-
   // Load initial api descriptions
-  var versions = fs.readdirSync(versionsPath)
+  let versions = fs.readdirSync(versionsPath)
 
-  versions.forEach(function (version) {
+  versions.forEach(version => {
     if (version.indexOf('.') === 0) return
 
-    var dirname = path.join(versionsPath, version)
+    let dirname = path.join(versionsPath, version)
 
     if (dirname.indexOf('collections') > 0) {
-      self.updateDatabases(dirname)
+      this.updateDatabases(dirname)
 
-      self.addMonitor(dirname, function (databaseName) {
-        if (databaseName) return self.updateCollections(path.join(dirname, databaseName))
-        self.updateDatabases(dirname)
+      this.addMonitor(dirname, databaseName => {
+        if (databaseName) {
+          return this.updateCollections(path.join(dirname, databaseName))
+        }
+
+        this.updateDatabases(dirname)
       })
     } else {
-      self.updateEndpoints(dirname)
+      this.updateEndpoints(dirname)
 
-      self.addMonitor(dirname, function (endpoint) {
-        self.updateEndpoints(dirname)
+      this.addMonitor(dirname, endpoint => {
+        this.updateEndpoints(dirname)
       })
     }
   })
 }
 
 Server.prototype.updateDatabases = function (databasesPath) {
-  var self = this
-  var databases
+  let databases
+
   try {
     databases = fs.readdirSync(databasesPath)
   } catch (e) {
@@ -421,14 +424,14 @@ Server.prototype.updateDatabases = function (databasesPath) {
     return
   }
 
-  databases.forEach(function (database) {
+  databases.forEach(database => {
     if (database.indexOf('.') === 0) return
 
-    var dirname = path.join(databasesPath, database)
-    self.updateCollections(dirname)
+    let dirname = path.join(databasesPath, database)
+    this.updateCollections(dirname)
 
-    self.addMonitor(dirname, function (collectionFile) {
-      self.updateCollections(dirname)
+    this.addMonitor(dirname, collectionFile => {
+      this.updateCollections(dirname)
     })
   })
 }
@@ -579,24 +582,24 @@ Server.prototype.addCollectionResource = function (options) {
   )
 
   // Watch the schema's file and update it in place.
-  // this.addMonitor(options.filepath, filename => {
-  //   // Invalidate schema file cache then reload.
-  //   delete require.cache[options.filepath]
+  this.addMonitor(options.filepath, filename => {
+    // Invalidate schema file cache then reload.
+    delete require.cache[options.filepath]
 
-  //   try {
-  //     let schemaObj = require(options.filepath)
-  //     let fields = help.getFieldsFromSchema(schemaObj)
+    try {
+      let schemaObj = require(options.filepath)
+      let fields = help.getFieldsFromSchema(schemaObj)
 
-  //     this.components[options.route].model.schema = JSON.parse(fields)
-  //     this.components[options.route].model.settings = schemaObj.settings
-  //   } catch (e) {
-  //     // If file was removed, "un-use" this component.
-  //     if (e && e.code === 'ENOENT') {
-  //       this.removeMonitor(options.filepath)
-  //       this.removeComponent(options.route, controller)
-  //     }
-  //   }
-  // })
+      this.components[options.route].model.schema = JSON.parse(fields)
+      this.components[options.route].model.settings = schemaObj.settings
+    } catch (e) {
+      // If file was removed, "un-use" this component.
+      if (e && e.code === 'ENOENT') {
+        this.removeMonitor(options.filepath)
+        this.removeComponent(options.route, controller)
+      }
+    }
+  })
 }
 
 Server.prototype.addMediaCollectionResource = function (options) {
@@ -707,11 +710,10 @@ Server.prototype.addEndpointResource = function (options) {
 }
 
 Server.prototype.updateHooks = function (hookPath) {
-  var self = this
-  var hooks = fs.readdirSync(hookPath)
+  let hooks = fs.readdirSync(hookPath)
 
-  hooks.forEach(function (hook) {
-    self.addHook({
+  hooks.forEach(hook => {
+    this.addHook({
       hook: hook,
       filepath: path.join(hookPath, hook)
     })
@@ -720,41 +722,43 @@ Server.prototype.updateHooks = function (hookPath) {
 
 Server.prototype.addHook = function (options) {
   if (path.extname(options.filepath) !== '.js') return
-  var hook = options.hook
+  let hook = options.hook
 
-  var self = this
-  var name = hook.replace('.js', '')
-  var filepath = options.filepath
+  let name = hook.replace('.js', '')
+  let filepath = options.filepath
+  let opts = {}
   delete require.cache[filepath]
 
   try {
-    var content = fs.readFileSync(filepath).toString()
+    let content = fs.readFileSync(filepath).toString()
 
-    var opts = {
+    opts = {
       route: 'hook:' + name,
       component: filepath,
       docs: parsecomments(content),
       filepath: filepath
     }
 
-    self.addComponent(opts)
+    this.addComponent(opts)
   } catch (e) {
     console.log(e)
   }
 
-  self.addMonitor(filepath, function (filename) {
+  this.addMonitor(filepath, filename => {
     delete require.cache[filepath]
 
     try {
       opts.component = require(filepath)
     } catch (err) {
       // if file was removed "un-use" this component
-      self.removeMonitor(filepath)
-      self.removeComponent(opts.route)
+      this.removeMonitor(filepath)
+      this.removeComponent(opts.route)
     }
   })
 
-  if (config.get('env') !== 'test') debug('hook loaded: %s', name)
+  if (config.get('env') !== 'test') {
+    debug('hook loaded: %s', name)
+  }
 }
 
 Server.prototype.addComponent = function (options, type) {
@@ -802,6 +806,10 @@ Server.prototype.removeComponent = function (route, component) {
 }
 
 Server.prototype.addMonitor = function (filepath, callback) {
+  if (!filepath) {
+    return
+  }
+
   filepath = path.normalize(filepath)
 
   // only add one watcher per path

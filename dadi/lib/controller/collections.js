@@ -17,17 +17,25 @@ const Collections = function (server) {
     get: this.get.bind(this)
   })
 
-  server.app.routeMethods('/api/collections', {
+  server.app.routeMethods('/api/collections/:version/:database/:collection', {
     post: this.post.bind(this)
   })
 
-  server.app.routeMethods('/api/collections/:version/:database/:collection/fields', {
-    put: this.updateFields.bind(this)
+  server.app.routeMethods('/api/collections/:version/:database/:collection/:type', {
+    put: this.put.bind(this)
   })
 
   this.server = server
 }
 
+/**
+ * Delete a collection schema from the database.
+ * Usage: DELETE /api/collections/version/database/collection
+ *
+ * @param  {IncomingMessage} req
+ * @param  {ServerResponse} res
+ * @param  {Function} next
+ */
 Collections.prototype.delete = function (req, res, next) {
   let collection = {
     database: req.params.database,
@@ -58,6 +66,14 @@ Collections.prototype.delete = function (req, res, next) {
   }).catch(this.handleError(res, next))
 }
 
+/**
+ * Get all collections or a specific collection from the database.
+ * Usage: GET /api/collections (optionally add /version/database/collection)
+ *
+ * @param  {IncomingMessage} req
+ * @param  {ServerResponse} res
+ * @param  {Function} next
+ */
 Collections.prototype.get = function (req, res, next) {
   if (!req.dadiApiClient.clientId) {
     return help.sendBackJSON(null, res, next)(
@@ -73,7 +89,14 @@ Collections.prototype.get = function (req, res, next) {
   }
 
   return Promise.resolve(accessCheck).then((access = {}) => {
-    console.log('access :', access);
+    // if (!clientIsAdmin && access.read !== true) {
+    //   return Promise.reject(
+    //     acl.createError(req.dadiApiClient)
+    //   )
+    // }
+
+    console.log(access)
+
     let collections = Object.keys(this.server.components).filter(key => {
       if (this.server.components[key]._type !== this.server.COMPONENT_TYPE.COLLECTION) {
         return false
@@ -81,12 +104,21 @@ Collections.prototype.get = function (req, res, next) {
 
       let aclKey = this.server.components[key].model.aclKey
 
+      console.log(aclKey)
+
       if (!clientIsAdmin && (!access[aclKey] || !access[aclKey].read)) {
         return false
       }
 
       return true
     }).map(key => {
+      // If a specific collection is requested, return false for all others.
+      if (req.params.version && req.params.database && req.params.collection) {
+        if (key !== `/${req.params.version}/${req.params.database}/${req.params.collection}`) {
+          return false
+        }
+      }
+
       let model = this.server.components[key].model
       let parts = key.split('/')
 
@@ -113,16 +145,14 @@ Collections.prototype.get = function (req, res, next) {
       }
 
       return data
-    }).sort((a, b) => {
-      if (a.path < b.path) {
-        return -1
+    })
+    .filter(Boolean)
+    .sort((a, b) => {
+      if (a.path === b.path) {
+        return 0
       }
 
-      if (a.path > b.path) {
-        return 1
-      }
-
-      return 0
+      return (a.path < b.path) ? -1 : 1
     })
 
     // Adding media buckets.
@@ -196,21 +226,25 @@ Collections.prototype.handleError = function (res, next) {
 }
 
 /**
+ * Create a collection in the database.
+ * Usage: POST /api/collections/version/database/collection
+ * Example:
  * {
- *   "name": "school",
- *   "version": "1.0",
- *   "database": "industries",
  *   "fields": {
  *   },
  *   "settings": {
  *   }
  * }
+ *
+ * @param  {IncomingMessage} req
+ * @param  {ServerResponse} res
+ * @param  {Function} next
  */
 Collections.prototype.post = function (req, res, next) {
-  if (typeof req.body.name !== 'string') {
+  if (typeof req.body.fields !== 'object' || typeof req.body.settings !== 'object') {
     return help.sendBackJSON(400, res, next)(null, {
       success: false,
-      errors: ['Invalid input. Expected: {"name": String}']
+      errors: ['Invalid input. Expected: {"fields": Object, "settings": Object}']
     })
   }
 
@@ -221,7 +255,14 @@ Collections.prototype.post = function (req, res, next) {
       )
     }
 
-    return schema.create(req.body)
+    let collection = {
+      database: req.params.database,
+      name: req.params.collection,
+      version: req.params.version,
+      ...req.body
+    }
+
+    return schema.create(collection)
       .then(({results}) => {
         this.server.loadCollections(results[0].name)
 
@@ -232,26 +273,39 @@ Collections.prototype.post = function (req, res, next) {
   }).catch(this.handleError(res, next))
 }
 
-Collections.prototype.updateFields = function (req, res, next) {
-  // if (typeof req.body.name !== 'string') {
-  //   return help.sendBackJSON(400, res, next)(null, {
-  //     success: false,
-  //     errors: ['Invalid input. Expected: {"name": String, "collection": String}']
-  //   })
-  // }
+/**
+ * Update a specific collection in the database. Specify final "type" parameter as
+ * "fields" or "settings".
+ * Usage: PUT /api/collections/version/database/collection/fields|settings
+ *
+ * @param  {IncomingMessage} req
+ * @param  {ServerResponse} res
+ * @param  {Function} next
+ */
+Collections.prototype.put = function (req, res, next) {
+  if (!['fields', 'settings'].includes(req.params.type)) {
+    help.sendBackJSON(404, res, next)(null)
+  }
 
-//   if (!acl.hasResource(req.body.name)) {
-//     return help.sendBackJSON(400, res, next)(null, {
-//       success: false,
-//       errors: [`Invalid resource: ${req.body.name}`]
-//     })
-//   }
+  return acl.access.get(req.dadiApiClient, 'collections').then(access => {
+    if (access.update !== true) {
+      return Promise.reject(
+        acl.createError(req.dadiApiClient)
+      )
+    }
+  }).then(() => {
+    let collection = {
+      database: req.params.database,
+      name: req.params.collection,
+      version: req.params.version
+    }
 
-  return schema.fieldAdd(
-    req.params.schema,
-    req.body
-  ).then(({results}) => {
-    help.sendBackJSON(201, res, next)(null, {results})
+    return schema.update(collection, req.body, req.params.type)
+      .then(({results}) => {
+        this.server.loadCollections(results[0].name)
+
+        help.sendBackJSON(200, res, next)(null, {results})
+      })
   }).catch(this.handleError(res, next))
 }
 

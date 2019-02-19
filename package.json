@@ -97,7 +97,8 @@
       "sinon",
       "mocha",
       "should",
-      "snazzy"
+      "snazzy",
+      "snyk"
     ]
   },
   "repository": {

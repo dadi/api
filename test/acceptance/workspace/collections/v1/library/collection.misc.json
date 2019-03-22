@@ -1,5 +1,8 @@
 {
   "fields": {
+    "boolean": {
+      "type": "Boolean"
+    },
     "string": {
       "type": "String"
     },

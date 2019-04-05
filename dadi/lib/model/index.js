@@ -7,7 +7,6 @@ const deepMerge = require('deepmerge')
 const fields = require('./../fields')
 const History = require('./history')
 const logger = require('@dadi/logger')
-const Search = require('./../search')
 const Validator = require('@dadi/api-validator')
 
 const DEFAULT_HISTORY_COLLECTION_SUFFIX = 'Versions'
@@ -78,13 +77,6 @@ const Model = function (name, schema, connection, settings) {
     this.compose = this.settings.compose
   }
 
-  // setup search context
-  this.searchHandler = new Search(this)
-
-  if (this.searchHandler.isImplemented()) {
-    this.searchHandler.init()
-  }
-
   // Add any configured indexes.
   if (this.settings.index && !Array.isArray(this.settings.index)) {
     this.settings.index = [
@@ -101,7 +93,7 @@ const Model = function (name, schema, connection, settings) {
     this.settings.enableVersioning !== false &&
     this.settings.storeRevisions !== false
   ) {
-    let versioningCollection = this.settings.versioningCollection ||
+    const versioningCollection = this.settings.versioningCollection ||
       this.settings.revisionCollection ||
       this.name + DEFAULT_HISTORY_COLLECTION_SUFFIX
 
@@ -599,6 +591,14 @@ Model.prototype.formatQuery = function (query) {
 
   return newQuery
 }
+/**
+ * Returns the ACL key for this model.
+ *
+ * @returns {String}
+ */ 
+Model.prototype.getAclKey = function () {
+  return this.aclKey
+}
 
 /**
  * Returns the field with a given name, if it exists.
@@ -860,7 +860,7 @@ Model.prototype.validateAccess = function ({
 
   let accessQueue = access
     ? Promise.resolve(access)
-    : this.acl.access.get(client, this.aclKey)
+    : this.acl.access.get(client, this.getAclKey())
 
   return accessQueue.then(access => {
     let value = access[type]

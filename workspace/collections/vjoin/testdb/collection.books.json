@@ -10,17 +10,25 @@
         "weight": 2
       }
     },
-    "authorId": {
+    "synopsis": {
       "type": "String",
+      "label": "name",
+      "example": "War and Peace",
+      "comments": "This is the book's name",
+      "required": true,
+      "search": {
+        "weight": 1
+      }
+    },
+    "author": {
+      "type": "Reference",
       "label": "author",
       "example": "b8b285ae-53d1-47a5-9e69-ec04",
       "comments": "This is the _id of the book's author",
-      "validation": {
-        "regex": {
-          "pattern": "^[0-9a-fA-F]{24}$"
-        }
-      },
-      "required": true
+      "required": true,
+      "settings": {
+        "collection": "users"
+      }
     }
   },
   "settings": {

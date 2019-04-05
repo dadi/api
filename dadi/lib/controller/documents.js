@@ -4,6 +4,7 @@ const Controller = require('./index')
 const debug = require('debug')('api:controller')
 const help = require('./../help')
 const url = require('url')
+const workQueue = require('../workQueue')
 
 const Collection = function (model, server) {
   if (!model) throw new Error('Model instance required')
@@ -14,7 +15,7 @@ const Collection = function (model, server) {
 
 Collection.prototype = new Controller()
 
-Collection.prototype.count = function (req, res, next) {
+Collection.prototype.count = workQueue.wrapForegroundJob(function (req, res, next) {
   let method = req.method && req.method.toLowerCase()
 
   if (method !== 'get') {
@@ -41,9 +42,9 @@ Collection.prototype.count = function (req, res, next) {
   }).catch(error => {
     return help.sendBackJSON(null, res, next)(error)
   })
-}
+})
 
-Collection.prototype.delete = function (req, res, next) {
+Collection.prototype.delete = workQueue.wrapForegroundJob(function (req, res, next) {
   let query = req.params.id ? { _id: req.params.id } : req.body.query
 
   if (!query) return next()
@@ -79,9 +80,9 @@ Collection.prototype.delete = function (req, res, next) {
   }).catch(error => {
     return help.sendBackJSON(200, res, next)(error)
   })
-}
+})
 
-Collection.prototype.get = function (req, res, next) {
+Collection.prototype.get = workQueue.wrapForegroundJob(function (req, res, next) {
   let options = this._getURLParameters(req.url)
   let callback = options.callback || this.model.settings.callback
 
@@ -112,9 +113,9 @@ Collection.prototype.get = function (req, res, next) {
   }).catch(error => {
     return done(error)
   })
-}
+})
 
-Collection.prototype.post = function (req, res, next) {
+Collection.prototype.post = workQueue.wrapForegroundJob(function (req, res, next) {
   // Add internal fields.
   let internals = {
     _apiVersion: req.url.split('/')[1]
@@ -184,7 +185,7 @@ Collection.prototype.post = function (req, res, next) {
   }).catch(error => {
     return help.sendBackJSON(200, res, next)(error)
   })
-}
+})
 
 Collection.prototype.put = function (req, res, next) {
   return this.post(req, res, next)
@@ -239,7 +240,7 @@ Collection.prototype.registerRoutes = function (route, filePath) {
   })
 }
 
-Collection.prototype.stats = function (req, res, next) {
+Collection.prototype.stats = workQueue.wrapForegroundJob(function (req, res, next) {
   let method = req.method && req.method.toLowerCase()
 
   if (method !== 'get') {
@@ -253,14 +254,14 @@ Collection.prototype.stats = function (req, res, next) {
   }).catch(error => {
     return help.sendBackJSON(null, res, next)(error)
   })
-}
+})
 
 Collection.prototype.unregisterRoutes = function (route) {
   this.server.app.unuse(`${route}/config`)
   this.server.app.unuse(`${route}/:id(${this.ID_PATTERN})?/:action(count|search|stats|versions)?`)
 }
 
-Collection.prototype.versions = function (req, res, next) {
+Collection.prototype.versions = workQueue.wrapForegroundJob(function (req, res, next) {
   let method = req.method && req.method.toLowerCase()
 
   if (method !== 'get') {
@@ -275,7 +276,7 @@ Collection.prototype.versions = function (req, res, next) {
   }).catch(error => {
     return help.sendBackJSON(null, res, next)(error)
   })
-}
+})
 
 module.exports = function (model, server) {
   return new Collection(model, server)

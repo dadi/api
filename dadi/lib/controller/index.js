@@ -1,5 +1,6 @@
 const config = require('./../../../config')
 const help = require('./../help')
+const searchModel = require('./../model/search')
 const url = require('url')
 
 const ID_PATTERN = '[a-fA-F0-9-]*'
@@ -162,50 +163,53 @@ Controller.prototype.ID_PATTERN = ID_PATTERN
  * Example: /1.0/library/books/search?q=title
  */
 Controller.prototype.search = function (req, res, next) {
-  let path = url.parse(req.url, true)
-  let options = path.query
+  const minimumQueryLength = config.get('search.minQueryLength')
+  const path = url.parse(req.url, true)
+  const {q: query} = path.query
+  const {errors, queryOptions} = this._prepareQueryOptions(path.query)
 
-  let queryOptions = this._prepareQueryOptions(options)
+  if (!config.get('search.enabled')) {
+    const error = new Error('Not Implemented')
 
-  if (queryOptions.errors.length !== 0) {
-    return help.sendBackJSON(400, res, next)(null, queryOptions)
-  } else {
-    queryOptions = queryOptions.queryOptions
+    error.statusCode = 501
+    error.json = {
+      errors: [{
+        message: `Search is disabled or an invalid data connector has been specified.`
+      }]
+    }
+
+    return help.sendBackJSON(null, res, next)(error)
   }
 
-  return this.model.search({
-    client: req.dadiApiClient,
-    options: queryOptions
-  }).then(query => {
-    let ids = query._id['$containsAny'].map(id => id.toString())
+  if (errors.length !== 0) {
+    return help.sendBackJSON(400, res, next)(null, queryOptions)
+  }  
 
+  if (typeof query !== 'string' || query.length < minimumQueryLength) {
+    const error = new Error('Bad Request')
+
+    error.statusCode = 400
+    error.json = {
+      errors: [{
+        message: `Search query must be at least ${minimumQueryLength} characters.`
+      }]
+    }
+
+    return help.sendBackJSON(null, res, next)(error)
+  }
+
+  return searchModel.find(query, [this.model.name]).then(collections => {
+    const documents = collections[this.model.name]
+    const documentIds = documents.map(({_id}) => _id)
+    
     return this.model.find({
-      client: req.dadiApiClient,
-      language: options.lang,
-      query,
-      options: queryOptions
-    }).then(results => {
-      results.results = results.results.sort((a, b) => {
-        let aIndex = ids.indexOf(a._id.toString())
-        let bIndex = ids.indexOf(b._id.toString())
-
-        if (aIndex === bIndex) return 0
-
-        return aIndex > bIndex ? 1 : -1
-      })
-
-      return this.model.formatForOutput(
-        results.results,
-        {
-          client: req.dadiApiClient,
-          composeOverride: queryOptions.compose,
-          language: options.lang,
-          urlFields: queryOptions.fields
+      query: {
+        _id: {
+          '$containsAny': documentIds
         }
-      ).then(formattedResults => {
-        results.results = formattedResults
-        return help.sendBackJSON(200, res, next)(null, results)
-      })
+      }
+    }).then(({results}) => {
+      return help.sendBackJSON(200, res, next)(null, results)
     })
   }).catch(error => {
     return help.sendBackJSON(null, res, next)(error)

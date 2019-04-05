@@ -200,19 +200,21 @@ describe('Search', function () {
       .send(doc)
       .expect(200)
       .end((err, res) => {
-        client
-        .get('/vtest/testdb/test-schema/search?q=quick%20brown')
-        .set('Authorization', 'Bearer ' + bearerToken)
-        .expect(200)
-        .end((err, res) => {
-          if (err) return done(err)
-          should.exist(res.body.results)
-
-          res.body.results.should.be.Array
-          res.body.results.length.should.eql(1)
-
-          done()
-        })
+        setTimeout(() => {
+          client
+          .get('/vtest/testdb/test-schema/search?q=quick%20brown')
+          .set('Authorization', 'Bearer ' + bearerToken)
+          .expect(200)
+          .end((err, res) => {
+            if (err) return done(err)
+            should.exist(res.body.results)
+  
+            res.body.results.should.be.Array
+            res.body.results.length.should.eql(1)
+  
+            done()
+          })
+        }, 800)
       })
     })
 
@@ -236,57 +238,61 @@ describe('Search', function () {
       .end((err, res) => {
         let insertedDocument = res.body.results[0]
 
-        client
-        .get('/vtest/testdb/test-schema/search?q=sunrise')
-        .set('Authorization', 'Bearer ' + bearerToken)
-        .expect(200)
-        .end((err, res) => {
-          if (err) return done(err)
-          should.exist(res.body.results)
-
-          res.body.results.should.be.Array
-          res.body.results.length.should.eql(1)
-
-          // update the document
-          doc.field1 = 'The Big Friendly Giant'
-          doc.title = 'You Never Saw Such a Thing'
-
+        setTimeout(() => {
           client
-          .put('/vtest/testdb/test-schema/' + insertedDocument._id)
+          .get('/vtest/testdb/test-schema/search?q=sunrise')
           .set('Authorization', 'Bearer ' + bearerToken)
-          .set('content-type', 'application/json')
-          .send(doc)
           .expect(200)
           .end((err, res) => {
+            if (err) return done(err)
+            should.exist(res.body.results)
+  
+            res.body.results.should.be.Array
+            res.body.results.length.should.eql(1)
+  
+            // update the document
+            doc.field1 = 'The Big Friendly Giant'
+            doc.title = 'You Never Saw Such a Thing'
+  
             client
-            .get('/vtest/testdb/test-schema/search?q=sunrise')
+            .put('/vtest/testdb/test-schema/' + insertedDocument._id)
             .set('Authorization', 'Bearer ' + bearerToken)
+            .set('content-type', 'application/json')
+            .send(doc)
             .expect(200)
             .end((err, res) => {
-              if (err) return done(err)
-              should.exist(res.body.results)
-
-              res.body.results.should.be.Array
-              res.body.results.length.should.eql(0)
-
-              client
-              .get('/vtest/testdb/test-schema/search?q=thing')
-              .set('Authorization', 'Bearer ' + bearerToken)
-              .expect(200)
-              .end((err, res) => {
-                if (err) return done(err)
-                should.exist(res.body.results)
-
-                res.body.results.should.be.Array
-                res.body.results.length.should.eql(1)
-
-                res.body.results[0]._id.should.eql(insertedDocument._id)
-
-                done()
-              })
+              setTimeout(() => {
+                client
+                .get('/vtest/testdb/test-schema/search?q=sunrise')
+                .set('Authorization', 'Bearer ' + bearerToken)
+                .expect(200)
+                .end((err, res) => {
+                  if (err) return done(err)
+                  should.exist(res.body.results)
+    
+                  res.body.results.should.be.Array
+                  res.body.results.length.should.eql(0)
+    
+                  client
+                  .get('/vtest/testdb/test-schema/search?q=thing')
+                  .set('Authorization', 'Bearer ' + bearerToken)
+                  .expect(200)
+                  .end((err, res) => {
+                    if (err) return done(err)
+                    should.exist(res.body.results)
+    
+                    res.body.results.should.be.Array
+                    res.body.results.length.should.eql(1)
+    
+                    res.body.results[0]._id.should.eql(insertedDocument._id)
+    
+                    done()
+                  })
+                })
+              }, 800)
             })
           })
-        })
+        }, 800)
       })
     })
 

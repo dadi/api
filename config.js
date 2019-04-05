@@ -144,11 +144,27 @@ var conf = convict({
     }
   },
   search: {
+    database: {
+      doc: 'The name of the database to use for storing and querying indexed documents',
+      format: String,
+      default: 'search',
+      env: 'DB_SEARCH_NAME'
+    },
+    datastore: {
+      doc: 'The datastore to use for storing and querying indexed documents',
+      format: String,
+      default: '@dadi/api-mongodb'
+    },
     enabled: {
       doc: 'If true, API responds to collection /search endpoints',
       format: Boolean,
       default: false
     },
+    indexCollection: {
+      doc: 'The name of the datastore collection that will hold the index of word matches',
+      format: String,
+      default: 'searchIndex'
+    },    
     minQueryLength: {
       doc: 'Minimum search string length',
       format: Number,
@@ -157,18 +173,7 @@ var conf = convict({
     wordCollection: {
       doc: 'The name of the datastore collection that will hold tokenized words',
       format: String,
-      default: 'words'
-    },
-    datastore: {
-      doc: 'The datastore to use for storing and querying indexed documents',
-      format: String,
-      default: '@dadi/api-mongodb'
-    },
-    database: {
-      doc: 'The name of the database to use for storing and querying indexed documents',
-      format: String,
-      default: 'search',
-      env: 'DB_SEARCH_NAME'
+      default: 'searchWords'
     }
   },
   caching: {

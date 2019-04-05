@@ -233,15 +233,18 @@ function update ({
 
       // Run any `afterUpdate` hooks.
       if (hooks && Array.isArray(hooks.afterUpdate)) {
-        hooks.afterUpdate.forEach((hookConfig, index) => {
-          let hook = new Hook(hooks.afterUpdate[index], 'afterUpdate')
+        hooks.afterUpdate.forEach(hookConfig => {
+          let hook = new Hook(hookConfig, 'afterUpdate')
 
           return hook.apply(data.results, this.schema, this.name)
         })
       }
 
-      // Asynchronous search index.
-      this.searchHandler.index(data.results)
+      // Index all the created documents for search, as a background job.
+      // this.searchHandler.indexDocumentsInTheBackground({
+      //   documents: data.results,
+      //   original: updatedDocuments
+      // })
 
       // Format result set for output.
       if (!rawOutput) {
@@ -263,7 +266,7 @@ function update ({
     if (this.history && updatedDocuments.length > 0) {
       return this.history.addVersion(updatedDocuments, {
         description
-      }).then(historyResponse => response)
+      }).then(() => response)
     }
 
     return response

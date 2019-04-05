@@ -7,21 +7,12 @@
       "example": "John Doe",
       "placement": "Main content",
       "validation": {},
-      "required": false,
+      "required": true,
       "message": "can't be empty",
       "display": {
         "index": true,
         "edit": true
-      },
-      "search": {
-        "weight": 1
       }
-    },
-    "object": {
-      "type": "Object"
-    },
-    "mixed": {
-      "type": "Mixed"
     }
   },
   "settings": {
@@ -33,7 +24,7 @@
     "count": 40,
     "sort": "name",
     "sortOrder": 1,
-    "storeRevisions": true,
+    "storeRevisions": false,
     "revisionCollection": "userHistory",
     "index": {
       "enabled": true,

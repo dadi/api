@@ -89,9 +89,8 @@ Client.prototype.create = function (client, {
       )
     }
 
-    return this.hashSecret(client.secret)
+    return this.hashSecret(client.secret, client)
   }).then(hashedsecret => {
-    client._hashVersion = HASH_VERSION
     client.secret = hashedsecret
 
     return this.model.create({
@@ -198,13 +197,23 @@ Client.prototype.get = function (clientId, secret) {
 }
 
 /**
- * Generates a hash from a secret.
+ * Generates a hash from a secret. If `target` is supplied, a `_hashVersion_`
+ * property will be added to that object.
  *
  * @param  {String}  secret
+ * @param  {Object}  target
  * @return {Promise<String>}
  */
-Client.prototype.hashSecret = function (secret) {
+Client.prototype.hashSecret = function (secret, target) {
+  if (!config.get('auth.hashSecrets')) {
+    return Promise.resolve(secret)
+  }
+
   const saltRounds = config.get('auth.saltRounds')
+
+  if (target) {
+    target._hashVersion = HASH_VERSION
+  }
 
   return bcrypt.hash(secret, saltRounds)
 }
@@ -602,8 +611,7 @@ Client.prototype.update = function (clientId, update) {
     // If we're trying to update the client's secret, we must hash it
     // before sending it to the database.
     if (typeof secret === 'string') {
-      return this.hashSecret(secret).then(hashedSecret => {
-        update._hashVersion = HASH_VERSION
+      return this.hashSecret(secret, update).then(hashedSecret => {
         update.secret = hashedSecret
 
         return results
@@ -705,6 +713,10 @@ Client.prototype.validate = function (client, {
  * @return {Promise<Boolean>}
  */
 Client.prototype.validateSecret = function (hash, candidate, hashVersion) {
+  if (!config.get('auth.hashSecrets')) {
+    return Promise.resolve(hash === candidate)
+  }
+
   if (hashVersion !== HASH_VERSION) {
     return Promise.reject(
       new Error('CLIENT_NEEDS_UPGRADE')

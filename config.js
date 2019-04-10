@@ -132,6 +132,11 @@ var conf = convict({
       default: 'test',
       env: 'DB_AUTH_NAME'
     },
+    hashSecrets: {
+      doc: 'Whether to hash client secrets',
+      format: Boolean,
+      default: false
+    },
     saltRounds: {
       doc: 'The number of rounds to go through when hashing a password',
       format: Number,

@@ -59,6 +59,8 @@ describe('Token store', () => {
     })
 
     it('should return 401 with a specific error message in the www-authenticate header if the client must be upgraded due to an outdated hashing algorithm', done => {
+      config.set('auth.hashSecrets', true)
+
       const unhashedClient = {
         clientId: 'anotherTestClient',
         secret: 'iShouldBeHashed',
@@ -79,6 +81,8 @@ describe('Token store', () => {
         .expect(401, (err, res) => {
           res.headers['www-authenticate'].includes('error="client_needs_upgrade"').should.eql(true)
           res.headers['www-authenticate'].includes('error_description="The client record on the server must be upgraded"').should.eql(true)
+
+          config.set('auth.hashSecrets', configBackup.auth.hashSecrets)
 
           done(err)
         })
@@ -325,41 +329,47 @@ describe('Token store', () => {
       })
     })
 
-    it('should attach client data to the request object if the bearer token supplied is valid', done => {
-      const newClient = {
-        clientId: 'testClient1',
-        secret: 'superSecret1',
-        accessType: 'admin'
-      }
-      const spy = sinon.spy(bcrypt, 'compare')
+    describe('if `auth.hashSecrets` is set to true', () => {
+      it('should compare the secret supplied against the one store using a cryptographic compare function', done => {
+        config.set('auth.hashSecrets', true)
 
-      help.createClient(newClient, (err, clientRecord) => {
-        client
-        .post(tokenRoute)
-        .send({
-          clientId: newClient.clientId,
-          secret: newClient.secret
-        })
-        .expect('content-type', 'application/json')
-        .expect('pragma', 'no-cache')
-        .expect('Cache-Control', 'no-store')
-        .expect(200, (err, res) => {
-          res.body.accessToken.should.be.String
-
-          spy.getCall(0).args[0].should.eql(newClient.secret)
-          spy.getCall(0).args[1].should.eql(clientRecord.secret)
-          spy.restore()
-
+        const newClient = {
+          clientId: 'testClient1',
+          secret: 'superSecret1',
+          accessType: 'admin'
+        }
+        const spy = sinon.spy(bcrypt, 'compare')
+  
+        help.createClient(newClient, (err, clientRecord) => {
           client
-            .get('/v1/intercept-client')
-            .set('Authorization', `Bearer ${res.body.accessToken}`)
-            .expect('content-type', 'application/json')
-            .expect(200, (err, res) => {
-              res.body.clientId.should.eql(newClient.clientId)
-              res.body.accessType.should.eql(newClient.accessType)
+          .post(tokenRoute)
+          .send({
+            clientId: newClient.clientId,
+            secret: newClient.secret
+          })
+          .expect('content-type', 'application/json')
+          .expect('pragma', 'no-cache')
+          .expect('Cache-Control', 'no-store')
+          .expect(200, (err, res) => {
+            res.body.accessToken.should.be.String
+  
+            spy.getCall(0).args[0].should.eql(newClient.secret)
+            spy.getCall(0).args[1].should.eql(clientRecord.secret)
+            spy.restore()
+  
+            client
+              .get('/v1/intercept-client')
+              .set('Authorization', `Bearer ${res.body.accessToken}`)
+              .expect('content-type', 'application/json')
+              .expect(200, (err, res) => {
+                res.body.clientId.should.eql(newClient.clientId)
+                res.body.accessType.should.eql(newClient.accessType)
 
-              done()
-            })
+                config.set('auth.hashSecrets', configBackup.auth.hashSecrets)
+  
+                done()
+              })
+          })
         })
       })
     })

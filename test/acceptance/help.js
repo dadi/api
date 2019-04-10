@@ -8,15 +8,18 @@ const config = require(__dirname + '/../../config')
 const request = require('supertest')
 
 function hashClientSecret(client) {
+  if (client._hashVersion === undefined && config.get('auth.hashSecrets')) {
+    client._hashVersion = 1
+  }
+
   switch (client._hashVersion) {
-    case undefined:
     case 1:
       return Object.assign({}, client, {
         _hashVersion: 1,
         secret: bcrypt.hashSync(client.secret, config.get('auth.saltRounds'))
       })
 
-    case null:
+    default:
       delete client._hashVersion
 
       return client

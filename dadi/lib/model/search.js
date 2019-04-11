@@ -210,7 +210,9 @@ Search.prototype.find = function ({
 
       return {
         results,
-        metadata
+        metadata: Object.assign({}, metadata, {
+          search: query
+        })
       }
     })
   })

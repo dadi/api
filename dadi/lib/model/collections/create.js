@@ -163,7 +163,7 @@ function create ({
     }).then(results => {
       // Index all the created documents for search, as a background job.
       search.indexDocumentsInTheBackground({
-        documents,
+        documents: results,
         model: this
       })
 

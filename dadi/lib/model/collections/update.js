@@ -2,6 +2,7 @@ const async = require('async')
 const debug = require('debug')('api:model')
 const Hook = require('./../hook')
 const logger = require('@dadi/logger')
+const search = require('./../search')
 
 /**
  * Block with metadata pertaining to an API collection.
@@ -241,10 +242,10 @@ function update ({
       }
 
       // Index all the created documents for search, as a background job.
-      // this.searchHandler.indexDocumentsInTheBackground({
-      //   documents: data.results,
-      //   original: updatedDocuments
-      // })
+      search.indexDocumentsInTheBackground({
+        documents: data.results,
+        model: this
+      })
 
       // Format result set for output.
       if (!rawOutput) {

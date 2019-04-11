@@ -1,5 +1,6 @@
 const config = require('./../../../config')
 const Connection = require('./connection')
+const logger = require('@dadi/logger')
 
 /**
  * Document history manager.
@@ -70,6 +71,12 @@ History.prototype.getVersion = function (version, options = {}) {
     })
 
     return response
+  }).catch(error => {
+    logger.error({module: 'history'}, error)
+
+    return {
+      results: []
+    }
   })
 }
 

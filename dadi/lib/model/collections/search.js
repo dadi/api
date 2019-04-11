@@ -1,4 +1,3 @@
-const config = require('./../../../../config')
 const debug = require('debug')('api:model:search')
 
 /**

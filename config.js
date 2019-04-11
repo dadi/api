@@ -135,7 +135,7 @@ var conf = convict({
     hashSecrets: {
       doc: 'Whether to hash client secrets',
       format: Boolean,
-      default: false
+      default: true
     },
     saltRounds: {
       doc: 'The number of rounds to go through when hashing a password',

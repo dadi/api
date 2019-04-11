@@ -1,6 +1,7 @@
 const async = require('async')
 const Hook = require('./../hook')
 const logger = require('@dadi/logger')
+const search = require('./../search')
 const workQueue = require('./../../workQueue')
 
 /**
@@ -174,14 +175,11 @@ function deleteFn ({
 
         return result
       }).then(result => {
-        // If search is enabled, add a background job to the work queue
-        // that deletes from the search collection each reference to the
-        // documents that were just deleted.
-        // if (this.searchHandler.isImplemented()) {
-        //   workQueue.queueBackgroundJob(() => {
-        //     this.searchHandler.delete(deletedDocuments)
-        //   })
-        // }
+        // Add a background job to the work queue that deletes from the search
+        // collection each reference to the documents that were just deleted.
+        workQueue.queueBackgroundJob(() => {
+          search.delete(deletedDocuments)
+        })
 
         return result
       })

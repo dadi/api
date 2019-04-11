@@ -5,7 +5,7 @@ const Connection = require('./../model/connection')
 const createMetadata = require('@dadi/metadata')
 const debug = require('debug')('api:search')
 const natural = require('natural')
-const promiseQueue = require('js-promise-queue')
+// const promiseQueue = require('js-promise-queue')
 const workQueue = require('./../workQueue')
 
 const PAGE_SIZE = 10
@@ -127,12 +127,16 @@ Search.prototype.delete = function (documents) {
 }
 
 /**
- * Find documents in the "words" collection matching the specified searchTerm,
- * using the results of the query to fetch results from the current collection's
- * search collection, ultimately leading to a set of IDs for documents that
- * contain the searchTerm.
+ * Search for documents in the collections specified in the `collections` array
+ * that match the terms specified in the `query` term. It expects a `modelFactory`
+ * function, which is essentially `dadi/lib/model/index.js`. The only reason it is
+ * required as a parameter is to get around circular dependencies. Pagination can
+ * be done by supplying a `page` parameter.
  *
- * @param  {String} query - query passed to the collection search endpoint
+ * @param  {Array<String>} collections
+ * @param  {Function}      modelFactory
+ * @param  {Number}        page
+ * @param  {String}        query
  * @return {Promise} - a query containing IDs of documents that contain the
  *                     searchTerm
  */
@@ -146,9 +150,12 @@ Search.prototype.find = function ({
 
   const tokens = this.tokenise(query)
 
+  // Find matches for the various tokens in the words collection.
   return this.getWordsFromCollection(tokens).then(words => {
     const wordIds = words.results.map(word => word._id.toString())
 
+    // Find matches for the word IDs in the search index collection,
+    // limiting the results to the collections specified.
     return this.getIndexResults({
       collections,
       options: {
@@ -160,6 +167,7 @@ Search.prototype.find = function ({
     })
   }).then(resultsMap => {
     const documents = new Map()
+
     let indexableFields = {}
 
     // We must retrieve all the documents using their respective models.
@@ -287,7 +295,7 @@ Search.prototype.getIndexResults = function ({
       resultsMap[collection][document] = resultsMap[collection][document] || 0
       resultsMap[collection][document] += weight
     })
-    
+
     return resultsMap
   })
 }
@@ -504,7 +512,7 @@ Search.prototype.indexDocumentsInTheBackground = function ({
         document,
         indexableFields
       })
-    })    
+    })
   })
 }
 
@@ -529,8 +537,8 @@ Search.prototype.initialise = function () {
   this.indexConnection.setMaxListeners(35)
   this.indexConnection.once('connect', database => {
     database.index(this.indexCollection, SCHEMA_SEARCH.settings.index)
-  })  
-  
+  })
+
   // Initialising words collection.
   this.wordCollection = config.get('search.wordCollection')
   this.wordConnection = Connection(

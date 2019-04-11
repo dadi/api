@@ -1,5 +1,6 @@
 const config = require('./../../../config')
 const help = require('./../help')
+const model = require('../model')
 const searchModel = require('./../model/search')
 const url = require('url')
 
@@ -183,7 +184,7 @@ Controller.prototype.search = function (req, res, next) {
 
   if (errors.length !== 0) {
     return help.sendBackJSON(400, res, next)(null, queryOptions)
-  }  
+  }
 
   if (typeof query !== 'string' || query.length < minimumQueryLength) {
     const error = new Error('Bad Request')
@@ -198,19 +199,12 @@ Controller.prototype.search = function (req, res, next) {
     return help.sendBackJSON(null, res, next)(error)
   }
 
-  return searchModel.find(query, [this.model.name]).then(collections => {
-    const documents = collections[this.model.name]
-    const documentIds = documents.map(({_id}) => _id)
-    
-    return this.model.find({
-      query: {
-        _id: {
-          '$containsAny': documentIds
-        }
-      }
-    }).then(({results}) => {
-      return help.sendBackJSON(200, res, next)(null, results)
-    })
+  return searchModel.find({
+    collections: [this.model.name],
+    modelFactory: model,
+    query
+  }).then(response => {
+    return help.sendBackJSON(200, res, next)(null, response)
   }).catch(error => {
     return help.sendBackJSON(null, res, next)(error)
   })

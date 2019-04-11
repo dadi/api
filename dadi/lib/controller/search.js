@@ -6,7 +6,7 @@ const searchModel = require('./../model/search')
 const url = require('url')
 
 const Search = function (server, modelFactory) {
-  server.app.routeMethods('/search', {
+  server.app.routeMethods('/api/search', {
     get: this.get.bind(this)
   })
 }
@@ -18,7 +18,6 @@ const Search = function (server, modelFactory) {
 Search.prototype.get = function (req, res, next) {
   const {query: options} = url.parse(req.url, true)
   const {collections, page = 1, q: query} = options
-  const collectionsArray = (collections || '').split(',')
   const minimumQueryLength = config.get('search.minQueryLength')
 
   if (!config.get('search.enabled')) {
@@ -50,30 +49,40 @@ Search.prototype.get = function (req, res, next) {
   }
 
   let aclCheck = Promise.resolve()
+  let searchCollections = (collections || '').split(',')
 
+  // If the client is not an admin, we must first find out what collections they
+  // have read permissions for.
   if (!acl.client.isAdmin(req.dadiApiClient)) {
-    const aclKeys = collectionsArray.reduce((keys, collection) => {
-      const model = CollectionModel(collection)
-
-      if (model) {
-        keys[collection] = model.getAclKey()
-      }
-
-      return keys
-    }, {})
-
     aclCheck = acl.access.get(req.dadiApiClient).then(resources => {
-      return Object.keys(aclKeys).filter(collection => {
-        const key = aclKeys[collection]
-
-        return resources[key] && resources[key].read
+      const allowedResources = Object.keys(resources).filter(key => {
+        return Boolean(resources[key].read)
       })
+      const allowedModels = allowedResources.map(aclKey => {
+        return CollectionModel.getByAclKey(aclKey)
+      })
+
+      return allowedModels.filter(Boolean)
     })
   }
 
+  // At this point, `collections` contains either an array of the names of
+  // the collections that the user has access to, or `undefined` if we're
+  // dealing with an admin user that can access everything.
   return aclCheck.then(collections => {
+    if (searchCollections.length > 0) {
+      // If `collections` isn't undefined, then it holds the set of collections
+      // which the user has access to. As such, `searchCollections` becomes the
+      // intersection between itself and `collections`.
+      if (collections !== undefined) {
+        searchCollections = searchCollections.filter(collection => {
+          return collections.includes(collection)
+        })
+      }
+    }
+
     return searchModel.find({
-      collections,
+      collections: searchCollections,
       modelFactory: CollectionModel,
       page,
       query

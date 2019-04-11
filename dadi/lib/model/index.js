@@ -595,7 +595,7 @@ Model.prototype.formatQuery = function (query) {
  * Returns the ACL key for this model.
  *
  * @returns {String}
- */ 
+ */
 Model.prototype.getAclKey = function () {
   return this.aclKey
 }
@@ -1008,6 +1008,16 @@ module.exports = function (name, schema, connection, settings) {
   }
 
   return _models[name]
+}
+
+module.exports.getByAclKey = aclKey => {
+  const modelName = Object.keys(_models).find(key => {
+    return _models[key].getAclKey() === aclKey
+  })
+
+  if (modelName) {
+    return _models[modelName]
+  }
 }
 
 module.exports.Model = Model

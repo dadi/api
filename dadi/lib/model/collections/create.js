@@ -162,10 +162,10 @@ function create ({
       settings: this.settings
     }).then(results => {
       // Index all the created documents for search, as a background job.
-      // search.indexDocumentsInTheBackground({
-      //   documents,
-      //   model: this
-      // })
+      search.indexDocumentsInTheBackground({
+        documents,
+        model: this
+      })
 
       // Run any `afterCreate` hooks.
       if (hooks && Array.isArray(hooks.afterCreate)) {

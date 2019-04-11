@@ -404,7 +404,7 @@ Search.prototype.indexDocumentsInTheBackground = function ({
 
     workQueue.queueBackgroundJob(() => {
       this.indexDocument(document)
-    })    
+    })
   })
 }
 
@@ -429,8 +429,8 @@ Search.prototype.initialise = function () {
   this.indexConnection.setMaxListeners(35)
   this.indexConnection.once('connect', database => {
     database.index(this.indexCollection, SCHEMA_SEARCH.settings.index)
-  })  
-  
+  })
+
   // Initialising words collection.
   this.wordCollection = config.get('search.wordCollection')
   this.wordConnection = Connection(

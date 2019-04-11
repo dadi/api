@@ -1229,5 +1229,32 @@ describe('Collections API – GET', function () {
         })
       })
     })
+
+    it('should respond with 304 if etag matches If-None-Match header', function (done) {
+      help.createDoc(bearerToken, function (err, doc1) {
+        if (err) return done(err)
+        help.createDoc(bearerToken, function (err, doc2) {
+          if (err) return done(err)
+
+          var client = request(connectionString)
+          client
+            .get('/vtest/testdb/test-schema')
+            .set('Authorization', 'Bearer ' + bearerToken)
+            .expect(200)
+            .expect('content-type', 'application/json')
+            .end((err, res) => {
+              if (err) return done(err)
+
+              let etag = res.headers['etag']
+
+              client
+                .get('/vtest/testdb/test-schema')
+                .set('Authorization', 'Bearer ' + bearerToken)
+                .set('If-None-Match', etag)
+                .expect(304, done)
+            })
+        })
+      })
+    })
   })
 })

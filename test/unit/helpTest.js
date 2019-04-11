@@ -44,7 +44,7 @@ describe('Help', function (done) {
     it('should send an error with the formatted message corresponding to the API error code with the status code provided', done => {
       let res = {
         end: function end (resBody) {
-          this.setHeader.callCount.should.eql(2)
+          this.setHeader.callCount.should.eql(3)
           this.setHeader.args[0][0].should.eql('Content-Length')
           this.setHeader.args[0][1].should.be.Number
           this.setHeader.args[1][0].should.eql('Content-Type')
@@ -68,7 +68,7 @@ describe('Help', function (done) {
     it('should send an error with the formatted message corresponding to the API error code with the status code 500 if one is not provided', done => {
       let res = {
         end: function end (resBody) {
-          this.setHeader.callCount.should.eql(2)
+          this.setHeader.callCount.should.eql(3)
           this.setHeader.args[0][0].should.eql('Content-Length')
           this.setHeader.args[0][1].should.be.Number
           this.setHeader.args[1][0].should.eql('Content-Type')

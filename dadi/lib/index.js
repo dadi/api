@@ -6,7 +6,7 @@ var chokidar = require('chokidar')
 var cluster = require('cluster')
 var colors = require('colors') // eslint-disable-line
 var debug = require('debug')('api:server')
-var parsecomments = require('parse-comments')
+var ParseComments = require('parse-comments')
 var fs = require('fs')
 var mkdirp = require('mkdirp')
 var path = require('path')
@@ -632,7 +632,7 @@ Server.prototype.addEndpointResource = function (options) {
 
       this.addComponent({
         aclKey,
-        docs: parsecomments(content),
+        docs: new ParseComments().parse(content),
         component,
         filepath,
         route
@@ -688,7 +688,7 @@ Server.prototype.addHook = function (options) {
     var opts = {
       route: 'hook:' + name,
       component: filepath,
-      docs: parsecomments(content),
+      docs: new ParseComments().parse(content),
       filepath: filepath
     }
 

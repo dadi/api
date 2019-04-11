@@ -49,7 +49,9 @@ Search.prototype.get = function (req, res, next) {
   }
 
   let aclCheck = Promise.resolve()
-  let searchCollections = (collections || '').split(',')
+  let requestCollections = typeof collections === 'string'
+    ? collections.split(',')
+    : []
 
   // If the client is not an admin, we must first find out what collections they
   // have read permissions for.
@@ -62,23 +64,35 @@ Search.prototype.get = function (req, res, next) {
         return CollectionModel.getByAclKey(aclKey)
       })
 
-      return allowedModels.filter(Boolean)
+      return allowedModels
+        .filter(Boolean)
+        .map(collection => collection.name)
     })
   }
 
   // At this point, `collections` contains either an array of the names of
   // the collections that the user has access to, or `undefined` if we're
   // dealing with an admin user that can access everything.
-  return aclCheck.then(collections => {
-    if (searchCollections.length > 0) {
-      // If `collections` isn't undefined, then it holds the set of collections
-      // which the user has access to. As such, `searchCollections` becomes the
-      // intersection between itself and `collections`.
-      if (collections !== undefined) {
-        searchCollections = searchCollections.filter(collection => {
-          return collections.includes(collection)
+  return aclCheck.then(allowedCollections => {
+    let searchCollections = []
+
+    if (requestCollections.length > 0) {
+      // If `allowedCollections` is undefined, it means that the user can
+      // access any collection, so we'll search on `requestCollections`.
+      // If `allowedCollections` isn't undefined, then it holds the set of
+      // collections which the user has access to. As such, we'll search on
+      // the intersection between `allowedCollections` and `requestCollections`.
+      if (allowedCollections === undefined) {
+        searchCollections = requestCollections
+      } else {
+        searchCollections = requestCollections.filter(collection => {
+          return allowedCollections.includes(collection)
         })
       }
+    } else {
+      searchCollections = allowedCollections === undefined
+        ? undefined
+        : allowedCollections
     }
 
     return searchModel.find({

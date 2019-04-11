@@ -1,7 +1,5 @@
 const config = require('./../../../config')
 const help = require('./../help')
-const model = require('../model')
-const searchModel = require('./../model/search')
 const url = require('url')
 
 const ID_PATTERN = '[a-fA-F0-9-]*'
@@ -158,57 +156,6 @@ Controller.prototype._prepareQueryOptions = function (options) {
 }
 
 Controller.prototype.ID_PATTERN = ID_PATTERN
-
-/**
- * Handle collection search endpoints
- * Example: /1.0/library/books/search?q=title
- */
-Controller.prototype.search = function (req, res, next) {
-  const minimumQueryLength = config.get('search.minQueryLength')
-  const path = url.parse(req.url, true)
-  const {q: query} = path.query
-  const {errors, queryOptions} = this._prepareQueryOptions(path.query)
-
-  if (!config.get('search.enabled')) {
-    const error = new Error('Not Implemented')
-
-    error.statusCode = 501
-    error.json = {
-      errors: [{
-        message: `Search is disabled or an invalid data connector has been specified.`
-      }]
-    }
-
-    return help.sendBackJSON(null, res, next)(error)
-  }
-
-  if (errors.length !== 0) {
-    return help.sendBackJSON(400, res, next)(null, queryOptions)
-  }
-
-  if (typeof query !== 'string' || query.length < minimumQueryLength) {
-    const error = new Error('Bad Request')
-
-    error.statusCode = 400
-    error.json = {
-      errors: [{
-        message: `Search query must be at least ${minimumQueryLength} characters.`
-      }]
-    }
-
-    return help.sendBackJSON(null, res, next)(error)
-  }
-
-  return searchModel.find({
-    collections: [this.model.name],
-    modelFactory: model,
-    query
-  }).then(response => {
-    return help.sendBackJSON(200, res, next)(null, response)
-  }).catch(error => {
-    return help.sendBackJSON(null, res, next)(error)
-  })
-}
 
 module.exports = function (model) {
   return new Controller(model)

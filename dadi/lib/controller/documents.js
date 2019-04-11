@@ -3,6 +3,8 @@ const config = require('./../../../config')
 const Controller = require('./index')
 const debug = require('debug')('api:controller')
 const help = require('./../help')
+const model = require('../model')
+const searchModel = require('./../model/search')
 const url = require('url')
 const workQueue = require('../workQueue')
 
@@ -237,6 +239,58 @@ Collection.prototype.registerRoutes = function (route, filePath) {
     }
 
     next()
+  })
+}
+
+Collection.prototype.search = function (req, res, next) {
+  const minimumQueryLength = config.get('search.minQueryLength')
+  const path = url.parse(req.url, true)
+  const {q: query} = path.query
+  const {errors, queryOptions} = this._prepareQueryOptions(path.query)
+
+  if (!config.get('search.enabled')) {
+    const error = new Error('Not Implemented')
+
+    error.statusCode = 501
+    error.json = {
+      errors: [{
+        message: `Search is disabled or an invalid data connector has been specified.`
+      }]
+    }
+
+    return help.sendBackJSON(null, res, next)(error)
+  }
+
+  if (errors.length !== 0) {
+    return help.sendBackJSON(400, res, next)(null, queryOptions)
+  }
+
+  if (typeof query !== 'string' || query.length < minimumQueryLength) {
+    const error = new Error('Bad Request')
+
+    error.statusCode = 400
+    error.json = {
+      errors: [{
+        message: `Search query must be at least ${minimumQueryLength} characters.`
+      }]
+    }
+
+    return help.sendBackJSON(null, res, next)(error)
+  }
+
+  return this.model.validateAccess({
+    client: req.dadiApiClient,
+    type: 'read'
+  }).then(() => {
+    return searchModel.find({
+      collections: [this.model.name],
+      modelFactory: model,
+      query
+    })
+  }).then(response => {
+    return help.sendBackJSON(200, res, next)(null, response)
+  }).catch(error => {
+    return help.sendBackJSON(null, res, next)(error)
   })
 }
 

@@ -218,8 +218,6 @@ describe('Cache', function (done) {
       config.set('caching.directory.enabled', true)
       config.set('caching.redis.enabled', false)
 
-      cache.reset()
-
       app.start(function () {
         help.dropDatabase('testdb', function (err) {
           if (err) return done(err)
@@ -242,7 +240,8 @@ describe('Cache', function (done) {
     })
 
     it('should save responses to the file system', function (done) {
-      var spy = sinon.spy(fs, 'createWriteStream')
+      let cacheHandler = cache().cache.cacheHandler
+      var spy = sinon.spy(cacheHandler, 'set')
 
       request('http://' + config.get('server.host') + ':' + config.get('server.port'))
       .get('/vtest/testdb/test-schema')
@@ -255,9 +254,9 @@ describe('Cache', function (done) {
           spy.called.should.be.true
           var args = spy.getCall(0).args
 
-          args[0].indexOf('cache/api').should.be.above(-1)
-
           spy.restore()
+          args[0].indexOf('.gz').should.be.above(-1)
+
           done()
         }, 1000)
       })
@@ -269,7 +268,7 @@ describe('Cache', function (done) {
       var oldTTL = config.get('caching.ttl')
       config.set('caching.ttl', 1)
 
-      cache.reset()
+      // cache.reset()
 
       var _done = done
       done = function (err) {

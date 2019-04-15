@@ -1,5 +1,6 @@
 const acl = require('./../../dadi/lib/model/acl')
 const bcrypt = require('bcrypt')
+const exec = require('child_process').exec
 const fs = require('fs-extra')
 const path = require('path')
 const should = require('should')
@@ -7,7 +8,7 @@ const connection = require(__dirname + '/../../dadi/lib/model/connection')
 const config = require(__dirname + '/../../config')
 const request = require('supertest')
 
-function hashClientSecret(client) {
+function hashClientSecret (client) {
   if (client._hashVersion === undefined && config.get('auth.hashSecrets')) {
     client._hashVersion = 1
   }
@@ -337,28 +338,13 @@ module.exports.removeTestClients = function (done) {
 }
 
 module.exports.clearCache = function () {
-  var deleteFolderRecursive = function (filepath) {
-    try {
-      if (fs.existsSync(filepath) && fs.lstatSync(filepath).isDirectory()) {
-        fs.readdirSync(filepath).forEach(function (file, index) {
-          var curPath = filepath + '/' + file
-          if (fs.lstatSync(curPath).isDirectory()) { // recurse
-            deleteFolderRecursive(curPath)
-          } else { // delete file
-            fs.unlinkSync(path.resolve(curPath))
-          }
-        })
-        fs.rmdirSync(filepath)
-      }
-    } catch (err) {
-      console.log(err)
+  let dir = path.resolve(config.get('caching.directory.path'))
+  exec(`rm -rf ${dir}`, (err, result) => {
+    if (err) {
+      console.log(`Error removing directory ${dir}`, err)
+    } else {
+      console.log(`Removed directory ${dir}`)
     }
-  }
-
-    // for each directory in the cache folder, remove all files then
-    // delete the folder
-  fs.readdirSync(config.get('caching.directory.path')).forEach(function (dirname) {
-    deleteFolderRecursive(path.join(config.get('caching.directory.path'), dirname))
   })
 }
 

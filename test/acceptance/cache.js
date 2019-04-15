@@ -40,6 +40,7 @@ describe('Cache', function (done) {
 
   it('should use cache if available', function (done) {
     config.set('caching.directory.enabled', true)
+    help.clearCache()
 
     app.start(function () {
       help.dropDatabase('testdb', function (err) {
@@ -49,7 +50,6 @@ describe('Cache', function (done) {
           if (err) return done(err)
 
           bearerToken = token
-          help.clearCache()
 
           var client = request('http://' + config.get('server.host') + ':' + config.get('server.port'))
 
@@ -89,7 +89,6 @@ describe('Cache', function (done) {
                     res3.headers['x-cache'].should.eql('HIT')
 
                     help.removeTestClients(function () {
-                      help.clearCache()
                       app.stop(done)
                     })
                   })
@@ -104,6 +103,7 @@ describe('Cache', function (done) {
 
   it('should allow bypassing cache with query string flag', function (done) {
     config.set('caching.directory.enabled', true)
+    help.clearCache()
 
     app.start(function () {
       help.dropDatabase('testdb', function (err) {
@@ -113,7 +113,6 @@ describe('Cache', function (done) {
           if (err) return done(err)
 
           bearerToken = token
-          help.clearCache()
 
           var client = request('http://' + config.get('server.host') + ':' + config.get('server.port'))
 
@@ -147,7 +146,6 @@ describe('Cache', function (done) {
                 res2.headers['x-cache-lookup'].should.eql('HIT')
 
                 help.removeTestClients(function () {
-                  help.clearCache()
                   app.stop(done)
                 })
               })
@@ -161,6 +159,7 @@ describe('Cache', function (done) {
   it('should allow disabling through config', function (done) {
     config.set('caching.directory.enabled', false)
     config.set('caching.redis.enabled', false)
+    help.clearCache()
 
     var spy = sinon.spy(fs, 'createWriteStream')
 
@@ -170,7 +169,6 @@ describe('Cache', function (done) {
         help.getBearerToken(function (err, token) {
           if (err) return done(err)
           bearerToken = token
-          help.clearCache()
 
           var client = request('http://' + config.get('server.host') + ':' + config.get('server.port'))
 
@@ -217,6 +215,7 @@ describe('Cache', function (done) {
     beforeEach(function (done) {
       config.set('caching.directory.enabled', true)
       config.set('caching.redis.enabled', false)
+      help.clearCache()
 
       app.start(function () {
         help.dropDatabase('testdb', function (err) {
@@ -226,7 +225,6 @@ describe('Cache', function (done) {
             if (err) return done(err)
 
             bearerToken = token
-            help.clearCache()
             done()
           })
         })

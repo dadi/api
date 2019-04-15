@@ -402,7 +402,7 @@ describe('Application', function () {
             docs.should.exist
             docs.should.be.Array
 
-            docs[0].lead.should.eql('Adds two numbers together.')
+            docs[0].description.should.eql('Adds two numbers together.')
 
             done()
           })

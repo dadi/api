@@ -1,4 +1,5 @@
 const crypto = require('crypto')
+const etag = require('etag')
 const lengthStream = require('length-stream')
 const path = require('path')
 const pathToRegexp = require('path-to-regexp')
@@ -95,12 +96,24 @@ Cache.prototype.init = function () {
         return cache
           .getMetadata(cacheKey)
           .then(metadata => {
+            res.statusCode = 200
             res.setHeader('X-Cache-Lookup', 'HIT')
 
             let compressed = false
 
-            if (metadata && metadata.compression === 'gzip') {
-              compressed = true
+            if (metadata) {
+              if (metadata.compression === 'gzip') {
+                compressed = true
+              }
+
+              if (metadata.etag) {
+                res.setHeader('ETag', metadata.etag)
+
+                if (req.headers['if-none-match'] === metadata.etag) {
+                  res.statusCode = 304
+                  return res.end()
+                }
+              }
             }
 
             if (noCache) {
@@ -170,12 +183,15 @@ Cache.prototype.init = function () {
         _end.apply(res, arguments)
 
         // If response is not 200 don't cache.
-        if (res.statusCode !== 200) return
+        if (res.statusCode !== 200) {
+          return
+        }
 
         // Cache the content.
         cache.set(cacheKey, data, {
           metadata: {
-            compression: !acceptEncoding ? 'none' : acceptEncoding
+            compression: !acceptEncoding ? 'none' : acceptEncoding,
+            etag: etag(data)
           }
         }).then(() => {
 

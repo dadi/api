@@ -2,6 +2,7 @@ const cache = require('./cache')
 const config = require('./../../config')
 const crypto = require('crypto')
 const ERROR_CODES = require('./../../error-codes')
+const etag = require('etag')
 const formatError = require('@dadi/format-error')
 const log = require('@dadi/logger')
 const stackTrace = require('stack-trace')
@@ -82,12 +83,6 @@ module.exports.sendBackJSON = function (successCode, res, next) {
 
     let resBody = body ? JSON.stringify(body) : null
 
-    // log response if it's already been sent
-    if (res.finished) {
-      log.info({res: res}, 'Response already sent. Attempting to send results: ' + resBody)
-      return
-    }
-
     if (originalRequest && module.exports.shouldCompress(originalRequest)) {
       res.setHeader('Content-Encoding', 'gzip')
 
@@ -105,6 +100,17 @@ module.exports.sendBackJSON = function (successCode, res, next) {
 
     return Promise.resolve(resBody).then(resBody => {
       res.setHeader('Content-Type', 'application/json')
+
+      if (resBody) {
+        let etagResult = etag(resBody)
+        res.setHeader('ETag', etagResult)
+
+        if (originalRequest && originalRequest.headers['if-none-match'] === etagResult) {
+          res.statusCode = 304
+          return res.end()
+        }
+      }
+
       res.statusCode = statusCode
       res.end(resBody)
     })

@@ -42,6 +42,7 @@
     "debug": "3.1.0",
     "deep-clone": "^3.0.2",
     "deepmerge": "^2.1.0",
+    "etag": "^1.8.1",
     "fs-extra": "^3.0.1",
     "imagesize": "^1.0.0",
     "js-promise-queue": "^1.1.0",
@@ -52,7 +53,7 @@
     "moment": "2.19.3",
     "natural": "^0.6.1",
     "object-path": "^0.11.4",
-    "parse-comments": "0.4.3",
+    "parse-comments": "^1.0.0",
     "path-to-regexp": "~1.7.0",
     "recovery": "^0.2.6",
     "require-directory": "^2.1.1",
@@ -65,7 +66,7 @@
     "vary": "^1.1.2"
   },
   "devDependencies": {
-    "@commitlint/cli": "~4.1.1",
+    "@commitlint/cli": "^7.5.2",
     "@commitlint/config-angular": "~3.1.1",
     "aws-sdk-mock": "1.6.1",
     "coveralls": "^3.0.1",
@@ -83,7 +84,7 @@
     "should": "4.0.4",
     "sinon": "2.3.2",
     "snazzy": "7.0.0",
-    "snyk": "^1.104.1",
+    "snyk": "^1.147.3",
     "standard": "8.6.0",
     "supertest": "^3.1.0",
     "uuid": "^3.3.2"

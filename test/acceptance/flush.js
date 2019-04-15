@@ -35,6 +35,8 @@ describe('Cache', function (done) {
     })
 
     beforeEach(function (done) {
+      help.clearCache()
+
       app.start(function () {
         help.dropDatabase('testdb', function (err) {
           if (err) return done(err)
@@ -50,8 +52,6 @@ describe('Cache', function (done) {
                 if (err) return done(err)
 
                 bearerToken = token
-
-                help.clearCache()
 
                 cacheKeys = [] // resets the array for the next test
 
@@ -391,6 +391,7 @@ describe('Cache', function (done) {
 
     beforeEach(function (done) {
       cache.reset()
+      help.clearCache()
 
       c = cache(app)
       c.cache.cacheHandler.redisClient = fakeredis.createClient()
@@ -426,8 +427,6 @@ describe('Cache', function (done) {
                 if (err) return done(err)
 
                 bearerToken = token
-
-                help.clearCache()
 
                 help.createDoc(adminBearerToken, function (err, doc) {
                   if (err) return done(err)

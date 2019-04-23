@@ -1,3 +1,4 @@
+const config = require('../../config')
 const DEBOUNCE_TIME = config.get('workQueue.debounceTime')
 const POLLING_TIME = config.get('workQueue.pollingTime')
 

@@ -35,8 +35,6 @@ describe('Cache', function (done) {
     })
 
     beforeEach(function (done) {
-      help.clearCache()
-
       app.start(function () {
         help.dropDatabase('testdb', function (err) {
           if (err) return done(err)

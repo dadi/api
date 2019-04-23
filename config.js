@@ -437,6 +437,18 @@ var conf = convict({
       format: Boolean,
       default: true
     }
+  },
+  workQueue: {
+    debounceTime: {
+      doc: 'The amount of idle time (in ms) required for the work queue to start a background job',
+      format: Number,
+      default: 500
+    },
+    pollingTime: {
+      doc: 'The interval (in ms) at which the work queue checks for new background jobs',
+      format: Number,
+      default: 200
+    }
   }
 })
 

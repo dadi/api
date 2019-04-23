@@ -1,6 +1,5 @@
-const DEBOUNCE_TIME = 500
-const POLLING_TIME = 200
-// const MAXIMUM_POOL_SIZE = 1
+const DEBOUNCE_TIME = config.get('workQueue.debounceTime')
+const POLLING_TIME = config.get('workQueue.pollingTime')
 
 class WorkQueue {
   constructor () {

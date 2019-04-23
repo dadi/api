@@ -415,7 +415,7 @@ Search.prototype.indexDocument = function ({
     const newWords = words.filter(word => {
       return existingWords.every(result => result.word !== word)
     })
-    const data = newWords.map(word => ({ word }))
+    const data = newWords.map(word => ({word}))
 
     if (newWords.length > 0) {
       return this.wordConnection.datastore.insert({

@@ -80,9 +80,11 @@ Search.prototype.batchIndex = function (page = 1, limit = 1000) {
   if (!Object.keys(this.indexableFields).length) return
 
   const skip = (page - 1) * limit
-  const fields = Object.keys(this.indexableFields).map(key => {
-    return {[key]: 1}
-  })
+  const fields = Object.keys(this.indexableFields).reduce((fields, field) => {
+    fields[field] = 1
+
+    return fields
+  }, {})
   const options = {
     fields,
     limit,
@@ -96,7 +98,7 @@ Search.prototype.batchIndex = function (page = 1, limit = 1000) {
     this.runBatchIndex(options)
   }
 
-  this.model.connection.once('connect', database => {
+  this.model.connection.once('connect', () => {
     this.runBatchIndex(options)
   })
 }

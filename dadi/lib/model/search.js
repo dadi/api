@@ -5,7 +5,7 @@ const Connection = require('./../model/connection')
 const createMetadata = require('@dadi/metadata')
 const debug = require('debug')('api:search')
 const natural = require('natural')
-// const promiseQueue = require('js-promise-queue')
+const promiseQueue = require('js-promise-queue')
 const workQueue = require('./../workQueue')
 
 const PAGE_SIZE = 10
@@ -68,35 +68,57 @@ const Search = function () {
 }
 
 /**
- * Index an entire collection, in batches of documents.
+ * Indexes for search every document in the given collection.
  *
- * @param  {Number} page - the current page of documents to process
- * @param  {Number} limit - the number of documents to process
+ * @param {Object} model
  */
-// Search.prototype.batchIndex = function (page = 1, limit = 1000) {
-//   if (!Object.keys(this.indexableFields).length) return
+Search.prototype.batchIndexCollection = function (model, {pageNumber = 1, pageSize = 1} = {}) {
+  const options = {
+    limit: pageSize,
+    skip: (pageNumber - 1) * pageSize
+  }
 
-//   const skip = (page - 1) * limit
-//   const fields = Object.keys(this.indexableFields).map(key => {
-//     return {[key]: 1}
-//   })
-//   const options = {
-//     fields,
-//     limit,
-//     page,
-//     skip
-//   }
+  return model.find({
+    options,
+    query: {}
+  }).then(({metadata, results}) => {
+    const indexableFields = this.getIndexableFields(model.schema)
+    const factoryFn = document => {
+      return this.indexDocument({
+        collection: model.name,
+        document,
+        indexableFields
+      })
+    }
 
-//   debug(`Indexing page ${page} (${limit} per page)`)
+    return promiseQueue(results, factoryFn, {interval: 20}).then(() => {
+      if ((pageNumber * pageSize) < metadata.totalCount) {
+        return this.batchIndexCollection(model, {
+          pageNumber: pageNumber + 1
+        })
+      }
+    })
+  })
+}
 
-//   if (this.model.connection.db) {
-//     this.runBatchIndex(options)
-//   }
+/**
+ * Takes an array of models and indexes for search alls documents in the subset
+ * of collections that have indexable fields.
+ *
+ * @param {Array} models
+ */
+Search.prototype.batchIndexCollections = function (models) {
+  // We're only interested in models with at least one indexable field.
+  const indexableModels = models.filter(model => {
+    const fields = this.getIndexableFields(model.schema)
 
-//   this.model.connection.once('connect', database => {
-//     this.runBatchIndex(options)
-//   })
-// }
+    return Object.keys(fields).length > 0
+  })
+
+  return promiseQueue(indexableModels, this.batchIndexCollection.bind(this), {
+    interval: 100
+  })
+}
 
 /**
  * Removes entries in the collection's search collection that match the
@@ -557,37 +579,6 @@ Search.prototype.initialise = function () {
     database.index(this.wordCollection, SCHEMA_WORDS.settings.index)
   })
 }
-
-/**
- * Performs indexing across an entire collection.
- *
- * @param  {Object} options find query options.
- */
-// Search.prototype.runBatchIndex = function (options) {
-//   this.model.connection.datastore.find({
-//     collection: this.model.name,
-//     options: options,
-//     query: {},
-//     schema: this.model.schema,
-//     settings: this.model.settings
-//   }).then(({metadata, results}) => {
-//     if (results && results.length) {
-//       debug(
-//         `Indexed ${results.length} records for ${this.model.name}`
-//       )
-
-//       return promiseQueue(results, this.indexDocument.bind(this), {
-//         interval: 300
-//       }).then(response => {
-//         debug(`Indexed page ${options.page}/${metadata.totalPages}`)
-
-//         if (options.page * options.limit < metadata.totalCount) {
-//           return this.batchIndex(options.page + 1, options.limit)
-//         }
-//       })
-//     }
-//   })
-// }
 
 Search.prototype.runSecondPass = function ({
   documents,

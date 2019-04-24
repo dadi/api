@@ -35,7 +35,6 @@ const debug = require('debug')('api:model')
 function find ({
   client,
   isRestIDQuery,
-  language,
   query = {},
   options = {},
   version

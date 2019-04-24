@@ -1,9 +1,10 @@
 const config = require('../../config')
-const DEBOUNCE_TIME = config.get('workQueue.debounceTime')
-const POLLING_TIME = config.get('workQueue.pollingTime')
 
 class WorkQueue {
   constructor () {
+    this.debounceTime = config.get('workQueue.debounceTime')
+    this.pollingTime = config.get('workQueue.pollingTime')
+
     this.backgroundPool = []
     this.foregroundPool = new Map()
 
@@ -29,7 +30,7 @@ class WorkQueue {
       }
 
       this.clearDebounceTimer()
-    }, DEBOUNCE_TIME)
+    }, this.debounceTime)
   }
 
   finishForegroundJob (key) {
@@ -47,7 +48,7 @@ class WorkQueue {
       }
 
       this.dequeueBackgroundJob()
-    }, POLLING_TIME)
+    }, this.pollingTime)
   }
 
   startForegroundJob () {
@@ -82,3 +83,4 @@ class WorkQueue {
 }
 
 module.exports = new WorkQueue()
+module.exports.WorkQueue = WorkQueue

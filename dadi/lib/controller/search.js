@@ -17,7 +17,12 @@ const Search = function (server, modelFactory) {
  */
 Search.prototype.get = function (req, res, next) {
   const {query: options} = url.parse(req.url, true)
-  const {collections, page = 1, q: query} = options
+  const {
+    collections,
+    lang: language,
+    page = 1,
+    q: query
+  } = options
   const minimumQueryLength = config.get('search.minQueryLength')
 
   if (!config.get('search.enabled')) {
@@ -97,6 +102,7 @@ Search.prototype.get = function (req, res, next) {
 
     return searchModel.find({
       collections: searchCollections,
+      language,
       modelFactory: CollectionModel,
       page,
       query

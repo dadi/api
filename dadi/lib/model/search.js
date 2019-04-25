@@ -4,6 +4,7 @@ const config = require('./../../../config')
 const Connection = require('./../model/connection')
 const createMetadata = require('@dadi/metadata')
 const debug = require('debug')('api:search')
+const logger = require('@dadi/logger')
 const natural = require('natural')
 const promiseQueue = require('js-promise-queue')
 const workQueue = require('./../workQueue')
@@ -156,6 +157,7 @@ Search.prototype.delete = function (documents) {
  * be done by supplying a `page` parameter.
  *
  * @param  {Array<String>} collections
+ * @param  {String}        language
  * @param  {Function}      modelFactory
  * @param  {Number}        page
  * @param  {String}        query
@@ -164,16 +166,19 @@ Search.prototype.delete = function (documents) {
  */
 Search.prototype.find = function ({
   collections,
+  fields,
+  language,
   modelFactory,
   page,
-  query
+  query,
+  sort
 }) {
-  debug('find in %s: %s', this.indexCollection, query)
+  debug('Search find in %s: %s', this.indexCollection, query)
 
   const tokens = this.tokenise(query)
 
   // Find matches for the various tokens in the words collection.
-  return this.getWordsFromCollection(tokens).then(words => {
+  return this.findWords(tokens, language).then(words => {
     const wordIds = words.results.map(word => word._id.toString())
 
     // Find matches for the word IDs in the search index collection,
@@ -203,7 +208,8 @@ Search.prototype.find = function ({
 
       const documentIds = Object.keys(resultsMap[collection])
 
-      return model.find({
+      return model.get({
+        language,
         query: {
           _id: {
             $containsAny: documentIds
@@ -230,13 +236,136 @@ Search.prototype.find = function ({
     }).then(results => {
       const metadata = createMetadata({page}, documents.size)
 
+      // To ensure the search algorithm works effectively, it's not a good idea
+      // to exclude from the results any fields up until this point. Now that
+      // all the results have been computed, we must remove from the results
+      // any fields that may have been excluded due to a fields projection sent
+      // in the request.
+      const filteredResults = results.map(document => {
+        return this.formatDocumentForOutput(document, {fields})
+      })
+
       return {
-        results,
+        results: filteredResults,
         metadata: Object.assign({}, metadata, {
           search: query
         })
       }
     })
+  })
+}
+
+/**
+ * Query the "words" collection for results that match any of the words
+ * and the language specified. If there are no results, re-query the collection
+ * using a more relaxed search criteria, converting each word to a "contains"
+ * regular expression.
+ *
+ * @param  {Array}   words
+ * @param  {String}  language
+ * @return {Promise}
+ */
+Search.prototype.findWords = function (
+  words,
+  language = config.get('i18n.defaultLanguage')
+) {
+  const {fields: schema, settings} = SCHEMA_WORDS
+  const wordPairs = words.map(word => `${word}:${language}`)
+  const wordQuery = {
+    word: {'$containsAny': wordPairs}
+  }
+
+  return this.wordConnection.datastore.find({
+    collection: this.wordCollection,
+    options: {},
+    query: wordQuery,
+    schema,
+    settings
+  }).then(response => {
+    // Try a second pass with regular expressions.
+    if (response.results.length === 0) {
+      const regexWords = words.map(word => {
+        return new RegExp(`${word}(.*):${language}`)
+      })
+      const regexQuery = Object.assign({}, wordQuery, {
+        word: {'$containsAny': regexWords}
+      })
+
+      return this.wordConnection.datastore.find({
+        collection: this.wordCollection,
+        options: {},
+        query: regexQuery,
+        schema,
+        settings
+      })
+    }
+
+    return response
+  })
+}
+
+/**
+ * Receives a document about to be returned as search results and formats it
+ * for output, removing any fields that were excluded by a fields projection.
+ *
+ * @param  {Object} document
+ * @param  {Object} fields
+ */
+Search.prototype.formatDocumentForOutput = function (document, {fields}) {
+  const languageFieldCharacter = config.get('i18n.fieldCharacter')
+  const hasFieldsProjection = Boolean(fields)
+  const fieldsProjectionIsInclusive = hasFieldsProjection &&
+    Object.keys(fields).find(field => fields[field] === 1)
+  const idField = `${config.get('internalFieldsPrefix')}id`
+
+  if (!hasFieldsProjection) return document
+
+  return Object.keys(document).reduce((newDocument, fieldString) => {
+    const [field] = fieldString.split(languageFieldCharacter)
+
+    if (
+      fieldsProjectionIsInclusive && fields[field] === 1 ||
+      !fieldsProjectionIsInclusive && fields[field] !== 0 ||
+      fieldString === idField
+    ) {
+      newDocument[fieldString] = document[fieldString]
+    }
+
+    return newDocument
+  }, {})
+}
+
+/**
+ * Takes a Map that links languages to a list of words. For each language,
+ * it runs a query against the words collection to find whether a specific
+ * word+language pair already exists. The result is a flattened array of
+ * all word+language pairs found.
+ *
+ * @param  {Map}     wordsByLanguage
+ * @return {Promise}
+ */
+Search.prototype.getExistingWords = function (wordsByLanguage) {
+  const {fields: schema, settings} = SCHEMA_WORDS
+  const queries = Array.from(wordsByLanguage.keys()).map(language => {
+    const wordsArray = wordsByLanguage.get(language).map(word => {
+      return `${word}:${language}`
+    })
+
+    return this.wordConnection.datastore.find({
+      collection: this.wordCollection,
+      options: {},
+      query: {
+        word: {'$containsAny': wordsArray}
+      },
+      schema,
+      settings
+    })
+  })
+
+  return Promise.all(queries).then(responses => {
+    return responses.reduce((words, response) => {
+      return words.concat(response.results)
+    }, [])
   })
 }
 
@@ -327,27 +456,63 @@ Search.prototype.getIndexResults = function ({
 /**
  * Process a document for indexing. For each indexable field, the value is
  * tokenised. Each word is then processed individually and a weight relative
- * to the entire document is calculated. The result is a Map that relates
- * words to their weight.
+ * to the entire document is calculated. The result is a two-level Map. The
+ * first level contains language codes as keys. The second level maps words to
+ * their weight.
+ *
+ * Example input:
+ *
+ * ```json
+ * {"title": "hello world", "title:pt": "ola mundo"}
+ * ```
+ *
+ * Example output:
+ *
+ * ```json
+ * {
+ *   "en": {
+ *     "hello": 0.5,
+ *     "world": 0.5
+ *   },
+ *   "pt": {
+*      "ola": 0.5,
+*      "mundo": 0.5
+*    }
+ * }
+ * ```
  *
  * @param   {Object} document
  * @returns {Map}
  */
 Search.prototype.getWordsForDocument = function (document, indexableFields) {
   const documentWords = new Map()
+  const defaultLanguage = config.get('i18n.defaultLanguage')
+  const languageFieldCharacter = config.get('i18n.fieldCharacter')
 
-  Object.keys(document).forEach(field => {
+  Object.keys(document).forEach(fieldString => {
+    const [
+      field,
+      language = defaultLanguage
+    ] = fieldString.split(languageFieldCharacter)
+    const value = document[fieldString]
+
     // Ignore non-indexable fields.
     if (!indexableFields[field]) {
       return
     }
+
+    if (!documentWords.has(language)) {
+      documentWords.set(language, new Map())
+    }
+
+    const languageWords = documentWords.get(language)
 
     // The `weight` property defined in the `search` block of the field
     // definition. Defaults to 1 if not defined.
     const {weight: fieldWeight = 1} = indexableFields[field]
 
     // We start by converting the field into an array of tokens.
-    const tokens = this.tokenise(document[field])
+    const tokens = this.tokenise(value)
 
     // `fieldWords` maps each token present in the field to the number of
     // times it occurs.
@@ -371,48 +536,11 @@ Search.prototype.getWordsForDocument = function (document, indexableFields) {
       // L = total number of words in the field
       const weight = (occurrences * fieldWeight) / tokens.length
 
-      documentWords.set(word, (documentWords.get(word) || 0) + weight)
+      languageWords.set(word, (languageWords.get(word) || 0) + weight)
     })
   })
 
   return documentWords
-}
-
-/**
- * Query the "words" collection for results that match any of the words
- * specified. If there are no results, re-query the collection using the
- * same set of words but each converted to a regular expression.
- *
- * @param {Array} words - an array of words extracted from the search term
- * @return {Promise} Query against the words collection.
- */
-Search.prototype.getWordsFromCollection = function (words) {
-  const {fields: schema, settings} = SCHEMA_WORDS
-  const wordQuery = { word: { '$containsAny': words } }
-
-  return this.wordConnection.datastore.find({
-    query: wordQuery,
-    collection: this.wordCollection,
-    options: {},
-    schema,
-    settings
-  }).then(response => {
-    // Try a second pass with regular expressions.
-    if (response.results.length === 0) {
-      const regexWords = words.map(word => new RegExp(word))
-      const regexQuery = { word: { '$containsAny': regexWords } }
-
-      return this.wordConnection.datastore.find({
-        collection: this.wordCollection,
-        options: {},
-        query: regexQuery,
-        schema,
-        settings
-      })
-    }
-
-    return response
-  })
 }
 
 /**
@@ -427,17 +555,43 @@ Search.prototype.indexDocument = function ({
   document,
   indexableFields
 }) {
-  const wordsAndWeights = this.getWordsForDocument(document, indexableFields)
-  const words = Array.from(wordsAndWeights.keys())
+  const wordsAndWeightsByLanguage = this.getWordsForDocument(
+    document,
+    indexableFields
+  )
+
+  // A Map linking language codes to an array of words.
+  //
+  // Example:
+  // {"en" => ["hello", "world"], "pt" => ["ola", "mundo"]}
+  const wordsByLanguage = new Map()
+
+  // An array containing word+language pairs, separated by a `:`.
+  //
+  // Example:
+  // [{"language": "en", "word": "hello"}, {"language": "pt", "word": "ola"}]
+  const wordPairs = []
+
+  wordsAndWeightsByLanguage.forEach((wordsAndWeights, language) => {
+    const wordsForLanguage = Array.from(wordsAndWeights.keys())
+
+    wordsByLanguage.set(language, wordsForLanguage)
+
+    wordsForLanguage.forEach(word => {
+      wordPairs.push({language, word})
+    })
+  })
 
   // Look into the words collection to determine which of the document's words,
-  // if any, already exist in the words collection. The ones that doesn't, must
+  // if any, already exist in the words collection. The ones that don't, must
   // be inserted.
-  return this.getWordsFromCollection(words).then(({results: existingWords}) => {
-    const newWords = words.filter(word => {
-      return existingWords.every(result => result.word !== word)
+  return this.getExistingWords(wordsByLanguage).then(existingWords => {
+    const newWords = wordPairs.filter(({language, word}) => {
+      return existingWords.every(entry => entry.word !== `${word}:${language}`)
     })
-    const data = newWords.map(word => ({word}))
+    const data = newWords.map(({language, word}) => {
+      return {word: `${word}:${language}`}
+    })
 
     if (newWords.length > 0) {
       return this.wordConnection.datastore.insert({
@@ -468,11 +622,13 @@ Search.prototype.indexDocument = function ({
     // We're now ready to insert the results from processing the document into
     // the search collection. Entries will contain the ID of the document, the
     // ID of the word and its weight relative to the document.
-    const data = wordEntries.map(({_id, word}) => {
+    const data = wordEntries.map(({_id, word: wordPair}) => {
+      const [word, language] = wordPair.split(':')
+
       return {
         collection,
         document: document._id,
-        weight: wordsAndWeights.get(word),
+        weight: wordsAndWeightsByLanguage.get(language).get(word),
         word: _id
       }
     })
@@ -484,8 +640,8 @@ Search.prototype.indexDocument = function ({
       schema: SCHEMA_SEARCH.fields,
       settings: SCHEMA_SEARCH.settings
     })
-  }).catch(err => {
-    console.log(err)
+  }).catch(error => {
+    logger.error({module: 'search'}, error)
   })
 }
 
@@ -580,6 +736,19 @@ Search.prototype.initialise = function () {
   })
 }
 
+/**
+ * Takes a set of documents that match the search criteria and runs a second
+ * pass in order to find the most relevant subset. It takes a pool of results
+ * of up to POOL_SIZE documents and reduces it down to at most PAGE_SIZE. It
+ * also takes care of paginating the results as per the `page` and `pageSize`
+ * arguments.
+ *
+ * @param  {Array}  documents
+ * @param  {Object} indexableFields
+ * @param  {Number} page
+ * @param  {Number} pageSize
+ * @param  {String} query
+ */
 Search.prototype.runSecondPass = function ({
   documents,
   indexableFields,
@@ -602,6 +771,8 @@ Search.prototype.runSecondPass = function ({
   documents.forEach(({collection, document, weight: indexWeight}) => {
     const fields = indexableFields[collection]
     const weight = Object.keys(fields).reduce((weight, field) => {
+      if (!document[field]) return weight
+
       const {distance} = natural.LevenshteinDistance(query, document[field], {
         search: true
       })

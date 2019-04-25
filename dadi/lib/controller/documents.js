@@ -245,7 +245,7 @@ Collection.prototype.registerRoutes = function (route, filePath) {
 Collection.prototype.search = function (req, res, next) {
   const minimumQueryLength = config.get('search.minQueryLength')
   const path = url.parse(req.url, true)
-  const {q: query} = path.query
+  const {lang: language, q: query} = path.query
   const {errors, queryOptions} = this._prepareQueryOptions(path.query)
 
   if (!config.get('search.enabled')) {
@@ -284,8 +284,11 @@ Collection.prototype.search = function (req, res, next) {
   }).then(() => {
     return searchModel.find({
       collections: [this.model.name],
+      fields: queryOptions.fields,
+      language,
       modelFactory: model,
-      query
+      query,
+      sort: queryOptions.sort
     })
   }).then(response => {
     return help.sendBackJSON(200, res, next)(null, response)

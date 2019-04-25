@@ -6,7 +6,7 @@ const should = require('should')
 const sinon = require('sinon')
 const request = require('supertest')
 
-describe.only('Search', function () {
+describe('Search', function () {
   this.timeout(4000)
 
   const client = request(`http://${config.get('server.host')}:${config.get('server.port')}`)
@@ -40,28 +40,20 @@ describe.only('Search', function () {
   
             const schema = {
               'fields': {
-                'field1': {
-                  'type': 'String',
-                  'required': false
-                },
                 'title': {
                   'type': 'String',
-                  'required': false,
                   'search': {
                     'weight': 2
                   }
                 },
-                'field2': {
-                  'type': 'Number',
-                  'required': false
+                'author': {
+                  'type': 'String',
+                  'search': {
+                    'weight': 1
+                  }
                 },
-                'field3': {
-                  'type': 'Object',
-                  'required': false
-                },
-                '_fieldWithUnderscore': {
-                  'type': 'Object',
-                  'required': false
+                'year': {
+                  'type': 'Number'
                 }
               },
               'settings': {
@@ -70,11 +62,11 @@ describe.only('Search', function () {
             }
   
             help.writeTempFile(
-              'temp-workspace/collections/vtest/testdb/collection.test-schema.json',
+              'temp-workspace/collections/vtest/testdb/collection.first-schema.json',
               schema,
               callback1 => {
                 help.writeTempFile(
-                  'temp-workspace/collections/v1/testdb/collection.test-schema.json',
+                  'temp-workspace/collections/vtest/testdb/collection.second-schema.json',
                   schema,
                   callback2 => {
                     cleanupFn = () => {
@@ -103,12 +95,12 @@ describe.only('Search', function () {
     })
   })
 
-  describe('when search is disabled', function () {
-    it('should return 501 when calling a /search endpoint', done => {
+  describe('Single collection search', () => {
+    it('should return 501 when search is disabled', done => {
       config.set('search.enabled', false)
 
       client
-      .get('/vtest/testdb/test-schema/search')
+      .get('/vtest/testdb/first-schema/search?q=something')
       .set('Authorization', 'Bearer ' + bearerToken)
       .expect(501)
       .end((err, res) => {
@@ -117,7 +109,1164 @@ describe.only('Search', function () {
       })
     })
 
-    it('should return 404 when calling the batch index endpoint', done => {
+    it('should return 404 when searching a collection that does not exist', done => {
+      client
+      .get('/vtest/testdb/invalid-collection/search?q=quick%20brown')
+      .set('Authorization', 'Bearer ' + bearerToken)
+      .expect(404, done)
+    })
+
+    it('should return 400 when searching with no query', done => {
+      client
+      .get('/vtest/testdb/first-schema/search')
+      .set('Authorization', 'Bearer ' + bearerToken)
+      .expect(400)
+      .end(done)
+    })
+
+    it('should return 400 when searching with a short query', done => {
+      client
+      .get('/vtest/testdb/first-schema/search?q=xx')
+      .set('Authorization', 'Bearer ' + bearerToken)
+      .expect(400)
+      .end((err, res) => {
+        done(err)
+      })
+    })
+
+    it('should return empty results when no documents match a query', done => {
+      client
+      .get('/vtest/testdb/first-schema/search?q=xxx')
+      .set('Authorization', 'Bearer ' + bearerToken)
+      .expect(200)
+      .end((err, res) => {
+        if (err) return done(err)
+
+        should.exist(res.body.results)
+        res.body.results.should.be.Array
+        res.body.results.length.should.eql(0)
+
+        done()
+      })
+    })
+
+    it('should return results when documents match a query', done => {
+      const doc = {
+        title: 'The quick brown fox jumps over the lazy dog'
+      }
+
+      client
+      .post('/vtest/testdb/first-schema')
+      .set('Authorization', 'Bearer ' + bearerToken)
+      .set('content-type', 'application/json')
+      .send(doc)
+      .expect(200)
+      .end((err, res) => {
+        setTimeout(() => {
+          client
+          .get('/vtest/testdb/first-schema/search?q=quick%20brown')
+          .set('Authorization', 'Bearer ' + bearerToken)
+          .expect(200)
+          .end((err, res) => {
+            if (err) return done(err)
+
+            should.exist(res.body.results)
+  
+            res.body.results.should.be.Array
+            res.body.results.length.should.eql(1)
+  
+            done()
+          })
+        }, 1000)
+      })
+    })
+
+    it('should update the index on update of documents', done => {
+      const doc = {
+        author: 'Leo Tolstoy',
+        title: 'War and Peace'
+      }
+
+      client
+      .post('/vtest/testdb/first-schema')
+      .set('Authorization', 'Bearer ' + bearerToken)
+      .set('content-type', 'application/json')
+      .send(doc)
+      .expect(200)
+      .end((err, res) => {
+        let insertedDocument = res.body.results[0]
+
+        setTimeout(() => {
+          client
+          .get('/vtest/testdb/first-schema/search?q=peace')
+          .set('Authorization', 'Bearer ' + bearerToken)
+          .expect(200)
+          .end((err, res) => {
+            if (err) return done(err)
+            should.exist(res.body.results)
+  
+            res.body.results.should.be.Array
+            res.body.results.length.should.eql(1)
+  
+            doc.author = 'Gabriel García Márquez'
+            doc.title = 'Love in the Time of Cholera'
+  
+            client
+            .put('/vtest/testdb/first-schema/' + insertedDocument._id)
+            .set('Authorization', 'Bearer ' + bearerToken)
+            .set('content-type', 'application/json')
+            .send(doc)
+            .expect(200)
+            .end((err, res) => {
+              setTimeout(() => {
+                client
+                .get('/vtest/testdb/first-schema/search?q=peace')
+                .set('Authorization', 'Bearer ' + bearerToken)
+                .expect(200)
+                .end((err, res) => {
+                  if (err) return done(err)
+                  should.exist(res.body.results)
+    
+                  res.body.results.should.be.Array
+                  res.body.results.length.should.eql(0)
+    
+                  client
+                  .get('/vtest/testdb/first-schema/search?q=love')
+                  .set('Authorization', 'Bearer ' + bearerToken)
+                  .expect(200)
+                  .end((err, res) => {
+                    if (err) return done(err)
+                    should.exist(res.body.results)
+    
+                    res.body.results.should.be.Array
+                    res.body.results.length.should.eql(1)
+    
+                    res.body.results[0]._id.should.eql(insertedDocument._id)
+    
+                    done()
+                  })
+                })
+              }, 800)
+            })
+          })
+        }, 800)
+      })
+    })
+
+    it('should return metadata containing the search term', done => {
+      const doc = {
+        title: 'The quick brown fox jumps over the lazy dog'
+      }
+
+      client
+      .post('/vtest/testdb/first-schema')
+      .set('Authorization', 'Bearer ' + bearerToken)
+      .set('content-type', 'application/json')
+      .send(doc)
+      .expect(200)
+      .end((err, res) => {
+        client
+        .get('/vtest/testdb/first-schema/search?q=quick%20brown')
+        .set('Authorization', 'Bearer ' + bearerToken)
+        .expect(200)
+        .end((err, res) => {
+          if (err) return done(err)
+          should.exist(res.body.metadata)
+          should.exist(res.body.metadata.search)
+          res.body.metadata.search.should.eql('quick brown')
+
+          done()
+        })
+      })
+    })
+
+    describe('ACL', () => {
+      it('should return 410 when searching a collection which the client has no read access to', done => {
+        const doc = {
+          title: 'The quick brown fox jumps over the lazy dog'
+        }
+        const testClient = {
+          clientId: 'johndoe',
+          secret: 'squirrel',
+          resources: {}
+        }
+  
+        client
+        .post('/vtest/testdb/first-schema')
+        .set('Authorization', 'Bearer ' + bearerToken)
+        .set('content-type', 'application/json')
+        .send(doc)
+        .expect(200)
+        .end((err, res) => {
+          setTimeout(() => {
+            help.createACLClient(testClient).then(() => {
+              client
+              .post(config.get('auth.tokenUrl'))
+              .set('content-type', 'application/json')
+              .send({
+                clientId: testClient.clientId,
+                secret: testClient.secret
+              })
+              .expect(200)
+              .expect('content-type', 'application/json')
+              .end((err, res) => {
+                if (err) return done(err)
+
+                const clientToken = res.body.accessToken
+
+                client
+                .get('/vtest/testdb/first-schema/search?q=quick%20brown')
+                .set('Authorization', 'Bearer ' + clientToken)
+                .expect(403)
+                .end((err, res) => {
+                  if (err) return done(err)
+
+                  res.body.code.should.eql('API-0006')
+                  should.not.exist(res.body.results)
+                  should.not.exist(res.body.metadata)
+        
+                  done()
+                })
+              })
+            })
+          }, 1000)
+        })
+      })
+
+      it('should return results when a non-admin client has read access to the collection', done => {
+        const doc = {
+          title: 'Love in the Time of Cholera',
+          year: 1985
+        }
+        const testClient = {
+          clientId: 'johndoe',
+          secret: 'squirrel',
+          resources: {
+            'collection:testdb_first-schema': {
+              read: true
+            }
+          }
+        }
+
+        client
+        .post('/vtest/testdb/first-schema')
+        .set('Authorization', 'Bearer ' + bearerToken)
+        .set('content-type', 'application/json')
+        .send(doc)
+        .expect(200)
+        .end((err, res) => {
+          setTimeout(() => {
+            help.createACLClient(testClient).then(() => {
+              client
+              .post(config.get('auth.tokenUrl'))
+              .set('content-type', 'application/json')
+              .send({
+                clientId: testClient.clientId,
+                secret: testClient.secret
+              })
+              .expect(200)
+              .expect('content-type', 'application/json')
+              .end((err, res) => {
+                if (err) return done(err)
+
+                const clientToken = res.body.accessToken
+
+                client
+                .get('/vtest/testdb/first-schema/search?q=love')
+                .set('Authorization', 'Bearer ' + clientToken)
+                .expect(200)
+                .end((err, res) => {
+                  if (err) return done(err)
+
+                  should.exist(res.body.results)
+  
+                  res.body.results.should.be.Array
+                  res.body.results.length.should.eql(1)
+                  res.body.results[0].title.should.eql(doc.title)
+                  res.body.results[0].year.should.eql(doc.year)
+        
+                  done()
+                })
+              })
+            })
+          }, 1000)
+        })
+      })
+
+      it('should not show any fields which the client has no read access to ("includes" projection)', done => {
+        const documents = [
+          {
+            author: 'Antoine de Saint-Exupéry',
+            title: 'The Little Prince',
+            year: 1943
+          },
+          {
+            author: 'Hans Christian Andersen',
+            title: 'The Little Mermaid',
+            year: 1837
+          },
+          {
+            author: 'Janny Wurts',
+            title: 'Fugitive Prince (Wars of Light & Shadow, #4; Arc 3 - Alliance of Light, #1)',
+            year: 1997
+          }
+        ]
+        const testClient = {
+          clientId: 'johndoe',
+          secret: 'squirrel',
+          resources: {
+            'collection:testdb_first-schema': {
+              read: {
+                fields: {
+                  title: 1,
+                  year: 1
+                }
+              }
+            }
+          }
+        }
+
+        client
+        .post('/vtest/testdb/first-schema')
+        .set('Authorization', 'Bearer ' + bearerToken)
+        .set('content-type', 'application/json')
+        .send(documents)
+        .expect(200)
+        .end((err, res) => {
+          setTimeout(() => {
+            help.createACLClient(testClient).then(() => {
+              client
+              .post(config.get('auth.tokenUrl'))
+              .set('content-type', 'application/json')
+              .send({
+                clientId: testClient.clientId,
+                secret: testClient.secret
+              })
+              .expect(200)
+              .expect('content-type', 'application/json')
+              .end((err, res) => {
+                if (err) return done(err)
+
+                const clientToken = res.body.accessToken
+
+                client
+                .get('/vtest/testdb/first-schema/search?q=prince')
+                .set('Authorization', 'Bearer ' + clientToken)
+                .expect(200)
+                .end((err, res) => {
+                  if (err) return done(err)
+
+                  should.exist(res.body.results)
+  
+                  res.body.results.should.be.Array
+                  res.body.results.length.should.eql(2)
+
+                  res.body.results[0].title.should.eql(documents[0].title)
+                  res.body.results[0].year.should.eql(documents[0].year)
+                  should.not.exist(res.body.results[0].author)
+
+                  res.body.results[1].title.should.eql(documents[2].title)
+                  res.body.results[1].year.should.eql(documents[2].year)
+                  should.not.exist(res.body.results[1].author)
+        
+                  done()
+                })
+              })
+            })
+          }, 1000)
+        })
+      })
+
+      it('should not show any fields which the client has no read access to ("excludes" projection)', done => {
+        const documents = [
+          {
+            author: 'Antoine de Saint-Exupéry',
+            title: 'The Little Prince',
+            year: 1943
+          },
+          {
+            author: 'Hans Christian Andersen',
+            title: 'The Little Mermaid',
+            year: 1837
+          },
+          {
+            author: 'Janny Wurts',
+            title: 'Fugitive Prince (Wars of Light & Shadow, #4; Arc 3 - Alliance of Light, #1)',
+            year: 1997
+          }
+        ]
+        const testClient = {
+          clientId: 'johndoe',
+          secret: 'squirrel',
+          resources: {
+            'collection:testdb_first-schema': {
+              read: {
+                fields: {
+                  author: 0
+                }
+              }
+            }
+          }
+        }
+
+        client
+        .post('/vtest/testdb/first-schema')
+        .set('Authorization', 'Bearer ' + bearerToken)
+        .set('content-type', 'application/json')
+        .send(documents)
+        .expect(200)
+        .end((err, res) => {
+          setTimeout(() => {
+            help.createACLClient(testClient).then(() => {
+              client
+              .post(config.get('auth.tokenUrl'))
+              .set('content-type', 'application/json')
+              .send({
+                clientId: testClient.clientId,
+                secret: testClient.secret
+              })
+              .expect(200)
+              .expect('content-type', 'application/json')
+              .end((err, res) => {
+                if (err) return done(err)
+
+                const clientToken = res.body.accessToken
+
+                client
+                .get('/vtest/testdb/first-schema/search?q=prince')
+                .set('Authorization', 'Bearer ' + clientToken)
+                .expect(200)
+                .end((err, res) => {
+                  if (err) return done(err)
+
+                  should.exist(res.body.results)
+  
+                  res.body.results.should.be.Array
+                  res.body.results.length.should.eql(2)
+
+                  res.body.results[0].title.should.eql(documents[0].title)
+                  res.body.results[0].year.should.eql(documents[0].year)
+                  should.not.exist(res.body.results[0].author)
+
+                  res.body.results[1].title.should.eql(documents[2].title)
+                  res.body.results[1].year.should.eql(documents[2].year)
+                  should.not.exist(res.body.results[1].author)
+        
+                  done()
+                })
+              })
+            })
+          }, 1000)
+        })
+      })
+
+      it('should not return results which the client has no read access to (1)', done => {
+        const documents = [
+          {
+            author: 'Antoine de Saint-Exupéry',
+            title: 'The Little Prince',
+            year: 1943
+          },
+          {
+            author: 'Hans Christian Andersen',
+            title: 'The Little Mermaid',
+            year: 1837
+          },
+          {
+            author: 'Janny Wurts',
+            title: 'Fugitive Prince (Wars of Light & Shadow, #4; Arc 3 - Alliance of Light, #1)',
+            year: 1997
+          }
+        ]
+        const testClient = {
+          clientId: 'johndoe',
+          secret: 'squirrel',
+          resources: {
+            'collection:testdb_first-schema': {
+              read: {
+                filter: {
+                  year: {
+                    $lt: 1990
+                  }
+                }
+              }
+            }
+          }
+        }
+  
+        client
+        .post('/vtest/testdb/first-schema')
+        .set('Authorization', 'Bearer ' + bearerToken)
+        .set('content-type', 'application/json')
+        .send(documents)
+        .expect(200)
+        .end((err, res) => {
+          setTimeout(() => {
+            help.createACLClient(testClient).then(() => {
+              client
+              .post(config.get('auth.tokenUrl'))
+              .set('content-type', 'application/json')
+              .send({
+                clientId: testClient.clientId,
+                secret: testClient.secret
+              })
+              .expect(200)
+              .expect('content-type', 'application/json')
+              .end((err, res) => {
+                if (err) return done(err)
+
+                const clientToken = res.body.accessToken
+
+                client
+                .get('/vtest/testdb/first-schema/search?q=prince')
+                .set('Authorization', 'Bearer ' + clientToken)
+                .expect(200)
+                .end((err, res) => {
+                  if (err) return done(err)
+
+                  res.body.results.should.be.Array
+                  res.body.results.length.should.eql(1)
+
+                  res.body.results[0].title.should.eql(documents[0].title)
+                  res.body.results[0].year.should.eql(documents[0].year)
+                  res.body.results[0].author.should.eql(documents[0].author)
+        
+                  done()
+                })
+              })
+            })
+          }, 1000)
+        })
+      })
+
+      it('should not return results which the client has no read access to (2)', done => {
+        const doc = {
+          title: 'The quick brown fox jumps over the lazy dog'
+        }
+        const testClient = {
+          clientId: 'johndoe',
+          secret: 'squirrel',
+          resources: {
+            'collection:testdb_first-schema': {
+              readOwn: true
+            }
+          }
+        }
+  
+        client
+        .post('/vtest/testdb/first-schema')
+        .set('Authorization', 'Bearer ' + bearerToken)
+        .set('content-type', 'application/json')
+        .send(doc)
+        .expect(200)
+        .end((err, res) => {
+          setTimeout(() => {
+            help.createACLClient(testClient).then(() => {
+              client
+              .post(config.get('auth.tokenUrl'))
+              .set('content-type', 'application/json')
+              .send({
+                clientId: testClient.clientId,
+                secret: testClient.secret
+              })
+              .expect(200)
+              .expect('content-type', 'application/json')
+              .end((err, res) => {
+                if (err) return done(err)
+
+                const clientToken = res.body.accessToken
+
+                client
+                .get('/vtest/testdb/first-schema/search?q=quick%20brown')
+                .set('Authorization', 'Bearer ' + clientToken)
+                .expect(200)
+                .end((err, res) => {
+                  if (err) return done(err)
+
+                  should.exist(res.body.results)
+  
+                  res.body.results.should.be.Array
+                  res.body.results.length.should.eql(0)
+        
+                  done()
+                })
+              })
+            })
+          }, 1000)
+        })
+      })
+    })
+  })
+
+  describe('Multi collection search', () => {
+    it('should return 501 when search is disabled', done => {
+      config.set('search.enabled', false)
+
+      client
+      .get('/api/search?q=something')
+      .set('Authorization', 'Bearer ' + bearerToken)
+      .expect(501)
+      .end((err, res) => {
+        config.set('search.enabled', true)
+
+        done(err)
+      })
+    })
+
+    it('should return 400 when searching with no query', done => {
+      client
+      .get('/api/search')
+      .set('Authorization', 'Bearer ' + bearerToken)
+      .expect(400)
+      .end(done)
+    })
+
+    it('should return 400 when searching with a short query', done => {
+      client
+      .get('/api/search?q=xx')
+      .set('Authorization', 'Bearer ' + bearerToken)
+      .expect(400)
+      .end((err, res) => {
+        done(err)
+      })
+    })
+
+    it('should return empty results when no documents match a query', done => {
+      client
+      .get('/api/search?q=abracadabra')
+      .set('Authorization', 'Bearer ' + bearerToken)
+      .expect(200)
+      .end((err, res) => {
+        if (err) return done(err)
+
+        should.exist(res.body.results)
+        res.body.results.should.be.Array
+        res.body.results.length.should.eql(0)
+
+        done()
+      })
+    })
+
+    it('should return results when documents match a query, adding a `_collection` property indicating the collection each result belongs to', done => {
+      const documents = [
+        {
+          author: 'Antoine de Saint-Exupéry',
+          title: 'The Little Prince',
+          year: 1943
+        },
+        {
+          author: 'Hans Christian Andersen',
+          title: 'The Little Mermaid',
+          year: 1837
+        },
+        {
+          author: 'Janny Wurts',
+          title: 'Fugitive Prince (Wars of Light & Shadow, #4; Arc 3 - Alliance of Light, #1)',
+          year: 1997
+        }
+      ]
+
+      client
+      .post('/vtest/testdb/first-schema')
+      .set('Authorization', 'Bearer ' + bearerToken)
+      .set('content-type', 'application/json')
+      .send(documents[2])
+      .expect(200)
+      .end((err, res) => {
+        if (err) return done(err)
+
+        client
+        .post('/vtest/testdb/second-schema')
+        .set('Authorization', 'Bearer ' + bearerToken)
+        .set('content-type', 'application/json')
+        .send([documents[0], documents[1]])
+        .expect(200)
+        .end((err, res) => {
+          if (err) return done(err)
+
+          setTimeout(() => {
+            client
+            .get('/api/search?q=prince')
+            .set('Authorization', 'Bearer ' + bearerToken)
+            .expect(200)
+            .end((err, res) => {
+              if (err) return done(err)
+
+              const {results} = res.body
+  
+              results.should.be.Array
+              results.length.should.eql(2)
+
+              results[0].title.should.eql(documents[0].title)
+              results[0]._collection.should.eql('second-schema')
+              
+              results[1].title.should.eql(documents[2].title)
+              results[1]._collection.should.eql('first-schema')
+
+              results[0]._searchRelevance.should.be.above(results[1]._searchRelevance)
+    
+              done()
+            })
+          }, 1000)
+        })
+      })
+    })
+
+    it('should return updated results after new documents are created', done => {
+      const documents = [
+        {
+          author: 'Antoine de Saint-Exupéry',
+          title: 'The Little Prince',
+          year: 1943
+        },
+        {
+          author: 'Hans Christian Andersen',
+          title: 'The Little Mermaid',
+          year: 1837
+        },
+        {
+          author: 'Janny Wurts',
+          title: 'Fugitive Prince (Wars of Light & Shadow, #4; Arc 3 - Alliance of Light, #1)',
+          year: 1997
+        }
+      ]
+
+      client
+      .post('/vtest/testdb/first-schema')
+      .set('Authorization', 'Bearer ' + bearerToken)
+      .set('content-type', 'application/json')
+      .send(documents[0])
+      .expect(200)
+      .end((err, res) => {
+        if (err) return done(err)
+
+        const documentId = res.body.results[0]._id
+
+        setTimeout(() => {
+          client
+          .get('/api/search?q=prince')
+          .set('Authorization', 'Bearer ' + bearerToken)
+          .expect(200)
+          .end((err, res) => {
+            if (err) return done(err)
+
+            const {results} = res.body
+
+            results.should.be.Array
+            results.length.should.eql(1)
+
+            results[0].title.should.eql(documents[0].title)
+            results[0]._id.should.eql(documentId)
+            results[0]._collection.should.eql('first-schema')
+  
+            client
+            .post('/vtest/testdb/second-schema')
+            .set('Authorization', 'Bearer ' + bearerToken)
+            .set('content-type', 'application/json')
+            .send(documents[2])
+            .expect(200)
+            .end((err, res) => {
+              if (err) return done(err)
+
+              setTimeout(() => {
+                client
+                .get('/api/search?q=prince')
+                .set('Authorization', 'Bearer ' + bearerToken)
+                .expect(200)
+                .end((err, res) => {
+                  if (err) return done(err)
+      
+                  const {results} = res.body
+      
+                  results.should.be.Array
+                  results.length.should.eql(2)
+      
+                  results[0].title.should.eql(documents[0].title)
+                  results[0]._collection.should.eql('first-schema')
+
+                  results[1].title.should.eql(documents[2].title)
+                  results[1]._collection.should.eql('second-schema')
+
+                  done(err)
+                })
+              }, 100)
+            })
+          })
+        }, 100)
+      })
+    })
+
+    it('should return updated results after documents are updated', done => {
+      const documents = [
+        {
+          author: 'Antoine de Saint-Exupéry',
+          title: 'The Little Prince',
+          year: 1943
+        },
+        {
+          author: 'Hans Christian Andersen',
+          title: 'The Little Mermaid',
+          year: 1837
+        },
+        {
+          author: 'Janny Wurts',
+          title: 'Fugitive Prince (Wars of Light & Shadow, #4; Arc 3 - Alliance of Light, #1)',
+          year: 1997
+        }
+      ]
+
+      client
+      .post('/vtest/testdb/first-schema')
+      .set('Authorization', 'Bearer ' + bearerToken)
+      .set('content-type', 'application/json')
+      .send(documents)
+      .expect(200)
+      .end((err, res) => {
+        if (err) return done(err)
+
+        const createdDocuments = res.body.results
+
+        setTimeout(() => {
+          client
+          .get('/api/search?q=prince')
+          .set('Authorization', 'Bearer ' + bearerToken)
+          .expect(200)
+          .end((err, res) => {
+            if (err) return done(err)
+
+            const {results} = res.body
+
+            results.should.be.Array
+            results.length.should.eql(2)
+
+            results[0].title.should.eql(documents[0].title)
+            results[0]._collection.should.eql('first-schema')
+
+            results[1].title.should.eql(documents[2].title)
+            results[1]._collection.should.eql('first-schema')
+
+            const update = {
+              title: 'The Little Mermaid Prince'
+            }
+  
+            client
+            .put(`/vtest/testdb/first-schema/${createdDocuments[1]._id}`)
+            .set('Authorization', 'Bearer ' + bearerToken)
+            .set('content-type', 'application/json')
+            .send(update)
+            .expect(200)
+            .end((err, res) => {
+              if (err) return done(err)
+
+              setTimeout(() => {
+                client
+                .get('/api/search?q=prince')
+                .set('Authorization', 'Bearer ' + bearerToken)
+                .expect(200)
+                .end((err, res) => {
+                  if (err) return done(err)
+      
+                  const {results} = res.body
+      
+                  results.should.be.Array
+                  results.length.should.eql(3)
+      
+                  results[0].title.should.eql(documents[0].title)
+                  results[0]._collection.should.eql('first-schema')
+
+                  results[1].title.should.eql(update.title)
+                  results[1]._collection.should.eql('first-schema')
+
+                  results[2].title.should.eql(documents[2].title)
+                  results[2]._collection.should.eql('first-schema')
+
+                  done(err)
+                })
+              }, 100)
+            })
+          })
+        }, 100)
+      })
+    })
+
+    it('should return metadata containing the search term', done => {
+      const document = {
+        title: 'The quick brown fox jumps over the lazy dog'
+      }
+
+      client
+      .post('/vtest/testdb/first-schema')
+      .set('Authorization', 'Bearer ' + bearerToken)
+      .set('content-type', 'application/json')
+      .send(document)
+      .expect(200)
+      .end((err, res) => {
+        setTimeout(() => {
+          client
+          .get('/api/search?q=quick%20brown')
+          .set('Authorization', 'Bearer ' + bearerToken)
+          .expect(200)
+          .end((err, res) => {
+            res.body.metadata.search.should.eql('quick brown')
+  
+            done(err)
+          })
+        }, 100)
+      })
+    })
+
+    describe('ACL', () => {
+      it('should only return results from collections which the client has read access to (1)', done => {
+        const documents = [
+          {
+            author: 'Antoine de Saint-Exupéry',
+            title: 'The Little Prince',
+            year: 1943
+          },
+          {
+            author: 'Hans Christian Andersen',
+            title: 'The Little Mermaid',
+            year: 1837
+          },
+          {
+            author: 'Janny Wurts',
+            title: 'Fugitive Prince (Wars of Light & Shadow, #4; Arc 3 - Alliance of Light, #1)',
+            year: 1997
+          }
+        ]
+        const testClient = {
+          clientId: 'johndoe',
+          secret: 'squirrel',
+          resources: {}
+        }
+  
+        client
+        .post('/vtest/testdb/first-schema')
+        .set('Authorization', 'Bearer ' + bearerToken)
+        .set('content-type', 'application/json')
+        .send(documents[0])
+        .expect(200)
+        .end((err, res) => {
+          if (err) return done(err)
+
+          client
+          .post('/vtest/testdb/second-schema')
+          .set('Authorization', 'Bearer ' + bearerToken)
+          .set('content-type', 'application/json')
+          .send([documents[1], documents[2]])
+          .expect(200)
+          .end((err, res) => {
+            if (err) return done(err)
+
+            setTimeout(() => {
+              help.createACLClient(testClient).then(() => {
+                client
+                .post(config.get('auth.tokenUrl'))
+                .set('content-type', 'application/json')
+                .send({
+                  clientId: testClient.clientId,
+                  secret: testClient.secret
+                })
+                .expect(200)
+                .expect('content-type', 'application/json')
+                .end((err, res) => {
+                  if (err) return done(err)
+
+                  const clientToken = res.body.accessToken
+
+                  client
+                  .get('/api/search?q=prince')
+                  .set('Authorization', 'Bearer ' + clientToken)
+                  .expect(200)
+                  .end((err, res) => {
+                    if (err) return done(err)
+
+                    const {results} = res.body
+
+                    results.should.be.Array
+                    results.length.should.eql(0)
+          
+                    done()
+                  })
+                })
+              })
+            }, 100)
+          })
+        })
+      })
+
+      it('should only return results from collections which the client has read access to (2)', done => {
+        const documents = [
+          {
+            author: 'Antoine de Saint-Exupéry',
+            title: 'The Little Prince',
+            year: 1943
+          },
+          {
+            author: 'Hans Christian Andersen',
+            title: 'The Little Mermaid',
+            year: 1837
+          },
+          {
+            author: 'Janny Wurts',
+            title: 'Fugitive Prince (Wars of Light & Shadow, #4; Arc 3 - Alliance of Light, #1)',
+            year: 1997
+          }
+        ]
+        const testClient = {
+          clientId: 'johndoe',
+          secret: 'squirrel',
+          resources: {
+            'collection:testdb_second-schema': {
+              read: true
+            }
+          }
+        }
+  
+        client
+        .post('/vtest/testdb/first-schema')
+        .set('Authorization', 'Bearer ' + bearerToken)
+        .set('content-type', 'application/json')
+        .send(documents[0])
+        .expect(200)
+        .end((err, res) => {
+          if (err) return done(err)
+
+          client
+          .post('/vtest/testdb/second-schema')
+          .set('Authorization', 'Bearer ' + bearerToken)
+          .set('content-type', 'application/json')
+          .send([documents[1], documents[2]])
+          .expect(200)
+          .end((err, res) => {
+            if (err) return done(err)
+
+            setTimeout(() => {
+              help.createACLClient(testClient).then(() => {
+                client
+                .post(config.get('auth.tokenUrl'))
+                .set('content-type', 'application/json')
+                .send({
+                  clientId: testClient.clientId,
+                  secret: testClient.secret
+                })
+                .expect(200)
+                .expect('content-type', 'application/json')
+                .end((err, res) => {
+                  if (err) return done(err)
+
+                  const clientToken = res.body.accessToken
+
+                  client
+                  .get('/api/search?q=prince')
+                  .set('Authorization', 'Bearer ' + clientToken)
+                  .expect(200)
+                  .end((err, res) => {
+                    if (err) return done(err)
+
+                    const {results} = res.body
+
+                    results.should.be.Array
+                    results.length.should.eql(1)
+                    results[0].title.should.eql(documents[2].title)
+          
+                    done()
+                  })
+                })
+              })
+            }, 100)
+          })
+        })
+      })
+
+      it('should only return results from collections which the client has read access to (2)', done => {
+        const documents = [
+          {
+            author: 'Antoine de Saint-Exupéry',
+            title: 'The Little Prince',
+            year: 1943
+          },
+          {
+            author: 'Hans Christian Andersen',
+            title: 'The Little Mermaid',
+            year: 1837
+          },
+          {
+            author: 'Janny Wurts',
+            title: 'Fugitive Prince (Wars of Light & Shadow, #4; Arc 3 - Alliance of Light, #1)',
+            year: 1997
+          }
+        ]
+        const testClient = {
+          clientId: 'johndoe',
+          secret: 'squirrel',
+          resources: {
+            'collection:testdb_second-schema': {
+              read: true
+            }
+          }
+        }
+  
+        client
+        .post('/vtest/testdb/first-schema')
+        .set('Authorization', 'Bearer ' + bearerToken)
+        .set('content-type', 'application/json')
+        .send(documents[0])
+        .expect(200)
+        .end((err, res) => {
+          if (err) return done(err)
+
+          client
+          .post('/vtest/testdb/second-schema')
+          .set('Authorization', 'Bearer ' + bearerToken)
+          .set('content-type', 'application/json')
+          .send([documents[1], documents[2]])
+          .expect(200)
+          .end((err, res) => {
+            if (err) return done(err)
+
+            setTimeout(() => {
+              help.createACLClient(testClient).then(() => {
+                client
+                .post(config.get('auth.tokenUrl'))
+                .set('content-type', 'application/json')
+                .send({
+                  clientId: testClient.clientId,
+                  secret: testClient.secret
+                })
+                .expect(200)
+                .expect('content-type', 'application/json')
+                .end((err, res) => {
+                  if (err) return done(err)
+
+                  const clientToken = res.body.accessToken
+
+                  client
+                  .get('/api/search?q=prince')
+                  .set('Authorization', 'Bearer ' + clientToken)
+                  .expect(200)
+                  .end((err, res) => {
+                    if (err) return done(err)
+
+                    const {results} = res.body
+
+                    results.should.be.Array
+                    results.length.should.eql(1)
+                    results[0].title.should.eql(documents[2].title)
+          
+                    done()
+                  })
+                })
+              })
+            }, 100)
+          })
+        })
+      })
+    })
+  })
+
+  describe('Batch indexing', function () {
+    it('should return 404 when calling the batch index endpoint when search is disabled', done => {
       config.set('search.enabled', false)
 
       client
@@ -130,180 +1279,7 @@ describe.only('Search', function () {
         done()
       })
     })
-  })
-
-  describe('when search is enabled', function () {
-    describe('single collection search', () => {
-      it('should return 400 when searching with no query', done => {
-        client
-        .get('/vtest/testdb/test-schema/search')
-        .set('Authorization', 'Bearer ' + bearerToken)
-        .expect(400)
-        .end(done)
-      })
-  
-      it('should return 400 when searching with a short query', done => {
-        client
-        .get('/vtest/testdb/test-schema/search?q=xx')
-        .set('Authorization', 'Bearer ' + bearerToken)
-        .expect(400)
-        .end((err, res) => {
-          done(err)
-        })
-      })
-  
-      it('should return empty results when no documents match a query', done => {
-        client
-        .get('/vtest/testdb/test-schema/search?q=xxx')
-        .set('Authorization', 'Bearer ' + bearerToken)
-        .expect(200)
-        .end((err, res) => {
-          if (err) return done(err)
-  
-          should.exist(res.body.results)
-          res.body.results.should.be.Array
-          res.body.results.length.should.eql(0)
-  
-          done()
-        })
-      })
-  
-      it('should return results when documents match a query', done => {
-        const doc = {
-          field1: 'The quick brown fox jumps',
-          title: 'The quick brown fox jumps over the lazy dog'
-        }
-  
-        client
-        .post('/vtest/testdb/test-schema')
-        .set('Authorization', 'Bearer ' + bearerToken)
-        .set('content-type', 'application/json')
-        .send(doc)
-        .expect(200)
-        .end((err, res) => {
-          setTimeout(() => {
-            client
-            .get('/vtest/testdb/test-schema/search?q=quick%20brown')
-            .set('Authorization', 'Bearer ' + bearerToken)
-            .expect(200)
-            .end((err, res) => {
-              if (err) return done(err)
-
-              should.exist(res.body.results)
     
-              res.body.results.should.be.Array
-              res.body.results.length.should.eql(1)
-    
-              done()
-            })
-          }, 1000)
-        })
-      })
-  
-      it('should update the index on update of documents', done => {
-        const doc = {
-          field1: 'Tycho - Elsewhere',
-          title: 'Burning Man Sunrise Set 2015'
-        }
-  
-        client
-        .post('/vtest/testdb/test-schema')
-        .set('Authorization', 'Bearer ' + bearerToken)
-        .set('content-type', 'application/json')
-        .send(doc)
-        .expect(200)
-        .end((err, res) => {
-          let insertedDocument = res.body.results[0]
-  
-          setTimeout(() => {
-            client
-            .get('/vtest/testdb/test-schema/search?q=sunrise')
-            .set('Authorization', 'Bearer ' + bearerToken)
-            .expect(200)
-            .end((err, res) => {
-              if (err) return done(err)
-              should.exist(res.body.results)
-    
-              res.body.results.should.be.Array
-              res.body.results.length.should.eql(1)
-    
-              // update the document
-              doc.field1 = 'The Big Friendly Giant'
-              doc.title = 'You Never Saw Such a Thing'
-    
-              client
-              .put('/vtest/testdb/test-schema/' + insertedDocument._id)
-              .set('Authorization', 'Bearer ' + bearerToken)
-              .set('content-type', 'application/json')
-              .send(doc)
-              .expect(200)
-              .end((err, res) => {
-                setTimeout(() => {
-                  client
-                  .get('/vtest/testdb/test-schema/search?q=sunrise')
-                  .set('Authorization', 'Bearer ' + bearerToken)
-                  .expect(200)
-                  .end((err, res) => {
-                    if (err) return done(err)
-                    should.exist(res.body.results)
-      
-                    res.body.results.should.be.Array
-                    res.body.results.length.should.eql(0)
-      
-                    client
-                    .get('/vtest/testdb/test-schema/search?q=thing')
-                    .set('Authorization', 'Bearer ' + bearerToken)
-                    .expect(200)
-                    .end((err, res) => {
-                      if (err) return done(err)
-                      should.exist(res.body.results)
-      
-                      res.body.results.should.be.Array
-                      res.body.results.length.should.eql(1)
-      
-                      res.body.results[0]._id.should.eql(insertedDocument._id)
-      
-                      done()
-                    })
-                  })
-                }, 800)
-              })
-            })
-          }, 800)
-        })
-      })
-  
-      it('should return metadata containing the search term', done => {
-        const doc = {
-          field1: 'The quick brown fox jumps',
-          title: 'The quick brown fox jumps over the lazy dog'
-        }
-  
-        client
-        .post('/vtest/testdb/test-schema')
-        .set('Authorization', 'Bearer ' + bearerToken)
-        .set('content-type', 'application/json')
-        .send(doc)
-        .expect(200)
-        .end((err, res) => {
-          client
-          .get('/vtest/testdb/test-schema/search?q=quick%20brown')
-          .set('Authorization', 'Bearer ' + bearerToken)
-          .expect(200)
-          .end((err, res) => {
-            if (err) return done(err)
-            should.exist(res.body.metadata)
-            should.exist(res.body.metadata.search)
-            res.body.metadata.search.should.eql('quick brown')
-  
-            done()
-          })
-        })
-      })
-    })
-  })
-
-  describe('Batch indexing', function () {
     it('should return 204 when calling the index endpoint', done => {
       const stub = sinon.spy(search, 'batchIndexCollections')
 
@@ -330,7 +1306,7 @@ describe.only('Search', function () {
       }
 
       client
-      .post('/vtest/testdb/test-schema')
+      .post('/vtest/testdb/first-schema')
       .set('Authorization', `Bearer ${bearerToken}`)
       .send(document)
       .expect(200)
@@ -338,7 +1314,7 @@ describe.only('Search', function () {
         if (err) return done(err)
 
         client
-        .get(`/vtest/testdb/test-schema/search?q=Prince`)
+        .get(`/vtest/testdb/first-schema/search?q=Prince`)
         .set('Authorization', `Bearer ${bearerToken}`)
         .expect(200)
         .end((err, res) => {
@@ -369,7 +1345,7 @@ describe.only('Search', function () {
       ]
 
       client
-      .post(`/vtest/testdb/test-schema`)
+      .post(`/vtest/testdb/first-schema`)
       .set('Authorization', `Bearer ${bearerToken}`)
       .send(documents)
       .expect(200)
@@ -378,7 +1354,7 @@ describe.only('Search', function () {
 
         setTimeout(() => {
           client
-          .get('/vtest/testdb/test-schema/search?q=little')
+          .get('/vtest/testdb/first-schema/search?q=little')
           .set('Authorization', `Bearer ${bearerToken}`)
           .expect(200)
           .end((err, res) => {
@@ -392,7 +1368,7 @@ describe.only('Search', function () {
             should.not.exist(results[0]._i18n)
   
             client
-            .get('/vtest/testdb/test-schema/search?q=petit')
+            .get('/vtest/testdb/first-schema/search?q=petit')
             .set('Authorization', `Bearer ${bearerToken}`)
             .expect(200)
             .end((err, res) => {
@@ -417,7 +1393,7 @@ describe.only('Search', function () {
       ]
 
       client
-      .post(`/vtest/testdb/test-schema`)
+      .post(`/vtest/testdb/first-schema`)
       .set('Authorization', `Bearer ${bearerToken}`)
       .send(documents)
       .expect(200)
@@ -426,7 +1402,7 @@ describe.only('Search', function () {
 
         setTimeout(() => {
           client
-          .get('/vtest/testdb/test-schema/search?q=petit&lang=fr')
+          .get('/vtest/testdb/first-schema/search?q=petit&lang=fr')
           .set('Authorization', `Bearer ${bearerToken}`)
           .expect(200)
           .end((err, res) => {
@@ -440,7 +1416,7 @@ describe.only('Search', function () {
             results[0]._i18n.title.should.eql('fr')
   
             client
-            .get('/vtest/testdb/test-schema/search?q=principezinho&lang=pt')
+            .get('/vtest/testdb/first-schema/search?q=principezinho&lang=pt')
             .set('Authorization', `Bearer ${bearerToken}`)
             .expect(200)
             .end((err, res) => {
@@ -465,15 +1441,12 @@ describe.only('Search', function () {
     const documents = [
       {
         title: 'The Little Prince',
-        field2: 123,
-        field3: {
-          author: 'Antoine de Saint-Exupéry'
-        }
+        author: 'Antoine de Saint-Exupéry'
       }
     ]
 
     client
-    .post(`/vtest/testdb/test-schema`)
+    .post(`/vtest/testdb/first-schema`)
     .set('Authorization', `Bearer ${bearerToken}`)
     .send(documents)
     .expect(200)
@@ -484,7 +1457,7 @@ describe.only('Search', function () {
 
       setTimeout(() => {
         client
-        .get('/vtest/testdb/test-schema/search?q=little&fields={"title":0}')
+        .get('/vtest/testdb/first-schema/search?q=little&fields={"title":0}')
         .set('Authorization', `Bearer ${bearerToken}`)
         .expect(200)
         .end((err, res) => {
@@ -496,11 +1469,10 @@ describe.only('Search', function () {
 
           results[0]._id.should.eql(documentId)
           should.not.exist(results[0].title)
-          results[0].field2.should.eql(documents[0].field2)
-          results[0].field3.should.eql(documents[0].field3)
+          results[0].author.should.eql(documents[0].author)
 
           client
-          .get('/vtest/testdb/test-schema/search?q=little&fields={"title":1}')
+          .get('/vtest/testdb/first-schema/search?q=little&fields={"title":1}')
           .set('Authorization', `Bearer ${bearerToken}`)
           .expect(200)
           .end((err, res) => {
@@ -510,8 +1482,7 @@ describe.only('Search', function () {
   
             results[0]._id.should.eql(documentId)
             results[0].title.should.eql(documents[0].title)
-            should.not.exist(results[0].field2)
-            should.not.exist(results[0].field3)
+            should.not.exist(results[0].author)
   
             done(err)
           })            
@@ -532,7 +1503,7 @@ describe.only('Search', function () {
     ]
 
     client
-    .post(`/vtest/testdb/test-schema`)
+    .post(`/vtest/testdb/first-schema`)
     .set('Authorization', `Bearer ${bearerToken}`)
     .send(documents)
     .expect(200)
@@ -543,7 +1514,7 @@ describe.only('Search', function () {
 
       setTimeout(() => {
         client
-        .get('/vtest/testdb/test-schema/search?q=petit&lang=fr&fields={"title":0}')
+        .get('/vtest/testdb/first-schema/search?q=petit&lang=fr&fields={"title":0}')
         .set('Authorization', `Bearer ${bearerToken}`)
         .expect(200)
         .end((err, res) => {
@@ -557,7 +1528,7 @@ describe.only('Search', function () {
           should.not.exist(results[0].title)
 
           client
-          .get('/vtest/testdb/test-schema/search?q=little&fields={"_id":1}')
+          .get('/vtest/testdb/first-schema/search?q=little&fields={"_id":1}')
           .set('Authorization', `Bearer ${bearerToken}`)
           .expect(200)
           .end((err, res) => {

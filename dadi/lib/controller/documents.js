@@ -283,12 +283,12 @@ Collection.prototype.search = function (req, res, next) {
     type: 'read'
   }).then(() => {
     return searchModel.find({
+      client: req.dadiApiClient,
       collections: [this.model.name],
       fields: queryOptions.fields,
       language,
       modelFactory: model,
-      query,
-      sort: queryOptions.sort
+      query
     })
   }).then(response => {
     return help.sendBackJSON(200, res, next)(null, response)

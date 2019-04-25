@@ -156,7 +156,9 @@ Search.prototype.delete = function (documents) {
  * required as a parameter is to get around circular dependencies. Pagination can
  * be done by supplying a `page` parameter.
  *
+ * @param  {Object}        client
  * @param  {Array<String>} collections
+ * @param  {Object}        fields
  * @param  {String}        language
  * @param  {Function}      modelFactory
  * @param  {Number}        page
@@ -165,13 +167,13 @@ Search.prototype.delete = function (documents) {
  *                     searchTerm
  */
 Search.prototype.find = function ({
+  client,
   collections,
   fields,
   language,
   modelFactory,
   page,
-  query,
-  sort
+  query
 }) {
   debug('Search find in %s: %s', this.indexCollection, query)
 
@@ -209,6 +211,7 @@ Search.prototype.find = function ({
       const documentIds = Object.keys(resultsMap[collection])
 
       return model.get({
+        client,
         language,
         query: {
           _id: {

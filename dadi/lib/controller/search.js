@@ -101,6 +101,7 @@ Search.prototype.get = function (req, res, next) {
     }
 
     return searchModel.find({
+      client: req.dadiApiClient,
       collections: searchCollections,
       language,
       modelFactory: CollectionModel,

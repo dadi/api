@@ -244,7 +244,8 @@ function update ({
       // Index all the created documents for search, as a background job.
       search.indexDocumentsInTheBackground({
         documents: data.results,
-        model: this
+        model: this,
+        original: updatedDocuments
       })
 
       // Format result set for output.

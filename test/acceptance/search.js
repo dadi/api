@@ -181,7 +181,7 @@ describe('Search', function () {
       })
     })
 
-    it('should update the index on update of documents', done => {
+    it('should update the index when documents are updated', done => {
       const doc = {
         author: 'Leo Tolstoy',
         title: 'War and Peace'
@@ -194,7 +194,7 @@ describe('Search', function () {
       .send(doc)
       .expect(200)
       .end((err, res) => {
-        let insertedDocument = res.body.results[0]
+        const insertedDocument = res.body.results[0]
 
         setTimeout(() => {
           client
@@ -204,13 +204,13 @@ describe('Search', function () {
           .end((err, res) => {
             if (err) return done(err)
             should.exist(res.body.results)
-  
+
             res.body.results.should.be.Array
             res.body.results.length.should.eql(1)
-  
+
             doc.author = 'Gabriel García Márquez'
             doc.title = 'Love in the Time of Cholera'
-  
+
             client
             .put('/vtest/testdb/first-schema/' + insertedDocument._id)
             .set('Authorization', 'Bearer ' + bearerToken)
@@ -226,10 +226,10 @@ describe('Search', function () {
                 .end((err, res) => {
                   if (err) return done(err)
                   should.exist(res.body.results)
-    
+
                   res.body.results.should.be.Array
                   res.body.results.length.should.eql(0)
-    
+
                   client
                   .get('/vtest/testdb/first-schema/search?q=love')
                   .set('Authorization', 'Bearer ' + bearerToken)
@@ -237,14 +237,74 @@ describe('Search', function () {
                   .end((err, res) => {
                     if (err) return done(err)
                     should.exist(res.body.results)
-    
+
                     res.body.results.should.be.Array
                     res.body.results.length.should.eql(1)
-    
+
                     res.body.results[0]._id.should.eql(insertedDocument._id)
-    
+
                     done()
                   })
+                })
+              }, 800)
+            })
+          })
+        }, 800)
+      })
+    })
+
+    it('should update the index when documents are deleted', done => {
+      const doc = {
+        author: 'Leo Tolstoy',
+        title: 'War and Peace'
+      }
+
+      client
+      .post('/vtest/testdb/first-schema')
+      .set('Authorization', 'Bearer ' + bearerToken)
+      .set('content-type', 'application/json')
+      .send(doc)
+      .expect(200)
+      .end((err, res) => {
+        const insertedDocument = res.body.results[0]
+
+        setTimeout(() => {
+          client
+          .get('/vtest/testdb/first-schema/search?q=peace')
+          .set('Authorization', 'Bearer ' + bearerToken)
+          .expect(200)
+          .end((err, res) => {
+            if (err) return done(err)
+
+            should.exist(res.body.results)
+
+            res.body.results.should.be.Array
+            res.body.results.length.should.eql(1)
+
+            doc.author = 'Gabriel García Márquez'
+            doc.title = 'Love in the Time of Cholera'
+
+            client
+            .delete('/vtest/testdb/first-schema/' + insertedDocument._id)
+            .set('Authorization', 'Bearer ' + bearerToken)
+            .set('content-type', 'application/json')
+            .expect(204)
+            .end((err, res) => {
+              if (err) return done(err)
+
+              setTimeout(() => {
+                client
+                .get('/vtest/testdb/first-schema/search?q=peace')
+                .set('Authorization', 'Bearer ' + bearerToken)
+                .expect(200)
+                .end((err, res) => {
+                  if (err) return done(err)
+                  should.exist(res.body.results)
+
+                  res.body.results.should.be.Array
+                  res.body.results.length.should.eql(0)
+
+                  done()
                 })
               }, 800)
             })
@@ -914,6 +974,7 @@ describe('Search', function () {
           year: 1997
         }
       ]
+      const stub = sinon.spy(search, 'indexDocument')
 
       client
       .post('/vtest/testdb/first-schema')
@@ -979,6 +1040,166 @@ describe('Search', function () {
 
                   results[2].title.should.eql(documents[2].title)
                   results[2]._collection.should.eql('first-schema')
+
+                  stub.callCount.should.eql(4)
+
+                  stub.getCall(0).args[0].collection.should.eql('first-schema')
+                  stub.getCall(0).args[0].document.title.should.eql(documents[0].title)
+
+                  stub.getCall(1).args[0].collection.should.eql('first-schema')
+                  stub.getCall(1).args[0].document.title.should.eql(documents[1].title)
+
+                  stub.getCall(2).args[0].collection.should.eql('first-schema')
+                  stub.getCall(2).args[0].document.title.should.eql(documents[2].title)
+
+                  stub.getCall(3).args[0].collection.should.eql('first-schema')
+                  stub.getCall(3).args[0].document.title.should.eql(update.title)
+
+                  stub.restore()
+
+                  done(err)
+                })
+              }, 100)
+            })
+          })
+        }, 100)
+      })
+    })
+
+    it('should not re-index documents when only non-searchable fields are updated', done => {
+      const documents = [
+        {
+          author: 'Antoine de Saint-Exupéry',
+          title: 'The Little Prince',
+          year: 1943
+        },
+        {
+          author: 'Hans Christian Andersen',
+          title: 'The Little Mermaid',
+          year: 1837
+        },
+        {
+          author: 'Janny Wurts',
+          title: 'Fugitive Prince (Wars of Light & Shadow, #4; Arc 3 - Alliance of Light, #1)',
+          year: 1997
+        }
+      ]
+      const stub = sinon.spy(search, 'indexDocument')
+
+      client
+      .post('/vtest/testdb/first-schema')
+      .set('Authorization', 'Bearer ' + bearerToken)
+      .set('content-type', 'application/json')
+      .send(documents)
+      .expect(200)
+      .end((err, res) => {
+        if (err) return done(err)
+
+        const createdDocuments = res.body.results
+
+        setTimeout(() => {
+          client
+          .put(`/vtest/testdb/first-schema/${createdDocuments[0]._id}`)
+          .set('Authorization', 'Bearer ' + bearerToken)
+          .set('content-type', 'application/json')
+          .send({year: 2019})
+          .expect(200)
+          .end((err, res) => {
+            if (err) return done(err)
+
+            setTimeout(() => {
+              stub.callCount.should.eql(3)
+
+              stub.getCall(0).args[0].collection.should.eql('first-schema')
+              stub.getCall(0).args[0].document.title.should.eql(documents[0].title)
+
+              stub.getCall(1).args[0].collection.should.eql('first-schema')
+              stub.getCall(1).args[0].document.title.should.eql(documents[1].title)
+
+              stub.getCall(2).args[0].collection.should.eql('first-schema')
+              stub.getCall(2).args[0].document.title.should.eql(documents[2].title)
+
+              stub.restore()
+
+              done(err)
+            })
+          })
+        })
+      })
+    })
+
+    it('should return updated results after documents are deleted', done => {
+      const documents = [
+        {
+          author: 'Antoine de Saint-Exupéry',
+          title: 'The Little Prince',
+          year: 1943
+        },
+        {
+          author: 'Hans Christian Andersen',
+          title: 'The Little Mermaid',
+          year: 1837
+        },
+        {
+          author: 'Janny Wurts',
+          title: 'Fugitive Prince (Wars of Light & Shadow, #4; Arc 3 - Alliance of Light, #1)',
+          year: 1997
+        }
+      ]
+
+      client
+      .post('/vtest/testdb/first-schema')
+      .set('Authorization', 'Bearer ' + bearerToken)
+      .set('content-type', 'application/json')
+      .send(documents)
+      .expect(200)
+      .end((err, res) => {
+        if (err) return done(err)
+
+        const createdDocuments = res.body.results
+
+        setTimeout(() => {
+          client
+          .get('/api/search?q=prince')
+          .set('Authorization', 'Bearer ' + bearerToken)
+          .expect(200)
+          .end((err, res) => {
+            if (err) return done(err)
+
+            const {results} = res.body
+
+            results.should.be.Array
+            results.length.should.eql(2)
+
+            results[0].title.should.eql(documents[0].title)
+            results[0]._collection.should.eql('first-schema')
+
+            results[1].title.should.eql(documents[2].title)
+            results[1]._collection.should.eql('first-schema')
+  
+            client
+            .delete(`/vtest/testdb/first-schema/${createdDocuments[2]._id}`)
+            .set('Authorization', 'Bearer ' + bearerToken)
+            .set('content-type', 'application/json')
+            .expect(204)
+            .end((err, res) => {
+              if (err) return done(err)
+
+              setTimeout(() => {
+                client
+                .get('/api/search?q=prince')
+                .set('Authorization', 'Bearer ' + bearerToken)
+                .expect(200)
+                .end((err, res) => {
+                  if (err) return done(err)
+      
+                  const {results} = res.body
+      
+                  results.should.be.Array
+                  results.length.should.eql(1)
+      
+                  results[0].title.should.eql(documents[0].title)
+                  results[0]._collection.should.eql('first-schema')
 
                   done(err)
                 })

@@ -253,6 +253,60 @@ describe('Search', function () {
       })
     })
 
+    it('should not update the index when only non-searchable fields are updated', done => {
+      const doc = {
+        author: 'Leo Tolstoy',
+        title: 'War and Peace',
+        year: 1869
+      }
+      const stub = sinon.spy(search, 'indexDocument')
+
+      client
+      .post('/vtest/testdb/first-schema')
+      .set('Authorization', 'Bearer ' + bearerToken)
+      .set('content-type', 'application/json')
+      .send(doc)
+      .expect(200)
+      .end((err, res) => {
+        const insertedDocument = res.body.results[0]
+
+        setTimeout(() => {
+          client
+          .put('/vtest/testdb/first-schema/' + insertedDocument._id)
+          .set('Authorization', 'Bearer ' + bearerToken)
+          .set('content-type', 'application/json')
+          .send({year: 2019})
+          .expect(200)
+          .end((err, res) => {
+            setTimeout(() => {
+              client
+              .get('/vtest/testdb/first-schema/search?q=peace')
+              .set('Authorization', 'Bearer ' + bearerToken)
+              .expect(200)
+              .end((err, res) => {
+                if (err) return done(err)
+                should.exist(res.body.results)
+
+                res.body.results.should.be.Array
+                res.body.results.length.should.eql(1)
+
+                res.body.results[0]._id.should.eql(insertedDocument._id)
+
+                stub.callCount.should.eql(1)
+
+                stub.getCall(0).args[0].collection.should.eql('first-schema')
+                stub.getCall(0).args[0].document.title.should.eql(doc.title)          
+
+                stub.restore()
+
+                done(err)
+              })
+            }, 800)
+          })
+        }, 800)
+      })
+    })
+
     it('should update the index when documents are deleted', done => {
       const doc = {
         author: 'Leo Tolstoy',
@@ -1399,90 +1453,6 @@ describe('Search', function () {
           })
         })
       })
-
-      it('should only return results from collections which the client has read access to (2)', done => {
-        const documents = [
-          {
-            author: 'Antoine de Saint-Exupéry',
-            title: 'The Little Prince',
-            year: 1943
-          },
-          {
-            author: 'Hans Christian Andersen',
-            title: 'The Little Mermaid',
-            year: 1837
-          },
-          {
-            author: 'Janny Wurts',
-            title: 'Fugitive Prince (Wars of Light & Shadow, #4; Arc 3 - Alliance of Light, #1)',
-            year: 1997
-          }
-        ]
-        const testClient = {
-          clientId: 'johndoe',
-          secret: 'squirrel',
-          resources: {
-            'collection:testdb_second-schema': {
-              read: true
-            }
-          }
-        }
-  
-        client
-        .post('/vtest/testdb/first-schema')
-        .set('Authorization', 'Bearer ' + bearerToken)
-        .set('content-type', 'application/json')
-        .send(documents[0])
-        .expect(200)
-        .end((err, res) => {
-          if (err) return done(err)
-
-          client
-          .post('/vtest/testdb/second-schema')
-          .set('Authorization', 'Bearer ' + bearerToken)
-          .set('content-type', 'application/json')
-          .send([documents[1], documents[2]])
-          .expect(200)
-          .end((err, res) => {
-            if (err) return done(err)
-
-            setTimeout(() => {
-              help.createACLClient(testClient).then(() => {
-                client
-                .post(config.get('auth.tokenUrl'))
-                .set('content-type', 'application/json')
-                .send({
-                  clientId: testClient.clientId,
-                  secret: testClient.secret
-                })
-                .expect(200)
-                .expect('content-type', 'application/json')
-                .end((err, res) => {
-                  if (err) return done(err)
-
-                  const clientToken = res.body.accessToken
-
-                  client
-                  .get('/api/search?q=prince')
-                  .set('Authorization', 'Bearer ' + clientToken)
-                  .expect(200)
-                  .end((err, res) => {
-                    if (err) return done(err)
-
-                    const {results} = res.body
-
-                    results.should.be.Array
-                    results.length.should.eql(1)
-                    results[0].title.should.eql(documents[2].title)
-          
-                    done()
-                  })
-                })
-              })
-            }, 100)
-          })
-        })
-      })
     })
   })
 
@@ -1495,9 +1465,10 @@ describe('Search', function () {
       .set('Authorization', 'Bearer ' + bearerToken)
       .set('content-type', 'application/json')
       .expect(404)
-      .end((err, res) => {
+      .end(err => {
         config.set('search.enabled', true)
-        done()
+
+        done(err)
       })
     })
     
@@ -1509,7 +1480,7 @@ describe('Search', function () {
       .set('Authorization', 'Bearer ' + bearerToken)
       .set('content-type', 'application/json')
       .expect(204)
-      .end((err, res) => {
+      .end(err => {
         stub.called.should.be.true
         stub.restore()
 

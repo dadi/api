@@ -926,6 +926,101 @@ describe('Search', function () {
       })
     })
 
+    it('should only search in the collections specified in the `collections´ URL parameter, if one is present', done => {
+      const documents = [
+        {
+          author: 'Antoine de Saint-Exupéry',
+          title: 'The Little Prince',
+          year: 1943
+        },
+        {
+          author: 'Hans Christian Andersen',
+          title: 'The Little Mermaid',
+          year: 1837
+        },
+        {
+          author: 'Janny Wurts',
+          title: 'Fugitive Prince (Wars of Light & Shadow, #4; Arc 3 - Alliance of Light, #1)',
+          year: 1997
+        }
+      ]
+
+      client
+      .post('/vtest/testdb/first-schema')
+      .set('Authorization', 'Bearer ' + bearerToken)
+      .set('content-type', 'application/json')
+      .send(documents[0])
+      .expect(200)
+      .end((err, res) => {
+        if (err) return done(err)
+
+        client
+        .post('/vtest/testdb/second-schema')
+        .set('Authorization', 'Bearer ' + bearerToken)
+        .set('content-type', 'application/json')
+        .send([documents[1], documents[2]])
+        .expect(200)
+        .end((err, res) => {
+          if (err) return done(err)
+
+          setTimeout(() => {
+            client
+            .get('/api/search?q=prince&collections=testdb_first-schema,testdb_second-schema')
+            .set('Authorization', 'Bearer ' + bearerToken)
+            .expect(200)
+            .end((err, res) => {
+              if (err) return done(err)
+
+              const {results} = res.body
+  
+              results.should.be.Array
+              results.length.should.eql(2)
+
+              results[0].title.should.eql(documents[0].title)
+              results[0]._collection.should.eql('first-schema')
+              
+              results[1].title.should.eql(documents[2].title)
+              results[1]._collection.should.eql('second-schema')
+    
+              client
+              .get('/api/search?q=prince&collections=testdb_first-schema')
+              .set('Authorization', 'Bearer ' + bearerToken)
+              .expect(200)
+              .end((err, res) => {
+                if (err) return done(err)
+  
+                const {results} = res.body
+    
+                results.should.be.Array
+                results.length.should.eql(1)
+  
+                results[0].title.should.eql(documents[0].title)
+                results[0]._collection.should.eql('first-schema')
+      
+                client
+                .get('/api/search?q=prince&collections=testdb_second-schema')
+                .set('Authorization', 'Bearer ' + bearerToken)
+                .expect(200)
+                .end((err, res) => {
+                  if (err) return done(err)
+    
+                  const {results} = res.body
+      
+                  results.should.be.Array
+                  results.length.should.eql(1)
+    
+                  results[0].title.should.eql(documents[2].title)
+                  results[0]._collection.should.eql('second-schema')
+        
+                  done()
+                })
+              })
+            })
+          }, 1000)
+        })
+      })
+    })
+
     it('should return updated results after new documents are created', done => {
       const documents = [
         {
@@ -1446,6 +1541,103 @@ describe('Search', function () {
                     results[0].title.should.eql(documents[2].title)
           
                     done()
+                  })
+                })
+              })
+            }, 100)
+          })
+        })
+      })
+
+      it('should only return results from collections which the client has read access to (3)', done => {
+        const documents = [
+          {
+            author: 'Antoine de Saint-Exupéry',
+            title: 'The Little Prince',
+            year: 1943
+          },
+          {
+            author: 'Hans Christian Andersen',
+            title: 'The Little Mermaid',
+            year: 1837
+          },
+          {
+            author: 'Janny Wurts',
+            title: 'Fugitive Prince (Wars of Light & Shadow, #4; Arc 3 - Alliance of Light, #1)',
+            year: 1997
+          }
+        ]
+        const testClient = {
+          clientId: 'johndoe',
+          secret: 'squirrel',
+          resources: {
+            'collection:testdb_second-schema': {
+              read: true
+            }
+          }
+        }
+  
+        client
+        .post('/vtest/testdb/first-schema')
+        .set('Authorization', 'Bearer ' + bearerToken)
+        .set('content-type', 'application/json')
+        .send(documents[0])
+        .expect(200)
+        .end((err, res) => {
+          if (err) return done(err)
+
+          client
+          .post('/vtest/testdb/second-schema')
+          .set('Authorization', 'Bearer ' + bearerToken)
+          .set('content-type', 'application/json')
+          .send([documents[1], documents[2]])
+          .expect(200)
+          .end((err, res) => {
+            if (err) return done(err)
+
+            setTimeout(() => {
+              help.createACLClient(testClient).then(() => {
+                client
+                .post(config.get('auth.tokenUrl'))
+                .set('content-type', 'application/json')
+                .send({
+                  clientId: testClient.clientId,
+                  secret: testClient.secret
+                })
+                .expect(200)
+                .expect('content-type', 'application/json')
+                .end((err, res) => {
+                  if (err) return done(err)
+
+                  const clientToken = res.body.accessToken
+
+                  client
+                  .get('/api/search?q=prince&collections=testdb_first-schema')
+                  .set('Authorization', 'Bearer ' + clientToken)
+                  .expect(200)
+                  .end((err, res) => {
+                    if (err) return done(err)
+
+                    const {results} = res.body
+
+                    results.should.be.Array
+                    results.length.should.eql(0)
+          
+                    client
+                    .get('/api/search?q=prince&collections=testdb_second-schema')
+                    .set('Authorization', 'Bearer ' + clientToken)
+                    .expect(200)
+                    .end((err, res) => {
+                      if (err) return done(err)
+  
+                      const {results} = res.body
+  
+                      results.should.be.Array
+                      results.length.should.eql(1)
+                      results[0].title.should.eql(documents[2].title)
+            
+                      done()
+                    })
                   })
                 })
               })

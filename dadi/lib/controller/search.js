@@ -58,6 +58,19 @@ Search.prototype.get = function (req, res, next) {
     ? collections.split(',')
     : []
 
+  // (!) TO DO: We're currently treating collection names inconsistently
+  // across the application. ACL keys contain the database name and the
+  // collection name, but models are summoned by the name of the collection
+  // only. This will need to be standardised at some point, if we want a
+  // multi-database setup to work without any naming conflicts. Until then,
+  // and to avoid breaking changes in the future, the `collections` parameter
+  // in the search endpoint is already expecting a format in which the database
+  // name is included (e.g. dbName_collectionName), which we must translate
+  // into the collection name until the models accept the new format.
+  requestCollections = requestCollections.map(aclKey => {
+    return aclKey.split('_')[1]
+  })
+
   // If the client is not an admin, we must first find out what collections they
   // have read permissions for.
   if (!acl.client.isAdmin(req.dadiApiClient)) {

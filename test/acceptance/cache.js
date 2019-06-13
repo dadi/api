@@ -40,6 +40,7 @@ describe('Cache', function (done) {
 
   it('should use cache if available', function (done) {
     config.set('caching.directory.enabled', true)
+    help.clearCache()
 
     app.start(function () {
       help.dropDatabase('testdb', function (err) {
@@ -49,7 +50,6 @@ describe('Cache', function (done) {
           if (err) return done(err)
 
           bearerToken = token
-          help.clearCache()
 
           var client = request('http://' + config.get('server.host') + ':' + config.get('server.port'))
 
@@ -89,7 +89,6 @@ describe('Cache', function (done) {
                     res3.headers['x-cache'].should.eql('HIT')
 
                     help.removeTestClients(function () {
-                      help.clearCache()
                       app.stop(done)
                     })
                   })
@@ -104,6 +103,7 @@ describe('Cache', function (done) {
 
   it('should allow bypassing cache with query string flag', function (done) {
     config.set('caching.directory.enabled', true)
+    help.clearCache()
 
     app.start(function () {
       help.dropDatabase('testdb', function (err) {
@@ -113,7 +113,6 @@ describe('Cache', function (done) {
           if (err) return done(err)
 
           bearerToken = token
-          help.clearCache()
 
           var client = request('http://' + config.get('server.host') + ':' + config.get('server.port'))
 
@@ -147,7 +146,6 @@ describe('Cache', function (done) {
                 res2.headers['x-cache-lookup'].should.eql('HIT')
 
                 help.removeTestClients(function () {
-                  help.clearCache()
                   app.stop(done)
                 })
               })
@@ -161,6 +159,7 @@ describe('Cache', function (done) {
   it('should allow disabling through config', function (done) {
     config.set('caching.directory.enabled', false)
     config.set('caching.redis.enabled', false)
+    help.clearCache()
 
     var spy = sinon.spy(fs, 'createWriteStream')
 
@@ -170,7 +169,6 @@ describe('Cache', function (done) {
         help.getBearerToken(function (err, token) {
           if (err) return done(err)
           bearerToken = token
-          help.clearCache()
 
           var client = request('http://' + config.get('server.host') + ':' + config.get('server.port'))
 
@@ -217,8 +215,7 @@ describe('Cache', function (done) {
     beforeEach(function (done) {
       config.set('caching.directory.enabled', true)
       config.set('caching.redis.enabled', false)
-
-      cache.reset()
+      help.clearCache()
 
       app.start(function () {
         help.dropDatabase('testdb', function (err) {
@@ -228,7 +225,6 @@ describe('Cache', function (done) {
             if (err) return done(err)
 
             bearerToken = token
-            help.clearCache()
             done()
           })
         })
@@ -242,7 +238,8 @@ describe('Cache', function (done) {
     })
 
     it('should save responses to the file system', function (done) {
-      var spy = sinon.spy(fs, 'createWriteStream')
+      let cacheHandler = cache().cache.cacheHandler
+      var spy = sinon.spy(cacheHandler, 'set')
 
       request('http://' + config.get('server.host') + ':' + config.get('server.port'))
       .get('/vtest/testdb/test-schema')
@@ -255,9 +252,9 @@ describe('Cache', function (done) {
           spy.called.should.be.true
           var args = spy.getCall(0).args
 
-          args[0].indexOf('cache/api').should.be.above(-1)
-
           spy.restore()
+          args[0].indexOf('.gz').should.be.above(-1)
+
           done()
         }, 1000)
       })
@@ -269,7 +266,7 @@ describe('Cache', function (done) {
       var oldTTL = config.get('caching.ttl')
       config.set('caching.ttl', 1)
 
-      cache.reset()
+      // cache.reset()
 
       var _done = done
       done = function (err) {

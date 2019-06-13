@@ -52,7 +52,7 @@ describe('Resources endpoint', function () {
           switch (component._type) {
             case app.COMPONENT_TYPE.COLLECTION:
             case app.COMPONENT_TYPE.MEDIA_COLLECTION:
-              aclKey = component.model.aclKey
+              aclKey = component.model.getAclKey()
 
               break
 

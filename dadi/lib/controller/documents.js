@@ -3,7 +3,10 @@ const config = require('./../../../config')
 const Controller = require('./index')
 const debug = require('debug')('api:controller')
 const help = require('./../help')
+const model = require('../model')
+const searchModel = require('./../model/search')
 const url = require('url')
+const workQueue = require('../workQueue')
 
 const Collection = function (model, server) {
   if (!model) throw new Error('Model instance required')
@@ -14,7 +17,7 @@ const Collection = function (model, server) {
 
 Collection.prototype = new Controller()
 
-Collection.prototype.count = function (req, res, next) {
+Collection.prototype.count = workQueue.wrapForegroundJob(function (req, res, next) {
   let method = req.method && req.method.toLowerCase()
 
   if (method !== 'get') {
@@ -41,9 +44,9 @@ Collection.prototype.count = function (req, res, next) {
   }).catch(error => {
     return help.sendBackJSON(null, res, next)(error)
   })
-}
+})
 
-Collection.prototype.delete = function (req, res, next) {
+Collection.prototype.delete = workQueue.wrapForegroundJob(function (req, res, next) {
   let query = req.params.id ? { _id: req.params.id } : req.body.query
 
   if (!query) return next()
@@ -79,9 +82,9 @@ Collection.prototype.delete = function (req, res, next) {
   }).catch(error => {
     return help.sendBackJSON(200, res, next)(error)
   })
-}
+})
 
-Collection.prototype.get = function (req, res, next) {
+Collection.prototype.get = workQueue.wrapForegroundJob(function (req, res, next) {
   let options = this._getURLParameters(req.url)
   let callback = options.callback || this.model.settings.callback
 
@@ -112,9 +115,9 @@ Collection.prototype.get = function (req, res, next) {
   }).catch(error => {
     return done(error)
   })
-}
+})
 
-Collection.prototype.post = function (req, res, next) {
+Collection.prototype.post = workQueue.wrapForegroundJob(function (req, res, next) {
   // Add internal fields.
   let internals = {
     _apiVersion: req.url.split('/')[1]
@@ -184,7 +187,7 @@ Collection.prototype.post = function (req, res, next) {
   }).catch(error => {
     return help.sendBackJSON(200, res, next)(error)
   })
-}
+})
 
 Collection.prototype.put = function (req, res, next) {
   return this.post(req, res, next)
@@ -239,7 +242,62 @@ Collection.prototype.registerRoutes = function (route, filePath) {
   })
 }
 
-Collection.prototype.stats = function (req, res, next) {
+Collection.prototype.search = function (req, res, next) {
+  const minimumQueryLength = config.get('search.minQueryLength')
+  const path = url.parse(req.url, true)
+  const {lang: language, q: query} = path.query
+  const {errors, queryOptions} = this._prepareQueryOptions(path.query)
+
+  if (!config.get('search.enabled')) {
+    const error = new Error('Not Implemented')
+
+    error.statusCode = 501
+    error.json = {
+      errors: [{
+        message: `Search is disabled or an invalid data connector has been specified.`
+      }]
+    }
+
+    return help.sendBackJSON(null, res, next)(error)
+  }
+
+  if (errors.length !== 0) {
+    return help.sendBackJSON(400, res, next)(null, queryOptions)
+  }
+
+  if (typeof query !== 'string' || query.length < minimumQueryLength) {
+    const error = new Error('Bad Request')
+
+    error.statusCode = 400
+    error.json = {
+      errors: [{
+        message: `Search query must be at least ${minimumQueryLength} characters.`
+      }]
+    }
+
+    return help.sendBackJSON(null, res, next)(error)
+  }
+
+  return this.model.validateAccess({
+    client: req.dadiApiClient,
+    type: 'read'
+  }).then(() => {
+    return searchModel.find({
+      client: req.dadiApiClient,
+      collections: [this.model.name],
+      fields: queryOptions.fields,
+      language,
+      modelFactory: model,
+      query
+    })
+  }).then(response => {
+    return help.sendBackJSON(200, res, next)(null, response)
+  }).catch(error => {
+    return help.sendBackJSON(null, res, next)(error)
+  })
+}
+
+Collection.prototype.stats = workQueue.wrapForegroundJob(function (req, res, next) {
   let method = req.method && req.method.toLowerCase()
 
   if (method !== 'get') {
@@ -253,14 +311,14 @@ Collection.prototype.stats = function (req, res, next) {
   }).catch(error => {
     return help.sendBackJSON(null, res, next)(error)
   })
-}
+})
 
 Collection.prototype.unregisterRoutes = function (route) {
   this.server.app.unuse(`${route}/config`)
   this.server.app.unuse(`${route}/:id(${this.ID_PATTERN})?/:action(count|search|stats|versions)?`)
 }
 
-Collection.prototype.versions = function (req, res, next) {
+Collection.prototype.versions = workQueue.wrapForegroundJob(function (req, res, next) {
   let method = req.method && req.method.toLowerCase()
 
   if (method !== 'get') {
@@ -275,7 +333,7 @@ Collection.prototype.versions = function (req, res, next) {
   }).catch(error => {
     return help.sendBackJSON(null, res, next)(error)
   })
-}
+})
 
 module.exports = function (model, server) {
   return new Collection(model, server)

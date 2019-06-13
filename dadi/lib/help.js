@@ -8,6 +8,55 @@ const log = require('@dadi/logger')
 const stackTrace = require('stack-trace')
 const zlib = require('zlib')
 
+/**
+ * Remove each file in the specified cache folder.
+ */
+module.exports.clearCache = function (pathname, callback) {
+  var pattern = ''
+
+  pattern = crypto.createHash('sha1').update(pathname).digest('hex')
+
+  if (config.get('caching.redis.enabled')) {
+    pattern = pattern + '*'
+  }
+
+  if (pathname === '*' || pathname === '') {
+    if (config.get('caching.redis.enabled')) {
+      pattern = '*'
+    } else {
+      pattern = ''
+    }
+  }
+
+  cache.delete(pattern, function (err) {
+    if (err) console.log(err)
+
+    if (typeof callback === 'function') {
+      callback(err)
+    }
+  })
+}
+
+module.exports.isJSON = function (jsonString) {
+  if (!jsonString) return false
+
+  try {
+    var o = JSON.parse(jsonString)
+
+    // Handle non-exception-throwing cases:
+    // Neither JSON.parse(false) or JSON.parse(1234) throw errors, hence the type-checking,
+    // but... JSON.parse(null) returns 'null', and typeof null === "object",
+    // so we must check for that, too.
+    if (o && typeof o === 'object' && o !== null) {
+      return o
+    }
+  } catch (err) {
+    log.error(err)
+  }
+
+  return false
+}
+
 module.exports.sendBackErrorTrace = function (res, next) {
   return err => {
     let body = {
@@ -117,19 +166,6 @@ module.exports.sendBackJSON = function (successCode, res, next) {
   }
 }
 
-/**
- * Determines whether the response should be compressed by
- * inspecting the Accept-Encoding header.
- *
- * @param {IncomingMessage} req - the original HTTP request
- * @returns Boolean
- */
-module.exports.shouldCompress = function (req) {
-  let acceptHeader = req.headers['accept-encoding'] || ''
-
-  return acceptHeader.split(',').includes('gzip')
-}
-
 module.exports.sendBackJSONP = function (callbackName, res, next) {
   return function (err, results) {
     if (err) return next(err)
@@ -164,6 +200,19 @@ module.exports.sendBackText = function (successCode, res, next) {
   }
 }
 
+/**
+ * Determines whether the response should be compressed by
+ * inspecting the Accept-Encoding header.
+ *
+ * @param {IncomingMessage} req - the original HTTP request
+ * @returns Boolean
+ */
+module.exports.shouldCompress = function (req) {
+  let acceptHeader = req.headers['accept-encoding'] || ''
+
+  return acceptHeader.split(',').includes('gzip')
+}
+
 // function to wrap try - catch for JSON.parse to mitigate pref losses
 module.exports.parseQuery = function (queryStr) {
   var ret
@@ -176,128 +225,4 @@ module.exports.parseQuery = function (queryStr) {
   // handle case where queryStr is "null" or some other malicious string
   if (typeof ret !== 'object' || ret === null) ret = {}
   return ret
-}
-
-function getKeys (obj, keyName, result) {
-  for (var key in obj) {
-    if (obj.hasOwnProperty(key)) {
-      if (key === keyName) {
-        result.push(obj[key])
-      } else if (typeof obj[key] === 'object') {
-        getKeys(obj[key], keyName, result)
-      }
-    }
-  }
-}
-
-module.exports.getFieldsFromSchema = function (obj) {
-  var fields = []
-  getKeys(obj, 'fields', fields)
-  return JSON.stringify(fields[0])
-}
-
-module.exports.isJSON = function (jsonString) {
-  if (!jsonString) return false
-
-  try {
-    var o = JSON.parse(jsonString)
-
-    // Handle non-exception-throwing cases:
-    // Neither JSON.parse(false) or JSON.parse(1234) throw errors, hence the type-checking,
-    // but... JSON.parse(null) returns 'null', and typeof null === "object",
-    // so we must check for that, too.
-    if (o && typeof o === 'object' && o !== null) {
-      return o
-    }
-  } catch (err) {
-    log.error(err)
-  }
-
-  return false
-}
-
-module.exports.validateCollectionSchema = function (obj) {
-  // `obj` must be a "hash type object", i.e. { ... }
-  if (typeof obj !== 'object' || Array.isArray(obj) || obj === null) return false
-
-  let response = {
-    success: true,
-    errors: []
-  }
-  let fields = []
-
-  getKeys(obj, 'fields', fields)
-  if (fields.length === 0) {
-    response.errors.push({section: 'fields', message: 'must be provided at least once'})
-  }
-
-  if (response.errors.length > 0) {
-    response.success = false
-    return response
-  }
-
-  // check at least one field has been provided
-  if (Object.keys(fields[0]).length === 0) {
-    response.success = false
-    response.errors.push({section: 'fields', message: 'must include at least one field'})
-    return response
-  }
-
-  // check that an index exists for the field
-  // specified as the sort field
-  if (obj.settings && obj.settings.sort) {
-    let indexSpecified = false
-
-    if (!obj.settings.index) {
-      indexSpecified = false
-    } else {
-      if (Array.isArray(obj.settings.index)) {
-        obj.settings.index.forEach(index => {
-          if (Object.keys(index.keys).includes(obj.settings.sort)) {
-            indexSpecified = true
-          }
-        })
-      } else if (Object.keys(obj.settings.index.keys).includes(obj.settings.sort)) {
-        indexSpecified = true
-      }
-    }
-
-    if (!indexSpecified) {
-      response.errors.push(formatError.createApiError('0001', { 'field': obj.settings.sort }))
-    }
-  }
-
-  response.success = response.errors.length === 0
-
-  return response
-}
-
-/**
- *
- * Remove each file in the specified cache folder.
- */
-module.exports.clearCache = function (pathname, callback) {
-  var pattern = ''
-
-  pattern = crypto.createHash('sha1').update(pathname).digest('hex')
-
-  if (config.get('caching.redis.enabled')) {
-    pattern = pattern + '*'
-  }
-
-  if (pathname === '*' || pathname === '') {
-    if (config.get('caching.redis.enabled')) {
-      pattern = '*'
-    } else {
-      pattern = ''
-    }
-  }
-
-  cache.delete(pattern, function (err) {
-    if (err) console.log(err)
-
-    if (typeof callback === 'function') {
-      callback(err)
-    }
-  })
 }

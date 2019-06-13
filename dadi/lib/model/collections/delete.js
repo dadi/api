@@ -1,6 +1,8 @@
 const async = require('async')
 const Hook = require('./../hook')
 const logger = require('@dadi/logger')
+const search = require('./../search')
+const workQueue = require('./../../workQueue')
 
 /**
  * @typedef {Object} DeleteResult
@@ -156,11 +158,8 @@ function deleteFn ({
         if (result.deletedCount > 0) {
           // Run any `afterDelete` hooks.
           if (this.settings.hooks && (typeof this.settings.hooks.afterDelete === 'object')) {
-            this.settings.hooks.afterDelete.forEach((hookConfig, index) => {
-              let hook = new Hook(
-                this.settings.hooks.afterDelete[index],
-                'afterDelete'
-              )
+            this.settings.hooks.afterDelete.forEach(hookConfig => {
+              let hook = new Hook(hookConfig, 'afterDelete')
 
               return hook.apply(
                 query,
@@ -173,6 +172,14 @@ function deleteFn ({
         }
 
         result.totalCount = allDocuments.metadata.totalCount - result.deletedCount
+
+        return result
+      }).then(result => {
+        // Add a background job to the work queue that deletes from the search
+        // collection each reference to the documents that were just deleted.
+        workQueue.queueBackgroundJob(() => {
+          search.delete(deletedDocuments)
+        })
 
         return result
       })

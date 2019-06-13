@@ -7,21 +7,18 @@
       "example": "John Doe",
       "placement": "Main content",
       "validation": {},
-      "required": false,
+      "required": true,
       "message": "can't be empty",
       "display": {
         "index": true,
         "edit": true
-      },
-      "search": {
-        "weight": 1
       }
     },
-    "object": {
-      "type": "Object"
-    },
-    "mixed": {
-      "type": "Mixed"
+    "reference": {
+      "type": "Reference",
+      "settings": {
+        "collection": "referenced"
+      }
     }
   },
   "settings": {
@@ -34,13 +31,15 @@
     "sort": "name",
     "sortOrder": 1,
     "storeRevisions": true,
-    "revisionCollection": "userHistory",
     "index": {
       "enabled": true,
       "keys": {
         "name": 1
       }
     },
-    "description": "Represents members who have registered with the system."
+    "description": "Represents members who have registered with the system.",
+    "hooks": {
+      "afterGet": ["check-reference"]
+    }
   }
 }

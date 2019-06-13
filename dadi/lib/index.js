@@ -30,10 +30,10 @@ var LanguagesController = require(path.join(__dirname, '/controller/languages'))
 var MediaController = require(path.join(__dirname, '/controller/media'))
 var ResourcesController = require(path.join(__dirname, '/controller/resources'))
 var RolesController = require(path.join(__dirname, '/controller/roles'))
+var SearchController = require(path.join(__dirname, '/controller/search'))
 var SearchIndexController = require(path.join(__dirname, '/controller/searchIndex'))
 var StatusEndpointController = require(path.join(__dirname, '/controller/status'))
 var dadiBoot = require('@dadi/boot')
-var help = require(path.join(__dirname, '/help'))
 var Model = require(path.join(__dirname, '/model'))
 var mediaModel = require(path.join(__dirname, '/model/media'))
 var monitor = require(path.join(__dirname, '/monitor'))
@@ -266,6 +266,7 @@ Server.prototype.start = function (done) {
   LanguagesController(this)
   ResourcesController(this)
   RolesController(this)
+  SearchController(this)
   SearchIndexController(this)
 
   this.readyState = 1
@@ -511,9 +512,9 @@ Server.prototype.loadMediaCollections = function () {
  * req.method` to component methods
  */
 Server.prototype.addCollectionResource = function (options) {
-  let fields = help.getFieldsFromSchema(options.schema)
+  let fields = Object.assign({}, options.schema.fields)
   let settings = Object.assign({}, options.schema.settings, { database: options.database })
-  let model = Model(options.name, JSON.parse(fields), null, settings, settings.database)
+  let model = Model(options.name, fields, null, settings, settings.database)
   let isMediaCollection = settings.type && settings.type === 'mediaCollection'
   let controller = isMediaCollection
     ? MediaController(model, this)
@@ -540,10 +541,10 @@ Server.prototype.addCollectionResource = function (options) {
 
     try {
       let schemaObj = require(options.filepath)
-      let fields = help.getFieldsFromSchema(schemaObj)
+      let parsedSchema = JSON.parse(schemaObj)
 
-      this.components[options.route].model.schema = JSON.parse(fields)
-      this.components[options.route].model.settings = schemaObj.settings
+      this.components[options.route].model.schema = parsedSchema.fields
+      this.components[options.route].model.settings = parsedSchema.settings
     } catch (e) {
       // If file was removed, "un-use" this component.
       if (e && e.code === 'ENOENT') {

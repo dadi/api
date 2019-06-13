@@ -51,8 +51,6 @@ describe('Cache', function (done) {
 
                 bearerToken = token
 
-                help.clearCache()
-
                 cacheKeys = [] // resets the array for the next test
 
                 help.createDoc(adminBearerToken, function (err, doc) {
@@ -391,6 +389,7 @@ describe('Cache', function (done) {
 
     beforeEach(function (done) {
       cache.reset()
+      help.clearCache()
 
       c = cache(app)
       c.cache.cacheHandler.redisClient = fakeredis.createClient()
@@ -426,8 +425,6 @@ describe('Cache', function (done) {
                 if (err) return done(err)
 
                 bearerToken = token
-
-                help.clearCache()
 
                 help.createDoc(adminBearerToken, function (err, doc) {
                   if (err) return done(err)

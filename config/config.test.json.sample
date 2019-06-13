@@ -56,5 +56,9 @@
   },
   "feedback": false,
   "cors": false,
-  "cluster": false
+  "cluster": false,
+  "workQueue": {
+    "debounceTime": 0,
+    "pollingTime": 0
+  }
 }

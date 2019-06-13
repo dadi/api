@@ -1,6 +1,8 @@
-const acl = require('./../model/acl')
-const config = require('./../../../config')
-const help = require('./../help')
+const acl = require('../model/acl')
+const config = require('../../../config')
+const help = require('../help')
+const log = require('@dadi/logger')
+const search = require('../model/search')
 
 const SearchIndex = function (server) {
   this.server = server
@@ -23,21 +25,22 @@ SearchIndex.prototype.post = function (req, res, next) {
   }
 
   res.statusCode = 204
-  res.end(JSON.stringify({'message': 'Indexing started'}))
+  res.end()
+
+  const models = Object.keys(this.server.components)
+    .map(key => {
+      const component = this.server.components[key]
+      const hasModel = component.model &&
+        component.model.constructor.name === 'Model'
+
+      return hasModel ? component.model : null
+    })
+    .filter(Boolean)
 
   try {
-    Object.keys(this.server.components).forEach(key => {
-      let value = this.server.components[key]
-
-      let hasModel = Object.keys(value).includes('model') &&
-        value.model.constructor.name === 'Model'
-
-      if (hasModel) {
-        value.model.searchHandler.batchIndex()
-      }
-    })
-  } catch (err) {
-    console.log(err)
+    search.batchIndexCollections(models)
+  } catch (error) {
+    log.error({module: 'batch index'}, error)
   }
 }
 

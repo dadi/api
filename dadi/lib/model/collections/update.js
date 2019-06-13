@@ -2,6 +2,7 @@ const async = require('async')
 const debug = require('debug')('api:model')
 const Hook = require('./../hook')
 const logger = require('@dadi/logger')
+const search = require('./../search')
 
 /**
  * Block with metadata pertaining to an API collection.
@@ -233,15 +234,19 @@ function update ({
 
       // Run any `afterUpdate` hooks.
       if (hooks && Array.isArray(hooks.afterUpdate)) {
-        hooks.afterUpdate.forEach((hookConfig, index) => {
-          let hook = new Hook(hooks.afterUpdate[index], 'afterUpdate')
+        hooks.afterUpdate.forEach(hookConfig => {
+          let hook = new Hook(hookConfig, 'afterUpdate')
 
           return hook.apply(data.results, this.schema, this.name)
         })
       }
 
-      // Asynchronous search index.
-      this.searchHandler.index(data.results)
+      // Index all the created documents for search, as a background job.
+      search.indexDocumentsInTheBackground({
+        documents: data.results,
+        model: this,
+        original: updatedDocuments
+      })
 
       // Format result set for output.
       if (!rawOutput) {
@@ -263,7 +268,7 @@ function update ({
     if (this.history && updatedDocuments.length > 0) {
       return this.history.addVersion(updatedDocuments, {
         description
-      }).then(historyResponse => response)
+      }).then(() => response)
     }
 
     return response

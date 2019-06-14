@@ -64,13 +64,7 @@ const SCHEMA_WORDS = {
  * @classdesc Indexes documents as they are inserted/updated, and performs
  *            search tasks.
  */
-const Search = function () {
-  this.initialise()
-const Search = function() {
-  if (config.get('search.enabled')) {
-    this.initialise()
-  }
-}
+const Search = function () {}
 
 /**
  * Indexes for search every document in the given collection.
@@ -707,6 +701,10 @@ Search.prototype.indexDocumentsInTheBackground = function ({
  * Initialises the word and search collections.
  */
 Search.prototype.initialise = function () {
+  if (!config.get('search.enabled')) {
+    return
+  }
+
   const searchDatabase = config.get('search.database')
 
   // If there is a specific data connector specified for search, we'll use it.
@@ -745,6 +743,15 @@ Search.prototype.initialise = function () {
   this.wordConnection.once('connect', database => {
     database.index(this.wordCollection, SCHEMA_WORDS.settings.index)
   })
+}
+
+/**
+ * Returns whether the search functionality is enabled for the API.
+ *
+ * @return {Boolean}
+ */
+Search.prototype.isEnabled = function () {
+  return config.get('search.enabled')
 }
 
 /**

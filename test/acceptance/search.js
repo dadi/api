@@ -22,14 +22,11 @@ describe('Search', function () {
       help.dropDatabase('testdb', err => {
         if (err) return done(err)
   
-        config.set('search', {
-          'enabled': true,
-          'minQueryLength': 3,
-          'wordCollection': 'words',
-          'datastore': './../../../test/test-connector',
-          'database': 'testdb'
-        })
-  
+        config.set('search.enabled', true)
+        config.set('search.minQueryLength', 3)
+        config.set('search.wordCollection', 'words')
+        config.set('search.datastore', './../../../test/test-connector')
+        config.set('search.database', 'testdb')
         config.set('i18n.languages', ['fr', 'pt'])
   
         app.start(function () {

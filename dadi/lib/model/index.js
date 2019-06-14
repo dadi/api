@@ -81,7 +81,7 @@ const Model = function (name, schema, connection, settings) {
   if (this.settings.index && !Array.isArray(this.settings.index)) {
     this.settings.index = [
       {
-        keys: this.settings.index.keys,
+        keys: this.settings.index.keys || {},
         options: this.settings.index.options || {}
       }
     ]

@@ -20,13 +20,11 @@ let docs
 
 describe('Collections API', () => {
   before(done => {
-    config.set('search', {
-      'enabled': true,
-      'minQueryLength': 3,
-      'wordCollection': 'words',
-      'datastore': './../../../test/test-connector',
-      'database': 'testdb'
-    })
+    config.set('search.enabled', true)
+    config.set('search.minQueryLength', 3)
+    config.set('search.wordCollection', 'words')
+    config.set('search.datastore', './../../../test/test-connector')
+    config.set('search.database', 'testdb')
 
     app.start(err => {
       if (err) return done(err)
@@ -74,13 +72,11 @@ describe('Collections API', () => {
 
   after(done => {
     help.removeACLData(() => {
-      config.set('search', {
-        'enabled': false,
-        'minQueryLength': 3,
-        'wordCollection': 'words',
-        'datastore': './../../../test/test-connector',
-        'database': 'testdb'
-      })
+      config.set('search.enabled', false)
+      config.set('search.minQueryLength', 3)
+      config.set('search.wordCollection', 'words')
+      config.set('search.datastore', './../../../test/test-connector')
+      config.set('search.database', 'testdb')
 
       app.stop(done)
     })

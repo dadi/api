@@ -177,9 +177,11 @@ function deleteFn ({
       }).then(result => {
         // Add a background job to the work queue that deletes from the search
         // collection each reference to the documents that were just deleted.
-        workQueue.queueBackgroundJob(() => {
-          search.delete(deletedDocuments)
-        })
+        if (search.isEnabled()) {
+          workQueue.queueBackgroundJob(() => {
+            search.delete(deletedDocuments)
+          })
+        }
 
         return result
       })

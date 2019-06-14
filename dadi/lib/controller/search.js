@@ -6,6 +6,8 @@ const searchModel = require('./../model/search')
 const url = require('url')
 
 const Search = function (server, modelFactory) {
+  searchModel.initialise()
+
   server.app.routeMethods('/api/search', {
     get: this.get.bind(this)
   })

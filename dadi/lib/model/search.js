@@ -708,7 +708,6 @@ Search.prototype.indexDocumentsInTheBackground = function ({
  */
 Search.prototype.initialise = function () {
   const searchDatabase = config.get('search.database')
-  const searchDatastore = config.get('search.datastore')
 
   // If there is a specific data connector specified for search, we'll use it.
   // Otherwise, we use the main data connector.

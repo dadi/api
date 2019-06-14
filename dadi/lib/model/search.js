@@ -66,6 +66,10 @@ const SCHEMA_WORDS = {
  */
 const Search = function () {
   this.initialise()
+const Search = function() {
+  if (config.get('search.enabled')) {
+    this.initialise()
+  }
 }
 
 /**
@@ -705,6 +709,11 @@ Search.prototype.indexDocumentsInTheBackground = function ({
 Search.prototype.initialise = function () {
   const searchDatabase = config.get('search.database')
   const searchDatastore = config.get('search.datastore')
+
+  // If there is a specific data connector specified for search, we'll use it.
+  // Otherwise, we use the main data connector.
+  const searchDatastore =
+    config.get('search.datastore') || config.get('datastore')
 
   // Initialising index collection.
   this.indexCollection = config.get('search.indexCollection')

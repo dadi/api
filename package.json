@@ -89,7 +89,7 @@
   },
   "dataConnectorDependencies": {
     "@dadi/api-mongodb": "4.2.0",
-    "@dadi/api-filestore": "0.11.3"
+    "@dadi/api-filestore": "0.11.4"
   },
   "greenkeeper": {
     "ignore": [

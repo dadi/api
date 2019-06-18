@@ -23,10 +23,10 @@ module.exports.beforeOutput = function ({
   let normalisedValue = isArraySyntax ? input[field] : [input[field]]
   let mediaObjectIDs = normalisedValue.map(value => {
     if (value && typeof value !== 'string') {
-      return value._id
+      return value._id.toString()
     }
 
-    return value
+    return value ? value.toString() : value
   }).filter(Boolean)
   let composedIDs = []
 
@@ -54,14 +54,16 @@ module.exports.beforeOutput = function ({
         : {}
 
       if (mediaObjects[id]) {
-        let mergedValue = Object.assign({}, mediaObjects[id], value)
+        let mergedValue = Object.assign({}, mediaObjects[id], value, {
+          _id: id
+        })
         let sortedValue = Object.keys(mergedValue).sort().reduce((sortedValue, field) => {
           sortedValue[field] = mergedValue[field]
 
           return sortedValue
         }, {})
 
-        composedIDs.push(id.toString())
+        composedIDs.push(id)
 
         return sortedValue
       }

@@ -498,7 +498,7 @@ Search.prototype.getWordsForDocument = function (document, indexableFields) {
     const value = document[fieldString]
 
     // Ignore non-indexable fields.
-    if (!indexableFields[field]) {
+    if (!indexableFields[field] || typeof value !== 'string') {
       return
     }
 

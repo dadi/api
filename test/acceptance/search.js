@@ -250,6 +250,64 @@ describe('Search', function () {
       })
     })
 
+    it('should remove a document from search results when it is updated and its indexable field that would match the query has been unset', done => {
+      const doc = {
+        author: 'Leo Tolstoy',
+        title: 'War and Peace'
+      }
+
+      client
+      .post('/vtest/testdb/first-schema')
+      .set('Authorization', 'Bearer ' + bearerToken)
+      .set('content-type', 'application/json')
+      .send(doc)
+      .expect(200)
+      .end((err, res) => {
+        const insertedDocument = res.body.results[0]
+
+        setTimeout(() => {
+          client
+          .get('/vtest/testdb/first-schema/search?q=peace')
+          .set('Authorization', 'Bearer ' + bearerToken)
+          .expect(200)
+          .end((err, res) => {
+            if (err) return done(err)
+            should.exist(res.body.results)
+
+            res.body.results.should.be.Array
+            res.body.results.length.should.eql(1)
+
+            doc.author = 'Gabriel García Márquez'
+            doc.title = 'Love in the Time of Cholera'
+
+            client
+            .put('/vtest/testdb/first-schema/' + insertedDocument._id)
+            .set('Authorization', 'Bearer ' + bearerToken)
+            .set('content-type', 'application/json')
+            .send({title: null})
+            .expect(200)
+            .end((err, res) => {
+              setTimeout(() => {
+                client
+                .get('/vtest/testdb/first-schema/search?q=peace')
+                .set('Authorization', 'Bearer ' + bearerToken)
+                .expect(200)
+                .end((err, res) => {
+                  if (err) return done(err)
+                  should.exist(res.body.results)
+
+                  res.body.results.should.be.Array
+                  res.body.results.length.should.eql(0)
+
+                  done()
+                })
+              }, 800)
+            })
+          })
+        }, 800)
+      })
+    })
+
     it('should not update the index when only non-searchable fields are updated', done => {
       const doc = {
         author: 'Leo Tolstoy',

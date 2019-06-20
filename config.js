@@ -11,19 +11,22 @@ var conf = convict({
   },
   publicUrl: {
     host: {
-      doc: 'The host of the URL where the API instance can be publicly accessed at',
+      doc:
+        'The host of the URL where the API instance can be publicly accessed at',
       format: '*',
       default: null,
       env: 'URL_HOST'
     },
     port: {
-      doc: 'The port of the URL where the API instance can be publicly accessed at',
+      doc:
+        'The port of the URL where the API instance can be publicly accessed at',
       format: '*',
       default: null,
       env: 'URL_PORT'
     },
     protocol: {
-      doc: 'The protocol of the URL where the API instance can be publicly accessed at',
+      doc:
+        'The protocol of the URL where the API instance can be publicly accessed at',
       format: 'String',
       default: 'http',
       env: 'URL_PROTOCOL'
@@ -31,13 +34,15 @@ var conf = convict({
   },
   server: {
     host: {
-      doc: 'Accept connections on the specified address. If the host is omitted, the server will accept connections on any IPv6 address (::) when IPv6 is available, or any IPv4 address (0.0.0.0) otherwise.',
+      doc:
+        'Accept connections on the specified address. If the host is omitted, the server will accept connections on any IPv6 address (::) when IPv6 is available, or any IPv4 address (0.0.0.0) otherwise.',
       format: '*',
       default: null,
       env: 'HOST'
     },
     port: {
-      doc: 'Accept connections on the specified port. A value of zero will assign a random port.',
+      doc:
+        'Accept connections on the specified port. A value of zero will assign a random port.',
       format: Number,
       default: 8081,
       env: 'PORT'
@@ -79,14 +84,16 @@ var conf = convict({
       env: 'SSL_INTERMEDIATE_CERTIFICATE_PATH'
     },
     sslIntermediateCertificatePaths: {
-      doc: 'The filenames of SSL intermediate certificates, overrides sslIntermediateCertificate (singular)',
+      doc:
+        'The filenames of SSL intermediate certificates, overrides sslIntermediateCertificate (singular)',
       format: Array,
       default: [],
       env: 'SSL_INTERMEDIATE_CERTIFICATE_PATHS'
     }
   },
   datastore: {
-    doc: 'The name of the npm module that implements the data connector used for storing documents',
+    doc:
+      'The name of the npm module that implements the data connector used for storing documents',
     format: String,
     default: '@dadi/api-mongodb'
   },
@@ -107,7 +114,8 @@ var conf = convict({
       default: 'YOU-MUST-CHANGE-ME!'
     },
     accessCollection: {
-      doc: 'The name of the internal collection used to store aggregate permissions data',
+      doc:
+        'The name of the internal collection used to store aggregate permissions data',
       format: String,
       default: 'accessStore'
     },
@@ -122,7 +130,8 @@ var conf = convict({
       default: 'roleStore'
     },
     datastore: {
-      doc: 'The name of the npm module that implements the data connector used for authentication',
+      doc:
+        'The name of the npm module that implements the data connector used for authentication',
       format: String,
       default: '@dadi/api-mongodb'
     },
@@ -131,13 +140,41 @@ var conf = convict({
       format: String,
       default: 'test',
       env: 'DB_AUTH_NAME'
+    },
+    hashSecrets: {
+      doc: 'Whether to hash client secrets',
+      format: Boolean,
+      default: true
+    },
+    saltRounds: {
+      doc: 'The number of rounds to go through when hashing a password',
+      format: Number,
+      default: 10
     }
   },
   search: {
+    database: {
+      doc:
+        'The name of the database to use for storing and querying indexed documents',
+      format: String,
+      default: 'search',
+      env: 'DB_SEARCH_NAME'
+    },
+    datastore: {
+      doc: 'The datastore to use for storing and querying indexed documents',
+      format: String,
+      default: ''
+    },
     enabled: {
       doc: 'If true, API responds to collection /search endpoints',
       format: Boolean,
       default: false
+    },
+    indexCollection: {
+      doc:
+        'The name of the datastore collection that will hold the index of word matches',
+      format: String,
+      default: 'searchIndex'
     },
     minQueryLength: {
       doc: 'Minimum search string length',
@@ -145,20 +182,10 @@ var conf = convict({
       default: 3
     },
     wordCollection: {
-      doc: 'The name of the datastore collection that will hold tokenized words',
+      doc:
+        'The name of the datastore collection that will hold tokenized words',
       format: String,
-      default: 'words'
-    },
-    datastore: {
-      doc: 'The datastore to use for storing and querying indexed documents',
-      format: String,
-      default: '@dadi/api-mongodb'
-    },
-    database: {
-      doc: 'The name of the database to use for storing and querying indexed documents',
-      format: String,
-      default: 'search',
-      env: 'DB_SEARCH_NAME'
+      default: 'searchWords'
     }
   },
   caching: {
@@ -196,7 +223,8 @@ var conf = convict({
     },
     redis: {
       enabled: {
-        doc: 'If enabled, cache files will be saved to the specified Redis server',
+        doc:
+          'If enabled, cache files will be saved to the specified Redis server',
         format: Boolean,
         default: false,
         env: 'REDIS_ENABLED'
@@ -249,7 +277,8 @@ var conf = convict({
     },
     accessLog: {
       enabled: {
-        doc: 'If true, HTTP access logging is enabled. The log file name is similar to the setting used for normal logging, with the addition of "access". For example `api.access.log`.',
+        doc:
+          'If true, HTTP access logging is enabled. The log file name is similar to the setting used for normal logging, with the addition of "access". For example `api.access.log`.',
         format: Boolean,
         default: true
       },
@@ -290,14 +319,16 @@ var conf = convict({
       default: false
     },
     routes: {
-      doc: 'An array of routes to test. Each route object must contain properties `route` and `expectedResponseTime`.',
+      doc:
+        'An array of routes to test. Each route object must contain properties `route` and `expectedResponseTime`.',
       format: Array,
       default: []
     }
   },
   query: {
     useVersionFilter: {
-      doc: 'If true, the API version parameter is extracted from the request URL and passed to the database query',
+      doc:
+        'If true, the API version parameter is extracted from the request URL and passed to the database query',
       format: Boolean,
       default: false
     }
@@ -319,7 +350,8 @@ var conf = convict({
       default: 'catboat-beatific-drizzle'
     },
     tokenExpiresIn: {
-      doc: 'The duration a signed token is valid for. Expressed in seconds or a string describing a time span (https://github.com/zeit/ms). Eg: 60, "2 days", "10h", "7d"',
+      doc:
+        'The duration a signed token is valid for. Expressed in seconds or a string describing a time span (https://github.com/zeit/ms). Eg: 60, "2 days", "10h", "7d"',
       format: '*',
       default: '1h'
     },
@@ -334,19 +366,22 @@ var conf = convict({
       default: 'workspace/media'
     },
     pathFormat: {
-      doc: 'Determines the format for the generation of subdirectories to store uploads',
+      doc:
+        'Determines the format for the generation of subdirectories to store uploads',
       format: ['none', 'date', 'datetime', 'sha1/4', 'sha1/5', 'sha1/8'],
       default: 'date'
     },
     s3: {
       accessKey: {
-        doc: 'The access key used to connect to an S3-compatible storage provider',
+        doc:
+          'The access key used to connect to an S3-compatible storage provider',
         format: String,
         default: '',
         env: 'AWS_S3_ACCESS_KEY'
       },
       secretKey: {
-        doc: 'The secret key used to connect to an S3-compatible storage provider',
+        doc:
+          'The secret key used to connect to an S3-compatible storage provider',
         format: String,
         default: '',
         env: 'AWS_S3_SECRET_KEY'
@@ -378,12 +413,14 @@ var conf = convict({
     arg: 'node_env'
   },
   cluster: {
-    doc: 'If true, API runs in cluster mode, starting a worker for each CPU core',
+    doc:
+      'If true, API runs in cluster mode, starting a worker for each CPU core',
     format: Boolean,
     default: false
   },
   cors: {
-    doc: 'If true, responses will include headers for cross-domain resource sharing',
+    doc:
+      'If true, responses will include headers for cross-domain resource sharing',
     format: Boolean,
     default: true
   },
@@ -394,7 +431,8 @@ var conf = convict({
   },
   databaseConnection: {
     maxRetries: {
-      doc: 'The maximum number of times to reconnection attempts after a database fails',
+      doc:
+        'The maximum number of times to reconnection attempts after a database fails',
       format: Number,
       default: 10
     }
@@ -422,6 +460,20 @@ var conf = convict({
       format: Boolean,
       default: true
     }
+  },
+  workQueue: {
+    debounceTime: {
+      doc:
+        'The amount of idle time (in ms) required for the work queue to start a background job',
+      format: Number,
+      default: 500
+    },
+    pollingTime: {
+      doc:
+        'The interval (in ms) at which the work queue checks for new background jobs',
+      format: Number,
+      default: 200
+    }
   }
 })
 
@@ -430,7 +482,7 @@ var env = conf.get('env')
 conf.loadFile('./config/config.' + env + '.json')
 
 // Load domain-specific configuration
-conf.updateConfigDataForDomain = function (domain) {
+conf.updateConfigDataForDomain = function(domain) {
   var domainConfig = './config/' + domain + '.json'
 
   try {
@@ -447,6 +499,6 @@ conf.updateConfigDataForDomain = function (domain) {
 }
 
 module.exports = conf
-module.exports.configPath = function () {
+module.exports.configPath = function() {
   return './config/config.' + conf.get('env') + '.json'
 }

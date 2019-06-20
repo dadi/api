@@ -1,5 +1,11 @@
 const ACLMatrix = require('./matrix')
+const bcrypt = require('bcrypt')
+const config = require('./../../../../config.js')
 const roleModel = require('./role')
+
+// This value should be incremented if we ever replace bcrypt with another
+// hashing algorithm.
+const HASH_VERSION = 1
 
 const Client = function () {
   this.schema = {
@@ -54,11 +60,18 @@ Client.prototype.broadcastWrite = function (input) {
 /**
  * Creates a client.
  *
- * @param  {Object} client
+ * @param  {Object}  client
+ * @param  {Boolean} options.allowAccessType
  * @return {Promise<Object>}
  */
-Client.prototype.create = function (client) {
-  return this.validate(client).then(() => {
+Client.prototype.create = function (client, {
+  allowAccessType = false
+} = {}) {
+  const allowedFields = allowAccessType ? ['accessType'] : []
+
+  return this.validate(client, {
+    allowedFields
+  }).then(() => {
     return this.model.find({
       options: {
         fields: {
@@ -75,6 +88,10 @@ Client.prototype.create = function (client) {
         new Error('CLIENT_EXISTS')
       )
     }
+
+    return this.hashSecret(client.secret, client)
+  }).then(hashedsecret => {
+    client.secret = hashedsecret
 
     return this.model.create({
       documents: [client],
@@ -133,7 +150,9 @@ Client.prototype.formatForOutput = function (client) {
 }
 
 /**
- * Retrieves clients by ID.
+ * Retrieves clients by ID. When a secret is supplied, it is validated
+ * against the hash that is stored in the database. If they don't match,
+ * an empty result set is returned.
  *
  * @param  {String} clientId
  * @param  {String} secret
@@ -146,25 +165,57 @@ Client.prototype.get = function (clientId, secret) {
     query.clientId = clientId
   }
 
-  if (typeof secret === 'string') {
-    query.secret = secret
-  }
-
   return this.model.find({
     query
   }).then(response => {
-    let formattedResults = response.results.map(result => {
-      let resources = new ACLMatrix(result.resources)
+    const {results} = response
+    const mustValidateSecret = results.length === 1 &&
+      typeof secret === 'string'
+    const [record] = results
+    const secretValidation = mustValidateSecret
+      ? this.validateSecret(record.secret, secret, record._hashVersion)
+      : Promise.resolve(true)
 
-      return Object.assign({}, result, {
-        resources: resources.getAll()
+    return secretValidation.then(secretIsValid => {
+      if (!secretIsValid) {
+        return []
+      }
+
+      return results.map(result => {
+        let resources = new ACLMatrix(result.resources)
+
+        return Object.assign({}, result, {
+          resources: resources.getAll()
+        })
       })
     })
-
+  }).then(results => {
     return {
-      results: formattedResults
+      results
     }
   })
+}
+
+/**
+ * Generates a hash from a secret. If `target` is supplied, a `_hashVersion_`
+ * property will be added to that object.
+ *
+ * @param  {String}  secret
+ * @param  {Object}  target
+ * @return {Promise<String>}
+ */
+Client.prototype.hashSecret = function (secret, target) {
+  if (!config.get('auth.hashSecrets')) {
+    return Promise.resolve(secret)
+  }
+
+  const saltRounds = config.get('auth.saltRounds')
+
+  if (target) {
+    target._hashVersion = HASH_VERSION
+  }
+
+  return bcrypt.hash(secret, saltRounds)
 }
 
 /**
@@ -477,6 +528,11 @@ Client.prototype.roleRemove = function (clientId, roles) {
   })
 }
 
+/**
+ * Sets an internal reference to the instance of Model.
+ *
+ * @param {Object} model
+ */
 Client.prototype.setModel = function (model) {
   this.model = model
 }
@@ -501,16 +557,13 @@ Client.prototype.setWriteCallback = function (callback) {
  * @return {Promise<Object>}
  */
 Client.prototype.update = function (clientId, update) {
-  let findQuery = {
+  const {currentSecret, secret} = update
+  const findQuery = {
     clientId
   }
-  let isUpdatingSecret = typeof update.currentSecret === 'string'
 
-  if (isUpdatingSecret) {
-    findQuery.secret = update.currentSecret
-
-    delete update.currentSecret
-  }
+  delete update.currentSecret
+  delete update.secret
 
   return this.validate(update, {
     blockedFields: ['clientId'],
@@ -519,24 +572,54 @@ Client.prototype.update = function (clientId, update) {
     return this.model.find({
       options: {
         fields: {
-          data: 1
+          _hashVersion: 1,
+          data: 1,
+          secret: 1
         }
       },
       query: findQuery
     })
   }).then(({results}) => {
     if (results.length === 0) {
-      if (isUpdatingSecret) {
-        return Promise.reject(
-          new Error('INVALID_SECRET')
-        )
-      }
-
       return Promise.reject(
         new Error('CLIENT_NOT_FOUND')
       )
     }
 
+    const [record] = results
+
+    // If a `currentSecret` property was sent, we must validate it against the
+    // hashed secret in the database.
+    if (typeof currentSecret === 'string') {
+      return this.validateSecret(
+        record.secret,
+        currentSecret,
+        record._hashVersion
+      ).then(secretIsValid => {
+        if (!secretIsValid) {
+          return Promise.reject(
+            new Error('INVALID_SECRET')
+          )
+        }
+
+        return results
+      })
+    }
+
+    return results
+  }).then(results => {
+    // If we're trying to update the client's secret, we must hash it
+    // before sending it to the database.
+    if (typeof secret === 'string') {
+      return this.hashSecret(secret, update).then(hashedSecret => {
+        update.secret = hashedSecret
+
+        return results
+      })
+    }
+
+    return results
+  }).then(results => {
     if (update.data) {
       let mergedData = Object.assign({}, results[0].data, update.data)
 
@@ -566,10 +649,13 @@ Client.prototype.update = function (clientId, update) {
  * resolved with `undefined` otherwise.
  *
  * @param  {String}   client
+ * @param  {Boolean}  options.allowedFields A whitelist of fields
+ * @param  {Boolean}  options.blockedFields A blacklist of fields
  * @param  {Boolean}  options.partial Whether this is a partial value
  * @return {Promise}
  */
 Client.prototype.validate = function (client, {
+  allowedFields = [],
   blockedFields = [],
   partial = false
 } = {}) {
@@ -588,7 +674,8 @@ Client.prototype.validate = function (client, {
   let invalidFields = Object.keys(this.schema).filter(field => {
     if (
       client[field] !== undefined &&
-      this.schema[field].allowedInInput === false
+      this.schema[field].allowedInInput === false &&
+      !allowedFields.includes(field)
     ) {
       return true
     }
@@ -615,6 +702,28 @@ Client.prototype.validate = function (client, {
   }
 
   return Promise.resolve()
+}
+
+/**
+ * Validates a secret against a stored hash, returning a Promise that
+ * resolves to `true` if there is a match and `false` otherwise.
+ *
+ * @param  {String}   hash
+ * @param  {String}   candidate
+ * @return {Promise<Boolean>}
+ */
+Client.prototype.validateSecret = function (hash, candidate, hashVersion) {
+  if (!config.get('auth.hashSecrets')) {
+    return Promise.resolve(hash === candidate)
+  }
+
+  if (hashVersion !== HASH_VERSION) {
+    return Promise.reject(
+      new Error('CLIENT_NEEDS_UPGRADE')
+    )
+  }
+
+  return bcrypt.compare(candidate, hash)
 }
 
 module.exports = new Client()

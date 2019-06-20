@@ -1,24 +1,18 @@
 const crypto = require('crypto')
 const fs = require('fs')
-const path = require('path')
 const should = require('should')
 const request = require('supertest')
 // const redis = require('redis');
 const fakeredis = require('fakeredis')
 const sinon = require('sinon')
-const proxyquire = require('proxyquire')
 const url = require('url')
-const _ = require('underscore')
 
 const config = require(__dirname + '/../../config.js')
 const app = require(__dirname + '/../../dadi/lib/')
-const api = require(__dirname + '/../../dadi/lib/api')
-const Server = require(__dirname + '/../../dadi/lib')
 const cache = require(__dirname + '/../../dadi/lib/cache')
 const help = require(__dirname + '/help')
 
 let configBackup
-let testConfigString
 let cacheKeys = []
 let bearerToken
 
@@ -46,6 +40,7 @@ describe('Cache', function (done) {
 
   it('should use cache if available', function (done) {
     config.set('caching.directory.enabled', true)
+    help.clearCache()
 
     app.start(function () {
       help.dropDatabase('testdb', function (err) {
@@ -55,7 +50,6 @@ describe('Cache', function (done) {
           if (err) return done(err)
 
           bearerToken = token
-          help.clearCache()
 
           var client = request('http://' + config.get('server.host') + ':' + config.get('server.port'))
 
@@ -95,7 +89,6 @@ describe('Cache', function (done) {
                     res3.headers['x-cache'].should.eql('HIT')
 
                     help.removeTestClients(function () {
-                      help.clearCache()
                       app.stop(done)
                     })
                   })
@@ -110,6 +103,7 @@ describe('Cache', function (done) {
 
   it('should allow bypassing cache with query string flag', function (done) {
     config.set('caching.directory.enabled', true)
+    help.clearCache()
 
     app.start(function () {
       help.dropDatabase('testdb', function (err) {
@@ -119,7 +113,6 @@ describe('Cache', function (done) {
           if (err) return done(err)
 
           bearerToken = token
-          help.clearCache()
 
           var client = request('http://' + config.get('server.host') + ':' + config.get('server.port'))
 
@@ -153,7 +146,6 @@ describe('Cache', function (done) {
                 res2.headers['x-cache-lookup'].should.eql('HIT')
 
                 help.removeTestClients(function () {
-                  help.clearCache()
                   app.stop(done)
                 })
               })
@@ -167,6 +159,7 @@ describe('Cache', function (done) {
   it('should allow disabling through config', function (done) {
     config.set('caching.directory.enabled', false)
     config.set('caching.redis.enabled', false)
+    help.clearCache()
 
     var spy = sinon.spy(fs, 'createWriteStream')
 
@@ -176,7 +169,6 @@ describe('Cache', function (done) {
         help.getBearerToken(function (err, token) {
           if (err) return done(err)
           bearerToken = token
-          help.clearCache()
 
           var client = request('http://' + config.get('server.host') + ':' + config.get('server.port'))
 
@@ -223,8 +215,7 @@ describe('Cache', function (done) {
     beforeEach(function (done) {
       config.set('caching.directory.enabled', true)
       config.set('caching.redis.enabled', false)
-
-      cache.reset()
+      help.clearCache()
 
       app.start(function () {
         help.dropDatabase('testdb', function (err) {
@@ -234,7 +225,6 @@ describe('Cache', function (done) {
             if (err) return done(err)
 
             bearerToken = token
-            help.clearCache()
             done()
           })
         })
@@ -248,7 +238,8 @@ describe('Cache', function (done) {
     })
 
     it('should save responses to the file system', function (done) {
-      var spy = sinon.spy(fs, 'createWriteStream')
+      let cacheHandler = cache().cache.cacheHandler
+      var spy = sinon.spy(cacheHandler, 'set')
 
       request('http://' + config.get('server.host') + ':' + config.get('server.port'))
       .get('/vtest/testdb/test-schema')
@@ -261,9 +252,9 @@ describe('Cache', function (done) {
           spy.called.should.be.true
           var args = spy.getCall(0).args
 
-          args[0].indexOf('cache/api').should.be.above(-1)
-
           spy.restore()
+          args[0].indexOf('.gz').should.be.above(-1)
+
           done()
         }, 1000)
       })
@@ -275,7 +266,7 @@ describe('Cache', function (done) {
       var oldTTL = config.get('caching.ttl')
       config.set('caching.ttl', 1)
 
-      cache.reset()
+      // cache.reset()
 
       var _done = done
       done = function (err) {
@@ -427,7 +418,7 @@ describe('Cache', function (done) {
                           .end(function (err, getRes3) {
                             if (err) return done(err)
 
-                            var result = _.findWhere(getRes3.body.results, { '_id': id })
+                            var result = getRes3.body.results.find(item => item._id === id)
 
                             result.field1.should.eql('foo bar baz!')
 
@@ -503,7 +494,7 @@ describe('Cache', function (done) {
                           .end(function (err, getRes3) {
                             if (err) return done(err)
 
-                            var result = _.findWhere(getRes3.body.results, { '_id': id })
+                            var result = getRes3.body.results.find(item => item._id === id)
 
                             should.not.exist(result)
 
@@ -585,7 +576,7 @@ describe('Cache', function (done) {
       var query = url.parse(requestUrl, true).query
       var modelDir = crypto.createHash('sha1').update(url.parse(requestUrl).pathname).digest('hex')
       var filename = crypto.createHash('sha1').update(url.parse(requestUrl).pathname + JSON.stringify(query)).digest('hex')
-      var cacheKey = modelDir + '_' + filename
+      var cacheKey = modelDir + '_' + filename + '.gz'
 
       try {
         app.start(function () {
@@ -642,6 +633,7 @@ describe('Cache', function (done) {
 
             client
             .get(requestUrl)
+            .set('Accept-Encoding', 'identity')
             .set('Authorization', 'Bearer ' + bearerToken)
             .expect(200)
             .end(function (err, res) {
@@ -934,7 +926,7 @@ describe('Cache', function (done) {
                                   .set('Authorization', 'Bearer ' + bearerToken)
                                   .expect(200)
                                   .end(function (err, getRes3) {
-                                    var result = _.findWhere(getRes3.body.results, { '_id': id })
+                                    var result = getRes3.body.results.find(item => item._id === id)
                                     result.field1.should.eql('foo bar baz!')
                                     app.stop(done)
                                   })
@@ -1047,7 +1039,7 @@ describe('Cache', function (done) {
                                     .set('Authorization', 'Bearer ' + bearerToken)
                                     .expect(200)
                                     .end(function (err, getRes3) {
-                                      var result = _.findWhere(getRes3.body.results, { '_id': id })
+                                      var result = getRes3.body.results.find(item => item._id === id)
                                       should.not.exist(result)
                                       app.stop(done)
                                     })

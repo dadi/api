@@ -30,7 +30,7 @@ Collections.prototype.get = function (req, res, next) {
         return false
       }
 
-      let aclKey = this.server.components[key].model.aclKey
+      let aclKey = this.server.components[key].model.getAclKey()
 
       if (!clientIsAdmin && (!access[aclKey] || !access[aclKey].read)) {
         return false

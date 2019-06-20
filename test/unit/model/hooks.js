@@ -2,7 +2,6 @@
 
 var sinon = require('sinon')
 var should = require('should')
-var _ = require('underscore')
 
 var model = require(__dirname + '/../../../dadi/lib/model')
 var hook = require(__dirname + '/../../../dadi/lib/model/hook')
@@ -827,7 +826,7 @@ describe('Hook', function () {
       }
 
       var inspectFunction = function (obj, type, data) {
-        console.log('obj :', obj);
+        console.log('obj :', obj)
         JSON.stringify(data.schema).should.eql(JSON.stringify(schema))
         data.collection.should.eql('testModelName')
 

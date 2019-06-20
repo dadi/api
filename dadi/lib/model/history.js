@@ -1,70 +1,103 @@
-const debug = require('debug')('api:history')
-const deepClone = require('deep-clone')
+const config = require('./../../../config')
+const Connection = require('./connection')
+const logger = require('@dadi/logger')
 
-const History = function (model) {
-  this.model = model
+/**
+ * Document history manager.
+ *
+ * @param {String} options.database Name of the database
+ * @param {String} options.name     Name of the collection
+ */
+const History = function ({database, name}) {
+  this.name = name
+  this.connection = Connection(
+    {
+      collection: name,
+      database
+    },
+    name,
+    config.get('datastore')
+  )
 }
 
-History.prototype.create = function (obj, model, done) {
-  // create copy of original
-  let revisionObj = deepClone(obj)
+/**
+ * Stores a version of a document as a diff.
+ *
+ * @param {Array<Object>} documents           Documents to add
+ * @param {String}        options.description Optional message describing the operation
+ */
+History.prototype.addVersion = function (documents, {description}) {
+  const versions = documents.map(document => {
+    let version = Object.assign({}, document, {
+      _document: document._id
+    })
 
-  revisionObj._originalDocumentId = obj._id
+    delete version._id
 
-  delete revisionObj._id
-
-  const _done = function (database) {
-    if (Array.isArray(database.settings.internalProperties)) {
-      database.settings.internalProperties.forEach(property => {
-        delete revisionObj[property]
-      })
+    if (typeof description === 'string' && description.length > 0) {
+      version._changeDescription = description
     }
 
-    database.insert({
-      data: revisionObj,
-      collection: model.revisionCollection,
-      schema: model.schema,
-      settings: model.settings
-    }).then((doc) => {
-      debug('inserted %o', doc)
+    return version
+  })
 
-      // TODO: remove mongo options
-      database.update({
-        query: { _id: obj._id },
-        collection: model.name,
-        update: { $push: { '_history': doc[0]._id.toString() } },
-        schema: model.schema
-      }).then((result) => {
-        return done(null, obj)
-      }).catch((err) => {
-        done(err)
-      })
-    }).catch((err) => {
-      done(err)
-    })
-  }
-
-  if (model.connection.db) return _done(model.connection.db)
-
-  // if the db is not connected queue the insert
-  model.connection.once('connect', _done)
+  return this.connection.db.insert({
+    data: versions,
+    collection: this.name
+  })
 }
 
-History.prototype.createEach = function (objs, action, model, done) {
-  return new Promise((resolve, reject) => {
-    if (objs.length === 0) return resolve()
+/**
+ * Returns a previous version of a given document.
+ *
+ * @param  {String} version  ID of a previous version
+ * @return {Object}
+ */
+History.prototype.getVersion = function (version, options = {}) {
+  return this.connection.db.find({
+    collection: this.name,
+    options,
+    query: {
+      _id: version
+    }
+  }).then(response => {
+    response.metadata.version = version
+    response.results = response.results.map(result => {
+      result._id = result._document
 
-    objs.forEach((obj, index, array) => {
-      obj._action = action
+      delete result._document
 
-      this.create(obj, model, (err, doc) => {
-        if (err) return reject(err)
-
-        if (index === array.length - 1) {
-          return resolve()
-        }
-      })
+      return result
     })
+
+    return response
+  }).catch(error => {
+    logger.error({module: 'history'}, error)
+
+    return {
+      results: []
+    }
+  })
+}
+
+/**
+ * Gets all versions available for a given document.
+ *
+ * @param  {String}         documentId
+ * @return {Array<Object>}
+ */
+History.prototype.getVersions = function (documentId) {
+  return this.connection.db.find({
+    collection: this.name,
+    options: {
+      fields: {
+        _document: 1,
+        _changeDescription: 1
+      }
+    },
+    query: {
+      _document: documentId
+    }
   })
 }
 

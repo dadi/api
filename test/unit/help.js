@@ -1,4 +1,3 @@
-var _ = require('underscore')
 var config = require(__dirname + '/../../config.js')
 var model = require(__dirname + '/../../dadi/lib/model')
 var connection = require(__dirname + '/../../dadi/lib/model/connection')
@@ -95,9 +94,11 @@ module.exports.testModelProperty = function (key, val) {
   obj[key] = val
 
   var schema = module.exports.getModelSchema()
-  _.extend(schema.fieldName, obj)
+  schema.fieldName = Object.assign({}, schema.fieldName, obj)
 
-  model('testModelName', schema, null, { database: 'testdb' }).schema.fieldName[key].should.equal(val)
+  let m = model('testModelName', schema, null, { database: 'testdb' })
+
+  m.schema.fieldName[key].should.equal(val)
 }
 
 module.exports.cleanUpDB = function (done) {

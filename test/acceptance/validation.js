@@ -1,9 +1,6 @@
-var fs = require('fs')
 var path = require('path')
 var should = require('should')
-var moment = require('moment')
 var request = require('supertest')
-var _ = require('underscore')
 var config = require(__dirname + '/../../config')
 var help = require(__dirname + '/help')
 var app = require(__dirname + '/../../dadi/lib/')
@@ -168,7 +165,7 @@ describe('Validation', function () {
 
               done()
             })
-        })        
+        })
       })
     })
 

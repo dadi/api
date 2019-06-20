@@ -1,6 +1,7 @@
 const async = require('async')
 const debug = require('debug')('api:model')
 const Hook = require('./../hook')
+const search = require('./../search')
 
 /**
  * Creates one or multiple documents.
@@ -96,14 +97,6 @@ function create ({
         Object.assign(document, internals)
       }
 
-      // Add placeholder for document history.
-      if (this.history) {
-        document._history = []
-      }
-
-      // Add initial revision number.
-      document._version = 1
-
       return Object.keys(document).reduce((documentTransform, field) => {
         if (field === '_id') {
           return documentTransform
@@ -134,7 +127,7 @@ function create ({
       return new Promise((resolve, reject) => {
         let processedDocuments = 0
 
-        documents.forEach((doc, docIndex) => {
+        documents.forEach(doc => {
           async.reduce(hooks.beforeCreate, doc, (current, hookConfig, callback) => {
             let hook = new Hook(hookConfig, 'beforeCreate')
 
@@ -168,14 +161,19 @@ function create ({
       schema: this.schema,
       settings: this.settings
     }).then(results => {
-      // Asynchronous search index.
-      this.searchHandler.index(results)
+      // Index all the created documents for search, as a background job.
+      if (search.isEnabled()) {
+        search.indexDocumentsInTheBackground({
+          documents: results,
+          model: this
+        })
+      }
 
       // Run any `afterCreate` hooks.
       if (hooks && Array.isArray(hooks.afterCreate)) {
         results.forEach(document => {
-          hooks.afterCreate.forEach((hookConfig, index) => {
-            let hook = new Hook(hooks.afterCreate[index], 'afterCreate')
+          hooks.afterCreate.forEach(hookConfig => {
+            let hook = new Hook(hookConfig, 'afterCreate')
 
             return hook.apply(document, this.schema, this.name)
           })

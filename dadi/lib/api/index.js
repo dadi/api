@@ -1,15 +1,14 @@
-var _ = require('underscore')
-var fs = require('fs')
-var http = require('http')
-var https = require('https')
-var path = require('path')
-var pathToRegexp = require('path-to-regexp')
-var url = require('url')
+const fs = require('fs')
+const http = require('http')
+const https = require('https')
+const path = require('path')
+const pathToRegexp = require('path-to-regexp')
+const url = require('url')
 
-var log = require('@dadi/logger')
-var config = require(path.join(__dirname, '/../../../config'))
+const log = require('@dadi/logger')
+const config = require(path.join(__dirname, '/../../../config'))
 
-var Api = function () {
+const Api = function () {
   this.paths = {}
   this.all = []
   this.errors = []
@@ -31,15 +30,15 @@ var Api = function () {
       this.redirectInstance = http.createServer(this.redirectListener)
     }
 
-    var readFileSyncSafe = (path) => {
+    let readFileSyncSafe = (path) => {
       try { return fs.readFileSync(path) } catch (ex) {}
       return null
     }
 
-    var passphrase = config.get('server.sslPassphrase')
-    var caPath = config.get('server.sslIntermediateCertificatePath')
-    var caPaths = config.get('server.sslIntermediateCertificatePaths')
-    var serverOptions = {
+    let passphrase = config.get('server.sslPassphrase')
+    let caPath = config.get('server.sslIntermediateCertificatePath')
+    let caPaths = config.get('server.sslIntermediateCertificatePaths')
+    let serverOptions = {
       key: readFileSyncSafe(config.get('server.sslPrivateKeyPath')),
       cert: readFileSyncSafe(config.get('server.sslCertificatePath'))
     }
@@ -51,7 +50,7 @@ var Api = function () {
     if (caPaths && caPaths.length > 0) {
       serverOptions.ca = []
       caPaths.forEach((path) => {
-        var data = readFileSyncSafe(path)
+        let data = readFileSyncSafe(path)
         data && serverOptions.ca.push(data)
       })
     } else if (caPath && caPath.length > 0) {
@@ -63,7 +62,7 @@ var Api = function () {
     try {
       this.httpsInstance = https.createServer(serverOptions, this.listener)
     } catch (ex) {
-      var exPrefix = 'error starting https server: '
+      let exPrefix = 'error starting https server: '
       switch (ex.message) {
         case 'error:06065064:digital envelope routines:EVP_DecryptFinal_ex:bad decrypt':
           throw new Error(exPrefix + 'incorrect ssl passphrase')
@@ -89,7 +88,7 @@ Api.prototype.use = function (path, handler) {
     return this.all.push(path)
   }
 
-  var regex = pathToRegexp(path)
+  let regex = pathToRegexp(path)
 
   this.paths[path] = {
     handler: handler,
@@ -126,7 +125,7 @@ Api.prototype.routeMethods = function (path, handlers) {
  *  @api public
  */
 Api.prototype.unuse = function (path) {
-  var indx
+  let indx
   if (typeof path === 'function') {
     if (path.length === 4) {
       indx = this.errors.indexOf(path)
@@ -148,9 +147,9 @@ Api.prototype.unuse = function (path) {
  *  @api public
  */
 Api.prototype.listen = function (backlog, done) {
-  var port = config.get('server.port')
-  var host = config.get('server.host')
-  var redirectPort = config.get('server.redirectPort')
+  let port = config.get('server.port')
+  let host = config.get('server.host')
+  let redirectPort = config.get('server.redirectPort')
 
   // If http only, return the http instance
   if (this.httpInstance) {
@@ -200,21 +199,21 @@ Api.prototype.close = function (done) {
  */
 Api.prototype.listener = function (req, res) {
   // clone the middleware stack
-  var stack = this.all.slice(0)
-  var path = url.parse(req.url).pathname
+  let stack = this.all.slice(0)
+  let path = url.parse(req.url).pathname
 
   // get matching routes, and add req.params
-  var matches = this._match(path, req)
+  let matches = this._match(path, req)
 
-  var doStack = function (i) {
+  let doStack = function (i) {
     return function (err) {
       if (err) return errStack(0)(err)
       stack[i](req, res, doStack(++i))
     }
   }
 
-  var self = this
-  var errStack = function (i) {
+  let self = this
+  let errStack = function (i) {
     return function (err) {
       self.errors[i](err, req, res, errStack(++i))
     }
@@ -238,9 +237,9 @@ Api.prototype.listener = function (req, res) {
  *  @api public
  */
 Api.prototype.redirectListener = function (req, res) {
-  var port = config.get('server.port')
-  var hostname = req.headers.host.split(':')[0]
-  var location = 'https://' + hostname + ':' + port + req.url
+  let port = config.get('server.port')
+  let hostname = req.headers.host.split(':')[0]
+  let location = 'https://' + hostname + ':' + port + req.url
 
   res.setHeader('Location', location)
   res.statusCode = 301
@@ -255,22 +254,22 @@ Api.prototype.redirectListener = function (req, res) {
  *  @api private
  */
 Api.prototype._match = function (path, req) {
-  var paths = this.paths
-  var handlers = []
+  let paths = this.paths
+  let handlers = []
 
   // always add params object to avoid need for checking later
   req.params = {}
 
   Object.keys(paths).forEach((key) => {
-    var match = paths[key].regex.exec(path)
+    let match = paths[key].regex.exec(path)
     if (!match) return
 
-    var keys = paths[key].regex.keys
+    let keys = paths[key].regex.keys
 
     handlers.push(paths[key].handler)
 
     match.forEach((k, i) => {
-      var keyOpts = keys[i] || {}
+      let keyOpts = keys[i] || {}
       if (match[i + 1] && keyOpts.name) req.params[keyOpts.name] = match[i + 1]
     })
   })
@@ -287,7 +286,7 @@ module.exports.Api = Api
 // Default error handler, in case application doesn't define error handling
 function defaultError (api) {
   return function (err, req, res) {
-    var resBody
+    let resBody
 
     log.error({module: 'api'}, err)
 
@@ -313,22 +312,17 @@ function notFound (req, res) {
 }
 
 function routePriority (path, keys) {
-  var tokens = pathToRegexp.parse(path)
+  let tokens = pathToRegexp.parse(path)
 
-  var staticRouteLength = 0
+  let staticRouteLength = 0
   if (typeof tokens[0] === 'string') {
-    staticRouteLength = _.compact(tokens[0].split('/')).length
+    staticRouteLength = tokens[0].split('/').filter(Boolean).length
   }
 
-  var requiredParamLength = _.filter(keys, function (key) {
-    return !key.optional
-  }).length
+  let requiredParamLength = keys.filter(key => !key.optional).length
+  let optionalParamLength = keys.filter(key => key.optional).length
 
-  var optionalParamLength = _.filter(keys, function (key) {
-    return key.optional
-  }).length
-
-  var order =
+  let order =
     staticRouteLength * 5 +
     requiredParamLength * 2 +
     optionalParamLength

@@ -3,7 +3,6 @@ const should = require('should')
 const sinon = require('sinon')
 const path = require('path')
 const request = require('supertest')
-const _ = require('underscore')
 const EventEmitter = require('events').EventEmitter
 const config = require(path.join(__dirname, '/../../../../config'))
 const help = require(path.join(__dirname, '/../../help'))
@@ -441,7 +440,7 @@ describe('Collections API – GET', function () {
           res.body['results'].should.exist
           res.body['results'].should.be.Array
 
-          _.each(res.body['results'], function (value, key) {
+          res.body['results'].forEach((value, key) => {
             if (value.field1 === 'Test') found = true
           })
 
@@ -478,7 +477,7 @@ describe('Collections API – GET', function () {
           res.body['results'].should.exist
           res.body['results'].should.be.Array
 
-          _.each(res.body['results'], function (value, key) {
+          res.body['results'].forEach((value, key) => {
             if (value.field1 === 'Test') found = true
           })
 
@@ -540,7 +539,13 @@ describe('Collections API – GET', function () {
           res.body['results'].should.exist
           res.body['results'].should.be.Array
 
-          var obj = _.sample(_.compact(_.filter(res.body['results'], function (x) { return x.hasOwnProperty('field1') })))
+          var obj = res.body['results'].map(x => {
+            if (x.hasOwnProperty('field1')) {
+              return x
+            }
+          }).filter(Boolean)
+
+          obj = obj[0]
 
           delete obj._id
 
@@ -576,7 +581,14 @@ describe('Collections API – GET', function () {
           res.body['results'].should.exist
           res.body['results'].should.be.Array
 
-          var obj = _.sample(_.compact(_.map(res.body['results'], function (x) { if (x.hasOwnProperty('_fieldWithUnderscore')) return x })))
+          var obj = res.body['results'].map(x => {
+            if (x.hasOwnProperty('_fieldWithUnderscore')) {
+              return x
+            }
+          }).filter(Boolean)
+
+          obj = obj[0]
+
           should.exist(obj['_fieldWithUnderscore'])
 
           done()
@@ -824,155 +836,6 @@ describe('Collections API – GET', function () {
             res.body['results'].length.should.equal(1)
             done()
           })
-      })
-    })
-  })
-
-  it('should add history to results when querystring param includeHistory=true', function (done) {
-    var client = request(connectionString)
-
-    client
-    .post('/vtest/testdb/test-schema')
-    .set('Authorization', 'Bearer ' + bearerToken)
-    .send({field1: 'original field content'})
-    .expect(200)
-    .end(function (err, res) {
-      if (err) return done(err)
-
-      var doc = res.body.results[0]
-      var body = {
-        query: { _id: doc._id },
-        update: {field1: 'updated'}
-      }
-
-      client
-      .put('/vtest/testdb/test-schema/')
-      .set('Authorization', 'Bearer ' + bearerToken)
-      .send(body)
-      .expect(200)
-      .end(function (err, res) {
-        if (err) return done(err)
-
-        res.body.results[0]._id.should.equal(doc._id)
-        res.body.results[0].field1.should.equal('updated')
-
-        client
-        .get('/vtest/testdb/test-schema?includeHistory=true&filter={"_id": "' + doc._id + '"}')
-        .set('Authorization', 'Bearer ' + bearerToken)
-        .expect(200)
-        .expect('content-type', 'application/json')
-        .end(function (err, res) {
-          if (err) return done(err)
-
-          res.body['results'].should.exist
-          res.body['results'].should.be.Array
-          res.body['results'][0]._history.should.exist
-          res.body['results'][0]._history[0].field1.should.eql('original field content')
-          done()
-        })
-      })
-    })
-  })
-
-  it('should add history to results when querystring param includeHistory=true, translating internal fields to the prefix defined in config', function (done) {
-    var originalPrefix = config.get('internalFieldsPrefix')
-    var client = request(connectionString)
-
-    config.set('internalFieldsPrefix', '$')
-
-    client
-    .post('/vtest/testdb/test-schema')
-    .set('Authorization', 'Bearer ' + bearerToken)
-    .send({field1: 'original field content'})
-    .expect(200)
-    .end(function (err, res) {
-      if (err) return done(err)
-
-      var doc = res.body.results[0]
-
-      var body = {
-        query: { $id: doc.$id },
-        update: {field1: 'updated'}
-      }
-
-      client
-      .put('/vtest/testdb/test-schema/')
-      .set('Authorization', 'Bearer ' + bearerToken)
-      .send(body)
-      .expect(200)
-      .end(function (err, res) {
-        if (err) return done(err)
-
-        res.body.results[0].$id.should.equal(doc.$id)
-        res.body.results[0].field1.should.equal('updated')
-
-        client
-        .get('/vtest/testdb/test-schema/' + doc.$id + '?includeHistory=true')
-        .set('Authorization', 'Bearer ' + bearerToken)
-        .expect(200)
-        .expect('content-type', 'application/json')
-        .end(function (err, res) {
-          if (err) return done(err)
-
-          res.body.results.should.exist
-          res.body.results.should.be.Array
-          res.body.results[0].$history.should.exist
-          res.body.results[0].$history[0].$id.should.exist
-          res.body.results[0].$history[0].field1.should.eql('original field content')
-
-          config.set('internalFieldsPrefix', originalPrefix)
-
-          done()
-        })
-      })
-    })
-  })
-
-  it('should use specified historyFilters when querystring param includeHistory=true', function (done) {
-    var client = request(connectionString)
-
-    client
-    .post('/vtest/testdb/test-schema')
-    .set('Authorization', 'Bearer ' + bearerToken)
-    .send({ field1: 'ABCDEF', field2: 2001 })
-    .expect(200)
-    .end(function (err, res) {
-      if (err) return done(err)
-      var doc = res.body.results[0]
-
-      var body = {
-        query: { _id: doc._id },
-        update: {field1: 'GHIJKL'}
-      }
-
-      client
-      .put('/vtest/testdb/test-schema/')
-      .set('Authorization', 'Bearer ' + bearerToken)
-      .send(body)
-      .expect(200)
-      .end(function (err, res) {
-        if (err) return done(err)
-
-        res.body.results[0]._id.should.equal(doc._id)
-        res.body.results[0].field1.should.equal('GHIJKL')
-
-        client
-        .get('/vtest/testdb/test-schema?filter={"_id": "' + doc._id + '"}&includeHistory=true&historyFilters={"field2":2001}')
-        .set('Authorization', 'Bearer ' + bearerToken)
-        .expect(200)
-        .expect('content-type', 'application/json')
-        .end(function (err, res) {
-          if (err) return done(err)
-
-          res.body['results'].should.exist
-          res.body['results'].should.be.Array
-          res.body['results'][0].field1.should.exist
-          res.body['results'][0].field1.should.eql('GHIJKL')
-          res.body['results'][0].field2.should.exist
-          res.body['results'][0]._history.should.exist
-          res.body['results'][0]._history[0].field1.should.eql('ABCDEF')
-          done()
-        })
       })
     })
   })
@@ -1317,6 +1180,81 @@ describe('Collections API – GET', function () {
           res.text.slice(-2).should.equal(');')
           done()
         })
+    })
+
+    it('should include correct Content-Encoding header for gzipped responses', function (done) {
+      help.createDoc(bearerToken, function (err, doc1) {
+        if (err) return done(err)
+        help.createDoc(bearerToken, function (err, doc2) {
+          if (err) return done(err)
+
+          var client = request(connectionString)
+          client
+            .get('/vtest/testdb/test-schema')
+            .set('Accept-Encoding', 'gzip, deflate')
+            .set('Authorization', 'Bearer ' + bearerToken)
+            .expect(200)
+            .expect('content-type', 'application/json')
+            .end((err, res) => {
+              if (err) return done(err)
+
+              res.headers['content-encoding'].should.exist
+              res.headers['content-encoding'].should.eql('gzip')
+
+              done()
+            })
+        })
+      })
+    })
+
+    it('should not include Content-Encoding header for uncompressed responses', function (done) {
+      help.createDoc(bearerToken, function (err, doc1) {
+        if (err) return done(err)
+        help.createDoc(bearerToken, function (err, doc2) {
+          if (err) return done(err)
+
+          var client = request(connectionString)
+          client
+            .get('/vtest/testdb/test-schema')
+            .set('Accept-Encoding', 'identity')
+            .set('Authorization', 'Bearer ' + bearerToken)
+            .expect(200)
+            .expect('content-type', 'application/json')
+            .end((err, res) => {
+              if (err) return done(err)
+
+              should.not.exist(res.headers['content-encoding'])
+              done()
+            })
+        })
+      })
+    })
+
+    it('should respond with 304 if etag matches If-None-Match header', function (done) {
+      help.createDoc(bearerToken, function (err, doc1) {
+        if (err) return done(err)
+        help.createDoc(bearerToken, function (err, doc2) {
+          if (err) return done(err)
+
+          var client = request(connectionString)
+          client
+            .get('/vtest/testdb/test-schema')
+            .set('Authorization', 'Bearer ' + bearerToken)
+            .expect(200)
+            .expect('content-type', 'application/json')
+            .end((err, res) => {
+              if (err) return done(err)
+
+              let etag = res.headers['etag']
+
+              client
+                .get('/vtest/testdb/test-schema')
+                .set('Authorization', 'Bearer ' + bearerToken)
+                .set('If-None-Match', etag)
+                .expect(304, done)
+            })
+        })
+      })
     })
   })
 })

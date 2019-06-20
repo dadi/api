@@ -12,7 +12,7 @@ var logpath = config.get('logging').path + '/' + config.get('logging').filename 
 
 var resetLog = function (done) {
     // empty the log for each test
-  fs.writeFileSync(logpath, new Buffer(''))
+  fs.writeFileSync(logpath, Buffer.from(''))
   done()
 }
 

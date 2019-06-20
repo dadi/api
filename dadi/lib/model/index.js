@@ -7,8 +7,20 @@ const deepMerge = require('deepmerge')
 const fields = require('./../fields')
 const History = require('./history')
 const logger = require('@dadi/logger')
-const Search = require('./../search')
 const Validator = require('@dadi/api-validator')
+
+const DEFAULT_HISTORY_COLLECTION_SUFFIX = 'Versions'
+const INTERNAL_PROPERTIES = [
+  '_apiVersion',
+  '_composed',
+  '_createdAt',
+  '_createdBy',
+  '_history',
+  '_id',
+  '_lastModifiedAt',
+  '_lastModifiedBy',
+  '_version'
+]
 
 /**
  * Block with metadata pertaining to an API collection.
@@ -37,18 +49,6 @@ let _models = {}
  * @classdesc
  */
 const Model = function (name, schema, connection, settings) {
-  this.internalProperties = [
-    '_apiVersion',
-    '_composed',
-    '_createdAt',
-    '_createdBy',
-    '_history',
-    '_id',
-    '_lastModifiedAt',
-    '_lastModifiedBy',
-    '_version'
-  ]
-
   this.acl = require('./acl')
 
   // Attach collection name.
@@ -77,53 +77,41 @@ const Model = function (name, schema, connection, settings) {
     this.compose = this.settings.compose
   }
 
-  // setup search context
-  this.searchHandler = new Search(this)
-
-  if (this.searchHandler.canUse()) {
-    this.searchHandler.init()
-  }
-
   // Add any configured indexes.
   if (this.settings.index && !Array.isArray(this.settings.index)) {
     this.settings.index = [
       {
-        keys: this.settings.index.keys,
+        keys: this.settings.index.keys || {},
         options: this.settings.index.options || {}
       }
     ]
   }
 
-  // Setup history context unless requested not to.
-  this.storeRevisions = this.settings.storeRevisions !== false
+  // Unless `enableVersioning` (or `storeRevisions`, for backward-compatibility)
+  // is explicitly set to `false`, we enable history.
+  if (
+    this.settings.enableVersioning !== false &&
+    this.settings.storeRevisions !== false
+  ) {
+    const versioningCollection = this.settings.versioningCollection ||
+      this.settings.revisionCollection ||
+      this.name + DEFAULT_HISTORY_COLLECTION_SUFFIX
 
-  if (this.storeRevisions) {
-    this.history = new History(this)
-
-    // Define the name of the revision collection for this model.
-    // If no value is specified, use the name of the model with
-    // the 'History' suffix.
-    this.revisionCollection = this.settings.revisionCollection
-      ? this.settings.revisionCollection
-      : this.name + 'History'
-  }
-
-  // Create connection for this model.
-  if (connection) {
-    this.connection = connection
-  } else {
-    let connectionOptions = {
-      collection: this.name,
+    this.history = new History({
       database: this.settings.database,
-      revisionCollection: this.revisionCollection
-    }
-
-    this.connection = Connection(
-      connectionOptions,
-      this.name,
-      config.get('datastore')
-    )
+      name: versioningCollection
+    })
   }
+
+  // Create connection for this model, if it doesn't exist.
+  this.connection = connection || Connection(
+    {
+      collection: this.name,
+      database: this.settings.database
+    },
+    this.name,
+    config.get('datastore')
+  )
 
   this.connection.setMaxListeners(35)
 
@@ -603,6 +591,14 @@ Model.prototype.formatQuery = function (query) {
 
   return newQuery
 }
+/**
+ * Returns the ACL key for this model.
+ *
+ * @returns {String}
+ */
+Model.prototype.getAclKey = function () {
+  return this.aclKey
+}
 
 /**
  * Returns the field with a given name, if it exists.
@@ -672,7 +668,7 @@ Model.prototype.isKeyValid = function (key) {
  */
 Model.prototype.removeInternalProperties = function (document) {
   return Object.keys(document).reduce((output, field) => {
-    if (!this.internalProperties.includes(field)) {
+    if (!INTERNAL_PROPERTIES.includes(field)) {
       output[field] = document[field]
     }
 
@@ -864,7 +860,7 @@ Model.prototype.validateAccess = function ({
 
   let accessQueue = access
     ? Promise.resolve(access)
-    : this.acl.access.get(client, this.aclKey)
+    : this.acl.access.get(client, this.getAclKey())
 
   return accessQueue.then(access => {
     let value = access[type]
@@ -997,10 +993,8 @@ Model.prototype.get = require('./collections/get')
 Model.prototype.getIndexes = require('./collections/getIndexes')
 Model.prototype.getRevisions = require('./collections/getRevisions')
 Model.prototype.getStats = require('./collections/getStats')
-Model.prototype.revisions = require('./collections/getRevisions') // (!) Deprecated in favour of `getRevisions`
-Model.prototype.stats = require('./collections/getStats') // (!) Deprecated in favour of `getStats`
+Model.prototype.getVersions = require('./collections/getVersions')
 Model.prototype.update = require('./collections/update')
-Model.prototype.search = require('./search')
 
 module.exports = function (name, schema, connection, settings) {
   if (schema) {
@@ -1013,6 +1007,16 @@ module.exports = function (name, schema, connection, settings) {
   }
 
   return _models[name]
+}
+
+module.exports.getByAclKey = aclKey => {
+  const modelName = Object.keys(_models).find(key => {
+    return _models[key].getAclKey() === aclKey
+  })
+
+  if (modelName) {
+    return _models[modelName]
+  }
 }
 
 module.exports.Model = Model

@@ -1,13 +1,57 @@
 const acl = require('./../../dadi/lib/model/acl')
+const bcrypt = require('bcrypt')
+const exec = require('child_process').exec
 const fs = require('fs-extra')
 const path = require('path')
 const should = require('should')
 const connection = require(__dirname + '/../../dadi/lib/model/connection')
 const config = require(__dirname + '/../../config')
 const request = require('supertest')
-const _ = require('underscore')
 
-var clientCollectionName = config.get('auth.clientCollection')
+function hashClientSecret (client) {
+  if (client._hashVersion === undefined && config.get('auth.hashSecrets')) {
+    client._hashVersion = 1
+  }
+
+  switch (client._hashVersion) {
+    case 1:
+      return Object.assign({}, client, {
+        _hashVersion: 1,
+        secret: bcrypt.hashSync(client.secret, config.get('auth.saltRounds'))
+      })
+
+    default:
+      delete client._hashVersion
+
+      return client
+  }
+}
+
+module.exports.bulkRequest = function ({method = 'get', requests, token}) {
+  const client = request(`http://${config.get('server.host')}:${config.get('server.port')}`)
+  let results = []
+
+  return requests.reduce((result, request, index) => {
+    return result.then(() => {
+      return new Promise((resolve, reject) => {
+        let endpoint = typeof request === 'string'
+          ? request
+          : request.endpoint
+
+        client[method](endpoint)
+        .set('Authorization', `Bearer ${token}`)
+        .send(request.body)
+        .end((err, res) => {
+          if (err) return reject(err)
+
+          results[index] = res.body
+
+          resolve(results)
+        })
+      })
+    })
+  }, Promise.resolve())
+}
 
 // create a document with random string via the api
 module.exports.createDoc = function (token, done) {
@@ -106,7 +150,9 @@ module.exports.dropDatabase = function (database, collectionName, done) {
   }
 }
 
-module.exports.createClient = function (client, done) {
+module.exports.createClient = function (client, done, {
+  hashVersion = 1
+} = {}) {
   if (!client) {
     client = {
       accessType: 'admin',
@@ -114,6 +160,8 @@ module.exports.createClient = function (client, done) {
       secret: 'superSecret'
     }
   }
+
+  client = hashClientSecret(client)
 
   var collectionName = config.get('auth.clientCollection')
   var conn = connection({
@@ -138,7 +186,7 @@ module.exports.createClient = function (client, done) {
       }).then(res => {
         res.results.length.should.eql(1)
 
-        done()
+        done(null, res.results[0])
       })
     }).catch((err) => {
       done(err)
@@ -162,6 +210,8 @@ module.exports.createACLClient = function (client, callback) {
     null,
     config.get('datastore')
   )
+
+  client = hashClientSecret(client)
 
   return clientsConnection.datastore.insert({
     data: client,
@@ -288,28 +338,13 @@ module.exports.removeTestClients = function (done) {
 }
 
 module.exports.clearCache = function () {
-  var deleteFolderRecursive = function (filepath) {
-    try {
-      if (fs.existsSync(filepath) && fs.lstatSync(filepath).isDirectory()) {
-        fs.readdirSync(filepath).forEach(function (file, index) {
-          var curPath = filepath + '/' + file
-          if (fs.lstatSync(curPath).isDirectory()) { // recurse
-            deleteFolderRecursive(curPath)
-          } else { // delete file
-            fs.unlinkSync(path.resolve(curPath))
-          }
-        })
-        fs.rmdirSync(filepath)
-      }
-    } catch (err) {
-      console.log(err)
+  let dir = path.resolve(config.get('caching.directory.path'))
+  exec(`rm -rf ${dir}`, (err, result) => {
+    if (err) {
+      console.log(`Error removing directory ${dir}`, err)
+    } else {
+      console.log(`Removed directory ${dir}`)
     }
-  }
-
-    // for each directory in the cache folder, remove all files then
-    // delete the folder
-  fs.readdirSync(config.get('caching.directory.path')).forEach(function (dirname) {
-    deleteFolderRecursive(path.join(config.get('caching.directory.path'), dirname))
   })
 }
 

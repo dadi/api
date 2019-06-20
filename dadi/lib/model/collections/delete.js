@@ -1,6 +1,8 @@
 const async = require('async')
 const Hook = require('./../hook')
 const logger = require('@dadi/logger')
+const search = require('./../search')
+const workQueue = require('./../../workQueue')
 
 /**
  * @typedef {Object} DeleteResult
@@ -12,6 +14,7 @@ const logger = require('@dadi/logger')
  * Deletes documents from the database.
  *
  * @param  {Object} client - client to check permissions for
+ * @param  {String} description - optional update description
  * @param  {Object} query - query to find documents to delete
  * @param  {Object} req - request to be passed to hooks
  * @param  {Boolean} validate - whether to run validation
@@ -19,6 +22,7 @@ const logger = require('@dadi/logger')
  */
 function deleteFn ({
   client,
+  description,
   query,
   req,
   validate = true
@@ -103,13 +107,11 @@ function deleteFn ({
         return Promise.reject(error)
       }
 
-      // Create a revision for each of the documents about to be deleted.
-      if (this.history && deletedDocuments.length > 0) {
-        return this.history.createEach(
-          deletedDocuments,
-          'delete',
-          this
-        )
+      // Create a revision for each of the updated documents.
+      if (this.history) {
+        return this.history.addVersion(deletedDocuments, {
+          description
+        })
       }
     }).then(() => {
       // Run any `beforeDelete` hooks.
@@ -156,11 +158,8 @@ function deleteFn ({
         if (result.deletedCount > 0) {
           // Run any `afterDelete` hooks.
           if (this.settings.hooks && (typeof this.settings.hooks.afterDelete === 'object')) {
-            this.settings.hooks.afterDelete.forEach((hookConfig, index) => {
-              let hook = new Hook(
-                this.settings.hooks.afterDelete[index],
-                'afterDelete'
-              )
+            this.settings.hooks.afterDelete.forEach(hookConfig => {
+              let hook = new Hook(hookConfig, 'afterDelete')
 
               return hook.apply(
                 query,
@@ -173,6 +172,16 @@ function deleteFn ({
         }
 
         result.totalCount = allDocuments.metadata.totalCount - result.deletedCount
+
+        return result
+      }).then(result => {
+        // Add a background job to the work queue that deletes from the search
+        // collection each reference to the documents that were just deleted.
+        if (search.isEnabled()) {
+          workQueue.queueBackgroundJob(() => {
+            search.delete(deletedDocuments)
+          })
+        }
 
         return result
       })

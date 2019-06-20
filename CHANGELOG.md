@@ -4,6 +4,29 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## [5.0.0] (2019-06-20)
+
+### BREAKING CHANGES
+
+The way API clients are internally stored has changed. After upgrading to 5.0.0, existing clients must be migrated. See https://docs.dadi.cloud/api/5.0#migrating-from-version-4-to-5 for more information.
+
+### Added
+
+- [#532](https://github.com/dadi/api/pull/532): add new endpoints for document versioning
+- [#533](https://github.com/dadi/api/pull/533): compress responses using gzip
+- [#538](https://github.com/dadi/api/pull/538): add global search endpoint and various improvements to search
+- [#547](https://github.com/dadi/api/pull/547): add support for ETag and If-None-Match headers
+
+### Changed
+
+- [#534](https://github.com/dadi/api/pull/534): hash client secrets
+
+### Fixed
+
+- [#539](https://github.com/dadi/api/issues/539): "false" filter on Boolean fields
+- [#553](https://github.com/dadi/api/pull/553): add default value for index keys
+- [#558](https://github.com/dadi/api/pull/558): make Media field output document IDs as String
+
 ## [4.4.5] (2019-01-24)
 
 ### Fixed

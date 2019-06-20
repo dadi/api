@@ -2,6 +2,7 @@ const async = require('async')
 const debug = require('debug')('api:model')
 const Hook = require('./../hook')
 const logger = require('@dadi/logger')
+const search = require('./../search')
 
 /**
  * Block with metadata pertaining to an API collection.
@@ -35,6 +36,7 @@ const logger = require('@dadi/logger')
  * @param  {Object} client - client to check permissions for
  * @param  {Boolean|Number} compose - the composition settings for the result
  * @param  {Object}  query - query to match documents against
+ * @param  {String}  description - optional update description
  * @param  {Object}  update - properties to update documents with
  * @param  {Object}  internals - internal properties to inject in documents
  * @param  {Boolean} rawOutput - whether to bypass output formatting
@@ -46,12 +48,13 @@ const logger = require('@dadi/logger')
 function update ({
   client,
   compose = true,
-  query = {},
-  update,
+  description,
   internals = {},
+  query = {},
   rawOutput = false,
   removeInternalProperties = true,
   req,
+  update,
   validate = true
 }) {
   debug(
@@ -200,8 +203,7 @@ function update ({
         query,
         schema: this.schema,
         update: {
-          $set: update,
-          $inc: { _version: 1 }
+          $set: update
         }
       })
     }).then(({matchedCount}) => {
@@ -211,15 +213,6 @@ function update ({
         error.statusCode = 404
 
         return Promise.reject(error)
-      }
-
-      // Create a revision for each of the updated documents.
-      if (this.history) {
-        return this.history.createEach(
-          updatedDocuments,
-          'update',
-          this
-        )
       }
     }).then(() => {
       let updatedDocumentsQuery = {
@@ -241,15 +234,21 @@ function update ({
 
       // Run any `afterUpdate` hooks.
       if (hooks && Array.isArray(hooks.afterUpdate)) {
-        hooks.afterUpdate.forEach((hookConfig, index) => {
-          let hook = new Hook(hooks.afterUpdate[index], 'afterUpdate')
+        hooks.afterUpdate.forEach(hookConfig => {
+          let hook = new Hook(hookConfig, 'afterUpdate')
 
           return hook.apply(data.results, this.schema, this.name)
         })
       }
 
-      // Asynchronous search index.
-      this.searchHandler.index(data.results)
+      // Index all the created documents for search, as a background job.
+      if (search.isEnabled()) {
+        search.indexDocumentsInTheBackground({
+          documents: data.results,
+          model: this,
+          original: updatedDocuments
+        })
+      }
 
       // Format result set for output.
       if (!rawOutput) {
@@ -266,6 +265,15 @@ function update ({
 
       return data
     })
+  }).then(response => {
+    // Create a revision for each of the updated documents.
+    if (this.history && updatedDocuments.length > 0) {
+      return this.history.addVersion(updatedDocuments, {
+        description
+      }).then(() => response)
+    }
+
+    return response
   }).catch(error => {
     // Dealing with the case of an impossible query. We can simply return
     // an empty result set here.

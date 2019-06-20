@@ -3,7 +3,6 @@ var sinon = require('sinon')
 var model = require(__dirname + '/../../../dadi/lib/model')
 var apiHelp = require(__dirname + '/../../../dadi/lib/help')
 var connection = require(__dirname + '/../../../dadi/lib/model/connection')
-var _ = require('underscore')
 var help = require(__dirname + '/../help')
 var acceptanceHelper = require(__dirname + '/../../acceptance/help')
 var config = require(__dirname + '/../../../config')
@@ -11,7 +10,7 @@ var config = require(__dirname + '/../../../config')
 describe('Model', function () {
   beforeEach((done) => {
     help.clearCollection('testModelName', function () {
-      help.clearCollection('testModelNameHistory', function () {
+      help.clearCollection('testModelNameVersions', function () {
         done()
       })
     })
@@ -98,7 +97,23 @@ describe('Model', function () {
       )
 
       should.exist(mod.settings)
-      mod.revisionCollection.should.equal('testModelNameHistory')
+      should.exist(mod.history)
+      mod.history.name.should.equal('testModelNameVersions')
+
+      done()
+    })
+
+    it('should attach history collection if specified (using legacy `revisionCollection` property)', function (done) {
+      var mod = model(
+        'testModelName',
+        help.getModelSchema(),
+        null,
+        {
+          database: 'testdb',
+          revisionCollection: 'modelHistory'
+        }
+      )
+      mod.history.name.should.equal('modelHistory')
 
       done()
     })
@@ -110,10 +125,10 @@ describe('Model', function () {
         null,
         {
           database: 'testdb',
-          revisionCollection: 'modelHistory'
+          versioningCollection: 'modelHistory'
         }
       )
-      mod.revisionCollection.should.equal('modelHistory')
+      mod.history.name.should.equal('modelHistory')
 
       done()
     })
@@ -128,8 +143,8 @@ describe('Model', function () {
           storeRevisions: true
         }
       )
-      should.exist(mod.revisionCollection)
-      mod.revisionCollection.should.equal('testModelNameHistory')
+      should.exist(mod.history)
+      mod.history.name.should.equal('testModelNameVersions')
 
       done()
     })
@@ -145,8 +160,41 @@ describe('Model', function () {
           revisionCollection: 'modelHistory'
         }
       )
-      should.exist(mod.revisionCollection)
-      mod.revisionCollection.should.equal('modelHistory')
+      should.exist(mod.history)
+      mod.history.name.should.equal('modelHistory')
+
+      done()
+    })
+
+    it('should attach history collection if `enableVersioning` is true', function (done) {
+      var mod = model(
+        'testModelName',
+        help.getModelSchema(),
+        null,
+        {
+          database: 'testdb',
+          enableVersioning: true
+        }
+      )
+      should.exist(mod.history)
+      mod.history.name.should.equal('testModelNameVersions')
+
+      done()
+    })
+
+    it('should attach specified history collection if `enableVersioning` is true', function (done) {
+      const mod = model(
+        'testModelName',
+        help.getModelSchema(),
+        null,
+        {
+          database: 'testdb',
+          enableVersioning: true,
+          versioningCollection: 'modelHistory'
+        }
+      )
+      should.exist(mod.history)
+      mod.history.name.should.equal('modelHistory')
 
       done()
     })
@@ -464,158 +512,6 @@ describe('Model', function () {
     })
   })
 
-  describe('includeHistory param', function () {
-    beforeEach((done) => {
-      acceptanceHelper.dropDatabase('testdb', err => {
-        done()
-      })
-    })
-
-    it('should override `done` method if options.includeHistory = true', function (done) {
-      var mod = model('testModelName', help.getModelSchema(), null, { database: 'testdb', storeRevisions: true })
-
-      var method = sinon.spy(model.Model.prototype, '_injectHistory')
-
-      mod.create({fieldName: 'foo'}, function (err, result) {
-        if (err) return done(err)
-
-        mod.find({fieldName: 'foo'}, { includeHistory: true }, function (err, results) {
-          if (err) return done(err)
-
-          method.restore()
-          method.called.should.eql(true)
-
-          results.results.should.exist
-          results.results.should.be.Array
-          results.results[0].fieldName.should.eql('foo')
-          done()
-        })
-      })
-    })
-
-    it('should add history to results if options.includeHistory = true', function (done) {
-      var mod = model('testModelName', help.getModelSchema(), null, { database: 'testdb', storeRevisions: true })
-
-      help.whenModelsConnect([mod]).then(() => {
-        mod.create({fieldName: 'foo'}, function (err, result) {
-          if (err) return done(err)
-
-          mod.update({fieldName: 'foo'}, {fieldName: 'bar'}, function (err, result) {
-            if (err) return done(err)
-
-            mod.find({}, { includeHistory: true }, function (err, results) {
-              if (err) return done(err)
-
-              results.results.should.exist
-              results.results.should.be.Array
-              results.results[0]._history.should.exist
-              results.results[0]._history[0].fieldName.should.eql('foo')
-              done()
-            })
-          })
-        })
-      })
-    })
-
-    it('should use specified historyFilters when includeHistory = true', function (done) {
-      var mod = model('testModelName', help.getModelSchema(), null, { database: 'testdb', storeRevisions: true })
-
-      mod.create({fieldName: 'foo'}, function (err, result) {
-        if (err) return done(err)
-
-        mod.update({fieldName: 'foo'}, {fieldName: 'bar'}, function (err, result) {
-          if (err) return done(err)
-
-          mod.find({}, { includeHistory: true, historyFilters: '{ "fieldName": "foo" }' }, function (err, results) {
-            if (err) return done(err)
-            results.results.should.exist
-            results.results.should.be.Array
-            should.exist(results.results[0]._history)
-            should.exist(results.results[0].fieldName)
-            done()
-          })
-        })
-      })
-    })
-  })
-
-  describe('Version number', function () {
-    beforeEach((done) => {
-      acceptanceHelper.dropDatabase('testdb', err => {
-        done()
-      })
-    })
-
-    it('should add _version:1 to a new document', function (done) {
-      var mod = model('testModelName', help.getModelSchema(), null, { database: 'testdb', storeRevisions: true })
-
-      mod.create({fieldName: 'foo'}, function (err, results) {
-        if (err) return done(err)
-
-        results.results.should.exist
-        results.results.should.be.Array
-        results.results[0]._version.should.eql(1)
-        done()
-      })
-    })
-
-    it('should increment the version number when updating a document', function (done) {
-      var mod = model('testModelName', help.getModelSchema(), null, { database: 'testdb', storeRevisions: true })
-      mod.create({fieldName: 'foo'}, function (err, result) {
-        if (err) return done(err)
-        mod.update({fieldName: 'foo'}, {fieldName: 'bar'}, function (err, result) {
-          if (err) return done(err)
-          mod.find({fieldName: 'bar'}, { includeHistory: true }, function (err, results) {
-            if (err) return done(err)
-            results.results.should.exist
-            results.results.should.be.Array
-            results.results[0]._version.should.eql(2)
-            results.results[0]._history[0]._version.should.eql(1)
-            done()
-          })
-        })
-      })
-    })
-  })
-
-  describe('`revisions` method', function () {
-    beforeEach((done) => {
-      acceptanceHelper.dropDatabase('testdb', err => {
-        done()
-      })
-    })
-
-    it('should accept id param and return history collection', function (done) {
-      var mod = model('testModelName', help.getModelSchema(), null, { database: 'testdb', storeRevisions: true })
-
-      mod.create({fieldName: 'foo'}, function (err, result) {
-        if (err) return done(err)
-
-        mod.update({fieldName: 'foo'}, {fieldName: 'bar'}, function (err, result) {
-          if (err) return done(err)
-
-          mod.find({fieldName: 'bar'}, function (err, doc) {
-            if (err) return done(err)
-
-            var doc_id = doc.results[0]._id
-            var revision_id = doc.results[0]._history[0] // expected history object
-
-            model('testModelName', help.getModelSchema(), null, { database: 'testdb' }).revisions(doc_id, {}, function (err, result) {
-              if (err) return done(err)
-
-              result.should.be.Array
-
-              if (result[0]) {
-                result[0]._id.toString().should.equal(revision_id.toString())
-              }
-            })
-            done()
-          })
-        })
-      })
-    })
-  })
-
   describe('`getIndexes` method', function () {
     beforeEach((done) => {
       acceptanceHelper.dropDatabase('testdb', err => {
@@ -649,7 +545,7 @@ describe('Model', function () {
             // mod.connection.db = null
 
             mod.getIndexes(indexes => {
-              var result = _.some(indexes, index => { return index.name.indexOf('fieldName') > -1 })
+              var result = indexes.some(index => { return index.name.indexOf('fieldName') > -1 })
               result.should.eql(true)
               done()
             })
@@ -686,7 +582,7 @@ describe('Model', function () {
 
         setTimeout(function () {
           mod.getIndexes(indexes => {
-            var result = _.some(indexes, index => { return index.name.indexOf('fieldName') > -1 })
+            var result = indexes.some(index => { return index.name.indexOf('fieldName') > -1 })
             result.should.eql(true)
             done()
           })
@@ -700,7 +596,7 @@ describe('Model', function () {
         var schema = {}
         schema.fields = fields
 
-        schema.fields.field2 = _.extend({}, schema.fields.fieldName, {
+        schema.fields.field2 = Object.assign({}, schema.fields.fieldName, {
           type: 'Number',
           required: false
         })
@@ -747,7 +643,7 @@ describe('Model', function () {
         var schema = {}
         schema.fields = fields
 
-        schema.fields.field3 = _.extend({}, schema.fields.fieldName, {
+        schema.fields.field3 = Object.assign({}, schema.fields.fieldName, {
           type: 'String',
           required: false
         })
@@ -788,7 +684,7 @@ describe('Model', function () {
         var schema = {}
         schema.fields = fields
 
-        schema.fields.field3 = _.extend({}, schema.fields.fieldName, {
+        schema.fields.field3 = Object.assign({}, schema.fields.fieldName, {
           type: 'String',
           required: false
         })
@@ -890,29 +786,6 @@ describe('Model', function () {
         })
       })
 
-      it('should save model to history collection', function (done) {
-        let mod = model(
-          'testModelName',
-          help.getModelSchema(),
-          null,
-          { database: 'testdb' }
-        )
-
-        mod.create({fieldName: 'foo'}, err => {
-          if (err) return done(err)
-
-          mod.find({fieldName: 'foo'}, (err, doc) => {
-            if (err) return done(err)
-
-            should.exist(doc['results'])
-            doc['results'][0]._history.should.be.Array
-            doc['results'][0]._history.length.should.equal(0) // no updates yet
-
-            done()
-          })
-        })
-      })
-
       it('should pass error to callback if validation fails', function (done) {
         let schema = help.getModelSchema()
         let mod = model(
@@ -981,29 +854,6 @@ describe('Model', function () {
         should.exist(results)
 
         results[0].fieldName.should.equal('foo')
-      })
-    })
-
-    it('should save model to history collection', () => {
-      let mod = model(
-        'testModelName',
-        help.getModelSchema(),
-        null,
-        { database: 'testdb' }
-      )
-
-      return mod.create({
-        documents: { fieldName: 'foo' }
-      }).then(documents => {
-        return mod.find({
-          query: { fieldName: 'foo' }
-        })
-      }).then(({metadata, results}) => {
-        should.exist(metadata)
-        should.exist(results)
-
-        results[0]._history.should.be.Array
-        results[0]._history.length.should.equal(0) // no updates yet
       })
     })
 
@@ -1108,10 +958,13 @@ describe('Model', function () {
             should.exist(result['results'] && result['results'][0])
             result['results'][0].field1.should.equal('bar')
 
-            should.exist(result['results'][0]._history)
-            result['results'][0]._history.length.should.equal(1) // one revision, from the update
+            mod.getVersions({
+              documentId: result.results[0]._id
+            }).then(({results}) => {
+              results.length.should.equal(1)
 
-            done()
+              done()
+            })
           })
         })
       })
@@ -1204,8 +1057,11 @@ describe('Model', function () {
         should.exist(results && results[0])
         results[0].field1.should.equal('bar')
 
-        should.exist(results[0]._history)
-        results[0]._history.length.should.equal(1) // one revision, from the update
+        return mod.getVersions({
+          documentId: results[0]._id
+        })
+      }).then(({results}) => {
+        results.length.should.equal(1)
       })
     })
 
@@ -1452,7 +1308,7 @@ describe('Model', function () {
 
       it('should allow querying with key values too', function (done) {
         var schema = help.getModelSchema()
-        schema = _.extend(schema, {
+        schema = Object.assign({}, schema, {
           fieldMixed: {
             type: 'Mixed',
             label: 'Mixed Field',

@@ -1,9 +1,11 @@
 'use strict'
 
+const config = require('../../config')
 const debug = require('debug')('api:filestore')
 const EventEmitter = require('events').EventEmitter
 const Loki = require('lokijs')
 const metadata = require('@dadi/metadata')
+const path = require('path')
 const sinon = require('sinon')
 const util = require('util')
 const Update = require('./lib/update')
@@ -94,25 +96,7 @@ DataStore.prototype._mockDisconnect = function () {
 }
 
 DataStore.prototype._mockIsDisconnected = function (collection) {
-  // If the connection state is set to failed and there isn't an
-  // exception for the collection.
-  if (
-    mockConnection.failed === true &&
-    !mockConnection.exceptForCollections.includes(collection)
-  ) {
-    return true
-  }
-
-  // If the connection state is set to available but there is an
-  // exception for the collection.
-  if (
-    mockConnection.failed === false &&
-    mockConnection.exceptForCollections.includes(collection)
-  ) {
-    return true
-  }
-
-  return false
+  return mockConnection.failed
 }
 
 /**
@@ -160,7 +144,7 @@ DataStore.prototype.applyFieldsFilterToResults = function (fields, documents) {
  *
  * @param {ConnectionOptions} options
  */
-DataStore.prototype.connect = function ({database, collection}) {
+DataStore.prototype.connect = function ({database = 'default', collection}) {
   if (this._mockIsDisconnected(collection)) {
     this.readyState = STATE_DISCONNECTED
 
@@ -182,7 +166,6 @@ DataStore.prototype.connect = function ({database, collection}) {
       uuid: Math.random()
     }
     this._debug('connect: new db', {
-
       database,
       collection
     })
@@ -277,19 +260,19 @@ DataStore.prototype.dropDatabase = function (collectionName) {
  * @returns {Promise.<Array, Error>} A promise that returns an Array of results,
  *     or an Error if the operation fails
  */
-DataStore.prototype.find = function ({ query, collection, options = {}, schema, settings }) {
-  if (this._mockIsDisconnected(collection)) {
+DataStore.prototype.find = function ({ query, collection: collectionName, options = {}, schema, settings }) {
+  if (this._mockIsDisconnected(collectionName)) {
     this.readyState = STATE_DISCONNECTED
 
     return Promise.reject(new Error('DB_DISCONNECTED'))
   }
 
   options = options || {}
+
   query = this.prepareQuery(query, schema)
 
   return new Promise((resolve, reject) => {
-    const collName = collection
-    this.getCollection(collection).then(collection => {
+    this.getCollection(collectionName).then(collection => {
       let results
 
       const sort = this.getSortParameters(options)
@@ -310,7 +293,7 @@ DataStore.prototype.find = function ({ query, collection, options = {}, schema, 
       results = this.applyFieldsFilterToResults(options.fields, results)
 
       this._debug('find', {
-        collection: collName,
+        collection: collectionName,
         query,
         results
       })
@@ -344,7 +327,7 @@ DataStore.prototype.getCollection = function (collectionName) {
     let collection = this.database.getCollection(collectionName)
 
     if (!collection) {
-      collection = this.database.addCollection(collectionName)
+      collection = this.database.addCollection(collectionName, {disableChangesApi: false})
     }
 
     return resolve(collection)
@@ -420,9 +403,9 @@ DataStore.prototype.getSortParameters = function (options) {
   return sort
 }
 
-DataStore.prototype.index = function (collection, indexes) {
+DataStore.prototype.index = function (collectionName, indexes) {
   return new Promise((resolve, reject) => {
-    this.getCollection(collection).then(collection => {
+    this.getCollection(collectionName).then(collection => {
       let results = []
 
       indexes.forEach((index, idx) => {
@@ -440,13 +423,13 @@ DataStore.prototype.index = function (collection, indexes) {
             collection.ensureIndex(Object.keys(index.keys)[0])
 
             results.push({
-              collection: collection,
+              collection: collectionName,
               index: Object.keys(index.keys)[0]
             })
           }
 
           if (idx === indexes.length - 1) {
-            return resolve(results)
+            return resolve()
           }
         }
       })
@@ -499,7 +482,6 @@ DataStore.prototype.insert = function ({data, collection, options = {}, schema, 
 
         return resolve(results)
       } catch (err) {
-        console.log(err)
         return reject(err)
       }
     })
@@ -509,7 +491,9 @@ DataStore.prototype.insert = function ({data, collection, options = {}, schema, 
 /**
  *
  */
-DataStore.prototype.prepareQuery = function (query, schema) {
+DataStore.prototype.prepareQuery = function (originalQuery, schema) {
+  let query = Object.assign({}, originalQuery)
+
   Object.keys(query).forEach(key => {
     if (Object.prototype.toString.call(query[key]) === '[object RegExp]') {
       const re = new RegExp(query[key])
@@ -625,6 +609,56 @@ DataStore.prototype.update = function ({query, collection, update, options = {},
   })
 }
 
+global.___dbOps = global.___dbOps || []
+
+const WRAPPED_METHODS = [
+  'connect',
+  'delete',
+  'destroy',
+  'dropDatabase',
+  'find',
+  'getIndexes',
+  'index',
+  'insert',
+  //'stats',
+  'update'
+]
+
+WRAPPED_METHODS.forEach(methodName => {
+  const wrappedMethodName = '$$' + methodName
+
+  DataStore.prototype[wrappedMethodName] = DataStore.prototype[methodName]
+  DataStore.prototype[methodName] = function () {
+    const op = {
+      t: methodName,
+      a: Array.from(arguments)
+    }
+
+    // In some situations, the order in which the data connector returns
+    // a result set is irrelevant. We must flag those situations in the
+    // script output so that the comparison method on the data connector
+    // side can adjust accordingly.
+    if (
+      methodName === 'find' &&
+      op.a[0].collection === config.get('search.wordCollection')
+    ) {
+      op.looseResultSearch = true
+    }
+
+    global.___dbOps.push(op)
+
+    return Promise.resolve(this[wrappedMethodName].apply(this, arguments)).then(result => {
+      op.r = result
+
+      return result
+    }).catch(error => {
+      op.e = true
+
+      return Promise.reject(error)
+    })
+  }
+})
+
 module.exports = DataStore
 module.exports.settings = {
   connectWithCollection: false
@@ -640,9 +674,5 @@ module.exports._mock = {
 
   setFailedConnection: state => {
     mockConnection.failed = state
-  },
-
-  setFailedConnectionExceptions: collections => {
-    mockConnection.exceptForCollections = collections
   }
 }

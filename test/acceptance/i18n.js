@@ -25,7 +25,7 @@ describe('Multi-language', function () {
   })
 
   beforeEach(done => {
-    help.dropDatabase('library', err => {
+    help.dropDatabase('library', null, err => {
       if (err) return done(err)
 
       app.start(() => {

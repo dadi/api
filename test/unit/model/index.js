@@ -514,7 +514,7 @@ describe('Model', function () {
 
   describe('`getIndexes` method', function () {
     beforeEach((done) => {
-      acceptanceHelper.dropDatabase('testdb', err => {
+      acceptanceHelper.dropDatabase('testdb', null, err => {
         done()
       })
     })

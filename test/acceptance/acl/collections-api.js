@@ -53,11 +53,15 @@ describe('Collections API', () => {
               help.dropDatabase('testdb', 'test-schema', () => {
                 help.dropDatabase('testdb', 'test-reference-schema', () => {
                   help.dropDatabase('testdb', 'test-required-schema', () => {
-                    help.createDocWithParams(res.body.accessToken, { 'field1': '7', 'title': 'test doc' }, (err, doc1) => {
-                      help.createDocWithParams(res.body.accessToken, { 'field1': '11', 'title': 'very long title' }, (err, doc2) => {
-                        docs = [doc1._id, doc2._id]
+                    help.dropDatabase(config.get('search.database'), config.get('search.wordCollection'), () => {
+                      help.dropDatabase(config.get('search.database'), config.get('search.indexCollection'), () => {
+                        help.createDocWithParams(res.body.accessToken, { 'field1': '7', 'title': 'test doc' }, (err, doc1) => {
+                          help.createDocWithParams(res.body.accessToken, { 'field1': '11', 'title': 'very long title' }, (err, doc2) => {
+                            docs = [doc1._id, doc2._id]
 
-                        help.removeACLData(done)
+                            help.removeACLData(done)
+                          })
+                        })
                       })
                     })
                   })

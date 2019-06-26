@@ -580,24 +580,28 @@ describe('Cache', function (done) {
 
       try {
         app.start(function () {
-          help.getBearerToken(function (err, token) {
+          help.dropDatabase('testdb', function (err) {
             if (err) return done(err)
-            bearerToken = token
 
-            var client = request('http://' + config.get('server.host') + ':' + config.get('server.port'))
-
-            client
-            .get(requestUrl)
-            .set('Authorization', 'Bearer ' + bearerToken)
-            .expect(200)
-            .end(function (err, res) {
+            help.getBearerToken(function (err, token) {
               if (err) return done(err)
+              bearerToken = token
 
-              spy.called.should.eql(true)
-              spy.args[0][0].should.eql(cacheKey)
+              var client = request('http://' + config.get('server.host') + ':' + config.get('server.port'))
 
-              c.cache.cacheHandler.redisClient.exists.restore()
-              app.stop(done)
+              client
+              .get(requestUrl)
+              .set('Authorization', 'Bearer ' + bearerToken)
+              .expect(200)
+              .end(function (err, res) {
+                if (err) return done(err)
+
+                spy.called.should.eql(true)
+                spy.args[0][0].should.eql(cacheKey)
+
+                c.cache.cacheHandler.redisClient.exists.restore()
+                app.stop(done)
+              })
             })
           })
         })
@@ -625,24 +629,26 @@ describe('Cache', function (done) {
 
       try {
         app.start(function () {
-          help.getBearerToken(function (err, token) {
-            if (err) return done(err)
-            bearerToken = token
-
-            var client = request('http://' + config.get('server.host') + ':' + config.get('server.port'))
-
-            client
-            .get(requestUrl)
-            .set('Accept-Encoding', 'identity')
-            .set('Authorization', 'Bearer ' + bearerToken)
-            .expect(200)
-            .end(function (err, res) {
+          help.dropDatabase('testdb', function (err) {
+            help.getBearerToken(function (err, token) {
               if (err) return done(err)
+              bearerToken = token
 
-              res.body.should.eql({'DATA': 'OK'})
-              res.headers['x-cache'].should.eql('HIT')
+              var client = request('http://' + config.get('server.host') + ':' + config.get('server.port'))
 
-              app.stop(done)
+              client
+              .get(requestUrl)
+              .set('Accept-Encoding', 'identity')
+              .set('Authorization', 'Bearer ' + bearerToken)
+              .expect(200)
+              .end(function (err, res) {
+                if (err) return done(err)
+
+                res.body.should.eql({'DATA': 'OK'})
+                res.headers['x-cache'].should.eql('HIT')
+
+                app.stop(done)
+              })
             })
           })
         })
@@ -1093,44 +1099,48 @@ describe('Cache', function (done) {
         app.start(function () {
           var client = request('http://' + config.get('server.host') + ':' + config.get('server.port'))
 
-          client
-        .get('/vtest/testdb/test-schema?callback=myCallback')
-        .set('Authorization', 'Bearer ' + bearerToken)
-        .expect(200)
-        .expect('content-type', 'text/javascript')
-        .end(function (err, res1) {
-          if (err) return done(err)
+          help.dropDatabase('testdb', function (err) {
+            if (err) return done(err)
 
-          setTimeout(function () {
-            // get the cache keys
-            c.cache.cacheHandler.redisClient.KEYS('*', (err, keys) => {
-              cacheKeys = keys
+            client
+            .get('/vtest/testdb/test-schema?callback=myCallback')
+            .set('Authorization', 'Bearer ' + bearerToken)
+            .expect(200)
+            .expect('content-type', 'text/javascript')
+            .end(function (err, res1) {
+              if (err) return done(err)
 
               setTimeout(function () {
-                client
-                .post('/vtest/testdb/test-schema')
-                .set('Authorization', 'Bearer ' + bearerToken)
-                .send({field1: 'foo!'})
-                .expect(200)
-                .end(function (err, res) {
-                  if (err) return done(err)
+                // get the cache keys
+                c.cache.cacheHandler.redisClient.KEYS('*', (err, keys) => {
+                  cacheKeys = keys
 
-                  client
-                  .get('/vtest/testdb/test-schema?callback=myCallback')
-                  .set('Authorization', 'Bearer ' + bearerToken)
-                  .expect(200)
-                  .expect('content-type', 'text/javascript')
-                  .end(function (err, res2) {
-                    if (err) return done(err)
+                  setTimeout(function () {
+                    client
+                    .post('/vtest/testdb/test-schema')
+                    .set('Authorization', 'Bearer ' + bearerToken)
+                    .send({field1: 'foo!'})
+                    .expect(200)
+                    .end(function (err, res) {
+                      if (err) return done(err)
 
-                    res2.text.should.not.equal(res1.text)
-                    app.stop(done)
-                  })
+                      client
+                      .get('/vtest/testdb/test-schema?callback=myCallback')
+                      .set('Authorization', 'Bearer ' + bearerToken)
+                      .expect(200)
+                      .expect('content-type', 'text/javascript')
+                      .end(function (err, res2) {
+                        if (err) return done(err)
+
+                        res2.text.should.not.equal(res1.text)
+                        app.stop(done)
+                      })
+                    })
+                  }, 500)
                 })
               }, 500)
             })
-          }, 500)
-        })
+          })
         })
       } catch (err) {
 

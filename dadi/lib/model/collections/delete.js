@@ -171,9 +171,9 @@ function deleteFn ({
           }
         }
 
-        result.totalCount = allDocuments.metadata.totalCount - result.deletedCount
-
-        return result
+        return Object.assign({}, result, {
+          totalCount: allDocuments.metadata.totalCount - result.deletedCount
+        })
       }).then(result => {
         // Add a background job to the work queue that deletes from the search
         // collection each reference to the documents that were just deleted.

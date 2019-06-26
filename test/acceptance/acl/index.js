@@ -289,7 +289,7 @@ describe('ACL', () => {
           resources: {
             'some:resource': {
               read: {
-                filter
+                filter: JSON.stringify(filter)
               }
             }
           }

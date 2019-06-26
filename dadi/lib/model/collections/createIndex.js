@@ -12,7 +12,7 @@
  */
 function createIndex () {
   const createIndexInDatastore = database => {
-    return database.index(this.name, this.settings.index)
+    return database.index(this.name, this.settings.index).then(() => true)
   }
 
   if (!this.connection.db) {

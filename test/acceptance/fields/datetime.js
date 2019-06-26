@@ -19,10 +19,10 @@ describe('DateTime Field', function () {
   })
 
   beforeEach(done => {
-    help.dropDatabase('testdb', err => {
-      if (err) return done(err)
+    app.start(() => {
+      help.dropDatabase('library', null, err => {
+        if (err) return done(err)
 
-      app.start(() => {
         help.getBearerToken((err, token) => {
           if (err) return done(err)
 

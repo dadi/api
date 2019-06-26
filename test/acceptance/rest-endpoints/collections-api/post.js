@@ -35,7 +35,7 @@ describe('Collections API – POST', function () {
                 'required': false
               },
               'field3': {
-                'type': 'ObjectID',
+                'type': 'Reference',
                 'required': false
               },
               '_fieldWithUnderscore': {

@@ -16,10 +16,10 @@ describe('Search', function () {
   let cleanupFn
 
   beforeEach(done => {
-    help.dropDatabase('search', err => {
+    help.dropDatabase('search', null, err => {
       if (err) return done(err)
 
-      help.dropDatabase('testdb', err => {
+      help.dropDatabase('testdb', null, err => {
         if (err) return done(err)
   
         config.set('search.enabled', true)
@@ -753,11 +753,11 @@ describe('Search', function () {
           resources: {
             'collection:testdb_first-schema': {
               read: {
-                filter: {
+                filter: JSON.stringify({
                   year: {
                     $lt: 1990
                   }
-                }
+                })
               }
             }
           }

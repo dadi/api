@@ -33,7 +33,7 @@ describe('String Field', () => {
   })
 
   describe('query filtering', () => {
-    it('should transform string to regex when at root', done => {
+    it('should transform string to case-insensitive regex when at root', done => {
       let client = request(connectionString)
       let value = 'Hello world'
 
@@ -45,26 +45,20 @@ describe('String Field', () => {
       .end((err, res) => {
         if (err) return done(err)
 
-        let model = Model('misc')
-        let spy = sinon.spy(model.connection.db, 'find')
-
         client
-        .get(`/v1/library/misc?filter={"string":"${value}"}`)
+        .get(`/v1/library/misc?filter={"string":"${value.toUpperCase()}"}`)
         .set('Authorization', 'Bearer ' + bearerToken)
         .expect(200)
         .end((err, res) => {
-          spy.getCall(0).args[0].query.string.should.eql({
-            $regex: [`^${value}$`, 'i']
-          })
+          res.body.results.length.should.eql(1)
+          res.body.results[0].string.should.eql(value)
 
-          spy.restore()
-
-          done()
+          done(err)
         })
       })
     })
 
-    it('should not transform string to regex when nested inside operator', done => {
+    it('should not transform string to case-insensitive regex when nested inside operator', done => {
       let client = request(connectionString)
       let value = 'Hello world'
 
@@ -76,19 +70,13 @@ describe('String Field', () => {
       .end((err, res) => {
         if (err) return done(err)
 
-        let model = Model('misc')
-        let spy = sinon.spy(model.connection.db, 'find')
-
         client
-        .get(`/v1/library/misc?filter={"string":{"$ne":"${value}"}}`)
+        .get(`/v1/library/misc?filter={"string":{"$ne":"${value.toUpperCase()}"}}`)
         .set('Authorization', 'Bearer ' + bearerToken)
         .expect(200)
         .end((err, res) => {
-          spy.getCall(0).args[0].query.string.should.eql({
-            $ne: value
-          })
-
-          spy.restore()
+          res.body.results.length.should.eql(1)
+          res.body.results[0].string.should.eql(value)
 
           done()
         })

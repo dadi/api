@@ -347,42 +347,41 @@ Role.prototype.setWriteCallback = function (callback) {
 /**
  * Updates a role.
  *
- * @param  {Object} role
+ * @param  {Object} roleName
  * @param  {Object} update
  * @return {Promise<Object>}
  */
-Role.prototype.update = function (role, update) {
+Role.prototype.update = function (roleName, update) {
   return this.model.find({
     options: {
       fields: {
-        _id: 0,
-        secret: 0
+        _id: 1
       }
     },
     query: {
-      name: role.name
+      name: roleName
     }
   }).then(({results}) => {
-    if (results.length > 0) {
+    if (results.length === 0) {
       return Promise.reject(
-        new Error('ROLE_EXISTS')
+        new Error('ROLE_NOT_FOUND')
       )
     }
 
     return this.validate(update, {
       partial: true
+    }).then(() => {
+      return this.model.update({
+        query: {
+          _id: results[0]._id
+        },
+        rawOutput: true,
+        update,
+        validate: false
+      })
+    }).then(result => {
+      return this.broadcastWrite(result)
     })
-  }).then(() => {
-    return this.model.update({
-      query: {
-        name: role
-      },
-      rawOutput: true,
-      update,
-      validate: false
-    })
-  }).then(result => {
-    return this.broadcastWrite(result)
   })
 }
 

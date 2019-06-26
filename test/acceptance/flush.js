@@ -36,47 +36,51 @@ describe('Cache', function (done) {
 
     beforeEach(function (done) {
       app.start(function () {
-        help.dropDatabase('testdb', function (err) {
+        help.dropDatabase('testdb', null, function (err) {
           if (err) return done(err)
 
-          help.getBearerToken(function (err, token) {
+          help.dropDatabase('library', null, function (err) {
             if (err) return done(err)
 
-            adminBearerToken = token
+            help.getBearerToken(function (err, token) {
+              if (err) return done(err)
 
-            help.getBearerTokenWithPermissions(
-              { roles: ['some-role'] },
-              (err, token) => {
-                if (err) return done(err)
+              adminBearerToken = token
 
-                bearerToken = token
-
-                cacheKeys = [] // resets the array for the next test
-
-                help.createDoc(adminBearerToken, function (err, doc) {
+              help.getBearerTokenWithPermissions(
+                { roles: ['some-role'] },
+                (err, token) => {
                   if (err) return done(err)
 
-                  setTimeout(() => {
-                    help.createDoc(adminBearerToken, function (err, doc) {
-                      if (err) return done(err)
+                  bearerToken = token
 
-                      var client = request('http://' + config.get('server.host') + ':' + config.get('server.port'))
+                  cacheKeys = [] // resets the array for the next test
 
-                      client
-                      .get('/vtest/testdb/test-schema')
-                      .set('Authorization', `Bearer ${adminBearerToken}`)
-                      .expect(200)
-                      .end(function (err, res1) {
+                  help.createDoc(adminBearerToken, function (err, doc) {
+                    if (err) return done(err)
+
+                    setTimeout(() => {
+                      help.createDoc(adminBearerToken, function (err, doc) {
                         if (err) return done(err)
-                        res1.headers['x-cache'].should.exist
-                        res1.headers['x-cache'].should.eql('MISS')
-                        done()
+
+                        var client = request('http://' + config.get('server.host') + ':' + config.get('server.port'))
+
+                        client
+                        .get('/vtest/testdb/test-schema')
+                        .set('Authorization', `Bearer ${adminBearerToken}`)
+                        .expect(200)
+                        .end(function (err, res1) {
+                          if (err) return done(err)
+                          res1.headers['x-cache'].should.exist
+                          res1.headers['x-cache'].should.eql('MISS')
+                          done()
+                        })
                       })
-                    })
-                  }, 300)
-                })
-              }
-            )
+                    }, 300)
+                  })
+                }
+              )
+            })
           })
         })
       })
@@ -411,44 +415,48 @@ describe('Cache', function (done) {
       }
 
       app.start(function () {
-        help.dropDatabase('testdb', function (err) {
+        help.dropDatabase('testdb', null, function (err) {
           if (err) return done(err)
 
-          help.getBearerToken(function (err, token) {
+          help.dropDatabase('library', null, function (err) {
             if (err) return done(err)
 
-            adminBearerToken = token
+            help.getBearerToken(function (err, token) {
+              if (err) return done(err)
 
-            help.getBearerTokenWithPermissions(
-              { roles: ['some-role'] },
-              (err, token) => {
-                if (err) return done(err)
+              adminBearerToken = token
 
-                bearerToken = token
-
-                help.createDoc(adminBearerToken, function (err, doc) {
+              help.getBearerTokenWithPermissions(
+                { roles: ['some-role'] },
+                (err, token) => {
                   if (err) return done(err)
+
+                  bearerToken = token
 
                   help.createDoc(adminBearerToken, function (err, doc) {
                     if (err) return done(err)
 
-                    var client = request('http://' + config.get('server.host') + ':' + config.get('server.port'))
-
-                    client
-                    .get('/vtest/testdb/test-schema')
-                    .set('Accept-Encoding', 'identity')
-                    .set('Authorization', `Bearer ${adminBearerToken}`)
-                    .expect(200)
-                    .end(function (err, res1) {
+                    help.createDoc(adminBearerToken, function (err, doc) {
                       if (err) return done(err)
-                      res1.headers['x-cache'].should.exist
-                      res1.headers['x-cache'].should.eql('MISS')
-                      done()
+
+                      var client = request('http://' + config.get('server.host') + ':' + config.get('server.port'))
+
+                      client
+                      .get('/vtest/testdb/test-schema')
+                      .set('Accept-Encoding', 'identity')
+                      .set('Authorization', `Bearer ${adminBearerToken}`)
+                      .expect(200)
+                      .end(function (err, res1) {
+                        if (err) return done(err)
+                        res1.headers['x-cache'].should.exist
+                        res1.headers['x-cache'].should.eql('MISS')
+                        done()
+                      })
                     })
                   })
-                })
-              }
-            )
+                }
+              )
+            })
           })
         })
       })

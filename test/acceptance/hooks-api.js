@@ -15,25 +15,27 @@ describe('Hooks API', function () {
 
   describe('when the requesting client does not have admin access', () => {
     before(done => {
-      app.start(() => {
-        help.getBearerTokenWithPermissions(
-          {
-            resources: {
-              'collection:library_book': {
-                create: true,
-                read: true
-              }
+      help.removeACLData().then(() => {
+        app.start(() => {
+          help.getBearerTokenWithPermissions(
+            {
+              resources: {
+                'collection:library_book': {
+                  create: true,
+                  read: true
+                }
+              },
+              roles: ['some-role']
             },
-            roles: ['some-role']
-          },
-          (err, token) => {
-            if (err) return done(err)
+            (err, token) => {
+              if (err) return done(err)
 
-            bearerToken = token
+              bearerToken = token
 
-            done()
-          }
-        )
+              done()
+            }
+          )
+        })
       })
     })
 
@@ -194,17 +196,19 @@ describe('Hooks API', function () {
 
   describe('when the requesting client has admin access', () => {
     before(done => {
-      app.start(() => {
-        help.getBearerTokenWithPermissions(
-          { accessType: 'admin' },
-          (err, token) => {
-            if (err) return done(err)
+      help.removeACLData().then(() => {
+        app.start(() => {
+          help.getBearerTokenWithPermissions(
+            { accessType: 'admin' },
+            (err, token) => {
+              if (err) return done(err)
 
-            bearerToken = token
+              bearerToken = token
 
-            done()
-          }
-        )
+              done()
+            }
+          )
+        })
       })
     })
 

@@ -19,59 +19,65 @@ describe('Collections API – GET', function () {
 
   let cleanupFn
 
-  before(function (done) {
-    help.dropDatabase('testdb', function (err) {
+  beforeEach(done => {
+    help.dropDatabase('testdb', null, function (err) {
       if (err) return done(err)
 
-      app.start(function () {
-        help.getBearerTokenWithAccessType('admin', function (err, token) {
-          if (err) return done(err)
+      help.dropDatabase('library', null, function (err) {
+        return done(err)
+      })
+    })
+  })
 
-          bearerToken = token
+  before(function (done) {
+    app.start(function () {
+      help.getBearerTokenWithAccessType('admin', function (err, token) {
+        if (err) return done(err)
 
-          let schema = {
-            'fields': {
-              'field1': {
-                'type': 'String',
-                'required': false
-              },
-              'field2': {
-                'type': 'Number',
-                'required': false
-              },
-              'field3': {
-                'type': 'ObjectID',
-                'required': false
-              },
-              '_fieldWithUnderscore': {
-                'type': 'Object',
-                'required': false
-              }
+        bearerToken = token
+
+        let schema = {
+          'fields': {
+            'field1': {
+              'type': 'String',
+              'required': false
             },
-            'settings': {
-              'count': 40
+            'field2': {
+              'type': 'Number',
+              'required': false
+            },
+            'field3': {
+              'type': 'ObjectID',
+              'required': false
+            },
+            '_fieldWithUnderscore': {
+              'type': 'Object',
+              'required': false
             }
+          },
+          'settings': {
+            'count': 40
           }
+        }
 
-          help.writeTempFile(
-            'temp-workspace/collections/vtest/testdb/collection.test-schema.json',
-            schema,
-            callback1 => {
-              help.writeTempFile(
-                'temp-workspace/collections/v1/testdb/collection.test-schema.json',
-                schema,
-                callback2 => {
-                  cleanupFn = () => {
-                    callback1()
-                    callback2()
-                  }
-
-                  done()
+        help.writeTempFile(
+          'temp-workspace/collections/vtest/testdb/collection.test-schema.json',
+          schema,
+          callback1 => {
+            help.writeTempFile(
+              'temp-workspace/collections/v1/testdb/collection.test-schema.json',
+              schema,
+              callback2 => {
+                cleanupFn = () => {
+                  callback1()
+                  callback2()
                 }
-              )
-            }
-          )
-        })
+
+                done()
+              }
+            )
+          }
+        )
       })
     })
   })
@@ -875,26 +881,26 @@ describe('Collections API – GET', function () {
   })
 
   describe('query string params', function () {
-    before(function (done) {
-      // create a bunch of docs
-      var asyncControl = new EventEmitter()
-      var count = 0
+    beforeEach(() => {
+      const total = 46
+      let data = []
 
-      for (var i = 0; i < 45; ++i) {
-        help.createDoc(bearerToken, function (err) {
-          if (err) return asyncControl.emit('error', err)
-          count += 1
+      for (let i = 0; i < total; ++i) {
+        const number = i % 2 === 0 ? i : (total - i)
+        const doc = {
+          field1: (number < 10 ? '0' : '') + number.toString()
+        }
 
-          if (count >= 45) asyncControl.emit('ready')
-        })
+        data.push(doc)
       }
 
-      asyncControl.on('ready', function () {
-        // documents are loaded and tests can start
-        done()
+      return help.createDocument({
+        database: 'testdb',
+        document: data,
+        collection: 'test-schema',
+        token: bearerToken,
+        version: 'vtest'
       })
-
-      asyncControl.on('error', function (err) { throw err })
     })
 
     it('should paginate results', function (done) {

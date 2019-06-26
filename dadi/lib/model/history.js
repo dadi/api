@@ -60,17 +60,18 @@ History.prototype.getVersion = function (version, options = {}) {
     query: {
       _id: version
     }
-  }).then(response => {
-    response.metadata.version = version
-    response.results = response.results.map(result => {
-      result._id = result._document
-
-      delete result._document
-
-      return result
-    })
-
-    return response
+  }).then(({metadata, results}) => {
+    return {
+      results: results.map(result => {
+        return Object.assign({}, result, {
+          _id: result._document,
+          _document: undefined
+        })
+      }),
+      metadata: Object.assign({}, metadata, {
+        version
+      })
+    }
   }).catch(error => {
     logger.error({module: 'history'}, error)
 

@@ -31,6 +31,7 @@ beforeEach(function() {
   global.___dbOps.push({
     test: this.currentTest.title
   })
+  global.___skipTestFromScript = false
 })
 
 after(() => {

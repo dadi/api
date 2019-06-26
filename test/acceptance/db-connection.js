@@ -32,7 +32,11 @@ describe('Database connection', () => {
         app.stop(done)
       })        
     })
-  })  
+  })
+
+  beforeEach(() => {
+    global.___skipTestFromScript = true
+  })
 
   describe('when available at app boot', function () {
     this.timeout(6000)

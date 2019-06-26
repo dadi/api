@@ -629,6 +629,10 @@ WRAPPED_METHODS.forEach(methodName => {
 
   DataStore.prototype[wrappedMethodName] = DataStore.prototype[methodName]
   DataStore.prototype[methodName] = function () {
+    if (global.___skipTestFromScript) {
+      return this[wrappedMethodName].apply(this, arguments)
+    }
+
     const op = {
       t: methodName,
       a: Array.from(arguments)

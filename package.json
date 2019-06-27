@@ -5,7 +5,7 @@
   "scripts": {
     "create-client": "cd ../../.. && node ./node_modules/@dadi/api/utils/create-client.js",
     "test:prepare": "rm -rf cache && rm -rf config/config.test.json && rm -rf test/acceptance/temp-workspace && cp -R test/acceptance/workspace test/acceptance/temp-workspace",
-    "test": "npm run test:prepare && standard --fix 'dadi/**/*.js' | snazzy && env NODE_ENV=test ./node_modules/.bin/istanbul cover  --report cobertura --report text --report html --report lcov ./node_modules/mocha/bin/_mocha && npm run test:cleanup",
+    "test": "npm run test:prepare && eslint . && prettier --check **/*.{js,jsx,md,html} && env NODE_ENV=test ./node_modules/.bin/istanbul cover  --report cobertura --report text --report html --report lcov ./node_modules/mocha/bin/_mocha && npm run test:cleanup",
     "test:cleanup": "rm -rf test/acceptance/temp-workspace",
     "posttest": "./scripts/coverage.js",
     "start": "node start.js --node_env=development",
@@ -66,24 +66,27 @@
   "devDependencies": {
     "@commitlint/cli": "^7.5.2",
     "@commitlint/config-angular": "~3.1.1",
+    "@dadi/eslint-config": "latest",
+    "@dadi/prettier-config": "latest",
     "aws-sdk-mock": "1.6.1",
     "coveralls": "^3.0.1",
     "env-test": "1.0.0",
+    "eslint": "^6.0.1",
     "faker": "^4.1.0",
     "fakeredis": "1.0.3",
     "form-data": "2.1.4",
-    "husky": "^0.13.3",
+    "husky": "^0.13.4",
     "istanbul": "^1.1.0-alpha.1",
+    "lint-staged": "^8.2.1",
     "lokijs": "^1.5.3",
     "mocha": "^5.2.0",
     "mochawesome": "^2.1.0",
     "mock-require": "^3.0.2",
+    "prettier": "^1.18.2",
     "proxyquire": "^1.7.4",
     "should": "4.0.4",
     "sinon": "2.3.2",
-    "snazzy": "7.0.0",
     "snyk": "^1.147.3",
-    "standard": "8.6.0",
     "supertest": "^3.1.0",
     "uuid": "^3.3.2"
   },
@@ -100,6 +103,17 @@
       "snyk"
     ]
   },
+  "husky": {
+    "hooks": {
+      "pre-commit": "lint-staged"
+    }
+  },
+  "lint-staged": {
+    "*.{js,jsx,md,html}": [
+      "prettier --write",
+      "git add"
+    ]
+  },  
   "repository": {
     "type": "git",
     "url": "https://github.com/dadi/api.git"

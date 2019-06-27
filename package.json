@@ -5,7 +5,7 @@
   "scripts": {
     "create-client": "cd ../../.. && node ./node_modules/@dadi/api/utils/create-client.js",
     "test:prepare": "rm -rf cache && rm -rf config/config.test.json && rm -rf test/acceptance/temp-workspace && cp -R test/acceptance/workspace test/acceptance/temp-workspace",
-    "test": "npm run test:prepare && eslint . && prettier --check **/*.{js,jsx,md,html} && env NODE_ENV=test ./node_modules/.bin/istanbul cover  --report cobertura --report text --report html --report lcov ./node_modules/mocha/bin/_mocha && npm run test:cleanup",
+    "test": "npm run test:prepare && eslint . && prettier --check \"**/*.{js,jsx,md,html}\" && env NODE_ENV=test ./node_modules/.bin/istanbul cover  --report cobertura --report text --report html --report lcov ./node_modules/mocha/bin/_mocha && npm run test:cleanup",
     "test:cleanup": "rm -rf test/acceptance/temp-workspace",
     "posttest": "./scripts/coverage.js",
     "start": "node start.js --node_env=development",
@@ -113,7 +113,7 @@
       "prettier --write",
       "git add"
     ]
-  },  
+  },
   "repository": {
     "type": "git",
     "url": "https://github.com/dadi/api.git"

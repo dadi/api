@@ -9,8 +9,8 @@ const app = require(__dirname + '/../../../dadi/lib/')
 const Model = require('./../../../dadi/lib/model')
 
 let bearerToken
-let configBackup = config.get()
-let client = request(`http://${config.get('server.host')}:${config.get('server.port')}`)
+const configBackup = config.get()
+const client = request(`http://${config.get('server.host')}:${config.get('server.port')}`)
 
 describe('Media field', () => {
   beforeEach(done => {
@@ -32,7 +32,7 @@ describe('Media field', () => {
   describe('POST', () => {
     describe('when `validation.mimeTypes` is defined', () => {
       it('should reject a single value that does not correspond to a valid media object', done => {
-        let payload = {
+        const payload = {
           title: 'Media support in DADI API',
           leadImageJPEG: '5bf5369dd680048cf051bd92'
         }
@@ -61,8 +61,8 @@ describe('Media field', () => {
         .set('Authorization', `Bearer ${bearerToken}`)
         .attach('avatar', 'test/acceptance/temp-workspace/media/1f525.png')
         .end((err, res) => {
-          let mediaObject = res.body.results[0]
-          let payload = {
+          const mediaObject = res.body.results[0]
+          const payload = {
             title: 'Media support in DADI API',
             leadImageJPEG: mediaObject._id
           }
@@ -92,8 +92,8 @@ describe('Media field', () => {
         .set('Authorization', `Bearer ${bearerToken}`)
         .attach('avatar', 'test/acceptance/temp-workspace/media/flowers.jpg')
         .end((err, res) => {
-          let mediaObject = res.body.results[0]
-          let payload = {
+          const mediaObject = res.body.results[0]
+          const payload = {
             title: 'Media support in DADI API',
             leadImageJPEG: mediaObject._id
           }
@@ -124,8 +124,8 @@ describe('Media field', () => {
         .set('Authorization', `Bearer ${bearerToken}`)
         .attach('avatar', 'test/acceptance/temp-workspace/media/1f525.png')
         .end((err, res) => {
-          let mediaObject = res.body.results[0]
-          let payload = {
+          const mediaObject = res.body.results[0]
+          const payload = {
             title: 'Media support in DADI API',
             leadImageJPEG: [
               '5bf5369dd680048cf051bd92',
@@ -158,7 +158,7 @@ describe('Media field', () => {
         .set('Authorization', `Bearer ${bearerToken}`)
         .attach('avatar', 'test/acceptance/temp-workspace/media/1f525.png')
         .end((err, res) => {
-          let mediaObject1 = res.body.results[0]
+          const mediaObject1 = res.body.results[0]
 
           client
           .post('/media/upload')
@@ -166,8 +166,8 @@ describe('Media field', () => {
           .set('Authorization', `Bearer ${bearerToken}`)
           .attach('avatar', 'test/acceptance/temp-workspace/media/flowers.jpg')
           .end((err, res) => {
-            let mediaObject2 = res.body.results[0]
-            let payload = {
+            const mediaObject2 = res.body.results[0]
+            const payload = {
               title: 'Media support in DADI API',
               leadImageJPEG: [
                 mediaObject1._id,
@@ -214,7 +214,7 @@ describe('Media field', () => {
     })
 
     it('should accept `null` as a value', done => {
-      let payload = {
+      const payload = {
         title: 'Media support in DADI API',
         leadImage: null
       }
@@ -236,7 +236,7 @@ describe('Media field', () => {
     })
 
     it('should accept an ID that does not correspond to a valid media object', done => {
-      let payload = {
+      const payload = {
         title: 'Media support in DADI API',
         leadImage: '5bf5369dd680048cf051bd92'
       }
@@ -265,8 +265,8 @@ describe('Media field', () => {
       .set('Authorization', `Bearer ${bearerToken}`)
       .attach('avatar', 'test/acceptance/temp-workspace/media/1f525.png')
       .end((err, res) => {
-        let mediaObject = res.body.results[0]
-        let payload = {
+        const mediaObject = res.body.results[0]
+        const payload = {
           title: 'Media support in DADI API',
           leadImage: mediaObject._id
         }
@@ -277,7 +277,7 @@ describe('Media field', () => {
         .set('Authorization', `Bearer ${bearerToken}`)
         .send(payload)
         .end((err, res) => {
-          let {results} = res.body
+          const {results} = res.body
           
           results.should.be.instanceOf(Array)
           results.length.should.eql(1)
@@ -292,7 +292,7 @@ describe('Media field', () => {
           .set('content-type', 'application/json')
           .set('Authorization', `Bearer ${bearerToken}`)
           .end((err, res) => {
-            let {results} = res.body
+            const {results} = res.body
             
             results.should.be.instanceOf(Array)
             results.length.should.eql(1)
@@ -315,7 +315,7 @@ describe('Media field', () => {
       .set('Authorization', `Bearer ${bearerToken}`)
       .attach('avatar', 'test/acceptance/temp-workspace/media/1f525.png')
       .end((err, res) => {
-        let mediaObject1 = res.body.results[0]
+        const mediaObject1 = res.body.results[0]
 
         client
         .post('/media/upload')
@@ -323,8 +323,8 @@ describe('Media field', () => {
         .set('Authorization', `Bearer ${bearerToken}`)
         .attach('avatar', 'test/acceptance/temp-workspace/media/flowers.jpg')
         .end((err, res) => {
-          let mediaObject2 = res.body.results[0]
-          let payload = {
+          const mediaObject2 = res.body.results[0]
+          const payload = {
             title: 'Media support in DADI API',
             leadImage: [
               mediaObject1._id,
@@ -338,7 +338,7 @@ describe('Media field', () => {
           .set('Authorization', `Bearer ${bearerToken}`)
           .send(payload)
           .end((err, res) => {
-            let {results} = res.body
+            const {results} = res.body
             
             results.should.be.instanceOf(Array)
             results.length.should.eql(1)
@@ -361,7 +361,7 @@ describe('Media field', () => {
             .set('content-type', 'application/json')
             .set('Authorization', `Bearer ${bearerToken}`)
             .end((err, res) => {
-              let {results} = res.body
+              const {results} = res.body
               
               results.should.be.instanceOf(Array)
               results.length.should.eql(1)
@@ -430,8 +430,8 @@ describe('Media field', () => {
       .set('Authorization', `Bearer ${bearerToken}`)
       .attach('avatar', 'test/acceptance/temp-workspace/media/1f525.png')
       .end((err, res) => {
-        let mediaObject = res.body.results[0]
-        let payload = {
+        const mediaObject = res.body.results[0]
+        const payload = {
           title: 'Media support in DADI API',
           leadImage: {
             _id: mediaObject._id
@@ -444,7 +444,7 @@ describe('Media field', () => {
         .set('Authorization', `Bearer ${bearerToken}`)
         .send(payload)
         .end((err, res) => {
-          let {results} = res.body
+          const {results} = res.body
           
           results.should.be.instanceOf(Array)
           results.length.should.eql(1)
@@ -459,7 +459,7 @@ describe('Media field', () => {
           .set('content-type', 'application/json')
           .set('Authorization', `Bearer ${bearerToken}`)
           .end((err, res) => {
-            let {results} = res.body
+            const {results} = res.body
             
             results.should.be.instanceOf(Array)
             results.length.should.eql(1)
@@ -482,7 +482,7 @@ describe('Media field', () => {
       .set('Authorization', `Bearer ${bearerToken}`)
       .attach('avatar', 'test/acceptance/temp-workspace/media/1f525.png')
       .end((err, res) => {
-        let mediaObject1 = res.body.results[0]
+        const mediaObject1 = res.body.results[0]
 
         client
         .post('/media/upload')
@@ -490,8 +490,8 @@ describe('Media field', () => {
         .set('Authorization', `Bearer ${bearerToken}`)
         .attach('avatar', 'test/acceptance/temp-workspace/media/flowers.jpg')
         .end((err, res) => {
-          let mediaObject2 = res.body.results[0]
-          let payload = {
+          const mediaObject2 = res.body.results[0]
+          const payload = {
             title: 'Media support in DADI API',
             leadImage: [
               { _id: mediaObject1._id },
@@ -505,7 +505,7 @@ describe('Media field', () => {
           .set('Authorization', `Bearer ${bearerToken}`)
           .send(payload)
           .end((err, res) => {
-            let {results} = res.body
+            const {results} = res.body
             
             results.should.be.instanceOf(Array)
             results.length.should.eql(1)
@@ -528,7 +528,7 @@ describe('Media field', () => {
             .set('content-type', 'application/json')
             .set('Authorization', `Bearer ${bearerToken}`)
             .end((err, res) => {
-              let {results} = res.body
+              const {results} = res.body
               
               results.should.be.instanceOf(Array)
               results.length.should.eql(1)
@@ -560,8 +560,8 @@ describe('Media field', () => {
       .set('Authorization', `Bearer ${bearerToken}`)
       .attach('avatar', 'test/acceptance/temp-workspace/media/1f525.png')
       .end((err, res) => {
-        let mediaObject = res.body.results[0]
-        let payload = {
+        const mediaObject = res.body.results[0]
+        const payload = {
           title: 'Media support in DADI API',
           leadImage: {
             _id: mediaObject._id,
@@ -576,7 +576,7 @@ describe('Media field', () => {
         .set('Authorization', `Bearer ${bearerToken}`)
         .send(payload)
         .end((err, res) => {
-          let {results} = res.body
+          const {results} = res.body
 
           results.should.be.instanceOf(Array)
           results.length.should.eql(1)
@@ -594,7 +594,7 @@ describe('Media field', () => {
           .set('Authorization', `Bearer ${bearerToken}`)
           .send(payload)
           .end((err, res) => {
-            let {results} = res.body
+            const {results} = res.body
 
             results.should.be.instanceOf(Array)
             results.length.should.eql(1)
@@ -619,7 +619,7 @@ describe('Media field', () => {
       .set('Authorization', `Bearer ${bearerToken}`)
       .attach('avatar', 'test/acceptance/temp-workspace/media/1f525.png')
       .end((err, res) => {
-        let mediaObject1 = res.body.results[0]
+        const mediaObject1 = res.body.results[0]
 
         client
         .post('/media/upload')
@@ -627,8 +627,8 @@ describe('Media field', () => {
         .set('Authorization', `Bearer ${bearerToken}`)
         .attach('avatar', 'test/acceptance/temp-workspace/media/flowers.jpg')
         .end((err, res) => {
-          let mediaObject2 = res.body.results[0]
-          let payload = {
+          const mediaObject2 = res.body.results[0]
+          const payload = {
             title: 'Media support in DADI API',
             leadImage: [
               {
@@ -648,7 +648,7 @@ describe('Media field', () => {
           .set('Authorization', `Bearer ${bearerToken}`)
           .send(payload)
           .end((err, res) => {
-            let {results} = res.body
+            const {results} = res.body
             
             results.should.be.instanceOf(Array)
             results.length.should.eql(1)
@@ -673,7 +673,7 @@ describe('Media field', () => {
             .set('content-type', 'application/json')
             .set('Authorization', `Bearer ${bearerToken}`)
             .end((err, res) => {
-              let {results} = res.body
+              const {results} = res.body
               
               results.should.be.instanceOf(Array)
               results.length.should.eql(1)
@@ -707,8 +707,8 @@ describe('Media field', () => {
       .set('Authorization', `Bearer ${bearerToken}`)
       .attach('avatar', 'test/acceptance/temp-workspace/media/1f525.png')
       .end((err, res) => {
-        let mediaObject = res.body.results[0]
-        let payload = {
+        const mediaObject = res.body.results[0]
+        const payload = {
           title: 'Media support in DADI API',
           legacyImage: mediaObject._id
         }
@@ -719,7 +719,7 @@ describe('Media field', () => {
         .set('Authorization', `Bearer ${bearerToken}`)
         .send(payload)
         .end((err, res) => {
-          let {results} = res.body
+          const {results} = res.body
           
           results.should.be.instanceOf(Array)
           results.length.should.eql(1)
@@ -734,7 +734,7 @@ describe('Media field', () => {
           .set('content-type', 'application/json')
           .set('Authorization', `Bearer ${bearerToken}`)
           .end((err, res) => {
-            let {results} = res.body
+            const {results} = res.body
             
             results.should.be.instanceOf(Array)
             results.length.should.eql(1)
@@ -744,11 +744,11 @@ describe('Media field', () => {
             results[0].legacyImage.url.should.be.instanceOf(String)
             results[0]._composed.legacyImage.should.eql(mediaObject._id)
 
-            let collectionSchemaPath = path.join(
+            const collectionSchemaPath = path.join(
               __dirname,
               '/../temp-workspace/collections/vtest/testdb/collection.test-schema.json'
             )
-            let collectionSchema = require(collectionSchemaPath)
+            const collectionSchema = require(collectionSchemaPath)
 
             // Convert the field to use the Media type.
             collectionSchema.fields.legacyImage.type = 'Media'
@@ -764,7 +764,7 @@ describe('Media field', () => {
                   .set('content-type', 'application/json')
                   .set('Authorization', `Bearer ${bearerToken}`)
                   .end((err, res) => {
-                    let {results} = res.body
+                    const {results} = res.body
 
                     results.should.be.instanceOf(Array)
                     results.length.should.eql(1)
@@ -796,8 +796,8 @@ describe('Media field', () => {
         .set('Authorization', `Bearer ${bearerToken}`)
         .attach('avatar', 'test/acceptance/temp-workspace/media/flowers.jpg')
         .end((err, res) => {
-          let mediaObject = res.body.results[0]
-          let payload = {
+          const mediaObject = res.body.results[0]
+          const payload = {
             title: 'Media support in DADI API',
             leadImageJPEG: mediaObject._id
           }
@@ -808,9 +808,9 @@ describe('Media field', () => {
           .set('Authorization', `Bearer ${bearerToken}`)
           .send(payload)
           .end((err, res) => {
-            let {results} = res.body
-            let id = results[0]._id
-            let payload = {
+            const {results} = res.body
+            const id = results[0]._id
+            const payload = {
               leadImageJPEG: '5bf5369dd680048cf051bd92'
             }
 
@@ -840,8 +840,8 @@ describe('Media field', () => {
         .set('Authorization', `Bearer ${bearerToken}`)
         .attach('avatar', 'test/acceptance/temp-workspace/media/flowers.jpg')
         .end((err, res) => {
-          let mediaObject = res.body.results[0]
-          let payload = {
+          const mediaObject = res.body.results[0]
+          const payload = {
             title: 'Media support in DADI API',
             leadImageJPEG: mediaObject._id
           }
@@ -852,8 +852,8 @@ describe('Media field', () => {
           .set('Authorization', `Bearer ${bearerToken}`)
           .send(payload)
           .end((err, res) => {
-            let {results} = res.body
-            let id = results[0]._id
+            const {results} = res.body
+            const id = results[0]._id
 
             client
             .post('/media/upload')
@@ -861,8 +861,8 @@ describe('Media field', () => {
             .set('Authorization', `Bearer ${bearerToken}`)
             .attach('avatar', 'test/acceptance/temp-workspace/media/1f525.png')
             .end((err, res) => {
-              let mediaObject = res.body.results[0]
-              let payload = {
+              const mediaObject = res.body.results[0]
+              const payload = {
                 leadImageJPEG: mediaObject._id
               }
 
@@ -893,8 +893,8 @@ describe('Media field', () => {
         .set('Authorization', `Bearer ${bearerToken}`)
         .attach('avatar', 'test/acceptance/temp-workspace/media/flowers.jpg')
         .end((err, res) => {
-          let mediaObject = res.body.results[0]
-          let payload1 = {
+          const mediaObject = res.body.results[0]
+          const payload1 = {
             title: 'Media support in DADI API',
             leadImageJPEG: mediaObject._id
           }
@@ -905,8 +905,8 @@ describe('Media field', () => {
           .set('Authorization', `Bearer ${bearerToken}`)
           .send(payload1)
           .end((err, res) => {
-            let {results} = res.body
-            let id = results[0]._id
+            const {results} = res.body
+            const id = results[0]._id
 
             client
             .post('/media/upload')
@@ -914,8 +914,8 @@ describe('Media field', () => {
             .set('Authorization', `Bearer ${bearerToken}`)
             .attach('avatar', 'test/acceptance/temp-workspace/media/flowers.jpg')
             .end((err, res) => {
-              let mediaObject = res.body.results[0]
-              let payload2 = {
+              const mediaObject = res.body.results[0]
+              const payload2 = {
                 leadImageJPEG: mediaObject._id
               }
 
@@ -948,8 +948,8 @@ describe('Media field', () => {
         .set('Authorization', `Bearer ${bearerToken}`)
         .attach('avatar', 'test/acceptance/temp-workspace/media/1f525.png')
         .end((err, res) => {
-          let mediaObject = res.body.results[0]
-          let payload = {
+          const mediaObject = res.body.results[0]
+          const payload = {
             title: 'Media support in DADI API',
             leadImageJPEG: [
               '5bf5369dd680048cf051bd92',
@@ -982,8 +982,8 @@ describe('Media field', () => {
         .set('Authorization', `Bearer ${bearerToken}`)
         .attach('avatar', 'test/acceptance/temp-workspace/media/flowers.jpg')
         .end((err, res) => {
-          let mediaObject = res.body.results[0]
-          let payload = {
+          const mediaObject = res.body.results[0]
+          const payload = {
             title: 'Media support in DADI API',
             leadImageJPEG: mediaObject._id
           }
@@ -994,8 +994,8 @@ describe('Media field', () => {
           .set('Authorization', `Bearer ${bearerToken}`)
           .send(payload)
           .end((err, res) => {
-            let {results} = res.body
-            let id = results[0]._id
+            const {results} = res.body
+            const id = results[0]._id
 
             client
             .post('/media/upload')
@@ -1003,7 +1003,7 @@ describe('Media field', () => {
             .set('Authorization', `Bearer ${bearerToken}`)
             .attach('avatar', 'test/acceptance/temp-workspace/media/1f525.png')
             .end((err, res) => {
-              let mediaObject1 = res.body.results[0]
+              const mediaObject1 = res.body.results[0]
 
               client
               .post('/media/upload')
@@ -1011,8 +1011,8 @@ describe('Media field', () => {
               .set('Authorization', `Bearer ${bearerToken}`)
               .attach('avatar', 'test/acceptance/temp-workspace/media/flowers.jpg')
               .end((err, res) => {
-                let mediaObject2 = res.body.results[0]
-                let payload = {
+                const mediaObject2 = res.body.results[0]
+                const payload = {
                   title: 'Media support in DADI API',
                   leadImageJPEG: [
                     mediaObject1._id,
@@ -1049,8 +1049,8 @@ describe('Media field', () => {
       .set('Authorization', `Bearer ${bearerToken}`)
       .attach('avatar', 'test/acceptance/temp-workspace/media/1f525.png')
       .end((err, res) => {
-        let mediaObject = res.body.results[0]
-        let payload = {
+        const mediaObject = res.body.results[0]
+        const payload = {
           title: 'Media support in DADI API',
           leadImage: mediaObject._id
         }
@@ -1061,7 +1061,7 @@ describe('Media field', () => {
         .set('Authorization', `Bearer ${bearerToken}`)
         .send(payload)
         .end((err, res) => {
-          let {results} = res.body
+          const {results} = res.body
           
           results.should.be.instanceOf(Array)
           results.length.should.eql(1)
@@ -1070,7 +1070,7 @@ describe('Media field', () => {
           results[0].leadImage.fileName.should.eql('1f525.png')
           results[0].leadImage.url.should.be.instanceOf(String)
 
-          let updatePayload = {
+          const updatePayload = {
             leadImage: 'QWERTYUIOP'
           }
 
@@ -1098,7 +1098,7 @@ describe('Media field', () => {
       .set('Authorization', `Bearer ${bearerToken}`)
       .attach('avatar', 'test/acceptance/temp-workspace/media/1f525.png')
       .end((err, res) => {
-        let mediaObject1 = res.body.results[0]
+        const mediaObject1 = res.body.results[0]
 
         client
         .post('/media/upload')
@@ -1106,8 +1106,8 @@ describe('Media field', () => {
         .set('Authorization', `Bearer ${bearerToken}`)
         .attach('avatar', 'test/acceptance/temp-workspace/media/flowers.jpg')
         .end((err, res) => {
-          let mediaObject2 = res.body.results[0]
-          let payload = {
+          const mediaObject2 = res.body.results[0]
+          const payload = {
             title: 'Media support in DADI API',
             leadImage: mediaObject1._id
           }
@@ -1118,7 +1118,7 @@ describe('Media field', () => {
           .set('Authorization', `Bearer ${bearerToken}`)
           .send(payload)
           .end((err, res) => {
-            let {results} = res.body
+            const {results} = res.body
             
             results.should.be.instanceOf(Array)
             results.length.should.eql(1)
@@ -1128,7 +1128,7 @@ describe('Media field', () => {
             results[0].leadImage.url.should.be.instanceOf(String)
             results[0]._composed.leadImage.should.eql(mediaObject1._id)
 
-            let updatePayload = {
+            const updatePayload = {
               leadImage: mediaObject2._id
             }
 
@@ -1143,7 +1143,7 @@ describe('Media field', () => {
               .set('content-type', 'application/json')
               .set('Authorization', `Bearer ${bearerToken}`)
               .end((err, res) => {
-                let {results} = res.body
+                const {results} = res.body
 
                 results.should.be.instanceOf(Array)
                 results.length.should.eql(1)
@@ -1168,8 +1168,8 @@ describe('Media field', () => {
       .set('Authorization', `Bearer ${bearerToken}`)
       .attach('avatar', 'test/acceptance/temp-workspace/media/1f525.png')
       .end((err, res) => {
-        let mediaObject = res.body.results[0]
-        let payload = {
+        const mediaObject = res.body.results[0]
+        const payload = {
           title: 'Media support in DADI API',
           leadImage: mediaObject._id
         }
@@ -1180,7 +1180,7 @@ describe('Media field', () => {
         .set('Authorization', `Bearer ${bearerToken}`)
         .send(payload)
         .end((err, res) => {
-          let {results} = res.body
+          const {results} = res.body
           
           results.should.be.instanceOf(Array)
           results.length.should.eql(1)
@@ -1189,7 +1189,7 @@ describe('Media field', () => {
           results[0].leadImage.fileName.should.eql('1f525.png')
           results[0].leadImage.url.should.be.instanceOf(String)
 
-          let updatePayload = {
+          const updatePayload = {
             leadImage: {
               _id: 'QWERTYUIOP'
             }
@@ -1219,7 +1219,7 @@ describe('Media field', () => {
       .set('Authorization', `Bearer ${bearerToken}`)
       .attach('avatar', 'test/acceptance/temp-workspace/media/1f525.png')
       .end((err, res) => {
-        let mediaObject1 = res.body.results[0]
+        const mediaObject1 = res.body.results[0]
 
         client
         .post('/media/upload')
@@ -1227,8 +1227,8 @@ describe('Media field', () => {
         .set('Authorization', `Bearer ${bearerToken}`)
         .attach('avatar', 'test/acceptance/temp-workspace/media/flowers.jpg')
         .end((err, res) => {
-          let mediaObject2 = res.body.results[0]
-          let payload = {
+          const mediaObject2 = res.body.results[0]
+          const payload = {
             title: 'Media support in DADI API',
             leadImage: mediaObject1._id
           }
@@ -1239,7 +1239,7 @@ describe('Media field', () => {
           .set('Authorization', `Bearer ${bearerToken}`)
           .send(payload)
           .end((err, res) => {
-            let {results} = res.body
+            const {results} = res.body
             
             results.should.be.instanceOf(Array)
             results.length.should.eql(1)
@@ -1249,7 +1249,7 @@ describe('Media field', () => {
             results[0].leadImage.url.should.be.instanceOf(String)
             results[0]._composed.leadImage.should.eql(mediaObject1._id)
 
-            let updatePayload = {
+            const updatePayload = {
               leadImage: {
                 _id: mediaObject2._id
               }
@@ -1266,7 +1266,7 @@ describe('Media field', () => {
               .set('content-type', 'application/json')
               .set('Authorization', `Bearer ${bearerToken}`)
               .end((err, res) => {
-                let {results} = res.body
+                const {results} = res.body
 
                 results.should.be.instanceOf(Array)
                 results.length.should.eql(1)
@@ -1291,7 +1291,7 @@ describe('Media field', () => {
       .set('Authorization', `Bearer ${bearerToken}`)
       .attach('avatar', 'test/acceptance/temp-workspace/media/1f525.png')
       .end((err, res) => {
-        let mediaObject1 = res.body.results[0]
+        const mediaObject1 = res.body.results[0]
 
         client
         .post('/media/upload')
@@ -1299,8 +1299,8 @@ describe('Media field', () => {
         .set('Authorization', `Bearer ${bearerToken}`)
         .attach('avatar', 'test/acceptance/temp-workspace/media/flowers.jpg')
         .end((err, res) => {
-          let mediaObject2 = res.body.results[0]
-          let payload = {
+          const mediaObject2 = res.body.results[0]
+          const payload = {
             title: 'Media support in DADI API',
             leadImage: {
               _id: mediaObject1._id,
@@ -1315,7 +1315,7 @@ describe('Media field', () => {
           .set('Authorization', `Bearer ${bearerToken}`)
           .send(payload)
           .end((err, res) => {
-            let {results} = res.body
+            const {results} = res.body
             
             results.should.be.instanceOf(Array)
             results.length.should.eql(1)
@@ -1327,7 +1327,7 @@ describe('Media field', () => {
             results[0].leadImage.url.should.be.instanceOf(String)
             results[0]._composed.leadImage.should.eql(mediaObject1._id)
 
-            let updatePayload = {
+            const updatePayload = {
               leadImage: {
                 _id: mediaObject2._id,
                 altText: 'New alt text',
@@ -1346,7 +1346,7 @@ describe('Media field', () => {
               .set('content-type', 'application/json')
               .set('Authorization', `Bearer ${bearerToken}`)
               .end((err, res) => {
-                let {results} = res.body
+                const {results} = res.body
 
                 results.should.be.instanceOf(Array)
                 results.length.should.eql(1)

@@ -22,13 +22,13 @@ describe('ACL access matrix', function () {
   })
 
   it('should initialise with an empty map if none is supplied', () => {
-    let matrix = new Matrix()
+    const matrix = new Matrix()
 
     matrix.map.should.eql({})
   })
 
   it('should initialise with the map supplied', () => {
-    let map = {
+    const map = {
       'collection:db_one': {
         create: true,
         readOwn: true
@@ -38,14 +38,14 @@ describe('ACL access matrix', function () {
         updateOwn: true
       }
     }
-    let matrix = new Matrix(map)
+    const matrix = new Matrix(map)
 
     matrix.map.should.eql(map)
   })
 
   describe('get()', () => {
     it('should return the access matrix for a given resource', () => {
-      let map = {
+      const map = {
         'collection:db_one': {
           create: true,
           readOwn: true
@@ -55,7 +55,7 @@ describe('ACL access matrix', function () {
           updateOwn: true
         }
       }
-      let matrix = new Matrix(map)
+      const matrix = new Matrix(map)
 
       matrix.get('collection:db_one').should.eql(
         map['collection:db_one']
@@ -63,7 +63,7 @@ describe('ACL access matrix', function () {
     })
 
     it('should return the access matrix for a given resource and add missing access types', () => {
-      let map = {
+      const map = {
         'collection:db_one': {
           create: true,
           readOwn: true
@@ -73,7 +73,7 @@ describe('ACL access matrix', function () {
           updateOwn: true
         }
       }
-      let matrix = new Matrix(map)
+      const matrix = new Matrix(map)
 
       matrix.get('collection:db_one', {
         addFalsyTypes: true
@@ -83,7 +83,7 @@ describe('ACL access matrix', function () {
     })    
 
     it('should return the access matrix for a given resource and stringify ACL objects', () => {
-      let map = {
+      const map = {
         'collection:db_one': {
           create: true,
           delete: {
@@ -96,7 +96,7 @@ describe('ACL access matrix', function () {
           readOwn: true
         }
       }
-      let matrix = new Matrix(map)
+      const matrix = new Matrix(map)
 
       matrix.get('collection:db_one', {
         stringifyObjects: true
@@ -114,7 +114,7 @@ describe('ACL access matrix', function () {
     })
 
     it('should return the access matrix for a given resource and parse ACL objects', () => {
-      let map = {
+      const map = {
         'collection:db_one': {
           create: true,
           delete: {
@@ -127,7 +127,7 @@ describe('ACL access matrix', function () {
           updateOwn: true
         }
       }
-      let matrix = new Matrix(map)
+      const matrix = new Matrix(map)
 
       matrix.get('collection:db_one', {
         parseObjects: true
@@ -145,7 +145,7 @@ describe('ACL access matrix', function () {
     })
 
     it('should gracefully handle an ACL filter with a malformed JSON payload', () => {
-      let map = {
+      const map = {
         'collection:db_one': {
           create: true,
           delete: {
@@ -154,7 +154,7 @@ describe('ACL access matrix', function () {
           readOwn: true
         }
       }
-      let matrix = new Matrix(map)
+      const matrix = new Matrix(map)
 
       matrix.get('collection:db_one', {
         parseObjects: true
@@ -172,7 +172,7 @@ describe('ACL access matrix', function () {
 
   describe('getAll()', () => {
     it('should return the access matrix for all resources', () => {
-      let map = {
+      const map = {
         'collection:db_one': {
           create: true,
           readOwn: true
@@ -182,13 +182,13 @@ describe('ACL access matrix', function () {
           updateOwn: true
         }
       }
-      let matrix = new Matrix(map)
+      const matrix = new Matrix(map)
 
       matrix.getAll().should.eql(map)
     })
 
     it('should return the access matrix for all resources and add missing access types', () => {
-      let map = {
+      const map = {
         'collection:db_one': {
           create: true,
           readOwn: true
@@ -198,7 +198,7 @@ describe('ACL access matrix', function () {
           updateOwn: true
         }
       }
-      let matrix = new Matrix(map)
+      const matrix = new Matrix(map)
 
       matrix.getAll({
         addFalsyTypes: true
@@ -217,7 +217,7 @@ describe('ACL access matrix', function () {
     })    
 
     it('should return the access matrix for all resources and stringify ACL objects', () => {
-      let map = {
+      const map = {
         'collection:db_one': {
           create: true,
           delete: {
@@ -241,7 +241,7 @@ describe('ACL access matrix', function () {
           updateOwn: true
         }
       }
-      let matrix = new Matrix(map)
+      const matrix = new Matrix(map)
 
       matrix.getAll({
         stringifyObjects: true
@@ -268,7 +268,7 @@ describe('ACL access matrix', function () {
     })
 
     it('should return the access matrix for all resources and parse ACL objects', () => {
-      let map = {
+      const map = {
         'collection:db_one': {
           create: true,
           delete: {
@@ -284,7 +284,7 @@ describe('ACL access matrix', function () {
           updateOwn: true
         }
       }
-      let matrix = new Matrix(map)
+      const matrix = new Matrix(map)
 
       matrix.getAll({
         parseObjects: true
@@ -313,7 +313,7 @@ describe('ACL access matrix', function () {
 
   describe('remove()', () => {
     it('should remove a resource from the map', () => {
-      let map = {
+      const map = {
         'collection:db_one': {
           create: true,
           readOwn: true
@@ -323,7 +323,7 @@ describe('ACL access matrix', function () {
           updateOwn: true
         }
       }
-      let matrix = new Matrix(map)
+      const matrix = new Matrix(map)
 
       matrix.map.should.eql(map)
       matrix.remove('collection:db_one')
@@ -335,13 +335,13 @@ describe('ACL access matrix', function () {
 
   describe('set()', () => {
     it('should merge an access matrix with the existing one for a particular resource', () => {
-      let map = {
+      const map = {
         'collection:db_one': {
           create: true,
           readOwn: true
         }
       }
-      let matrix = new Matrix(map)
+      const matrix = new Matrix(map)
 
       matrix.map.should.eql(map)
       matrix.set('collection:db_one', {
@@ -362,7 +362,7 @@ describe('ACL access matrix', function () {
 
   describe('validation', () => {
     it('should throw an error for an invalid access type', done => {
-      let matrix = new Matrix()
+      const matrix = new Matrix()
 
       try {
         matrix.validate({
@@ -379,7 +379,7 @@ describe('ACL access matrix', function () {
     })
 
     it('should throw an error for an invalid access type value', done => {
-      let matrix = new Matrix()
+      const matrix = new Matrix()
 
       try {
         matrix.validate({
@@ -398,7 +398,7 @@ describe('ACL access matrix', function () {
     })    
 
     it('should throw an error for an invalid key in a complex access type', done => {
-      let matrix = new Matrix()
+      const matrix = new Matrix()
 
       try {
         matrix.validate({
@@ -421,7 +421,7 @@ describe('ACL access matrix', function () {
     })
 
     it('should throw an error if the value for a `fields` or `filter` properties are not an object', done => {
-      let matrix = new Matrix()
+      const matrix = new Matrix()
 
       try {
         matrix.validate({
@@ -447,7 +447,7 @@ describe('ACL access matrix', function () {
     })
 
     it('should throw an error if the value for a `fields` property is not a valid field projection (invalid value)', done => {
-      let matrix = new Matrix()
+      const matrix = new Matrix()
 
       try {
         matrix.validate({
@@ -469,7 +469,7 @@ describe('ACL access matrix', function () {
     })
 
     it('should throw an error if the value for a `fields` property is not a valid field projection (combining inclusion and exclusion)', done => {
-      let matrix = new Matrix()
+      const matrix = new Matrix()
 
       try {
         matrix.validate({
@@ -493,7 +493,7 @@ describe('ACL access matrix', function () {
     })
 
     it('should not throw an error for a valid access matrix', done => {
-      let matrix = new Matrix()
+      const matrix = new Matrix()
 
       try {
         matrix.validate({
@@ -522,8 +522,8 @@ describe('ACL access matrix', function () {
 
   describe('array and object notations', () => {
     it('should leave the map untouched when trying to convert from array notation to object notation a map that is not an array', () => {
-      let matrix = new Matrix()
-      let input = {
+      const matrix = new Matrix()
+      const input = {
         'resource:one': {
           create: true,
           read: true,
@@ -539,15 +539,15 @@ describe('ACL access matrix', function () {
     })
 
     it('should convert an empty map from array notation to object notation', () => {
-      let matrix = new Matrix()
-      let input = []
+      const matrix = new Matrix()
+      const input = []
 
       matrix._convertArrayNotationToObjectNotation(input).should.eql({})
     })
 
     it('should convert a map from array notation to object notation', () => {
-      let matrix = new Matrix()
-      let input = [
+      const matrix = new Matrix()
+      const input = [
         {
           r: 'resource:one',
           a: {
@@ -572,8 +572,8 @@ describe('ACL access matrix', function () {
     })
 
     it('should leave the map untouched when trying to convert from object notation to array notation a map that is already an array', () => {
-      let matrix = new Matrix()
-      let input = [
+      const matrix = new Matrix()
+      const input = [
         {
           r: 'resource:one',
           a: {
@@ -595,15 +595,15 @@ describe('ACL access matrix', function () {
     })    
 
     it('should convert an empty map from object notation to array notation', () => {
-      let matrix = new Matrix()
-      let input = {}
+      const matrix = new Matrix()
+      const input = {}
 
       matrix._convertArrayNotationToObjectNotation(input).should.eql([])
     })
 
     it('should convert a map from object notation to array notation', () => {
-      let matrix = new Matrix()
-      let input = {
+      const matrix = new Matrix()
+      const input = {
         'resource:one': {
           create: true,
           read: true,

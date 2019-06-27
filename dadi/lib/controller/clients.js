@@ -43,7 +43,7 @@ const Clients = function (server) {
 
 Clients.prototype.bindOwn = function (handler) {
   return (req, res, next) => {
-    let modifiedRequest = Object.assign(
+    const modifiedRequest = Object.assign(
       {},
       req,
       {
@@ -114,7 +114,7 @@ Clients.prototype.deleteResource = function (req, res, next) {
 }
 
 Clients.prototype.deleteRole = function (req, res, next) {
-  let role = req.params.role
+  const role = req.params.role
 
   // To remove a role from a client, the requesting client needs to have
   // "update" access to the "clients" resource, and have themselves the
@@ -130,8 +130,8 @@ Clients.prototype.deleteRole = function (req, res, next) {
     // they have the role they are trying to remove.
     if (!model.isAdmin(req.dadiApiClient)) {
       return model.get(req.dadiApiClient.clientId).then(({results}) => {
-        let user = results[0]
-        let requestingClientHasRole = user.roles && user.roles.includes(role)
+        const user = results[0]
+        const requestingClientHasRole = user.roles && user.roles.includes(role)
 
         return requestingClientHasRole
       })
@@ -160,7 +160,7 @@ Clients.prototype.deleteRole = function (req, res, next) {
 
 Clients.prototype.get = function (req, res, next) {
   let aclCheck = Promise.resolve()
-  let clientId = req.params.clientId
+  const clientId = req.params.clientId
 
   // Clients will always have read access to their own endpoint.
   if (!clientId || req.dadiApiClient.clientId !== clientId) {
@@ -180,7 +180,7 @@ Clients.prototype.get = function (req, res, next) {
       return help.sendBackJSON(404, res, next)(null, null)
     }
 
-    let sanitisedClients = clients.results.map(client => {
+    const sanitisedClients = clients.results.map(client => {
       return model.formatForOutput(client)
     })
 
@@ -319,7 +319,7 @@ Clients.prototype.postResource = function (req, res, next) {
     // they have each of the access types they are trying to assign.
     if (!model.isAdmin(req.dadiApiClient)) {
       return acl.access.get(req.dadiApiClient, req.body.name).then(access => {
-        let forbiddenType = Object.keys(req.body.access).find(type => {
+        const forbiddenType = Object.keys(req.body.access).find(type => {
           return access[type] !== true
         })
 
@@ -342,7 +342,7 @@ Clients.prototype.postResource = function (req, res, next) {
 }
 
 Clients.prototype.postRole = function (req, res, next) {
-  let roles = req.body
+  const roles = req.body
 
   if (!Array.isArray(roles)) {
     return help.sendBackJSON(400, res, next)(null, {
@@ -365,8 +365,8 @@ Clients.prototype.postRole = function (req, res, next) {
     // they have each of the roles they are trying to assign.
     if (!model.isAdmin(req.dadiApiClient)) {
       return model.get(req.dadiApiClient.clientId).then(({results}) => {
-        let user = results[0]
-        let forbiddenRoles = roles.filter(role => {
+        const user = results[0]
+        const forbiddenRoles = roles.filter(role => {
           return !user.roles || !user.roles.includes(role)
         })
 
@@ -389,8 +389,8 @@ Clients.prototype.postRole = function (req, res, next) {
 }
 
 Clients.prototype.put = function (req, res, next) {
-  let clientIsAdmin = acl.client.isAdmin(req.dadiApiClient)
-  let update = req.body
+  const clientIsAdmin = acl.client.isAdmin(req.dadiApiClient)
+  const update = req.body
 
   // A client can only be updated by themselves or by an admin.
   if (!clientIsAdmin && req.params.clientId !== req.dadiApiClient.clientId) {
@@ -452,7 +452,7 @@ Clients.prototype.putResource = function (req, res, next) {
     // they have each of the access types they are trying to assign.
     if (!model.isAdmin(req.dadiApiClient)) {
       return acl.access.get(req.dadiApiClient, req.params.resource).then(access => {
-        let forbiddenType = Object.keys(req.body).find(type => {
+        const forbiddenType = Object.keys(req.body).find(type => {
           return access[type] !== true
         })
 
@@ -475,8 +475,8 @@ Clients.prototype.putResource = function (req, res, next) {
 }
 
 Clients.prototype.validateDataObject = function (data = {}, requestingClient) {
-  let isAdmin = model.isAdmin(requestingClient)
-  let protectedDataFields = Object.keys(data).filter(key => {
+  const isAdmin = model.isAdmin(requestingClient)
+  const protectedDataFields = Object.keys(data).filter(key => {
     return key.indexOf('_') === 0
   })
 
@@ -484,7 +484,7 @@ Clients.prototype.validateDataObject = function (data = {}, requestingClient) {
   // (i.e. prefixed with an underscore) *and* the requesting client
   // is not an admin, we abort the operation.
   if (!isAdmin && protectedDataFields.length) {
-    let error = new Error('PROTECTED_DATA_FIELDS')
+    const error = new Error('PROTECTED_DATA_FIELDS')
 
     error.data = protectedDataFields
 

@@ -1,10 +1,10 @@
-var should = require('should')
-var http = require('http')
-var api = require(__dirname + '/../../dadi/lib/api')
-var controller = require(__dirname + '/../../dadi/lib/controller')
-var model = require(__dirname + '/../../dadi/lib/model')
-var help = require(__dirname + '/help')
-var config = require(__dirname + '/../../config')
+const should = require('should')
+const http = require('http')
+const api = require(__dirname + '/../../dadi/lib/api')
+const controller = require(__dirname + '/../../dadi/lib/controller')
+const model = require(__dirname + '/../../dadi/lib/model')
+const help = require(__dirname + '/help')
+const config = require(__dirname + '/../../config')
 
 describe('API server', function () {
   it('should export function', function (done) {
@@ -18,14 +18,15 @@ describe('API server', function () {
   })
 
   it('should return api Object when called', function (done) {
-    var app = api()
+    const app = api()
+
     app.should.be.Object
     app.should.be.instanceOf(api.Api)
     done()
   })
 
   describe('paths', function () {
-    var app = api()
+    const app = api()
 
     it('should have instance of Controller attached as handler', function (done) {
       app.use('/foo/bar', controller(model('apiTest', help.getModelSchema(), null, { database: 'testdb' })))
@@ -48,7 +49,7 @@ describe('API server', function () {
   })
 
   describe('errors', function () {
-    var app = api()
+    const app = api()
 
     it('should be added to app', function (done) {
       app.errors.should.be.Array
@@ -57,7 +58,7 @@ describe('API server', function () {
   })
 
   describe('all', function () {
-    var app = api()
+    const app = api()
 
     it('should be added to app', function (done) {
       app.all.should.be.Array
@@ -66,7 +67,7 @@ describe('API server', function () {
   })
 
   describe('use method', function () {
-    var app = api()
+    const app = api()
 
     it('should be a function', function (done) {
       app.use.should.be.Function
@@ -80,7 +81,7 @@ describe('API server', function () {
     })
 
     it('should add error handlers to errors', function (done) {
-      var errHandle = function (err, req, res, next) {}
+      const errHandle = function (err, req, res, next) {}
 
       app.errors.should.be.Array
       app.use(errHandle)
@@ -90,7 +91,7 @@ describe('API server', function () {
     })
 
     it('should add all requests handler to app', function (done) {
-      var allRequests = function (req, res, next) {}
+      const allRequests = function (req, res, next) {}
 
       app.use(allRequests)
       app.all.length.should.equal(1)
@@ -100,7 +101,7 @@ describe('API server', function () {
   })
 
   describe('unuse method', function () {
-    var app = api()
+    const app = api()
 
     it('should be a function', function (done) {
       app.unuse.should.be.Function
@@ -118,7 +119,7 @@ describe('API server', function () {
     })
 
     it('should remove error handlers from errors', function (done) {
-      var errHandle = function (err, req, res, next) {}
+      const errHandle = function (err, req, res, next) {}
 
       app.errors.should.be.Array
       app.use(errHandle)
@@ -132,7 +133,7 @@ describe('API server', function () {
     })
 
     it('should remove all requests handler from app', function (done) {
-      var allRequests = function (req, res, next) {}
+      const allRequests = function (req, res, next) {}
 
       app.use(allRequests)
       app.all.length.should.equal(1)
@@ -146,7 +147,7 @@ describe('API server', function () {
   })
 
   describe('_match', function (done) {
-    var app = api()
+    const app = api()
 
     it('should be a function', function (done) {
       app._match.should.be.Function
@@ -156,7 +157,8 @@ describe('API server', function () {
     it('should return controller(s) matching a request url', function (done) {
       app.use('/foo/:bar', function (req, res, next) {})
 
-      var m = app._match('/foo/123', {})
+      const m = app._match('/foo/123', {})
+
       should.exist(m)
       m.length.should.equal(1)
 
@@ -166,8 +168,9 @@ describe('API server', function () {
     })
 
     it('should add `req.params` object', function (done) {
-      var req = {}
-      var m = app._match('/foo/123', req)
+      const req = {}
+      const m = app._match('/foo/123', req)
+
       should.exist(m)
       m.length.should.equal(1)
       should.exist(req.params)
@@ -178,7 +181,7 @@ describe('API server', function () {
   })
 
   describe('listen', function () {
-    var app = api()
+    const app = api()
 
     it('should be a function', function (done) {
       app.listen.should.be.Function
@@ -187,7 +190,7 @@ describe('API server', function () {
   })
 
   describe('listener', function () {
-    var app = api()
+    const app = api()
 
     it('should be a function', function (done) {
       app.listener.should.be.Function
@@ -196,7 +199,8 @@ describe('API server', function () {
   })
 
   describe('server', function () {
-    var app, server
+    let app, server
+
     before(function (done) {
       app = api()
       server = app.listen(null, done)

@@ -128,12 +128,12 @@ Client.prototype.delete = function (clientId) {
  * @return {Object}
  */
 Client.prototype.formatForOutput = function (client) {
-  let sanitisedClient = Object.keys(this.schema).reduce((output, key) => {
+  const sanitisedClient = Object.keys(this.schema).reduce((output, key) => {
     if (!this.schema[key].hidden) {
       let value = client[key] || this.schema[key].default
 
       if (key === 'resources') {
-        let resources = new ACLMatrix(value)
+        const resources = new ACLMatrix(value)
 
         value = resources.getAll({
           addFalsyTypes: true
@@ -159,7 +159,7 @@ Client.prototype.formatForOutput = function (client) {
  * @return {Promise<Object>}
  */
 Client.prototype.get = function (clientId, secret) {
-  let query = {}
+  const query = {}
 
   if (typeof clientId === 'string') {
     query.clientId = clientId
@@ -182,7 +182,7 @@ Client.prototype.get = function (clientId, secret) {
       }
 
       return results.map(result => {
-        let resources = new ACLMatrix(result.resources)
+        const resources = new ACLMatrix(result.resources)
 
         return Object.assign({}, result, {
           resources: resources.getAll()
@@ -253,7 +253,7 @@ Client.prototype.resourceAdd = function (clientId, resource, access) {
       )
     }
 
-    let resources = new ACLMatrix(
+    const resources = new ACLMatrix(
       results[0].resources
     )
 
@@ -313,7 +313,7 @@ Client.prototype.resourceRemove = function (clientId, resource) {
       )
     }
 
-    let resources = new ACLMatrix(
+    const resources = new ACLMatrix(
       results[0].resources
     )
 
@@ -369,7 +369,7 @@ Client.prototype.resourceUpdate = function (clientId, resource, access) {
       )
     }
 
-    let resources = new ACLMatrix(
+    const resources = new ACLMatrix(
       results[0].resources
     )
 
@@ -429,15 +429,15 @@ Client.prototype.roleAdd = function (clientId, roles) {
       )
     }
 
-    let existingRoles = results[0].roles || []
+    const existingRoles = results[0].roles || []
 
     return roleModel.get(roles).then(({results}) => {
-      let invalidRoles = roles.filter(role => {
+      const invalidRoles = roles.filter(role => {
         return !results.find(dbRole => dbRole.name === role)
       })
 
       if (invalidRoles.length > 0) {
-        let error = new Error('INVALID_ROLE')
+        const error = new Error('INVALID_ROLE')
 
         error.data = invalidRoles
 
@@ -447,7 +447,7 @@ Client.prototype.roleAdd = function (clientId, roles) {
       return existingRoles
     })
   }).then(existingRoles => {
-    let newRoles = [...new Set(existingRoles.concat(roles).sort())]
+    const newRoles = [...new Set(existingRoles.concat(roles).sort())]
 
     return this.model.update({
       query: {
@@ -476,7 +476,7 @@ Client.prototype.roleAdd = function (clientId, roles) {
  * @return {Promise<Object>}
  */
 Client.prototype.roleRemove = function (clientId, roles) {
-  let rolesRemoved = []
+  const rolesRemoved = []
 
   return this.model.find({
     options: {
@@ -495,8 +495,8 @@ Client.prototype.roleRemove = function (clientId, roles) {
       )
     }
 
-    let existingRoles = results[0].roles || []
-    let newRoles = [...new Set(
+    const existingRoles = results[0].roles || []
+    const newRoles = [...new Set(
       existingRoles.filter(role => {
         if (roles.includes(role)) {
           rolesRemoved.push(role)
@@ -621,7 +621,7 @@ Client.prototype.update = function (clientId, update) {
     return results
   }).then(results => {
     if (update.data) {
-      let mergedData = Object.assign({}, results[0].data, update.data)
+      const mergedData = Object.assign({}, results[0].data, update.data)
 
       Object.keys(mergedData).forEach(key => {
         if (mergedData[key] === null) {
@@ -659,19 +659,19 @@ Client.prototype.validate = function (client, {
   blockedFields = [],
   partial = false
 } = {}) {
-  let missingFields = Object.keys(this.schema).filter(field => {
+  const missingFields = Object.keys(this.schema).filter(field => {
     return this.schema[field].required && client[field] === undefined
   })
 
   if (!partial && missingFields.length > 0) {
-    let error = new Error('MISSING_FIELDS')
+    const error = new Error('MISSING_FIELDS')
 
     error.data = missingFields
 
     return Promise.reject(error)
   }
 
-  let invalidFields = Object.keys(this.schema).filter(field => {
+  const invalidFields = Object.keys(this.schema).filter(field => {
     if (
       client[field] !== undefined &&
       this.schema[field].allowedInInput === false &&
@@ -694,7 +694,7 @@ Client.prototype.validate = function (client, {
   })
 
   if (invalidFields.length > 0) {
-    let error = new Error('INVALID_FIELDS')
+    const error = new Error('INVALID_FIELDS')
 
     error.data = invalidFields
 

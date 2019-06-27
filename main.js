@@ -1,4 +1,4 @@
-module.exports = app = require(__dirname + '/index.js')
+module.exports = require(__dirname + '/index.js')
 module.exports.ACL = require(__dirname + '/dadi/lib/model/acl')
 module.exports.Config = require(__dirname + '/config')
 module.exports.Connection = require(__dirname + '/dadi/lib/model/connection')

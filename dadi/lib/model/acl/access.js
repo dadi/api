@@ -22,7 +22,7 @@ const Access = function () {
  * @return {Objct}
  */
 Access.prototype.combineAccessMatrices = function (matrix1 = {}, matrix2 = {}) {
-  let accessTypes = [...new Set(
+  const accessTypes = [...new Set(
     Object.keys(matrix1).concat(Object.keys(matrix2))
   )]
 
@@ -58,7 +58,7 @@ Access.prototype.combineAccessMatrices = function (matrix1 = {}, matrix2 = {}) {
     // of both the existing and candidate values, so that they result in
     // the broadest set of fields.
     if (matrix1[accessType].fields || matrix2[accessType].fields) {
-      let fields = this.mergeFields([
+      const fields = this.mergeFields([
         matrix1[accessType].fields,
         matrix2[accessType].fields
       ])
@@ -95,13 +95,13 @@ Access.prototype.combineAccessMatrices = function (matrix1 = {}, matrix2 = {}) {
  * @return {Array/Object}
  */
 Access.prototype.filterFields = function (access, input) {
-  let fields = access.fields
+  const fields = access.fields
 
   if ((typeof fields !== 'object') || !input || !Object.keys(input).length) {
     return input
   }
 
-  let isExclusion = Object.keys(fields).some(field => {
+  const isExclusion = Object.keys(fields).some(field => {
     return field !== '_id' && fields[field] === 0
   })
   let allowedFields = Array.isArray(input)
@@ -134,7 +134,7 @@ Access.prototype.get = function ({clientId = null, accessType = null} = {}, reso
   }
 
   if (accessType === 'admin') {
-    let matrix = {}
+    const matrix = {}
 
     ACCESS_TYPES.forEach(accessType => {
       matrix[accessType] = true
@@ -143,7 +143,7 @@ Access.prototype.get = function ({clientId = null, accessType = null} = {}, reso
     return Promise.resolve(matrix)
   }
 
-  let query = {
+  const query = {
     client: clientId
   }
 
@@ -159,14 +159,14 @@ Access.prototype.get = function ({clientId = null, accessType = null} = {}, reso
       return {}
     }
 
-    let accessMap = new ACLMatrix()
+    const accessMap = new ACLMatrix()
 
     results.forEach(result => {
       accessMap.set(result.resource, result.access)
     })
 
     if (resource) {
-      let matrix = accessMap.get(resource)
+      const matrix = accessMap.get(resource)
 
       return resolveOwnTypes
         ? this.resolveOwnTypes(matrix, clientId)
@@ -193,7 +193,7 @@ Access.prototype.getRoleChain = function (roles = [], cache = {}, chain) {
 
   // We only need to fetch from the database the roles that
   // are not already in cache.
-  let rolesToFetch = roles.filter(role => {
+  const rolesToFetch = roles.filter(role => {
     return !Object.keys(cache).includes(role)
   })
 
@@ -204,7 +204,7 @@ Access.prototype.getRoleChain = function (roles = [], cache = {}, chain) {
   }
 
   return roleModel.get(rolesToFetch).then(({results}) => {
-    let parentRoles = new Set()
+    const parentRoles = new Set()
 
     results.forEach(role => {
       cache[role.name] = role.resources || {}
@@ -228,7 +228,7 @@ Access.prototype.getClientRoles = function (clientId) {
       return []
     }
 
-    let roles = results[0].roles
+    const roles = results[0].roles
 
     if (roles.length === 0) {
       return []
@@ -249,8 +249,8 @@ Access.prototype.mergeFields = function mergeFields (projections) {
       return true
     }
 
-    let projectionFields = Object.keys(projection)
-    let projectionIsExclusion = projectionFields.find(field => {
+    const projectionFields = Object.keys(projection)
+    const projectionIsExclusion = projectionFields.find(field => {
       return field !== '_id' && projection[field] === 0
     })
 
@@ -279,6 +279,8 @@ Access.prototype.mergeFields = function mergeFields (projections) {
         })
       }
     }
+
+    return false
   })
 
   return fields.reduce((result, field) => {
@@ -300,9 +302,9 @@ Access.prototype.mergeFields = function mergeFields (projections) {
  * @return {Object}
  */
 Access.prototype.resolveOwnTypes = function (matrix, clientId) {
-  let newMatrix = {}
-  let splitTypes = Object.keys(matrix).reduce((result, accessType) => {
-    let match = accessType.match(/^(.*)Own$/)
+  const newMatrix = {}
+  const splitTypes = Object.keys(matrix).reduce((result, accessType) => {
+    const match = accessType.match(/^(.*)Own$/)
 
     if (match) {
       result.own.push(match[1])
@@ -321,20 +323,20 @@ Access.prototype.resolveOwnTypes = function (matrix, clientId) {
   })
 
   splitTypes.own.forEach(baseType => {
-    let accessType = `${baseType}Own`
+    const accessType = `${baseType}Own`
 
     if (!matrix[accessType] || (matrix[baseType] === true)) {
       return
     }
 
-    let filter = Object.assign(
+    const filter = Object.assign(
       {},
       newMatrix[baseType] && newMatrix[baseType].filter,
       newMatrix[accessType] && newMatrix[accessType].filter,
       {_createdBy: clientId}
     )
 
-    let fields = (matrix[baseType] && matrix[baseType].fields) ||
+    const fields = (matrix[baseType] && matrix[baseType].fields) ||
       (matrix[accessType] && matrix[accessType].fields)
 
     newMatrix[baseType] = Object.assign(
@@ -367,7 +369,7 @@ Access.prototype.write = function () {
   // this operation. This way, if X roles inherit from role
   // R1, we just fetch R1 from the database once, instead of
   // X times.
-  let roleCache = {}
+  const roleCache = {}
 
   // Getting all the clients.
   return clientModel.get().then(({results}) => {
@@ -376,7 +378,7 @@ Access.prototype.write = function () {
     // entries we need to push and then make a single call to
     // the database, as opposed to writing every time we process
     // a client or a resource.
-    let entries = []
+    const entries = []
     let queue = Promise.resolve()
 
     // For each client, we find out all the resources they have access to.
@@ -386,20 +388,20 @@ Access.prototype.write = function () {
         // assigned to, including inheritance.
         return this.getRoleChain(client.roles, roleCache).then(chain => {
           // Start with the resources assigned to the client directly.
-          let clientResources = client.resources || {}
-          let clientResourcesMap = new ACLMatrix(clientResources)
+          const clientResources = client.resources || {}
+          const clientResourcesMap = new ACLMatrix(clientResources)
 
           // Take the resources associated with each role and extend
           // the corresponding entry in `clientResources`.
           chain.forEach(roleName => {
-            let role = roleCache[roleName]
+            const role = roleCache[roleName]
 
             if (!role) return
 
-            let roleMap = new ACLMatrix(role)
+            const roleMap = new ACLMatrix(role)
 
             Object.keys(role).forEach(resource => {
-              let combinedMatrix = this.combineAccessMatrices(
+              const combinedMatrix = this.combineAccessMatrices(
                 clientResourcesMap.get(resource, {
                   parseObjects: true
                 }),
@@ -412,7 +414,7 @@ Access.prototype.write = function () {
             })
           })
 
-          let combinedResources = clientResourcesMap.getAll({
+          const combinedResources = clientResourcesMap.getAll({
             stringifyObjects: true
           })
 

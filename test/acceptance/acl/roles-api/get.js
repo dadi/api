@@ -5,8 +5,8 @@ const request = require('supertest')
 const should = require('should')
 
 module.exports = () => {
-  let configBackup = config.get()
-  let client = request(`http://${config.get('server.host')}:${config.get('server.port')}`)
+  const configBackup = config.get()
+  const client = request(`http://${config.get('server.host')}:${config.get('server.port')}`)
 
   beforeEach(() => {
     return help.createACLRole({
@@ -37,7 +37,7 @@ module.exports = () => {
     })
 
     it('should return 403 if the request includes a valid bearer token without sufficient permissions on the "roles" resource (no resource)', done => {
-      let testClient = {
+      const testClient = {
         clientId: 'apiClient',
         secret: 'someSecret'
       }
@@ -57,7 +57,7 @@ module.exports = () => {
 
           res.body.accessToken.should.be.String
 
-          let bearerToken = res.body.accessToken
+          const bearerToken = res.body.accessToken
 
           client
           .get('/api/roles')
@@ -74,7 +74,7 @@ module.exports = () => {
     })
 
     it('should return 403 if the request includes a valid bearer token without sufficient permissions on the "roles" resource (falsy access type)', done => {
-      let testClient = {
+      const testClient = {
         clientId: 'apiClient',
         secret: 'someSecret',
         resources: {
@@ -99,7 +99,7 @@ module.exports = () => {
 
           res.body.accessToken.should.be.String
 
-          let bearerToken = res.body.accessToken
+          const bearerToken = res.body.accessToken
 
           client
           .get('/api/roles')
@@ -116,7 +116,7 @@ module.exports = () => {
     })
 
     it('should return 404 when trying to get a role that does not exist', done => {
-      let testClient = {
+      const testClient = {
         clientId: 'apiClient',
         secret: 'someSecret',
         resources: {
@@ -141,7 +141,7 @@ module.exports = () => {
 
           res.body.accessToken.should.be.String
 
-          let bearerToken = res.body.accessToken
+          const bearerToken = res.body.accessToken
 
           client
           .get('/api/roles/does-not-exist')
@@ -160,7 +160,7 @@ module.exports = () => {
 
   describe('success states (the client has "read" access to the "roles" resource)', () => {
     it('should return a list of roles and sort them alphabetically by name', done => {
-      let testClient = {
+      const testClient = {
         clientId: 'apiClient',
         secret: 'someSecret',
         resources: {
@@ -185,7 +185,7 @@ module.exports = () => {
 
           res.body.accessToken.should.be.String
 
-          let bearerToken = res.body.accessToken
+          const bearerToken = res.body.accessToken
 
           client
           .get('/api/roles')
@@ -195,7 +195,7 @@ module.exports = () => {
           .end((err, res) => {
             res.statusCode.should.eql(200)
 
-            let results = res.body.results
+            const results = res.body.results
 
             results.should.be.Array
             results.length.should.eql(3)
@@ -219,7 +219,7 @@ module.exports = () => {
     })
 
     it('should list new roles after they are added', done => {
-      let testClient = {
+      const testClient = {
         clientId: 'apiClient',
         secret: 'someSecret',
         resources: {
@@ -230,7 +230,7 @@ module.exports = () => {
         },
         roles: ['cousin']
       }
-      let newRole = {
+      const newRole = {
         name: 'aaaa',
         extends: 'cousin'
       }
@@ -250,7 +250,7 @@ module.exports = () => {
 
           res.body.accessToken.should.be.String
 
-          let bearerToken = res.body.accessToken
+          const bearerToken = res.body.accessToken
 
           client
           .get('/api/roles')
@@ -260,7 +260,7 @@ module.exports = () => {
           .end((err, res) => {
             res.statusCode.should.eql(200)
 
-            let results = res.body.results
+            const results = res.body.results
 
             results.should.be.Array
             results.length.should.eql(3)
@@ -300,7 +300,7 @@ module.exports = () => {
               .end((err, res) => {
                 res.statusCode.should.eql(200)
 
-                let results = res.body.results
+                const results = res.body.results
 
                 results.should.be.Array
                 results.length.should.eql(4)
@@ -330,7 +330,7 @@ module.exports = () => {
     })
 
     it('should not list roles after they have been deleted', done => {
-      let testClient = {
+      const testClient = {
         clientId: 'apiClient',
         secret: 'someSecret',
         resources: {
@@ -357,7 +357,7 @@ module.exports = () => {
 
           res.body.accessToken.should.be.String
 
-          let bearerToken = res.body.accessToken
+          const bearerToken = res.body.accessToken
 
           client
           .get('/api/roles')
@@ -367,7 +367,7 @@ module.exports = () => {
           .end((err, res) => {
             res.statusCode.should.eql(200)
 
-            let results = res.body.results
+            const results = res.body.results
 
             results.should.be.Array
             results.length.should.eql(3)
@@ -400,7 +400,7 @@ module.exports = () => {
               .end((err, res) => {
                 res.statusCode.should.eql(200)
 
-                let results = res.body.results
+                const results = res.body.results
 
                 results.should.be.Array
                 results.length.should.eql(2)
@@ -422,7 +422,7 @@ module.exports = () => {
     })
 
     it('should get a role by name', done => {
-      let testClient = {
+      const testClient = {
         clientId: 'apiClient',
         secret: 'someSecret',
         resources: {
@@ -447,7 +447,7 @@ module.exports = () => {
 
           res.body.accessToken.should.be.String
 
-          let bearerToken = res.body.accessToken
+          const bearerToken = res.body.accessToken
 
           client
           .get('/api/roles/child')
@@ -457,7 +457,7 @@ module.exports = () => {
           .end((err, res) => {
             res.statusCode.should.eql(200)
 
-            let results = res.body.results
+            const results = res.body.results
 
             results.should.be.Array
             results.length.should.eql(1)

@@ -5,8 +5,8 @@ const help = require(__dirname + '/../help')
 const app = require(__dirname + '/../../../dadi/lib/')
 
 let bearerToken
-let configBackup = config.get()
-let connectionString = 'http://' + config.get('server.host') + ':' + config.get('server.port')
+const configBackup = config.get()
+const connectionString = 'http://' + config.get('server.host') + ':' + config.get('server.port')
 
 describe('Boolean Field', () => {
   beforeEach(done => {
@@ -29,7 +29,7 @@ describe('Boolean Field', () => {
   })
 
   it('should create and retrieve', done => {
-    let client = request(connectionString)
+    const client = request(connectionString)
 
     client
     .post('/v1/library/misc')
@@ -54,8 +54,8 @@ describe('Boolean Field', () => {
   })
 
   it('should retrieve all documents where the field is truthy', done => {
-    let client = request(connectionString)
-    let docs = [
+    const client = request(connectionString)
+    const docs = [
       {
         boolean: true
       },
@@ -91,8 +91,8 @@ describe('Boolean Field', () => {
   })
 
   it('should retrieve all documents where the field is falsy', done => {
-    let client = request(connectionString)
-    let docs = [
+    const client = request(connectionString)
+    const docs = [
       {
         boolean: true
       },

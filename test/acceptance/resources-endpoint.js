@@ -7,7 +7,7 @@ const request = require('supertest')
 const should = require('should')
 const sinon = require('sinon')
 
-let client = request(`http://${config.get('server.host')}:${config.get('server.port')}`)
+const client = request(`http://${config.get('server.host')}:${config.get('server.port')}`)
 
 describe('Resources endpoint', function () {
   let bearerToken
@@ -46,7 +46,7 @@ describe('Resources endpoint', function () {
       .set('Authorization', `Bearer ${bearerToken}`)
       .end((err, res) => {
         Object.keys(app.components).forEach(key => {
-          let component = app.components[key]
+          const component = app.components[key]
           let aclKey
 
           switch (component._type) {
@@ -64,7 +64,7 @@ describe('Resources endpoint', function () {
 
           if (!aclKey) return
 
-          let match = res.body.results.some(result => {
+          const match = res.body.results.some(result => {
             return result.name === aclKey
           })
 
@@ -77,7 +77,7 @@ describe('Resources endpoint', function () {
   })
 
   it('should only list collection, media and custom endpoint resources for which the client has any type of access to (no resources)', done => {
-    let testClient = {
+    const testClient = {
       clientId: 'apiClient',
       secret: 'someSecret',
       resources: {
@@ -102,7 +102,7 @@ describe('Resources endpoint', function () {
       .end((err, res) => {
         if (err) return done(err)
 
-        let bearerToken = res.body.accessToken
+        const bearerToken = res.body.accessToken
 
         client
         .get(`/api/resources`)
@@ -119,7 +119,7 @@ describe('Resources endpoint', function () {
   })
 
   it('should only list collection, media and custom endpoint resources for which the client has any type of access to (create access set to `true`)', done => {
-    let testClient = {
+    const testClient = {
       clientId: 'apiClient',
       secret: 'someSecret',
       resources: {
@@ -141,7 +141,7 @@ describe('Resources endpoint', function () {
       .end((err, res) => {
         if (err) return done(err)
 
-        let bearerToken = res.body.accessToken
+        const bearerToken = res.body.accessToken
 
         client
         .get(`/api/resources`)
@@ -159,7 +159,7 @@ describe('Resources endpoint', function () {
   })
 
   it('should only list collection, media and custom endpoint resources for which the client has any type of access to (create access with `fields`)', done => {
-    let testClient = {
+    const testClient = {
       clientId: 'apiClient',
       secret: 'someSecret',
       resources: {
@@ -185,7 +185,7 @@ describe('Resources endpoint', function () {
       .end((err, res) => {
         if (err) return done(err)
 
-        let bearerToken = res.body.accessToken
+        const bearerToken = res.body.accessToken
 
         client
         .get(`/api/resources`)
@@ -203,7 +203,7 @@ describe('Resources endpoint', function () {
   })
 
   it('should only list collection, media and custom endpoint resources for which the client has any type of access to (create access with `filter`)', done => {
-    let testClient = {
+    const testClient = {
       clientId: 'apiClient',
       secret: 'someSecret',
       resources: {
@@ -229,7 +229,7 @@ describe('Resources endpoint', function () {
       .end((err, res) => {
         if (err) return done(err)
 
-        let bearerToken = res.body.accessToken
+        const bearerToken = res.body.accessToken
 
         client
         .get(`/api/resources`)
@@ -247,7 +247,7 @@ describe('Resources endpoint', function () {
   })
 
   it('should only list collection, media and custom endpoint resources for which the client has any type of access to (delete access set to `true`)', done => {
-    let testClient = {
+    const testClient = {
       clientId: 'apiClient',
       secret: 'someSecret',
       resources: {
@@ -269,7 +269,7 @@ describe('Resources endpoint', function () {
       .end((err, res) => {
         if (err) return done(err)
 
-        let bearerToken = res.body.accessToken
+        const bearerToken = res.body.accessToken
 
         client
         .get(`/api/resources`)
@@ -287,7 +287,7 @@ describe('Resources endpoint', function () {
   })
 
   it('should only list collection, media and custom endpoint resources for which the client has any type of access to (delete access with `filter`)', done => {
-    let testClient = {
+    const testClient = {
       clientId: 'apiClient',
       secret: 'someSecret',
       resources: {
@@ -313,7 +313,7 @@ describe('Resources endpoint', function () {
       .end((err, res) => {
         if (err) return done(err)
 
-        let bearerToken = res.body.accessToken
+        const bearerToken = res.body.accessToken
 
         client
         .get(`/api/resources`)
@@ -331,7 +331,7 @@ describe('Resources endpoint', function () {
   })
 
   it('should only list collection, media and custom endpoint resources for which the client has any type of access to (read access set to `true`)', done => {
-    let testClient = {
+    const testClient = {
       clientId: 'apiClient',
       secret: 'someSecret',
       resources: {
@@ -353,7 +353,7 @@ describe('Resources endpoint', function () {
       .end((err, res) => {
         if (err) return done(err)
 
-        let bearerToken = res.body.accessToken
+        const bearerToken = res.body.accessToken
 
         client
         .get(`/api/resources`)
@@ -371,7 +371,7 @@ describe('Resources endpoint', function () {
   })
 
   it('should only list collection, media and custom endpoint resources for which the client has any type of access to (read access with `fields`)', done => {
-    let testClient = {
+    const testClient = {
       clientId: 'apiClient',
       secret: 'someSecret',
       resources: {
@@ -397,7 +397,7 @@ describe('Resources endpoint', function () {
       .end((err, res) => {
         if (err) return done(err)
 
-        let bearerToken = res.body.accessToken
+        const bearerToken = res.body.accessToken
 
         client
         .get(`/api/resources`)
@@ -415,7 +415,7 @@ describe('Resources endpoint', function () {
   })
 
   it('should only list collection, media and custom endpoint resources for which the client has any type of access to (read access with `filter`)', done => {
-    let testClient = {
+    const testClient = {
       clientId: 'apiClient',
       secret: 'someSecret',
       resources: {
@@ -441,7 +441,7 @@ describe('Resources endpoint', function () {
       .end((err, res) => {
         if (err) return done(err)
 
-        let bearerToken = res.body.accessToken
+        const bearerToken = res.body.accessToken
 
         client
         .get(`/api/resources`)
@@ -459,7 +459,7 @@ describe('Resources endpoint', function () {
   })
 
   it('should only list collection, media and custom endpoint resources for which the client has any type of access to (update access set to `true`)', done => {
-    let testClient = {
+    const testClient = {
       clientId: 'apiClient',
       secret: 'someSecret',
       resources: {
@@ -481,7 +481,7 @@ describe('Resources endpoint', function () {
       .end((err, res) => {
         if (err) return done(err)
 
-        let bearerToken = res.body.accessToken
+        const bearerToken = res.body.accessToken
 
         client
         .get(`/api/resources`)
@@ -499,7 +499,7 @@ describe('Resources endpoint', function () {
   })
 
   it('should only list collection, media and custom endpoint resources for which the client has any type of access to (update access with `fields`)', done => {
-    let testClient = {
+    const testClient = {
       clientId: 'apiClient',
       secret: 'someSecret',
       resources: {
@@ -525,7 +525,7 @@ describe('Resources endpoint', function () {
       .end((err, res) => {
         if (err) return done(err)
 
-        let bearerToken = res.body.accessToken
+        const bearerToken = res.body.accessToken
 
         client
         .get(`/api/resources`)
@@ -543,7 +543,7 @@ describe('Resources endpoint', function () {
   })
 
   it('should only list collection, media and custom endpoint resources for which the client has any type of access to (update access with `filter`)', done => {
-    let testClient = {
+    const testClient = {
       clientId: 'apiClient',
       secret: 'someSecret',
       resources: {
@@ -569,7 +569,7 @@ describe('Resources endpoint', function () {
       .end((err, res) => {
         if (err) return done(err)
 
-        let bearerToken = res.body.accessToken
+        const bearerToken = res.body.accessToken
 
         client
         .get(`/api/resources`)

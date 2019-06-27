@@ -7,7 +7,7 @@ const app = require(__dirname + '/../../../../dadi/lib/')
 // variables scoped for use throughout tests
 const connectionString = 'http://' + config.get('server.host') + ':' + config.get('server.port')
 let bearerToken
-let lastModifiedAt = 0
+const lastModifiedAt = 0
 
 describe('Collections API – Stats endpoint', function () {
   this.timeout(4000)
@@ -32,7 +32,7 @@ describe('Collections API – Stats endpoint', function () {
     help.createDoc(bearerToken, function (err, doc) {
       if (err) return done(err)
 
-      var client = request(connectionString)
+      const client = request(connectionString)
 
       client
         .get('/vtest/testdb/test-schema/stats')
@@ -50,7 +50,7 @@ describe('Collections API – Stats endpoint', function () {
     help.createDoc(bearerToken, function (err, doc) {
       if (err) return done(err)
 
-      var client = request(connectionString)
+      const client = request(connectionString)
 
       client
         .get('/vtest/testdb/test-schema/stats')
@@ -72,7 +72,7 @@ describe('Collections API – Stats endpoint', function () {
     help.createDoc(bearerToken, function (err, doc) {
       if (err) return done(err)
 
-      var client = request(connectionString)
+      const client = request(connectionString)
 
       client
         .post('/vtest/testdb/test-schema/stats')

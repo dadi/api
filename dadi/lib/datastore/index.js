@@ -10,16 +10,16 @@ let packageData = require('./../../../package.json')
  * @classdesc
  */
 const DataStore = function (storeName) {
-  let store = storeName || config.get('datastore')
-  let minimumVersion = packageData.dataConnectorDependencies[store]
+  const store = storeName || config.get('datastore')
+  const minimumVersion = packageData.dataConnectorDependencies[store]
 
   try {
-    let DataStore = require(store)
-    let instance = new DataStore()
+    const DataStore = require(store)
+    const instance = new DataStore()
     let version = '0.0.0'
 
     if (typeof instance.handshake === 'function') {
-      let connectorData = instance.handshake()
+      const connectorData = instance.handshake()
 
       version = connectorData.version || version
 

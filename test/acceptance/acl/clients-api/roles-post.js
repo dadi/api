@@ -4,11 +4,11 @@ const help = require('./../../help')
 const request = require('supertest')
 const should = require('should')
 
-let configBackup = config.get()
-let client = request(`http://${config.get('server.host')}:${config.get('server.port')}`)
+const configBackup = config.get()
+const client = request(`http://${config.get('server.host')}:${config.get('server.port')}`)
 
 module.exports = () => {
-  let targetClient = {
+  const targetClient = {
     clientId: 'targetClient',
     secret: 'someSecret'
   }
@@ -45,7 +45,7 @@ module.exports = () => {
     })
 
     it('should return 403 if the request includes a valid bearer token without sufficient permissions on the "clients" resource (no "clients" resource)', done => {
-      let testClient = {
+      const testClient = {
         clientId: 'apiClient',
         secret: 'someSecret'
       }
@@ -65,7 +65,7 @@ module.exports = () => {
 
           res.body.accessToken.should.be.String
 
-          let bearerToken = res.body.accessToken
+          const bearerToken = res.body.accessToken
 
           client
           .post(`/api/clients/${targetClient.clientId}/roles`)
@@ -83,7 +83,7 @@ module.exports = () => {
     })
 
     it('should return 403 if the request includes a valid bearer token without sufficient permissions (falsy "update" access to "clients" resource)', done => {
-      let testClient = {
+      const testClient = {
         clientId: 'apiClient',
         secret: 'someSecret',
         resources: {
@@ -108,7 +108,7 @@ module.exports = () => {
 
           res.body.accessToken.should.be.String
 
-          let bearerToken = res.body.accessToken
+          const bearerToken = res.body.accessToken
 
           client
           .post(`/api/clients/${targetClient.clientId}/roles`)
@@ -126,7 +126,7 @@ module.exports = () => {
     })
 
     it('should return 403 if the request includes a valid bearer token without sufficient permissions (requesting client does not have one of the assigned roles)', done => {
-      let testClient = {
+      const testClient = {
         clientId: 'apiClient',
         secret: 'someSecret',
         roles: ['child']
@@ -147,7 +147,7 @@ module.exports = () => {
 
           res.body.accessToken.should.be.String
 
-          let bearerToken = res.body.accessToken
+          const bearerToken = res.body.accessToken
 
           client
           .post(`/api/clients/${targetClient.clientId}/roles`)
@@ -165,7 +165,7 @@ module.exports = () => {
     })
 
     it('should return 400 if the request body is not an array of roles', done => {
-      let testClient = {
+      const testClient = {
         clientId: 'apiClient',
         secret: 'someSecret',
         roles: ['cousin']
@@ -186,7 +186,7 @@ module.exports = () => {
 
           res.body.accessToken.should.be.String
 
-          let bearerToken = res.body.accessToken
+          const bearerToken = res.body.accessToken
 
           client
           .post(`/api/clients/${targetClient.clientId}/roles`)
@@ -211,7 +211,7 @@ module.exports = () => {
     })
 
     it('should return 400 if the request body contains one or more invalid roles', done => {
-      let testClient = {
+      const testClient = {
         clientId: 'apiClient',
         secret: 'someSecret',
         accessType: 'admin'
@@ -232,7 +232,7 @@ module.exports = () => {
 
           res.body.accessToken.should.be.String
 
-          let bearerToken = res.body.accessToken
+          const bearerToken = res.body.accessToken
 
           client
           .post(`/api/clients/${targetClient.clientId}/roles`)
@@ -259,7 +259,7 @@ module.exports = () => {
 
   describe('success states (the client has "update" access to the "clients" resource and has all the roles they are trying to assign)', () => {
     it('should assign a role to a client', done => {
-      let testClient = {
+      const testClient = {
         clientId: 'apiClient',
         secret: 'someSecret',
         resources: {
@@ -286,7 +286,7 @@ module.exports = () => {
 
           res.body.accessToken.should.be.String
 
-          let bearerToken = res.body.accessToken
+          const bearerToken = res.body.accessToken
 
           client
           .get(`/api/clients/${targetClient.clientId}`)
@@ -324,7 +324,7 @@ module.exports = () => {
     })
 
     it('should assign multiple roles to a client, ignoring any roles they already have', done => {
-      let testClient = {
+      const testClient = {
         clientId: 'apiClient',
         secret: 'someSecret',
         resources: {
@@ -351,7 +351,7 @@ module.exports = () => {
 
           res.body.accessToken.should.be.String
 
-          let bearerToken = res.body.accessToken
+          const bearerToken = res.body.accessToken
 
           client
           .get(`/api/clients/${targetClient.clientId}`)

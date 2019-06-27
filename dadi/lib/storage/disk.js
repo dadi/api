@@ -35,7 +35,7 @@ DiskStorage.prototype.get = function (filePath, route, req, res, next) {
   // serve, but we're not serving files from the root. To get around this, we
   // pass it a modified version of the URL, where the root URL becomes just the
   // filename parameter.
-  let modifiedReq = Object.assign({}, req, {
+  const modifiedReq = Object.assign({}, req, {
     url: `${route}/${req.params.filename}`
   })
 
@@ -72,12 +72,13 @@ DiskStorage.prototype.put = function (stream, folderPath) {
           // file not found on disk, so ok to write it with no filename changes
         } else {
           // file exists, give it a new name
-          let pathParts = path.parse(filePath)
+          const pathParts = path.parse(filePath)
+
           newFileName = pathParts.name + '-' + Date.now().toString() + pathParts.ext
           filePath = path.join(this.path, newFileName)
         }
 
-        let data = {
+        const data = {
           path: `${folderPath}/${newFileName || this.fileName}`
         }
 
@@ -85,7 +86,8 @@ DiskStorage.prototype.put = function (stream, folderPath) {
           data.contentLength = length
         }
 
-        let writeStream = fs.createWriteStream(filePath)
+        const writeStream = fs.createWriteStream(filePath)
+
         stream.pipe(lengthStream(lengthListener)).pipe(writeStream)
 
         return resolve(data)
@@ -101,7 +103,7 @@ DiskStorage.prototype.put = function (stream, folderPath) {
  */
 DiskStorage.prototype.delete = function (fileDocument) {
   return new Promise((resolve, reject) => {
-    let filePath = path.join(this.basePath, fileDocument.path)
+    const filePath = path.join(this.basePath, fileDocument.path)
 
     fs.unlink(filePath, err => {
       if (err) {

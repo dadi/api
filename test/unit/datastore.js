@@ -8,7 +8,7 @@ const should = require('should')
 const sinon = require('sinon')
 
 describe('DataStore', function () {
-  let datastoreBackup = config.get('datastore')
+  const datastoreBackup = config.get('datastore')
 
   afterEach(() => {
     config.set('datastore', datastoreBackup)
@@ -21,13 +21,13 @@ describe('DataStore', function () {
   })
 
   it('should call the constructor function of the data connector', done => {
-    let namespace = {
-      MockConnector: function () {}
+    const namespace = {
+      MockConnector () {}
     }
 
     namespace.MockConnector.prototype.connect = () => Promise.resolve()
 
-    let spy = sinon.spy(namespace, 'MockConnector')
+    const spy = sinon.spy(namespace, 'MockConnector')
 
     mockRequire('@dadi/api-fakestore', namespace.MockConnector)
 
@@ -45,7 +45,7 @@ describe('DataStore', function () {
   })
 
   it('should call the handshake function of the data connector', done => {
-    let MockConnector = function () {}
+    const MockConnector = function () {}
 
     MockConnector.prototype.connect = () => Promise.resolve()
     MockConnector.prototype.handshake = sinon.stub().returns({
@@ -68,7 +68,7 @@ describe('DataStore', function () {
   })
 
   it('should not throw an error if the data connector does not implement a handshake function and there is no minimum version required set for it', done => {
-    let MockConnector = function () {}
+    const MockConnector = function () {}
 
     MockConnector.prototype.connect = () => Promise.resolve()
 
@@ -92,7 +92,7 @@ describe('DataStore', function () {
   })
 
   it('should throw an error if the data connector does not implement a handshake function and there is a minimum version required set for it', done => {
-    let MockConnector = function () {}
+    const MockConnector = function () {}
 
     MockConnector.prototype.connect = () => Promise.resolve()
 
@@ -126,7 +126,7 @@ describe('DataStore', function () {
 
   describe('data connector version check', () => {
     it('should not throw an error if the version of the data connector is the same as the one required by API', done => {
-      let MockConnector = function () {}
+      const MockConnector = function () {}
 
       MockConnector.prototype.connect = () => Promise.resolve()
       MockConnector.prototype.handshake = () => ({
@@ -153,7 +153,7 @@ describe('DataStore', function () {
     })
 
     it('should not throw an error if the version of the data connector is greater than the one required by API', done => {
-      let MockConnector = function () {}
+      const MockConnector = function () {}
 
       MockConnector.prototype.connect = () => Promise.resolve()
       MockConnector.prototype.handshake = () => ({
@@ -180,7 +180,7 @@ describe('DataStore', function () {
     })
 
     it('should throw an error if the version of the data connector is lower than the one required by API', done => {
-      let MockConnector = function () {}
+      const MockConnector = function () {}
 
       MockConnector.prototype.connect = () => Promise.resolve()
       MockConnector.prototype.handshake = sinon.stub().returns({
@@ -218,7 +218,7 @@ describe('DataStore', function () {
 
   describe('API version check', () => {
     it('should not throw an error if the version of API is the same as the one required by the data connector', done => {
-      let MockConnector = function () {}
+      const MockConnector = function () {}
 
       MockConnector.prototype.connect = () => Promise.resolve()
       MockConnector.prototype.handshake = () => ({
@@ -245,7 +245,7 @@ describe('DataStore', function () {
     })
 
     it('should not throw an error if the version of API is greater than the one required by the data connector', done => {
-      let MockConnector = function () {}
+      const MockConnector = function () {}
 
       MockConnector.prototype.connect = () => Promise.resolve()
       MockConnector.prototype.handshake = () => ({
@@ -272,7 +272,7 @@ describe('DataStore', function () {
     })
 
     it('should throw an error if the version of API is lower than the one required by the data connector', done => {
-      let MockConnector = function () {}
+      const MockConnector = function () {}
 
       MockConnector.prototype.connect = () => Promise.resolve()
       MockConnector.prototype.handshake = sinon.stub().returns({

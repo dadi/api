@@ -75,7 +75,7 @@ function update ({
   internals._lastModifiedAt = internals._lastModifiedAt || Date.now()
 
   // Is this a RESTful query by ID?
-  let isRestIDQuery = req && req.params && req.params.id
+  const isRestIDQuery = req && req.params && req.params.id
 
   // Get a reference to the documents that will be updated.
   let updatedDocuments = []
@@ -85,7 +85,7 @@ function update ({
     update = this.removeInternalProperties(update)
   }
 
-  let {hooks} = this.settings
+  const {hooks} = this.settings
 
   // If an ACL check is performed, this variable will contain the resulting
   // access matrix.
@@ -112,10 +112,10 @@ function update ({
     if (!validate) return
 
     // Validating the query.
-    let queryValidation = this.validateQuery(query)
+    const queryValidation = this.validateQuery(query)
 
     if (!queryValidation.success) {
-      let error = this._createValidationError('Bad Query')
+      const error = this._createValidationError('Bad Query')
 
       error.json = queryValidation
 
@@ -127,7 +127,7 @@ function update ({
       isUpdate: true,
       schema
     }).catch(errors => {
-      let error = this._createValidationError('Validation Failed', errors)
+      const error = this._createValidationError('Validation Failed', errors)
 
       return Promise.reject(error)
     })
@@ -175,7 +175,7 @@ function update ({
       if (hooks && hooks.beforeUpdate) {
         return new Promise((resolve, reject) => {
           async.reduce(hooks.beforeUpdate, update, (current, hookConfig, callback) => {
-            let hook = new Hook(hookConfig, 'beforeUpdate')
+            const hook = new Hook(hookConfig, 'beforeUpdate')
 
             Promise.resolve(hook.apply(current, updatedDocuments, this.schema, this.name, req))
               .then(newUpdate => {
@@ -208,14 +208,14 @@ function update ({
       })
     }).then(({matchedCount}) => {
       if (isRestIDQuery && (matchedCount === 0)) {
-        let error = new Error('Not Found')
+        const error = new Error('Not Found')
 
         error.statusCode = 404
 
         return Promise.reject(error)
       }
     }).then(() => {
-      let updatedDocumentsQuery = {
+      const updatedDocumentsQuery = {
         _id: {
           '$in': updatedDocuments.map(doc => doc._id.toString())
         }
@@ -235,7 +235,7 @@ function update ({
       // Run any `afterUpdate` hooks.
       if (hooks && Array.isArray(hooks.afterUpdate)) {
         hooks.afterUpdate.forEach(hookConfig => {
-          let hook = new Hook(hookConfig, 'afterUpdate')
+          const hook = new Hook(hookConfig, 'afterUpdate')
 
           return hook.apply(data.results, this.schema, this.name)
         })
@@ -292,7 +292,7 @@ module.exports = function () {
   // Signature: query, update, internals, done, req, bypassOutputFormatting
   if (arguments.length > 1) {
     let callback
-    let legacyArguments = {
+    const legacyArguments = {
       query: arguments[0],
       rawOutput: arguments[5],
       req: arguments[4],

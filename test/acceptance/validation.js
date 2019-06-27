@@ -1,15 +1,15 @@
-var path = require('path')
-var should = require('should')
-var request = require('supertest')
-var config = require(__dirname + '/../../config')
-var help = require(__dirname + '/help')
-var app = require(__dirname + '/../../dadi/lib/')
+const path = require('path')
+const should = require('should')
+const request = require('supertest')
+const config = require(__dirname + '/../../config')
+const help = require(__dirname + '/help')
+const app = require(__dirname + '/../../dadi/lib/')
 
-var bearerToken // scoped for all tests
-var dirs = config.get('paths')
-var newSchemaPath = path.resolve(dirs.collections + '/vtest/testdb/collection.test-validation-schema.json')
+let bearerToken // scoped for all tests
+const dirs = config.get('paths')
+const newSchemaPath = path.resolve(dirs.collections + '/vtest/testdb/collection.test-validation-schema.json')
 
-var client = request(`http://${config.get('server.host')}:${config.get('server.port')}`)
+const client = request(`http://${config.get('server.host')}:${config.get('server.port')}`)
 
 describe('Validation', function () {
   before(function (done) {
@@ -181,7 +181,7 @@ describe('Validation', function () {
         })
 
         it('should allow setting DateTime', function (done) {
-          var date = new Date()
+          const date = new Date()
 
           client
             .post('/vtest/testdb/test-validation-schema')
@@ -217,7 +217,7 @@ describe('Validation', function () {
 
         describe('`after` operator', () => {
           it('should not allow setting DateTime that fails validation', function (done) {
-            let now = new Date()
+            const now = new Date()
 
             now.setMonth(now.getMonth() - 1)
 
@@ -230,7 +230,7 @@ describe('Validation', function () {
           })
 
           it('should allow setting DateTime that passes validation', function (done) {
-            let now = new Date()
+            const now = new Date()
 
             now.setMonth(now.getMonth() + 1)
 
@@ -248,7 +248,7 @@ describe('Validation', function () {
 
       describe('PUT', function () {
         it('should not allow setting invalid DateTime', function (done) {
-          var date = new Date()
+          const date = new Date()
 
           client
             .post('/vtest/testdb/test-validation-schema')
@@ -256,8 +256,8 @@ describe('Validation', function () {
             .send({fieldDateTime: date})
             .expect(200)
             .end(function (err, res) {
-              var doc = res.body.results[0]
-              var id = doc._id
+              const doc = res.body.results[0]
+              const id = doc._id
 
               doc.fieldDateTime = 'abcdef'
               delete doc.createdAt
@@ -278,7 +278,7 @@ describe('Validation', function () {
         })
 
         it('should allow setting DateTime', function (done) {
-          var date = new Date()
+          const date = new Date()
 
           client
             .post('/vtest/testdb/test-validation-schema')
@@ -286,10 +286,11 @@ describe('Validation', function () {
             .send({fieldDateTime: date})
             .expect(200)
             .end(function (err, res) {
-              var doc = res.body.results[0]
-              var id = doc._id
+              const doc = res.body.results[0]
+              const id = doc._id
 
-              var date2 = new Date()
+              const date2 = new Date()
+
               doc.fieldDateTime = date2
               delete doc._createdAt
               delete doc._createdBy

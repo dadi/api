@@ -10,8 +10,8 @@ const app = require(__dirname + '/../../../dadi/lib/')
 
 // variables scoped for use throughout tests
 let bearerToken
-let configBackup = config.get()
-let connectionString = 'http://' + config.get('server.host') + ':' + config.get('server.port')
+const configBackup = config.get()
+const connectionString = 'http://' + config.get('server.host') + ':' + config.get('server.port')
 
 describe('DateTime Field', function () {
   before(() => {
@@ -43,11 +43,12 @@ describe('DateTime Field', function () {
   })
 
   it('should not attempt to process a null/undefined value', done => {
-    let person = { name: 'Ernest Hemingway' }
+    const person = { name: 'Ernest Hemingway' }
 
     config.set('query.useVersionFilter', true)
 
-    let client = request(connectionString)
+    const client = request(connectionString)
+
     client
     .post('/v1/library/person')
     .set('Authorization', 'Bearer ' + bearerToken)
@@ -56,8 +57,8 @@ describe('DateTime Field', function () {
     .end((err, res) => {
       if (err) return done(err)
 
-      let personId = res.body.results[0]._id
-      let book = { title: 'For Whom The Bell Tolls', author: personId }
+      const personId = res.body.results[0]._id
+      const book = { title: 'For Whom The Bell Tolls', author: personId }
 
       client
       .post('/v1/library/book')
@@ -67,8 +68,8 @@ describe('DateTime Field', function () {
       .end((err, res) => {
         if (err) return done(err)
 
-        let bookId = res.body.results[0]._id
-        let event = { type: 'borrow', book: bookId, datetime: null }
+        const bookId = res.body.results[0]._id
+        const event = { type: 'borrow', book: bookId, datetime: null }
 
         client
         .post('/v1/library/event')
@@ -94,11 +95,12 @@ describe('DateTime Field', function () {
   })
 
   it('should format a DateTime field as ISO when no format is specified', done => {
-    let person = { name: 'Ernest Hemingway' }
+    const person = { name: 'Ernest Hemingway' }
 
     config.set('query.useVersionFilter', true)
 
-    let client = request(connectionString)
+    const client = request(connectionString)
+
     client
     .post('/v1/library/person')
     .set('Authorization', 'Bearer ' + bearerToken)
@@ -107,8 +109,8 @@ describe('DateTime Field', function () {
     .end((err, res) => {
       if (err) return done(err)
 
-      let personId = res.body.results[0]._id
-      let book = { title: 'For Whom The Bell Tolls', author: personId }
+      const personId = res.body.results[0]._id
+      const book = { title: 'For Whom The Bell Tolls', author: personId }
 
       client
       .post('/v1/library/book')
@@ -118,9 +120,9 @@ describe('DateTime Field', function () {
       .end((err, res) => {
         if (err) return done(err)
 
-        let bookId = res.body.results[0]._id
-        let date = new Date()
-        let event = { type: 'borrow', book: bookId, datetime: date }
+        const bookId = res.body.results[0]._id
+        const date = new Date()
+        const event = { type: 'borrow', book: bookId, datetime: date }
 
         client
         .post('/v1/library/event')
@@ -146,11 +148,12 @@ describe('DateTime Field', function () {
   })
 
   it('should format a DateTime field as ISO when `iso` format is specified', done => {
-    let person = { name: 'Ernest Hemingway' }
+    const person = { name: 'Ernest Hemingway' }
 
     config.set('query.useVersionFilter', true)
 
-    let client = request(connectionString)
+    const client = request(connectionString)
+
     client
     .post('/v1/library/person')
     .set('Authorization', 'Bearer ' + bearerToken)
@@ -159,9 +162,9 @@ describe('DateTime Field', function () {
     .end((err, res) => {
       if (err) return done(err)
 
-      let personId = res.body.results[0]._id
+      const personId = res.body.results[0]._id
 
-      let book = { title: 'For Whom The Bell Tolls', author: personId }
+      const book = { title: 'For Whom The Bell Tolls', author: personId }
 
       client
       .post('/v1/library/book')
@@ -171,10 +174,10 @@ describe('DateTime Field', function () {
       .end((err, res) => {
         if (err) return done(err)
 
-        let bookId = res.body.results[0]._id
+        const bookId = res.body.results[0]._id
 
-        let date = new Date()
-        let event = { type: 'borrow', book: bookId, datetime: date }
+        const date = new Date()
+        const event = { type: 'borrow', book: bookId, datetime: date }
 
         client
         .post('/v1/library/event_iso_date')
@@ -191,8 +194,8 @@ describe('DateTime Field', function () {
           .end((err, res) => {
             if (err) return done(err)
 
-            let d1 = res.body.results[0].datetime
-            let d2 = moment(date).toISOString()
+            const d1 = res.body.results[0].datetime
+            const d2 = moment(date).toISOString()
 
             d1.substring(0, d1.lastIndexOf(':')).should.eql(d2.substring(0, d2.lastIndexOf(':')))
             done()
@@ -203,9 +206,11 @@ describe('DateTime Field', function () {
   })
 
   it('should format a DateTime field when format is specified', done => {
-    let person = { name: 'Ernest Hemingway' }
+    const person = { name: 'Ernest Hemingway' }
+
     config.set('query.useVersionFilter', true)
-    let client = request(connectionString)
+    const client = request(connectionString)
+
     client
     .post('/v1/library/person')
     .set('Authorization', 'Bearer ' + bearerToken)
@@ -213,8 +218,8 @@ describe('DateTime Field', function () {
     .expect(200)
     .end((err, res) => {
       if (err) return done(err)
-      let personId = res.body.results[0]._id
-      let book = { title: 'For Whom The Bell Tolls', author: personId }
+      const personId = res.body.results[0]._id
+      const book = { title: 'For Whom The Bell Tolls', author: personId }
 
       client
       .post('/v1/library/book')
@@ -223,9 +228,9 @@ describe('DateTime Field', function () {
       .expect(200)
       .end((err, res) => {
         if (err) return done(err)
-        let bookId = res.body.results[0]._id
-        let date = moment('2016-11-02', 'YYYY-MM-DD').format('YYYY-MM-DD')
-        let event = { type: 'borrow', book: bookId, datetime: date }
+        const bookId = res.body.results[0]._id
+        const date = moment('2016-11-02', 'YYYY-MM-DD').format('YYYY-MM-DD')
+        const event = { type: 'borrow', book: bookId, datetime: date }
 
         client
         .post('/v1/library/event_format_date')
@@ -252,11 +257,12 @@ describe('DateTime Field', function () {
   })
 
   it('should format a DateTime field as unix when `unix` format is specified', done => {
-    let person = { name: 'Ernest Hemingway' }
+    const person = { name: 'Ernest Hemingway' }
 
     config.set('query.useVersionFilter', true)
 
-    let client = request(connectionString)
+    const client = request(connectionString)
+
     client
     .post('/v1/library/person')
     .set('Authorization', 'Bearer ' + bearerToken)
@@ -265,9 +271,9 @@ describe('DateTime Field', function () {
     .end((err, res) => {
       if (err) return done(err)
 
-      let personId = res.body.results[0]._id
+      const personId = res.body.results[0]._id
 
-      let book = { title: 'For Whom The Bell Tolls', author: personId }
+      const book = { title: 'For Whom The Bell Tolls', author: personId }
 
       client
       .post('/v1/library/book')
@@ -277,10 +283,10 @@ describe('DateTime Field', function () {
       .end((err, res) => {
         if (err) return done(err)
 
-        let bookId = res.body.results[0]._id
+        const bookId = res.body.results[0]._id
 
-        let date = new Date()
-        let event = { type: 'borrow', book: bookId, datetime: date }
+        const date = new Date()
+        const event = { type: 'borrow', book: bookId, datetime: date }
 
         client
         .post('/v1/library/event_unix_date')
@@ -306,11 +312,12 @@ describe('DateTime Field', function () {
   })
 
   it('should keep a DateTime field as unix when `unix` format is specified', done => {
-    let person = { name: 'Ernest Hemingway' }
+    const person = { name: 'Ernest Hemingway' }
 
     config.set('query.useVersionFilter', true)
 
-    let client = request(connectionString)
+    const client = request(connectionString)
+
     client
     .post('/v1/library/person')
     .set('Authorization', 'Bearer ' + bearerToken)
@@ -319,9 +326,9 @@ describe('DateTime Field', function () {
     .end((err, res) => {
       if (err) return done(err)
 
-      let personId = res.body.results[0]._id
+      const personId = res.body.results[0]._id
 
-      let book = { title: 'For Whom The Bell Tolls', author: personId }
+      const book = { title: 'For Whom The Bell Tolls', author: personId }
 
       client
       .post('/v1/library/book')
@@ -331,10 +338,10 @@ describe('DateTime Field', function () {
       .end((err, res) => {
         if (err) return done(err)
 
-        let bookId = res.body.results[0]._id
+        const bookId = res.body.results[0]._id
 
-        let date = moment(new Date()).valueOf()
-        let event = { type: 'borrow', book: bookId, datetime: date }
+        const date = moment(new Date()).valueOf()
+        const event = { type: 'borrow', book: bookId, datetime: date }
 
         client
         .post('/v1/library/event_unix_date')
@@ -363,8 +370,8 @@ describe('DateTime Field', function () {
   })
 
   it('should replace `$now` with the current timestamp in DateTime queries', done => {
-    let currentDate = Date.now()
-    let documents = [
+    const currentDate = Date.now()
+    const documents = [
       {
         type: 'one',
         datetime: 588985200000
@@ -381,7 +388,8 @@ describe('DateTime Field', function () {
 
     config.set('query.useVersionFilter', true)
 
-    let client = request(connectionString)
+    const client = request(connectionString)
+
     client
     .post('/v1/library/event_iso_date')
     .set('Authorization', 'Bearer ' + bearerToken)
@@ -405,8 +413,8 @@ describe('DateTime Field', function () {
   })
 
   it('should allow query filters with Unix timestamps', done => {
-    let baseDate = 588985200000
-    let documents = [
+    const baseDate = 588985200000
+    const documents = [
       {
         type: 'one',
         datetime: baseDate - 3600000
@@ -423,7 +431,8 @@ describe('DateTime Field', function () {
 
     config.set('query.useVersionFilter', true)
 
-    let client = request(connectionString)
+    const client = request(connectionString)
+
     client
     .post('/v1/library/event')
     .set('Authorization', 'Bearer ' + bearerToken)
@@ -449,7 +458,7 @@ describe('DateTime Field', function () {
   })
 
   it('should allow query filters with ISO strings', done => {
-    let documents = [
+    const documents = [
       {
         type: 'one',
         datetime: 588985200000
@@ -466,7 +475,8 @@ describe('DateTime Field', function () {
 
     config.set('query.useVersionFilter', true)
 
-    let client = request(connectionString)
+    const client = request(connectionString)
+
     client
     .post('/v1/library/event')
     .set('Authorization', 'Bearer ' + bearerToken)
@@ -515,11 +525,11 @@ describe('DateTime Field', function () {
   })
 
   it('should return an error when the value supplied is not valid', done => {
-    let client = request(connectionString)
+    const client = request(connectionString)
 
     config.set('query.useVersionFilter', true)
 
-    let event = { type: 'borrow', datetime: {} }
+    const event = { type: 'borrow', datetime: {} }
 
     client
     .post('/v1/library/event')

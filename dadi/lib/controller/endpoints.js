@@ -17,7 +17,7 @@ Endpoints.prototype.get = function (req, res, next) {
     )
   }
 
-  let clientIsAdmin = acl.client.isAdmin(req.dadiApiClient)
+  const clientIsAdmin = acl.client.isAdmin(req.dadiApiClient)
   let accessCheck
 
   if (!clientIsAdmin) {
@@ -25,12 +25,12 @@ Endpoints.prototype.get = function (req, res, next) {
   }
 
   return Promise.resolve(accessCheck).then((access = {}) => {
-    let endpoints = Object.keys(this.server.components).filter(key => {
+    const endpoints = Object.keys(this.server.components).filter(key => {
       if (this.server.components[key]._type !== this.server.COMPONENT_TYPE.CUSTOM_ENDPOINT) {
         return false
       }
 
-      let aclKey = this.server.components[key].aclKey
+      const aclKey = this.server.components[key].aclKey
 
       if (!clientIsAdmin && (!access[aclKey] || !access[aclKey].read)) {
         return false
@@ -38,13 +38,13 @@ Endpoints.prototype.get = function (req, res, next) {
 
       return true
     }).map(key => {
-      let parts = key.split('/')
-      let endpoint = {
+      const parts = key.split('/')
+      const endpoint = {
         name: this.server.components[key].getDisplayName() || parts[2],
         path: key,
         version: parts[1]
       }
-      let regexp = pathToRegexp(key)
+      const regexp = pathToRegexp(key)
 
       if (regexp.keys.length > 0) {
         endpoint.params = regexp.keys

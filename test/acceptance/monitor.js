@@ -1,18 +1,18 @@
-var connection = require(__dirname + '/../../dadi/lib/model/connection')
-var should = require('should')
-var request = require('supertest')
-var config = require(__dirname + '/../../config')
-var fs = require('fs')
-var app = require(__dirname + '/../../dadi/lib/')
-var help = require(__dirname + '/help')
+const connection = require(__dirname + '/../../dadi/lib/model/connection')
+const should = require('should')
+const request = require('supertest')
+const config = require(__dirname + '/../../config')
+const fs = require('fs')
+const app = require(__dirname + '/../../dadi/lib/')
+const help = require(__dirname + '/help')
 
-var originalSchemaPath = __dirname + '/temp-workspace/monitor-collection/collection.monitor-test-schema.json'
-var testSchemaPath = __dirname + '/temp-workspace/collections/vtest/testdb/collection.monitor-test-schema.json'
+const originalSchemaPath = __dirname + '/temp-workspace/monitor-collection/collection.monitor-test-schema.json'
+const testSchemaPath = __dirname + '/temp-workspace/collections/vtest/testdb/collection.monitor-test-schema.json'
 
-var originalEndpointPath = __dirname + '/temp-workspace/monitor-collection/endpoint.monitor-test-endpoint.js'
-var testEndpointPath = __dirname + '/temp-workspace/endpoints/v1/endpoint.monitor-test-endpoint.js'
+const originalEndpointPath = __dirname + '/temp-workspace/monitor-collection/endpoint.monitor-test-endpoint.js'
+const testEndpointPath = __dirname + '/temp-workspace/endpoints/v1/endpoint.monitor-test-endpoint.js'
 
-var bearerToken // used through out tests
+let bearerToken // used through out tests
 
 describe('File system watching', function () {
   this.timeout(5000)
@@ -30,6 +30,7 @@ describe('File system watching', function () {
             if (err) return done(err)
 
             bearerToken = token
+
             // help.clearCache()
             return done()
           })
@@ -42,7 +43,9 @@ describe('File system watching', function () {
     try {
       fs.unlinkSync(testSchemaPath)
       fs.unlinkSync(testEndpointPath)
-    } catch (err) {}
+    } catch (err) {
+      // noop
+    }
 
     help.removeTestClients(function () {
       app.stop(done)
@@ -50,8 +53,8 @@ describe('File system watching', function () {
   })
 
   beforeEach(function (done) {
-    var testSchema = fs.readFileSync(originalSchemaPath)
-    var testEndpoint = fs.readFileSync(originalEndpointPath)
+    const testSchema = fs.readFileSync(originalSchemaPath)
+    const testEndpoint = fs.readFileSync(originalEndpointPath)
 
     fs.writeFileSync(testSchemaPath, testSchema)
     fs.writeFileSync(testEndpointPath, testEndpoint)
@@ -64,7 +67,7 @@ describe('File system watching', function () {
   describe('changing files', function () {
     it('should update collections component when file changes', function (done) {
       this.timeout(4000)
-      var client = request('http://' + config.get('server.host') + ':' + config.get('server.port'))
+      const client = request('http://' + config.get('server.host') + ':' + config.get('server.port'))
 
       client
         .post('/vtest/testdb/monitor-test-schema')
@@ -76,9 +79,10 @@ describe('File system watching', function () {
           if (err) return done(err)
 
           // Change the schema file's content
-          var schemaPath = __dirname + '/temp-workspace/collections/vtest/testdb/collection.monitor-test-schema.json'
+          const schemaPath = __dirname + '/temp-workspace/collections/vtest/testdb/collection.monitor-test-schema.json'
           // clone so that `require.cache` is unaffected
-          var schema = JSON.parse(JSON.stringify(require(schemaPath)))
+          const schema = JSON.parse(JSON.stringify(require(schemaPath)))
+
           schema.fields.field1.type = 'Number'
           fs.writeFileSync(schemaPath, JSON.stringify(schema))
 
@@ -100,7 +104,7 @@ describe('File system watching', function () {
 
     it('should update endpoint component when file changes', function (done) {
       this.timeout(5000)
-      var client = request('http://' + config.get('server.host') + ':' + config.get('server.port'))
+      const client = request('http://' + config.get('server.host') + ':' + config.get('server.port'))
 
       client
         .get('/v1/monitor-test-endpoint?cache=false')
@@ -112,9 +116,10 @@ describe('File system watching', function () {
           res.body.message.should.equal('version 1')
 
           // Change the endpoint file's content
-          var endpoint = fs.readFileSync(testEndpointPath).toString()
+          const endpoint = fs.readFileSync(testEndpointPath).toString()
 
-          var lines = endpoint.split('\n')
+          const lines = endpoint.split('\n')
+
           lines[0] = "var message = 'version 2';"
           fs.writeFileSync(testEndpointPath, lines.join('\n'))
 
@@ -137,14 +142,15 @@ describe('File system watching', function () {
   })
 
   describe('adding new files', function () {
-    var newSchemaPath = __dirname + '/temp-workspace/collections/vtest2/testdb/collection.new-test-schema.json'
-    var newEndpointPath = __dirname + '/temp-workspace/endpoints/v1/endpoint.new-test-endpoint.js'
+    const newSchemaPath = __dirname + '/temp-workspace/collections/vtest2/testdb/collection.new-test-schema.json'
+    const newEndpointPath = __dirname + '/temp-workspace/endpoints/v1/endpoint.new-test-endpoint.js'
 
     before(function (done) {
       // tests are going to try to create these directories and they shouldn't exist before hand
       if (fs.existsSync(__dirname + '/temp-workspace/collections/vtest2/testdb')) {
         fs.rmdirSync(__dirname + '/temp-workspace/collections/vtest2/testdb')
       }
+
       if (fs.existsSync(__dirname + '/temp-workspace/collections/vtest2')) {
         fs.rmdirSync(__dirname + '/temp-workspace/collections/vtest2')
       }
@@ -162,7 +168,7 @@ describe('File system watching', function () {
 
     it('should add to collections api when file is added', function (done) {
       // make a copy of the test schema in a new collections dir
-      var testSchema = fs.readFileSync(originalSchemaPath)
+      const testSchema = fs.readFileSync(originalSchemaPath)
 
       fs.mkdirSync(__dirname + '/temp-workspace/collections/vtest2')
       fs.mkdirSync(__dirname + '/temp-workspace/collections/vtest2/testdb')
@@ -170,7 +176,7 @@ describe('File system watching', function () {
 
       // allow time for app to respond
       setTimeout(function () {
-        var client = request('http://' + config.get('server.host') + ':' + config.get('server.port'))
+        const client = request('http://' + config.get('server.host') + ':' + config.get('server.port'))
 
         client
           .get('/vtest2/testdb/new-test-schema')
@@ -183,14 +189,15 @@ describe('File system watching', function () {
 
     it('should add to endpoints api when file is added', function (done) {
       // Change the endpoint file's content
-      var endpoint = fs.readFileSync(testEndpointPath).toString()
+      const endpoint = fs.readFileSync(testEndpointPath).toString()
 
-      var lines = endpoint.split('\n')
+      const lines = endpoint.split('\n')
+
       lines[0] = "var message = 'version 2';"
       fs.writeFileSync(newEndpointPath, lines.join('\n'))
 
       setTimeout(function () {
-        var client = request('http://' + config.get('server.host') + ':' + config.get('server.port'))
+        const client = request('http://' + config.get('server.host') + ':' + config.get('server.port'))
 
         client
           .get('/v1/new-test-endpoint')
@@ -211,7 +218,7 @@ describe('File system watching', function () {
     it('should remove endpoint from api when file is removed', function (done) {
       fs.unlinkSync(testEndpointPath)
 
-      var client = request('http://' + config.get('server.host') + ':' + config.get('server.port'))
+      const client = request('http://' + config.get('server.host') + ':' + config.get('server.port'))
 
       setTimeout(function () {
         client
@@ -225,7 +232,7 @@ describe('File system watching', function () {
     it('should remove collection from api when file is removed', function (done) {
       fs.unlinkSync(testSchemaPath)
 
-      var client = request('http://' + config.get('server.host') + ':' + config.get('server.port'))
+      const client = request('http://' + config.get('server.host') + ':' + config.get('server.port'))
 
       setTimeout(function () {
         client

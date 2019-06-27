@@ -93,8 +93,8 @@ MediaModel.prototype.getURLForPath = function (path) {
 }
 
 MediaModel.prototype.isValidUpdate = function (update) {
-  let reservedProperties = Object.keys(this.getSchema().fields)
-  let hasReservedFields = Object.keys(update).some(field => {
+  const reservedProperties = Object.keys(this.getSchema().fields)
+  const hasReservedFields = Object.keys(update).some(field => {
     if (field.indexOf(config.get('internalFieldsPrefix')) === 0) {
       return true
     }

@@ -7,12 +7,12 @@ const should = require('should')
 const sinon = require('sinon')
 
 module.exports = () => {
-  let configBackup = config.get()
-  let client = request(`http://${config.get('server.host')}:${config.get('server.port')}`)
+  const configBackup = config.get()
+  const client = request(`http://${config.get('server.host')}:${config.get('server.port')}`)
 
   describe('error states', () => {
     it('should return 401 if the request does not include a valid bearer token', done => {
-      let testClient = {
+      const testClient = {
         clientId: 'apiClient',
         secret: 'someSecret'
       }
@@ -49,11 +49,11 @@ module.exports = () => {
     })
 
     it('should return 401 if a non-admin client is trying to change the secret of another client', done => {
-      let testClient1 = {
+      const testClient1 = {
         clientId: 'apiClient1',
         secret: 'someSecret'
       }
-      let testClient2 = {
+      const testClient2 = {
         clientId: 'apiClient2',
         secret: 'someSecret'
       }
@@ -75,7 +75,7 @@ module.exports = () => {
 
           res.body.accessToken.should.be.String
 
-          let bearerToken = res.body.accessToken
+          const bearerToken = res.body.accessToken
 
           client
           .put('/api/clients/testClient2')
@@ -110,7 +110,7 @@ module.exports = () => {
     })
 
     it('should return 404 when trying to update a client that does not exist', done => {
-      let testClient = {
+      const testClient = {
         clientId: 'apiClient',
         secret: 'someSecret',
         accessType: 'admin'
@@ -131,7 +131,7 @@ module.exports = () => {
 
           res.body.accessToken.should.be.String
 
-          let bearerToken = res.body.accessToken
+          const bearerToken = res.body.accessToken
 
           client
           .put('/api/clients/johnnynobody')
@@ -152,7 +152,7 @@ module.exports = () => {
     })
 
     it('should return 403 when a non-admin client tries to change another client\'s ID', done => {
-      let testClient1 = {
+      const testClient1 = {
         clientId: 'apiClient1',
         secret: 'someSecret',
         resources: {
@@ -161,7 +161,7 @@ module.exports = () => {
           }
         }
       }
-      let testClient2 = {
+      const testClient2 = {
         clientId: 'apiClient2',
         secret: 'someSecret'
       }
@@ -183,7 +183,7 @@ module.exports = () => {
 
           res.body.accessToken.should.be.String
 
-          let bearerToken = res.body.accessToken
+          const bearerToken = res.body.accessToken
 
           client
           .put(`/api/clients/${testClient2.clientId}`)
@@ -218,7 +218,7 @@ module.exports = () => {
     })
 
     it('should return 400 when a non-admin client tries to change their own ID', done => {
-      let testClient1 = {
+      const testClient1 = {
         clientId: 'apiClient1',
         secret: 'someSecret'
       }
@@ -238,7 +238,7 @@ module.exports = () => {
 
           res.body.accessToken.should.be.String
 
-          let bearerToken = res.body.accessToken
+          const bearerToken = res.body.accessToken
 
           client
           .put(`/api/clients/${testClient1.clientId}`)
@@ -276,12 +276,12 @@ module.exports = () => {
     })
 
     it('should return 400 when an admin client tries to change another client\'s ID', done => {
-      let testClient1 = {
+      const testClient1 = {
         clientId: 'apiClient1',
         secret: 'someSecret',
         accessType: 'admin'
       }
-      let testClient2 = {
+      const testClient2 = {
         clientId: 'apiClient2',
         secret: 'someSecret'
       }
@@ -303,7 +303,7 @@ module.exports = () => {
 
           res.body.accessToken.should.be.String
 
-          let bearerToken = res.body.accessToken
+          const bearerToken = res.body.accessToken
 
           client
           .put(`/api/clients/${testClient2.clientId}`)
@@ -326,7 +326,7 @@ module.exports = () => {
     })
 
     it('should return 400 when an admin client tries to change their own ID', done => {
-      let testClient1 = {
+      const testClient1 = {
         clientId: 'apiClient1',
         secret: 'someSecret',
         accessType: 'admin'
@@ -347,7 +347,7 @@ module.exports = () => {
 
           res.body.accessToken.should.be.String
 
-          let bearerToken = res.body.accessToken
+          const bearerToken = res.body.accessToken
 
           client
           .put(`/api/clients/${testClient1.clientId}`)
@@ -370,11 +370,11 @@ module.exports = () => {
     })
 
     it('should return 400 when a client tries to write a protected data property to their record', done => {
-      let testClient = {
+      const testClient = {
         clientId: 'apiClient',
         secret: 'someSecret'
       }
-      let newData = {
+      const newData = {
         _keyOne: 1
       }        
 
@@ -393,7 +393,7 @@ module.exports = () => {
 
           res.body.accessToken.should.be.String
 
-          let bearerToken = res.body.accessToken
+          const bearerToken = res.body.accessToken
 
           client
           .put(`/api/clients/${testClient.clientId}`)
@@ -431,7 +431,7 @@ module.exports = () => {
     })
 
     it('should return 400 when a non-admin client tries to update their secret without supplying the current secret', done => {
-      let testClient = {
+      const testClient = {
         clientId: 'apiClient',
         secret: 'someSecret'
       }
@@ -451,7 +451,7 @@ module.exports = () => {
 
           res.body.accessToken.should.be.String
 
-          let bearerToken = res.body.accessToken
+          const bearerToken = res.body.accessToken
 
           client
           .put(`/api/clients/${testClient.clientId}`)
@@ -489,7 +489,7 @@ module.exports = () => {
     })
 
     it('should return 400 when a non-admin client tries to update their secret and the current secret supplied is incorrect', done => {
-      let testClient = {
+      const testClient = {
         clientId: 'apiClient',
         secret: 'someSecret'
       }
@@ -509,7 +509,7 @@ module.exports = () => {
 
           res.body.accessToken.should.be.String
 
-          let bearerToken = res.body.accessToken
+          const bearerToken = res.body.accessToken
 
           client
           .put(`/api/clients/${testClient.clientId}`)
@@ -554,7 +554,7 @@ module.exports = () => {
         it('should hash the new secret and salt it using the number of rounds specified in the `auth.saltRounds` config property', done => {
           config.set('auth.hashSecrets', true)
 
-          let testClient = {
+          const testClient = {
             clientId: 'apiClient',
             secret: 'someSecret'
           }
@@ -574,7 +574,7 @@ module.exports = () => {
   
               res.body.accessToken.should.be.String
   
-              let bearerToken = res.body.accessToken
+              const bearerToken = res.body.accessToken
   
               config.set('auth.saltRounds', 9)
   
@@ -630,7 +630,7 @@ module.exports = () => {
       })
       
       it('should allow a client to update their own secret on /api/clients/{ID}', done => {
-        let testClient = {
+        const testClient = {
           clientId: 'apiClient',
           secret: 'someSecret'
         }
@@ -650,7 +650,7 @@ module.exports = () => {
 
             res.body.accessToken.should.be.String
 
-            let bearerToken = res.body.accessToken
+            const bearerToken = res.body.accessToken
 
             client
             .put(`/api/clients/${testClient.clientId}`)
@@ -692,7 +692,7 @@ module.exports = () => {
       })
 
       it('should allow a client to update their own secret on /api/client', done => {
-        let testClient = {
+        const testClient = {
           clientId: 'apiClient',
           secret: 'someSecret'
         }
@@ -712,7 +712,7 @@ module.exports = () => {
 
             res.body.accessToken.should.be.String
 
-            let bearerToken = res.body.accessToken
+            const bearerToken = res.body.accessToken
 
             client
             .put('/api/client')
@@ -754,11 +754,11 @@ module.exports = () => {
       })
 
       it('should allow an admin to update another client\'s secret', done => {
-        let testClient1 = {
+        const testClient1 = {
           clientId: 'apiClient',
           secret: 'someSecret'
         }
-        let testClient2 = {
+        const testClient2 = {
           clientId: 'adminClient',
           secret: 'someSecret',
           accessType: 'admin'
@@ -781,7 +781,7 @@ module.exports = () => {
 
             res.body.accessToken.should.be.String
 
-            let bearerToken = res.body.accessToken
+            const bearerToken = res.body.accessToken
 
             client
             .put(`/api/clients/${testClient1.clientId}`)
@@ -824,11 +824,11 @@ module.exports = () => {
 
     describe('storing arbitrary data', () => {
       it('should allow a client to write a new data property to their own record at /api/clients/{ID}', done => {
-        let testClient = {
+        const testClient = {
           clientId: 'apiClient',
           secret: 'someSecret'
         }
-        let newData = {
+        const newData = {
           keyOne: 1
         }
 
@@ -847,7 +847,7 @@ module.exports = () => {
 
             res.body.accessToken.should.be.String
 
-            let bearerToken = res.body.accessToken
+            const bearerToken = res.body.accessToken
 
             client
             .put(`/api/clients/${testClient.clientId}`)
@@ -888,11 +888,11 @@ module.exports = () => {
       })
 
       it('should allow a client to write a new data property to their own record at /api/client', done => {
-        let testClient = {
+        const testClient = {
           clientId: 'apiClient',
           secret: 'someSecret'
         }
-        let newData = {
+        const newData = {
           keyOne: 1
         }
 
@@ -911,7 +911,7 @@ module.exports = () => {
 
             res.body.accessToken.should.be.String
 
-            let bearerToken = res.body.accessToken
+            const bearerToken = res.body.accessToken
 
             client
             .put('/api/client')
@@ -952,16 +952,16 @@ module.exports = () => {
       })
 
       it('should allow an admin client to write a new data property to another client\'s record', done => {
-        let testClient1 = {
+        const testClient1 = {
           clientId: 'apiClient',
           secret: 'someSecret'
         }
-        let testClient2 = {
+        const testClient2 = {
           clientId: 'adminClient',
           secret: 'someSecret',
           accessType: 'admin'
         }
-        let newData = {
+        const newData = {
           keyOne: 1
         }        
 
@@ -982,7 +982,7 @@ module.exports = () => {
 
             res.body.accessToken.should.be.String
 
-            let bearerToken = res.body.accessToken
+            const bearerToken = res.body.accessToken
 
             client
             .put(`/api/clients/${testClient1.clientId}`)
@@ -1023,16 +1023,16 @@ module.exports = () => {
       })
 
       it('should allow an admin client to write a new protected data property to another client\'s record', done => {
-        let testClient1 = {
+        const testClient1 = {
           clientId: 'apiClient',
           secret: 'someSecret'
         }
-        let testClient2 = {
+        const testClient2 = {
           clientId: 'adminClient',
           secret: 'someSecret',
           accessType: 'admin'
         }
-        let newData = {
+        const newData = {
           _keyOne: 1
         }        
 
@@ -1053,7 +1053,7 @@ module.exports = () => {
 
             res.body.accessToken.should.be.String
 
-            let bearerToken = res.body.accessToken
+            const bearerToken = res.body.accessToken
 
             client
             .put(`/api/clients/${testClient1.clientId}`)
@@ -1094,7 +1094,7 @@ module.exports = () => {
       })      
 
       it('should merge existing data properties with any new ones sent in the payload', done => {
-        let testClient = {
+        const testClient = {
           clientId: 'apiClient',
           secret: 'someSecret',
           data: {
@@ -1102,7 +1102,7 @@ module.exports = () => {
             keyThree: 3
           }
         }
-        let newData = {
+        const newData = {
           keyOne: 1,
           keyTwo: 9999
         }
@@ -1122,7 +1122,7 @@ module.exports = () => {
 
             res.body.accessToken.should.be.String
 
-            let bearerToken = res.body.accessToken
+            const bearerToken = res.body.accessToken
 
             client
             .put('/api/client')
@@ -1167,7 +1167,7 @@ module.exports = () => {
       })
 
       it('should delete data properties when their value in the payload is `null`', done => {
-        let testClient = {
+        const testClient = {
           clientId: 'apiClient',
           secret: 'someSecret',
           data: {
@@ -1175,7 +1175,7 @@ module.exports = () => {
             keyThree: 3
           }
         }
-        let newData = {
+        const newData = {
           keyTwo: null
         }
 
@@ -1194,7 +1194,7 @@ module.exports = () => {
 
             res.body.accessToken.should.be.String
 
-            let bearerToken = res.body.accessToken
+            const bearerToken = res.body.accessToken
 
             client
             .put('/api/client')
@@ -1239,7 +1239,7 @@ module.exports = () => {
       })
 
       it('should leave the data object untouched if the payload of the update request does not contain a `data` property', done => {
-        let testClient = {
+        const testClient = {
           clientId: 'apiClient',
           secret: 'someSecret',
           data: {
@@ -1263,7 +1263,7 @@ module.exports = () => {
 
             res.body.accessToken.should.be.String
 
-            let bearerToken = res.body.accessToken
+            const bearerToken = res.body.accessToken
 
             client
             .put('/api/client')

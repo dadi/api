@@ -19,9 +19,10 @@ describe('Cache', function (done) {
 
   describe('Invalidation API - Filesystem', function () {
     before(function (done) {
-      var testConfigString = fs.readFileSync(config.configPath())
+      const testConfigString = fs.readFileSync(config.configPath())
 
-      var newTestConfig = JSON.parse(testConfigString)
+      const newTestConfig = JSON.parse(testConfigString)
+
       newTestConfig.caching.directory.enabled = true
       newTestConfig.caching.redis.enabled = false
 
@@ -63,7 +64,7 @@ describe('Cache', function (done) {
                       help.createDoc(adminBearerToken, function (err, doc) {
                         if (err) return done(err)
 
-                        var client = request('http://' + config.get('server.host') + ':' + config.get('server.port'))
+                        const client = request('http://' + config.get('server.host') + ':' + config.get('server.port'))
 
                         client
                         .get('/vtest/testdb/test-schema')
@@ -93,7 +94,7 @@ describe('Cache', function (done) {
     })
 
     it('should return 401 if the request does not contain a valid bearer token', done => {
-      var client = request('http://' + config.get('server.host') + ':' + config.get('server.port'))
+      const client = request('http://' + config.get('server.host') + ':' + config.get('server.port'))
 
       client
       .post('/api/flush')
@@ -121,7 +122,7 @@ describe('Cache', function (done) {
     })
 
     it('should return 403 if the request contain a valid bearer token that does not have sufficient permissions to perform the operation', done => {
-      var client = request('http://' + config.get('server.host') + ':' + config.get('server.port'))
+      const client = request('http://' + config.get('server.host') + ':' + config.get('server.port'))
 
       client
       .post('/api/flush')
@@ -150,7 +151,7 @@ describe('Cache', function (done) {
     })
 
     it("should not flush cached items that don't match the specified path", function (done) {
-      var client = request('http://' + config.get('server.host') + ':' + config.get('server.port'))
+      const client = request('http://' + config.get('server.host') + ':' + config.get('server.port'))
 
       // create a document in another collection
       client
@@ -248,7 +249,7 @@ describe('Cache', function (done) {
 
     it('should flush only cached items matching the specified path', function (done) {
       this.timeout(4000)
-      var client = request('http://' + config.get('server.host') + ':' + config.get('server.port'))
+      const client = request('http://' + config.get('server.host') + ':' + config.get('server.port'))
 
       client
         .get('/vtest/testdb/test-schema')
@@ -288,7 +289,7 @@ describe('Cache', function (done) {
 
     it('should flush all cached items when no path is specified', function (done) {
       this.timeout(4000)
-      var client = request('http://' + config.get('server.host') + ':' + config.get('server.port'))
+      const client = request('http://' + config.get('server.host') + ':' + config.get('server.port'))
 
       // create a document in another collection
       client
@@ -377,9 +378,10 @@ describe('Cache', function (done) {
 
   describe('Invalidation API - Redis', function () {
     before(function (done) {
-      var testConfigString = fs.readFileSync(config.configPath())
+      const testConfigString = fs.readFileSync(config.configPath())
 
-      var newTestConfig = JSON.parse(testConfigString)
+      const newTestConfig = JSON.parse(testConfigString)
+
       newTestConfig.caching.directory.enabled = false
       newTestConfig.caching.redis.enabled = true
 
@@ -400,9 +402,9 @@ describe('Cache', function (done) {
       c.cache.cacheHandler.redisClient.status = 'ready'
 
       c.cache.cacheHandler.redisClient.scanStream = function (pattern) {
-        var stream = new Readable({objectMode: true})
+        const stream = new Readable({objectMode: true})
 
-        for (var i = 0; i < cacheKeys.length; i++) {
+        for (let i = 0; i < cacheKeys.length; i++) {
           if (pattern.match === '*' || cacheKeys[i].indexOf(pattern.match.substring(0, pattern.match.length - 1)) === 0) {
             stream.push([cacheKeys[i]])
           } else {
@@ -411,6 +413,7 @@ describe('Cache', function (done) {
         }
 
         stream.push(null)
+
         return stream
       }
 
@@ -439,7 +442,7 @@ describe('Cache', function (done) {
                     help.createDoc(adminBearerToken, function (err, doc) {
                       if (err) return done(err)
 
-                      var client = request('http://' + config.get('server.host') + ':' + config.get('server.port'))
+                      const client = request('http://' + config.get('server.host') + ':' + config.get('server.port'))
 
                       client
                       .get('/vtest/testdb/test-schema')
@@ -469,7 +472,7 @@ describe('Cache', function (done) {
     })
 
     it('should return 401 if the request does not contain a valid bearer token', done => {
-      var client = request('http://' + config.get('server.host') + ':' + config.get('server.port'))
+      const client = request('http://' + config.get('server.host') + ':' + config.get('server.port'))
 
       client
       .post('/api/flush')
@@ -498,7 +501,7 @@ describe('Cache', function (done) {
     })
 
     it('should return 403 if the request contain a valid bearer token that does not have sufficient permissions to perform the operation', done => {
-      var client = request('http://' + config.get('server.host') + ':' + config.get('server.port'))
+      const client = request('http://' + config.get('server.host') + ':' + config.get('server.port'))
 
       client
       .post('/api/flush')
@@ -530,7 +533,7 @@ describe('Cache', function (done) {
     it("should not flush cached items that don't match the specified path", function (done) {
       this.timeout(4000)
 
-      var client = request('http://' + config.get('server.host') + ':' + config.get('server.port'))
+      const client = request('http://' + config.get('server.host') + ':' + config.get('server.port'))
 
       // create a document in another collection
       client
@@ -637,7 +640,7 @@ describe('Cache', function (done) {
 
     it('should flush only cached items matching the specified path', function (done) {
       this.timeout(4000)
-      var client = request('http://' + config.get('server.host') + ':' + config.get('server.port'))
+      const client = request('http://' + config.get('server.host') + ':' + config.get('server.port'))
 
       setTimeout(function () {
         client
@@ -693,7 +696,7 @@ describe('Cache', function (done) {
 
     it('should flush all cached items when no path is specified', function (done) {
       this.timeout(4000)
-      var client = request('http://' + config.get('server.host') + ':' + config.get('server.port'))
+      const client = request('http://' + config.get('server.host') + ':' + config.get('server.port'))
 
       // create a document in another collection
       client

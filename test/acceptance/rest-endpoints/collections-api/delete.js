@@ -9,9 +9,9 @@ const app = require(__dirname + '/../../../../dadi/lib/')
 
 // variables scoped for use throughout tests
 const connectionString = 'http://' + config.get('server.host') + ':' + config.get('server.port')
-let configBackup = config.get()
+const configBackup = config.get()
 let bearerToken
-let lastModifiedAt = 0
+const lastModifiedAt = 0
 
 describe('Collections API – DELETE', function () {
   this.timeout(4000)
@@ -39,7 +39,7 @@ describe('Collections API – DELETE', function () {
   })
 
   it('should remove a single document by ID', function (done) {
-    var client = request(connectionString)
+    const client = request(connectionString)
 
     client
       .post('/vtest/testdb/test-schema')
@@ -49,7 +49,8 @@ describe('Collections API – DELETE', function () {
       .end(function (err, res) {
         if (err) return done(err)
 
-        var doc = res.body.results[0]
+        const doc = res.body.results[0]
+
         should.exist(doc)
         doc.field1.should.equal('doc to remove')
 
@@ -66,7 +67,7 @@ describe('Collections API – DELETE', function () {
       help.createDoc(bearerToken, function (err, doc2) {
         if (err) return done(err)
 
-        var client = request(connectionString)
+        const client = request(connectionString)
 
         client
           .delete('/vtest/testdb/test-schema/' + doc1._id)
@@ -75,7 +76,7 @@ describe('Collections API – DELETE', function () {
           .end(function (err) {
             if (err) return done(err)
 
-            var filter = encodeURIComponent(JSON.stringify({
+            const filter = encodeURIComponent(JSON.stringify({
               _id: doc2._id
             }))
 
@@ -103,7 +104,7 @@ describe('Collections API – DELETE', function () {
     help.createDoc(bearerToken, function (err, doc) {
       if (err) return done(err)
 
-      var client = request(connectionString)
+      const client = request(connectionString)
 
       client
         .delete('/vtest/testdb/test-schema')
@@ -128,14 +129,14 @@ describe('Collections API – DELETE', function () {
   })
 
   it('should remove all documents affected by the query property supplied in the request body, translating any internal fields to the prefix defined in config', function (done) {
-    var originalPrefix = config.get('internalFieldsPrefix')
+    const originalPrefix = config.get('internalFieldsPrefix')
 
     config.set('internalFieldsPrefix', '$')
 
     help.createDoc(bearerToken, function (err, doc) {
       if (err) return done(err)
 
-      var client = request(connectionString)
+      const client = request(connectionString)
 
       client
         .delete('/vtest/testdb/test-schema')
@@ -169,7 +170,7 @@ describe('Collections API – DELETE', function () {
       help.createDoc(bearerToken, function (err, doc2) {
         if (err) return done(err)
 
-        var body = {
+        const body = {
           query: {
             _id: {
               '$in': [doc1._id.toString()]
@@ -177,7 +178,7 @@ describe('Collections API – DELETE', function () {
           }
         }
 
-        var client = request(connectionString)
+        const client = request(connectionString)
 
         client
           .delete('/vtest/testdb/test-schema/')
@@ -187,7 +188,7 @@ describe('Collections API – DELETE', function () {
           .end(function (err) {
             if (err) return done(err)
 
-            var filter = encodeURIComponent(JSON.stringify({
+            const filter = encodeURIComponent(JSON.stringify({
               _id: doc1._id
             }))
 
@@ -211,10 +212,11 @@ describe('Collections API – DELETE', function () {
   })
 
   it('should return deleted count if config.feedback is true', function (done) {
-    var originalFeedback = config.get('feedback')
+    const originalFeedback = config.get('feedback')
+
     config.set('feedback', true)
 
-    var client = request(connectionString)
+    const client = request(connectionString)
 
     client
       .post('/vtest/testdb/test-schema')
@@ -224,7 +226,7 @@ describe('Collections API – DELETE', function () {
       .end(function (err, res) {
         if (err) return done(err)
 
-        var doc = res.body.results[0]
+        const doc = res.body.results[0]
 
         client
         .post('/vtest/testdb/test-schema')
@@ -253,7 +255,7 @@ describe('Collections API – DELETE', function () {
   })
 
   it('should return 404 when deleting a non-existing document by ID (RESTful)', function (done) {
-    var client = request(connectionString)
+    const client = request(connectionString)
 
     client
       .delete('/vtest/testdb/test-schema/59f1b3e038ad765e669ac47f')
@@ -269,7 +271,7 @@ describe('Collections API – DELETE', function () {
   })
 
   it('should return 200 when deleting a non-existing document by ID, supplying the query in the request body', function (done) {
-    var client = request(connectionString)
+    const client = request(connectionString)
 
     client
       .delete('/vtest/testdb/test-schema')

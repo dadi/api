@@ -1,16 +1,16 @@
-var fs = require('fs')
-var should = require('should')
-var request = require('supertest')
+const fs = require('fs')
+const should = require('should')
+const request = require('supertest')
 
-var config = require(__dirname + '/../../config')
-var help = require(__dirname + '/help')
-var app = require(__dirname + '/../../dadi/lib/')
+const config = require(__dirname + '/../../config')
+const help = require(__dirname + '/help')
+const app = require(__dirname + '/../../dadi/lib/')
 
-var bearerToken
-var connectionString = 'http://' + config.get('server.host') + ':' + config.get('server.port')
-var logpath = config.get('logging').path + '/' + config.get('logging').filename + '.access.' + config.get('logging').extension
+let bearerToken
+const connectionString = 'http://' + config.get('server.host') + ':' + config.get('server.port')
+const logpath = config.get('logging').path + '/' + config.get('logging').filename + '.access.' + config.get('logging').extension
 
-var resetLog = function (done) {
+const resetLog = function (done) {
     // empty the log for each test
   fs.writeFileSync(logpath, Buffer.from(''))
   done()
@@ -20,18 +20,23 @@ describe('logger', function () {
   describe('request', function () {
     beforeEach(resetLog)
 
-    var cleanup = function (done) {
+    const cleanup = function (done) {
         // try to cleanup these tests directory tree
         // don't catch errors here, since the paths may not exist
 
-      var dirs = config.get('paths')
+      const dirs = config.get('paths')
+
       try {
         fs.unlinkSync(dirs.collections + '/v1/testdb/collection.test-schema.json')
-      } catch (e) {}
+      } catch (e) {
+        // noop
+      }
 
       try {
         fs.rmdirSync(dirs.collections + '/v1/testdb')
-      } catch (e) {}
+      } catch (e) {
+        // noop
+      }
 
       done()
     }
@@ -48,7 +53,7 @@ describe('logger', function () {
 
             bearerToken = token
 
-            let schema = Object.assign({}, require('./../new-schema.json'))
+            const schema = Object.assign({}, require('./../new-schema.json'))
 
             schema.fields.field1 = Object.assign({}, schema.fields.newField)
             delete schema.fields.newField
@@ -81,7 +86,7 @@ describe('logger', function () {
       help.createDoc(bearerToken, function (err, doc) {
         if (err) return done(err)
 
-        var client = request(connectionString)
+        const client = request(connectionString)
 
         client
         .get('/vtest/testdb/test-schema')
@@ -95,7 +100,8 @@ describe('logger', function () {
           res.body['results'].should.be.Array
           res.body['results'].length.should.be.above(0)
 
-          var logEntry = fs.readFileSync(logpath, {encoding: 'utf8'})
+          const logEntry = fs.readFileSync(logpath, {encoding: 'utf8'})
+
           logEntry.indexOf('/vtest/testdb/test-schema').should.be.above(0)
 
           done()
@@ -107,7 +113,7 @@ describe('logger', function () {
       help.createDoc(bearerToken, function (err, doc) {
         if (err) return done(err)
 
-        var client = request(connectionString)
+        const client = request(connectionString)
 
         client
         .get('/vtest/testdb/test-schema')
@@ -119,7 +125,7 @@ describe('logger', function () {
           if (err) return done(err)
 
           setTimeout(() => {
-            var logEntry = fs.readFileSync(logpath, {encoding: 'utf8'})
+            const logEntry = fs.readFileSync(logpath, {encoding: 'utf8'})
 
             logEntry.indexOf('52.101.34.175').should.be.above(0)
 

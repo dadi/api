@@ -1,4 +1,4 @@
-var message = {message: 'endpoint created through the API'}
+const message = {message: 'endpoint created through the API'}
 
 module.exports.get = function (req, res, next) {
   res.setHeader('content-type', 'application/json')

@@ -41,7 +41,7 @@ const INTERNAL_PROPERTIES = [
  */
 
 // Pool of initialised models.
-let _models = {}
+const _models = {}
 
 /**
  * Creates a new Model instance
@@ -160,7 +160,7 @@ Model.prototype._buildEmptyResponse = function (options = {}) {
  * @return {Object}
  */
 Model.prototype._compileFieldHooks = function () {
-  let hooks = {}
+  const hooks = {}
 
   Object.keys(fields).forEach(key => {
     let type = fields[key].type
@@ -174,7 +174,7 @@ Model.prototype._compileFieldHooks = function () {
     }
 
     type.forEach(item => {
-      let sanitisedItem = item.toString().toLowerCase()
+      const sanitisedItem = item.toString().toLowerCase()
 
       hooks[sanitisedItem] = hooks[sanitisedItem] || []
       hooks[sanitisedItem].push(fields[key])
@@ -209,10 +209,10 @@ Model.prototype._createValidationError = function (message, data, {
     let is403 = true
 
     data.some(error => {
-      let {code, field} = error
+      const {code, field} = error
 
       if (code === 'ERROR_REQUIRED') {
-        let fieldIsInAllDocuments = originalDocuments.every(document => {
+        const fieldIsInAllDocuments = originalDocuments.every(document => {
           return document[field] !== undefined && document[field] !== null
         })
 
@@ -228,6 +228,8 @@ Model.prototype._createValidationError = function (message, data, {
 
         return true
       }
+
+      return false
     })
 
     if (is403) {
@@ -315,16 +317,16 @@ Model.prototype._formatResultSet = function (
         }
 
         return result.then(newDocument => {
-          let hookName = formatForInput
+          const hookName = formatForInput
             ? 'beforeSave'
             : 'beforeOutput'
 
           // The hook will receive the portion of the document that
           // corresponds to the field in question, including any language
           // variations.
-          let subDocument = Object.keys(document)
+          const subDocument = Object.keys(document)
             .reduce((subDocument, rawField) => {
-              let canonicalField = rawField.split(
+              const canonicalField = rawField.split(
                 config.get('i18n.fieldCharacter')
               )[0]
 
@@ -349,7 +351,7 @@ Model.prototype._formatResultSet = function (
           })
         })
       }, Promise.resolve({})).then(document => {
-        let internals = this.connection.db.settings.internalProperties || []
+        const internals = this.connection.db.settings.internalProperties || []
 
         return Object.keys(document).sort().reduce((sanitisedDocument, field) => {
           const property = field.indexOf(prefixes.from) === 0
@@ -385,7 +387,7 @@ Model.prototype._formatResultSet = function (
  * @return {Boolean}
  */
 Model.prototype._getComposeValue = function (override) {
-  let rawValue = override !== undefined
+  const rawValue = override !== undefined
     ? override
     : this.settings.compose
 
@@ -463,8 +465,8 @@ Model.prototype._mergeQueryAndAclFields = function (query, acl) {
   }
 
   let result
-  let queryIsExclusion = isExclusion(query)
-  let aclIsExclusion = isExclusion(acl)
+  const queryIsExclusion = isExclusion(query)
+  const aclIsExclusion = isExclusion(acl)
 
   if (queryIsExclusion) {
     if (aclIsExclusion) {
@@ -517,8 +519,8 @@ Model.prototype._mergeQueryAndAclFields = function (query, acl) {
  */
 Model.prototype._transformQuery = function (query, options) {
   let result = Promise.resolve({})
-  let canonicalQuery = Object.keys(query).reduce((canonical, key) => {
-    let rootNode = key.split('.')[0].split('@')[0]
+  const canonicalQuery = Object.keys(query).reduce((canonical, key) => {
+    const rootNode = key.split('.')[0].split('@')[0]
 
     canonical[rootNode] = canonical[rootNode] || {}
     canonical[rootNode][key] = query[key]
@@ -575,8 +577,8 @@ Model.prototype.formatForOutput = function (results, data = {}) {
  * @api public
  */
 Model.prototype.formatQuery = function (query) {
-  let internalFieldsPrefix = config.get('internalFieldsPrefix')
-  let newQuery = {}
+  const internalFieldsPrefix = config.get('internalFieldsPrefix')
+  const newQuery = {}
 
   Object.keys(query).forEach(key => {
     if (
@@ -591,6 +593,7 @@ Model.prototype.formatQuery = function (query) {
 
   return newQuery
 }
+
 /**
  * Returns the ACL key for this model.
  *
@@ -655,7 +658,7 @@ Model.prototype.isKeyValid = function (key) {
 
   // Check for dot-notation, verifying the existence of the
   // root node.
-  let rootNode = key.split('.')[0]
+  const rootNode = key.split('.')[0]
 
   return Boolean(this.schema[rootNode])
 }
@@ -692,7 +695,7 @@ Model.prototype.runFieldHooks = function ({
   input,
   name
 }) {
-  let fieldType = this.getFieldType(field)
+  const fieldType = this.getFieldType(field)
   let queue = Promise.resolve(input)
 
   if (!this.hooks[fieldType]) {
@@ -716,7 +719,7 @@ Model.prototype.runFieldHooks = function ({
   })
 
   return queue.catch(error => {
-    let errorObject = {
+    const errorObject = {
       field,
       message: error.message
     }
@@ -752,8 +755,8 @@ Model.prototype.shouldCompose = function ({
   // If `compose` is `false`, we disable composition.
   if (composeOverride === 'false') return false
 
-  let overrideString = composeOverride.toString()
-  let overrideNumber = parseInt(composeOverride)
+  const overrideString = composeOverride.toString()
+  const overrideNumber = parseInt(composeOverride)
 
   // If the value is a number, we compose up to that level.
   if (overrideNumber.toString() === overrideString) {
@@ -838,7 +841,7 @@ Model.prototype.validateAccess = function ({
     // we must check the type of access that is being attempted against the
     // list of HTTP verbs that must be authenticated.
     if (Array.isArray(this.settings.authenticate)) {
-      let authenticatedVerbs = this.settings.authenticate.map(
+      const authenticatedVerbs = this.settings.authenticate.map(
         s => s.toLowerCase()
       )
 
@@ -858,12 +861,12 @@ Model.prototype.validateAccess = function ({
     }
   }
 
-  let accessQueue = access
+  const accessQueue = access
     ? Promise.resolve(access)
     : this.acl.access.get(client, this.getAclKey())
 
   return accessQueue.then(access => {
-    let value = access[type]
+    const value = access[type]
 
     if (!value) {
       return Promise.reject(
@@ -872,7 +875,7 @@ Model.prototype.validateAccess = function ({
     }
 
     if (value.filter) {
-      let conflict = Object.keys(value.filter).some(field => {
+      const conflict = Object.keys(value.filter).some(field => {
         return (
           query[field] !== undefined &&
           JSON.stringify(query[field]) !== JSON.stringify(value.filter[field])
@@ -921,7 +924,7 @@ Model.prototype.validateAccess = function ({
             return document
           }
 
-          let newDocument = {}
+          const newDocument = {}
 
           Object.keys(document).forEach(field => {
             if (field === '_id' || fields[field]) {
@@ -934,10 +937,10 @@ Model.prototype.validateAccess = function ({
       }
     }
 
-    let newDocuments = Array.isArray(documents)
+    const newDocuments = Array.isArray(documents)
       ? normalisedDocuments
       : documents && normalisedDocuments[0]
-    let newSchema = this.acl.access.filterFields(access, schema)
+    const newSchema = this.acl.access.filterFields(access, schema)
 
     return {
       access,
@@ -958,7 +961,7 @@ Model.prototype.validateAccess = function ({
  * @return {Object}
  */
 Model.prototype.validateQuery = function (query) {
-  let response = {
+  const response = {
     success: true,
     errors: []
   }
@@ -972,7 +975,7 @@ Model.prototype.validateQuery = function (query) {
     return response
   }
 
-  Object.keys(query).every(key => {
+  Object.keys(query).forEach(key => {
     if (key === '$where') {
       response.success = false
       response.errors.push({

@@ -1,7 +1,7 @@
-var convict = require('convict')
-var fs = require('fs')
+const convict = require('convict')
+const fs = require('fs')
 
-var conf = convict({
+const conf = convict({
   app: {
     name: {
       doc: 'The applicaton name',
@@ -478,15 +478,17 @@ var conf = convict({
 })
 
 // Load environment dependent configuration
-var env = conf.get('env')
+const env = conf.get('env')
+
 conf.loadFile('./config/config.' + env + '.json')
 
 // Load domain-specific configuration
 conf.updateConfigDataForDomain = function(domain) {
-  var domainConfig = './config/' + domain + '.json'
+  const domainConfig = './config/' + domain + '.json'
 
   try {
-    var stats = fs.statSync(domainConfig)
+    const stats = fs.statSync(domainConfig)
+
     // no error, file exists
     conf.loadFile(domainConfig)
   } catch (err) {

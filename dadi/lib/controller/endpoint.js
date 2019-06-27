@@ -53,10 +53,10 @@ Endpoint.prototype.registerRoutes = function (route, filePath) {
   this.server.app.use(route, (req, res, next) => {
     try {
       // Map request method to controller method.
-      let method = req.method && req.method.toLowerCase()
+      const method = req.method && req.method.toLowerCase()
 
       if (this.component[method]) {
-        let accessTypeForMethod = this.getAccessTypeForMethod(method)
+        const accessTypeForMethod = this.getAccessTypeForMethod(method)
         let aclCheck
 
         // If the method is OPTIONS *or* the custom endpoint has explicitly

@@ -54,17 +54,18 @@ S3Storage.prototype.getKey = function () {
  */
 S3Storage.prototype.get = function (filePath, route, req, res, next) {
   return new Promise((resolve, reject) => {
-    let requestData = {
+    const requestData = {
       Bucket: this.getBucket(),
       Key: filePath
     }
 
     if (requestData.Bucket === '' || requestData.Key === '') {
-      let err = {
+      const err = {
         statusCode: 400,
         statusText: 'Bad Request',
         message: 'Either no Bucket or Key provided: ' + JSON.stringify(requestData)
       }
+
       return reject(err)
     }
 
@@ -74,10 +75,11 @@ S3Storage.prototype.get = function (filePath, route, req, res, next) {
     }))
 
     // create the AWS.Request object
-    let getObjectPromise = this.s3.getObject(requestData).promise()
+    const getObjectPromise = this.s3.getObject(requestData).promise()
 
     return getObjectPromise.then(data => {
-      let bufferStream = new stream.PassThrough()
+      const bufferStream = new stream.PassThrough()
+
       bufferStream.push(data.Body)
       bufferStream.push(null)
       bufferStream.pipe(res)
@@ -95,15 +97,15 @@ S3Storage.prototype.get = function (filePath, route, req, res, next) {
  */
 S3Storage.prototype.put = function (stream, folderPath) {
   return new Promise((resolve, reject) => {
-    let fullPath = path.join(this.settings.basePath, folderPath, this.getKey())
+    const fullPath = path.join(this.settings.basePath, folderPath, this.getKey())
 
-    let requestData = {
+    const requestData = {
       Bucket: this.getBucket(),
       Key: fullPath
     }
 
     if (requestData.Bucket === '' || requestData.Key === '') {
-      let err = {
+      const err = {
         statusCode: 400,
         statusText: 'Bad Request',
         message: 'Either no Bucket or Key provided: ' + JSON.stringify(requestData)
@@ -124,7 +126,7 @@ S3Storage.prototype.put = function (stream, folderPath) {
 
     // receive the concatenated buffer and send the response
     // unless the etag hasn't changed, then send 304 and end the response
-    let sendBuffer = (buffer) => {
+    const sendBuffer = (buffer) => {
       requestData.Body = buffer
       requestData.ContentLength = contentLength
 
@@ -135,12 +137,12 @@ S3Storage.prototype.put = function (stream, folderPath) {
       }))
 
       // create the AWS.Request object
-      let putObjectPromise = this.s3.putObject(requestData).promise()
+      const putObjectPromise = this.s3.putObject(requestData).promise()
 
       return putObjectPromise.then(data => {
-        let obj = {
+        const obj = {
           path: requestData.Key,
-          contentLength: contentLength,
+          contentLength,
           awsUrl: `https://${requestData.Bucket}.s3.amazonaws.com/${requestData.Key}`
         }
 
@@ -150,7 +152,7 @@ S3Storage.prototype.put = function (stream, folderPath) {
       })
     }
 
-    let concatStream = concat(sendBuffer)
+    const concatStream = concat(sendBuffer)
 
     // send the file stream through:
     // 1) lengthStream to obtain contentLength
@@ -167,17 +169,18 @@ S3Storage.prototype.put = function (stream, folderPath) {
  */
 S3Storage.prototype.delete = function (file) {
   return new Promise((resolve, reject) => {
-    let requestData = {
+    const requestData = {
       Bucket: this.getBucket(),
       Key: file.path
     }
 
     if (requestData.Bucket === '' || requestData.Key === '') {
-      let err = {
+      const err = {
         statusCode: 400,
         statusText: 'Bad Request',
         message: 'Either no Bucket or Key provided: ' + JSON.stringify(requestData)
       }
+
       return reject(err)
     }
 
@@ -187,7 +190,7 @@ S3Storage.prototype.delete = function (file) {
     }))
 
     // create the AWS.Request object
-    let deleteObjectPromise = this.s3.deleteObject(requestData).promise()
+    const deleteObjectPromise = this.s3.deleteObject(requestData).promise()
 
     deleteObjectPromise.then(data => {
       return resolve()

@@ -41,8 +41,8 @@ module.exports.beforeOutput = function ({
 
   let value
   let valueLanguage
-  let languageField = field + config.get('i18n.fieldCharacter') + language
-  let supportedLanguages = config.get('i18n.languages')
+  const languageField = field + config.get('i18n.fieldCharacter') + language
+  const supportedLanguages = config.get('i18n.languages')
 
   // If the language requested is one of the supported languages
   // and the document contains a field translation for it, we'll
@@ -72,7 +72,7 @@ module.exports.beforeQuery = ({field, input, schema}) => {
     return input
   }
 
-  let sanitisedInput = Object.keys(input).reduce((result, key) => {
+  const sanitisedInput = Object.keys(input).reduce((result, key) => {
     result[key] = sanitise(input[key], schema)
 
     return result

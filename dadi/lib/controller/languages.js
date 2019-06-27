@@ -20,9 +20,9 @@ const Languages = function (server) {
 }
 
 Languages.prototype._getLanguageDetails = function (code) {
-  let defaultLanguage = config.get('i18n.defaultLanguage')
-  let match = langs.where('1', code)
-  let language = {
+  const defaultLanguage = config.get('i18n.defaultLanguage')
+  const match = langs.where('1', code)
+  const language = {
     code,
     default: defaultLanguage === code
   }
@@ -42,15 +42,15 @@ Languages.prototype.get = function (req, res, next) {
     )
   }
 
-  let supportedLanguages = config.get('i18n.languages')
-  let defaultLanguage = config.get('i18n.defaultLanguage')
+  const supportedLanguages = config.get('i18n.languages')
+  const defaultLanguage = config.get('i18n.defaultLanguage')
 
   if (!supportedLanguages.includes(defaultLanguage)) {
     supportedLanguages.unshift(defaultLanguage)
   }
 
-  let languages = supportedLanguages.map(this._getLanguageDetails)
-  let metadata = {
+  const languages = supportedLanguages.map(this._getLanguageDetails)
+  const metadata = {
     defaultLanguage: this._getLanguageDetails(defaultLanguage),
     fieldCharacter: config.get('i18n.fieldCharacter'),
     totalCount: supportedLanguages.length

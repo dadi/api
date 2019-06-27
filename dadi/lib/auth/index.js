@@ -29,8 +29,8 @@ const AuthMiddleware = function (server) {
 AuthMiddleware.prototype.authenticateRequest = function (req, res, next) {
   if (req.url === this.tokenRoute) return next()
 
-  let header = req.headers && req.headers.authorization
-  let match = header && header.match(/^Bearer (.*)$/)
+  const header = req.headers && req.headers.authorization
+  const match = header && header.match(/^Bearer (.*)$/)
 
   if (!match) {
     req.dadiApiClient = {}
@@ -60,7 +60,7 @@ AuthMiddleware.prototype.authenticateRequest = function (req, res, next) {
  * @param  {Function}               next
  */
 AuthMiddleware.prototype.handleInvalidCredentials = function (req, res, next) {
-  let error = new Error('Invalid Credentials')
+  const error = new Error('Invalid Credentials')
 
   error.statusCode = 401
 
@@ -80,7 +80,7 @@ AuthMiddleware.prototype.handleInvalidCredentials = function (req, res, next) {
  * @param  {Function}               next
  */
 AuthMiddleware.prototype.handleClientInNeedOfUpgrade = function (req, res, next) {
-  let error = new Error('Client must be upgraded')
+  const error = new Error('Client must be upgraded')
 
   error.statusCode = 401
 
@@ -103,7 +103,7 @@ AuthMiddleware.prototype.handleClientInNeedOfUpgrade = function (req, res, next)
  * @param  {Function}               next
  */
 AuthMiddleware.prototype.generateToken = function (req, res, next) {
-  let {clientId, secret} = req.body
+  const {clientId, secret} = req.body
 
   res.setHeader('Content-Type', 'application/json')
   res.setHeader('Cache-Control', 'no-store')
@@ -121,8 +121,8 @@ AuthMiddleware.prototype.generateToken = function (req, res, next) {
       return this.handleInvalidCredentials(req, res, next)
     }
 
-    let client = clientModel.formatForOutput(results[0])
-    let payload = {
+    const client = clientModel.formatForOutput(results[0])
+    const payload = {
       clientId,
       accessType: client.accessType
     }
@@ -134,7 +134,7 @@ AuthMiddleware.prototype.generateToken = function (req, res, next) {
         return this.handleInvalidCredentials(req, res, next)
       }
 
-      let response = {
+      const response = {
         accessToken: token,
         tokenType: 'Bearer',
         expiresIn: config.get('auth.tokenTtl'),

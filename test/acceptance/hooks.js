@@ -1,18 +1,18 @@
-var app = require(__dirname + '/../../dadi/lib/')
-var config = require(__dirname + '/../../config')
-var help = require(__dirname + '/help')
-var hook = require(__dirname + '/../../dadi/lib/model/hook')
-var should = require('should')
-var sinon = require('sinon')
-var request = require('supertest')
+const app = require(__dirname + '/../../dadi/lib/')
+const config = require(__dirname + '/../../config')
+const help = require(__dirname + '/help')
+const hook = require(__dirname + '/../../dadi/lib/model/hook')
+const should = require('should')
+const sinon = require('sinon')
+const request = require('supertest')
 
 // variables scoped for use throughout tests
-var bearerToken
-var connectionString = 'http://' + config.get('server.host') + ':' + config.get('server.port')
+let bearerToken
+const connectionString = 'http://' + config.get('server.host') + ':' + config.get('server.port')
 
 let cleanupFn = []
 
-let startApp = function (done) {
+const startApp = function (done) {
   app.start((err) => {
     if (err) return done(err)
 
@@ -28,7 +28,7 @@ let startApp = function (done) {
   })
 }
 
-let stopApp = function (done) {
+const stopApp = function (done) {
   cleanupFn.forEach(fn => {
     fn()
   })
@@ -93,7 +93,7 @@ describe('Hooks', function () {
   })
 
   it('testing failure when specifying _layout as a field in a GET request', function (done) {
-    var article = {
+    const article = {
     	'originalId': 79343,
     	'publicationDate': 1469162676000,
     	'isLegacy': true,
@@ -213,10 +213,11 @@ describe('Hooks', function () {
     	'trackingPixel': '57b550451afba38e182619dc',
     	'sponsor': '57b550451afba38e182619dd'
     }
+
     startApp(() => {
       sinon.stub(hook.Hook.prototype, 'load').returns(require(__dirname + '/temp-workspace/hooks/layout.js'))
 
-      var client = request(connectionString)
+      const client = request(connectionString)
 
       // create article
       client
@@ -227,7 +228,7 @@ describe('Hooks', function () {
       .end(function (err, res) {
         if (err) return done(err)
 
-        var newArticle = res.body.results[0]
+        const newArticle = res.body.results[0]
 
         // GET the article
         client
@@ -240,7 +241,8 @@ describe('Hooks', function () {
           should.exist(res.body.results)
           should.exist(res.body.results[0])
 
-          var articleResponse = res.body.results[0]
+          const articleResponse = res.body.results[0]
+
           should.exist(articleResponse._layout)
 
           // GET the article with qs params
@@ -256,7 +258,8 @@ describe('Hooks', function () {
             should.exist(res.body.results)
             should.exist(res.body.results[0])
 
-            var articleResponse = res.body.results[0]
+            const articleResponse = res.body.results[0]
+
             should.exist(articleResponse._layout)
 
             stopApp(done)
@@ -269,7 +272,7 @@ describe('Hooks', function () {
   it('should not cause creation of duplicate records', function (done) {
     config.set('query.useVersionFilter', true)
 
-    var client = request(connectionString)
+    const client = request(connectionString)
 
     startApp(() => {
       client
@@ -283,7 +286,7 @@ describe('Hooks', function () {
         sinon.stub(hook.Hook.prototype, 'load').returns(hookFunction)
 
         // create a publication
-        var publication = {
+        const publication = {
           name: 'Test FM'
         }
 
@@ -296,10 +299,10 @@ describe('Hooks', function () {
           if (err) return done(err)
 
           // get the new id
-          var publicationId = res.body.results[0]._id
+          const publicationId = res.body.results[0]._id
 
           // create an article
-          var article = {
+          const article = {
             title: 'An Article To Test Hooks',
             published: {},
             publications: [publicationId.toString()]
@@ -314,7 +317,7 @@ describe('Hooks', function () {
             if (err) return done(err)
 
             // get the new id
-            var articleId = res.body.results[0]._id
+            const articleId = res.body.results[0]._id
 
             // update the article
             article.title = 'Updated Article Title'
@@ -333,7 +336,7 @@ describe('Hooks', function () {
               .end(function (err, res) {
                 if (err) return done(err)
 
-                var publicationResults = res.body.results
+                const publicationResults = res.body.results
 
                 client
                 .get('/vtest/testdb/articles')
@@ -357,7 +360,7 @@ describe('Hooks', function () {
 
   it('should throw a meaningful error message when a before* hook fails to return', done => {
     startApp(() => {
-      var client = request(connectionString)
+      const client = request(connectionString)
 
       client
       .post('/vtest/testdb/schema-not-returning')
@@ -379,7 +382,7 @@ describe('Hooks', function () {
   it('should allow obtaining data from the request within beforeCreate & beforeGet hooks', function (done) {
     config.set('query.useVersionFilter', true)
 
-    var client = request(connectionString)
+    const client = request(connectionString)
 
     startApp(() => {
       client
@@ -393,7 +396,7 @@ describe('Hooks', function () {
         sinon.stub(hook.Hook.prototype, 'load').returns(urlHookFunction)
 
         // create a publication
-        var publication = {
+        const publication = {
           name: 'Test Hook'
         }
 
@@ -405,7 +408,8 @@ describe('Hooks', function () {
         .end((err, res) => {
           if (err) return done(err)
 
-          var publicationResults = res.body.results
+          const publicationResults = res.body.results
+
           publicationResults.length.should.eql(1)
 
           publicationResults[0]['url'].should.eql('/vtest/testdb/publications')
@@ -418,7 +422,7 @@ describe('Hooks', function () {
   })
 })
 
-var publicationSchema = {
+const publicationSchema = {
   'fields': {
     'name': {
       'type': 'String',
@@ -522,7 +526,7 @@ var publicationSchema = {
   }
 }
 
-var articleSchema = {
+const articleSchema = {
   'fields': {
     'published': {
       'type': 'Object',
@@ -736,7 +740,8 @@ var articleSchema = {
   }
 }
 
-var slugifyHook = ''
+let slugifyHook = ''
+
 slugifyHook += 'var getFieldValue = function(fieldName, object) {\n'
 slugifyHook += '  if (!fieldName) return\n'
 slugifyHook += '    fieldName = fieldName.split(".")\n'
@@ -760,9 +765,10 @@ slugifyHook += '    }\n'
 slugifyHook += '    return obj\n'
 slugifyHook += '}\n'
 
-var hookFunction = eval(slugifyHook)
+const hookFunction = eval(slugifyHook)
 
-var urlHook = ''
+let urlHook = ''
+
 urlHook += 'module.exports = function (obj, type, data) {\n'
 urlHook += '  if (type === "beforeCreate" || type === "beforeGet") {\n'
 urlHook += '    obj["url"] = data.req.url\n'
@@ -770,4 +776,4 @@ urlHook += '  }\n'
 urlHook += '  return obj\n'
 urlHook += '}\n'
 
-var urlHookFunction = eval(urlHook)
+const urlHookFunction = eval(urlHook)

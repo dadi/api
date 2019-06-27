@@ -1,11 +1,11 @@
-var should = require('should')
-var sinon = require('sinon')
-var model = require(__dirname + '/../../../dadi/lib/model')
-var apiHelp = require(__dirname + '/../../../dadi/lib/help')
-var connection = require(__dirname + '/../../../dadi/lib/model/connection')
-var help = require(__dirname + '/../help')
-var acceptanceHelper = require(__dirname + '/../../acceptance/help')
-var config = require(__dirname + '/../../../config')
+const should = require('should')
+const sinon = require('sinon')
+const model = require(__dirname + '/../../../dadi/lib/model')
+const apiHelp = require(__dirname + '/../../../dadi/lib/help')
+const connection = require(__dirname + '/../../../dadi/lib/model/connection')
+const help = require(__dirname + '/../help')
+const acceptanceHelper = require(__dirname + '/../../acceptance/help')
+const config = require(__dirname + '/../../../config')
 
 describe('Model', function () {
   beforeEach((done) => {
@@ -89,7 +89,7 @@ describe('Model', function () {
     })
 
     it('should attach history collection by default if not specified and `storeRevisions` is not false', function (done) {
-      var mod = model(
+      const mod = model(
         'testModelName',
         help.getModelSchema(),
         null,
@@ -104,7 +104,7 @@ describe('Model', function () {
     })
 
     it('should attach history collection if specified (using legacy `revisionCollection` property)', function (done) {
-      var mod = model(
+      const mod = model(
         'testModelName',
         help.getModelSchema(),
         null,
@@ -113,13 +113,14 @@ describe('Model', function () {
           revisionCollection: 'modelHistory'
         }
       )
+
       mod.history.name.should.equal('modelHistory')
 
       done()
     })
 
     it('should attach history collection if specified', function (done) {
-      var mod = model(
+      const mod = model(
         'testModelName',
         help.getModelSchema(),
         null,
@@ -128,13 +129,14 @@ describe('Model', function () {
           versioningCollection: 'modelHistory'
         }
       )
+
       mod.history.name.should.equal('modelHistory')
 
       done()
     })
 
     it('should attach history collection if `storeRevisions` is true', function (done) {
-      var mod = model(
+      const mod = model(
         'testModelName',
         help.getModelSchema(),
         null,
@@ -143,6 +145,7 @@ describe('Model', function () {
           storeRevisions: true
         }
       )
+
       should.exist(mod.history)
       mod.history.name.should.equal('testModelNameVersions')
 
@@ -160,6 +163,7 @@ describe('Model', function () {
           revisionCollection: 'modelHistory'
         }
       )
+
       should.exist(mod.history)
       mod.history.name.should.equal('modelHistory')
 
@@ -167,7 +171,7 @@ describe('Model', function () {
     })
 
     it('should attach history collection if `enableVersioning` is true', function (done) {
-      var mod = model(
+      const mod = model(
         'testModelName',
         help.getModelSchema(),
         null,
@@ -176,6 +180,7 @@ describe('Model', function () {
           enableVersioning: true
         }
       )
+
       should.exist(mod.history)
       mod.history.name.should.equal('testModelNameVersions')
 
@@ -193,6 +198,7 @@ describe('Model', function () {
           versioningCollection: 'modelHistory'
         }
       )
+
       should.exist(mod.history)
       mod.history.name.should.equal('modelHistory')
 
@@ -366,14 +372,16 @@ describe('Model', function () {
     })
 
     it('should return an error when db is disconnected', () => {
-      let mod = model(
+      const mod = model(
         'testModelName',
         help.getModelSchema(),
         null,
         { database: 'testdb' }
       )
-      let connectedDb = mod.connection.db
+      const connectedDb = mod.connection.db
+
       mod.connection.db = null
+
       return mod.getStats().catch(err => {
         mod.connection.db = connectedDb
         err.should.exist
@@ -520,7 +528,7 @@ describe('Model', function () {
     })
 
     it('should return indexes', function (done) {
-      var mod = model('testModelName',
+      const mod = model('testModelName',
         help.getModelSchema(),
         null,
         {
@@ -545,7 +553,8 @@ describe('Model', function () {
             // mod.connection.db = null
 
             mod.getIndexes(indexes => {
-              var result = indexes.some(index => { return index.name.indexOf('fieldName') > -1 })
+              const result = indexes.some(index => { return index.name.indexOf('fieldName') > -1 })
+
               result.should.eql(true)
               done()
             })
@@ -557,7 +566,7 @@ describe('Model', function () {
 
   describe('`createIndex` method', function () {
     it('should create index if indexing settings are supplied', function (done) {
-      var mod = model('testModelName',
+      const mod = model('testModelName',
         help.getModelSchema(),
         null,
         {
@@ -582,7 +591,8 @@ describe('Model', function () {
 
         setTimeout(function () {
           mod.getIndexes(indexes => {
-            var result = indexes.some(index => { return index.name.indexOf('fieldName') > -1 })
+            const result = indexes.some(index => { return index.name.indexOf('fieldName') > -1 })
+
             result.should.eql(true)
             done()
           })
@@ -592,8 +602,9 @@ describe('Model', function () {
 
     it.skip('should support compound indexes', function (done) {
       help.cleanUpDB(() => {
-        var fields = help.getModelSchema()
-        var schema = {}
+        const fields = help.getModelSchema()
+        const schema = {}
+
         schema.fields = fields
 
         schema.fields.field2 = Object.assign({}, schema.fields.fieldName, {
@@ -601,7 +612,7 @@ describe('Model', function () {
           required: false
         })
 
-        var mod = model('testModelName',
+        const mod = model('testModelName',
           schema.fields,
           null,
           {
@@ -639,8 +650,9 @@ describe('Model', function () {
 
     it('should support unique indexes', function (done) {
       help.cleanUpDB(() => {
-        var fields = help.getModelSchema()
-        var schema = {}
+        const fields = help.getModelSchema()
+        const schema = {}
+
         schema.fields = fields
 
         schema.fields.field3 = Object.assign({}, schema.fields.fieldName, {
@@ -648,7 +660,7 @@ describe('Model', function () {
           required: false
         })
 
-        var mod = model('testModelName',
+        const mod = model('testModelName',
           schema.fields,
           null,
           {
@@ -680,8 +692,9 @@ describe('Model', function () {
 
     it('should support multiple indexes', function (done) {
       help.cleanUpDB(() => {
-        var fields = help.getModelSchema()
-        var schema = {}
+        const fields = help.getModelSchema()
+        const schema = {}
+
         schema.fields = fields
 
         schema.fields.field3 = Object.assign({}, schema.fields.fieldName, {
@@ -689,7 +702,7 @@ describe('Model', function () {
           required: false
         })
 
-        var mod = model('testModelName',
+        const mod = model('testModelName',
           schema.fields,
           null,
           {
@@ -743,7 +756,7 @@ describe('Model', function () {
 
     describe('legacy syntax', () => {
       it('should accept Object and callback', function (done) {
-        let mod = model(
+        const mod = model(
           'testModelName',
           help.getModelSchema(),
           null,
@@ -754,7 +767,7 @@ describe('Model', function () {
       })
 
       it('should accept Array and callback', function (done) {
-        let mod = model(
+        const mod = model(
           'testModelName',
           help.getModelSchema(),
           null,
@@ -765,7 +778,7 @@ describe('Model', function () {
       })
 
       it('should save model to database', function (done) {
-        let mod = model(
+        const mod = model(
           'testModelName',
           help.getModelSchema(),
           null,
@@ -787,8 +800,8 @@ describe('Model', function () {
       })
 
       it('should pass error to callback if validation fails', function (done) {
-        let schema = help.getModelSchema()
-        let mod = model(
+        const schema = help.getModelSchema()
+        const mod = model(
           'testModelName',
           Object.assign({}, schema, {
             fieldName: Object.assign({}, schema.fieldName, {
@@ -808,7 +821,7 @@ describe('Model', function () {
     })
 
     it('should accept Object', () => {
-      let mod = model(
+      const mod = model(
         'testModelName',
         help.getModelSchema(),
         null,
@@ -821,7 +834,7 @@ describe('Model', function () {
     })
 
     it('should accept Array', () => {
-      let mod = model(
+      const mod = model(
         'testModelName',
         help.getModelSchema(),
         null,
@@ -836,7 +849,7 @@ describe('Model', function () {
     })
 
     it('should save model to database', () => {
-      let mod = model(
+      const mod = model(
         'testModelName',
         help.getModelSchema(),
         null,
@@ -858,8 +871,8 @@ describe('Model', function () {
     })
 
     it('should reject with error if validation fails', done => {
-      let schema = help.getModelSchema()
-      let mod = model(
+      const schema = help.getModelSchema()
+      const mod = model(
         'testModelName',
         Object.assign({}, schema, {
           fieldName: Object.assign({}, schema.fieldName, {
@@ -883,7 +896,7 @@ describe('Model', function () {
   describe('`update` method', function () {
     beforeEach(done => {
       acceptanceHelper.dropDatabase('testdb', err => {
-        let mod = model(
+        const mod = model(
           'testModelName',
           help.getModelSchemaWithMultipleFields(),
           null,
@@ -906,14 +919,14 @@ describe('Model', function () {
 
     describe('legacy syntax', () => {
       it('should accept query, update object, and callback', done => {
-        let mod = model('testModelName')
+        const mod = model('testModelName')
 
         mod.update({field1: 'foo'}, {field1: 'bar'}, done)
       })
 
       it('should update an existing document', done => {
-        let mod = model('testModelName')
-        let updateDoc = {field1: 'bar'}
+        const mod = model('testModelName')
+        const updateDoc = {field1: 'bar'}
 
         mod.update({field1: 'foo'}, updateDoc, (err, result) => {
           if (err) return done(err)
@@ -934,7 +947,7 @@ describe('Model', function () {
       })
 
       it('should create new history revision when updating an existing document and `storeRevisions` is true', done => {
-        let mod = model(
+        const mod = model(
           'testModelName',
           help.getModelSchemaWithMultipleFields(),
           null,
@@ -943,7 +956,7 @@ describe('Model', function () {
             storeRevisions: true
           }
         )
-        let updateDoc = {field1: 'bar'}
+        const updateDoc = {field1: 'bar'}
 
         mod.update({field1: 'foo'}, updateDoc, (err, result) => {
           if (err) return done(err)
@@ -970,8 +983,8 @@ describe('Model', function () {
       })
 
       it('should pass error to callback if schema validation fails', done => {
-        let schema = help.getModelSchema()
-        let mod = model(
+        const schema = help.getModelSchema()
+        const mod = model(
           'testModelName',
           Object.assign({}, schema, {
             fieldName: Object.assign({}, schema.fieldName, {
@@ -1003,7 +1016,7 @@ describe('Model', function () {
     })
 
     it('should accept query and update object', () => {
-      let mod = model('testModelName')
+      const mod = model('testModelName')
 
       return mod.update({
         query: {field1: 'foo'},
@@ -1012,8 +1025,8 @@ describe('Model', function () {
     })
 
     it('should update an existing document', () => {
-      let mod = model('testModelName')
-      let updateDoc = {field1: 'bar'}
+      const mod = model('testModelName')
+      const updateDoc = {field1: 'bar'}
 
       return mod.update({
         query: {field1: 'foo'},
@@ -1032,7 +1045,7 @@ describe('Model', function () {
     })
 
     it('should create new history revision when updating an existing document and `storeRevisions` is true', () => {
-      let mod = model(
+      const mod = model(
         'testModelName',
         help.getModelSchemaWithMultipleFields(),
         null,
@@ -1041,7 +1054,7 @@ describe('Model', function () {
           storeRevisions: true
         }
       )
-      let updateDoc = {field1: 'bar'}
+      const updateDoc = {field1: 'bar'}
 
       return mod.update({
         query: {field1: 'foo'},
@@ -1066,8 +1079,8 @@ describe('Model', function () {
     })
 
     it('should reject with error if schema validation fails', done => {
-      let schema = help.getModelSchema()
-      let mod = model(
+      const schema = help.getModelSchema()
+      const mod = model(
         'testModelName',
         Object.assign({}, schema, {
           fieldName: Object.assign({}, schema.fieldName, {
@@ -1105,8 +1118,8 @@ describe('Model', function () {
 
     describe('legacy syntax', () => {
       it('should accept a query object and callback', done => {
-        let schema = help.getModelSchema()
-        let mod = model(
+        const schema = help.getModelSchema()
+        const mod = model(
           'testModelName',
           schema,
           null,
@@ -1117,8 +1130,8 @@ describe('Model', function () {
       })
 
       it('should delete a single document', done => {
-        let schema = help.getModelSchema()
-        let mod = model(
+        const schema = help.getModelSchema()
+        const mod = model(
           'testModelName',
           schema,
           null,
@@ -1147,8 +1160,8 @@ describe('Model', function () {
       })
 
       it('should delete multiple documents', done => {
-        let schema = help.getModelSchema()
-        let mod = model(
+        const schema = help.getModelSchema()
+        const mod = model(
           'testModelName',
           schema,
           null,
@@ -1200,8 +1213,8 @@ describe('Model', function () {
     })
 
     it('should accept a query object', () => {
-      let schema = help.getModelSchema()
-      let mod = model(
+      const schema = help.getModelSchema()
+      const mod = model(
         'testModelName',
         schema,
         null,
@@ -1214,8 +1227,8 @@ describe('Model', function () {
     })
 
     it('should delete a single document', () => {
-      let schema = help.getModelSchema()
-      let mod = model(
+      const schema = help.getModelSchema()
+      const mod = model(
         'testModelName',
         schema,
         null,
@@ -1240,8 +1253,8 @@ describe('Model', function () {
     })
 
     it('should delete multiple documents', () => {
-      let schema = help.getModelSchema()
-      let mod = model(
+      const schema = help.getModelSchema()
+      const mod = model(
         'testModelName',
         schema,
         null,
@@ -1288,26 +1301,30 @@ describe('Model', function () {
 
   describe('validateQuery', function () {
     it('should be attached to Model', function (done) {
-      var mod = model('testModelName', help.getModelSchema(), null, { database: 'testdb' })
+      const mod = model('testModelName', help.getModelSchema(), null, { database: 'testdb' })
+
       mod.validateQuery.should.be.Function
       done()
     })
 
     describe('query', function () {
       it('should not allow the use of `$where` in queries', function (done) {
-        var mod = model('testModelName', help.getModelSchema(), null, { database: 'testdb' })
+        const mod = model('testModelName', help.getModelSchema(), null, { database: 'testdb' })
+
         mod.validateQuery({$where: 'throw new Error("Insertion Attack!")'}).success.should.be.false
         done()
       })
 
       it('should allow querying with key values', function (done) {
-        var mod = model('testModelName', help.getModelSchema(), null, { database: 'testdb' })
+        const mod = model('testModelName', help.getModelSchema(), null, { database: 'testdb' })
+
         mod.validateQuery({fieldName: 'foo'}).success.should.be.true
         done()
       })
 
       it('should allow querying with key values too', function (done) {
-        var schema = help.getModelSchema()
+        let schema = help.getModelSchema()
+
         schema = Object.assign({}, schema, {
           fieldMixed: {
             type: 'Mixed',
@@ -1318,7 +1335,8 @@ describe('Model', function () {
         }
         )
 
-        var mod = model('schemaTest', schema, null, { database: 'testdb' })
+        const mod = model('schemaTest', schema, null, { database: 'testdb' })
+
         mod.validateQuery({'fieldMixed.innerProperty': 'foo'}).success.should.be.true
         done()
       })
@@ -1327,14 +1345,14 @@ describe('Model', function () {
 
   describe('`_mergeQueryAndAclFields` method', () => {
     it('should use the fields provided by the query if ACL does not specify any', () => {
-      let testModel = model(
+      const testModel = model(
         'testModelName',
         help.getModelSchema(),
         null,
         { database: 'testdb' }
       )
 
-      let queryFields = {
+      const queryFields = {
         field1: 1,
         field2: 1
       }
@@ -1345,14 +1363,14 @@ describe('Model', function () {
     })
 
     it('should use the fields provided by the ACL filter if the query does not specify any', () => {
-      let testModel = model(
+      const testModel = model(
         'testModelName',
         help.getModelSchema(),
         null,
         { database: 'testdb' }
       )
 
-      let aclFields = {
+      const aclFields = {
         field1: 1,
         field2: 1
       }
@@ -1363,7 +1381,7 @@ describe('Model', function () {
     })
 
     it('should merge the fields from the query and the ACL filter so that the ACL restrictions are respected', () => {
-      let testModel = model(
+      const testModel = model(
         'testModelName',
         help.getModelSchema(),
         null,

@@ -7,7 +7,7 @@ const request = require('supertest')
 const should = require('should')
 const sinon = require('sinon')
 
-let client = request(`http://${config.get('server.host')}:${config.get('server.port')}`)
+const client = request(`http://${config.get('server.host')}:${config.get('server.port')}`)
 
 describe('Collections endpoint', function () {
   let bearerToken
@@ -45,14 +45,14 @@ describe('Collections endpoint', function () {
       .set('content-type', 'application/json')
       .set('Authorization', `Bearer ${token}`)
       .end((err, res) => {
-        let allCollections = help.getCollectionMap()
+        const allCollections = help.getCollectionMap()
 
         res.body.collections.length.should.eql(
           Object.keys(allCollections).length
         )
 
         Object.keys(allCollections).forEach(key => {
-          let match = res.body.collections.some(collection => {
+          const match = res.body.collections.some(collection => {
             return collection.path === key
           })
 
@@ -73,14 +73,14 @@ describe('Collections endpoint', function () {
       .set('content-type', 'application/json')
       .set('Authorization', `Bearer ${token}`)
       .end((err, res) => {
-        let allCollections = help.getCollectionMap()
+        const allCollections = help.getCollectionMap()
 
         res.body.collections.length.should.eql(
           Object.keys(allCollections).length
         )
 
         Object.keys(allCollections).forEach(key => {
-          let match = res.body.collections.some(collection => {
+          const match = res.body.collections.some(collection => {
             if (collection.path === key) {
               collection.fields.should.eql(allCollections[key].fields)
               Object.keys(collection.settings).should.eql(
@@ -129,19 +129,19 @@ describe('Collections endpoint', function () {
       .end((err, res) => {
         res.body.collections.length.should.eql(2)
 
-        let collection1 = res.body.collections.some(collection => {
+        const collection1 = res.body.collections.some(collection => {
           return collection.path === '/vtest/testdb/articles'
         })
 
-        let collection2 = res.body.collections.some(collection => {
+        const collection2 = res.body.collections.some(collection => {
           return collection.path === '/vtest/testdb/publications'
         })
 
-        let collection3 = res.body.collections.some(collection => {
+        const collection3 = res.body.collections.some(collection => {
           return collection.path === '/vtest/testdb/test-schema'
         })
 
-        let collection4 = res.body.collections.some(collection => {
+        const collection4 = res.body.collections.some(collection => {
           return collection.path === '/3rdparty/radio/articles'
         })
 
@@ -164,14 +164,14 @@ describe('Collections endpoint', function () {
       .set('content-type', 'application/json')
       .set('Authorization', `Bearer ${token}`)
       .end((err, res) => {
-        let allCollections = help.getCollectionMap()
+        const allCollections = help.getCollectionMap()
 
         res.body.collections.length.should.eql(
           Object.keys(allCollections).length
         )
 
         Object.keys(allCollections).forEach(key => {
-          let match = res.body.collections.some(collection => {
+          const match = res.body.collections.some(collection => {
             collection.version.should.be.String
             collection.database.should.be.String
             collection.name.should.be.String

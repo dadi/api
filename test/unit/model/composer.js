@@ -9,7 +9,7 @@ const config = require(__dirname + '/../../../config')
 
 describe('Model composer', function () {
   // some defaults
-  let bookSchema = {
+  const bookSchema = {
     'title': {
       'type': 'String',
       'required': true
@@ -29,7 +29,7 @@ describe('Model composer', function () {
       }
     }
   }
-  let personSchema = {
+  const personSchema = {
     'name': {
       'type': 'String',
       'required': true
@@ -50,7 +50,7 @@ describe('Model composer', function () {
       'type': 'Reference'
     }
   }
-  let refField = {
+  const refField = {
     'refField': {
       'type': 'Reference',
       'settings': {
@@ -60,7 +60,7 @@ describe('Model composer', function () {
       }
     }
   }
-  let nameFields = {
+  const nameFields = {
     'firstName': {
       'type': 'String',
       'required': false
@@ -70,7 +70,7 @@ describe('Model composer', function () {
       'required': false
     }
   }
-  let schema = Object.assign(
+  const schema = Object.assign(
     help.getModelSchema(),
     refField,
     nameFields
@@ -90,7 +90,7 @@ describe('Model composer', function () {
     help.whenModelsConnect([mod]).then(() => {
       acceptanceHelper.dropDatabase('testdb', null, err => {
         // create some docs
-        for (var i = 0; i <= 4; i++) {
+        for (let i = 0; i <= 4; i++) {
           mod.create({
             documents: {
               fieldName: 'foo_' + i,
@@ -115,7 +115,7 @@ describe('Model composer', function () {
         })
       })
       .then(({metadata, results}) => {
-        let anotherDoc = results[0]
+        const anotherDoc = results[0]
 
         return mod.update({
           query: { fieldName: 'foo_1' },
@@ -131,7 +131,7 @@ describe('Model composer', function () {
         })
       })
       .then(({metadata, results}) => {
-        let doc = results[0]
+        const doc = results[0]
 
         should.exist(doc.refField.fieldName)
         doc.refField.fieldName.should.equal('foo_3')
@@ -156,7 +156,7 @@ describe('Model composer', function () {
         })
       })
       .then(({metadata, results}) => {
-        let anotherDoc = results[0]
+        const anotherDoc = results[0]
 
         return mod.update({
           query: { fieldName: 'foo_1' },
@@ -170,7 +170,7 @@ describe('Model composer', function () {
         })
       })
       .then(({metadata, results}) => {
-        let doc = results[0]
+        const doc = results[0]
 
         should.not.exist(doc.refField.fieldName)
         should.exist(doc.refField.firstName)
@@ -189,8 +189,8 @@ describe('Model composer', function () {
 
   it('should reference a document in the specified collection', () => {
     // create two models
-    let book = model('book', bookSchema, null, { database: 'testdb' })
-    let person = model('person', personSchema, null, { database: 'testdb' })
+    const book = model('book', bookSchema, null, { database: 'testdb' })
+    const person = model('person', personSchema, null, { database: 'testdb' })
 
     return help.whenModelsConnect([book, person])
       .then(() => {
@@ -202,13 +202,13 @@ describe('Model composer', function () {
         return person.create({
           documents: { name: 'J K Rowling', spouse: results[0]._id }
         }).then(({results}) => {
-          let authorId = results[0]._id
+          const authorId = results[0]._id
 
           return book.create({
             documents: { title: 'Harry Potter 1', author: authorId }
           }).then(({results}) => {
-            let bookId = results[0]._id
-            let books = [bookId]
+            const bookId = results[0]._id
+            const books = [bookId]
 
             return book.create({
               documents: {
@@ -227,7 +227,7 @@ describe('Model composer', function () {
         })
       })
       .then(({results}) => {
-        let doc = results[0]
+        const doc = results[0]
 
         should.exist(doc.author.name)
         doc.author.name.should.equal('J K Rowling')
@@ -236,13 +236,13 @@ describe('Model composer', function () {
 
   it('should allow specifying to not resolve the references via the model settings', () => {
     // create two models
-    let book = model(
+    const book = model(
       'book',
       bookSchema,
       null,
       { database: 'testdb', compose: false }
     )
-    let person = model(
+    const person = model(
       'person',
       personSchema,
       null,
@@ -260,13 +260,13 @@ describe('Model composer', function () {
           documents: { name: 'J K Rowling', spouse: results[0]._id }
         })
       }).then(({results}) => {
-        let authorId = results[0]._id
+        const authorId = results[0]._id
 
         return book.create({
           documents: { title: 'Harry Potter 1', author: authorId }
         }).then(({results}) => {
-          let bookId = results[0]._id
-          let books = [bookId]
+          const bookId = results[0]._id
+          const books = [bookId]
 
           return book.create({
             documents: {
@@ -281,7 +281,7 @@ describe('Model composer', function () {
             query: { title: 'Harry Potter 2' }
           })
         }).then(({results}) => {
-          let doc = results[0]
+          const doc = results[0]
 
           should.exist(doc.author.name)
           should.not.exist(doc.author.spouse.name)
@@ -291,13 +291,13 @@ describe('Model composer', function () {
 
   it('should allow specifying to resolve the references via the model settings', () => {
     // create two models
-    let book = model(
+    const book = model(
       'book',
       bookSchema,
       null,
       { database: 'testdb', compose: true }
     )
-    let person = model(
+    const person = model(
       'person',
       personSchema,
       null,
@@ -311,13 +311,13 @@ describe('Model composer', function () {
         documents: { name: 'J K Rowling', spouse: results[0]._id }
       })
     }).then(({results}) => {
-      let authorId = results[0]._id
+      const authorId = results[0]._id
 
       return book.create({
         documents: { title: 'Harry Potter 1', author: authorId }
       }).then(({results}) => {
-        let bookId = results[0]._id
-        let books = [bookId]
+        const bookId = results[0]._id
+        const books = [bookId]
 
         return book.create({
           documents: {
@@ -333,7 +333,7 @@ describe('Model composer', function () {
         query: { title: 'Harry Potter 2' }
       })
     }).then(({results}) => {
-      let doc = results[0]
+      const doc = results[0]
 
       should.exist(doc.author.name)
       should.exist(doc.author.spouse.name)
@@ -344,8 +344,8 @@ describe('Model composer', function () {
     return mod.get({
       query: { fieldName: { '$regex': 'foo' } }
     }).then(({results}) => {
-      let firstDoc = results[0]
-      let remainingDocs = results.slice(1)
+      const firstDoc = results[0]
+      const remainingDocs = results.slice(1)
 
       return mod.update({
         query: { _id: firstDoc._id.toString() },
@@ -356,7 +356,7 @@ describe('Model composer', function () {
           query: { _id: firstDoc._id.toString() }
         })
       }).then(({results}) => {
-        let doc = results[0]
+        const doc = results[0]
 
         doc.refField.length.should.eql(4)
         doc.refField[0].lastName.should.eql(
@@ -382,15 +382,16 @@ describe('Model composer', function () {
   describe('Reference field nested query', () => {
     it('should allow querying nested Reference field properties', () => {
       let bookSchemaString = JSON.stringify(bookSchema)
+
       bookSchemaString = bookSchemaString.replace('author', 'person')
 
-      let book = model(
+      const book = model(
         'book',
         JSON.parse(bookSchemaString),
         null,
         {database: 'testdb'}
       )
-      let person = model(
+      const person = model(
         'person',
         personSchema,
         null,
@@ -438,7 +439,8 @@ describe('Model composer', function () {
       }).then(({results}) => {
         results.length.should.eql(1)
 
-        let doc = results[0]
+        const doc = results[0]
+
         should.exist(doc.person.name)
         doc.person.name.should.equal('J K Rowling')
       })
@@ -446,15 +448,16 @@ describe('Model composer', function () {
 
     it('should allow querying second level nested Reference field properties', () => {
       let bookSchemaString = JSON.stringify(bookSchema)
+
       bookSchemaString = bookSchemaString.replace('author', 'person')
 
-      let book = model(
+      const book = model(
         'book',
         JSON.parse(bookSchemaString),
         null,
         {database: 'testdb'}
       )
-      let person = model(
+      const person = model(
         'person',
         personSchema,
         null,
@@ -483,14 +486,15 @@ describe('Model composer', function () {
       }).then(({results}) => {
         results.length.should.eql(1)
 
-        let doc = results[0]
+        const doc = results[0]
+
         should.exist(doc.person.spouse)
         doc.person.name.should.equal('J K Rowling')
       })
     })
 
     it('should return results when multiple documents match a nested query', () => {
-      let categoriesSchema = {
+      const categoriesSchema = {
         fields: {
           parent: {
             type: 'Reference',
@@ -516,7 +520,7 @@ describe('Model composer', function () {
         }
       }
 
-      let articleSchema = {
+      const articleSchema = {
         fields: {
           title: {
             type: 'String',
@@ -535,21 +539,21 @@ describe('Model composer', function () {
         }
       }
 
-      let category = model(
+      const category = model(
         'categories',
         categoriesSchema.fields,
         null,
         {database: 'testdb', compose: true}
       )
 
-      let article = model(
+      const article = model(
         'articles',
         articleSchema.fields,
         null,
         {database: 'testdb', compose: true}
       )
 
-      let ids = {}
+      const ids = {}
 
       return help.whenModelsConnect([category, article]).then(() => {
         return category.create({
@@ -614,7 +618,7 @@ describe('Model composer', function () {
       }).then(({results}) => {
         results.length.should.eql(1)
 
-        let doc = results[0]
+        const doc = results[0]
 
         doc.categories[0].name.should.equal('Sports News')
         doc.categories[0].parent.name.should.equal('Sports')
@@ -622,14 +626,15 @@ describe('Model composer', function () {
     })
 
     it('should allow querying nested Reference fields with a different property name', () => {
-      let book = model(
+      const book = model(
         'book',
         bookSchema,
         null,
         {database: 'testdb'}
       )
+
       console.log(book.schema)
-      let person = model(
+      const person = model(
         'person',
         personSchema,
         null,
@@ -677,20 +682,21 @@ describe('Model composer', function () {
       }).then(({results}) => {
         results.length.should.eql(1)
 
-        let doc = results[0]
+        const doc = results[0]
+
         should.exist(doc.author.name)
         doc.author.name.should.equal('J K Rowling')
       })
     })
 
     it('should only return specified fields when querying nested Reference field properties', () => {
-      let book = model(
+      const book = model(
         'book',
         bookSchema,
         null,
         {database: 'testdb'}
       )
-      let person = model(
+      const person = model(
         'person',
         personSchema,
         null,
@@ -741,7 +747,8 @@ describe('Model composer', function () {
       }).then(({results}) => {
         results.length.should.eql(1)
 
-        let doc = results[0]
+        const doc = results[0]
+
         should.exist(doc._id)
         should.not.exist(doc.title)
         should.exist(doc.author.name)
@@ -751,13 +758,13 @@ describe('Model composer', function () {
     })
 
     it('should allow querying normal fields and nested Reference field properties', () => {
-      let book = model(
+      const book = model(
         'book',
         bookSchema,
         null,
         {database: 'testdb'}
       )
-      let person = model(
+      const person = model(
         'person',
         personSchema,
         null,
@@ -813,20 +820,21 @@ describe('Model composer', function () {
       }).then(({results}) => {
         results.length.should.eql(1)
 
-        let doc = results[0]
+        const doc = results[0]
+
         should.exist(doc.author.name)
         doc.author.name.should.equal('J K Rowling')
       })
     })
 
     it('should only return matching results when querying nested Reference field properties', () => {
-      let book = model(
+      const book = model(
         'book',
         bookSchema,
         null,
         {database: 'testdb'}
       )
-      let person = model(
+      const person = model(
         'person',
         personSchema,
         null,

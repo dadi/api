@@ -1,11 +1,11 @@
-var should = require('should')
-var connection = require(__dirname + '/../../../dadi/lib/model/connection')
-var help = require(__dirname + '/../help')
-var EventEmitter = require('events').EventEmitter
-var url = require('url')
-var querystring = require('querystring')
+const should = require('should')
+const connection = require(__dirname + '/../../../dadi/lib/model/connection')
+const help = require(__dirname + '/../help')
+const EventEmitter = require('events').EventEmitter
+const url = require('url')
+const querystring = require('querystring')
 
-var config = require(__dirname + '/../../../config')
+const config = require(__dirname + '/../../../config')
 
 describe('Model connection', function () {
   this.timeout(5000)
@@ -26,7 +26,8 @@ describe('Model connection', function () {
     })
 
     it('should inherit from EventEmitter', function (done) {
-      var conn = new connection.Connection()
+      const conn = new connection.Connection()
+
       conn.should.be.an.instanceOf(EventEmitter)
       conn.emit.should.be.Function
       done()

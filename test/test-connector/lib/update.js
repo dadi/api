@@ -1,7 +1,7 @@
 /**
  * @constructor Update
  */
-var Update = function Update (updateQuery) {
+const Update = function Update (updateQuery) {
   this.updateQuery = updateQuery
 }
 
@@ -10,15 +10,15 @@ Update.prototype.update = function (docs) {
     docs = [docs]
   }
 
-  for (var i = 0; i < docs.length; i++) {
-    var doc = docs[i]
-    var updates = Object.keys(this.updateQuery)
+  for (let i = 0; i < docs.length; i++) {
+    const doc = docs[i]
+    const updates = Object.keys(this.updateQuery)
 
-    for (var k = 0; k < updates.length; k++) {
-      var key = updates[k]
-      var properties = Object.keys(this.updateQuery[key])
-      var p
-      var prop
+    for (let k = 0; k < updates.length; k++) {
+      const key = updates[k]
+      const properties = Object.keys(this.updateQuery[key])
+      let p
+      let prop
 
       switch (key) {
         case '$set':

@@ -7,15 +7,15 @@ const ID_PATTERN = '[a-fA-F0-9-]*'
 const Controller = function () {}
 
 Controller.prototype._getURLParameters = function (requestUrl) {
-  let parsedUrl = url.parse(requestUrl, true)
+  const parsedUrl = url.parse(requestUrl, true)
 
   return parsedUrl.query
 }
 
 Controller.prototype._prepareQuery = function (req) {
-  let path = url.parse(req.url, true)
-  let apiVersion = path.pathname.split('/')[1]
-  let options = this._getURLParameters(req.url)
+  const path = url.parse(req.url, true)
+  const apiVersion = path.pathname.split('/')[1]
+  const options = this._getURLParameters(req.url)
   let query = help.parseQuery(options.filter)
 
   // Formatting query
@@ -44,9 +44,9 @@ Controller.prototype._prepareQuery = function (req) {
 }
 
 Controller.prototype._prepareQueryOptions = function (options) {
-  let response = { errors: [] }
-  let queryOptions = {}
-  let settings = this.model.settings || {}
+  const response = { errors: [] }
+  const queryOptions = {}
+  const settings = this.model.settings || {}
   let parsedSkip
 
   if (options.page) {
@@ -108,7 +108,7 @@ Controller.prototype._prepareQueryOptions = function (options) {
   }
 
   // Specified / default number of records to return.
-  let limit = parseInt(options.count || settings.count) || 50
+  const limit = parseInt(options.count || settings.count) || 50
 
   // Skip - passed or calculated from (page# x count).
   let skip = limit * (options.page - 1)
@@ -138,11 +138,12 @@ Controller.prototype._prepareQueryOptions = function (options) {
 
   // sorting
   let sort = {}
-  let sortOptions = help.isJSON(options.sort)
+  const sortOptions = help.isJSON(options.sort)
 
   if (!sortOptions || !Object.keys(sortOptions).length) {
-    let field = !sortOptions ? options.sort || settings.sort : settings.sort
-    let order = (options.sortOrder || settings.sortOrder) === 'desc' ? -1 : 1
+    const field = !sortOptions ? options.sort || settings.sort : settings.sort
+    const order = (options.sortOrder || settings.sortOrder) === 'desc' ? -1 : 1
+
     if (field) sort[field] = order
   } else {
     sort = sortOptions

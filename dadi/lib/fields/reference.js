@@ -19,8 +19,8 @@ function createModelChain (rootModel, fields) {
       return chain.concat(rootModel)
     }
 
-    let nodeModel = chain[chain.length - 1]
-    let referenceField = nodeModel.getField(
+    const nodeModel = chain[chain.length - 1]
+    const referenceField = nodeModel.getField(
       fields[index - 1].split('@')[0]
     )
 
@@ -33,7 +33,7 @@ function createModelChain (rootModel, fields) {
       return chain.concat(null)
     }
 
-    let referenceCollection = field.split('@')[1] ||
+    const referenceCollection = field.split('@')[1] ||
       (referenceField.settings && referenceField.settings.collection)
 
     // If there isn't a `settings.collection` property, we're
@@ -42,7 +42,7 @@ function createModelChain (rootModel, fields) {
       return chain.concat(nodeModel)
     }
 
-    let referenceModel = rootModel.getForeignModel(
+    const referenceModel = rootModel.getForeignModel(
       referenceCollection
     )
 
@@ -61,7 +61,7 @@ module.exports.beforeOutput = function ({
   level = 1,
   urlFields = {}
 }) {
-  let shouldCompose = this.shouldCompose({
+  const shouldCompose = this.shouldCompose({
     composeOverride,
     level
   })
@@ -73,22 +73,22 @@ module.exports.beforeOutput = function ({
     return input
   }
 
-  let isArray = Array.isArray(input[field])
+  const isArray = Array.isArray(input[field])
 
   // We don't want to do anything if the value is an empty array.
   if (isArray && input[field].length === 0) {
     return input
   }
 
-  let newDotNotationPath = dotNotationPath.concat(field)
-  let schema = this.getField(field)
-  let isStrictCompose = schema.settings &&
+  const newDotNotationPath = dotNotationPath.concat(field)
+  const schema = this.getField(field)
+  const isStrictCompose = schema.settings &&
     Boolean(schema.settings.strictCompose)
-  let values = Array.isArray(input[field])
+  const values = Array.isArray(input[field])
     ? input[field]
     : [input[field]]
   let ids = values
-  let idMappingField = this._getIdMappingName(field)
+  const idMappingField = this._getIdMappingName(field)
 
   // If strict compose is not enabled, we want to resolve duplicates.
   if (!isStrictCompose) {
@@ -99,9 +99,9 @@ module.exports.beforeOutput = function ({
 
   // This generates an object mapping document IDs to collections, so
   // that we can batch requests instead of making one per ID.
-  let referenceCollections = ids.reduce((collections, id) => {
-    let idMapping = document[idMappingField] || {}
-    let referenceCollection = idMapping[id] ||
+  const referenceCollections = ids.reduce((collections, id) => {
+    const idMapping = document[idMappingField] || {}
+    const referenceCollection = idMapping[id] ||
       (schema.settings && schema.settings.collection) ||
       this.name
 
@@ -111,8 +111,8 @@ module.exports.beforeOutput = function ({
     return collections
   }, {})
 
-  let documents = {}
-  let queryOptions = {}
+  const documents = {}
+  const queryOptions = {}
 
   // Looking at the `settings.fields` array to determine which fields
   // will be requested from the composed document.
@@ -134,10 +134,10 @@ module.exports.beforeOutput = function ({
   // Looking at the `fields` URL parameter to determine which fields
   // will be requested from the composed document.
   Object.keys(urlFields).forEach(fieldPath => {
-    let fieldPathNodes = fieldPath.split('.')
+    const fieldPathNodes = fieldPath.split('.')
 
     if (fieldPath.indexOf(newDotNotationPath.join('.')) === 0) {
-      let field = fieldPathNodes[level]
+      const field = fieldPathNodes[level]
 
       if (field) {
         queryOptions.fields = queryOptions.fields || {}
@@ -152,11 +152,11 @@ module.exports.beforeOutput = function ({
 
   return Promise.all(
     Object.keys(referenceCollections).map(collection => {
-      let model = collection === this.name
+      const model = collection === this.name
         ? this
         : this.getForeignModel(collection)
 
-      if (!model) return
+      if (!model) return undefined
 
       return model.find({
         client,
@@ -180,7 +180,7 @@ module.exports.beforeOutput = function ({
               result = mediaModel.formatDocuments(result)
             }
 
-            let nextData = Object.assign({}, arguments[0], {
+            const nextData = Object.assign({}, arguments[0], {
               dotNotationPath: newDotNotationPath,
               level: level + 1
             })
@@ -207,7 +207,7 @@ module.exports.beforeOutput = function ({
       })
     })
   ).then(() => {
-    let composedIds = []
+    const composedIds = []
     let resolvedDocuments = ids.map(id => {
       if (documents[id]) {
         composedIds.push(ids)
@@ -229,7 +229,7 @@ module.exports.beforeOutput = function ({
       resolvedDocuments = resolvedDocuments[0]
     }
 
-    let output = {
+    const output = {
       [field]: resolvedDocuments
     }
 
@@ -244,7 +244,7 @@ module.exports.beforeOutput = function ({
 }
 
 module.exports.beforeQuery = function ({config, field, input, options}) {
-  let isOperatorQuery = tree => {
+  const isOperatorQuery = tree => {
     return Boolean(
       tree &&
       Object.keys(tree).every(key => {
@@ -298,16 +298,16 @@ module.exports.beforeQuery = function ({config, field, input, options}) {
   //     "status.live": true
   //   }
   // }
-  let inputTree = {}
+  const inputTree = {}
 
   Object.keys(input).forEach(path => {
-    let nodes = path.split('.')
-    let modelChain = createModelChain(this, nodes)
+    const nodes = path.split('.')
+    const modelChain = createModelChain(this, nodes)
     let pointer = inputTree
 
-    let interrupted = nodes.slice(0, -1).some((node, index) => {
+    const interrupted = nodes.slice(0, -1).some((node, index) => {
       if (!modelChain[index + 1]) {
-        let key = nodes.slice(index).join('.')
+        const key = nodes.slice(index).join('.')
 
         pointer[key] = input[path]
 
@@ -316,6 +316,8 @@ module.exports.beforeQuery = function ({config, field, input, options}) {
 
       pointer[node] = Object.assign({}, pointer[node])
       pointer = pointer[node]
+
+      return false
     })
 
     if (!interrupted) {
@@ -326,11 +328,11 @@ module.exports.beforeQuery = function ({config, field, input, options}) {
   // This function takes a tree like the one in the example above and
   // processes it recursively, running the `find` method in the
   // appropriate models.
-  let processTree = (tree, path = []) => {
+  const processTree = (tree, path = []) => {
     let queue = Promise.resolve({})
 
     Object.keys(tree).forEach(key => {
-      let canonicalKey = key.split('@')[0]
+      const canonicalKey = key.split('@')[0]
 
       queue = queue.then(query => {
         if (
@@ -354,9 +356,9 @@ module.exports.beforeQuery = function ({config, field, input, options}) {
       })
     })
 
-    let firstKey = Object.keys(tree)[0]
-    let modelChain = createModelChain(this, path.concat(firstKey))
-    let model = modelChain && modelChain[modelChain.length - 1]
+    const firstKey = Object.keys(tree)[0]
+    const modelChain = createModelChain(this, path.concat(firstKey))
+    const model = modelChain && modelChain[modelChain.length - 1]
 
     return queue.then(query => {
       if (path.length === 0) {
@@ -395,20 +397,20 @@ module.exports.beforeSave = function ({
   input,
   schema
 }) {
-  let isArray = Array.isArray(input[field])
-  let values = isArray
+  const isArray = Array.isArray(input[field])
+  const values = isArray
     ? input[field]
     : [input[field]]
-  let idMapping = {}
-  let insertions = values.map(value => {
+  const idMapping = {}
+  const insertions = values.map(value => {
     // This is an ID or it's falsy, there's nothing left to do.
     if (!value || typeof value === 'string') {
       return value
     }
 
     let needsMapping = false
-    let collectionField = `${config.get('internalFieldsPrefix')}collection`
-    let dataField = `${config.get('internalFieldsPrefix')}data`
+    const collectionField = `${config.get('internalFieldsPrefix')}collection`
+    const dataField = `${config.get('internalFieldsPrefix')}data`
     let referenceCollection
 
     // Are we looking at the multi-collection reference format?
@@ -431,7 +433,7 @@ module.exports.beforeSave = function ({
         schema.settings.collection
     }
 
-    let model = referenceCollection
+    const model = referenceCollection
       ? this.getForeignModel(referenceCollection)
       : this
 

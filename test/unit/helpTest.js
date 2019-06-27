@@ -10,12 +10,12 @@ describe('Help', function (done) {
       let mockError
 
       try {
-        thisWillBreak()
+        thisWillBreak() // eslint-disable-line no-undef
       } catch (error) {
         mockError = error
       }
 
-      let res = {
+      const res = {
         end: sinon.stub(),
         setHeader: sinon.stub()
       }
@@ -30,7 +30,7 @@ describe('Help', function (done) {
 
       res.end.callCount.should.eql(1)
 
-      let body = JSON.parse(res.end.args[0][0])
+      const body = JSON.parse(res.end.args[0][0])
 
       body.success.should.eql(false)
       body.error.includes('ReferenceError: thisWillBreak is not defined').should.eql(true)
@@ -42,7 +42,7 @@ describe('Help', function (done) {
 
   describe('sendBackErrorWithCode', function () {
     it('should send an error with the formatted message corresponding to the API error code with the status code provided', done => {
-      let res = {
+      const res = {
         end: function end (resBody) {
           this.setHeader.callCount.should.eql(3)
           this.setHeader.args[0][0].should.eql('Content-Length')
@@ -50,7 +50,7 @@ describe('Help', function (done) {
           this.setHeader.args[1][0].should.eql('Content-Type')
           this.setHeader.args[1][1].should.eql('application/json')
 
-          let body = JSON.parse(resBody)
+          const body = JSON.parse(resBody)
 
           body.should.eql(
             formatError.createError('api', '0006', null, ERROR_CODES)
@@ -66,7 +66,7 @@ describe('Help', function (done) {
     })
 
     it('should send an error with the formatted message corresponding to the API error code with the status code 500 if one is not provided', done => {
-      let res = {
+      const res = {
         end: function end (resBody) {
           this.setHeader.callCount.should.eql(3)
           this.setHeader.args[0][0].should.eql('Content-Length')
@@ -74,7 +74,7 @@ describe('Help', function (done) {
           this.setHeader.args[1][0].should.eql('Content-Type')
           this.setHeader.args[1][1].should.eql('application/json')
 
-          let body = JSON.parse(resBody)
+          const body = JSON.parse(resBody)
 
           body.should.eql(
             formatError.createError('api', '0006', null, ERROR_CODES)
@@ -92,7 +92,7 @@ describe('Help', function (done) {
 
   describe('sendBackJSONP', function () {
     it('should call the next handler if there is an error', done => {
-      let nextFn = sinon.stub()
+      const nextFn = sinon.stub()
 
       help.sendBackJSONP('foobar', {}, nextFn)(
         new Error('Something')
@@ -104,7 +104,7 @@ describe('Help', function (done) {
     })
 
     it('should throw a 404 is the callback name contains non-letter characters', done => {
-      let res = {
+      const res = {
         send: sinon.stub()
       }
 
@@ -120,11 +120,11 @@ describe('Help', function (done) {
     })
 
     it('should send a response with the given callback and JSON-stringified results', done => {
-      let res = {
+      const res = {
         end: sinon.stub(),
         setHeader: sinon.stub()
       }
-      let data = {
+      const data = {
         results: [
           { _id: '123', name: 'Restful Jim' }
         ]
@@ -155,12 +155,13 @@ describe('Help', function (done) {
     })
 
     it('should return correct JSON object for valid querystring', function (done) {
-      var querystring = '{ "cap_id": 2337,"year":2224,"plate":4 }'
-      var query = help.parseQuery(querystring)
+      const querystring = '{ "cap_id": 2337,"year":2224,"plate":4 }'
+      const query = help.parseQuery(querystring)
 
-      var k = '', v = ''
-      for (var key in query) {
-        if (query.hasOwnProperty(key) && key == 'plate') {
+      let k = '', v = ''
+
+      for (const key in query) {
+        if (key === 'plate') {
           v = query[key]
           k = key
           break
@@ -173,16 +174,15 @@ describe('Help', function (done) {
     })
 
     it('should return empty JSON object for invalid querystring', function (done) {
-      var querystring = '{ "cap_id: 2337,"year":2224,"plate":4 }'
-      var query = help.parseQuery(querystring)
+      const querystring = '{ "cap_id: 2337,"year":2224,"plate":4 }'
+      const query = help.parseQuery(querystring)
 
-      var k = '', v = ''
-      for (var key in query) {
-        if (query.hasOwnProperty(key)) {
-          v = query[key]
-          k = key
-          break
-        }
+      let k = '', v = ''
+
+      for (const key in query) {
+        v = query[key]
+        k = key
+        break
       }
 
       k.should.equal('')
@@ -192,12 +192,13 @@ describe('Help', function (done) {
     })
 
     it('should do nothing for querystring with leading zeroes', function (done) {
-      var querystring = '{ "title": "My 007 Movie" }'
-      var query = help.parseQuery(querystring)
+      const querystring = '{ "title": "My 007 Movie" }'
+      const query = help.parseQuery(querystring)
 
-      var k = '', v = ''
-      for (var key in query) {
-        if (query.hasOwnProperty(key) && key == 'title') {
+      let k = '', v = ''
+
+      for (const key in query) {
+        if (key === 'title') {
           v = query[key]
           k = key
           break

@@ -22,7 +22,7 @@ StatusEndpoint.prototype.post = function (req, res, next) {
     return next()
   }
 
-  let params = {
+  const params = {
     site,
     package: '@dadi/api',
     version,

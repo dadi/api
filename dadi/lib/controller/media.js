@@ -50,8 +50,8 @@ MediaController.prototype = new Controller()
  * @return {String}
  */
 MediaController.prototype._formatDate = function (includeTime) {
-  let d = new Date()
-  let dateParts = [
+  const d = new Date()
+  const dateParts = [
     d.getFullYear(),
     ('0' + (d.getMonth() + 1)).slice(-2),
     ('0' + d.getDate()).slice(-2)
@@ -92,9 +92,9 @@ MediaController.prototype._signToken = function (obj) {
  * @returns {Promise<Metadata>}
  */
 MediaController.prototype.count = function (req, res, next) {
-  let path = url.parse(req.url, true)
-  let query = this._prepareQuery(req, this.model)
-  let parsedOptions = this._prepareQueryOptions(path.query, this.model.settings)
+  const path = url.parse(req.url, true)
+  const query = this._prepareQuery(req, this.model)
+  const parsedOptions = this._prepareQueryOptions(path.query, this.model.settings)
 
   if (parsedOptions.errors.length > 0) {
     return help.sendBackJSON(400, res, next)(null, parsedOptions)
@@ -120,7 +120,7 @@ MediaController.prototype.count = function (req, res, next) {
  * @return {Promise<ResultSet>}
  */
 MediaController.prototype.delete = function (req, res, next) {
-  let query = req.params.id ? { _id: req.params.id } : req.body.query
+  const query = req.params.id ? { _id: req.params.id } : req.body.query
 
   if (!query) return next()
 
@@ -139,9 +139,9 @@ MediaController.prototype.delete = function (req, res, next) {
       return help.sendBackJSON(404, res, next)()
     }
 
-    let deleteQueue = results.map(file => {
+    const deleteQueue = results.map(file => {
       // Remove physical file.
-      let storageHandler = StorageFactory.create(file.fileName)
+      const storageHandler = StorageFactory.create(file.fileName)
 
       return storageHandler.delete(file)
     })
@@ -180,9 +180,9 @@ MediaController.prototype.delete = function (req, res, next) {
  * @return {Promise<ResultSet>}
  */
 MediaController.prototype.get = function (req, res, next) {
-  let path = url.parse(req.url, true)
-  let query = this._prepareQuery(req, this.model)
-  let parsedOptions = this._prepareQueryOptions(path.query, this.model.settings)
+  const path = url.parse(req.url, true)
+  const query = this._prepareQuery(req, this.model)
+  const parsedOptions = this._prepareQueryOptions(path.query, this.model.settings)
 
   if (parsedOptions.errors.length > 0) {
     return help.sendBackJSON(400, res, next)(null, parsedOptions)
@@ -213,7 +213,7 @@ MediaController.prototype.get = function (req, res, next) {
  * @return {Promise<Stream>}
  */
 MediaController.prototype.getFile = function (req, res, next, route) {
-  let storageHandler = StorageFactory.create(req.params.filename)
+  const storageHandler = StorageFactory.create(req.params.filename)
 
   return storageHandler.get(req.params.filename, route, req, res, next)
 }
@@ -229,12 +229,15 @@ MediaController.prototype.getPath = function (fileName) {
   switch (config.get('media.pathFormat')) {
     case 'sha1/4':
       reSplitter = new RegExp('.{1,4}', 'g')
+
       return sha1(fileName).match(reSplitter).join('/')
     case 'sha1/5':
       reSplitter = new RegExp('.{1,5}', 'g')
+
       return sha1(fileName).match(reSplitter).join('/')
     case 'sha1/8':
       reSplitter = new RegExp('.{1,8}', 'g')
+
       return sha1(fileName).match(reSplitter).join('/')
     case 'date':
       return this._formatDate()
@@ -254,12 +257,12 @@ MediaController.prototype.getPath = function (fileName) {
  * @return {Promise<ResultSet>}
  */
 MediaController.prototype.post = function (req, res, next) {
-  let method = req.method.toLowerCase()
-  let token = req.params.token
+  const method = req.method.toLowerCase()
+  const token = req.params.token
   let aclCheck
 
   if (!token) {
-    let accessRequired = method === 'put'
+    const accessRequired = method === 'put'
       ? 'update'
       : 'create'
 
@@ -272,7 +275,7 @@ MediaController.prototype.post = function (req, res, next) {
     })
   }
 
-  let files = []
+  const files = []
 
   return Promise.resolve(aclCheck).then(() => {
     return new Promise((resolve, reject) => {
@@ -281,7 +284,7 @@ MediaController.prototype.post = function (req, res, next) {
       // `rejectAndAbort` function will take care of rejecting the Promise
       // and setting `hasErrors` accordingly.
       let hasErrors = false
-      let rejectAndAbort = error => {
+      const rejectAndAbort = error => {
         hasErrors = true
 
         reject(error)
@@ -297,7 +300,7 @@ MediaController.prototype.post = function (req, res, next) {
         // If we're updating a document, we can accept an application/json
         // request. We treat it as an update to the metadata properties only.
         if (req.headers['content-type'] === 'application/json') {
-          let update = req.body
+          const update = req.body
 
           if (!mediaModel.isValidUpdate(update)) {
             return rejectAndAbort(
@@ -322,14 +325,14 @@ MediaController.prototype.post = function (req, res, next) {
         }
       }
 
-      let busboy = new Busboy({
+      const busboy = new Busboy({
         headers: req.headers
       })
-      let userData = {}
+      const userData = {}
 
       busboy.on('field', (fieldName, value) => {
         try {
-          let parsedUpdate = JSON.parse(value)
+          const parsedUpdate = JSON.parse(value)
 
           if (!mediaModel.isValidUpdate(parsedUpdate)) {
             return rejectAndAbort(
@@ -346,8 +349,8 @@ MediaController.prototype.post = function (req, res, next) {
       // Listen for event when Busboy finds a file to stream
       busboy.on('file', (fieldName, file, inputFileName, encoding, inputMimeType) => {
         if (method === 'post' && this.tokenPayloads[token]) {
-          let tokenFileName = this.tokenPayloads[token].fileName
-          let tokenMimeType = this.tokenPayloads[token].mimeType || this.tokenPayloads[token].mimetype
+          const tokenFileName = this.tokenPayloads[token].fileName
+          const tokenMimeType = this.tokenPayloads[token].mimeType || this.tokenPayloads[token].mimetype
 
           if (tokenFileName && tokenFileName !== inputFileName) {
             return rejectAndAbort(
@@ -372,7 +375,7 @@ MediaController.prototype.post = function (req, res, next) {
         // file. We'll keep a reference to it so that we can write to it on the
         // "data" event, but we'll also add it to the files array so that we can
         // reference it later.
-        let data = []
+        const data = []
 
         files.push({
           data,
@@ -396,7 +399,7 @@ MediaController.prototype.post = function (req, res, next) {
         // we don't support the upload of multiple files and consider the
         // first one only.
         if (method === 'put') {
-          let {data, fileName, mimeType} = files[0]
+          const {data, fileName, mimeType} = files[0]
 
           return resolve(
             this.processFile({
@@ -424,8 +427,8 @@ MediaController.prototype.post = function (req, res, next) {
         // If we're here, it means we're dealing with the creation of new media
         // documents, in which case we can accept the upload of multiple files.
         // We'll process them one by one and then craft the response at the end.
-        let processedFiles = files.map(file => {
-          let {data, fileName, mimeType} = file
+        const processedFiles = files.map(file => {
+          const {data, fileName, mimeType} = file
 
           return this.processFile({
             data: Buffer.concat(data),
@@ -436,7 +439,7 @@ MediaController.prototype.post = function (req, res, next) {
         })
 
         return Promise.all(processedFiles).then(documents => {
-          let documentsWithUserData = documents.map(document => {
+          const documentsWithUserData = documents.map(document => {
             return Object.assign({}, userData, document)
           })
 
@@ -458,7 +461,7 @@ MediaController.prototype.post = function (req, res, next) {
       req.pipe(busboy)
     })
   }).then(response => {
-    let statusCode = method === 'post' ? 201 : 200
+    const statusCode = method === 'post' ? 201 : 200
 
     if (response.results) {
       response.results = response.results.map(document => {
@@ -522,7 +525,7 @@ MediaController.prototype.post = function (req, res, next) {
 
       default:
         if (err.message.includes('Unsupported content type')) {
-          let expectedContentTypes = method === 'put'
+          const expectedContentTypes = method === 'put'
             ? ['application/json', 'multipart/form-data']
             : ['multipart/form-data']
 
@@ -557,7 +560,7 @@ MediaController.prototype.processFile = function ({
   mimeType,
   req
 }) {
-  let stream = streamifier.createReadStream(data)
+  const stream = streamifier.createReadStream(data)
   let queue = Promise.resolve({
     contentLength: data.length,
     fileName,
@@ -567,15 +570,15 @@ MediaController.prototype.processFile = function ({
     // version 5.0.0. ¯\_(ツ)_/¯
     mimetype: mimeType
   })
-  let outputStream = new PassThrough()
+  const outputStream = new PassThrough()
 
   stream.pipe(outputStream)
 
   // Setting up any additional streams based on MIME type.
   switch (mimeType) {
     case 'image/jpeg':
-    case 'image/png':
-      let imageSizeStream = new PassThrough()
+    case 'image/png': {
+      const imageSizeStream = new PassThrough()
 
       stream.pipe(imageSizeStream)
 
@@ -593,6 +596,7 @@ MediaController.prototype.processFile = function ({
           )
         })
       }))
+    }
   }
 
   return queue.then(response => {
@@ -648,13 +652,13 @@ MediaController.prototype.registerRoutes = function (route) {
       let token
 
       try {
-        let payload = Object.assign({}, req.body, {
+        const payload = Object.assign({}, req.body, {
           _createdBy: req.dadiApiClient.clientId
         })
 
         token = this._signToken(payload)
       } catch (err) {
-        let error = {
+        const error = {
           name: 'ValidationError',
           message: err.message,
           statusCode: 400
@@ -671,7 +675,7 @@ MediaController.prototype.registerRoutes = function (route) {
 
   // Getting a document count.
   this.server.app.use(`${route}/count`, (req, res, next) => {
-    let method = req.method && req.method.toLowerCase()
+    const method = req.method && req.method.toLowerCase()
 
     if (method !== 'get') {
       return next()
@@ -683,7 +687,7 @@ MediaController.prototype.registerRoutes = function (route) {
   // Targets a specific document. Can be used to retrieve (GET), update (PUT)
   // or delete (DELETE).
   this.server.app.use(`${route}/:id(${this.ID_PATTERN})`, (req, res, next) => {
-    let method = req.method && req.method.toLowerCase()
+    const method = req.method && req.method.toLowerCase()
 
     if (req.params.id && method === 'post') {
       return help.sendBackJSON(404, res, next)()
@@ -698,7 +702,7 @@ MediaController.prototype.registerRoutes = function (route) {
 
   // Creates new document.
   this.server.app.use(`${route}/upload/:token?`, (req, res, next) => {
-    let method = req.method && req.method.toLowerCase()
+    const method = req.method && req.method.toLowerCase()
 
     // If this isn't a new document upload, let the next handler deal with it.
     if (method !== 'post') {
@@ -734,7 +738,7 @@ MediaController.prototype.registerRoutes = function (route) {
 
   // Retrieve or delete media documents.
   this.server.app.use(route, (req, res, next) => {
-    let method = req.method && req.method.toLowerCase()
+    const method = req.method && req.method.toLowerCase()
 
     if (method !== 'get' && method !== 'delete') {
       return help.sendBackJSON(405, res, next)()
@@ -745,7 +749,7 @@ MediaController.prototype.registerRoutes = function (route) {
 
   // Serve media files.
   this.server.app.use(`${route}/:filename(.*)`, (req, res, next) => {
-    let pathNodes = req.params.filename.split('/')
+    const pathNodes = req.params.filename.split('/')
 
     if (pathNodes[0] === 'upload' || !pathNodes[pathNodes.length - 1].includes('.')) {
       return next()
@@ -773,8 +777,8 @@ MediaController.prototype.registerRoutes = function (route) {
  */
 MediaController.prototype.writeFile = function (req, fileName, mimetype, stream) {
   return new Promise((resolve, reject) => {
-    let folderPath = path.join(this.route, this.getPath(fileName))
-    let storageHandler = StorageFactory.create(fileName)
+    const folderPath = path.join(this.route, this.getPath(fileName))
+    const storageHandler = StorageFactory.create(fileName)
 
     storageHandler.put(stream, folderPath).then(result => {
       return resolve(result)

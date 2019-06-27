@@ -39,7 +39,7 @@ Roles.prototype.delete = function (req, res, next) {
     // have access to the role they are trying to delete.
     if (!acl.client.isAdmin(req.dadiApiClient)) {
       return acl.client.get(req.dadiApiClient.clientId).then(({results}) => {
-        let clientRoles = results[0].roles || []
+        const clientRoles = results[0].roles || []
 
         if (!clientRoles.includes(req.params.role)) {
           return Promise.reject(
@@ -90,7 +90,7 @@ Roles.prototype.deleteResource = function (req, res, next) {
         }
 
         return acl.client.get(req.dadiApiClient.clientId).then(({results}) => {
-          let roles = results[0].roles || []
+          const roles = results[0].roles || []
 
           if (!roles.includes(req.params.role)) {
             return Promise.reject(
@@ -111,7 +111,7 @@ Roles.prototype.deleteResource = function (req, res, next) {
 }
 
 Roles.prototype.get = function (req, res, next) {
-  let roleNames = typeof req.params.role === 'string'
+  const roleNames = typeof req.params.role === 'string'
     ? [req.params.role]
     : null
 
@@ -258,7 +258,7 @@ Roles.prototype.postResource = function (req, res, next) {
       return acl.access.get(req.dadiApiClient, req.body.name, {
         resolveOwnTypes: false
       }).then(access => {
-        let forbiddenType = Object.keys(req.body.access).find(type => {
+        const forbiddenType = Object.keys(req.body.access).find(type => {
           return Boolean(req.body.access[type]) && access[type] !== true
         })
 
@@ -269,7 +269,7 @@ Roles.prototype.postResource = function (req, res, next) {
         }
 
         return acl.client.get(req.dadiApiClient.clientId).then(({results}) => {
-          let roles = results[0].roles || []
+          const roles = results[0].roles || []
 
           if (!roles.includes(req.params.role)) {
             return Promise.reject(
@@ -367,7 +367,7 @@ Roles.prototype.putResource = function (req, res, next) {
       return acl.access.get(req.dadiApiClient, req.params.resource, {
         resolveOwnTypes: false
       }).then(access => {
-        let forbiddenType = Object.keys(req.body).find(type => {
+        const forbiddenType = Object.keys(req.body).find(type => {
           return access[type] !== true
         })
 
@@ -378,7 +378,7 @@ Roles.prototype.putResource = function (req, res, next) {
         }
 
         return acl.client.get(req.dadiApiClient.clientId).then(({results}) => {
-          let roles = results[0].roles || []
+          const roles = results[0].roles || []
 
           if (!roles.includes(req.params.role)) {
             return Promise.reject(

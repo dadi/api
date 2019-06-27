@@ -7,8 +7,8 @@ const help = require(__dirname + '/../help')
 const app = require(__dirname + '/../../../dadi/lib/')
 
 let bearerToken
-let configBackup = config.get()
-let connectionString = 'http://' + config.get('server.host') + ':' + config.get('server.port')
+const configBackup = config.get()
+const connectionString = 'http://' + config.get('server.host') + ':' + config.get('server.port')
 
 describe('Reference Field', () => {
   beforeEach(done => {
@@ -46,13 +46,14 @@ describe('Reference Field', () => {
 
   describe('insert', () => {
     it('should accept reference documents as an ID string', done => {
-      let author = {
+      const author = {
         name: 'Author one'
       }
 
       config.set('query.useVersionFilter', true)
 
-      let client = request(connectionString)
+      const client = request(connectionString)
+
       client
       .post('/v1/library/person')
       .set('Authorization', 'Bearer ' + bearerToken)
@@ -61,7 +62,7 @@ describe('Reference Field', () => {
       .end((err, res) => {
         if (err) return done(err)
 
-        let book = {
+        const book = {
           title: 'Book one',
           author: res.body.results[0]._id
         }
@@ -80,7 +81,7 @@ describe('Reference Field', () => {
     })
 
     it('should accept reference documents as an array of IDs', done => {
-      let authors = [
+      const authors = [
         {name: 'Author one'},
         {name: 'Author two'},
         {name: 'Author three'}
@@ -88,7 +89,8 @@ describe('Reference Field', () => {
 
       config.set('query.useVersionFilter', true)
 
-      let client = request(connectionString)
+      const client = request(connectionString)
+
       client
       .post('/v1/library/person')
       .set('Authorization', 'Bearer ' + bearerToken)
@@ -97,7 +99,7 @@ describe('Reference Field', () => {
       .end((err, res) => {
         if (err) return done(err)
 
-        let book = {
+        const book = {
           title: 'Book one',
           author: res.body.results.map(result => result._id)
         }
@@ -119,18 +121,19 @@ describe('Reference Field', () => {
     })
 
     it('should accept reference documents as an array of _collection/_data objects containing document IDs in the _data property', done => {
-      let authors = [
+      const authors = [
         { name: 'Author one' },
         { name: 'Author two' }
       ]
-      let books = [
+      const books = [
         { title: 'Book one' },
         { title: 'Book two' }
       ]
 
       config.set('query.useVersionFilter', true)
 
-      let client = request(connectionString)
+      const client = request(connectionString)
+
       client
       .post('/v1/library/person')
       .set('Authorization', 'Bearer ' + bearerToken)
@@ -139,7 +142,7 @@ describe('Reference Field', () => {
       .end((err, res) => {
         if (err) return done(err)
 
-        let authorIds = res.body.results.map(result => result._id)
+        const authorIds = res.body.results.map(result => result._id)
 
         client
         .post('/v1/library/book')
@@ -149,8 +152,8 @@ describe('Reference Field', () => {
         .end((err, res) => {
           if (err) return done(err)
 
-          let bookIds = res.body.results.map(result => result._id)
-          let multiReference = [
+          const bookIds = res.body.results.map(result => result._id)
+          const multiReference = [
             {
               _collection: 'person',
               _data: authorIds[0]
@@ -177,7 +180,7 @@ describe('Reference Field', () => {
           .end((err, res) => {
             if (err) return done(err)
 
-            let doc = res.body.results[0]
+            const doc = res.body.results[0]
 
             doc.multiReference.length.should.eql(4)
             doc.multiReference[0].name.should.eql(
@@ -209,7 +212,7 @@ describe('Reference Field', () => {
     })
 
     it('should create reference documents that don\'t have _id fields', done => {
-      let book = {
+      const book = {
         title: 'For Whom The Bell Tolls',
         author: {
           name: 'Ernest Hemingway'
@@ -218,7 +221,8 @@ describe('Reference Field', () => {
 
       config.set('query.useVersionFilter', true)
 
-      let client = request(connectionString)
+      const client = request(connectionString)
+
       client
       .post('/v1/library/book')
       .set('Authorization', 'Bearer ' + bearerToken)
@@ -227,7 +231,7 @@ describe('Reference Field', () => {
       .end((err, res) => {
         if (err) return done(err)
         should.exist(res.body.results)
-        let newDoc = res.body.results[0]
+        const newDoc = res.body.results[0]
 
         should.exist(newDoc.author._id)
         should.exist(newDoc.author._apiVersion)
@@ -236,7 +240,7 @@ describe('Reference Field', () => {
     })
 
     it('should create reference documents recursively', done => {
-      let event = {
+      const event = {
         type: 'Book release',
         book: {
           title: 'For Whom The Bell Tolls',
@@ -248,7 +252,8 @@ describe('Reference Field', () => {
 
       config.set('query.useVersionFilter', true)
 
-      let client = request(connectionString)
+      const client = request(connectionString)
+
       client
       .post('/v1/library/event')
       .set('Authorization', 'Bearer ' + bearerToken)
@@ -257,9 +262,9 @@ describe('Reference Field', () => {
       .end((err, res) => {
         if (err) return done(err)
 
-        let eventId = res.body.results[0]._id
-        let bookId = res.body.results[0].book._id
-        let authorId = res.body.results[0].book.author
+        const eventId = res.body.results[0]._id
+        const bookId = res.body.results[0].book._id
+        const authorId = res.body.results[0].book.author
         let doneIndex = 0
 
         client
@@ -295,7 +300,7 @@ describe('Reference Field', () => {
     })
 
     it('should respect the value of the `compose` URL parameter when returning results after insertion', done => {
-      let event = {
+      const event = {
         type: 'Book release',
         book: {
           title: 'For Whom The Bell Tolls',
@@ -307,7 +312,8 @@ describe('Reference Field', () => {
 
       config.set('query.useVersionFilter', true)
 
-      let client = request(connectionString)
+      const client = request(connectionString)
+
       client
       .post('/v1/library/event')
       .set('Authorization', 'Bearer ' + bearerToken)
@@ -353,7 +359,7 @@ describe('Reference Field', () => {
     })
 
     it('should create reference documents recursively in the collections specified by the `_collection` field', done => {
-      let item = {
+      const item = {
         string: 'Item one',
         multiReference: [
           {
@@ -376,7 +382,8 @@ describe('Reference Field', () => {
 
       config.set('query.useVersionFilter', true)
 
-      let client = request(connectionString)
+      const client = request(connectionString)
+
       client
       .post('/v1/library/misc')
       .set('Authorization', 'Bearer ' + bearerToken)
@@ -385,7 +392,7 @@ describe('Reference Field', () => {
       .end((err, res) => {
         if (err) return done(err)
 
-        let result = res.body.results[0]
+        const result = res.body.results[0]
 
         result.string.should.eql(item.string)
         result.multiReference.length.should.eql(2)
@@ -446,14 +453,15 @@ describe('Reference Field', () => {
     })
 
     it('should allow an empty array of reference documents', done => {
-      let book = {
+      const book = {
         title: 'The Sun Also Rises',
         author: []
       }
 
       config.set('query.useVersionFilter', true)
 
-      let client = request(connectionString)
+      const client = request(connectionString)
+
       client
       .post('/v1/library/book')
       .set('Authorization', 'Bearer ' + bearerToken)
@@ -462,7 +470,7 @@ describe('Reference Field', () => {
       .end((err, res) => {
         if (err) return done(err)
         should.exist(res.body.results)
-        let newDoc = res.body.results[0]
+        const newDoc = res.body.results[0]
 
         should.exist(newDoc.author)
         newDoc.author.should.be.Array
@@ -472,7 +480,7 @@ describe('Reference Field', () => {
     })
 
     it('should create array of reference documents that don\'t have _id fields', done => {
-      let book = {
+      const book = {
         title: 'Dash & Lily\'s Book of Dares',
         author: [
           {
@@ -486,7 +494,8 @@ describe('Reference Field', () => {
 
       config.set('query.useVersionFilter', true)
 
-      let client = request(connectionString)
+      const client = request(connectionString)
+
       client
       .post('/v1/library/book')
       .set('Authorization', 'Bearer ' + bearerToken)
@@ -495,7 +504,7 @@ describe('Reference Field', () => {
       .end((err, res) => {
         if (err) return done(err)
         should.exist(res.body.results)
-        let newDoc = res.body.results[0]
+        const newDoc = res.body.results[0]
 
         should.exist(newDoc.author)
         newDoc.author.should.be.Array
@@ -507,7 +516,7 @@ describe('Reference Field', () => {
     })
 
     it('should create multiple reference documents that don\'t have _id fields', done => {
-      let data = {
+      const data = {
         'word': 'animals',
         'children': [
           {
@@ -536,7 +545,8 @@ describe('Reference Field', () => {
 
       config.set('query.useVersionFilter', true)
 
-      let client = request(connectionString)
+      const client = request(connectionString)
+
       client
       .post('/v1/library/taxonomy')
       .set('Authorization', 'Bearer ' + bearerToken)
@@ -546,7 +556,7 @@ describe('Reference Field', () => {
         if (err) return done(err)
 
         should.exist(res.body.results)
-        let newDoc = res.body.results[0]
+        const newDoc = res.body.results[0]
 
         should.exist(newDoc.word)
         newDoc.word.should.eql('animals')
@@ -560,11 +570,12 @@ describe('Reference Field', () => {
     })
 
     it('should update reference documents that already have _id fields', done => {
-      let person = {
+      const person = {
         name: 'Ernest Hemingway'
       }
 
-      let client = request(connectionString)
+      const client = request(connectionString)
+
       client
       .post('/v1/library/person')
       .set('Authorization', 'Bearer ' + bearerToken)
@@ -573,18 +584,20 @@ describe('Reference Field', () => {
       .end((err, res) => {
         if (err) return done(err)
 
-        let author = res.body.results[0]
+        const author = res.body.results[0]
+
         author.name += ', Jnr.'
 
-        let book = {
+        const book = {
           title: 'For Whom The Bell Tolls',
-          author: author
+          author
         }
 
         config.set('query.useVersionFilter', true)
 
         setTimeout(() => {
-          let client = request(connectionString)
+          const client = request(connectionString)
+
           client
           .post('/v1/library/book')
           .set('Authorization', 'Bearer ' + bearerToken)
@@ -593,7 +606,7 @@ describe('Reference Field', () => {
           .end((err, res) => {
             if (err) return done(err)
             should.exist(res.body.results)
-            let newDoc = res.body.results[0]
+            const newDoc = res.body.results[0]
 
             newDoc.author._id.should.eql(author._id)
             newDoc.author.name.should.eql(author.name)
@@ -604,11 +617,12 @@ describe('Reference Field', () => {
     })
 
     it('should update reference documents that already have _id fields when supplied using the _collection/_data format', done => {
-      let person = {
+      const person = {
         name: 'John Doe'
       }
 
-      let client = request(connectionString)
+      const client = request(connectionString)
+
       client
       .post('/v1/library/person')
       .set('Authorization', 'Bearer ' + bearerToken)
@@ -617,9 +631,9 @@ describe('Reference Field', () => {
       .end((err, res) => {
         if (err) return done(err)
 
-        let authorId = res.body.results[0]._id
+        const authorId = res.body.results[0]._id
 
-        let book = {
+        const book = {
           title: 'For Whom The Bell Tolls',
           author: {
             _collection: 'person',
@@ -632,7 +646,8 @@ describe('Reference Field', () => {
 
         config.set('query.useVersionFilter', true)
 
-        let client = request(connectionString)
+        const client = request(connectionString)
+
         client
         .post('/v1/library/book')
         .set('Authorization', 'Bearer ' + bearerToken)
@@ -641,7 +656,7 @@ describe('Reference Field', () => {
         .end((err, res) => {
           if (err) return done(err)
           should.exist(res.body.results)
-          let newDoc = res.body.results[0]
+          const newDoc = res.body.results[0]
 
           newDoc.author._id.should.eql(authorId)
           newDoc.author.name.should.eql('Ernest Hemingway')
@@ -664,15 +679,16 @@ describe('Reference Field', () => {
     })
 
     it('should update reference documents that already have _id fields, translating any internal fields in the referenced documents to the prefix defined in config', done => {
-      let originalPrefix = config.get('internalFieldsPrefix')
+      const originalPrefix = config.get('internalFieldsPrefix')
 
       config.set('internalFieldsPrefix', '$')
 
-      let person = {
+      const person = {
         name: 'Ernest Hemingway'
       }
 
-      let client = request(connectionString)
+      const client = request(connectionString)
+
       client
       .post('/v1/library/person')
       .set('Authorization', 'Bearer ' + bearerToken)
@@ -681,18 +697,20 @@ describe('Reference Field', () => {
       .end((err, res) => {
         if (err) return done(err)
 
-        let author = res.body.results[0]
+        const author = res.body.results[0]
+
         author.name += ', Jnr.'
 
-        let book = {
+        const book = {
           title: 'For Whom The Bell Tolls',
-          author: author
+          author
         }
 
         config.set('query.useVersionFilter', true)
 
         setTimeout(() => {
-          let client = request(connectionString)
+          const client = request(connectionString)
+
           client
           .post('/v1/library/book')
           .set('Authorization', 'Bearer ' + bearerToken)
@@ -702,7 +720,7 @@ describe('Reference Field', () => {
             if (err) return done(err)
             // console.log(res)
             should.exist(res.body.results)
-            let newDoc = res.body.results[0]
+            const newDoc = res.body.results[0]
 
             newDoc.author.$id.should.eql(author.$id)
             newDoc.author.name.should.eql(author.name)
@@ -741,10 +759,11 @@ describe('Reference Field', () => {
             .end((err, res) => {
               if (err) return done(err)
 
-              let doc = res.body.results[0]
+              const doc = res.body.results[0]
+
               should.exist(doc)
 
-              let body = {
+              const body = {
                 query: { _id: parent._id },
                 update: { children: doc._id.toString() }
               }
@@ -757,7 +776,8 @@ describe('Reference Field', () => {
               .end((err, res) => {
                 if (err) return done(err)
 
-                let results = res.body['results']
+                const results = res.body['results']
+
                 results.should.be.Array
                 results.length.should.equal(1)
 
@@ -775,7 +795,7 @@ describe('Reference Field', () => {
 
     it('should compose updated document and return when history is off', done => {
       help.getBearerTokenWithAccessType('admin', function (err, token) {
-        let settingsBackup = Object.assign({}, app.components['/v1/library/book'].model.settings)
+        const settingsBackup = Object.assign({}, app.components['/v1/library/book'].model.settings)
 
         app.components['/v1/library/book'].model.settings.storeRevisions = true
 
@@ -783,7 +803,8 @@ describe('Reference Field', () => {
 
         let book
 
-        let client = request(connectionString)
+        const client = request(connectionString)
+
         client
         .post('/v1/library/book')
         .set('Authorization', 'Bearer ' + bearerToken)
@@ -801,10 +822,11 @@ describe('Reference Field', () => {
           .end((err, res) => {
             if (err) return done(err)
 
-            let doc = res.body.results[0]
+            const doc = res.body.results[0]
+
             should.exist(doc)
 
-            let body = {
+            const body = {
               query: { _id: book._id },
               update: { author: doc._id.toString() }
             }
@@ -817,7 +839,8 @@ describe('Reference Field', () => {
             .end((err, res) => {
               if (err) return done(err)
 
-              let results = res.body['results']
+              const results = res.body['results']
+
               results.should.be.Array
               results.length.should.equal(1)
               should.exist(results[0].author.name)
@@ -834,13 +857,14 @@ describe('Reference Field', () => {
     })
 
     it('should create reference documents that don\'t have _id fields', done => {
-      let book = {
+      const book = {
         title: 'Thérèse Raquin'
       }
 
       config.set('query.useVersionFilter', true)
 
-      let client = request(connectionString)
+      const client = request(connectionString)
+
       client
       .post('/v1/library/book')
       .set('Authorization', 'Bearer ' + bearerToken)
@@ -849,9 +873,9 @@ describe('Reference Field', () => {
       .end((err, res) => {
         if (err) return done(err)
         should.exist(res.body.results)
-        let newDoc = res.body.results[0]
+        const newDoc = res.body.results[0]
 
-        let update = {
+        const update = {
           author: {
             name: 'Émile Zola'
           }
@@ -864,7 +888,7 @@ describe('Reference Field', () => {
         .expect(200)
         .end((err, res) => {
           should.exist(res.body.results)
-          let newDoc = res.body.results[0]
+          const newDoc = res.body.results[0]
 
           should.exist(newDoc.author._id)
           should.exist(newDoc.author._apiVersion)
@@ -874,13 +898,14 @@ describe('Reference Field', () => {
     })
 
     it('should allow an empty array of reference documents', done => {
-      let book = {
+      const book = {
         title: 'The Sun Also Rises (2nd Edition)'
       }
 
       config.set('query.useVersionFilter', true)
 
-      let client = request(connectionString)
+      const client = request(connectionString)
+
       client
       .post('/v1/library/book')
       .set('Authorization', 'Bearer ' + bearerToken)
@@ -889,9 +914,9 @@ describe('Reference Field', () => {
       .end((err, res) => {
         if (err) return done(err)
         should.exist(res.body.results)
-        let newDoc = res.body.results[0]
+        const newDoc = res.body.results[0]
 
-        let update = {
+        const update = {
           author: []
         }
 
@@ -902,7 +927,7 @@ describe('Reference Field', () => {
         .expect(200)
         .end((err, res) => {
           should.exist(res.body.results)
-          let newDoc = res.body.results[0]
+          const newDoc = res.body.results[0]
 
           should.exist(newDoc.author)
           newDoc.author.should.be.Array
@@ -913,11 +938,12 @@ describe('Reference Field', () => {
     })
 
     it('should create new reference documents that don\'t have _id fields', done => {
-      let person = {
+      const person = {
         name: 'Gustave Flaubert'
       }
 
-      let client = request(connectionString)
+      const client = request(connectionString)
+
       client
       .post('/v1/library/person')
       .set('Authorization', 'Bearer ' + bearerToken)
@@ -926,9 +952,9 @@ describe('Reference Field', () => {
       .end((err, res) => {
         if (err) return done(err)
 
-        let author = res.body.results[0]
+        const author = res.body.results[0]
 
-        let book = {
+        const book = {
           title: 'Madame Bolety',
           author: [author._id.toString()]
         }
@@ -948,7 +974,7 @@ describe('Reference Field', () => {
           should.exist(newDoc.author)
           newDoc.author.should.be.Array
 
-          let update = {
+          const update = {
             author: [
               {
                 _id: newDoc.author[0]._id
@@ -977,7 +1003,7 @@ describe('Reference Field', () => {
     })
 
     it('should respect the value of the `compose` URL parameter when returning results after update', done => {
-      let event = {
+      const event = {
         type: 'Book release',
         book: {
           title: 'For Whom The Bell Tolls',
@@ -989,7 +1015,8 @@ describe('Reference Field', () => {
 
       config.set('query.useVersionFilter', true)
 
-      let client = request(connectionString)
+      const client = request(connectionString)
+
       client
       .post('/v1/library/event')
       .set('Authorization', 'Bearer ' + bearerToken)
@@ -998,7 +1025,7 @@ describe('Reference Field', () => {
       .end((err, res) => {
         if (err) return done(err)
 
-        let eventId = res.body.results[0]._id
+        const eventId = res.body.results[0]._id
 
         client
         .put(`/v1/library/event/${eventId}`)
@@ -1048,7 +1075,7 @@ describe('Reference Field', () => {
 
   describe('delete', () => {
     it('should delete documents matching a reference field query', done => {
-      let book = {
+      const book = {
         title: 'For Whom The Bell Tolls',
         author: {
           name: 'Ernest Hemingway'
@@ -1057,7 +1084,8 @@ describe('Reference Field', () => {
 
       config.set('query.useVersionFilter', true)
 
-      let client = request(connectionString)
+      const client = request(connectionString)
+
       client
       .post('/v1/library/book')
       .set('Authorization', 'Bearer ' + bearerToken)
@@ -1067,9 +1095,9 @@ describe('Reference Field', () => {
         if (err) return done(err)
 
         should.exist(res.body.results)
-        let newDoc = res.body.results[0]
+        const newDoc = res.body.results[0]
 
-        let query = {
+        const query = {
           'query': {
             'author': newDoc.author._id.toString()
           }
@@ -1090,7 +1118,7 @@ describe('Reference Field', () => {
             if (err) return done(err)
 
             should.exist(res.body.results)
-            let results = res.body.results
+            const results = res.body.results
 
             results.length.should.eql(0)
 
@@ -1103,12 +1131,13 @@ describe('Reference Field', () => {
 
   describe('find', () => {
     it('should populate a reference field containing a String', done => {
-      let person = { name: 'Ernest Hemingway' }
-      let book = { title: 'For Whom The Bell Tolls', author: null }
+      const person = { name: 'Ernest Hemingway' }
+      const book = { title: 'For Whom The Bell Tolls', author: null }
 
       config.set('query.useVersionFilter', true)
 
-      let client = request(connectionString)
+      const client = request(connectionString)
+
       client
       .post('/v1/library/person')
       .set('Authorization', 'Bearer ' + bearerToken)
@@ -1119,7 +1148,8 @@ describe('Reference Field', () => {
 
         should.exist(res.body.results)
 
-        let personId = res.body.results[0]._id
+        const personId = res.body.results[0]._id
+
         book.author = personId.toString()
 
         client
@@ -1138,7 +1168,8 @@ describe('Reference Field', () => {
             if (err) return done(err)
 
             should.exist(res.body.results)
-            let bookResult = res.body.results[0]
+            const bookResult = res.body.results[0]
+
             // console.log(bookResult)
             should.exist(bookResult.author)
             should.exist(bookResult.author.name)
@@ -1151,11 +1182,12 @@ describe('Reference Field', () => {
 
     it('should populate all reference fields that aren\'t null', done => {
       // first person
-      let gertrude = { name: 'Gertrude Stein' }
+      const gertrude = { name: 'Gertrude Stein' }
 
       config.set('query.useVersionFilter', true)
 
-      let client = request(connectionString)
+      const client = request(connectionString)
+
       client
       .post('/v1/library/person')
       .set('Authorization', 'Bearer ' + bearerToken)
@@ -1164,9 +1196,9 @@ describe('Reference Field', () => {
       .end((err, res) => {
         if (err) return done(err)
 
-        let personId = res.body.results[0]._id
+        const personId = res.body.results[0]._id
 
-        let ernest = {
+        const ernest = {
           name: 'Ernest Hemingway',
           spouse: null,
           friend: personId.toString()
@@ -1188,7 +1220,7 @@ describe('Reference Field', () => {
             if (err) return done(err)
 
             should.exist(res.body.results)
-            let result = res.body.results[0]
+            const result = res.body.results[0]
 
             should.exist(result.friend)
             result.friend.name.should.eql('Gertrude Stein')
@@ -1201,11 +1233,12 @@ describe('Reference Field', () => {
 
     it('should populate all reference fields when optional ones aren\'t defined', done => {
       // first person
-      let gertrude = { name: 'Gertrude Stein' }
+      const gertrude = { name: 'Gertrude Stein' }
 
       config.set('query.useVersionFilter', true)
 
-      let client = request(connectionString)
+      const client = request(connectionString)
+
       client
       .post('/v1/library/person')
       .set('Authorization', 'Bearer ' + bearerToken)
@@ -1214,9 +1247,9 @@ describe('Reference Field', () => {
       .end(function (err, res) {
         if (err) return done(err)
 
-        let personId = res.body.results[0]._id
+        const personId = res.body.results[0]._id
 
-        let ernest = {
+        const ernest = {
           name: 'Ernest Hemingway',
           friend: personId.toString(),
           agent: []
@@ -1251,7 +1284,7 @@ describe('Reference Field', () => {
 
               should.exist(res.body.results)
 
-              let result = res.body.results[0]
+              const result = res.body.results[0]
 
               should.exist(result.friend)
               result.friend.name.should.eql('Gertrude Stein')
@@ -1264,12 +1297,13 @@ describe('Reference Field', () => {
     })
 
     it('should return results for a reference field containing an Array of Strings', done => {
-      let person = { name: 'Ernest Hemingway' }
-      let book = { title: 'For Whom The Bell Tolls', author: null }
+      const person = { name: 'Ernest Hemingway' }
+      const book = { title: 'For Whom The Bell Tolls', author: null }
 
       config.set('query.useVersionFilter', true)
 
-      let client = request(connectionString)
+      const client = request(connectionString)
+
       client
       .post('/v1/library/person')
       .set('Authorization', 'Bearer ' + bearerToken)
@@ -1280,7 +1314,8 @@ describe('Reference Field', () => {
 
         should.exist(res.body.results)
 
-        let personId = res.body.results[0]._id
+        const personId = res.body.results[0]._id
+
         book.author = [personId.toString()]
 
         client
@@ -1299,7 +1334,7 @@ describe('Reference Field', () => {
             if (err) return done(err)
 
             should.exist(res.body.results)
-            let bookResult = res.body.results[0]
+            const bookResult = res.body.results[0]
 
             should.exist(bookResult.author)
             should.exist(bookResult.author[0].name)
@@ -1311,7 +1346,7 @@ describe('Reference Field', () => {
     })
 
     it('should filter documents by nested properties', done => {
-      let event = {
+      const event = {
         type: 'Book release',
         book: {
           title: 'For Whom The Bell Tolls',
@@ -1323,7 +1358,8 @@ describe('Reference Field', () => {
 
       config.set('query.useVersionFilter', true)
 
-      let client = request(connectionString)
+      const client = request(connectionString)
+
       client
       .post('/v1/library/event')
       .set('Authorization', 'Bearer ' + bearerToken)
@@ -1358,7 +1394,7 @@ describe('Reference Field', () => {
     })
 
     it('should filter documents by nested properties including escaped characters', done => {
-      let event = {
+      const event = {
         type: 'Book release',
         book: {
           title: 'A book written by an email address. Odd, right?',
@@ -1370,7 +1406,8 @@ describe('Reference Field', () => {
 
       config.set('query.useVersionFilter', true)
 
-      let client = request(connectionString)
+      const client = request(connectionString)
+
       client
       .post('/v1/library/event')
       .set('Authorization', 'Bearer ' + bearerToken)
@@ -1405,7 +1442,7 @@ describe('Reference Field', () => {
     })    
 
     it('should filter documents by nested objects properties', done => {
-      let event = {
+      const event = {
         type: 'Book status',
         book: {
           title: 'For Whom The Bell Tolls',
@@ -1421,7 +1458,8 @@ describe('Reference Field', () => {
 
       config.set('query.useVersionFilter', true)
 
-      let client = request(connectionString)
+      const client = request(connectionString)
+
       client
       .post('/v1/library/event')
       .set('Authorization', 'Bearer ' + bearerToken)
@@ -1459,7 +1497,7 @@ describe('Reference Field', () => {
     })
 
     it('should filter documents by nested objects properties', done => {
-      let event = {
+      const event = {
         type: 'Book status',
         book: {
           title: 'For Whom The Bell Tolls',
@@ -1475,7 +1513,8 @@ describe('Reference Field', () => {
 
       config.set('query.useVersionFilter', true)
 
-      let client = request(connectionString)
+      const client = request(connectionString)
+
       client
       .post('/v1/library/event')
       .set('Authorization', 'Bearer ' + bearerToken)
@@ -1510,7 +1549,7 @@ describe('Reference Field', () => {
     })    
 
     it('should filter documents by nested properties in multi-collection references', done => {
-      let miscItem = {
+      const miscItem = {
         string: 'Some string',
         multiReference: [
           {
@@ -1533,7 +1572,7 @@ describe('Reference Field', () => {
 
       config.set('query.useVersionFilter', true)
 
-      let client = request(connectionString)
+      const client = request(connectionString)
 
       client
       .post('/v1/library/misc')
@@ -1597,9 +1636,9 @@ describe('Reference Field', () => {
     })
 
     it('should return results for a reference field containing an Array of multi-collection references', done => {
-      let person = { name: 'Ernest Hemingway' }
-      let book = { title: 'For Whom The Bell Tolls' }
-      let multiReference = [
+      const person = { name: 'Ernest Hemingway' }
+      const book = { title: 'For Whom The Bell Tolls' }
+      const multiReference = [
         {
           _collection: 'person',
           _data: person
@@ -1612,7 +1651,8 @@ describe('Reference Field', () => {
 
       config.set('query.useVersionFilter', true)
 
-      let client = request(connectionString)
+      const client = request(connectionString)
+
       client
       .post('/v1/library/misc')
       .set('Authorization', 'Bearer ' + bearerToken)
@@ -1632,7 +1672,7 @@ describe('Reference Field', () => {
 
           res.body.results.length.should.eql(1)
 
-          let item = res.body.results[0]
+          const item = res.body.results[0]
 
           item.multiReference[0].name.should.eql(person.name)
           item.multiReference[1].title.should.eql(book.title)
@@ -1643,7 +1683,7 @@ describe('Reference Field', () => {
     })
 
     it('should return referenced documents with the specified fields only', done => {
-      let event = {
+      const event = {
         type: 'Book release',
         datetime: 1522791512197,
         book: {
@@ -1659,7 +1699,8 @@ describe('Reference Field', () => {
 
       config.set('query.useVersionFilter', true)
 
-      let client = request(connectionString)
+      const client = request(connectionString)
+
       client
       .post('/v1/library/event')
       .set('Authorization', 'Bearer ' + bearerToken)
@@ -1675,7 +1716,7 @@ describe('Reference Field', () => {
         .end((err, res) => {
           if (err) return done(err)
 
-          let eventResult = res.body.results[0]
+          const eventResult = res.body.results[0]
 
           eventResult.type.should.eql(event.type)
           should.not.exist(eventResult.datetime)
@@ -1691,7 +1732,7 @@ describe('Reference Field', () => {
     })
 
     it('should return multi-collection referenced documents with the specified fields only', done => {
-      let item = {
+      const item = {
         string: 'Some string',
         mixed: 1234,
         multiReference: [
@@ -1718,7 +1759,8 @@ describe('Reference Field', () => {
 
       config.set('query.useVersionFilter', true)
 
-      let client = request(connectionString)
+      const client = request(connectionString)
+
       client
       .post('/v1/library/misc')
       .set('Authorization', 'Bearer ' + bearerToken)
@@ -1734,7 +1776,7 @@ describe('Reference Field', () => {
         .end((err, res) => {
           if (err) return done(err)
 
-          let itemResult = res.body.results[0]
+          const itemResult = res.body.results[0]
 
           should.not.exist(itemResult.string)
           itemResult.mixed.should.eql(item.mixed)
@@ -1753,7 +1795,7 @@ describe('Reference Field', () => {
     })
 
     it('should populate a `_composed` field with IDs for the composed fields only', done => {
-      let books = [
+      const books = [
         {
           title: 'For Whom The Bell Tolls',
           author: {
@@ -1774,7 +1816,8 @@ describe('Reference Field', () => {
 
       config.set('query.useVersionFilter', true)
 
-      let client = request(connectionString)
+      const client = request(connectionString)
+
       client
       .post('/v1/library/book')
       .set('Authorization', 'Bearer ' + bearerToken)
@@ -1849,7 +1892,7 @@ describe('Reference Field', () => {
     })
 
     it('should populate a `_composed` field with IDs for composed documents of multiple fields', done => {
-      let event = {
+      const event = {
         type: 'Book release',
         book: {
           title: 'For Whom The Bell Tolls'
@@ -1861,7 +1904,8 @@ describe('Reference Field', () => {
 
       config.set('query.useVersionFilter', true)
 
-      let client = request(connectionString)
+      const client = request(connectionString)
+
       client
       .post('/v1/library/event')
       .set('Authorization', 'Bearer ' + bearerToken)
@@ -1893,12 +1937,13 @@ describe('Reference Field', () => {
 
     describe('when `settings.strictCompose` is not enabled', () => {
       it('should return unique results for a reference field containing an Array of Strings', done => {
-        let book = { title: 'For Whom The Bell Tolls', author: null }
-        let author = { name: 'Ernest Hemingway' }
+        const book = { title: 'For Whom The Bell Tolls', author: null }
+        const author = { name: 'Ernest Hemingway' }
 
         config.set('query.useVersionFilter', true)
 
-        let client = request(connectionString)
+        const client = request(connectionString)
+
         client
         .post('/v1/library/person')
         .set('Authorization', 'Bearer ' + bearerToken)
@@ -1909,7 +1954,7 @@ describe('Reference Field', () => {
 
           should.exist(res.body.results)
 
-          let personId = res.body.results[0]._id
+          const personId = res.body.results[0]._id
 
           // add author multiple times
           book.author = []
@@ -1933,7 +1978,7 @@ describe('Reference Field', () => {
               if (err) return done(err)
 
               should.exist(res.body.results)
-              let bookResult = res.body.results[0]
+              const bookResult = res.body.results[0]
 
               should.exist(bookResult.author)
               bookResult.author.length.should.eql(1)
@@ -1945,11 +1990,12 @@ describe('Reference Field', () => {
       })
 
       it('should return unique results for a reference field when it contains an Array of Strings and Nulls', done => {
-        let book = { title: 'For Whom The Bell Tolls', author: null }
+        const book = { title: 'For Whom The Bell Tolls', author: null }
 
         config.set('query.useVersionFilter', true)
 
-        let client = request(connectionString)
+        const client = request(connectionString)
+
         client
         .post('/v1/library/person')
         .set('Authorization', 'Bearer ' + bearerToken)
@@ -1960,7 +2006,7 @@ describe('Reference Field', () => {
 
           should.exist(res.body.results)
 
-          let personId = res.body.results[0]._id
+          const personId = res.body.results[0]._id
 
           // add author multiple times
           book.author = []
@@ -1984,7 +2030,7 @@ describe('Reference Field', () => {
               if (err) return done(err)
 
               should.exist(res.body.results)
-              let bookResult = res.body.results[0]
+              const bookResult = res.body.results[0]
 
               should.exist(bookResult.author)
               bookResult.author.length.should.eql(1)
@@ -1997,11 +2043,12 @@ describe('Reference Field', () => {
       })
 
       it('should show the raw ID for reference fields where the single referenced ID does not correspond to an existing document', done => {
-        let book = { title: 'For Whom The Bell Tolls', author: 'id-that-does-not-exist' }
+        const book = { title: 'For Whom The Bell Tolls', author: 'id-that-does-not-exist' }
 
         config.set('query.useVersionFilter', true)
 
-        let client = request(connectionString)
+        const client = request(connectionString)
+
         client
         .post('/v1/library/book')
         .set('Authorization', 'Bearer ' + bearerToken)
@@ -2012,7 +2059,7 @@ describe('Reference Field', () => {
 
           should.exist(res.body.results)
 
-          let bookId = res.body.results[0]._id
+          const bookId = res.body.results[0]._id
 
           client
           .get(`/v1/library/book/${bookId}?compose=true`)
@@ -2029,7 +2076,7 @@ describe('Reference Field', () => {
       })
 
       it('should show an array of raw values + composed values for reference fields where some of the referenced IDs do not correspond to existing documents', done => {
-        let book = {
+        const book = {
           title: 'For Whom The Bell Tolls',
           author: [
             'id-that-does-not-exist',
@@ -2040,7 +2087,8 @@ describe('Reference Field', () => {
 
         config.set('query.useVersionFilter', true)
 
-        let client = request(connectionString)
+        const client = request(connectionString)
+
         client
         .post('/v1/library/book')
         .set('Authorization', 'Bearer ' + bearerToken)
@@ -2051,7 +2099,7 @@ describe('Reference Field', () => {
 
           should.exist(res.body.results)
 
-          let bookId = res.body.results[0]._id
+          const bookId = res.body.results[0]._id
 
           client
           .get(`/v1/library/book/${bookId}?compose=true`)
@@ -2060,7 +2108,7 @@ describe('Reference Field', () => {
           .end((err, res) => {
             if (err) return done(err)
 
-            let authorResults = res.body.results[0].author
+            const authorResults = res.body.results[0].author
 
             authorResults.length.should.eql(3)
             authorResults[0].should.eql(book.author[0])
@@ -2073,7 +2121,7 @@ describe('Reference Field', () => {
       })
 
       it('should show an array of raw values for reference fields where none of the referenced IDs do not correspond to existing documents', done => {
-        let book = {
+        const book = {
           title: 'For Whom The Bell Tolls',
           author: [
             'id-that-does-not-exist',
@@ -2083,7 +2131,8 @@ describe('Reference Field', () => {
 
         config.set('query.useVersionFilter', true)
 
-        let client = request(connectionString)
+        const client = request(connectionString)
+
         client
         .post('/v1/library/book')
         .set('Authorization', 'Bearer ' + bearerToken)
@@ -2094,7 +2143,7 @@ describe('Reference Field', () => {
 
           should.exist(res.body.results)
 
-          let bookId = res.body.results[0]._id
+          const bookId = res.body.results[0]._id
 
           client
           .get(`/v1/library/book/${bookId}?compose=true`)
@@ -2103,7 +2152,7 @@ describe('Reference Field', () => {
           .end((err, res) => {
             if (err) return done(err)
 
-            let authorResults = res.body.results[0].author
+            const authorResults = res.body.results[0].author
 
             authorResults.length.should.eql(2)
             authorResults[0].should.eql(book.author[0])
@@ -2117,12 +2166,13 @@ describe('Reference Field', () => {
 
     describe('when `settings.strictCompose` is enabled', () => {
       it('should return duplicate results for a reference field containing an Array of Strings', done => {
-        let book = { title: 'For Whom The Bell Tolls', author: null }
-        let author = { name: 'Ernest Hemingway' }
+        const book = { title: 'For Whom The Bell Tolls', author: null }
+        const author = { name: 'Ernest Hemingway' }
 
         config.set('query.useVersionFilter', true)
 
-        let client = request(connectionString)
+        const client = request(connectionString)
+
         client
         .post('/v1/library/person')
         .set('Authorization', 'Bearer ' + bearerToken)
@@ -2133,7 +2183,7 @@ describe('Reference Field', () => {
 
           should.exist(res.body.results)
 
-          let personId = res.body.results[0]._id
+          const personId = res.body.results[0]._id
 
           // add author multiple times
           book.authorStrict = []
@@ -2157,7 +2207,7 @@ describe('Reference Field', () => {
               if (err) return done(err)
 
               should.exist(res.body.results)
-              let bookResult = res.body.results[0]
+              const bookResult = res.body.results[0]
 
               should.exist(bookResult.authorStrict)
               bookResult.authorStrict.length.should.eql(3)
@@ -2172,12 +2222,13 @@ describe('Reference Field', () => {
       })
 
       it('should return duplicate results for a reference field when it contains an Array of Strings and Nulls', done => {
-        let book = { title: 'For Whom The Bell Tolls', author: null }
-        let author = { name: 'Ernest Hemingway' }
+        const book = { title: 'For Whom The Bell Tolls', author: null }
+        const author = { name: 'Ernest Hemingway' }
 
         config.set('query.useVersionFilter', true)
 
-        let client = request(connectionString)
+        const client = request(connectionString)
+
         client
         .post('/v1/library/person')
         .set('Authorization', 'Bearer ' + bearerToken)
@@ -2188,7 +2239,7 @@ describe('Reference Field', () => {
 
           should.exist(res.body.results)
 
-          let personId = res.body.results[0]._id
+          const personId = res.body.results[0]._id
 
           // add author multiple times
           book.authorStrict = []
@@ -2212,7 +2263,7 @@ describe('Reference Field', () => {
               if (err) return done(err)
 
               should.exist(res.body.results)
-              let bookResult = res.body.results[0]
+              const bookResult = res.body.results[0]
 
               should.exist(bookResult.authorStrict)
               bookResult.authorStrict.length.should.eql(3)
@@ -2227,11 +2278,12 @@ describe('Reference Field', () => {
       })
 
       it('should omit reference fields where the single referenced ID does not correspond to an existing document', done => {
-        let book = { title: 'For Whom The Bell Tolls', authorStrict: 'id-that-does-not-exist' }
+        const book = { title: 'For Whom The Bell Tolls', authorStrict: 'id-that-does-not-exist' }
 
         config.set('query.useVersionFilter', true)
 
-        let client = request(connectionString)
+        const client = request(connectionString)
+
         client
         .post('/v1/library/book')
         .set('Authorization', 'Bearer ' + bearerToken)
@@ -2242,7 +2294,7 @@ describe('Reference Field', () => {
 
           should.exist(res.body.results)
 
-          let bookId = res.body.results[0]._id
+          const bookId = res.body.results[0]._id
 
           client
           .get(`/v1/library/book/${bookId}?compose=true`)
@@ -2259,7 +2311,7 @@ describe('Reference Field', () => {
       })
 
       it('should show an array of null + composed values for reference fields where some of the referenced IDs do not correspond to existing documents', done => {
-        let book = {
+        const book = {
           title: 'For Whom The Bell Tolls',
           authorStrict: [
             'id-that-does-not-exist',
@@ -2270,7 +2322,8 @@ describe('Reference Field', () => {
 
         config.set('query.useVersionFilter', true)
 
-        let client = request(connectionString)
+        const client = request(connectionString)
+
         client
         .post('/v1/library/book')
         .set('Authorization', 'Bearer ' + bearerToken)
@@ -2281,7 +2334,7 @@ describe('Reference Field', () => {
 
           should.exist(res.body.results)
 
-          let bookId = res.body.results[0]._id
+          const bookId = res.body.results[0]._id
 
           client
           .get(`/v1/library/book/${bookId}?compose=true`)
@@ -2290,7 +2343,7 @@ describe('Reference Field', () => {
           .end((err, res) => {
             if (err) return done(err)
 
-            let authorResults = res.body.results[0].authorStrict
+            const authorResults = res.body.results[0].authorStrict
 
             authorResults.length.should.eql(3)
             should.equal(authorResults[0], null)
@@ -2303,7 +2356,7 @@ describe('Reference Field', () => {
       })
 
       it('should show an array of null for reference fields where none of the referenced IDs do not correspond to existing documents', done => {
-        let book = {
+        const book = {
           title: 'For Whom The Bell Tolls',
           authorStrict: [
             'id-that-does-not-exist',
@@ -2313,7 +2366,8 @@ describe('Reference Field', () => {
 
         config.set('query.useVersionFilter', true)
 
-        let client = request(connectionString)
+        const client = request(connectionString)
+
         client
         .post('/v1/library/book')
         .set('Authorization', 'Bearer ' + bearerToken)
@@ -2324,7 +2378,7 @@ describe('Reference Field', () => {
 
           should.exist(res.body.results)
 
-          let bookId = res.body.results[0]._id
+          const bookId = res.body.results[0]._id
 
           client
           .get(`/v1/library/book/${bookId}?compose=true`)
@@ -2333,7 +2387,7 @@ describe('Reference Field', () => {
           .end((err, res) => {
             if (err) return done(err)
 
-            let authorResults = res.body.results[0].authorStrict
+            const authorResults = res.body.results[0].authorStrict
 
             authorResults.length.should.eql(2)
             should.equal(authorResults[0], null)
@@ -2346,12 +2400,14 @@ describe('Reference Field', () => {
     })
 
     it('should return results in the same order as the original Array', done => {
-      let book = { title: 'Death in the Afternoon', author: null }
+      const book = { title: 'Death in the Afternoon', author: null }
+
       book.author = []
 
       config.set('query.useVersionFilter', true)
 
-      let client = request(connectionString)
+      const client = request(connectionString)
+
       client
       .post('/v1/library/person')
       .set('Authorization', 'Bearer ' + bearerToken)
@@ -2359,9 +2415,11 @@ describe('Reference Field', () => {
       .expect(200)
       .end((err, res) => {
         let personId = res.body.results[0]._id
+
         book.author.push(personId.toString())
 
-        let client = request(connectionString)
+        const client = request(connectionString)
+
         client
         .post('/v1/library/person')
         .set('Authorization', 'Bearer ' + bearerToken)
@@ -2371,7 +2429,8 @@ describe('Reference Field', () => {
           personId = res.body.results[0]._id
           book.author.unshift(personId.toString())
 
-          let client = request(connectionString)
+          const client = request(connectionString)
+
           client
           .post('/v1/library/person')
           .set('Authorization', 'Bearer ' + bearerToken)
@@ -2395,12 +2454,13 @@ describe('Reference Field', () => {
               .expect(200)
               .end((err, res) => {
                 should.exist(res.body.results)
-                let bookResult = res.body.results[0]
+                const bookResult = res.body.results[0]
 
                 should.exist(bookResult.author)
 
                 for (let i = 0; i < bookResult.author.length; i++) {
-                  let author = bookResult.author[i]
+                  const author = bookResult.author[i]
+
                   author._id.toString().should.eql(bookResult._composed.author[i].toString())
                 }
 
@@ -2413,7 +2473,7 @@ describe('Reference Field', () => {
     })
 
     it('should compose as many levels of references as the value of `compose`, with `true` being 1 and `all` being infinite', done => {
-      let event = {
+      const event = {
         type: 'Book release',
         book: {
           title: 'For Whom The Bell Tolls',
@@ -2428,7 +2488,8 @@ describe('Reference Field', () => {
 
       config.set('query.useVersionFilter', true)
 
-      let client = request(connectionString)
+      const client = request(connectionString)
+
       client
       .post('/v1/library/event')
       .set('Authorization', 'Bearer ' + bearerToken)
@@ -2437,9 +2498,9 @@ describe('Reference Field', () => {
       .end((err, res) => {
         if (err) return done(err)
 
-        let eventId = res.body.results[0]._id
+        const eventId = res.body.results[0]._id
         let doneCount = 0
-        let doneFn = () => {
+        const doneFn = () => {
           if (++doneCount === 4) done()
         }
 
@@ -2499,19 +2560,20 @@ describe('Reference Field', () => {
 
   describe('with configured prefix', () => {
     it('should create reference documents that don\'t have identifier fields', done => {
-      let book = {
+      const book = {
         title: 'For Whom The Bell Tolls',
         author: {
           name: 'Ernest Hemingway'
         }
       }
 
-      let originalPrefix = config.get('internalFieldsPrefix')
+      const originalPrefix = config.get('internalFieldsPrefix')
 
       config.set('internalFieldsPrefix', '$')
       config.set('query.useVersionFilter', true)
 
-      let client = request(connectionString)
+      const client = request(connectionString)
+
       client
       .post('/v1/library/book')
       .set('Authorization', 'Bearer ' + bearerToken)
@@ -2522,7 +2584,7 @@ describe('Reference Field', () => {
         config.set('internalFieldsPrefix', originalPrefix)
 
         should.exist(res.body.results)
-        let newDoc = res.body.results[0]
+        const newDoc = res.body.results[0]
 
         should.exist(newDoc.author.$id)
         should.exist(newDoc.author.$apiVersion)
@@ -2531,16 +2593,17 @@ describe('Reference Field', () => {
     })
 
     it('should update reference documents that already have _id fields', done => {
-      let person = {
+      const person = {
         name: 'Ernest Hemingway'
       }
 
-      let originalPrefix = config.get('internalFieldsPrefix')
+      const originalPrefix = config.get('internalFieldsPrefix')
 
       config.set('internalFieldsPrefix', '$')
       config.set('query.useVersionFilter', true)
 
-      let client = request(connectionString)
+      const client = request(connectionString)
+
       client
     .post('/v1/library/person')
     .set('Authorization', 'Bearer ' + bearerToken)
@@ -2549,18 +2612,20 @@ describe('Reference Field', () => {
     .end((err, res) => {
       if (err) return done(err)
 
-      let author = res.body.results[0]
+      const author = res.body.results[0]
+
       author.name += ', Jnr.'
 
-      let book = {
+      const book = {
         title: 'For Whom The Bell Tolls',
-        author: author
+        author
       }
 
       config.set('query.useVersionFilter', true)
 
       setTimeout(() => {
-        let client = request(connectionString)
+        const client = request(connectionString)
+
         client
         .post('/v1/library/book')
         .set('Authorization', 'Bearer ' + bearerToken)
@@ -2571,7 +2636,7 @@ describe('Reference Field', () => {
           config.set('internalFieldsPrefix', originalPrefix)
 
           should.exist(res.body.results)
-          let newDoc = res.body.results[0]
+          const newDoc = res.body.results[0]
 
           newDoc.author.$id.should.eql(author.$id)
           newDoc.author.name.should.eql(author.name)

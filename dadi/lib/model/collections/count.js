@@ -29,10 +29,10 @@ function count ({
     query,
     type: 'read'
   }).then(({query}) => {
-    let validation = this.validateQuery(query)
+    const validation = this.validateQuery(query)
 
     if (!validation.success) {
-      let err = this._createValidationError('Bad Query')
+      const err = this._createValidationError('Bad Query')
 
       err.json = validation
 
@@ -61,7 +61,7 @@ module.exports = function () {
   // Signature: query, options, done
   if (arguments.length > 1) {
     let callback
-    let legacyArguments = {
+    const legacyArguments = {
       query: arguments[0]
     }
 

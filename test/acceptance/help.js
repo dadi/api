@@ -29,12 +29,12 @@ function hashClientSecret (client) {
 
 module.exports.bulkRequest = function ({method = 'get', requests, token}) {
   const client = request(`http://${config.get('server.host')}:${config.get('server.port')}`)
-  let results = []
+  const results = []
 
   return requests.reduce((result, request, index) => {
     return result.then(() => {
       return new Promise((resolve, reject) => {
-        let endpoint = typeof request === 'string'
+        const endpoint = typeof request === 'string'
           ? request
           : request.endpoint
 
@@ -121,7 +121,7 @@ module.exports.dropDatabase = function (database, collectionName, done) {
     collectionName = 'test-schema'
   }
 
-  var options = {
+  const options = {
     database: 'testdb'
   }
 
@@ -133,7 +133,7 @@ module.exports.dropDatabase = function (database, collectionName, done) {
     options.collection = collectionName
   }
 
-  var conn = connection(options, null, config.get('datastore'))
+  const conn = connection(options, null, config.get('datastore'))
 
   const dropDatabase = () => {
     conn.datastore.dropDatabase(collectionName).then(() => {
@@ -163,8 +163,8 @@ module.exports.createClient = function (client, done, {
 
   client = hashClientSecret(client)
 
-  var collectionName = config.get('auth.clientCollection')
-  var conn = connection({
+  const collectionName = config.get('auth.clientCollection')
+  const conn = connection({
     override: true,
     database: config.get('auth.database'),
     collection: collectionName
@@ -201,7 +201,7 @@ module.exports.createClient = function (client, done, {
 }
 
 module.exports.createACLClient = function (client, callback) {
-  let clientsConnection = connection(
+  const clientsConnection = connection(
     {
       override: true,
       database: config.get('auth.database'),
@@ -220,14 +220,14 @@ module.exports.createACLClient = function (client, callback) {
   }).then(result => {
     return acl.access.write().then(w => {
       if (typeof callback === 'function') {
-        done(null, result)
+        callback(null, result)
       }
 
       return result
     })
   }).catch(err => {
     if (typeof callback === 'function') {
-      done(err)
+      callback(err)
     }
 
     return Promise.reject(err)
@@ -235,7 +235,7 @@ module.exports.createACLClient = function (client, callback) {
 }
 
 module.exports.createACLRole = function (role, callback) {
-  let rolesConnection = connection(
+  const rolesConnection = connection(
     {
       override: true,
       database: config.get('auth.database'),
@@ -252,14 +252,14 @@ module.exports.createACLRole = function (role, callback) {
   }).then(result => {
     return acl.access.write().then(() => {
       if (typeof callback === 'function') {
-        done(null, result)
+        callback(null, result)
       }
 
       return result
     })
   }).catch(err => {
     if (typeof callback === 'function') {
-      done(err)
+      callback(err)
     }
 
     return Promise.reject(err)
@@ -267,7 +267,7 @@ module.exports.createACLRole = function (role, callback) {
 }
 
 module.exports.removeACLData = function (done) {
-  let accessConnection = connection(
+  const accessConnection = connection(
     {
       override: true,
       database: config.get('auth.database'),
@@ -277,7 +277,7 @@ module.exports.removeACLData = function (done) {
     config.get('datastore')
   )
 
-  let clientsConnection = connection(
+  const clientsConnection = connection(
     {
       override: true,
       database: config.get('auth.database'),
@@ -287,7 +287,7 @@ module.exports.removeACLData = function (done) {
     config.get('datastore')
   )
 
-  let rolesConnection = connection(
+  const rolesConnection = connection(
     {
       override: true,
       database: config.get('auth.database'),
@@ -319,8 +319,8 @@ module.exports.removeACLData = function (done) {
 }
 
 module.exports.removeTestClients = function (done) {
-  var collectionName = config.get('auth.clientCollection')
-  var conn = connection({ override: true, database: config.get('auth.database'), collection: collectionName }, null, config.get('datastore'))
+  const collectionName = config.get('auth.clientCollection')
+  const conn = connection({ override: true, database: config.get('auth.database'), collection: collectionName }, null, config.get('datastore'))
 
   const dropDatabase = () => {
     conn.datastore.dropDatabase(collectionName).then(() => {
@@ -338,7 +338,8 @@ module.exports.removeTestClients = function (done) {
 }
 
 module.exports.clearCache = function () {
-  let dir = path.resolve(config.get('caching.directory.path'))
+  const dir = path.resolve(config.get('caching.directory.path'))
+
   exec(`rm -rf ${dir}`, (err, result) => {
     if (err) {
       console.log(`Error removing directory ${dir}`, err)
@@ -366,7 +367,8 @@ module.exports.getBearerToken = function (done) {
       // .expect('content-type', 'application/json')
       .end(function (err, res) {
         if (err) return done(err)
-        var bearerToken = res.body.accessToken
+        const bearerToken = res.body.accessToken
+
         should.exist(bearerToken)
         done(null, bearerToken)
       })
@@ -375,7 +377,7 @@ module.exports.getBearerToken = function (done) {
 }
 
 module.exports.getBearerTokenWithPermissions = function (permissions, done = (() => {})) {
-  let client = Object.assign({}, {
+  const client = Object.assign({}, {
     clientId: 'test123',
     secret: 'superSecret'
   }, permissions)
@@ -407,7 +409,7 @@ module.exports.getBearerTokenWithPermissions = function (permissions, done = (()
             return done(err)
           }
 
-          let bearerToken = res.body.accessToken
+          const bearerToken = res.body.accessToken
 
           should.exist(bearerToken)
 
@@ -423,10 +425,10 @@ module.exports.getBearerTokenWithPermissions = function (permissions, done = (()
 }
 
 module.exports.getBearerTokenWithAccessType = function (accessType, done) {
-  var client = {
+  const client = {
     clientId: 'test123',
     secret: 'superSecret',
-    accessType: accessType
+    accessType
   }
 
   module.exports.removeTestClients(function (err) {
@@ -443,7 +445,7 @@ module.exports.getBearerTokenWithAccessType = function (accessType, done) {
       .end(function (err, res) {
         if (err) return done(err)
 
-        var bearerToken = res.body.accessToken
+        const bearerToken = res.body.accessToken
 
         should.exist(bearerToken)
         done(null, bearerToken)
@@ -453,32 +455,32 @@ module.exports.getBearerTokenWithAccessType = function (accessType, done) {
 }
 
 module.exports.getCollectionMap = function () {
-  let collectionsPath = path.resolve(
+  const collectionsPath = path.resolve(
     config.get('paths.collections')
   )
-  let versions = fs.readdirSync(collectionsPath)
-  let map = {}
+  const versions = fs.readdirSync(collectionsPath)
+  const map = {}
 
   versions.forEach(version => {
-    let versionPath = path.join(collectionsPath, version)
-    let databases = fs.readdirSync(versionPath)
+    const versionPath = path.join(collectionsPath, version)
+    const databases = fs.readdirSync(versionPath)
 
     databases.forEach(database => {
-      let databasePath = path.join(versionPath, database)
-      let stats = fs.statSync(databasePath)
+      const databasePath = path.join(versionPath, database)
+      const stats = fs.statSync(databasePath)
 
       if (stats.isDirectory()) {
-        let collections = fs.readdirSync(databasePath)
+        const collections = fs.readdirSync(databasePath)
 
         collections.forEach(collection => {
-          let match = collection.match(/^collection.(.*).json$/)
+          const match = collection.match(/^collection.(.*).json$/)
 
           if (!match) {
             return
           }
 
-          let collectionName = match[1]
-          let collectionPath = path.join(databasePath, collection)
+          const collectionName = match[1]
+          const collectionPath = path.join(databasePath, collection)
 
           map[`/${version}/${database}/${collectionName}`] = require(collectionPath)
         })
@@ -491,13 +493,15 @@ module.exports.getCollectionMap = function () {
 
 module.exports.writeTempFile = function (filePath, data, callback) {
   let existingContent
-  let fullPath = path.resolve(__dirname, filePath)
+  const fullPath = path.resolve(__dirname, filePath)
 
   try {
     existingContent = fs.readFileSync(fullPath, 'utf8')
-  } catch (err) {}
+  } catch (err) {
+    // noop
+  }
 
-  let revertFn = () => {
+  const revertFn = () => {
     if (existingContent) {
       fs.writeFileSync(fullPath, existingContent)
     } else {
@@ -505,7 +509,7 @@ module.exports.writeTempFile = function (filePath, data, callback) {
     }
   }
 
-  let parsedData = typeof data === 'string'
+  const parsedData = typeof data === 'string'
     ? data
     : JSON.stringify(data, null, 2)
 

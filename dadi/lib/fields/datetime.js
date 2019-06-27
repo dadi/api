@@ -23,8 +23,8 @@ function convertDateTimeInQuery (input, schema, recursive) {
       format = schema.format
     }
 
-    let dateTime = moment.utc(input, format)
-    let timestamp = dateTime.valueOf()
+    const dateTime = moment.utc(input, format)
+    const timestamp = dateTime.valueOf()
 
     if (Number.isNaN(timestamp)) {
       throw new Error('Not a valid DateTime value')
@@ -37,7 +37,7 @@ function convertDateTimeInQuery (input, schema, recursive) {
     throw new Error('Not a valid DateTime value')
   }
 
-  let output = {}
+  const output = {}
 
   Object.keys(input).forEach(key => {
     output[key] = convertDateTimeInQuery(input[key], schema, true)
@@ -53,7 +53,7 @@ module.exports.beforeOutput = function ({field, input, schema}) {
     }
   }
 
-  let dateTime = moment.utc(input[field])
+  const dateTime = moment.utc(input[field])
   let value
 
   switch (schema.format) {

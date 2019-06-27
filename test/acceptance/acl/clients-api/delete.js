@@ -5,8 +5,8 @@ const request = require('supertest')
 const should = require('should')
 
 module.exports = () => {
-  let configBackup = config.get()
-  let client = request(`http://${config.get('server.host')}:${config.get('server.port')}`)
+  const configBackup = config.get()
+  const client = request(`http://${config.get('server.host')}:${config.get('server.port')}`)
 
   describe('error states', () => {
     it('should return 401 if the request does not include a valid bearer token', done => {
@@ -22,7 +22,7 @@ module.exports = () => {
     })
 
     it('should return 403 if the request includes a valid bearer token without sufficient permissions on the "clients" resource (no resource)', done => {
-      let testClient = {
+      const testClient = {
         clientId: 'apiClient',
         secret: 'someSecret'
       }
@@ -39,7 +39,7 @@ module.exports = () => {
 
           res.body.accessToken.should.be.String
 
-          let bearerToken = res.body.accessToken
+          const bearerToken = res.body.accessToken
 
           client
           .delete('/api/clients/someClient')
@@ -56,7 +56,7 @@ module.exports = () => {
     })
 
     it('should return 403 if the request includes a valid bearer token without sufficient permissions on the "clients" resource (falsy access type)', done => {
-      let testClient = {
+      const testClient = {
         clientId: 'apiClient',
         secret: 'someSecret',
         resources: {
@@ -79,7 +79,7 @@ module.exports = () => {
 
           res.body.accessToken.should.be.String
 
-          let bearerToken = res.body.accessToken
+          const bearerToken = res.body.accessToken
 
           client
           .delete('/api/clients/someClient')
@@ -96,7 +96,7 @@ module.exports = () => {
     })
 
     it('should return 404 if an authorised request tries to delete a client that does not exist', done => {
-      let testClient = {
+      const testClient = {
         clientId: 'apiClient',
         secret: 'someSecret',
         resources: {
@@ -118,7 +118,7 @@ module.exports = () => {
 
           res.body.accessToken.should.be.String
 
-          let bearerToken = res.body.accessToken
+          const bearerToken = res.body.accessToken
 
           client
           .delete('/api/clients/someClient')
@@ -137,7 +137,7 @@ module.exports = () => {
 
   describe('success states (the client has "delete" access to the "clients" resource)', () => {
     it('should delete a client and return 204', done => {
-      let testClient1 = {
+      const testClient1 = {
         clientId: 'apiClient',
         secret: 'someSecret',
         resources: {
@@ -147,7 +147,7 @@ module.exports = () => {
           }
         }
       }
-      let testClient2 = {
+      const testClient2 = {
         clientId: 'someClient',
         secret: 'someSecret'
       }
@@ -169,7 +169,7 @@ module.exports = () => {
 
           res.body.accessToken.should.be.String
 
-          let bearerToken = res.body.accessToken
+          const bearerToken = res.body.accessToken
 
           client
           .get(`/api/clients/${testClient2.clientId}`)
@@ -206,7 +206,7 @@ module.exports = () => {
     })
 
     it('should not issue tokens to clients that have been deleted', done => {
-      let testClient1 = {
+      const testClient1 = {
         clientId: 'apiClient',
         secret: 'someSecret',
         resources: {
@@ -216,7 +216,7 @@ module.exports = () => {
           }
         }
       }
-      let testClient2 = {
+      const testClient2 = {
         clientId: 'someClient',
         secret: 'someSecret'
       }
@@ -238,7 +238,7 @@ module.exports = () => {
 
           res.body.accessToken.should.be.String
 
-          let bearerToken = res.body.accessToken
+          const bearerToken = res.body.accessToken
 
           client
           .post(config.get('auth.tokenUrl'))

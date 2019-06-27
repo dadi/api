@@ -11,13 +11,15 @@ function getRevisions ({
   id,
   options = {}
 }) {
-  let fields = options.fields || {}
+  const fields = options.fields || {}
   let historyQuery = {}
 
   if (options.historyFilters) {
     try {
       historyQuery = JSON.parse(options.historyFilters)
-    } catch (e) {}
+    } catch (_) {
+      // noop
+    }
   }
 
   return this.connection.db.find({
@@ -51,8 +53,8 @@ module.exports = function () {
   // Compatibility with legacy model API.
   // Signature: id, options, done
   if (arguments.length > 1) {
-    let callback = arguments[2]
-    let legacyArguments = {
+    const callback = arguments[2]
+    const legacyArguments = {
       id: arguments[0],
       options: arguments[1]
     }

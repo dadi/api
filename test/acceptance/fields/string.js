@@ -9,8 +9,8 @@ const app = require(__dirname + '/../../../dadi/lib/')
 const Model = require('./../../../dadi/lib/model')
 
 let bearerToken
-let configBackup = config.get()
-let connectionString = 'http://' + config.get('server.host') + ':' + config.get('server.port')
+const configBackup = config.get()
+const connectionString = 'http://' + config.get('server.host') + ':' + config.get('server.port')
 
 describe('String Field', () => {
   beforeEach(done => {
@@ -34,8 +34,8 @@ describe('String Field', () => {
 
   describe('query filtering', () => {
     it('should transform string to case-insensitive regex when at root', done => {
-      let client = request(connectionString)
-      let value = 'Hello world'
+      const client = request(connectionString)
+      const value = 'Hello world'
 
       client
       .post('/v1/library/misc')
@@ -59,8 +59,8 @@ describe('String Field', () => {
     })
 
     it('should not transform string to case-insensitive regex when nested inside operator', done => {
-      let client = request(connectionString)
-      let value = 'Hello world'
+      const client = request(connectionString)
+      const value = 'Hello world'
 
       client
       .post('/v1/library/misc')

@@ -54,8 +54,8 @@ function find ({
   // as well as language variations of fields.
   if (options.fields && Object.keys(options.fields).length) {
     Object.keys(options.fields).forEach(field => {
-      let baseField = field.split('.')[0]
-      let [name, collection] = baseField.split('@')
+      const baseField = field.split('.')[0]
+      const [name, collection] = baseField.split('@')
 
       // If the projected field specifies a collection to search on
       // (e.g. author@people.name) and that collection is not the
@@ -75,7 +75,7 @@ function find ({
       // include a field and request a certain language, we must also include
       // that corresponding variation).
       config.get('i18n.languages').forEach(supportedLanguage => {
-        let langField = name + config.get('i18n.fieldCharacter') + supportedLanguage
+        const langField = name + config.get('i18n.fieldCharacter') + supportedLanguage
 
         queryFields[langField] = options.fields[field]
       })
@@ -87,7 +87,7 @@ function find ({
         this.getFieldType(name) === 'reference' &&
         options.fields[field] === 1
       ) {
-        let mappingField = this._getIdMappingName(name)
+        const mappingField = this._getIdMappingName(name)
 
         queryFields[mappingField] = 1
       }
@@ -95,7 +95,7 @@ function find ({
   }
 
   // Run validation.
-  let validation = this.validateQuery(query)
+  const validation = this.validateQuery(query)
 
   if (!validation.success) {
     const err = this._createValidationError('Bad Query')
@@ -148,7 +148,7 @@ module.exports = function () {
   // Signature: query, options, done
   if (arguments.length > 1) {
     let callback
-    let legacyArguments = {
+    const legacyArguments = {
       query: arguments[0]
     }
 

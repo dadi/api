@@ -8,7 +8,7 @@ const app = require(__dirname + '/../../../../dadi/lib/')
 const connectionString = 'http://' + config.get('server.host') + ':' + config.get('server.port')
 const client = request(connectionString)
 let bearerToken
-let lastModifiedAt = 0
+const lastModifiedAt = 0
 
 describe('Collections API – PUT', function () {
   this.timeout(4000)
@@ -19,7 +19,7 @@ describe('Collections API – PUT', function () {
     help.dropDatabase('testdb', function (err) {
       if (err) return done(err)
 
-      let schema = {
+      const schema = {
         'fields': {
           'field1': {
             'type': 'String',
@@ -41,7 +41,7 @@ describe('Collections API – PUT', function () {
         'settings': {}
       }
 
-      let schemaNoHistory = Object.assign({}, schema, {
+      const schemaNoHistory = Object.assign({}, schema, {
         settings: {
           storeRevisions: false
         }
@@ -107,11 +107,12 @@ describe('Collections API – PUT', function () {
       .end(function (err, res) {
         if (err) return done(err)
 
-        var doc = res.body.results[0]
+        const doc = res.body.results[0]
+
         should.exist(doc)
         doc.field1.should.equal('doc to update')
 
-        var puturl = '/vtest/testdb/put-test-schema/' + doc._id
+        const puturl = '/vtest/testdb/put-test-schema/' + doc._id
 
         client
           .put(puturl)
@@ -180,8 +181,8 @@ describe('Collections API – PUT', function () {
   })
 
   it('should update existing documents when passing ID, giving back the updated document with internal fields prefixed with the character defined in config', function (done) {
-    var client = request(connectionString)
-    var originalPrefix = config.get('internalFieldsPrefix')
+    const client = request(connectionString)
+    const originalPrefix = config.get('internalFieldsPrefix')
 
     config.set('internalFieldsPrefix', '$')
 
@@ -193,11 +194,12 @@ describe('Collections API – PUT', function () {
       .end(function (err, res) {
         if (err) return done(err)
 
-        var doc = res.body.results[0]
+        const doc = res.body.results[0]
+
         should.exist(doc)
         doc.field1.should.equal('doc to update')
 
-        var puturl = '/vtest/testdb/put-test-schema/' + doc.$id
+        const puturl = '/vtest/testdb/put-test-schema/' + doc.$id
 
         client
           .put(puturl)
@@ -225,11 +227,12 @@ describe('Collections API – PUT', function () {
       .end(function (err, res) {
         if (err) return done(err)
 
-        var doc = res.body.results[0]
+        const doc = res.body.results[0]
+
         should.exist(doc)
         doc.field1.should.equal('doc to update')
 
-        var body = {
+        const body = {
           query: { _id: doc._id },
           update: {field1: 'updated doc'}
         }
@@ -266,8 +269,8 @@ describe('Collections API – PUT', function () {
   })
 
   it('should update existing document by ID when passing a query, translating any internal field to the prefix defined in config', function (done) {
-    var client = request(connectionString)
-    var originalPrefix = config.get('internalFieldsPrefix')
+    const client = request(connectionString)
+    const originalPrefix = config.get('internalFieldsPrefix')
 
     config.set('internalFieldsPrefix', '$')
 
@@ -279,11 +282,12 @@ describe('Collections API – PUT', function () {
       .end(function (err, res) {
         if (err) return done(err)
 
-        var doc = res.body.results[0]
+        const doc = res.body.results[0]
+
         should.exist(doc)
         doc.field1.should.equal('doc to update')
 
-        var body = {
+        const body = {
           query: { $id: doc.$id },
           update: {field1: 'updated doc'}
         }
@@ -347,7 +351,7 @@ describe('Collections API – PUT', function () {
                 if (err) return done(err)
 
                 // update query
-                var body = {
+                const body = {
                   query: { field1: 'draft' },
                   update: {field1: 'published'}
                 }
@@ -375,8 +379,8 @@ describe('Collections API – PUT', function () {
   })
 
   it('should update documents when passing a query with a filter, translating any internal field to the prefix defined in config', function (done) {
-    var client = request(connectionString)
-    var originalPrefix = config.get('internalFieldsPrefix')
+    const client = request(connectionString)
+    const originalPrefix = config.get('internalFieldsPrefix')
 
     config.set('internalFieldsPrefix', '$')
 
@@ -388,8 +392,8 @@ describe('Collections API – PUT', function () {
       .end(function (err, res) {
         if (err) return done(err)
 
-        var doc = res.body.results[0]
-        var body = {
+        const doc = res.body.results[0]
+        const body = {
           query: {
             $id: doc.$id
           },
@@ -440,7 +444,8 @@ describe('Collections API – PUT', function () {
       .end(function (err, res) {
         if (err) return done(err)
 
-        var doc = res.body.results[0]
+        const doc = res.body.results[0]
+
         should.exist(doc)
         doc.field1.should.equal('doc to update')
 
@@ -478,10 +483,10 @@ describe('Collections API – PUT', function () {
   })
 
   it('should ignore any internal properties supplied by the client when updating a document', function (done) {
-    let initial = {
+    const initial = {
       field1: 'initial'
     }
-    let update = {
+    const update = {
       _id: 12345,
       _createdBy: 'johndoe',
       _createdAt: 1010101,
@@ -497,7 +502,8 @@ describe('Collections API – PUT', function () {
       .end(function (err, res) {
         if (err) return done(err)
 
-        var doc = res.body.results[0]
+        const doc = res.body.results[0]
+
         should.exist(doc)
         doc.field1.should.equal(initial.field1)
 
@@ -576,12 +582,13 @@ describe('Collections API – PUT', function () {
           .end(function (err, res) {
             if (err) return done(err)
 
-            var doc = res.body.results[0]
+            const doc = res.body.results[0]
+
             should.exist(doc)
 
             doc.field1.should.equal('doc')
 
-            var body = {
+            const body = {
               query: { field1: 'doc' },
               update: {field1: 'updated doc'}
             }
@@ -638,11 +645,12 @@ describe('Collections API – PUT', function () {
             .expect(200)
             .end(function (err, res) {
               if (err) return done(err)
-              var doc = res.body.results[0]
+              const doc = res.body.results[0]
+
               should.exist(doc)
               doc.field1.should.equal('doc')
 
-              var body = {
+              const body = {
                 query: { field1: 'doc' },
                 update: {field1: 'updated doc'}
               }

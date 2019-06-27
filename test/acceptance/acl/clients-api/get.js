@@ -5,8 +5,8 @@ const request = require('supertest')
 const should = require('should')
 
 module.exports = () => {
-  let configBackup = config.get()
-  let client = request(`http://${config.get('server.host')}:${config.get('server.port')}`)
+  const configBackup = config.get()
+  const client = request(`http://${config.get('server.host')}:${config.get('server.port')}`)
 
   describe('error states', () => {
     it('should return 401 if the request to /api/clients does not include a valid bearer token', done => {
@@ -46,7 +46,7 @@ module.exports = () => {
     })
 
     it('should return 403 if the request includes a valid bearer token without sufficient permissions on the "clients" resource (no resource)', done => {
-      let testClient = {
+      const testClient = {
         clientId: 'apiClient',
         secret: 'someSecret'
       }
@@ -63,7 +63,7 @@ module.exports = () => {
 
           res.body.accessToken.should.be.String
 
-          let bearerToken = res.body.accessToken
+          const bearerToken = res.body.accessToken
 
           client
           .get('/api/clients')
@@ -80,7 +80,7 @@ module.exports = () => {
     })
 
     it('should return 403 if the request includes a valid bearer token without sufficient permissions on the "clients" resource (falsy access type)', done => {
-      let testClient = {
+      const testClient = {
         clientId: 'apiClient',
         secret: 'someSecret',
         resources: {
@@ -103,7 +103,7 @@ module.exports = () => {
 
           res.body.accessToken.should.be.String
 
-          let bearerToken = res.body.accessToken
+          const bearerToken = res.body.accessToken
 
           client
           .get('/api/clients')
@@ -132,7 +132,7 @@ module.exports = () => {
     })
 
     it('should return 403 for an unauthorised request trying to access a client that does not exist', done => {
-      let testClient = {
+      const testClient = {
         clientId: 'apiClient2',
         secret: 'someOtherSecret',
         resources: {
@@ -157,7 +157,7 @@ module.exports = () => {
 
           res.body.accessToken.should.be.String
 
-          let bearerToken = res.body.accessToken
+          const bearerToken = res.body.accessToken
 
           client
           .get('/api/clients/johndoe')
@@ -174,7 +174,7 @@ module.exports = () => {
     })
 
     it('should return 404 for an authorised request trying to access a client that does not exist', done => {
-      let testClient = {
+      const testClient = {
         clientId: 'apiClient2',
         secret: 'someOtherSecret',
         resources: {
@@ -199,7 +199,7 @@ module.exports = () => {
 
           res.body.accessToken.should.be.String
 
-          let bearerToken = res.body.accessToken
+          const bearerToken = res.body.accessToken
 
           client
           .get('/api/clients/johndoe')
@@ -218,7 +218,7 @@ module.exports = () => {
 
   describe('success states (the client has "read" access to the "clients" resource)', () => {
     it('should list existing clients', done => {
-      let testClient = {
+      const testClient = {
         clientId: 'apiClient',
         secret: 'someSecret',
         resources: {
@@ -243,7 +243,7 @@ module.exports = () => {
 
           res.body.accessToken.should.be.String
 
-          let bearerToken = res.body.accessToken
+          const bearerToken = res.body.accessToken
 
           client
           .get('/api/clients')
@@ -277,12 +277,12 @@ module.exports = () => {
     })
 
     it('should retrieve clients by name, ommitting the `secret` property', done => {
-      let testClient1 = {
+      const testClient1 = {
         clientId: 'apiClient1',
         secret: 'someSecret'
       }
 
-      let testClient2 = {
+      const testClient2 = {
         clientId: 'apiClient2',
         secret: 'someOtherSecret',
         resources: {
@@ -309,7 +309,7 @@ module.exports = () => {
 
           res.body.accessToken.should.be.String
 
-          let bearerToken = res.body.accessToken
+          const bearerToken = res.body.accessToken
 
           client
           .get(`/api/clients/${testClient1.clientId}`)
@@ -335,11 +335,11 @@ module.exports = () => {
     })
 
     it('should retrieve a data object associated with a client', done => {
-      let testClient = {
+      const testClient = {
         clientId: 'apiClient',
         secret: 'someSecret'
       }
-      let newData = {
+      const newData = {
         keyOne: 1
       }        
 
@@ -358,7 +358,7 @@ module.exports = () => {
 
           res.body.accessToken.should.be.String
 
-          let bearerToken = res.body.accessToken
+          const bearerToken = res.body.accessToken
 
           client
           .put(`/api/clients/${testClient.clientId}`)
@@ -399,16 +399,16 @@ module.exports = () => {
     })
 
     it('should display protected properties present in the data object associated with a client', done => {
-      let testClient1 = {
+      const testClient1 = {
         clientId: 'apiClient',
         secret: 'someSecret'
       }
-      let testClient2 = {
+      const testClient2 = {
         clientId: 'adminClient',
         secret: 'someSecret',
         accessType: 'admin'
       }
-      let newData = {
+      const newData = {
         _keyOne: 1
       }        
 
@@ -429,7 +429,7 @@ module.exports = () => {
 
           res.body.accessToken.should.be.String
 
-          let adminToken = res.body.accessToken
+          const adminToken = res.body.accessToken
 
           client
           .post(config.get('auth.tokenUrl'))
@@ -445,7 +445,7 @@ module.exports = () => {
 
             res.body.accessToken.should.be.String
 
-            let bearerToken = res.body.accessToken
+            const bearerToken = res.body.accessToken
 
             client
             .put(`/api/clients/${testClient1.clientId}`)
@@ -489,7 +489,7 @@ module.exports = () => {
 
   describe('success states (the client is retrieving his own record)', () => {
     it('should list existing clients', done => {
-      let testClient = {
+      const testClient = {
         clientId: 'apiClient',
         secret: 'someSecret'
       }
@@ -509,7 +509,7 @@ module.exports = () => {
 
           res.body.accessToken.should.be.String
 
-          let bearerToken = res.body.accessToken
+          const bearerToken = res.body.accessToken
 
           client
           .get('/api/client')

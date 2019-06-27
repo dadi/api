@@ -9,8 +9,8 @@ module.exports = server => {
       req.headers &&
       req.headers['x-dadi-requires']
     ) {
-      let requestedFeatures = req.headers['x-dadi-requires'].split(';')
-      let supportedFeatures = requestedFeatures.filter(feature => {
+      const requestedFeatures = req.headers['x-dadi-requires'].split(';')
+      const supportedFeatures = requestedFeatures.filter(feature => {
         return FEATURES.includes(feature)
       })
 

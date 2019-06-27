@@ -101,12 +101,12 @@ Role.prototype.delete = function (name) {
  * @return {Object}
  */
 Role.prototype.formatForOutput = function (role) {
-  let sanitisedRole = Object.keys(this.schema).reduce((output, key) => {
+  const sanitisedRole = Object.keys(this.schema).reduce((output, key) => {
     if (!this.schema[key].hidden) {
       output[key] = role[key] || this.schema[key].default
 
       if (key === 'resources') {
-        let resources = new ACLMatrix(output[key])
+        const resources = new ACLMatrix(output[key])
 
         output[key] = resources.getAll({
           addFalsyTypes: true
@@ -128,7 +128,7 @@ Role.prototype.formatForOutput = function (role) {
  * @return {Promise<Object>}
  */
 Role.prototype.get = function (names) {
-  let query = {}
+  const query = {}
 
   if (Array.isArray(names)) {
     query.name = {
@@ -141,8 +141,8 @@ Role.prototype.get = function (names) {
   return this.model.find({
     query
   }).then(response => {
-    let formattedResults = response.results.map(result => {
-      let resources = new ACLMatrix(result.resources)
+    const formattedResults = response.results.map(result => {
+      const resources = new ACLMatrix(result.resources)
 
       return Object.assign({}, result, {
         resources: resources.getAll()
@@ -180,7 +180,7 @@ Role.prototype.resourceAdd = function (role, resource, access) {
       )
     }
 
-    let resources = new ACLMatrix(
+    const resources = new ACLMatrix(
       results[0].resources
     )
 
@@ -239,7 +239,7 @@ Role.prototype.resourceRemove = function (role, resource) {
       )
     }
 
-    let resources = new ACLMatrix(
+    const resources = new ACLMatrix(
       results[0].resources
     )
 
@@ -295,7 +295,7 @@ Role.prototype.resourceUpdate = function (role, resource, access) {
       )
     }
 
-    let resources = new ACLMatrix(
+    const resources = new ACLMatrix(
       results[0].resources
     )
 
@@ -395,19 +395,19 @@ Role.prototype.update = function (roleName, update) {
  * @return {Promise}
  */
 Role.prototype.validate = function (role, {partial = false} = {}) {
-  let missingFields = Object.keys(this.schema).filter(field => {
+  const missingFields = Object.keys(this.schema).filter(field => {
     return this.schema[field].required && role[field] === undefined
   })
 
   if (!partial && missingFields.length > 0) {
-    let error = new Error('MISSING_FIELDS')
+    const error = new Error('MISSING_FIELDS')
 
     error.data = missingFields
 
     return Promise.reject(error)
   }
 
-  let invalidFields = Object.keys(this.schema).filter(field => {
+  const invalidFields = Object.keys(this.schema).filter(field => {
     if (
       role[field] !== undefined &&
       this.schema[field].allowedInInput === false
@@ -429,7 +429,7 @@ Role.prototype.validate = function (role, {partial = false} = {}) {
   })
 
   if (invalidFields.length > 0) {
-    let error = new Error('INVALID_FIELDS')
+    const error = new Error('INVALID_FIELDS')
 
     error.data = invalidFields
 

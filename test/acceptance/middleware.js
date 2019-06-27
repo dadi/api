@@ -1,13 +1,13 @@
-var should = require('should')
-var request = require('supertest')
-var config = require(__dirname + '/../../config')
-var help = require(__dirname + '/help')
-var appHelp = require(__dirname + '/../../dadi/lib/help')
-var app = require(__dirname + '/../../dadi/lib/')
+const should = require('should')
+const request = require('supertest')
+const config = require(__dirname + '/../../config')
+const help = require(__dirname + '/help')
+const appHelp = require(__dirname + '/../../dadi/lib/help')
+const app = require(__dirname + '/../../dadi/lib/')
 
 // variables scoped for use throughout tests
-var bearerToken
-var connectionString = 'http://' + config.get('server.host') + ':' + config.get('server.port')
+let bearerToken
+const connectionString = 'http://' + config.get('server.host') + ':' + config.get('server.port')
 
 describe('middleware extension', function (done) {
   before(function (done) {
@@ -34,7 +34,7 @@ describe('middleware extension', function (done) {
   })
 
   it('should expose a .get method', function (done) {
-    var client = request(connectionString)
+    const client = request(connectionString)
 
     app.get('/test-route', function (req, res, next) {
             // make sure we can pass multiple middlewares
@@ -59,7 +59,7 @@ describe('middleware extension', function (done) {
   })
 
   it('should expose a .post method', function (done) {
-    var client = request(connectionString)
+    const client = request(connectionString)
 
     app.post('/test-route', function (req, res, next) {
             // make sure we can pass multiple middlewares
@@ -87,7 +87,7 @@ describe('middleware extension', function (done) {
   })
 
   it('should expose a .put method', function (done) {
-    var client = request(connectionString)
+    const client = request(connectionString)
 
     app.put('/test-route', function (req, res, next) {
             // make sure we can pass multiple middlewares
@@ -115,7 +115,7 @@ describe('middleware extension', function (done) {
   })
 
   it('should expose a .delete method', function (done) {
-    var client = request(connectionString)
+    const client = request(connectionString)
 
     app.delete('/test-route', function (req, res, next) {
             // make sure we can pass multiple middlewares
@@ -143,7 +143,7 @@ describe('middleware extension', function (done) {
   })
 
   it('should expose a .head method', function (done) {
-    var client = request(connectionString)
+    const client = request(connectionString)
 
     app.head('/test-route', function (req, res, next) {
             // make sure we can pass multiple middlewares
@@ -161,7 +161,7 @@ describe('middleware extension', function (done) {
   })
 
   it('should expose a .options method', function (done) {
-    var client = request(connectionString)
+    const client = request(connectionString)
 
     app.options('/test-route', function (req, res, next) {
             // make sure we can pass multiple middlewares
@@ -189,7 +189,7 @@ describe('middleware extension', function (done) {
   })
 
   it('should expose a .trace method', function (done) {
-    var client = request(connectionString)
+    const client = request(connectionString)
 
     app.trace('/test-route', function (req, res, next) {
             // make sure we can pass multiple middlewares

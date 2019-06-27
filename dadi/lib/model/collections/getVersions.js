@@ -15,7 +15,7 @@ function getVersions ({
     )
   }
 
-  let response = {
+  const response = {
     results: []
   }
 

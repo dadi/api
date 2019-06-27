@@ -158,8 +158,8 @@ Hook.prototype.formatError = function (error) {
   }
 
   return [formatError.createApiError(errorCode, {
-    error: error,
-    errorMessage: errorMessage,
+    error,
+    errorMessage,
     hookName: this.getName()
   })]
 }

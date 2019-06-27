@@ -146,8 +146,6 @@ Connection.prototype.setUpEventListeners = function (db) {
  * @api public
  */
 module.exports = function (options, collection, storeName) {
-  let conn
-
   try {
     const storeSettings = require(storeName).settings
 
@@ -163,7 +161,7 @@ module.exports = function (options, collection, storeName) {
     return connectionPool[connectionKey]
   }
 
-  conn = new Connection(options, storeName)
+  const conn = new Connection(options, storeName)
 
   if (collection) {
     options.collection = collection
@@ -177,7 +175,7 @@ module.exports = function (options, collection, storeName) {
 
 module.exports.Connection = Connection
 module.exports.resetConnections = () => {
-  let queue = Object.keys(connectionPool).map(connectionKey => {
+  const queue = Object.keys(connectionPool).map(connectionKey => {
     return connectionPool[connectionKey].destroy()
   })
 

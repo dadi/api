@@ -12,8 +12,8 @@ const sinon = require('sinon')
 
 // Bearer token with admin access
 let bearerToken
-let client = request(`http://${config.get('server.host')}:${config.get('server.port')}`)
-let configBackup = config.get()
+const client = request(`http://${config.get('server.host')}:${config.get('server.port')}`)
+const configBackup = config.get()
 
 function signAndUpload (data, callback) {
   return client
@@ -38,42 +38,48 @@ describe('Media', function () {
   describe('Path format', function () {
     it('should generate a folder hierarchy for a file with 4 character chunks', function (done) {
       config.set('media.pathFormat', 'sha1/4')
-      let mediaController = new MediaController()
+      const mediaController = new MediaController()
+
       mediaController.getPath('test.jpg').split('/')[0].length.should.eql(4)
       done()
     })
 
     it('should generate a folder hierarchy for a file with 5 character chunks', function (done) {
       config.set('media.pathFormat', 'sha1/5')
-      let mediaController = new MediaController()
+      const mediaController = new MediaController()
+
       mediaController.getPath('test.jpg').split('/')[0].length.should.eql(5)
       done()
     })
 
     it('should generate a folder hierarchy for a file with 8 character chunks', function (done) {
       config.set('media.pathFormat', 'sha1/8')
-      let mediaController = new MediaController()
+      const mediaController = new MediaController()
+
       mediaController.getPath('test.jpg').split('/')[0].length.should.eql(8)
       done()
     })
 
     it('should generate a folder hierarchy for a file using the current date', function (done) {
       config.set('media.pathFormat', 'date')
-      let mediaController = new MediaController()
+      const mediaController = new MediaController()
+
       mediaController.getPath('test.jpg').split('/').length.should.eql(3)
       done()
     })
 
     it('should generate a folder hierarchy for a file using the current datetime', function (done) {
       config.set('media.pathFormat', 'datetime')
-      let mediaController = new MediaController()
+      const mediaController = new MediaController()
+
       mediaController.getPath('test.jpg').split('/').length.should.eql(6)
       done()
     })
 
     it('should not generate a folder hierarchy for a file when not configured', function (done) {
       config.set('media.pathFormat', '')
-      let mediaController = new MediaController()
+      const mediaController = new MediaController()
+
       mediaController.getPath('test.jpg').should.eql('')
       done()
     })
@@ -125,7 +131,7 @@ describe('Media', function () {
       })
 
       it('should return 401 if the request does not include a valid bearer token', done => {
-        let obj = {
+        const obj = {
           fileName: 'test.jpg'
         }
 
@@ -151,7 +157,7 @@ describe('Media', function () {
         }, (err, token) => {
           if (err) return done(err)
 
-          let obj = {
+          const obj = {
             fileName: 'test.jpg'
           }
 
@@ -170,7 +176,7 @@ describe('Media', function () {
       })
 
       it('should accept a payload and return a signed url', function (done) {
-        var obj = {
+        const obj = {
           fileName: 'test.jpg'
         }
 
@@ -183,7 +189,8 @@ describe('Media', function () {
         .end((err, res) => {
           if (err) return done(err)
           should.exist(res.body.url)
-          var url = res.body.url.replace('/media/upload/', '')
+          const url = res.body.url.replace('/media/upload/', '')
+
           jwt.verify(url, config.get('media.tokenSecret'), (err, payload) => {
             payload.fileName.should.eql(obj.fileName)
             payload._createdBy.should.eql('test123')
@@ -221,14 +228,14 @@ describe('Media', function () {
       })
 
       it('should use override expiresIn value if specified', function (done) {
-        var obj = {
+        const obj = {
           fileName: 'test.jpg',
           expiresIn: '60',
           _createdBy: 'test123'
         }
 
-        var spy = sinon.spy(MediaController.MediaController.prototype, '_signToken')
-        var expected = jwt.sign(obj, config.get('media.tokenSecret'), { expiresIn: '60' })
+        const spy = sinon.spy(MediaController.MediaController.prototype, '_signToken')
+        const expected = jwt.sign(obj, config.get('media.tokenSecret'), { expiresIn: '60' })
 
         client
         .post('/media/sign')
@@ -247,7 +254,7 @@ describe('Media', function () {
     describe('POST', function () {
       describe('with signed URL', () => {
         it('should return an error if specified token has expired', function (done) {
-          var obj = {
+          const obj = {
             fileName: '1f525.png'
           }
 
@@ -264,7 +271,7 @@ describe('Media', function () {
         })
 
         it('should return an error if posted filename does not match token payload', function (done) {
-          var obj = {
+          const obj = {
             fileName: 'test.jpg'
           }
 
@@ -276,7 +283,7 @@ describe('Media', function () {
         })
 
         it('should return an error if posted mimetype does not match token payload', function (done) {
-          var obj = {
+          const obj = {
             fileName: '1f525.png',
             mimetype: 'image/jpeg'
           }
@@ -329,7 +336,7 @@ describe('Media', function () {
         })
 
         it('should accept metadata properties alongside the file and add them to the created object', done => {
-          let metadata = {
+          const metadata = {
             caption: 'A thousand words'
           }
 
@@ -350,7 +357,7 @@ describe('Media', function () {
         })
 
         it('should handle the upload of multiple files', done => {
-          let metadata = {
+          const metadata = {
             caption: 'A thousand words'
           }
 
@@ -372,7 +379,7 @@ describe('Media', function () {
         })
 
         it('should accept metadata properties alongside the files and add them to all created objects', done => {
-          let metadata = {
+          const metadata = {
             caption: 'A thousand words'
           }
 
@@ -423,7 +430,7 @@ describe('Media', function () {
       })
 
       it('should return 400 if the content type is not `multipart/form-data`', done => {
-        let metadata = {
+        const metadata = {
           caption: 'A thousand words'
         }
 
@@ -443,7 +450,7 @@ describe('Media', function () {
 
     describe('PUT', function () {
       it('should update a document by ID', done => {
-        let obj = {
+        const obj = {
           fileName: '1f525.png',
           mimetype: 'image/png'
         }
@@ -459,8 +466,8 @@ describe('Media', function () {
           res.body.results[0].width.should.eql(512)
           res.body.results[0].height.should.eql(512)
 
-          let id = res.body.results[0]._id
-          let metadataUpdate = {
+          const id = res.body.results[0]._id
+          const metadataUpdate = {
             altText: 'A lovely flower',
             someNumericValue: 1337
           }
@@ -496,7 +503,7 @@ describe('Media', function () {
       })
 
       it('should accept application/json to update metadata on document by ID', done => {
-        let obj = {
+        const obj = {
           fileName: '1f525.png',
           mimetype: 'image/png'
         }
@@ -512,8 +519,8 @@ describe('Media', function () {
           res.body.results[0].width.should.eql(512)
           res.body.results[0].height.should.eql(512)
 
-          let id = res.body.results[0]._id
-          let metadataUpdate = {
+          const id = res.body.results[0]._id
+          const metadataUpdate = {
             altText: 'A lovely flower',
             someNumericValue: 1337
           }
@@ -544,7 +551,7 @@ describe('Media', function () {
       })
 
       it('should return a 400 when trying to update a reserved property', done => {
-        let obj = {
+        const obj = {
           fileName: '1f525.png',
           mimetype: 'image/png'
         }
@@ -560,8 +567,8 @@ describe('Media', function () {
           res.body.results[0].width.should.eql(512)
           res.body.results[0].height.should.eql(512)
 
-          let id = res.body.results[0]._id
-          let metadataUpdate = {
+          const id = res.body.results[0]._id
+          const metadataUpdate = {
             altText: 'A lovely flower',
             _createdBy: 'johnDoe'
           }
@@ -598,7 +605,7 @@ describe('Media', function () {
 
     describe('COUNT', function () {
       it('should return 401 if the request does not include a valid bearer token', done => {
-        let obj = {
+        const obj = {
           fileName: '1f525.png',
           mimetype: 'image/png'
         }
@@ -631,7 +638,7 @@ describe('Media', function () {
         }, (err, token) => {
           if (err) return done(err)
 
-          let obj = {
+          const obj = {
             fileName: '1f525.png',
             mimetype: 'image/png'
           }
@@ -657,7 +664,7 @@ describe('Media', function () {
       })
 
       it('should return count of uploaded media', function (done) {
-        let obj = {
+        const obj = {
           fileName: '1f525.png',
           mimetype: 'image/png'
         }
@@ -758,7 +765,7 @@ describe('Media', function () {
         })
 
         it('should return results of uploaded media', function (done) {
-          var obj = {
+          const obj = {
             fileName: '1f525.png',
             mimetype: 'image/png'
           }
@@ -787,7 +794,7 @@ describe('Media', function () {
         })
 
         it('should format Reference fields containing media documents', function (done) {
-          var obj = {
+          const obj = {
             fileName: '1f525.png',
             mimetype: 'image/png'
           }
@@ -826,7 +833,7 @@ describe('Media', function () {
         })
 
         it('should allow standard filtering on media collection', function (done) {
-          var obj = {
+          const obj = {
             fileName: '1f525.png',
             mimetype: 'image/png'
           }
@@ -849,7 +856,7 @@ describe('Media', function () {
         })
 
         it('should allow limiting fields returned', function (done) {
-          var obj = {
+          const obj = {
             fileName: '1f525.png',
             mimetype: 'image/png'
           }
@@ -874,7 +881,7 @@ describe('Media', function () {
 
       describe('Named bucket', function () {
         let bearerToken
-        let defaultBucket = config.get('media.defaultBucket')
+        const defaultBucket = config.get('media.defaultBucket')
 
         beforeEach(done => {
           help.getBearerTokenWithPermissions({
@@ -948,7 +955,7 @@ describe('Media', function () {
         })
 
         it('should return results of uploaded media', function (done) {
-          var obj = {
+          const obj = {
             fileName: '1f525.png',
             mimetype: 'image/png'
           }
@@ -961,7 +968,7 @@ describe('Media', function () {
           .end((err, res) => {
             if (err) return done(err)
 
-            var url = res.body.url
+            const url = res.body.url
 
             client
             .post(url)
@@ -996,11 +1003,11 @@ describe('Media', function () {
       })
 
       it('should list media buckets in /api/collections endpoint', function (done) {
-        let additionalBuckets = ['bucketOne', 'bucketTwo']
-        let defaultBucket = config.get('media.defaultBucket')
-        let allBuckets = additionalBuckets.concat(defaultBucket)
+        const additionalBuckets = ['bucketOne', 'bucketTwo']
+        const defaultBucket = config.get('media.defaultBucket')
+        const allBuckets = additionalBuckets.concat(defaultBucket)
 
-        let originalBuckets = config.get('media.buckets')
+        const originalBuckets = config.get('media.buckets')
 
         config.set('media.buckets', additionalBuckets)
 
@@ -1052,7 +1059,7 @@ describe('Media', function () {
       })
 
       it('should return 401 if the request does not include a valid bearer token', done => {
-        let obj = {
+        const obj = {
           fileName: '1f525.png',
           mimetype: 'image/png'
         }
@@ -1075,7 +1082,7 @@ describe('Media', function () {
       })
 
       it('should return 403 if the request includes a bearer token with insufficient permissions', done => {
-        let obj = {
+        const obj = {
           fileName: '1f525.png',
           mimetype: 'image/png'
         }
@@ -1109,7 +1116,7 @@ describe('Media', function () {
       })
 
       it('should allow deleting media by ID', function (done) {
-        var obj = {
+        const obj = {
           fileName: '1f525.png',
           mimetype: 'image/png'
         }
@@ -1139,7 +1146,7 @@ describe('Media', function () {
       it('should allow deleting media by query', function (done) {
         config.set('feedback', true)
 
-        let objects = [
+        const objects = [
           {
             fileName: '1f525.png',
             mimeType: 'image/png'
@@ -1195,7 +1202,7 @@ describe('Media', function () {
       })
 
       it('should return 204 when deleting media and feedback == false', function (done) {
-        var obj = {
+        const obj = {
           fileName: '1f525.png',
           mimetype: 'image/png'
         }
@@ -1224,7 +1231,7 @@ describe('Media', function () {
 
     describe('Disk Storage', () => {
       let bearerToken
-      let defaultBucket = config.get('media.defaultBucket')
+      const defaultBucket = config.get('media.defaultBucket')
 
       beforeEach(done => {
         config.set('media.storage', 'disk')
@@ -1265,12 +1272,12 @@ describe('Media', function () {
         })
 
         it('should return 200 when image is returned', function (done) {
-          var obj = {
+          const obj = {
             fileName: '1f525.png',
             mimetype: 'image/png'
           }
 
-          let defaultBucket = config.get('media.defaultBucket')
+          const defaultBucket = config.get('media.defaultBucket')
 
           client
           .post(`/media/${defaultBucket}/sign`)
@@ -1280,7 +1287,7 @@ describe('Media', function () {
           .end((err, res) => {
             if (err) return done(err)
 
-            var url = res.body.url
+            const url = res.body.url
 
             client
             .post(url)
@@ -1327,13 +1334,13 @@ describe('Media', function () {
       describe('GET', function () {
         it('should return 200 when image is returned', function (done) {
           // return a buffer from the S3 request
-          let stream = fs.createReadStream('./test/acceptance/temp-workspace/media/1f525.png')
-          let buffers = []
+          const stream = fs.createReadStream('./test/acceptance/temp-workspace/media/1f525.png')
+          const buffers = []
 
           stream
           .on('data', function (data) { buffers.push(data) })
           .on('end', function () {
-            let buffer = Buffer.concat(buffers)
+            const buffer = Buffer.concat(buffers)
 
             AWS.mock('S3', 'getObject', Promise.resolve({
               LastModified: Date.now(),
@@ -1394,7 +1401,7 @@ describe('Media', function () {
         })
 
         it('should return 400 when no bucket is defined', function (done) {
-          var obj = {
+          const obj = {
             fileName: '1f525.png',
             mimetype: 'image/png'
           }
@@ -1449,7 +1456,7 @@ describe('Media', function () {
         })
 
         it('should return 400 when no bucket is defined', function (done) {
-          var obj = {
+          const obj = {
             fileName: '1f525.png',
             mimetype: 'image/png'
           }

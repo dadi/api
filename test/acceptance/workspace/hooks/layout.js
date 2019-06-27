@@ -1,12 +1,13 @@
-var url = require('url')
+const url = require('url')
 
 module.exports = function (obj, type, data) {
   if (!obj || !obj.results || Object.keys(obj.results).length === 0) {
     return obj
   }
-  var queryParameters = data.req && url.parse(data.req.url, true).query
-  var resolveLayout = queryParameters ? (queryParameters.resolveLayout !== 'false') : true
-  var layoutField = (data.options && data.options.field) || '_layout'
+
+  const queryParameters = data.req && url.parse(data.req.url, true).query
+  const resolveLayout = queryParameters ? (queryParameters.resolveLayout !== 'false') : true
+  const layoutField = (data.options && data.options.field) || '_layout'
 
   if (data.schema && data.schema[layoutField] && data.schema[layoutField].schema) {
     switch (type) {
@@ -36,16 +37,18 @@ module.exports = function (obj, type, data) {
         break
 
       case 'beforeCreate':
-      case 'beforeUpdate':
-        var validationErrors = validate(data.schema[layoutField].schema, layoutField, obj, type)
+      case 'beforeUpdate': {
+        const validationErrors = validate(data.schema[layoutField].schema, layoutField, obj, type)
 
         if (validationErrors) {
           return Promise.reject(validationErrors)
         }
 
         break
+      }
     }
   }
+
   return obj
 }
 
@@ -54,8 +57,8 @@ module.exports = function (obj, type, data) {
 // --------------------------
 
 function resolve (layoutSchema, layoutField, document) {
-  var result = []
-  var freeSections = []
+  const result = []
+  const freeSections = []
 
   if (!document[layoutField]) return document
 
@@ -71,7 +74,7 @@ function resolve (layoutSchema, layoutField, document) {
       })
     } else {
       result.push({
-        content: document.hasOwnProperty(block.source) ? document[block.source] : null,
+        content: document[block.source] !== undefined ? document[block.source] : null,
         type: block.source
       })
     }
@@ -79,10 +82,10 @@ function resolve (layoutSchema, layoutField, document) {
 
   // Add free fields
   if (freeSections.length) {
-    var counter = 0
+    let counter = 0
 
     Object.keys(document[layoutField]).forEach(function (section) {
-      var schemaSection = freeSections.find(function (obj) {
+      const schemaSection = freeSections.find(function (obj) {
         return (obj.name === section)
       })
 
@@ -110,15 +113,15 @@ function resolve (layoutSchema, layoutField, document) {
 // --------------------------
 
 function validate (layoutSchema, layoutField, document, type) {
-  var errors = []
-  var fieldCount = []
-  var freeFieldsSections = layoutSchema.filter(function (elem) {
+  const errors = []
+  const fieldCount = []
+  const freeFieldsSections = layoutSchema.filter(function (elem) {
     return elem.free
   })
 
   if (document[layoutField]) {
     Object.keys(document[layoutField]).forEach(function (section) {
-      var schemaSection = freeFieldsSections.find(function (obj) {
+      const schemaSection = freeFieldsSections.find(function (obj) {
         return (obj.name === section)
       })
 
@@ -129,7 +132,7 @@ function validate (layoutSchema, layoutField, document, type) {
       }
 
       document[layoutField][section].forEach(function (block, blockIndex) {
-        var freeField = schemaSection.fields.find(function (elem) {
+        const freeField = schemaSection.fields.find(function (elem) {
           return elem.source === block.source
         })
 
@@ -152,13 +155,13 @@ function validate (layoutSchema, layoutField, document, type) {
       })
     })
 
-    var free = layoutSchema.filter(function (elem) {
+    const free = layoutSchema.filter(function (elem) {
       return elem.free
     })
 
     free.forEach(function (section) {
       section.fields.forEach(function (field) {
-        var count = (fieldCount[section.name] && fieldCount[section.name][field.source]) ? fieldCount[section.name][field.source] : 0
+        const count = (fieldCount[section.name] && fieldCount[section.name][field.source]) ? fieldCount[section.name][field.source] : 0
 
         // Check for `min` limit
         if (field.min && (count < field.min)) {

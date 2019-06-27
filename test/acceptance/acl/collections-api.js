@@ -15,7 +15,7 @@ const PERMISSIONS = {
   FILTER: { read: { filter: '{"title":"very long title"}' } }
 }
 
-let client = request(`http://${config.get('server.host')}:${config.get('server.port')}`)
+const client = request(`http://${config.get('server.host')}:${config.get('server.port')}`)
 let docs
 
 describe('Collections API', () => {
@@ -36,7 +36,7 @@ describe('Collections API', () => {
   beforeEach(done => {
     // Before each test, clear ACL, create a dummy document, clear ACL
     help.removeACLData(() => {
-      let creatingClient = {
+      const creatingClient = {
         clientId: 'apiClient',
         secret: 'someSecret',
         resources: { 'collection:testdb_test-schema': PERMISSIONS.CREATE }
@@ -88,7 +88,7 @@ describe('Collections API', () => {
 
   describe('Search', function () {
     it('should return 403 with no permissions', function (done) {
-      let testClient = {
+      const testClient = {
         clientId: 'apiClient',
         secret: 'someSecret',
         resources: { 'collection:testdb_test-schema': {} }
@@ -103,7 +103,7 @@ describe('Collections API', () => {
         .end((err, res) => {
           if (err) return done(err)
 
-          let bearerToken = res.body.accessToken
+          const bearerToken = res.body.accessToken
 
           client
           .get(`/vtest/testdb/test-schema/search?q=xyz`)
@@ -119,7 +119,7 @@ describe('Collections API', () => {
     })
 
     it('should return 403 with no read permission', function (done) {
-      let testClient = {
+      const testClient = {
         clientId: 'apiClient',
         secret: 'someSecret',
         resources: { 'collection:testdb_test-schema': PERMISSIONS.NO_READ }
@@ -134,7 +134,7 @@ describe('Collections API', () => {
         .end((err, res) => {
           if (err) return done(err)
 
-          let bearerToken = res.body.accessToken
+          const bearerToken = res.body.accessToken
 
           client
           .get(`/vtest/testdb/test-schema/search?q=xyz`)
@@ -150,7 +150,7 @@ describe('Collections API', () => {
     })
 
     it('should return 200 with read permission', function (done) {
-      let testClient = {
+      const testClient = {
         clientId: 'apiClient',
         secret: 'someSecret',
         resources: { 'collection:testdb_test-schema': PERMISSIONS.READ }
@@ -165,7 +165,7 @@ describe('Collections API', () => {
         .end((err, res) => {
           if (err) return done(err)
 
-          let bearerToken = res.body.accessToken
+          const bearerToken = res.body.accessToken
 
           client
           .get(`/vtest/testdb/test-schema/search?q=fghj`)
@@ -183,7 +183,7 @@ describe('Collections API', () => {
 
   describe('GET', function () {
     it('should return 403 with no permissions', function (done) {
-      let testClient = {
+      const testClient = {
         clientId: 'apiClient',
         secret: 'someSecret',
         resources: { 'collection:testdb_test-schema': {} }
@@ -198,7 +198,7 @@ describe('Collections API', () => {
         .end((err, res) => {
           if (err) return done(err)
 
-          let bearerToken = res.body.accessToken
+          const bearerToken = res.body.accessToken
 
           client
           .get(`/vtest/testdb/test-schema`)
@@ -214,7 +214,7 @@ describe('Collections API', () => {
     })
 
     it('should return 403 with no read permission', function (done) {
-      let testClient = {
+      const testClient = {
         clientId: 'apiClient',
         secret: 'someSecret',
         resources: { 'collection:testdb_test-schema': PERMISSIONS.NO_READ }
@@ -229,7 +229,7 @@ describe('Collections API', () => {
         .end((err, res) => {
           if (err) return done(err)
 
-          let bearerToken = res.body.accessToken
+          const bearerToken = res.body.accessToken
 
           client
           .get(`/vtest/testdb/test-schema`)
@@ -245,7 +245,7 @@ describe('Collections API', () => {
     })
 
     it('should return 200 with read permission', function (done) {
-      let testClient = {
+      const testClient = {
         clientId: 'apiClient',
         secret: 'someSecret',
         resources: { 'collection:testdb_test-schema': PERMISSIONS.READ }
@@ -260,7 +260,7 @@ describe('Collections API', () => {
         .end((err, res) => {
           if (err) return done(err)
 
-          let bearerToken = res.body.accessToken
+          const bearerToken = res.body.accessToken
 
           client
           .get(`/vtest/testdb/test-schema`)
@@ -276,7 +276,7 @@ describe('Collections API', () => {
     })
 
     it('should return 200 with create,read,update,delete permission', function (done) {
-      let testClient = {
+      const testClient = {
         clientId: 'apiClient',
         secret: 'someSecret',
         resources: { 'collection:testdb_test-schema': PERMISSIONS.ALL }
@@ -291,7 +291,7 @@ describe('Collections API', () => {
         .end((err, res) => {
           if (err) return done(err)
 
-          let bearerToken = res.body.accessToken
+          const bearerToken = res.body.accessToken
 
           client
           .get(`/vtest/testdb/test-schema`)
@@ -307,7 +307,7 @@ describe('Collections API', () => {
     })
 
     it('should return 200 with read permission and a field excluded', function (done) {
-      let testClient = {
+      const testClient = {
         clientId: 'apiClient',
         secret: 'someSecret',
         resources: { 'collection:testdb_test-schema': PERMISSIONS.READ_EXCLUDE_FIELDS }
@@ -322,7 +322,7 @@ describe('Collections API', () => {
         .end((err, res) => {
           if (err) return done(err)
 
-          let bearerToken = res.body.accessToken
+          const bearerToken = res.body.accessToken
 
           client
           .get('/vtest/testdb/test-schema/?fields={"field1":1,"title":1}')
@@ -332,7 +332,8 @@ describe('Collections API', () => {
             if (err) return done(err)
             res.statusCode.should.eql(200)
 
-            let type = typeof res.body.results[0].title
+            const type = typeof res.body.results[0].title
+
             type.should.eql('undefined')
 
             done()
@@ -342,7 +343,7 @@ describe('Collections API', () => {
     })
 
     it('should return 200 and compose a Reference field if the client read permissions on both the parent and referenced collections', function (done) {
-      let testClient = {
+      const testClient = {
         clientId: 'apiClient',
         secret: 'someSecret',
         resources: {
@@ -388,7 +389,7 @@ describe('Collections API', () => {
           .end((err, res) => {
             if (err) return done(err)
 
-            let bearerToken = res.body.accessToken
+            const bearerToken = res.body.accessToken
 
             client
             .get(`/v1/library/book/${response.results[0]._id}?compose=true`)
@@ -409,7 +410,7 @@ describe('Collections API', () => {
     })
 
     it('should return 200 if the client has read permission on the given collection, but not compose a Reference field if they do not have read permissions on the referenced collection', function (done) {
-      let testClient = {
+      const testClient = {
         clientId: 'apiClient',
         secret: 'someSecret',
         resources: {
@@ -455,7 +456,7 @@ describe('Collections API', () => {
           .end((err, res) => {
             if (err) return done(err)
 
-            let bearerToken = res.body.accessToken
+            const bearerToken = res.body.accessToken
 
             client
             .get(`/v1/library/book/${response.results[0]._id}?compose=true`)
@@ -477,13 +478,13 @@ describe('Collections API', () => {
     })
 
     it('should return 200 with a filter permission', function (done) {
-      let testClient = {
+      const testClient = {
         clientId: 'apiClient',
         secret: 'someSecret',
         resources: { 'collection:testdb_test-schema': PERMISSIONS.FILTER }
       }
 
-      let params = {
+      const params = {
         filter: JSON.stringify({ title: 'very long title' })
       }
 
@@ -496,8 +497,8 @@ describe('Collections API', () => {
         .end((err, res) => {
           if (err) return done(err)
 
-          let bearerToken = res.body.accessToken
-          let query = require('querystring').stringify(params)
+          const bearerToken = res.body.accessToken
+          const query = require('querystring').stringify(params)
 
           client
           .get(`/vtest/testdb/test-schema/?${query}`)
@@ -507,7 +508,7 @@ describe('Collections API', () => {
             if (err) return done(err)
             res.statusCode.should.eql(200)
 
-            let allCorrect = res.body.results.every(record => {
+            const allCorrect = res.body.results.every(record => {
               return record.title === 'very long title'
             })
 
@@ -520,13 +521,13 @@ describe('Collections API', () => {
     })
 
     it('should return 200 with a result set with results from the filter permission, even when no query is supplied', function (done) {
-      let testClient = {
+      const testClient = {
         clientId: 'apiClient',
         secret: 'someSecret',
         resources: { 'collection:testdb_test-schema': PERMISSIONS.FILTER }
       }
 
-      let params = {
+      const params = {
         filter: JSON.stringify({})
       }
 
@@ -539,8 +540,8 @@ describe('Collections API', () => {
         .end((err, res) => {
           if (err) return done(err)
 
-          let bearerToken = res.body.accessToken
-          let query = require('querystring').stringify(params)
+          const bearerToken = res.body.accessToken
+          const query = require('querystring').stringify(params)
 
           client
           .get(`/vtest/testdb/test-schema/?${query}`)
@@ -552,7 +553,7 @@ describe('Collections API', () => {
 
             res.body.results.length.should.be.above(0)
 
-            let allCorrect = res.body.results.every(record => {
+            const allCorrect = res.body.results.every(record => {
               return record.title === 'very long title'
             })
 
@@ -565,13 +566,13 @@ describe('Collections API', () => {
     })
 
     it('should return 200 with an empty result set when the query differs from the filter permission', function (done) {
-      let testClient = {
+      const testClient = {
         clientId: 'apiClient',
         secret: 'someSecret',
         resources: { 'collection:testdb_test-schema': PERMISSIONS.FILTER }
       }
 
-      let params = {
+      const params = {
         filter: JSON.stringify({ title: 'test doc' })
       }
 
@@ -584,8 +585,8 @@ describe('Collections API', () => {
         .end((err, res) => {
           if (err) return done(err)
 
-          let bearerToken = res.body.accessToken
-          let query = require('querystring').stringify(params)
+          const bearerToken = res.body.accessToken
+          const query = require('querystring').stringify(params)
 
           client
           .get(`/vtest/testdb/test-schema/?${query}`)
@@ -604,7 +605,7 @@ describe('Collections API', () => {
     })
 
     it('should return 200 without bearer token if `settings.authenticate` is `false`', function (done) {
-      let modelSettings = Object.assign({}, app.components['/vtest/testdb/test-schema'].model.settings)
+      const modelSettings = Object.assign({}, app.components['/vtest/testdb/test-schema'].model.settings)
 
       app.components['/vtest/testdb/test-schema'].model.settings.authenticate = false
 
@@ -622,7 +623,7 @@ describe('Collections API', () => {
     })
 
     it('should return 200 without bearer token if `settings.authenticate` is set to an array that does not include `GET`', function (done) {
-      let modelSettings = Object.assign({}, app.components['/vtest/testdb/test-schema'].model.settings)
+      const modelSettings = Object.assign({}, app.components['/vtest/testdb/test-schema'].model.settings)
 
       app.components['/vtest/testdb/test-schema'].model.settings.authenticate = [
         'POST',
@@ -644,7 +645,7 @@ describe('Collections API', () => {
     })
 
     it('should return 401 without bearer token if `settings.authenticate` is set to an array that includes `GET`', function (done) {
-      let modelSettings = Object.assign({}, app.components['/vtest/testdb/test-schema'].model.settings)
+      const modelSettings = Object.assign({}, app.components['/vtest/testdb/test-schema'].model.settings)
 
       app.components['/vtest/testdb/test-schema'].model.settings.authenticate = [
         'GET',
@@ -670,7 +671,7 @@ describe('Collections API', () => {
 
   describe('COUNT', function () {
     it('should return 400 for an invalid query', function (done) {
-      let testClient = {
+      const testClient = {
         clientId: 'apiClient',
         secret: 'someSecret',
         resources: { 'collection:testdb_test-schema': PERMISSIONS.READ }
@@ -685,7 +686,7 @@ describe('Collections API', () => {
         .end((err, res) => {
           if (err) return done(err)
 
-          let bearerToken = res.body.accessToken
+          const bearerToken = res.body.accessToken
 
           client
           .get(`/vtest/testdb/test-schema/count?filter={"$where":{"title":"xxx"}}`)
@@ -701,7 +702,7 @@ describe('Collections API', () => {
     })
 
     it('should return 403 with no permissions', function (done) {
-      let testClient = {
+      const testClient = {
         clientId: 'apiClient',
         secret: 'someSecret',
         resources: { 'collection:testdb_test-schema': {} }
@@ -716,7 +717,7 @@ describe('Collections API', () => {
         .end((err, res) => {
           if (err) return done(err)
 
-          let bearerToken = res.body.accessToken
+          const bearerToken = res.body.accessToken
 
           client
           .get(`/vtest/testdb/test-schema/count`)
@@ -732,7 +733,7 @@ describe('Collections API', () => {
     })
 
     it('should return 403 with no read permission', function (done) {
-      let testClient = {
+      const testClient = {
         clientId: 'apiClient',
         secret: 'someSecret',
         resources: { 'collection:testdb_test-schema': PERMISSIONS.NO_READ }
@@ -747,7 +748,7 @@ describe('Collections API', () => {
         .end((err, res) => {
           if (err) return done(err)
 
-          let bearerToken = res.body.accessToken
+          const bearerToken = res.body.accessToken
 
           client
           .get(`/vtest/testdb/test-schema/count`)
@@ -763,7 +764,7 @@ describe('Collections API', () => {
     })
 
     it('should return 200 with read permission', function (done) {
-      let testClient = {
+      const testClient = {
         clientId: 'apiClient',
         secret: 'someSecret',
         resources: { 'collection:testdb_test-schema': PERMISSIONS.READ }
@@ -778,7 +779,7 @@ describe('Collections API', () => {
         .end((err, res) => {
           if (err) return done(err)
 
-          let bearerToken = res.body.accessToken
+          const bearerToken = res.body.accessToken
 
           client
           .get(`/vtest/testdb/test-schema/count`)
@@ -794,7 +795,7 @@ describe('Collections API', () => {
     })
 
     it('should only count the documents that match the ACL filter, if one is set', function (done) {
-      let testClient = {
+      const testClient = {
         clientId: 'apiClient',
         secret: 'someSecret',
         resources: {
@@ -808,7 +809,7 @@ describe('Collections API', () => {
         }
       }
 
-      let documents = [
+      const documents = [
         { field1: 'Value one' },
         { field1: 'Value one' },
         { field1: 'Value one' },
@@ -838,7 +839,7 @@ describe('Collections API', () => {
             .end((err, res) => {
               if (err) return done(err)
 
-              let bearerToken = res.body.accessToken
+              const bearerToken = res.body.accessToken
 
               client
               .get(`/vtest/testdb/test-schema/count`)
@@ -861,7 +862,7 @@ describe('Collections API', () => {
     })
 
     it('should return a count of zero if there is an ACL filter set that does not match any document in the collection', function (done) {
-      let testClient = {
+      const testClient = {
         clientId: 'apiClient',
         secret: 'someSecret',
         resources: {
@@ -875,7 +876,7 @@ describe('Collections API', () => {
         }
       }
 
-      let documents = [
+      const documents = [
         { field1: 'Value two' },
         { field1: 'Value three' },
         { field1: 'Value four' }
@@ -903,7 +904,7 @@ describe('Collections API', () => {
             .end((err, res) => {
               if (err) return done(err)
 
-              let bearerToken = res.body.accessToken
+              const bearerToken = res.body.accessToken
 
               client
               .get(`/vtest/testdb/test-schema/count`)
@@ -926,13 +927,13 @@ describe('Collections API', () => {
 
   describe('POST', function () {
     it('should return 400 with invalid payload', function (done) {
-      let testClient = {
+      const testClient = {
         clientId: 'apiClient',
         secret: 'someSecret',
         resources: { 'collection:testdb_test-schema': PERMISSIONS.CREATE }
       }
 
-      let payload = { fieldOne: 'fieldValue', title: 'title' }
+      const payload = { fieldOne: 'fieldValue', title: 'title' }
 
       help.createACLClient(testClient).then(() => {
         client
@@ -943,7 +944,7 @@ describe('Collections API', () => {
         .end((err, res) => {
           if (err) return done(err)
 
-          let bearerToken = res.body.accessToken
+          const bearerToken = res.body.accessToken
 
           client
           .post(`/vtest/testdb/test-schema/`)
@@ -962,13 +963,13 @@ describe('Collections API', () => {
     })
 
     it('should return 403 with no create permission', function (done) {
-      let testClient = {
+      const testClient = {
         clientId: 'apiClient',
         secret: 'someSecret',
         resources: { 'collection:testdb_test-schema': PERMISSIONS.READ }
       }
 
-      let payload = { field1: 'fieldValue', title: 'title' }
+      const payload = { field1: 'fieldValue', title: 'title' }
 
       help.createACLClient(testClient).then(() => {
         client
@@ -979,7 +980,7 @@ describe('Collections API', () => {
         .end((err, res) => {
           if (err) return done(err)
 
-          let bearerToken = res.body.accessToken
+          const bearerToken = res.body.accessToken
 
           client
           .post(`/vtest/testdb/test-schema/`)
@@ -998,13 +999,13 @@ describe('Collections API', () => {
     })
 
     it('should return 200 with create permission', function (done) {
-      let testClient = {
+      const testClient = {
         clientId: 'apiClient',
         secret: 'someSecret',
         resources: { 'collection:testdb_test-schema': PERMISSIONS.CREATE }
       }
 
-      let payload = { field1: 'fieldValue', title: 'title' }
+      const payload = { field1: 'fieldValue', title: 'title' }
 
       help.createACLClient(testClient).then(() => {
         client
@@ -1015,7 +1016,7 @@ describe('Collections API', () => {
         .end((err, res) => {
           if (err) return done(err)
 
-          let bearerToken = res.body.accessToken
+          const bearerToken = res.body.accessToken
 
           client
           .post(`/vtest/testdb/test-schema/`)
@@ -1037,11 +1038,11 @@ describe('Collections API', () => {
     })
 
     it('should return 200 without bearer token if `settings.authenticate` is `false`', function (done) {
-      let modelSettings = Object.assign({}, app.components['/vtest/testdb/test-schema'].model.settings)
+      const modelSettings = Object.assign({}, app.components['/vtest/testdb/test-schema'].model.settings)
 
       app.components['/vtest/testdb/test-schema'].model.settings.authenticate = false
 
-      let payload = {
+      const payload = {
         field1: 'fieldValue',
         title: 'title'
       }
@@ -1065,7 +1066,7 @@ describe('Collections API', () => {
     })
 
     it('should return 200 without bearer token if `settings.authenticate` is set to an array that does not include `POST`', function (done) {
-      let modelSettings = Object.assign({}, app.components['/vtest/testdb/test-schema'].model.settings)
+      const modelSettings = Object.assign({}, app.components['/vtest/testdb/test-schema'].model.settings)
 
       app.components['/vtest/testdb/test-schema'].model.settings.authenticate = [
         'GET',
@@ -1073,7 +1074,7 @@ describe('Collections API', () => {
         'DELETE'
       ]
 
-      let payload = {
+      const payload = {
         field1: 'fieldValue',
         title: 'title'
       }
@@ -1096,7 +1097,7 @@ describe('Collections API', () => {
     })
 
     it('should create the document but return just the IDs if the client does not have read permissions on the collection', function (done) {
-      let testClient = {
+      const testClient = {
         clientId: 'apiClient',
         secret: 'someSecret',
         resources: {
@@ -1107,7 +1108,7 @@ describe('Collections API', () => {
         }
       }
 
-      let payload = { field1: 'fieldValue', title: 'title' }
+      const payload = { field1: 'fieldValue', title: 'title' }
 
       help.getBearerTokenWithPermissions({
         accessType: 'admin'
@@ -1121,7 +1122,7 @@ describe('Collections API', () => {
           .end((err, res) => {
             if (err) return done(err)
 
-            let bearerToken = res.body.accessToken
+            const bearerToken = res.body.accessToken
 
             client
             .post(`/vtest/testdb/test-schema/`)
@@ -1135,7 +1136,7 @@ describe('Collections API', () => {
               res.body.results.length.should.eql(1)
               Object.keys(res.body.results[0]).should.eql(['_id'])
 
-              let id = res.body.results[0]._id
+              const id = res.body.results[0]._id
 
               client
               .get(`/vtest/testdb/test-schema/${id}`)
@@ -1156,7 +1157,7 @@ describe('Collections API', () => {
     })
 
     it('should create the document but return just the fields defined in the client\'s read permissions (projection of type "includes")', function (done) {
-      let testClient = {
+      const testClient = {
         clientId: 'apiClient',
         secret: 'someSecret',
         resources: {
@@ -1172,7 +1173,7 @@ describe('Collections API', () => {
         }
       }
 
-      let payload = { field1: 'fieldValue', title: 'title' }
+      const payload = { field1: 'fieldValue', title: 'title' }
 
       help.getBearerTokenWithPermissions({
         accessType: 'admin'
@@ -1186,7 +1187,7 @@ describe('Collections API', () => {
           .end((err, res) => {
             if (err) return done(err)
 
-            let bearerToken = res.body.accessToken
+            const bearerToken = res.body.accessToken
 
             client
             .post(`/vtest/testdb/test-schema/`)
@@ -1203,7 +1204,7 @@ describe('Collections API', () => {
               res.body.results[0]._id.should.be.instanceOf(String)
               res.body.results[0].field1.should.eql(payload.field1)
 
-              let id = res.body.results[0]._id
+              const id = res.body.results[0]._id
 
               client
               .get(`/vtest/testdb/test-schema/${id}`)
@@ -1224,7 +1225,7 @@ describe('Collections API', () => {
     })
 
     it('should create the document but return just the fields defined in the client\'s read permissions (projection of type "excludes")', function (done) {
-      let testClient = {
+      const testClient = {
         clientId: 'apiClient',
         secret: 'someSecret',
         resources: {
@@ -1240,7 +1241,7 @@ describe('Collections API', () => {
         }
       }
 
-      let payload = { field1: 'fieldValue', title: 'title' }
+      const payload = { field1: 'fieldValue', title: 'title' }
 
       help.getBearerTokenWithPermissions({
         accessType: 'admin'
@@ -1254,7 +1255,7 @@ describe('Collections API', () => {
           .end((err, res) => {
             if (err) return done(err)
 
-            let bearerToken = res.body.accessToken
+            const bearerToken = res.body.accessToken
 
             client
             .post(`/vtest/testdb/test-schema/`)
@@ -1272,7 +1273,7 @@ describe('Collections API', () => {
               should.not.exist(res.body.results[0]._createdAt)
               should.not.exist(res.body.results[0].field1)
 
-              let id = res.body.results[0]._id
+              const id = res.body.results[0]._id
 
               client
               .get(`/vtest/testdb/test-schema/${id}`)
@@ -1293,7 +1294,7 @@ describe('Collections API', () => {
     })
 
     it('should create the document but not compose a reference field if the client does not have read permissions on the referenced collection', function (done) {
-      let testClient = {
+      const testClient = {
         clientId: 'apiClient',
         secret: 'someSecret',
         resources: {
@@ -1307,7 +1308,7 @@ describe('Collections API', () => {
         }
       }
 
-      let referencePayload = {
+      const referencePayload = {
         refField1: 'hello',
         refField2: 123
       }
@@ -1324,8 +1325,8 @@ describe('Collections API', () => {
         .end((err, res) => {
           if (err) return done(err)
 
-          let id = res.body.results[0]._id
-          let payload = {
+          const id = res.body.results[0]._id
+          const payload = {
             field1: 'something',
             title: 'hello',
             fieldReference: id
@@ -1340,7 +1341,7 @@ describe('Collections API', () => {
             .end((err, res) => {
               if (err) return done(err)
 
-              let bearerToken = res.body.accessToken
+              const bearerToken = res.body.accessToken
 
               client
               .post(`/vtest/testdb/test-schema?compose=true`)
@@ -1356,7 +1357,7 @@ describe('Collections API', () => {
                 res.body.results[0].title.should.eql(payload.title)
                 res.body.results[0].fieldReference.should.eql(payload.fieldReference)
 
-                let id = res.body.results[0]._id
+                const id = res.body.results[0]._id
 
                 client
                 .get(`/vtest/testdb/test-schema/${id}?compose=true`)
@@ -1376,7 +1377,7 @@ describe('Collections API', () => {
     })
 
     it('should create the document and compose a reference field so that the response respects the `fields` object defined in the read permissions of the referenced collection (projection of type "includes")', function (done) {
-      let testClient = {
+      const testClient = {
         clientId: 'apiClient',
         secret: 'someSecret',
         resources: {
@@ -1394,7 +1395,7 @@ describe('Collections API', () => {
         }
       }
 
-      let referencePayload = {
+      const referencePayload = {
         refField1: 'hello',
         refField2: 123
       }
@@ -1411,8 +1412,8 @@ describe('Collections API', () => {
         .end((err, res) => {
           if (err) return done(err)
 
-          let id = res.body.results[0]._id
-          let payload = {
+          const id = res.body.results[0]._id
+          const payload = {
             field1: 'something',
             title: 'hello',
             fieldReference: id
@@ -1427,7 +1428,7 @@ describe('Collections API', () => {
             .end((err, res) => {
               if (err) return done(err)
 
-              let bearerToken = res.body.accessToken
+              const bearerToken = res.body.accessToken
 
               client
               .post(`/vtest/testdb/test-schema?compose=true`)
@@ -1445,7 +1446,7 @@ describe('Collections API', () => {
                 res.body.results[0].fieldReference._id.should.eql(payload.fieldReference)
                 res.body.results[0].fieldReference.refField2.should.eql(referencePayload.refField2)
 
-                let id = res.body.results[0]._id
+                const id = res.body.results[0]._id
 
                 client
                 .get(`/vtest/testdb/test-schema/${id}?compose=true`)
@@ -1465,7 +1466,7 @@ describe('Collections API', () => {
     })
 
     it('should create the document and compose a reference field so that the response respects the `fields` object defined in the read permissions of the referenced collection (projection of type "excludes")', function (done) {
-      let testClient = {
+      const testClient = {
         clientId: 'apiClient',
         secret: 'someSecret',
         resources: {
@@ -1483,7 +1484,7 @@ describe('Collections API', () => {
         }
       }
 
-      let referencePayload = {
+      const referencePayload = {
         refField1: 'hello',
         refField2: 123
       }
@@ -1500,8 +1501,8 @@ describe('Collections API', () => {
         .end((err, res) => {
           if (err) return done(err)
 
-          let id = res.body.results[0]._id
-          let payload = {
+          const id = res.body.results[0]._id
+          const payload = {
             field1: 'something',
             title: 'hello',
             fieldReference: id
@@ -1516,7 +1517,7 @@ describe('Collections API', () => {
             .end((err, res) => {
               if (err) return done(err)
 
-              let bearerToken = res.body.accessToken
+              const bearerToken = res.body.accessToken
 
               client
               .post(`/vtest/testdb/test-schema?compose=true`)
@@ -1537,7 +1538,7 @@ describe('Collections API', () => {
                 should.exist(res.body.results[0].fieldReference._apiVersion)
                 should.not.exist(res.body.results[0].fieldReference.refField2)
 
-                let id = res.body.results[0]._id
+                const id = res.body.results[0]._id
 
                 client
                 .get(`/vtest/testdb/test-schema/${id}?compose=true`)
@@ -1557,7 +1558,7 @@ describe('Collections API', () => {
     })
 
     it('should create only the fields defined in the `create.fields` object, if defined (projection of type "includes")', function (done) {
-      let testClient = {
+      const testClient = {
         clientId: 'apiClient',
         secret: 'someSecret',
         resources: {
@@ -1572,7 +1573,7 @@ describe('Collections API', () => {
         }
       }
 
-      let payload = {
+      const payload = {
         field1: 'fieldValue',
         title: 'title'
       }
@@ -1589,7 +1590,7 @@ describe('Collections API', () => {
           .end((err, res) => {
             if (err) return done(err)
 
-            let bearerToken = res.body.accessToken
+            const bearerToken = res.body.accessToken
 
             client
             .post(`/vtest/testdb/test-schema`)
@@ -1627,7 +1628,7 @@ describe('Collections API', () => {
     })
 
     it('should create only the fields defined in the `create.fields` object, if defined (projection of type "excludes")', function (done) {
-      let testClient = {
+      const testClient = {
         clientId: 'apiClient',
         secret: 'someSecret',
         resources: {
@@ -1642,7 +1643,7 @@ describe('Collections API', () => {
         }
       }
 
-      let payload = {
+      const payload = {
         field1: 'fieldValue',
         title: 'title'
       }
@@ -1659,7 +1660,7 @@ describe('Collections API', () => {
           .end((err, res) => {
             if (err) return done(err)
 
-            let bearerToken = res.body.accessToken
+            const bearerToken = res.body.accessToken
 
             client
             .post(`/vtest/testdb/test-schema`)
@@ -1697,7 +1698,7 @@ describe('Collections API', () => {
     })
 
     it('should return a 400 when one of the validation errors results from the `create.fields` ACL permissions blocking the client from writing to a required field', function (done) {
-      let testClient = {
+      const testClient = {
         clientId: 'apiClient',
         secret: 'someSecret',
         resources: {
@@ -1712,7 +1713,7 @@ describe('Collections API', () => {
         }
       }
 
-      let payload = {
+      const payload = {
         field1: 'one',
         field2: 1337
       }
@@ -1729,7 +1730,7 @@ describe('Collections API', () => {
           .end((err, res) => {
             if (err) return done(err)
 
-            let bearerToken = res.body.accessToken
+            const bearerToken = res.body.accessToken
 
             client
             .post(`/vtest/testdb/test-required-schema`)
@@ -1755,7 +1756,7 @@ describe('Collections API', () => {
     })
 
     it('should return a 403 when all the validation errors result from the `create.fields` ACL permissions blocking the client from writing to a required field', function (done) {
-      let testClient = {
+      const testClient = {
         clientId: 'apiClient',
         secret: 'someSecret',
         resources: {
@@ -1770,7 +1771,7 @@ describe('Collections API', () => {
         }
       }
 
-      let payload = {
+      const payload = {
         field1: 'one',
         field2: 'two'
       }
@@ -1787,7 +1788,7 @@ describe('Collections API', () => {
           .end((err, res) => {
             if (err) return done(err)
 
-            let bearerToken = res.body.accessToken
+            const bearerToken = res.body.accessToken
 
             client
             .post(`/vtest/testdb/test-required-schema`)
@@ -1810,7 +1811,7 @@ describe('Collections API', () => {
     })
 
     it('should return 401 without bearer token if `settings.authenticate` is set to an array that includes `POST`', function (done) {
-      let modelSettings = Object.assign({}, app.components['/vtest/testdb/test-schema'].model.settings)
+      const modelSettings = Object.assign({}, app.components['/vtest/testdb/test-schema'].model.settings)
 
       app.components['/vtest/testdb/test-schema'].model.settings.authenticate = [
         'GET',
@@ -1840,13 +1841,13 @@ describe('Collections API', () => {
 
   describe('PUT', function () {
     it('should return 403 with no update permission (query in body)', function (done) {
-      let testClient = {
+      const testClient = {
         clientId: 'apiClient',
         secret: 'someSecret',
         resources: { 'collection:testdb_test-schema': PERMISSIONS.READ }
       }
 
-      let payload = { query: { field1: '7' }, update: { title: 'updated title' } }
+      const payload = { query: { field1: '7' }, update: { title: 'updated title' } }
 
       help.createACLClient(testClient).then(() => {
         client
@@ -1857,7 +1858,7 @@ describe('Collections API', () => {
         .end((err, res) => {
           if (err) return done(err)
 
-          let bearerToken = res.body.accessToken
+          const bearerToken = res.body.accessToken
 
           client
           .put(`/vtest/testdb/test-schema/`)
@@ -1874,13 +1875,13 @@ describe('Collections API', () => {
     })
 
     it('should return 403 with no update permission (querying by ID)', function (done) {
-      let testClient = {
+      const testClient = {
         clientId: 'apiClient',
         secret: 'someSecret',
         resources: { 'collection:testdb_test-schema': PERMISSIONS.READ }
       }
 
-      let update = { title: 'updated title' }
+      const update = { title: 'updated title' }
 
       help.createACLClient(testClient).then(() => {
         client
@@ -1891,7 +1892,7 @@ describe('Collections API', () => {
         .end((err, res) => {
           if (err) return done(err)
 
-          let bearerToken = res.body.accessToken
+          const bearerToken = res.body.accessToken
 
           client
           .put(`/vtest/testdb/test-schema/${docs[0]}`)
@@ -1908,13 +1909,13 @@ describe('Collections API', () => {
     })
 
     it('should return 200 with all permissions (query in body)', function (done) {
-      let testClient = {
+      const testClient = {
         clientId: 'apiClient',
         secret: 'someSecret',
         resources: { 'collection:testdb_test-schema': PERMISSIONS.ALL }
       }
 
-      let payload = { query: { field1: '7' }, update: { title: 'updated title' } }
+      const payload = { query: { field1: '7' }, update: { title: 'updated title' } }
 
       help.createACLClient(testClient).then(() => {
         client
@@ -1925,7 +1926,7 @@ describe('Collections API', () => {
         .end((err, res) => {
           if (err) return done(err)
 
-          let bearerToken = res.body.accessToken
+          const bearerToken = res.body.accessToken
 
           client
           .put(`/vtest/testdb/test-schema/`)
@@ -1942,13 +1943,13 @@ describe('Collections API', () => {
     })
 
     it('should return 200 with all permissions (query by ID)', function (done) {
-      let testClient = {
+      const testClient = {
         clientId: 'apiClient',
         secret: 'someSecret',
         resources: { 'collection:testdb_test-schema': PERMISSIONS.ALL }
       }
 
-      let update = { title: 'updated title' }
+      const update = { title: 'updated title' }
 
       help.createACLClient(testClient).then(() => {
         client
@@ -1959,7 +1960,7 @@ describe('Collections API', () => {
         .end((err, res) => {
           if (err) return done(err)
 
-          let bearerToken = res.body.accessToken
+          const bearerToken = res.body.accessToken
 
           client
           .put(`/vtest/testdb/test-schema/${docs[0]}`)
@@ -1980,13 +1981,13 @@ describe('Collections API', () => {
     })
 
     it('should return 200 with update permissions (query in body)', function (done) {
-      let testClient = {
+      const testClient = {
         clientId: 'apiClient',
         secret: 'someSecret',
         resources: { 'collection:testdb_test-schema': PERMISSIONS.UPDATE }
       }
 
-      let payload = { query: { field1: '7' }, update: { title: 'updated title' } }
+      const payload = { query: { field1: '7' }, update: { title: 'updated title' } }
 
       help.createACLClient(testClient).then(() => {
         client
@@ -1997,7 +1998,7 @@ describe('Collections API', () => {
         .end((err, res) => {
           if (err) return done(err)
 
-          let bearerToken = res.body.accessToken
+          const bearerToken = res.body.accessToken
 
           client
           .put(`/vtest/testdb/test-schema/`)
@@ -2014,13 +2015,13 @@ describe('Collections API', () => {
     })
 
     it('should return 200 with update permissions (query by ID)', function (done) {
-      let testClient = {
+      const testClient = {
         clientId: 'apiClient',
         secret: 'someSecret',
         resources: { 'collection:testdb_test-schema': PERMISSIONS.UPDATE }
       }
 
-      let update = { title: 'updated title' }
+      const update = { title: 'updated title' }
 
       help.createACLClient(testClient).then(() => {
         client
@@ -2031,7 +2032,7 @@ describe('Collections API', () => {
         .end((err, res) => {
           if (err) return done(err)
 
-          let bearerToken = res.body.accessToken
+          const bearerToken = res.body.accessToken
 
           client
           .put(`/vtest/testdb/test-schema/${docs[0]}`)
@@ -2052,7 +2053,7 @@ describe('Collections API', () => {
     })
 
     it('should return 200 with update permissions after they have been updated', function (done) {
-      let testClient = {
+      const testClient = {
         clientId: 'apiClient',
         secret: 'someSecret',
         resources: {
@@ -2078,7 +2079,7 @@ describe('Collections API', () => {
             .end((err, res) => {
               if (err) return done(err)
 
-              let userToken = res.body.accessToken
+              const userToken = res.body.accessToken
 
               client
               .put(`/vtest/testdb/test-schema/${document._id}`)
@@ -2130,7 +2131,7 @@ describe('Collections API', () => {
     })
 
     it('should return 200 and not update any documents when the query differs from the filter permission', function (done) {
-      let testClient = {
+      const testClient = {
         clientId: 'apiClient',
         secret: 'someSecret',
         resources: {
@@ -2154,7 +2155,7 @@ describe('Collections API', () => {
         .end((err, res) => {
           if (err) return done(err)
 
-          let bearerToken = res.body.accessToken
+          const bearerToken = res.body.accessToken
 
           client
           .put(`/vtest/testdb/test-schema`)
@@ -2194,7 +2195,7 @@ describe('Collections API', () => {
     })
 
     it('should return 200 without bearer token if `settings.authenticate` is `false`', function (done) {
-      let modelSettings = Object.assign({}, app.components['/vtest/testdb/test-schema'].model.settings)
+      const modelSettings = Object.assign({}, app.components['/vtest/testdb/test-schema'].model.settings)
 
       app.components['/vtest/testdb/test-schema'].model.settings.authenticate = false
 
@@ -2220,7 +2221,7 @@ describe('Collections API', () => {
     })
 
     it('should return 200 without bearer token if `settings.authenticate` is set to an array that does not include `PUT`', function (done) {
-      let modelSettings = Object.assign({}, app.components['/vtest/testdb/test-schema'].model.settings)
+      const modelSettings = Object.assign({}, app.components['/vtest/testdb/test-schema'].model.settings)
 
       app.components['/vtest/testdb/test-schema'].model.settings.authenticate = [
         'GET',
@@ -2249,7 +2250,7 @@ describe('Collections API', () => {
     })
 
     it('should update the document but return just the IDs if the client does not have read permissions on the collection', function (done) {
-      let testClient = {
+      const testClient = {
         clientId: 'apiClient',
         secret: 'someSecret',
         resources: {
@@ -2260,7 +2261,7 @@ describe('Collections API', () => {
         }
       }
 
-      let original = {
+      const original = {
         field1: 'fieldValue',
         title: 'title'
       }
@@ -2277,7 +2278,7 @@ describe('Collections API', () => {
         .end((err, res) => {
           if (err) return done(err)
 
-          let id = res.body.results[0]._id
+          const id = res.body.results[0]._id
 
           help.createACLClient(testClient).then(() => {
             client
@@ -2288,8 +2289,8 @@ describe('Collections API', () => {
             .end((err, res) => {
               if (err) return done(err)
 
-              let bearerToken = res.body.accessToken
-              let update = {
+              const bearerToken = res.body.accessToken
+              const update = {
                 title: 'new title'
               }
 
@@ -2326,7 +2327,7 @@ describe('Collections API', () => {
     })
 
     it('should update the document but return just the fields defined in the client\'s read permissions (projection of type "includes")', function (done) {
-      let testClient = {
+      const testClient = {
         clientId: 'apiClient',
         secret: 'someSecret',
         resources: {
@@ -2342,7 +2343,7 @@ describe('Collections API', () => {
         }
       }
 
-      let original = {
+      const original = {
         field1: 'fieldValue',
         title: 'title'
       }
@@ -2359,7 +2360,7 @@ describe('Collections API', () => {
         .end((err, res) => {
           if (err) return done(err)
 
-          let id = res.body.results[0]._id
+          const id = res.body.results[0]._id
 
           help.createACLClient(testClient).then(() => {
             client
@@ -2370,8 +2371,8 @@ describe('Collections API', () => {
             .end((err, res) => {
               if (err) return done(err)
 
-              let bearerToken = res.body.accessToken
-              let update = {
+              const bearerToken = res.body.accessToken
+              const update = {
                 title: 'new title'
               }
 
@@ -2409,7 +2410,7 @@ describe('Collections API', () => {
     })
 
     it('should update the document but return just the fields defined in the client\'s read permissions (projection of type "excludes")', function (done) {
-      let testClient = {
+      const testClient = {
         clientId: 'apiClient',
         secret: 'someSecret',
         resources: {
@@ -2425,7 +2426,7 @@ describe('Collections API', () => {
         }
       }
 
-      let original = {
+      const original = {
         field1: 'fieldValue',
         title: 'title'
       }
@@ -2442,7 +2443,7 @@ describe('Collections API', () => {
         .end((err, res) => {
           if (err) return done(err)
 
-          let id = res.body.results[0]._id
+          const id = res.body.results[0]._id
 
           help.createACLClient(testClient).then(() => {
             client
@@ -2453,8 +2454,8 @@ describe('Collections API', () => {
             .end((err, res) => {
               if (err) return done(err)
 
-              let bearerToken = res.body.accessToken
-              let update = {
+              const bearerToken = res.body.accessToken
+              const update = {
                 title: 'new title'
               }
 
@@ -2493,7 +2494,7 @@ describe('Collections API', () => {
     })
 
     it('should update the document but not compose a reference field if the client does not have read permissions on the referenced collection', function (done) {
-      let testClient = {
+      const testClient = {
         clientId: 'apiClient',
         secret: 'someSecret',
         resources: {
@@ -2507,7 +2508,7 @@ describe('Collections API', () => {
         }
       }
 
-      let referencePayload = {
+      const referencePayload = {
         refField1: 'hello',
         refField2: 123
       }
@@ -2524,8 +2525,8 @@ describe('Collections API', () => {
         .end((err, res) => {
           if (err) return done(err)
 
-          let referenceId = res.body.results[0]._id
-          let original = {
+          const referenceId = res.body.results[0]._id
+          const original = {
             field1: 'something',
             title: 'hello',
             fieldReference: referenceId
@@ -2539,7 +2540,7 @@ describe('Collections API', () => {
           .end((err, res) => {
             if (err) return done(err)
 
-            let id = res.body.results[0]._id
+            const id = res.body.results[0]._id
 
             help.createACLClient(testClient).then(() => {
               client
@@ -2550,8 +2551,8 @@ describe('Collections API', () => {
               .end((err, res) => {
                 if (err) return done(err)
 
-                let bearerToken = res.body.accessToken
-                let update = {
+                const bearerToken = res.body.accessToken
+                const update = {
                   title: 'new title'
                 }
 
@@ -2586,7 +2587,7 @@ describe('Collections API', () => {
     })
 
     it('should update the document and compose a reference field so that the response respects the `fields` object defined in the read permissions of the referenced collection (projection of type "includes")', function (done) {
-      let testClient = {
+      const testClient = {
         clientId: 'apiClient',
         secret: 'someSecret',
         resources: {
@@ -2604,7 +2605,7 @@ describe('Collections API', () => {
         }
       }
 
-      let referencePayload = {
+      const referencePayload = {
         refField1: 'hello',
         refField2: 123
       }
@@ -2621,8 +2622,8 @@ describe('Collections API', () => {
         .end((err, res) => {
           if (err) return done(err)
 
-          let referenceId = res.body.results[0]._id
-          let original = {
+          const referenceId = res.body.results[0]._id
+          const original = {
             field1: 'something',
             title: 'hello',
             fieldReference: referenceId
@@ -2636,7 +2637,7 @@ describe('Collections API', () => {
           .end((err, res) => {
             if (err) return done(err)
 
-            let id = res.body.results[0]._id
+            const id = res.body.results[0]._id
 
             help.createACLClient(testClient).then(() => {
               client
@@ -2647,8 +2648,8 @@ describe('Collections API', () => {
               .end((err, res) => {
                 if (err) return done(err)
 
-                let bearerToken = res.body.accessToken
-                let update = {
+                const bearerToken = res.body.accessToken
+                const update = {
                   title: 'new title'
                 }
 
@@ -2685,7 +2686,7 @@ describe('Collections API', () => {
     })
 
     it('should update the document and compose a reference field so that the response respects the `fields` object defined in the read permissions of the referenced collection (projection of type "excludes")', function (done) {
-      let testClient = {
+      const testClient = {
         clientId: 'apiClient',
         secret: 'someSecret',
         resources: {
@@ -2703,7 +2704,7 @@ describe('Collections API', () => {
         }
       }
 
-      let referencePayload = {
+      const referencePayload = {
         refField1: 'hello',
         refField2: 123
       }
@@ -2720,8 +2721,8 @@ describe('Collections API', () => {
         .end((err, res) => {
           if (err) return done(err)
 
-          let referenceId = res.body.results[0]._id
-          let original = {
+          const referenceId = res.body.results[0]._id
+          const original = {
             field1: 'something',
             title: 'hello',
             fieldReference: referenceId
@@ -2735,7 +2736,7 @@ describe('Collections API', () => {
           .end((err, res) => {
             if (err) return done(err)
 
-            let id = res.body.results[0]._id
+            const id = res.body.results[0]._id
 
             help.createACLClient(testClient).then(() => {
               client
@@ -2746,8 +2747,8 @@ describe('Collections API', () => {
               .end((err, res) => {
                 if (err) return done(err)
 
-                let bearerToken = res.body.accessToken
-                let update = {
+                const bearerToken = res.body.accessToken
+                const update = {
                   title: 'new title'
                 }
 
@@ -2787,7 +2788,7 @@ describe('Collections API', () => {
     })
 
     it('should limit the update to the fields defined in the `update.fields` object, if defined (projection of type "includes")', function (done) {
-      let testClient = {
+      const testClient = {
         clientId: 'apiClient',
         secret: 'someSecret',
         resources: {
@@ -2802,7 +2803,7 @@ describe('Collections API', () => {
         }
       }
 
-      let original = {
+      const original = {
         field1: 'fieldValue',
         title: 'title'
       }
@@ -2819,7 +2820,7 @@ describe('Collections API', () => {
         .end((err, res) => {
           if (err) return done(err)
 
-          let id = res.body.results[0]._id
+          const id = res.body.results[0]._id
 
           help.createACLClient(testClient).then(() => {
             client
@@ -2830,8 +2831,8 @@ describe('Collections API', () => {
             .end((err, res) => {
               if (err) return done(err)
 
-              let bearerToken = res.body.accessToken
-              let update = {
+              const bearerToken = res.body.accessToken
+              const update = {
                 title: 'new title',
                 field1: 'new field1'
               }
@@ -2858,7 +2859,7 @@ describe('Collections API', () => {
     })
 
     it('should limit the update to the fields defined in the `update.fields` object, if defined (projection of type "excludes")', function (done) {
-      let testClient = {
+      const testClient = {
         clientId: 'apiClient',
         secret: 'someSecret',
         resources: {
@@ -2873,7 +2874,7 @@ describe('Collections API', () => {
         }
       }
 
-      let original = {
+      const original = {
         field1: 'fieldValue',
         title: 'title'
       }
@@ -2890,7 +2891,7 @@ describe('Collections API', () => {
         .end((err, res) => {
           if (err) return done(err)
 
-          let id = res.body.results[0]._id
+          const id = res.body.results[0]._id
 
           help.createACLClient(testClient).then(() => {
             client
@@ -2901,8 +2902,8 @@ describe('Collections API', () => {
             .end((err, res) => {
               if (err) return done(err)
 
-              let bearerToken = res.body.accessToken
-              let update = {
+              const bearerToken = res.body.accessToken
+              const update = {
                 title: 'new title',
                 field1: 'new field1'
               }
@@ -2929,7 +2930,7 @@ describe('Collections API', () => {
     })
 
     it('should return 401 without bearer token if `settings.authenticate` is set to an array that includes `PUT`', function (done) {
-      let modelSettings = Object.assign({}, app.components['/vtest/testdb/test-schema'].model.settings)
+      const modelSettings = Object.assign({}, app.components['/vtest/testdb/test-schema'].model.settings)
 
       app.components['/vtest/testdb/test-schema'].model.settings.authenticate = [
         'GET',
@@ -2963,13 +2964,13 @@ describe('Collections API', () => {
 
   describe('DELETE', function () {
     it('should return 403 with no delete permission (query in body)', function (done) {
-      let testClient = {
+      const testClient = {
         clientId: 'apiClient',
         secret: 'someSecret',
         resources: { 'collection:testdb_test-schema': PERMISSIONS.READ }
       }
 
-      let payload = { query: { field1: 'fieldValue' } }
+      const payload = { query: { field1: 'fieldValue' } }
 
       help.createACLClient(testClient).then(() => {
         client
@@ -2980,7 +2981,7 @@ describe('Collections API', () => {
         .end((err, res) => {
           if (err) return done(err)
 
-          let bearerToken = res.body.accessToken
+          const bearerToken = res.body.accessToken
 
           client
           .delete(`/vtest/testdb/test-schema/`)
@@ -2997,7 +2998,7 @@ describe('Collections API', () => {
     })
 
     it('should return 403 with no delete permission (query by ID)', function (done) {
-      let testClient = {
+      const testClient = {
         clientId: 'apiClient',
         secret: 'someSecret',
         resources: { 'collection:testdb_test-schema': PERMISSIONS.READ }
@@ -3012,7 +3013,7 @@ describe('Collections API', () => {
         .end((err, res) => {
           if (err) return done(err)
 
-          let bearerToken = res.body.accessToken
+          const bearerToken = res.body.accessToken
 
           client
           .delete(`/vtest/testdb/test-schema/${docs[0]}`)
@@ -3028,7 +3029,7 @@ describe('Collections API', () => {
     })
 
     it('should return 204 with delete permission (query in body)', function (done) {
-      let testClient = {
+      const testClient = {
         clientId: 'apiClient',
         secret: 'someSecret',
         resources: {
@@ -3039,7 +3040,7 @@ describe('Collections API', () => {
         }
       }
 
-      let payload = { query: { field1: 'fieldValue' } }
+      const payload = { query: { field1: 'fieldValue' } }
 
       help.createACLClient(testClient).then(() => {
         client
@@ -3050,7 +3051,7 @@ describe('Collections API', () => {
         .end((err, res) => {
           if (err) return done(err)
 
-          let bearerToken = res.body.accessToken
+          const bearerToken = res.body.accessToken
 
           client
           .delete(`/vtest/testdb/test-schema/`)
@@ -3079,7 +3080,7 @@ describe('Collections API', () => {
     })
 
     it('should return 204 with delete permission (query by ID)', function (done) {
-      let testClient = {
+      const testClient = {
         clientId: 'apiClient',
         secret: 'someSecret',
         resources: {
@@ -3099,7 +3100,7 @@ describe('Collections API', () => {
         .end((err, res) => {
           if (err) return done(err)
 
-          let bearerToken = res.body.accessToken
+          const bearerToken = res.body.accessToken
 
           client
           .delete(`/vtest/testdb/test-schema/${docs[0]}`)
@@ -3125,7 +3126,7 @@ describe('Collections API', () => {
     })
 
     it('should return 204 and not delete any documents when the query differs from the filter permission', function (done) {
-      let testClient = {
+      const testClient = {
         clientId: 'apiClient',
         secret: 'someSecret',
         resources: {
@@ -3149,7 +3150,7 @@ describe('Collections API', () => {
         .end((err, res) => {
           if (err) return done(err)
 
-          let bearerToken = res.body.accessToken
+          const bearerToken = res.body.accessToken
 
           client
           .delete(`/vtest/testdb/test-schema`)
@@ -3185,7 +3186,7 @@ describe('Collections API', () => {
     })
 
     it('should return 204 without bearer token if `settings.authenticate` is `false`', function (done) {
-      let modelSettings = Object.assign({}, app.components['/vtest/testdb/test-schema'].model.settings)
+      const modelSettings = Object.assign({}, app.components['/vtest/testdb/test-schema'].model.settings)
 
       app.components['/vtest/testdb/test-schema'].model.settings.authenticate = false
 
@@ -3203,7 +3204,7 @@ describe('Collections API', () => {
     })
 
     it('should return 204 without bearer token if `settings.authenticate` is set to an array that does not include `DELETE`', function (done) {
-      let modelSettings = Object.assign({}, app.components['/vtest/testdb/test-schema'].model.settings)
+      const modelSettings = Object.assign({}, app.components['/vtest/testdb/test-schema'].model.settings)
 
       app.components['/vtest/testdb/test-schema'].model.settings.authenticate = [
         'GET',
@@ -3232,7 +3233,7 @@ describe('Collections API', () => {
     })
 
     it('should return 401 without bearer token if `settings.authenticate` is set to an array that includes `DELETE`', function (done) {
-      let modelSettings = Object.assign({}, app.components['/vtest/testdb/test-schema'].model.settings)
+      const modelSettings = Object.assign({}, app.components['/vtest/testdb/test-schema'].model.settings)
 
       app.components['/vtest/testdb/test-schema'].model.settings.authenticate = [
         'GET',

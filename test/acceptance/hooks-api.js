@@ -8,7 +8,7 @@ const request = require('supertest')
 const should = require('should')
 const sinon = require('sinon')
 
-let client = request(`http://${config.get('server.host')}:${config.get('server.port')}`)
+const client = request(`http://${config.get('server.host')}:${config.get('server.port')}`)
 
 describe('Hooks API', function () {
   let bearerToken

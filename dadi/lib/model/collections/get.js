@@ -43,7 +43,7 @@ function get ({
   version
 }) {
   // Is this a RESTful query by ID?
-  let isRestIDQuery = req && req.params && req.params.id
+  const isRestIDQuery = req && req.params && req.params.id
 
   return new Promise((resolve, reject) => {
     // Run any `beforeGet` hooks.
@@ -52,7 +52,7 @@ function get ({
         this.settings.hooks.beforeGet,
         query,
         (current, hookConfig, callback) => {
-          let hook = new Hook(hookConfig, 'beforeGet')
+          const hook = new Hook(hookConfig, 'beforeGet')
 
           Promise.resolve(hook.apply(current, this.schema, this.name, req))
             .then(newQuery => {
@@ -83,14 +83,14 @@ function get ({
     })
   }).then(({metadata, results}) => {
     if (isRestIDQuery && results.length === 0) {
-      let error = new Error('Document not found')
+      const error = new Error('Document not found')
 
       error.statusCode = 404
 
       return Promise.reject(error)
     }
 
-    let formatter = rawOutput
+    const formatter = rawOutput
       ? Promise.resolve(results)
       : this.formatForOutput(
           results,
@@ -114,7 +114,7 @@ function get ({
           hooks.afterGet,
           response,
           (current, hookConfig, callback) => {
-            let hook = new Hook(hookConfig, 'afterGet')
+            const hook = new Hook(hookConfig, 'afterGet')
 
             Promise.resolve(hook.apply(current, this.schema, this.name, req))
               .then(newResults => {
@@ -143,7 +143,7 @@ module.exports = function () {
   // Signature: query, options, done, req
   if (arguments.length > 1) {
     let callback
-    let legacyArguments = {
+    const legacyArguments = {
       query: arguments[0],
       req: arguments[3]
     }

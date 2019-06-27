@@ -29,7 +29,7 @@ const Matrix = function (map) {
  */
 Matrix.prototype._addFalsyTypes = function (map) {
   return Object.keys(map).reduce((output, resource) => {
-    let formattedResource = {}
+    const formattedResource = {}
 
     ACCESS_TYPES.forEach(type => {
       formattedResource[type] = map[resource][type] || false
@@ -75,8 +75,8 @@ Matrix.prototype._convertACLObjects = function (map, {
 Matrix.prototype._convertACLObjectsInMatrix = function (matrix, {
   shouldStringify
 } = {}) {
-  let fromType = shouldStringify ? 'object' : 'string'
-  let transformFn = shouldStringify ? JSON.stringify : JSON.parse
+  const fromType = shouldStringify ? 'object' : 'string'
+  const transformFn = shouldStringify ? JSON.stringify : JSON.parse
 
   return Object.keys(matrix).reduce((sanitised, accessType) => {
     if (typeof matrix[accessType] === 'object') {
@@ -87,7 +87,7 @@ Matrix.prototype._convertACLObjectsInMatrix = function (matrix, {
 
         if (typeof matrix[accessType][key] === fromType) {
           try {
-            let transformedValue = transformFn(matrix[accessType][key])
+            const transformedValue = transformFn(matrix[accessType][key])
 
             value[key] = transformedValue
           } catch (error) {
@@ -123,7 +123,7 @@ Matrix.prototype._convertArrayNotationToObjectNotation = function (input) {
     return input
   }
 
-  let output = input.reduce((mapObject, entry) => {
+  const output = input.reduce((mapObject, entry) => {
     mapObject[entry.r] = entry.a
 
     return mapObject
@@ -144,7 +144,7 @@ Matrix.prototype._convertObjectNotationToArrayNotation = function (input) {
     return input
   }
 
-  let output = Object.keys(input).map(resource => {
+  const output = Object.keys(input).map(resource => {
     return {
       r: resource,
       a: input[resource]
@@ -170,7 +170,7 @@ Matrix.prototype.get = function (name, {
   parseObjects,
   stringifyObjects
 } = {}) {
-  let map = this.getAll({
+  const map = this.getAll({
     addFalsyTypes,
     getArrayNotation,
     parseObjects,
@@ -234,7 +234,7 @@ Matrix.prototype.remove = function (name) {
  * @param {Object} matrix
  */
 Matrix.prototype.set = function (name, matrix) {
-  let sanitisedMatrix = this._convertACLObjectsInMatrix(
+  const sanitisedMatrix = this._convertACLObjectsInMatrix(
     matrix,
     {shouldStringify: false}
   )
@@ -253,7 +253,7 @@ Matrix.prototype.set = function (name, matrix) {
  * @param  {Object} matrix
  */
 Matrix.prototype.validate = function (matrix) {
-  let errors = []
+  const errors = []
 
   if (typeof matrix === 'object') {
     Object.keys(matrix).forEach(type => {
@@ -273,17 +273,17 @@ Matrix.prototype.validate = function (matrix) {
                   `Invalid value in access matrix for key ${type}.${key} (expected object)`
                 )
               } else if (key === 'fields') {
-                let fieldsObj = matrix[type][key]
-                let fields = Object.keys(fieldsObj)
+                const fieldsObj = matrix[type][key]
+                const fields = Object.keys(fieldsObj)
 
                 // A valid fields projection is an object where all fields are
                 // 0 or 1, never combining the two.
-                let invalidProjection = fields.some((field, index) => {
+                const invalidProjection = fields.some((field, index) => {
                   if (fieldsObj[field] !== 0 && fieldsObj[field] !== 1) {
                     return true
                   }
 
-                  let nextField = fields[index + 1]
+                  const nextField = fields[index + 1]
 
                   if (
                     nextField !== undefined &&
@@ -291,6 +291,8 @@ Matrix.prototype.validate = function (matrix) {
                   ) {
                     return true
                   }
+
+                  return false
                 })
 
                 if (invalidProjection) {
@@ -319,7 +321,7 @@ Matrix.prototype.validate = function (matrix) {
   }
 
   if (errors.length > 0) {
-    let error = new Error('ACCESS_MATRIX_VALIDATION_FAILED')
+    const error = new Error('ACCESS_MATRIX_VALIDATION_FAILED')
 
     error.data = errors
 

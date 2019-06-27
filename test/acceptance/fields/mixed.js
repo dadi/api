@@ -7,8 +7,8 @@ const help = require(__dirname + '/../help')
 const app = require(__dirname + '/../../../dadi/lib/')
 
 let bearerToken
-let configBackup = config.get()
-let connectionString = 'http://' + config.get('server.host') + ':' + config.get('server.port')
+const configBackup = config.get()
+const connectionString = 'http://' + config.get('server.host') + ':' + config.get('server.port')
 
 describe('Mixed Field', () => {
   beforeEach(done => {
@@ -32,8 +32,8 @@ describe('Mixed Field', () => {
 
   describe('String values', () => {
     it('should create and retrieve', done => {
-      let client = request(connectionString)
-      let value = 'DADI #ftw'
+      const client = request(connectionString)
+      const value = 'DADI #ftw'
 
       client
       .post('/v1/library/misc')
@@ -58,9 +58,9 @@ describe('Mixed Field', () => {
     })
 
     it('should update', done => {
-      let client = request(connectionString)
-      let value = 'DADI #ftw'
-      let newValue = 'DADI #superftw'
+      const client = request(connectionString)
+      const value = 'DADI #ftw'
+      const newValue = 'DADI #superftw'
 
       client
       .post('/v1/library/misc')
@@ -70,7 +70,7 @@ describe('Mixed Field', () => {
       .end((err, res) => {
         if (err) return done(err)
 
-        let id = res.body.results[0]._id
+        const id = res.body.results[0]._id
 
         res.body.results[0].mixed.should.eql(value)
 
@@ -94,8 +94,8 @@ describe('Mixed Field', () => {
     })
 
     it('should delete', done => {
-      let client = request(connectionString)
-      let value = 'DADI #ftw'
+      const client = request(connectionString)
+      const value = 'DADI #ftw'
 
       client
       .post('/v1/library/misc')
@@ -105,7 +105,7 @@ describe('Mixed Field', () => {
       .end((err, res) => {
         if (err) return done(err)
 
-        let id = res.body.results[0]._id
+        const id = res.body.results[0]._id
 
         res.body.results[0].mixed.should.eql(value)
 
@@ -126,8 +126,8 @@ describe('Mixed Field', () => {
 
   describe('Number values', () => {
     it('should create and retrieve', done => {
-      let client = request(connectionString)
-      let value = 1337
+      const client = request(connectionString)
+      const value = 1337
 
       client
       .post('/v1/library/misc')
@@ -152,9 +152,9 @@ describe('Mixed Field', () => {
     })
 
     it('should update', done => {
-      let client = request(connectionString)
-      let value = 1337
-      let newValue = 'DADI #superftw'
+      const client = request(connectionString)
+      const value = 1337
+      const newValue = 'DADI #superftw'
 
       client
       .post('/v1/library/misc')
@@ -164,7 +164,7 @@ describe('Mixed Field', () => {
       .end((err, res) => {
         if (err) return done(err)
 
-        let id = res.body.results[0]._id
+        const id = res.body.results[0]._id
 
         res.body.results[0].mixed.should.eql(value)
 
@@ -188,8 +188,8 @@ describe('Mixed Field', () => {
     })
 
     it('should delete', done => {
-      let client = request(connectionString)
-      let value = 1337
+      const client = request(connectionString)
+      const value = 1337
 
       client
       .post('/v1/library/misc')
@@ -199,7 +199,7 @@ describe('Mixed Field', () => {
       .end((err, res) => {
         if (err) return done(err)
 
-        let id = res.body.results[0]._id
+        const id = res.body.results[0]._id
 
         res.body.results[0].mixed.should.eql(value)
 
@@ -220,8 +220,8 @@ describe('Mixed Field', () => {
 
   describe('Object values', () => {
     it('should create and retrieve', done => {
-      let client = request(connectionString)
-      let value = {
+      const client = request(connectionString)
+      const value = {
         name: 'GrandDADI',
         child: {
           name: 'DADI',
@@ -254,8 +254,8 @@ describe('Mixed Field', () => {
     })
 
     it('should retrieve by nested keys', done => {
-      let client = request(connectionString)
-      let value = {
+      const client = request(connectionString)
+      const value = {
         name: 'GrandDADI',
         child: {
           name: 'DADI',
@@ -288,8 +288,8 @@ describe('Mixed Field', () => {
     })
 
     it('should update by id', done => {
-      let client = request(connectionString)
-      let value = {
+      const client = request(connectionString)
+      const value = {
         name: 'GrandDADI',
         child: {
           name: 'DADI',
@@ -298,7 +298,7 @@ describe('Mixed Field', () => {
           }
         }
       }
-      let newValue = {
+      const newValue = {
         name: 'GrandDADI',
         child: {
           name: 'DADI'
@@ -313,7 +313,7 @@ describe('Mixed Field', () => {
       .end((err, res) => {
         if (err) return done(err)
 
-        let id = res.body.results[0]._id
+        const id = res.body.results[0]._id
 
         res.body.results[0].mixed.should.eql(value)
 
@@ -337,8 +337,8 @@ describe('Mixed Field', () => {
     })
 
     it('should update by query for nested key', done => {
-      let client = request(connectionString)
-      let value = {
+      const client = request(connectionString)
+      const value = {
         name: 'GrandDADI',
         child: {
           name: 'DADI',
@@ -347,7 +347,7 @@ describe('Mixed Field', () => {
           }
         }
       }
-      let newValue = {
+      const newValue = {
         name: 'GrandDADI',
         child: {
           name: 'DADI'
@@ -362,7 +362,7 @@ describe('Mixed Field', () => {
       .end((err, res) => {
         if (err) return done(err)
 
-        let id = res.body.results[0]._id
+        const id = res.body.results[0]._id
 
         res.body.results[0].mixed.should.eql(value)
 
@@ -393,8 +393,8 @@ describe('Mixed Field', () => {
     })
 
     it('should delete', done => {
-      let client = request(connectionString)
-      let value = {
+      const client = request(connectionString)
+      const value = {
         name: 'GrandDADI',
         child: {
           name: 'DADI',
@@ -412,7 +412,7 @@ describe('Mixed Field', () => {
       .end((err, res) => {
         if (err) return done(err)
 
-        let id = res.body.results[0]._id
+        const id = res.body.results[0]._id
 
         res.body.results[0].mixed.should.eql(value)
 

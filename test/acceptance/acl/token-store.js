@@ -10,14 +10,14 @@ const should = require('should')
 const sinon = require('sinon')
 
 describe('Token store', () => {
-  let configBackup = config.get()
-  let client = request(`http://${config.get('server.host')}:${config.get('server.port')}`)
-  let testClient = {
+  const configBackup = config.get()
+  const client = request(`http://${config.get('server.host')}:${config.get('server.port')}`)
+  const testClient = {
     clientId: 'rootClient',
     secret: 'superSecret',
     accessType: 'admin'
   }
-  let tokenRoute = config.get('auth.tokenUrl')
+  const tokenRoute = config.get('auth.tokenUrl')
 
   describe('Bearer token issuing', () => {
     before(done => {
@@ -180,7 +180,7 @@ describe('Token store', () => {
                 return done(err)
               }
 
-              let now = Math.floor(Date.now() / 1000)
+              const now = Math.floor(Date.now() / 1000)
 
               decoded.clientId.should.eql(testClient.clientId)
               decoded.accessType.should.eql(testClient.accessType)
@@ -194,7 +194,7 @@ describe('Token store', () => {
     })
 
     it('should encode the access type as "user" in the JWT if the client record does not have one set', done => {
-      let nonAdminUser = {
+      const nonAdminUser = {
         clientId: 'soldier',
         secret: 'nobody'
       }
@@ -218,7 +218,7 @@ describe('Token store', () => {
                   return done(err)
                 }
 
-                let now = Math.floor(Date.now() / 1000)
+                const now = Math.floor(Date.now() / 1000)
 
                 decoded.clientId.should.eql(nonAdminUser.clientId)
                 decoded.accessType.should.eql('user')
@@ -234,7 +234,7 @@ describe('Token store', () => {
   })
 
   describe('Endpoint customisation', () => {
-    let newTokenUrl = '/my-custom-endpoint'
+    const newTokenUrl = '/my-custom-endpoint'
 
     before(done => {
       config.set('auth.tokenUrl', newTokenUrl)
@@ -289,14 +289,14 @@ describe('Token store', () => {
   })
 
   describe('Validating requests', () => {
-    let endpointPath = path.resolve(
+    const endpointPath = path.resolve(
       __dirname,
       './../../acceptance/temp-workspace/endpoints/v1/endpoint.intercept-client.js'
     )
     let testClientHash
 
     before(done => {
-      let endpointSource = `
+      const endpointSource = `
         module.exports.get = function (req, res, next) {
           res.setHeader('content-type', 'application/json')
           res.statusCode = 200

@@ -5,8 +5,8 @@ const request = require('supertest')
 const should = require('should')
 
 describe('Clients API', () => {
-  let configBackup = config.get()
-  let client = request(`http://${config.get('server.host')}:${config.get('server.port')}`)
+  const configBackup = config.get()
+  const client = request(`http://${config.get('server.host')}:${config.get('server.port')}`)
 
   before(done => {
     app.start(err => {

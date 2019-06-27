@@ -7,8 +7,8 @@ const help = require(__dirname + '/../help')
 const app = require(__dirname + '/../../../dadi/lib/')
 
 let bearerToken
-let configBackup = config.get()
-let connectionString = 'http://' + config.get('server.host') + ':' + config.get('server.port')
+const configBackup = config.get()
+const connectionString = 'http://' + config.get('server.host') + ':' + config.get('server.port')
 
 describe('Object Field', () => {
   beforeEach(done => {
@@ -31,8 +31,8 @@ describe('Object Field', () => {
   })
 
   it('should create and retrieve', done => {
-    let client = request(connectionString)
-    let value = {
+    const client = request(connectionString)
+    const value = {
       name: 'GrandDADI',
       child: {
         name: 'DADI',
@@ -65,8 +65,8 @@ describe('Object Field', () => {
   })
 
   it('should retrieve by nested keys', done => {
-    let client = request(connectionString)
-    let value = {
+    const client = request(connectionString)
+    const value = {
       name: 'GrandDADI',
       child: {
         name: 'DADI',
@@ -99,8 +99,8 @@ describe('Object Field', () => {
   })
 
   it('should update by id', done => {
-    let client = request(connectionString)
-    let value = {
+    const client = request(connectionString)
+    const value = {
       name: 'GrandDADI',
       child: {
         name: 'DADI',
@@ -109,7 +109,7 @@ describe('Object Field', () => {
         }
       }
     }
-    let newValue = {
+    const newValue = {
       name: 'GrandDADI',
       child: {
         name: 'DADI'
@@ -124,7 +124,7 @@ describe('Object Field', () => {
     .end((err, res) => {
       if (err) return done(err)
 
-      let id = res.body.results[0]._id
+      const id = res.body.results[0]._id
 
       res.body.results[0].mixed.should.eql(value)
 
@@ -148,8 +148,8 @@ describe('Object Field', () => {
   })
 
   it('should update by query for nested key', done => {
-    let client = request(connectionString)
-    let value = {
+    const client = request(connectionString)
+    const value = {
       name: 'GrandDADI',
       child: {
         name: 'DADI',
@@ -158,7 +158,7 @@ describe('Object Field', () => {
         }
       }
     }
-    let newValue = {
+    const newValue = {
       name: 'GrandDADI',
       child: {
         name: 'DADI'
@@ -173,7 +173,7 @@ describe('Object Field', () => {
     .end((err, res) => {
       if (err) return done(err)
 
-      let id = res.body.results[0]._id
+      const id = res.body.results[0]._id
 
       res.body.results[0].mixed.should.eql(value)
 
@@ -204,8 +204,8 @@ describe('Object Field', () => {
   })
 
   it('should delete', done => {
-    let client = request(connectionString)
-    let value = {
+    const client = request(connectionString)
+    const value = {
       name: 'GrandDADI',
       child: {
         name: 'DADI',
@@ -223,7 +223,7 @@ describe('Object Field', () => {
     .end((err, res) => {
       if (err) return done(err)
 
-      let id = res.body.results[0]._id
+      const id = res.body.results[0]._id
 
       res.body.results[0].mixed.should.eql(value)
 

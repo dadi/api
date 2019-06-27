@@ -15,9 +15,9 @@ const DEBUG = Boolean(process.env.DEBUG_DB)
 const STATE_DISCONNECTED = 0
 const STATE_CONNECTED = 1
 
-let databasePool = {}
-let instancePool = []
-let mockConnection = {
+const databasePool = {}
+const instancePool = []
+const mockConnection = {
   failed: false,
   exceptForCollections: []
 }
@@ -113,14 +113,14 @@ DataStore.prototype.applyFieldsFilterToResults = function (fields, documents) {
     return documents
   }
 
-  let projection = Array.isArray(fields)
+  const projection = Array.isArray(fields)
     ? fields.reduce((result, field) => {
       result[field] = 1
 
       return result
     }, {})
     : fields
-  let isExclusion = Object.keys(projection).some(field => {
+  const isExclusion = Object.keys(projection).some(field => {
     return projection[field] === 0
   })
 
@@ -201,7 +201,7 @@ DataStore.prototype.delete = function ({query, collection, schema}) {
 
   return new Promise((resolve, reject) => {
     this.getCollection(collection).then(collection => {
-      let results = collection.chain().find(query)
+      const results = collection.chain().find(query)
 
       const count = results.data().length
 
@@ -231,7 +231,7 @@ DataStore.prototype.dropDatabase = function (collectionName) {
 
   if (!this.database) return Promise.resolve()
 
-  let collectionsCleared = []
+  const collectionsCleared = []
 
   this.database.collections.forEach(collection => {
     if (!collectionName || collectionName === collection.name) {
@@ -277,11 +277,11 @@ DataStore.prototype.find = function ({ query, collection: collectionName, option
 
       const sort = this.getSortParameters(options)
 
-      let baseResultset = collection.chain().find(query)
-      let branchedResultset = baseResultset.branch()
+      const baseResultset = collection.chain().find(query)
+      const branchedResultset = baseResultset.branch()
 
       // count of records matching the filter
-      let count = branchedResultset.count()
+      const count = branchedResultset.count()
 
       results = baseResultset
         .simplesort(sort.property, sort.descending)
@@ -298,7 +298,8 @@ DataStore.prototype.find = function ({ query, collection: collectionName, option
         results
       })
 
-      let returnData = {}
+      const returnData = {}
+
       returnData.results = results.map(this.formatDocumentForOutput.bind(this))
       returnData.metadata = this.getMetadata(options, count)
 
@@ -361,7 +362,7 @@ DataStore.prototype.getIndexes = function (collectionName) {
 
   return new Promise((resolve, reject) => {
     this.getCollection(collectionName).then(collection => {
-      let indexes = []
+      const indexes = []
 
       Object.keys(collection.binaryIndices).forEach(key => {
         indexes.push({ name: key })
@@ -390,7 +391,7 @@ DataStore.prototype.getMetadata = function (options, count) {
  *
  */
 DataStore.prototype.getSortParameters = function (options) {
-  let sort = {
+  const sort = {
     property: '$loki',
     descending: false
   }
@@ -406,7 +407,7 @@ DataStore.prototype.getSortParameters = function (options) {
 DataStore.prototype.index = function (collectionName, indexes) {
   return new Promise((resolve, reject) => {
     this.getCollection(collectionName).then(collection => {
-      let results = []
+      const results = []
 
       indexes.forEach((index, idx) => {
         if (Object.keys(index.keys).length === 1 && Object.keys(index.keys)[0] === '_id') {
@@ -416,7 +417,7 @@ DataStore.prototype.index = function (collectionName, indexes) {
             const uniqIdx = collection.ensureUniqueIndex(Object.keys(index.keys)[0])
 
             results.push({
-              collection: collection,
+              collection,
               index: uniqIdx.field
             })
           } else {
@@ -497,6 +498,7 @@ DataStore.prototype.prepareQuery = function (originalQuery, schema) {
   Object.keys(query).forEach(key => {
     if (Object.prototype.toString.call(query[key]) === '[object RegExp]') {
       const re = new RegExp(query[key])
+
       query[key] = { '$regex': [re.source, re.flags] }
     } else {
       if (typeof query[key] === 'object' && query[key]) {
@@ -525,7 +527,7 @@ DataStore.prototype.prepareQuery = function (originalQuery, schema) {
   //   {"fieldTwo": {"$gt": 1}},
   //   {"fieldTwo": {"$lt": 10}}
   // ]
-  let expressions = Object.keys(query).reduce((expressions, field) => {
+  const expressions = Object.keys(query).reduce((expressions, field) => {
     if (Boolean(query[field]) && typeof query[field] === 'object') {
       Object.keys(query[field]).forEach(operator => {
         expressions.push({

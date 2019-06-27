@@ -21,7 +21,7 @@ describe('Document versioning', function () {
     help.dropDatabase('testdb', err => {
       if (err) return done(err)
 
-      let schema1 = {
+      const schema1 = {
         fields: {
           name: {
             type: 'String'
@@ -43,7 +43,7 @@ describe('Document versioning', function () {
           }
         }
       }
-      let schema2 = Object.assign({}, schema1, {
+      const schema2 = Object.assign({}, schema1, {
         settings: {
           enableVersioning: true
         }        
@@ -94,7 +94,7 @@ describe('Document versioning', function () {
     })
 
     it('should return an empty result set when the document does not have previous versions', done => {
-      let document = {
+      const document = {
         name: 'John',
         surname: 'Doe'
       }
@@ -106,7 +106,7 @@ describe('Document versioning', function () {
       .end((err, res) => {
         if (err) return done(err)
 
-        let id = res.body.results[0]._id
+        const id = res.body.results[0]._id
 
         client
         .get(`/vtest/testdb/test-history-enabled/${id}/versions`)
@@ -125,11 +125,11 @@ describe('Document versioning', function () {
     })
 
     it('should list document versions', done => {
-      let document = {
+      const document = {
         name: 'John',
         surname: 'Doe'
       }
-      let updates = [
+      const updates = [
         { name: 'Jane' },
         { surname: 'Fonda' }
       ]
@@ -141,7 +141,7 @@ describe('Document versioning', function () {
       .end((err, res) => {
         if (err) return done(err)
 
-        let id = res.body.results[0]._id
+        const id = res.body.results[0]._id
 
         client
         .put(`/vtest/testdb/test-history-enabled/${id}`)
@@ -178,11 +178,11 @@ describe('Document versioning', function () {
     })
 
     it('should list document versions and show update description when available', done => {
-      let document = {
+      const document = {
         name: 'John',
         surname: 'Doe'
       }
-      let updates = [
+      const updates = [
         {
           description: 'Update first name',
           update: { name: 'Jane' }
@@ -200,7 +200,7 @@ describe('Document versioning', function () {
       .end((err, res) => {
         if (err) return done(err)
 
-        let id = res.body.results[0]._id
+        const id = res.body.results[0]._id
 
         client
         .put('/vtest/testdb/test-history-enabled')
@@ -249,7 +249,7 @@ describe('Document versioning', function () {
 
   describe('Rollback to previous versions', () => {
     it('should rollback to a previous version where a property was added, changed and removed multiple times', done => {
-      let original = {
+      const original = {
         name: 'John',
         surname: 'Doe'
       }
@@ -261,8 +261,8 @@ describe('Document versioning', function () {
       .end((err, res) => {
         if (err) return done(err)
 
-        let id = res.body.results[0]._id
-        let updates = [
+        const id = res.body.results[0]._id
+        const updates = [
           {
             endpoint: `/vtest/testdb/test-history-enabled/${id}`,
             body: {
@@ -365,7 +365,7 @@ describe('Document versioning', function () {
       .end((err, res) => {
         if (err) return done(err)
 
-        let originalReferenceID = res.body.results[0]._id
+        const originalReferenceID = res.body.results[0]._id
 
         client
         .post('/vtest/testdb/test-history-disabled')
@@ -375,8 +375,8 @@ describe('Document versioning', function () {
         .end((err, res) => {
           if (err) return done(err)
 
-          let modifiedReferenceID = res.body.results[0]._id
-          let payload = Object.assign(original, {
+          const modifiedReferenceID = res.body.results[0]._id
+          const payload = Object.assign(original, {
             reference: originalReferenceID
           })
 
@@ -387,7 +387,7 @@ describe('Document versioning', function () {
           .end((err, res) => {
             if (err) return done(err)
 
-            let id = res.body.results[0]._id
+            const id = res.body.results[0]._id
 
             client
             .get(`/vtest/testdb/test-history-enabled/${id}?compose=true`)
@@ -502,7 +502,7 @@ describe('Document versioning', function () {
       .end((err, res) => {
         if (err) return done(err)
 
-        let id = res.body.results[0]._id
+        const id = res.body.results[0]._id
 
         client
         .get(`/vtest/testdb/test-history-enabled/${id}`)

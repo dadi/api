@@ -14,7 +14,7 @@ Resources.prototype.get = function (req, res, next) {
     )
   }
 
-  let clientIsAdmin = acl.client.isAdmin(req.dadiApiClient)
+  const clientIsAdmin = acl.client.isAdmin(req.dadiApiClient)
 
   return acl.access.get(req.dadiApiClient).then(access => {
     return Object.keys(access).filter(resource => {
@@ -23,8 +23,8 @@ Resources.prototype.get = function (req, res, next) {
       })
     })
   }).then(allowedResources => {
-    let resources = acl.getResources()
-    let results = Object.keys(resources)
+    const resources = acl.getResources()
+    const results = Object.keys(resources)
       .filter(resource => {
         return clientIsAdmin || allowedResources.includes(resource)
       })

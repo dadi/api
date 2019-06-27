@@ -28,7 +28,7 @@ const History = function ({database, name}) {
  */
 History.prototype.addVersion = function (documents, {description}) {
   const versions = documents.map(document => {
-    let version = Object.assign({}, document, {
+    const version = Object.assign({}, document, {
       _document: document._id
     })
 

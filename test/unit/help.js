@@ -1,6 +1,6 @@
-var config = require(__dirname + '/../../config.js')
-var model = require(__dirname + '/../../dadi/lib/model')
-var connection = require(__dirname + '/../../dadi/lib/model/connection')
+const config = require(__dirname + '/../../config.js')
+const model = require(__dirname + '/../../dadi/lib/model')
+const connection = require(__dirname + '/../../dadi/lib/model/connection')
 
 // return valid model definition object
 module.exports.getModelSchema = function () {
@@ -90,13 +90,15 @@ module.exports.getModelSchemaWithMultipleFields = function () {
 
 // sync test that a property is correctly attached to a model
 module.exports.testModelProperty = function (key, val) {
-  var obj = {}
+  const obj = {}
+
   obj[key] = val
 
-  var schema = module.exports.getModelSchema()
+  const schema = module.exports.getModelSchema()
+
   schema.fieldName = Object.assign({}, schema.fieldName, obj)
 
-  let m = model('testModelName', schema, null, { database: 'testdb' })
+  const m = model('testModelName', schema, null, { database: 'testdb' })
 
   m.schema.fieldName[key].should.equal(val)
 }
@@ -160,7 +162,7 @@ module.exports.cleanUpDB = function (done) {
 }
 
 module.exports.clearCollection = function (collectionName, done) {
-  var conn = connection({database: 'testdb', collection: collectionName}, null, config.get('datastore'))
+  const conn = connection({database: 'testdb', collection: collectionName}, null, config.get('datastore'))
 
   if (conn.datastore.dropDatabase) {
     conn.datastore.dropDatabase(collectionName).then(() => {
@@ -201,7 +203,7 @@ module.exports.clearCollection = function (collectionName, done) {
 module.exports.whenModelsConnect = function (models, callback) {
   return new Promise((resolve, reject) => {
     let modelsConnected = 0
-    let processModel = () => {
+    const processModel = () => {
       if (++modelsConnected === models.length) {
         if (typeof callback === 'function') {
           callback()

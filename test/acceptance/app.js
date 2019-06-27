@@ -1,16 +1,16 @@
-var should = require('should')
-var sinon = require('sinon')
-var fs = require('fs')
-var path = require('path')
-var request = require('supertest')
-var config = require(__dirname + '/../../config')
-var help = require(__dirname + '/help')
-var app = require(__dirname + '/../../dadi/lib/')
+const should = require('should')
+const sinon = require('sinon')
+const fs = require('fs')
+const path = require('path')
+const request = require('supertest')
+const config = require(__dirname + '/../../config')
+const help = require(__dirname + '/help')
+const app = require(__dirname + '/../../dadi/lib/')
 
 // variables scoped for use throughout tests
-var bearerToken
-var connectionString = 'http://' + config.get('server.host') + ':' + config.get('server.port')
-var lastModifiedAt = 0
+let bearerToken
+const connectionString = 'http://' + config.get('server.host') + ':' + config.get('server.port')
+let lastModifiedAt = 0
 
 describe('Application', function () {
   this.timeout(10000)
@@ -18,9 +18,10 @@ describe('Application', function () {
   before(function (done) {
     // read "lastModifiedAt": 1466832329170
     // of workspace/collections/vtest/testdb
-    var dirs = config.get('paths')
-    var schemaPath = path.resolve(dirs.collections + '/vtest/testdb/collection.test-schema.json')
-    var schema = JSON.parse(fs.readFileSync(schemaPath).toString())
+    const dirs = config.get('paths')
+    const schemaPath = path.resolve(dirs.collections + '/vtest/testdb/collection.test-schema.json')
+    const schema = JSON.parse(fs.readFileSync(schemaPath).toString())
+
     lastModifiedAt = schema.settings.lastModifiedAt
     done()
   })
@@ -28,9 +29,10 @@ describe('Application', function () {
   after(function (done) {
     // reset "lastModifiedAt": 1466832329170
     // of workspace/collections/vtest/testdb
-    var dirs = config.get('paths')
-    var schemaPath = path.resolve(dirs.collections + '/vtest/testdb/collection.test-schema.json')
-    var schema = JSON.parse(fs.readFileSync(schemaPath).toString())
+    const dirs = config.get('paths')
+    const schemaPath = path.resolve(dirs.collections + '/vtest/testdb/collection.test-schema.json')
+    const schema = JSON.parse(fs.readFileSync(schemaPath).toString())
+
     schema.settings.lastModifiedAt = lastModifiedAt
     fs.writeFileSync(schemaPath, JSON.stringify(schema, null, 2))
 
@@ -53,7 +55,8 @@ describe('Application', function () {
       if (err) return done(err)
 
       setTimeout(function () {
-        var client = request(connectionString)
+        const client = request(connectionString)
+
         client
           .get('/api/config')
 
@@ -72,7 +75,8 @@ describe('Application', function () {
       if (err) return done(err)
 
       setTimeout(function () {
-        var client = request(connectionString)
+        const client = request(connectionString)
+
         client
           .get('/hello')
           .expect(200)
@@ -85,12 +89,13 @@ describe('Application', function () {
   })
 
   describe('collection initialisation', function () {
-    var dirs = config.get('paths')
-    var newSchemaPath = dirs.collections + '/vtest/testdb/collection.new-test-schema.json'
+    const dirs = config.get('paths')
+    const newSchemaPath = dirs.collections + '/vtest/testdb/collection.new-test-schema.json'
 
     before(function (done) {
       // Add a schema file to the collection path
-      var newSchema = JSON.parse(JSON.stringify(require(path.resolve(dirs.collections + '/../schemas/collection.new-test-schema.json'))))
+      const newSchema = JSON.parse(JSON.stringify(require(path.resolve(dirs.collections + '/../schemas/collection.new-test-schema.json'))))
+
       fs.writeFileSync(newSchemaPath, JSON.stringify(newSchema))
 
       app.start(done)
@@ -118,13 +123,15 @@ describe('Application', function () {
       })
 
       it('should initialise model using collection schema filename as model name', function (done) {
-        let loadedModels = Object.keys(app.components).map(key => {
+        const loadedModels = Object.keys(app.components).map(key => {
           if (app.components[key].model) {
             return app.components[key]
           }
+
+          return undefined
         }).filter(Boolean)
 
-        let component = loadedModels.find(c => c.model.name === 'test-schema')
+        const component = loadedModels.find(c => c.model.name === 'test-schema')
 
         component.model.name.should.equal('test-schema')
 
@@ -132,13 +139,15 @@ describe('Application', function () {
       })
 
       it('should initialise model using property from schema file as model name', function (done) {
-        let loadedModels = Object.keys(app.components).map(key => {
+        const loadedModels = Object.keys(app.components).map(key => {
           if (app.components[key].model) {
             return app.components[key]
           }
+
+          return undefined
         }).filter(Boolean)
 
-        let component = loadedModels.find(c => c.model.name === 'modelNameFromSchema')
+        const component = loadedModels.find(c => c.model.name === 'modelNameFromSchema')
 
         component.model.name.should.equal('modelNameFromSchema')
 
@@ -149,41 +158,55 @@ describe('Application', function () {
 
   describe('collections config api', function () {
     // mimic a file that could be sent to the server
-    var jsSchemaString = fs.readFileSync(__dirname + '/../new-schema.json', {encoding: 'utf8'})
+    const jsSchemaString = fs.readFileSync(__dirname + '/../new-schema.json', {encoding: 'utf8'})
 
-    var cleanup = function (done) {
+    const cleanup = function (done) {
       // try to cleanup these tests directory tree
       // don't catch errors here, since the paths may not exist
 
-      var dirs = config.get('paths')
+      const dirs = config.get('paths')
 
       try {
         fs.unlinkSync(dirs.collections + '/vapicreate/testdb/collection.api-create.json')
-      } catch (e) {}
+      } catch (_) {
+        // noop
+      }
 
       try {
         fs.unlinkSync(dirs.collections + '/vapicreate/testdb/collection.api-create-no-settings.json')
-      } catch (e) {}
+      } catch (_) {
+        // noop
+      }
 
       try {
         fs.unlinkSync(dirs.collections + '/vapicreate/testdb/collection.api-create-model-name.json')
-      } catch (e) {}
+      } catch (_) {
+        // noop
+      }
 
       try {
         fs.unlinkSync(dirs.collections + '/vapicreate/testdb/collection.api-create-last-modified.json')
-      } catch (e) {}
+      } catch (_) {
+        // noop
+      }
 
       try {
         fs.unlinkSync(dirs.collections + '/vapicreate/testdb/collection.modelNameFromSchema.json')
-      } catch (e) {}
+      } catch (_) {
+        // noop
+      }
 
       try {
         fs.rmdirSync(dirs.collections + '/vapicreate/testdb')
-      } catch (e) {}
+      } catch (_) {
+        // noop
+      }
 
       try {
         fs.rmdirSync(dirs.collections + '/vapicreate')
-      } catch (e) {}
+      } catch (_) {
+        // noop
+      }
 
       done()
     }
@@ -206,10 +229,11 @@ describe('Application', function () {
 
     describe('POST', function () {
       it('should not accept the creation of a new collection', function (done) {
-        var client = request(connectionString)
-        var schema = JSON.parse(jsSchemaString)
+        const client = request(connectionString)
+        const schema = JSON.parse(jsSchemaString)
+
         delete schema.fields
-        var newString = JSON.stringify(schema)
+        const newString = JSON.stringify(schema)
 
         client
         .post('/vapicreate/testdb/api-create/config')
@@ -251,7 +275,7 @@ describe('Application', function () {
 
     describe('DELETE', function () {
       it('should not allow removing endpoints', function (done) {
-        var client = request(connectionString)
+        const client = request(connectionString)
 
         client
         .delete('/vapicreate/testdb/api-create/config')
@@ -296,7 +320,8 @@ describe('Application', function () {
     })
 
     it('should allow unauthenticated requests if configured', function (done) {
-      var client = request(connectionString)
+      const client = request(connectionString)
+
       client
         .get('/v1/test-endpoint-unauth')
         .expect(200)
@@ -321,27 +346,36 @@ describe('Application', function () {
 
   describe('endpoint config api', function () {
     // mimic a file that could be sent to the server
-    var jsSchemaString = fs.readFileSync(__dirname + '/../new-endpoint.js', {encoding: 'utf8'})
+    let jsSchemaString = fs.readFileSync(__dirname + '/../new-endpoint.js', {encoding: 'utf8'})
 
-    var cleanup = function (done) {
-      var dirs = config.get('paths')
+    const cleanup = function (done) {
+      const dirs = config.get('paths')
 
       // try to cleanup these tests directory tree
       try {
         fs.unlinkSync(dirs.endpoints + '/v1/endpoint.new-endpoint.js')
-      } catch (err) {}
+      } catch (err) {
+        // noop
+      }
 
       try {
         fs.unlinkSync(dirs.endpoints + '/v1/endpoint.new-endpoint-with-docs.js')
-      } catch (err) {}
+      } catch (err) {
+        // noop
+      }
 
       try {
         fs.unlinkSync(dirs.endpoints + '/v2/endpoint.new-endpoint.js')
-      } catch (err) {}
+      } catch (err) {
+        // noop
+      }
 
       try {
         fs.rmdirSync(dirs.endpoints + '/v2')
-      } catch (err) {}
+      } catch (err) {
+        // noop
+      }
+
       done()
     }
 
@@ -368,7 +402,8 @@ describe('Application', function () {
     describe('POST', function () {
       it('should not allow creating a new custom endpoint', function (done) {
         help.getBearerToken(function (err, bearerToken) {
-          var client = request(connectionString)
+          const client = request(connectionString)
+
           // make sure the endpoint is not already there
           client
           .get('/v1/new-endpoint?cache=false')
@@ -398,7 +433,8 @@ describe('Application', function () {
           .end(function (err, res) {
             if (err) return done(err)
 
-            var docs = app.docs['/v1/test-endpoint-with-docs']
+            const docs = app.docs['/v1/test-endpoint-with-docs']
+
             docs.should.exist
             docs.should.be.Array
 
@@ -412,7 +448,8 @@ describe('Application', function () {
       it('should not allow updating an endpoint', function (done) {
         this.timeout(8000)
         help.getBearerToken(function (err, bearerToken) {
-          var client = request(connectionString)
+          const client = request(connectionString)
+
           client
           .get('/v1/test-endpoint?cache=false')
           .set('Authorization', 'Bearer ' + bearerToken)
@@ -421,7 +458,8 @@ describe('Application', function () {
             if (err) return done(err)
 
             // get an updated version of the file
-            var fileArr = jsSchemaString.split('\n')
+            const fileArr = jsSchemaString.split('\n')
+
             fileArr[0] = "var message = {message: 'endpoint updated through the API'}"
             jsSchemaString = fileArr.join('\n')
 
@@ -480,7 +518,7 @@ describe('Application', function () {
               should.exist(endpoint.path)
             })
 
-            let endpointWithDisplayName = res.body.endpoints.find(endpoint => {
+            const endpointWithDisplayName = res.body.endpoints.find(endpoint => {
               return endpoint.name === 'Test Endpoint'
             })
 
@@ -537,9 +575,9 @@ describe('Application', function () {
   })
 
   describe('config api', function () {
-    var config = require(__dirname + '/../../config.js')
-    var configPath = path.resolve(config.configPath())
-    var originalConfig = fs.readFileSync(configPath).toString()
+    const config = require(__dirname + '/../../config.js')
+    const configPath = path.resolve(config.configPath())
+    const originalConfig = fs.readFileSync(configPath).toString()
 
     beforeEach(function (done) {
       app.start(done)
@@ -580,14 +618,15 @@ describe('Application', function () {
       })
 
       it('should load a domain-specific config', function (done) {
-        var testConfigPath = './config/config.test.json'
-        var domainConfigPath
+        const testConfigPath = './config/config.test.json'
+        let domainConfigPath
 
         function loadConfig (server) {
           domainConfigPath = './config/' + server.host + ':' + server.port + '.json'
 
           try {
-            var testConfig = JSON.parse(fs.readFileSync(testConfigPath, { encoding: 'utf-8'}))
+            const testConfig = JSON.parse(fs.readFileSync(testConfigPath, { encoding: 'utf-8'}))
+
             testConfig.app.name = 'Domain Loaded Config'
             fs.writeFileSync(domainConfigPath, JSON.stringify(testConfig, null, 2))
           } catch (err) {
@@ -643,8 +682,8 @@ describe('Application', function () {
 
     describe('POST', function () {
       it('should not allow updating the main config file', function (done) {
-        let client = request(connectionString)
-        let currentTtl = config.get('auth.tokenTtl')
+        const client = request(connectionString)
+        const currentTtl = config.get('auth.tokenTtl')
 
         client
         .get('/api/config')

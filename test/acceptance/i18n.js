@@ -7,11 +7,11 @@ const request = require('supertest')
 const should = require('should')
 const sinon = require('sinon')
 
-let connectionString = `http://${config.get('server.host')}:${config.get('server.port')}`
-let client = request(connectionString)
-let configBackup = config.get()
+const connectionString = `http://${config.get('server.host')}:${config.get('server.port')}`
+const client = request(connectionString)
+const configBackup = config.get()
 let bearerToken
-let lastModifiedAt = 0
+const lastModifiedAt = 0
 
 describe('Multi-language', function () {
   this.timeout(4000)
@@ -67,8 +67,8 @@ describe('Multi-language', function () {
       .end((err, res) => {
         if (err) return done(err)
 
-        let defaultLanguage = config.get('i18n.defaultLanguage')
-        let supportedLanguages = config.get('i18n.languages')
+        const defaultLanguage = config.get('i18n.defaultLanguage')
+        const supportedLanguages = config.get('i18n.languages')
 
         res.body.results.length.should.eql(3)
         res.body.results.forEach(language => {
@@ -105,8 +105,8 @@ describe('Multi-language', function () {
       .end((err, res) => {
         if (err) return done(err)
 
-        let defaultLanguage = config.get('i18n.defaultLanguage')
-        let supportedLanguages = config.get('i18n.languages')
+        const defaultLanguage = config.get('i18n.defaultLanguage')
+        const supportedLanguages = config.get('i18n.languages')
 
         res.body.results.length.should.eql(4)
         res.body.results.forEach(language => {
@@ -153,7 +153,7 @@ describe('Multi-language', function () {
   })
 
   it('should accept a language variation of a field, separated by the character configured in `i18n.fieldCharacter` (using default)', done => {
-    let document = {
+    const document = {
       title: 'The Little Prince',
       'title:pt': 'O Principezinho'
     }
@@ -175,7 +175,7 @@ describe('Multi-language', function () {
   })
 
   it('should accept a language variation of a field, separated by the character configured in `i18n.fieldCharacter`', done => {
-    let document = {
+    const document = {
       title: 'The Little Prince',
       'title=pt': 'O Principezinho'
     }
@@ -213,7 +213,7 @@ describe('Multi-language', function () {
   it('should accept a language variation of a field, even if the language in question is not part of `i18n.languages`', done => {
     config.set('i18n.languages', ['es', 'fr'])
 
-    let document = {
+    const document = {
       title: 'The Little Prince',
       'title:pt': 'O Principezinho'
     }
@@ -239,7 +239,7 @@ describe('Multi-language', function () {
   it('should validate language variation of a field in the same way as the main field', done => {
     config.set('i18n.fieldCharacter', ':')
 
-    let document = {
+    const document = {
       title: 'The Little Prince',
       'title:pt': 123456
     }
@@ -263,7 +263,7 @@ describe('Multi-language', function () {
   })
 
   it('should retrieve all language variations if no `lang` parameter is supplied', done => {
-    let document = {
+    const document = {
       title: 'The Little Prince',
       'title:pt': 'O Principezinho',
       'title:fr': 'Le Petit Prince'
@@ -284,7 +284,7 @@ describe('Multi-language', function () {
       .end((err, res) => {
         res.body.results.length.should.eql(1)
 
-        let result = res.body.results[0]
+        const result = res.body.results[0]
 
         result.title.should.eql(document.title)
         result['title:pt'].should.eql(document['title:pt'])
@@ -300,7 +300,7 @@ describe('Multi-language', function () {
   it('should return the translation version of a field when there is one set for the language in the `lang` parameter, falling back to the default language', done => {
     config.set('i18n.languages', ['pt', 'fr'])
 
-    let documents = [
+    const documents = [
       {
         title: 'The Little Prince',
         'title:pt': 'O Principezinho',
@@ -326,7 +326,7 @@ describe('Multi-language', function () {
       .end((err, res) => {
         res.body.results.length.should.eql(2)
 
-        let results = res.body.results
+        const results = res.body.results
 
         results[0].title.should.eql(documents[0]['title:pt'])
         results[0]._i18n.title.should.eql('pt')
@@ -350,7 +350,7 @@ describe('Multi-language', function () {
   it('should return the translation version of a field when the fields projection is set to include the field in question (with `lang` param)', done => {
     config.set('i18n.languages', ['pt', 'fr'])
 
-    let documents = [
+    const documents = [
       {
         title: 'The Little Prince',
         'title:pt': 'O Principezinho',
@@ -376,7 +376,7 @@ describe('Multi-language', function () {
       .end((err, res) => {
         res.body.results.length.should.eql(2)
 
-        let results = res.body.results
+        const results = res.body.results
 
         results[0].title.should.eql(documents[0]['title:pt'])
         results[0]._i18n.title.should.eql('pt')
@@ -400,7 +400,7 @@ describe('Multi-language', function () {
   it('should return the translation version of a field when the fields projection is set to include the field in question (without `lang` param)', done => {
     config.set('i18n.languages', ['pt', 'fr'])
 
-    let documents = [
+    const documents = [
       {
         title: 'The Little Prince',
         'title:pt': 'O Principezinho',
@@ -426,7 +426,7 @@ describe('Multi-language', function () {
       .end((err, res) => {
         res.body.results.length.should.eql(2)
 
-        let results = res.body.results
+        const results = res.body.results
 
         results[0].title.should.eql(documents[0]['title'])
         should.not.exist(results[0]._i18n)
@@ -448,7 +448,7 @@ describe('Multi-language', function () {
   it('should return the original version of a field when the requested language is not part of `i18n.languages`', done => {
     config.set('i18n.languages', ['fr'])
 
-    let document = {
+    const document = {
       title: 'The Little Prince',
       'title:pt': 'O Principezinho',
       'title:fr': 'Le Petit Prince'
@@ -469,7 +469,7 @@ describe('Multi-language', function () {
       .end((err, res) => {
         res.body.results.length.should.eql(1)
 
-        let results = res.body.results
+        const results = res.body.results
 
         results[0].title.should.eql(document.title)
         results[0]._i18n.title.should.eql('en')
@@ -486,7 +486,7 @@ describe('Multi-language', function () {
   it('should populate a `_i18n` field with a mapping of the language used for each translatable field', done => {
     config.set('i18n.languages', ['pt', 'fr'])
 
-    let document = {
+    const document = {
       name: 'Eduardo Bouças',
       occupation: 'Software engineer',
       'occupation:pt': 'Engenheiro de software',
@@ -510,7 +510,7 @@ describe('Multi-language', function () {
       .end((err, res) => {
         res.body.results.length.should.eql(1)
 
-        let result = res.body.results[0]
+        const result = res.body.results[0]
 
         result.name.should.eql(document.name)
         result.occupation.should.eql(document['occupation:pt'])
@@ -519,7 +519,7 @@ describe('Multi-language', function () {
 
         should.exist(result._i18n)
 
-        let defaultLanguage = config.get('i18n.defaultLanguage')
+        const defaultLanguage = config.get('i18n.defaultLanguage')
 
         result._i18n.name.should.eql(defaultLanguage)
         result._i18n.occupation.should.eql('pt')
@@ -536,7 +536,7 @@ describe('Multi-language', function () {
   it('should translate fields and create a `_i18n` map in referenced documents', done => {
     config.set('i18n.languages', ['pt', 'fr'])
 
-    let document = {
+    const document = {
       name: 'Eduardo Bouças',
       occupation: 'Software engineer',
       'occupation:pt': 'Engenheiro de software',
@@ -568,7 +568,7 @@ describe('Multi-language', function () {
       .end((err, res) => {
         res.body.results.length.should.eql(1)
 
-        let result = res.body.results[0]
+        const result = res.body.results[0]
 
         result.name.should.eql(document.name)
         result.occupation.should.eql(document['occupation:pt'])
@@ -577,14 +577,14 @@ describe('Multi-language', function () {
 
         should.exist(result._i18n)
 
-        let defaultLanguage = config.get('i18n.defaultLanguage')
+        const defaultLanguage = config.get('i18n.defaultLanguage')
 
         result._i18n.name.should.eql(defaultLanguage)
         result._i18n.occupation.should.eql('pt')
         result._i18n.nationality.should.eql(defaultLanguage)
         result._i18n.education.should.eql('pt')
 
-        let referencedResult = res.body.results[0].friend
+        const referencedResult = res.body.results[0].friend
 
         referencedResult.name.should.eql(document.friend.name)
         referencedResult.occupation.should.eql(document.friend['occupation:pt'])
@@ -608,7 +608,7 @@ describe('Multi-language', function () {
   it('should return the translation version of a referenced field when the fields projection is set to include the field in question', done => {
     config.set('i18n.languages', ['pt', 'fr'])
 
-    let document = {
+    const document = {
       name: 'Eduardo Bouças',
       occupation: 'Software engineer',
       'occupation:pt': 'Engenheiro de software',
@@ -640,17 +640,17 @@ describe('Multi-language', function () {
       .end((err, res) => {
         res.body.results.length.should.eql(1)
 
-        let result = res.body.results[0]
+        const result = res.body.results[0]
 
         result.occupation.should.eql(document['occupation:pt'])
 
         should.exist(result._i18n)
 
-        let defaultLanguage = config.get('i18n.defaultLanguage')
+        const defaultLanguage = config.get('i18n.defaultLanguage')
 
         result._i18n.occupation.should.eql('pt')
 
-        let referencedResult = res.body.results[0].friend
+        const referencedResult = res.body.results[0].friend
 
         referencedResult.occupation.should.eql(document.friend['occupation:pt'])
 
@@ -666,10 +666,10 @@ describe('Multi-language', function () {
   })
 
   it('should handle translations with special characters', done => {
-    let original = {
+    const original = {
       name: 'I can eat glass and it doesn\'t hurt me.'
     }
-    let translations = {
+    const translations = {
       'name:af': 'Ek kan glas eet, maar dit doen my nie skade nie.',
       'name:an': 'Puedo minchar beire, no me\'n fa mal .',
       'name:ar': 'أنا قادر على أكل الزجاج و هذا لا يؤلمني.',
@@ -726,7 +726,7 @@ describe('Multi-language', function () {
       'name:wa': 'Dji pou magnî do vêre, çoula m\' freut nén må.',
       'name:zh': '我能吞下玻璃而不伤身体。'
     }
-    let languages = Object.keys(translations).map(field => {
+    const languages = Object.keys(translations).map(field => {
       return field.split(':')[1]
     })
 
@@ -742,7 +742,7 @@ describe('Multi-language', function () {
     .end((err, res) => {
       if (err) return done(err)
 
-      let id = res.body.results[0]._id
+      const id = res.body.results[0]._id
       let i = 0
 
       client

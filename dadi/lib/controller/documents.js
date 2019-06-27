@@ -18,15 +18,15 @@ const Collection = function (model, server) {
 Collection.prototype = new Controller()
 
 Collection.prototype.count = workQueue.wrapForegroundJob(function (req, res, next) {
-  let method = req.method && req.method.toLowerCase()
+  const method = req.method && req.method.toLowerCase()
 
   if (method !== 'get') {
     return next()
   }
 
-  let options = url.parse(req.url, true).query
+  const options = url.parse(req.url, true).query
 
-  let query = this._prepareQuery(req)
+  const query = this._prepareQuery(req)
   let queryOptions = this._prepareQueryOptions(options)
 
   if (queryOptions.errors.length !== 0) {
@@ -47,7 +47,7 @@ Collection.prototype.count = workQueue.wrapForegroundJob(function (req, res, nex
 })
 
 Collection.prototype.delete = workQueue.wrapForegroundJob(function (req, res, next) {
-  let query = req.params.id ? { _id: req.params.id } : req.body.query
+  const query = req.params.id ? { _id: req.params.id } : req.body.query
 
   if (!query) return next()
 
@@ -85,23 +85,24 @@ Collection.prototype.delete = workQueue.wrapForegroundJob(function (req, res, ne
 })
 
 Collection.prototype.get = workQueue.wrapForegroundJob(function (req, res, next) {
-  let options = this._getURLParameters(req.url)
-  let callback = options.callback || this.model.settings.callback
+  const options = this._getURLParameters(req.url)
+  const callback = options.callback || this.model.settings.callback
 
   // Determine if this is JSONP.
   let done = callback
     ? help.sendBackJSONP(callback, res, next)
     : help.sendBackJSON(200, res, next)
-  let query = this._prepareQuery(req)
+  const query = this._prepareQuery(req)
   let queryOptions = this._prepareQueryOptions(options)
 
   if (queryOptions.errors.length !== 0) {
     done = help.sendBackJSON(400, res, next)
 
     return done(null, queryOptions)
-  } else {
-    queryOptions = queryOptions.queryOptions
   }
+ 
+    queryOptions = queryOptions.queryOptions
+  
 
   return this.model.get({
     client: req.dadiApiClient,
@@ -119,12 +120,12 @@ Collection.prototype.get = workQueue.wrapForegroundJob(function (req, res, next)
 
 Collection.prototype.post = workQueue.wrapForegroundJob(function (req, res, next) {
   // Add internal fields.
-  let internals = {
+  const internals = {
     _apiVersion: req.url.split('/')[1]
   }
   let pathname = url.parse(req.url).pathname
-  let path = url.parse(req.url, true)
-  let options = path.query
+  const path = url.parse(req.url, true)
+  const options = path.query
 
   // Remove id param if it's an update, so we still
   // get a valid handle on the model name for clearing
@@ -200,7 +201,7 @@ Collection.prototype.registerRoutes = function (route, filePath) {
       return next()
     }
 
-    let method = req.method && req.method.toLowerCase()
+    const method = req.method && req.method.toLowerCase()
 
     if (method !== 'get') {
       return next()
@@ -208,7 +209,7 @@ Collection.prototype.registerRoutes = function (route, filePath) {
 
     // The client can read the schema if they have any type of access (i.e. create,
     // delete, read or update) to the collection resource.
-    let aclKey = this.model.aclKey
+    const aclKey = this.model.aclKey
 
     return acl.access.get(req.dadiApiClient, aclKey).then(access => {
       if (!access.create || !access.delete || !access.read || !access.update) {
@@ -225,7 +226,7 @@ Collection.prototype.registerRoutes = function (route, filePath) {
   this.server.app.use(`${route}/:id(${this.ID_PATTERN})?/:action(count|search|stats|versions)?`, (req, res, next) => {
     try {
       // Map request method to controller method.
-      let method = req.params.action || (req.method && req.method.toLowerCase())
+      const method = req.params.action || (req.method && req.method.toLowerCase())
 
       if (method && this[method]) {
         return this[method](req, res, next)
@@ -298,7 +299,7 @@ Collection.prototype.search = function (req, res, next) {
 }
 
 Collection.prototype.stats = workQueue.wrapForegroundJob(function (req, res, next) {
-  let method = req.method && req.method.toLowerCase()
+  const method = req.method && req.method.toLowerCase()
 
   if (method !== 'get') {
     return next()
@@ -319,7 +320,7 @@ Collection.prototype.unregisterRoutes = function (route) {
 }
 
 Collection.prototype.versions = workQueue.wrapForegroundJob(function (req, res, next) {
-  let method = req.method && req.method.toLowerCase()
+  const method = req.method && req.method.toLowerCase()
 
   if (method !== 'get') {
     return next()

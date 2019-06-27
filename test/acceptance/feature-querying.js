@@ -6,8 +6,8 @@ const request = require('supertest')
 const should = require('should')
 const sinon = require('sinon')
 
-let client = request(`http://${config.get('server.host')}:${config.get('server.port')}`)
-let configBackup = config.get()
+const client = request(`http://${config.get('server.host')}:${config.get('server.port')}`)
+const configBackup = config.get()
 
 describe('Feature querying', function () {
   afterEach(done => {
@@ -112,7 +112,7 @@ describe('Feature querying', function () {
 
         res.headers['x-dadi-supports'].should.eql('feature2')
 
-        let testClient = {
+        const testClient = {
           clientId: 'johnDoe',
           secret: 'sssh!'
         }
@@ -149,7 +149,7 @@ describe('Feature querying', function () {
     ])
 
     app.start(() => {
-      let testClient = {
+      const testClient = {
         clientId: 'johnDoe',
         secret: 'sssh!'
       }
@@ -165,7 +165,7 @@ describe('Feature querying', function () {
         .end((err, res) => {
           if (err) return done(err)
 
-          let bearerToken = res.body.accessToken
+          const bearerToken = res.body.accessToken
 
           res.headers['x-dadi-supports'].should.eql('feature1;feature2')
 

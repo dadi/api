@@ -4,8 +4,8 @@ const help = require('./../../help')
 const request = require('supertest')
 const should = require('should')
 
-let configBackup = config.get()
-let client = request(`http://${config.get('server.host')}:${config.get('server.port')}`)
+const configBackup = config.get()
+const client = request(`http://${config.get('server.host')}:${config.get('server.port')}`)
 
 module.exports = () => {
   beforeEach(() => {
@@ -25,7 +25,7 @@ module.exports = () => {
 
   describe('error states', () => {
     it('should return 401 if the request does not include a valid bearer token', done => {
-      let resource = {
+      const resource = {
         name: 'collection:library_book',
         access: {
           read: true
@@ -45,7 +45,7 @@ module.exports = () => {
     })
 
     it('should return 403 if the request includes a valid bearer token without sufficient permissions on the "roles" resource (no resource)', done => {
-      let testClient = {
+      const testClient = {
         clientId: 'apiClient',
         secret: 'someSecret',
         resources: {
@@ -58,7 +58,7 @@ module.exports = () => {
         },
         roles: ['child']
       }
-      let resource = {
+      const resource = {
         name: 'collection:library_book',
         access: {
           read: true
@@ -80,7 +80,7 @@ module.exports = () => {
 
           res.body.accessToken.should.be.String
 
-          let bearerToken = res.body.accessToken
+          const bearerToken = res.body.accessToken
 
           client
           .post('/api/roles/child/resources')
@@ -98,7 +98,7 @@ module.exports = () => {
     })
 
     it('should return 403 if the request includes a valid bearer token without sufficient permissions (falsy "update" access to "roles" resource)', done => {
-      let testClient = {
+      const testClient = {
         clientId: 'apiClient',
         secret: 'someSecret',
         resources: {
@@ -114,7 +114,7 @@ module.exports = () => {
         },
         roles: ['child']
       }
-      let resource = {
+      const resource = {
         name: 'collection:library_book',
         access: {
           read: true
@@ -136,7 +136,7 @@ module.exports = () => {
 
           res.body.accessToken.should.be.String
 
-          let bearerToken = res.body.accessToken
+          const bearerToken = res.body.accessToken
 
           client
           .post('/api/roles/child/resources')
@@ -154,7 +154,7 @@ module.exports = () => {
     })
 
     it('should return 403 if the request includes a valid bearer token without sufficient permissions (no access to role)', done => {
-      let testClient = {
+      const testClient = {
         clientId: 'apiClient',
         secret: 'someSecret',
         resources: {
@@ -167,7 +167,7 @@ module.exports = () => {
           }
         }
       }
-      let resource = {
+      const resource = {
         name: 'collection:library_book',
         access: {
           read: true
@@ -189,7 +189,7 @@ module.exports = () => {
 
           res.body.accessToken.should.be.String
 
-          let bearerToken = res.body.accessToken
+          const bearerToken = res.body.accessToken
 
           client
           .post('/api/roles/child/resources')
@@ -207,7 +207,7 @@ module.exports = () => {
     })
 
     it('should return 403 if the request includes a valid bearer token without sufficient permissions (no access to referenced resource)', done => {
-      let testClient = {
+      const testClient = {
         clientId: 'apiClient',
         secret: 'someSecret',
         resources: {
@@ -221,7 +221,7 @@ module.exports = () => {
         },
         roles: ['child']
       }
-      let resource = {
+      const resource = {
         name: 'collection:library_book',
         access: {
           read: true
@@ -243,7 +243,7 @@ module.exports = () => {
 
           res.body.accessToken.should.be.String
 
-          let bearerToken = res.body.accessToken
+          const bearerToken = res.body.accessToken
 
           client
           .post('/api/roles/child/resources')
@@ -261,7 +261,7 @@ module.exports = () => {
     })
 
     it('should return 400 if the resource name is missing', done => {
-      let testClient = {
+      const testClient = {
         clientId: 'apiClient',
         secret: 'someSecret',
         resources: {
@@ -273,7 +273,7 @@ module.exports = () => {
           }
         }
       }
-      let resource = {
+      const resource = {
         access: {
           read: true
         }
@@ -294,7 +294,7 @@ module.exports = () => {
 
           res.body.accessToken.should.be.String
 
-          let bearerToken = res.body.accessToken
+          const bearerToken = res.body.accessToken
 
           client
           .post('/api/roles/child/resources')
@@ -318,7 +318,7 @@ module.exports = () => {
     })
 
     it('should return 400 if the access matrix is missing', done => {
-      let testClient = {
+      const testClient = {
         clientId: 'apiClient',
         secret: 'someSecret',
         resources: {
@@ -330,7 +330,7 @@ module.exports = () => {
           }
         }
       }
-      let resource = {
+      const resource = {
         name: 'collection:library_book'
       }
 
@@ -349,7 +349,7 @@ module.exports = () => {
 
           res.body.accessToken.should.be.String
 
-          let bearerToken = res.body.accessToken
+          const bearerToken = res.body.accessToken
 
           client
           .post('/api/roles/child/resources')
@@ -373,12 +373,12 @@ module.exports = () => {
     })
 
     it('should return 400 if the access matrix is invalid', done => {
-      let testClient = {
+      const testClient = {
         clientId: 'apiClient',
         secret: 'someSecret',
         accessType: 'admin'
       }
-      let resource = {
+      const resource = {
         name: 'collection:library_book',
         access: {
           invalidType: true,
@@ -403,7 +403,7 @@ module.exports = () => {
 
           res.body.accessToken.should.be.String
 
-          let bearerToken = res.body.accessToken
+          const bearerToken = res.body.accessToken
 
           client
           .post('/api/roles/child/resources')
@@ -430,12 +430,12 @@ module.exports = () => {
     })      
 
     it('should return 400 if the referenced resource does not exist', done => {
-      let testClient = {
+      const testClient = {
         clientId: 'apiClient',
         secret: 'someSecret',
         accessType: 'admin'
       }
-      let resource = {
+      const resource = {
         name: 'collection:non_existing',
         access: {
           read: true
@@ -457,7 +457,7 @@ module.exports = () => {
 
           res.body.accessToken.should.be.String
 
-          let bearerToken = res.body.accessToken
+          const bearerToken = res.body.accessToken
 
           client
           .post('/api/roles/child/resources')
@@ -483,7 +483,7 @@ module.exports = () => {
 
   describe('success states (the client has "update" access to the "roles" resource, has access to the role being edited as well as access to the referenced resource for each of the access types they are attempting to grant)', () => {
     it('should give the role permissions to access a resource', done => {
-      let testClient = {
+      const testClient = {
         clientId: 'apiClient',
         secret: 'someSecret',
         resources: {
@@ -497,7 +497,7 @@ module.exports = () => {
         },
         roles: ['child']
       }
-      let resource = {
+      const resource = {
         name: 'collection:library_book',
         access: {
           read: true
@@ -519,7 +519,7 @@ module.exports = () => {
 
           res.body.accessToken.should.be.String
 
-          let bearerToken = res.body.accessToken
+          const bearerToken = res.body.accessToken
 
           client
           .get('/api/roles/child')
@@ -532,7 +532,7 @@ module.exports = () => {
             res.body.results.should.be.Array
             res.body.results.length.should.eql(1)
 
-            let result = res.body.results[0]
+            const result = res.body.results[0]
 
             result.resources.should.eql({})
 
@@ -548,7 +548,7 @@ module.exports = () => {
               res.body.results.should.be.Array
               res.body.results.length.should.eql(1)
 
-              let result = res.body.results[0]
+              const result = res.body.results[0]
 
               result.name.should.eql('child')
               result.resources[resource.name].create.should.eql(false)
@@ -570,7 +570,7 @@ module.exports = () => {
                 res.body.results.should.be.Array
                 res.body.results.length.should.eql(1)
 
-                let result = res.body.results[0]
+                const result = res.body.results[0]
 
                 result.resources[resource.name].create.should.eql(false)
                 result.resources[resource.name].delete.should.eql(false)
@@ -589,7 +589,7 @@ module.exports = () => {
     })
 
     it('should give the role permissions to access a resource without deleting existing permissions for other roles', done => {
-      let testClient = {
+      const testClient = {
         clientId: 'apiClient',
         secret: 'someSecret',
         resources: {
@@ -608,14 +608,14 @@ module.exports = () => {
         },
         roles: ['child']
       }
-      let resource1 = {
+      const resource1 = {
         name: 'collection:library_book',
         access: {
           read: true,
           updateOwn: true
         }
       }
-      let resource2 = {
+      const resource2 = {
         name: 'collection:library_person',
         access: {
           read: true,
@@ -638,7 +638,7 @@ module.exports = () => {
 
           res.body.accessToken.should.be.String
 
-          let bearerToken = res.body.accessToken
+          const bearerToken = res.body.accessToken
 
           client
           .get('/api/roles/child')
@@ -651,7 +651,7 @@ module.exports = () => {
             res.body.results.should.be.Array
             res.body.results.length.should.eql(1)
 
-            let result = res.body.results[0]
+            const result = res.body.results[0]
 
             result.resources.should.eql({})
 
@@ -667,7 +667,7 @@ module.exports = () => {
               res.body.results.should.be.Array
               res.body.results.length.should.eql(1)
 
-              let result = res.body.results[0]
+              const result = res.body.results[0]
 
               result.name.should.eql('child')
               result.resources[resource1.name].create.should.eql(resource1.access.create || false)
@@ -690,7 +690,7 @@ module.exports = () => {
                 res.body.results.should.be.Array
                 res.body.results.length.should.eql(1)
 
-                let result = res.body.results[0]
+                const result = res.body.results[0]
 
                 Object.keys(result.resources).length.should.eql(2)
 
@@ -714,7 +714,7 @@ module.exports = () => {
                   res.body.results.should.be.Array
                   res.body.results.length.should.eql(1)
 
-                  let result = res.body.results[0]
+                  const result = res.body.results[0]
 
                   Object.keys(result.resources).length.should.eql(2)
 

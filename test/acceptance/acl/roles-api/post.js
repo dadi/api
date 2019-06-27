@@ -5,8 +5,8 @@ const request = require('supertest')
 const should = require('should')
 
 module.exports = () => {
-  let configBackup = config.get()
-  let client = request(`http://${config.get('server.host')}:${config.get('server.port')}`)
+  const configBackup = config.get()
+  const client = request(`http://${config.get('server.host')}:${config.get('server.port')}`)
 
   beforeEach(() => {
     return help.createACLRole({
@@ -25,7 +25,7 @@ module.exports = () => {
 
   describe('error states', () => {
     it('should return 401 if the request does not include a valid bearer token', done => {
-      let newRole = {
+      const newRole = {
         name: 'dadi-engineer'
       }
 
@@ -42,12 +42,12 @@ module.exports = () => {
     })
 
     it('should return 403 if the request includes a valid bearer token without sufficient permissions on the "roles" resource (no resource)', done => {
-      let testClient = {
+      const testClient = {
         clientId: 'apiClient',
         secret: 'someSecret',
         roles: ['dadi-engineer']
       }
-      let newRole = {
+      const newRole = {
         name: 'dadi-engineer'
       }
 
@@ -66,7 +66,7 @@ module.exports = () => {
 
           res.body.accessToken.should.be.String
 
-          let bearerToken = res.body.accessToken
+          const bearerToken = res.body.accessToken
 
           client
           .post('/api/roles')
@@ -84,7 +84,7 @@ module.exports = () => {
     })
 
     it('should return 403 if the request includes a valid bearer token without sufficient permissions on the "roles" resource (falsy access type)', done => {
-      let testClient = {
+      const testClient = {
         clientId: 'apiClient',
         secret: 'someSecret',
         resources: {
@@ -95,7 +95,7 @@ module.exports = () => {
         },
         roles: ['dadi-engineer']
       }
-      let newRole = {
+      const newRole = {
         name: 'dadi-engineer'
       }      
 
@@ -114,7 +114,7 @@ module.exports = () => {
 
           res.body.accessToken.should.be.String
 
-          let bearerToken = res.body.accessToken
+          const bearerToken = res.body.accessToken
 
           client
           .post('/api/roles')
@@ -132,7 +132,7 @@ module.exports = () => {
     })
 
     it('should return 403 if the request body contains an `extends` property with a role which the requesting client does not have', done => {
-      let testClient = {
+      const testClient = {
         clientId: 'apiClient',
         secret: 'someSecret',
         resources: {
@@ -142,7 +142,7 @@ module.exports = () => {
         },
         roles: ['child']
       }
-      let newRole = {
+      const newRole = {
         name: 'dadi-engineer',
         extends: 'cousin'
       }      
@@ -162,7 +162,7 @@ module.exports = () => {
 
           res.body.accessToken.should.be.String
 
-          let bearerToken = res.body.accessToken
+          const bearerToken = res.body.accessToken
 
           client
           .post('/api/roles')
@@ -180,7 +180,7 @@ module.exports = () => {
     })
 
     it('should return 400 if the request body does not include a `name` property', done => {
-      let testClient = {
+      const testClient = {
         clientId: 'apiClient',
         secret: 'someSecret',
         resources: {
@@ -206,7 +206,7 @@ module.exports = () => {
 
           res.body.accessToken.should.be.String
 
-          let bearerToken = res.body.accessToken
+          const bearerToken = res.body.accessToken
 
           client
           .post('/api/roles')
@@ -230,7 +230,7 @@ module.exports = () => {
     })
 
     it('should return 400 if the request body contains an unknown property', done => {
-      let testClient = {
+      const testClient = {
         clientId: 'apiClient',
         secret: 'someSecret',
         resources: {
@@ -256,7 +256,7 @@ module.exports = () => {
 
           res.body.accessToken.should.be.String
 
-          let bearerToken = res.body.accessToken
+          const bearerToken = res.body.accessToken
 
           client
           .post('/api/roles')
@@ -281,7 +281,7 @@ module.exports = () => {
     })    
 
     it('should return 400 if the request body contains an `extends` property referencing a role that does not exist', done => {
-      let testClient = {
+      const testClient = {
         clientId: 'apiClient',
         secret: 'someSecret',
         accessType: 'admin'
@@ -302,7 +302,7 @@ module.exports = () => {
 
           res.body.accessToken.should.be.String
 
-          let bearerToken = res.body.accessToken
+          const bearerToken = res.body.accessToken
 
           client
           .post('/api/roles')
@@ -327,7 +327,7 @@ module.exports = () => {
     })    
 
     it('should return 409 if a role with the given name already exists', done => {
-      let testClient = {
+      const testClient = {
         clientId: 'apiClient',
         secret: 'someSecret',
         resources: {
@@ -336,7 +336,7 @@ module.exports = () => {
           }
         }
       }
-      let newRole = {
+      const newRole = {
         name: 'dadi-engineer'
       }
 
@@ -355,7 +355,7 @@ module.exports = () => {
 
           res.body.accessToken.should.be.String
 
-          let bearerToken = res.body.accessToken
+          const bearerToken = res.body.accessToken
 
           client
           .post('/api/roles')
@@ -390,7 +390,7 @@ module.exports = () => {
 
   describe('success states (the client has "create" access to the "roles" resource and to any role being extended)', () => {
     it('should create a role and return 201', done => {
-      let testClient = {
+      const testClient = {
         clientId: 'apiClient',
         secret: 'someSecret',
         resources: {
@@ -399,7 +399,7 @@ module.exports = () => {
           }
         }
       }
-      let newRole = {
+      const newRole = {
         name: 'dadi-engineer'
       }        
 
@@ -418,7 +418,7 @@ module.exports = () => {
 
           res.body.accessToken.should.be.String
 
-          let bearerToken = res.body.accessToken
+          const bearerToken = res.body.accessToken
 
           client
           .post('/api/roles')
@@ -442,7 +442,7 @@ module.exports = () => {
     })
 
     it('should create a role that extends another role that the client has direct access to', done => {
-      let testClient = {
+      const testClient = {
         clientId: 'apiClient',
         secret: 'someSecret',
         resources: {
@@ -452,7 +452,7 @@ module.exports = () => {
         },
         roles: ['parent']
       }
-      let newRole = {
+      const newRole = {
         name: 'dadi-engineer',
         extends: 'parent'
       }        
@@ -472,7 +472,7 @@ module.exports = () => {
 
           res.body.accessToken.should.be.String
 
-          let bearerToken = res.body.accessToken
+          const bearerToken = res.body.accessToken
 
           client
           .post('/api/roles')
@@ -496,7 +496,7 @@ module.exports = () => {
     })
 
     it('should create a role that extends another role that the client has access to through inheritance', done => {
-      let testClient = {
+      const testClient = {
         clientId: 'apiClient',
         secret: 'someSecret',
         resources: {
@@ -506,7 +506,7 @@ module.exports = () => {
         },
         roles: ['child']
       }
-      let newRole = {
+      const newRole = {
         name: 'dadi-engineer',
         extends: 'parent'
       }        
@@ -526,7 +526,7 @@ module.exports = () => {
 
           res.body.accessToken.should.be.String
 
-          let bearerToken = res.body.accessToken
+          const bearerToken = res.body.accessToken
 
           client
           .post('/api/roles')

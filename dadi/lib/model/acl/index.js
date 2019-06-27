@@ -16,14 +16,14 @@ const ACL = function () {
 
 ACL.prototype.connect = function () {
   // Establishing connection for access model.
-  let accessConnection = Connection(
+  const accessConnection = Connection(
     {
       collection: config.get('auth.accessCollection'),
       database: config.get('auth.database'),
       override: true
     }
   )
-  let accessModel = Model(
+  const accessModel = Model(
     config.get('auth.accessCollection'),
     {},
     accessConnection,
@@ -37,7 +37,7 @@ ACL.prototype.connect = function () {
   access.setModel(accessModel)
 
   // Establishing connection for client model.
-  let clientConnection = Connection(
+  const clientConnection = Connection(
     {
       collection: config.get('auth.clientCollection'),
       database: config.get('auth.database'),
@@ -46,7 +46,7 @@ ACL.prototype.connect = function () {
     null,
     config.get('auth.datastore')
   )
-  let clientModel = Model(
+  const clientModel = Model(
     config.get('auth.clientCollection'),
     {},
     clientConnection,
@@ -60,7 +60,7 @@ ACL.prototype.connect = function () {
   client.setModel(clientModel)
 
   // Establishing connection for role model.
-  let roleConnection = Connection(
+  const roleConnection = Connection(
     {
       collection: config.get('auth.roleCollection'),
       database: config.get('auth.database'),
@@ -68,7 +68,7 @@ ACL.prototype.connect = function () {
     }
   )
 
-  let roleModel = Model(
+  const roleModel = Model(
     config.get('auth.roleCollection'),
     {},
     roleConnection,

@@ -33,7 +33,9 @@ describe('Cache', function (done) {
   beforeEach(function (done) {
     try {
       cache.reset()
-    } catch (err) {}
+    } catch (err) {
+      // noop
+    }
 
     done()
   })
@@ -51,7 +53,7 @@ describe('Cache', function (done) {
 
           bearerToken = token
 
-          var client = request('http://' + config.get('server.host') + ':' + config.get('server.port'))
+          const client = request('http://' + config.get('server.host') + ':' + config.get('server.port'))
 
           client
           .get('/vtest/testdb/test-schema')
@@ -114,7 +116,7 @@ describe('Cache', function (done) {
 
           bearerToken = token
 
-          var client = request('http://' + config.get('server.host') + ':' + config.get('server.port'))
+          const client = request('http://' + config.get('server.host') + ':' + config.get('server.port'))
 
           client
           .post('/vtest/testdb/test-schema')
@@ -161,7 +163,7 @@ describe('Cache', function (done) {
     config.set('caching.redis.enabled', false)
     help.clearCache()
 
-    var spy = sinon.spy(fs, 'createWriteStream')
+    const spy = sinon.spy(fs, 'createWriteStream')
 
     app.start(function () {
       help.dropDatabase('testdb', function (err) {
@@ -170,7 +172,7 @@ describe('Cache', function (done) {
           if (err) return done(err)
           bearerToken = token
 
-          var client = request('http://' + config.get('server.host') + ':' + config.get('server.port'))
+          const client = request('http://' + config.get('server.host') + ':' + config.get('server.port'))
 
           client
           .get('/vtest/testdb/test-schema')
@@ -198,7 +200,8 @@ describe('Cache', function (done) {
 
                 res2.body['results'].length.should.equal(1)
 
-                var called = spy.called
+                const called = spy.called
+
                 spy.restore()
                 called.should.be.false
 
@@ -238,8 +241,8 @@ describe('Cache', function (done) {
     })
 
     it('should save responses to the file system', function (done) {
-      let cacheHandler = cache().cache.cacheHandler
-      var spy = sinon.spy(cacheHandler, 'set')
+      const cacheHandler = cache().cache.cacheHandler
+      const spy = sinon.spy(cacheHandler, 'set')
 
       request('http://' + config.get('server.host') + ':' + config.get('server.port'))
       .get('/vtest/testdb/test-schema')
@@ -250,7 +253,7 @@ describe('Cache', function (done) {
 
         setTimeout(function () {
           spy.called.should.be.true
-          var args = spy.getCall(0).args
+          const args = spy.getCall(0).args
 
           spy.restore()
           args[0].indexOf('.gz').should.be.above(-1)
@@ -263,18 +266,20 @@ describe('Cache', function (done) {
     it('should invalidate based on TTL', function (done) {
       this.timeout(4000)
 
-      var oldTTL = config.get('caching.ttl')
+      const oldTTL = config.get('caching.ttl')
+
       config.set('caching.ttl', 1)
 
       // cache.reset()
 
-      var _done = done
+      const _done = done
+
       done = function (err) {
         config.set('caching.ttl', oldTTL)
         _done(err)
       }
 
-      var client = request('http://' + config.get('server.host') + ':' + config.get('server.port'))
+      const client = request('http://' + config.get('server.host') + ':' + config.get('server.port'))
 
       client
       .get('/vtest/testdb/test-schema')
@@ -318,7 +323,7 @@ describe('Cache', function (done) {
         help.createDoc(bearerToken, function (err, doc) {
           if (err) return done(err)
 
-          var client = request('http://' + config.get('server.host') + ':' + config.get('server.port'))
+          const client = request('http://' + config.get('server.host') + ':' + config.get('server.port'))
 
           setTimeout(() => {
             client
@@ -367,7 +372,7 @@ describe('Cache', function (done) {
         help.createDoc(bearerToken, function (err, doc) {
           if (err) return done(err)
 
-          var client = request('http://' + config.get('server.host') + ':' + config.get('server.port'))
+          const client = request('http://' + config.get('server.host') + ':' + config.get('server.port'))
 
           setTimeout(() => {
             // GET
@@ -388,7 +393,7 @@ describe('Cache', function (done) {
                 if (err) return done(err)
 
                 // save id for updating
-                var id = postRes1.body.results[0]._id
+                const id = postRes1.body.results[0]._id
 
                 setTimeout(() => {
                   // GET AGAIN - should cache new results
@@ -418,7 +423,7 @@ describe('Cache', function (done) {
                           .end(function (err, getRes3) {
                             if (err) return done(err)
 
-                            var result = getRes3.body.results.find(item => item._id === id)
+                            const result = getRes3.body.results.find(item => item._id === id)
 
                             result.field1.should.eql('foo bar baz!')
 
@@ -444,7 +449,7 @@ describe('Cache', function (done) {
         help.createDoc(bearerToken, function (err, doc) {
           if (err) return done(err)
 
-          var client = request('http://' + config.get('server.host') + ':' + config.get('server.port'))
+          const client = request('http://' + config.get('server.host') + ':' + config.get('server.port'))
 
           setTimeout(() => {
             // GET
@@ -465,7 +470,7 @@ describe('Cache', function (done) {
                 if (err) return done(err)
 
                 // save id for deleting
-                var id = postRes1.body.results[0]._id
+                const id = postRes1.body.results[0]._id
 
                 setTimeout(() => {
                   // GET AGAIN - should cache new results
@@ -494,7 +499,7 @@ describe('Cache', function (done) {
                           .end(function (err, getRes3) {
                             if (err) return done(err)
 
-                            var result = getRes3.body.results.find(item => item._id === id)
+                            const result = getRes3.body.results.find(item => item._id === id)
 
                             should.not.exist(result)
 
@@ -513,7 +518,7 @@ describe('Cache', function (done) {
     })
 
     it('should preserve content-type', function (done) {
-      var client = request('http://' + config.get('server.host') + ':' + config.get('server.port'))
+      const client = request('http://' + config.get('server.host') + ':' + config.get('server.port'))
 
       client
       .get('/vtest/testdb/test-schema?callback=myCallback')
@@ -566,17 +571,18 @@ describe('Cache', function (done) {
       delete require.cache[__dirname + '/../../dadi/lib/']
 
       cache.reset()
-      var c = cache(app)
+      const c = cache(app)
+
       c.cache.cacheHandler.redisClient = fakeredis.createClient()
       c.cache.cacheHandler.redisClient.status = 'ready'
-      var spy = sinon.spy(c.cache.cacheHandler.redisClient, 'exists')
+      const spy = sinon.spy(c.cache.cacheHandler.redisClient, 'exists')
 
       // generate expected cacheKey
-      var requestUrl = '/vtest/testdb/test-schema'
-      var query = url.parse(requestUrl, true).query
-      var modelDir = crypto.createHash('sha1').update(url.parse(requestUrl).pathname).digest('hex')
-      var filename = crypto.createHash('sha1').update(url.parse(requestUrl).pathname + JSON.stringify(query)).digest('hex')
-      var cacheKey = modelDir + '_' + filename + '.gz'
+      const requestUrl = '/vtest/testdb/test-schema'
+      const query = url.parse(requestUrl, true).query
+      const modelDir = crypto.createHash('sha1').update(url.parse(requestUrl).pathname).digest('hex')
+      const filename = crypto.createHash('sha1').update(url.parse(requestUrl).pathname + JSON.stringify(query)).digest('hex')
+      const cacheKey = modelDir + '_' + filename + '.gz'
 
       try {
         app.start(function () {
@@ -587,7 +593,7 @@ describe('Cache', function (done) {
               if (err) return done(err)
               bearerToken = token
 
-              var client = request('http://' + config.get('server.host') + ':' + config.get('server.port'))
+              const client = request('http://' + config.get('server.host') + ':' + config.get('server.port'))
 
               client
               .get(requestUrl)
@@ -615,14 +621,15 @@ describe('Cache', function (done) {
       delete require.cache[__dirname + '/../../dadi/lib/']
 
       // generate expected cacheKey
-      var requestUrl = '/vtest/testdb/test-schema'
-      var query = url.parse(requestUrl, true).query
-      var modelDir = crypto.createHash('sha1').update(url.parse(requestUrl).pathname).digest('hex')
-      var filename = crypto.createHash('sha1').update(url.parse(requestUrl).pathname + JSON.stringify(query)).digest('hex')
-      var cacheKey = modelDir + '_' + filename
+      const requestUrl = '/vtest/testdb/test-schema'
+      const query = url.parse(requestUrl, true).query
+      const modelDir = crypto.createHash('sha1').update(url.parse(requestUrl).pathname).digest('hex')
+      const filename = crypto.createHash('sha1').update(url.parse(requestUrl).pathname + JSON.stringify(query)).digest('hex')
+      const cacheKey = modelDir + '_' + filename
 
       cache.reset()
-      var c = cache(app)
+      const c = cache(app)
+
       c.cache.cacheHandler.redisClient = fakeredis.createClient()
       c.cache.cacheHandler.redisClient.status = 'ready'
       c.cache.cacheHandler.redisClient.set(cacheKey, JSON.stringify({'DATA': 'OK'}))
@@ -634,7 +641,7 @@ describe('Cache', function (done) {
               if (err) return done(err)
               bearerToken = token
 
-              var client = request('http://' + config.get('server.host') + ':' + config.get('server.port'))
+              const client = request('http://' + config.get('server.host') + ':' + config.get('server.port'))
 
               client
               .get(requestUrl)
@@ -665,15 +672,16 @@ describe('Cache', function (done) {
       delete require.cache[__dirname + '/../../dadi/lib/']
 
       cache.reset()
-      var c = cache(app)
+      const c = cache(app)
+
       c.cache.cacheHandler.redisClient = fakeredis.createClient()
       c.cache.cacheHandler.redisClient.status = 'ready'
 
       c.cache.cacheHandler.redisClient.scanStream = function (pattern) {
-        var Readable = require('stream').Readable
-        var stream = new Readable({objectMode: true})
+        const Readable = require('stream').Readable
+        const stream = new Readable({objectMode: true})
 
-        for (var i = 0; i < cacheKeys.length; i++) {
+        for (let i = 0; i < cacheKeys.length; i++) {
           if (pattern.match === '*' || cacheKeys[i].indexOf(pattern.match.substring(0, pattern.match.length - 1)) === 0) {
             stream.push([cacheKeys[i]])
           } else {
@@ -682,6 +690,7 @@ describe('Cache', function (done) {
         }
 
         stream.push(null)
+
         return stream
       }
 
@@ -694,7 +703,7 @@ describe('Cache', function (done) {
               if (err) return done(err)
               bearerToken = token
 
-              var client = request('http://' + config.get('server.host') + ':' + config.get('server.port'))
+              const client = request('http://' + config.get('server.host') + ':' + config.get('server.port'))
 
               client
               .post('/vtest/testdb/test-schema')
@@ -751,15 +760,16 @@ describe('Cache', function (done) {
       config.loadFile(config.configPath())
 
       cache.reset()
-      var c = cache(app)
+      const c = cache(app)
+
       c.cache.cacheHandler.redisClient = fakeredis.createClient()
       c.cache.cacheHandler.redisClient.status = 'ready'
 
       c.cache.cacheHandler.redisClient.scanStream = function (pattern) {
-        var Readable = require('stream').Readable
-        var stream = new Readable({objectMode: true})
+        const Readable = require('stream').Readable
+        const stream = new Readable({objectMode: true})
 
-        for (var i = 0; i < cacheKeys.length; i++) {
+        for (let i = 0; i < cacheKeys.length; i++) {
           if (pattern.match === '*' || cacheKeys[i].indexOf(pattern.match.substring(0, pattern.match.length - 1)) === 0) {
             stream.push([cacheKeys[i]])
           } else {
@@ -768,6 +778,7 @@ describe('Cache', function (done) {
         }
 
         stream.push(null)
+
         return stream
       }
 
@@ -786,7 +797,7 @@ describe('Cache', function (done) {
                 help.createDoc(bearerToken, function (err, doc) {
                   if (err) return done(err)
 
-                  var client = request('http://' + config.get('server.host') + ':' + config.get('server.port'))
+                  const client = request('http://' + config.get('server.host') + ':' + config.get('server.port'))
 
                   client
                   .get('/vtest/testdb/test-schema')
@@ -848,15 +859,16 @@ describe('Cache', function (done) {
       config.loadFile(config.configPath())
 
       cache.reset()
-      var c = cache(app)
+      const c = cache(app)
+
       c.cache.cacheHandler.redisClient = fakeredis.createClient()
       c.cache.cacheHandler.redisClient.status = 'ready'
 
       c.cache.cacheHandler.redisClient.scanStream = function (pattern) {
-        var Readable = require('stream').Readable
-        var stream = new Readable({objectMode: true})
+        const Readable = require('stream').Readable
+        const stream = new Readable({objectMode: true})
 
-        for (var i = 0; i < cacheKeys.length; i++) {
+        for (let i = 0; i < cacheKeys.length; i++) {
           if (pattern.match === '*' || cacheKeys[i].indexOf(pattern.match.substring(0, pattern.match.length - 1)) === 0) {
             stream.push([cacheKeys[i]])
           } else {
@@ -865,6 +877,7 @@ describe('Cache', function (done) {
         }
 
         stream.push(null)
+
         return stream
       }
 
@@ -883,7 +896,7 @@ describe('Cache', function (done) {
                 help.createDoc(bearerToken, function (err, doc) {
                   if (err) return done(err)
 
-                  var client = request('http://' + config.get('server.host') + ':' + config.get('server.port'))
+                  const client = request('http://' + config.get('server.host') + ':' + config.get('server.port'))
 
                    // GET
                   client
@@ -903,7 +916,7 @@ describe('Cache', function (done) {
                        if (err) return done(err)
 
                        // save id for updating
-                       var id = postRes1.body.results[0]._id
+                       const id = postRes1.body.results[0]._id
 
                        // GET AGAIN - should cache new results
                        client
@@ -932,7 +945,8 @@ describe('Cache', function (done) {
                                   .set('Authorization', 'Bearer ' + bearerToken)
                                   .expect(200)
                                   .end(function (err, getRes3) {
-                                    var result = getRes3.body.results.find(item => item._id === id)
+                                    const result = getRes3.body.results.find(item => item._id === id)
+
                                     result.field1.should.eql('foo bar baz!')
                                     app.stop(done)
                                   })
@@ -963,15 +977,16 @@ describe('Cache', function (done) {
       config.loadFile(config.configPath())
 
       cache.reset()
-      var c = cache(app)
+      const c = cache(app)
+
       c.cache.cacheHandler.redisClient = fakeredis.createClient()
       c.cache.cacheHandler.redisClient.status = 'ready'
 
       c.cache.cacheHandler.redisClient.scanStream = function (pattern) {
-        var Readable = require('stream').Readable
-        var stream = new Readable({objectMode: true})
+        const Readable = require('stream').Readable
+        const stream = new Readable({objectMode: true})
 
-        for (var i = 0; i < cacheKeys.length; i++) {
+        for (let i = 0; i < cacheKeys.length; i++) {
           if (pattern.match === '*' || cacheKeys[i].indexOf(pattern.match.substring(0, pattern.match.length - 1)) === 0) {
             stream.push([cacheKeys[i]])
           } else {
@@ -980,6 +995,7 @@ describe('Cache', function (done) {
         }
 
         stream.push(null)
+
         return stream
       }
 
@@ -998,7 +1014,7 @@ describe('Cache', function (done) {
                 help.createDoc(bearerToken, function (err, doc) {
                   if (err) return done(err)
 
-                  var client = request('http://' + config.get('server.host') + ':' + config.get('server.port'))
+                  const client = request('http://' + config.get('server.host') + ':' + config.get('server.port'))
 
                     // GET
                   client
@@ -1018,7 +1034,7 @@ describe('Cache', function (done) {
                         if (err) return done(err)
 
                         // save id for deleting
-                        var id = postRes1.body.results[0]._id
+                        const id = postRes1.body.results[0]._id
 
                         // GET AGAIN - should cache new results
                         client
@@ -1045,7 +1061,8 @@ describe('Cache', function (done) {
                                     .set('Authorization', 'Bearer ' + bearerToken)
                                     .expect(200)
                                     .end(function (err, getRes3) {
-                                      var result = getRes3.body.results.find(item => item._id === id)
+                                      const result = getRes3.body.results.find(item => item._id === id)
+
                                       should.not.exist(result)
                                       app.stop(done)
                                     })
@@ -1075,15 +1092,16 @@ describe('Cache', function (done) {
       config.loadFile(config.configPath())
 
       cache.reset()
-      var c = cache(app)
+      const c = cache(app)
+
       c.cache.cacheHandler.redisClient = fakeredis.createClient()
       c.cache.cacheHandler.redisClient.status = 'ready'
 
       c.cache.cacheHandler.redisClient.scanStream = function (pattern) {
-        var Readable = require('stream').Readable
-        var stream = new Readable({objectMode: true})
+        const Readable = require('stream').Readable
+        const stream = new Readable({objectMode: true})
 
-        for (var i = 0; i < cacheKeys.length; i++) {
+        for (let i = 0; i < cacheKeys.length; i++) {
           if (pattern.match === '*' || cacheKeys[i].indexOf(pattern.match.substring(0, pattern.match.length - 1)) === 0) {
             stream.push([cacheKeys[i]])
           } else {
@@ -1092,12 +1110,13 @@ describe('Cache', function (done) {
         }
 
         stream.push(null)
+
         return stream
       }
 
       try {
         app.start(function () {
-          var client = request('http://' + config.get('server.host') + ':' + config.get('server.port'))
+          const client = request('http://' + config.get('server.host') + ':' + config.get('server.port'))
 
           help.dropDatabase('testdb', function (err) {
             if (err) return done(err)
@@ -1143,7 +1162,7 @@ describe('Cache', function (done) {
           })
         })
       } catch (err) {
-
+        // noop
       }
     })
   })

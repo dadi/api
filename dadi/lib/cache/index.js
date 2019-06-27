@@ -22,19 +22,21 @@ const Cache = function (server) {
 }
 
 let instance
+
 module.exports = function (server) {
   if (!instance) {
     instance = new Cache(server)
   }
+
   return instance
 }
 
 Cache.prototype.cachingEnabled = function (req) {
   let options = {}
-  let endpoints = this.server.components
-  let requestPath = url.parse(req.url, true).pathname
+  const endpoints = this.server.components
+  const requestPath = url.parse(req.url, true).pathname
 
-  let endpointKey = Object.keys(endpoints).find(key => pathToRegexp(key).exec(requestPath))
+  const endpointKey = Object.keys(endpoints).find(key => pathToRegexp(key).exec(requestPath))
 
   if (!endpointKey) return false
 
@@ -47,7 +49,8 @@ Cache.prototype.cachingEnabled = function (req) {
 
 Cache.prototype.getEndpointContentType = function (req) {
   // there are only two possible types javascript or json
-  let query = url.parse(req.url, true).query
+  const query = url.parse(req.url, true).query
+
   return query.callback ? 'text/javascript' : 'application/json'
 }
 
@@ -56,7 +59,8 @@ Cache.prototype.getEndpointContentType = function (req) {
  */
 Cache.prototype.init = function () {
   this.server.app.use((req, res, next) => {
-    let enabled = this.cachingEnabled(req)
+    const enabled = this.cachingEnabled(req)
+
     if (!enabled) return next()
 
     // Only cache GET requests.
@@ -64,16 +68,17 @@ Cache.prototype.init = function () {
       return next()
     }
 
-    let query = url.parse(req.url, true).query
+    const query = url.parse(req.url, true).query
 
     // Allow query string param to bypass cache.
-    let noCache = query.cache && query.cache.toString().toLowerCase() === 'false'
+    const noCache = query.cache && query.cache.toString().toLowerCase() === 'false'
+
     delete query.cache
 
     // Build the filename with a hashed hex string so it is unique
     // and avoids using file system reserved characters in the name.
-    let modelDir = crypto.createHash('sha1').update(url.parse(req.url).pathname).digest('hex')
-    let filename = crypto.createHash('sha1').update(url.parse(req.url).pathname + JSON.stringify(query)).digest('hex')
+    const modelDir = crypto.createHash('sha1').update(url.parse(req.url).pathname).digest('hex')
+    const filename = crypto.createHash('sha1').update(url.parse(req.url).pathname + JSON.stringify(query)).digest('hex')
 
     // Prepend the model's name/folder hierarchy to the filename so it can be used
     // later to flush the cache for this model
@@ -87,7 +92,7 @@ Cache.prototype.init = function () {
     }
 
     // get contentType that current endpoint requires
-    let contentType = this.getEndpointContentType(req)
+    const contentType = this.getEndpointContentType(req)
 
     // attempt to get from the cache
     cache
@@ -111,6 +116,7 @@ Cache.prototype.init = function () {
 
                 if (req.headers['if-none-match'] === metadata.etag) {
                   res.statusCode = 304
+
                   return res.end()
                 }
               }
@@ -118,6 +124,7 @@ Cache.prototype.init = function () {
 
             if (noCache) {
               res.setHeader('X-Cache', 'MISS')
+
               return next()
             }
 
@@ -143,13 +150,14 @@ Cache.prototype.init = function () {
         }
 
         res.setHeader('X-Cache-Lookup', 'MISS')
+
         return cacheResponse()
       })
 
     function _streamFile (res, stream, cb) {
-      let streamCache = new StreamCache()
+      const streamCache = new StreamCache()
 
-      let lstream = lengthStream(length => {
+      const lstream = lengthStream(length => {
         res.setHeader('Content-Length', length)
         streamCache.pipe(res)
       })
@@ -171,8 +179,8 @@ Cache.prototype.init = function () {
      */
     function cacheResponse () {
       // file is expired or does not exist, wrap res.end and res.write to save to cache
-      let _end = res.end
-      let _write = res.write
+      const _end = res.end
+      const _write = res.write
 
       res.write = function (chunk) {
         _write.apply(res, arguments)
@@ -197,6 +205,7 @@ Cache.prototype.init = function () {
 
         })
       }
+
       return next()
     }
   })
@@ -217,6 +226,7 @@ module.exports.delete = function (pattern, callback) {
     return callback(null)
   }).catch(err => {
     console.log(err)
+
     return callback(null)
   })
 }

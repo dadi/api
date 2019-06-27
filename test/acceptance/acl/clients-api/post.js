@@ -8,12 +8,12 @@ const should = require('should')
 const sinon = require('sinon')
 
 module.exports = () => {
-  let configBackup = config.get()
-  let client = request(`http://${config.get('server.host')}:${config.get('server.port')}`)
+  const configBackup = config.get()
+  const client = request(`http://${config.get('server.host')}:${config.get('server.port')}`)
 
   describe('error states', () => {
     it('should return 401 if the request does not include a valid bearer token', done => {
-      let newClient = {
+      const newClient = {
         clientId: 'apiClient',
         secret: 'someSecret'
       }
@@ -31,11 +31,11 @@ module.exports = () => {
     })
 
     it('should return 403 if the request includes a valid bearer token without sufficient permissions on the "clients" resource (no resource)', done => {
-      let testClient = {
+      const testClient = {
         clientId: 'apiClient',
         secret: 'someSecret'
       }
-      let newClient = {
+      const newClient = {
         clientId: 'newClient',
         secret: 'aNewSecret'
       }
@@ -52,7 +52,7 @@ module.exports = () => {
 
           res.body.accessToken.should.be.String
 
-          let bearerToken = res.body.accessToken
+          const bearerToken = res.body.accessToken
 
           client
           .post('/api/clients')
@@ -70,7 +70,7 @@ module.exports = () => {
     })
 
     it('should return 403 if the request includes a valid bearer token without sufficient permissions on the "clients" resource (falsy access type)', done => {
-      let testClient = {
+      const testClient = {
         clientId: 'apiClient',
         secret: 'someSecret',
         resources: {
@@ -80,7 +80,7 @@ module.exports = () => {
           }
         }
       }
-      let newClient = {
+      const newClient = {
         clientId: 'newClient',
         secret: 'aNewSecret'
       }      
@@ -97,7 +97,7 @@ module.exports = () => {
 
           res.body.accessToken.should.be.String
 
-          let bearerToken = res.body.accessToken
+          const bearerToken = res.body.accessToken
 
           client
           .post('/api/clients')
@@ -115,7 +115,7 @@ module.exports = () => {
     })
 
     it('should return 400 if the request does not include a client ID and a secret', done => {
-      let testClient = {
+      const testClient = {
         clientId: 'apiClient',
         secret: 'someSecret',
         resources: {
@@ -140,7 +140,7 @@ module.exports = () => {
 
           res.body.accessToken.should.be.String
 
-          let bearerToken = res.body.accessToken
+          const bearerToken = res.body.accessToken
 
           client
           .post('/api/clients')
@@ -172,7 +172,7 @@ module.exports = () => {
 
               res.body.accessToken.should.be.String
 
-              let bearerToken = res.body.accessToken
+              const bearerToken = res.body.accessToken
 
               client
               .post('/api/clients')
@@ -199,7 +199,7 @@ module.exports = () => {
     })
 
     it('should return 400 if the request body includes an `accessType` property', done => {
-      let testClient = {
+      const testClient = {
         clientId: 'apiClient',
         secret: 'someSecret',
         resources: {
@@ -208,7 +208,7 @@ module.exports = () => {
           }
         }
       }
-      let newClient = {
+      const newClient = {
         clientId: 'newClient',
         secret: 'aNewSecret',
         accessType: 'admin'
@@ -229,7 +229,7 @@ module.exports = () => {
 
           res.body.accessToken.should.be.String
 
-          let bearerToken = res.body.accessToken
+          const bearerToken = res.body.accessToken
 
           client
           .post('/api/clients')
@@ -253,7 +253,7 @@ module.exports = () => {
     })
 
     it('should return 400 if the request body includes a `roles` property', done => {
-      let testClient = {
+      const testClient = {
         clientId: 'apiClient',
         secret: 'someSecret',
         resources: {
@@ -262,7 +262,7 @@ module.exports = () => {
           }
         }
       }
-      let newClient = {
+      const newClient = {
         clientId: 'newClient',
         secret: 'aNewSecret',
         roles: ['admin']
@@ -283,7 +283,7 @@ module.exports = () => {
 
           res.body.accessToken.should.be.String
 
-          let bearerToken = res.body.accessToken
+          const bearerToken = res.body.accessToken
 
           client
           .post('/api/clients')
@@ -307,7 +307,7 @@ module.exports = () => {
     })
 
     it('should return 400 if the request body includes a `resources` property', done => {
-      let testClient = {
+      const testClient = {
         clientId: 'apiClient',
         secret: 'someSecret',
         resources: {
@@ -316,7 +316,7 @@ module.exports = () => {
           }
         }
       }
-      let newClient = {
+      const newClient = {
         clientId: 'newClient',
         secret: 'aNewSecret',
         resources: {
@@ -341,7 +341,7 @@ module.exports = () => {
 
           res.body.accessToken.should.be.String
 
-          let bearerToken = res.body.accessToken
+          const bearerToken = res.body.accessToken
 
           client
           .post('/api/clients')
@@ -365,7 +365,7 @@ module.exports = () => {
     })
 
     it('should return 400 if the request body includes an unknown property', done => {
-      let testClient = {
+      const testClient = {
         clientId: 'apiClient',
         secret: 'someSecret',
         resources: {
@@ -374,7 +374,7 @@ module.exports = () => {
           }
         }
       }
-      let newClient = {
+      const newClient = {
         clientId: 'newClient',
         secret: 'aNewSecret',
         something: 12345
@@ -395,7 +395,7 @@ module.exports = () => {
 
           res.body.accessToken.should.be.String
 
-          let bearerToken = res.body.accessToken
+          const bearerToken = res.body.accessToken
 
           client
           .post('/api/clients')
@@ -419,7 +419,7 @@ module.exports = () => {
     })
 
     it('should return 400 if a non-admin client tries to create a client containing a protected data property', done => {
-      let testClient = {
+      const testClient = {
         clientId: 'apiClient',
         secret: 'someSecret',
         resources: {
@@ -428,7 +428,7 @@ module.exports = () => {
           }
         }
       }
-      let newClient = {
+      const newClient = {
         clientId: 'newClient',
         secret: 'aNewSecret',
         data: {
@@ -451,7 +451,7 @@ module.exports = () => {
 
           res.body.accessToken.should.be.String
 
-          let bearerToken = res.body.accessToken
+          const bearerToken = res.body.accessToken
 
           client
           .post('/api/clients')
@@ -472,7 +472,7 @@ module.exports = () => {
     })    
 
     it('should return 409 if a client with the given ID already exists', done => {
-      let testClient = {
+      const testClient = {
         clientId: 'apiClient',
         secret: 'someSecret',
         resources: {
@@ -497,7 +497,7 @@ module.exports = () => {
 
           res.body.accessToken.should.be.String
 
-          let bearerToken = res.body.accessToken
+          const bearerToken = res.body.accessToken
 
           client
           .post('/api/clients')
@@ -603,7 +603,7 @@ module.exports = () => {
     })
     
     it('should create a client and return a 201', done => {
-      let testClient = {
+      const testClient = {
         clientId: 'apiClient',
         secret: 'someSecret',
         resources: {
@@ -612,7 +612,7 @@ module.exports = () => {
           }
         }
       }
-      let newClient = {
+      const newClient = {
         clientId: 'newClient',
         secret: 'aNewSecret'
       }        
@@ -632,7 +632,7 @@ module.exports = () => {
 
           res.body.accessToken.should.be.String
 
-          let bearerToken = res.body.accessToken
+          const bearerToken = res.body.accessToken
 
           client
           .post('/api/clients')
@@ -658,7 +658,7 @@ module.exports = () => {
     })
 
     it('should create a client with a data object', done => {
-      let testClient = {
+      const testClient = {
         clientId: 'apiClient',
         secret: 'someSecret',
         resources: {
@@ -668,7 +668,7 @@ module.exports = () => {
           }
         }
       }
-      let newClient = {
+      const newClient = {
         clientId: 'newClient',
         secret: 'aNewSecret',
         data: {
@@ -691,7 +691,7 @@ module.exports = () => {
 
           res.body.accessToken.should.be.String
 
-          let bearerToken = res.body.accessToken
+          const bearerToken = res.body.accessToken
 
           client
           .post('/api/clients')
@@ -736,12 +736,12 @@ module.exports = () => {
     })
 
     it('should create a client with a data object containing protected properties if the requesting client is an admin', done => {
-      let testClient = {
+      const testClient = {
         clientId: 'apiClient',
         secret: 'someSecret',
         accessType: 'admin'
       }
-      let newClient = {
+      const newClient = {
         clientId: 'newClient',
         secret: 'aNewSecret',
         data: {
@@ -764,7 +764,7 @@ module.exports = () => {
 
           res.body.accessToken.should.be.String
 
-          let bearerToken = res.body.accessToken
+          const bearerToken = res.body.accessToken
 
           client
           .post('/api/clients')

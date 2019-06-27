@@ -31,8 +31,8 @@ describe('ACL', () => {
 
   describe('Resources', () => {
     it('should register resources', done => {
-      let acl = new ACL()
-      let newResource = {
+      const acl = new ACL()
+      const newResource = {
         name: 'my:resource',
         description: 'Description of the resource'
       }
@@ -57,8 +57,8 @@ describe('ACL', () => {
     })
 
     it('should return resources', done => {
-      let acl = new ACL()
-      let newResource = {
+      const acl = new ACL()
+      const newResource = {
         name: 'my:resource',
         description: 'Description of the resource'
       }
@@ -268,7 +268,7 @@ describe('ACL', () => {
     })
 
     it('should give priority to an object with filters over falsy permissions', () => {
-      let filter = {
+      const filter = {
         fieldOne: {
           $in: ['123', '456']
         }
@@ -308,7 +308,7 @@ describe('ACL', () => {
     })  
 
     it('should give priority to an object with fields over falsy permissions', () => {
-      let fields = {
+      const fields = {
         fieldOne: 1,
         fieldTwo: 1
       }

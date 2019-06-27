@@ -4,11 +4,11 @@ const help = require('./../../help')
 const request = require('supertest')
 const should = require('should')
 
-let configBackup = config.get()
-let client = request(`http://${config.get('server.host')}:${config.get('server.port')}`)
+const configBackup = config.get()
+const client = request(`http://${config.get('server.host')}:${config.get('server.port')}`)
 
 module.exports = () => {
-  let initialResource = {
+  const initialResource = {
     name: 'collection:library_book',
     access: {
       create: true,
@@ -39,7 +39,7 @@ module.exports = () => {
     })
 
     it('should return 403 if the request includes a valid bearer token without sufficient permissions on the "roles" resource (no "roles" resource)', done => {
-      let testClient = {
+      const testClient = {
         clientId: 'apiClient',
         secret: 'someSecret'
       }
@@ -59,7 +59,7 @@ module.exports = () => {
 
           res.body.accessToken.should.be.String
 
-          let bearerToken = res.body.accessToken
+          const bearerToken = res.body.accessToken
 
           client
           .delete(`/api/roles/child/resources/${initialResource.name}`)
@@ -76,7 +76,7 @@ module.exports = () => {
     })
 
     it('should return 403 if the request includes a valid bearer token without sufficient permissions (falsy "update" access to "roles" resource)', done => {
-      let testClient = {
+      const testClient = {
         clientId: 'apiClient',
         secret: 'someSecret',
         resources: {
@@ -101,7 +101,7 @@ module.exports = () => {
 
           res.body.accessToken.should.be.String
 
-          let bearerToken = res.body.accessToken
+          const bearerToken = res.body.accessToken
 
           client
           .delete(`/api/roles/child/resources/${initialResource.name}`)
@@ -118,7 +118,7 @@ module.exports = () => {
     })
 
     it('should return 404 if the role does not have permissions for the resource', done => {
-      let testClient = {
+      const testClient = {
         clientId: 'apiClient',
         secret: 'someSecret',
         accessType: 'admin'
@@ -139,7 +139,7 @@ module.exports = () => {
 
           res.body.accessToken.should.be.String
 
-          let bearerToken = res.body.accessToken
+          const bearerToken = res.body.accessToken
 
           client
           .delete(`/api/roles/child/resources/other:resource`)
@@ -158,7 +158,7 @@ module.exports = () => {
 
   describe('success states (the client has "update" access to the "clients" resource, has the role being updated as well as access to the referenced resource for all the access types)', () => {
     it('should remove the client\'s permissions to access a resource', done => {
-      let testClient = {
+      const testClient = {
         clientId: 'apiClient',
         secret: 'someSecret',
         resources: {
@@ -193,7 +193,7 @@ module.exports = () => {
 
           res.body.accessToken.should.be.String
 
-          let bearerToken = res.body.accessToken
+          const bearerToken = res.body.accessToken
 
           client
           .get(`/api/roles/child`)
@@ -204,7 +204,7 @@ module.exports = () => {
             res.body.results.should.be.Array
             res.body.results.length.should.eql(1)
 
-            let result = res.body.results[0]
+            const result = res.body.results[0]
 
             should.exist(result.resources[initialResource.name])
 
@@ -225,7 +225,7 @@ module.exports = () => {
                 res.body.results.should.be.Array
                 res.body.results.length.should.eql(1)
 
-                let result = res.body.results[0]
+                const result = res.body.results[0]
 
                 should.not.exist(result.resources[initialResource.name])
 
@@ -238,7 +238,7 @@ module.exports = () => {
     })
 
     it('should remove the client\'s permissions to access a resource without affecting permissions for other resources', done => {
-      let testClient = {
+      const testClient = {
         clientId: 'apiClient',
         secret: 'someSecret',
         resources: {
@@ -263,7 +263,7 @@ module.exports = () => {
         },
         roles: ['child']
       }
-      let newResource = {
+      const newResource = {
         name: 'collection:library_person',
         access: {
           create: true,
@@ -286,7 +286,7 @@ module.exports = () => {
 
           res.body.accessToken.should.be.String
 
-          let bearerToken = res.body.accessToken
+          const bearerToken = res.body.accessToken
 
           client
           .post(`/api/roles/child/resources`)
@@ -306,7 +306,7 @@ module.exports = () => {
               res.body.results.should.be.Array
               res.body.results.length.should.eql(1)
 
-              let result = res.body.results[0]
+              const result = res.body.results[0]
 
               result.resources[initialResource.name].create.should.eql(initialResource.access.create || false)
               result.resources[initialResource.name].delete.should.eql(initialResource.access.delete || false)
@@ -341,7 +341,7 @@ module.exports = () => {
                   res.body.results.should.be.Array
                   res.body.results.length.should.eql(1)
 
-                  let result = res.body.results[0]
+                  const result = res.body.results[0]
 
                   should.not.exist(result.resources[initialResource.name])
 

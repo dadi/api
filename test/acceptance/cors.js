@@ -94,7 +94,7 @@ describe('CORS', () => {
   })
 
   it('should not expose the feature support header if disabled in config', done => {
-    let featureQueryEnabled = config.get('featureQuery.enabled')
+    const featureQueryEnabled = config.get('featureQuery.enabled')
 
     config.set('featureQuery.enabled', false)
 
@@ -112,7 +112,7 @@ describe('CORS', () => {
   })
 
   it('should expose the feature support header if enabled in config', done => {
-    let featureQueryEnabled = config.get('featureQuery.enabled')
+    const featureQueryEnabled = config.get('featureQuery.enabled')
 
     config.set('featureQuery.enabled', true)
 

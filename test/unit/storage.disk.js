@@ -1,14 +1,14 @@
-var fs = require('fs')
-var mkdirp = require('mkdirp')
-var path = require('path')
-var should = require('should')
-var sinon = require('sinon')
-var stream = require('stream')
-var StorageFactory = require(__dirname + '/../../dadi/lib/storage/factory')
-var DiskStorage = require(__dirname + '/../../dadi/lib/storage/disk')
-var cache = require(__dirname + '/../../dadi/lib/cache')
+const fs = require('fs')
+const mkdirp = require('mkdirp')
+const path = require('path')
+const should = require('should')
+const sinon = require('sinon')
+const stream = require('stream')
+const StorageFactory = require(__dirname + '/../../dadi/lib/storage/factory')
+const DiskStorage = require(__dirname + '/../../dadi/lib/storage/disk')
+const cache = require(__dirname + '/../../dadi/lib/cache')
 
-var config = require(__dirname + '/../../config')
+const config = require(__dirname + '/../../config')
 
 describe('Storage', function (done) {
   beforeEach(function (done) {
@@ -25,7 +25,8 @@ describe('Storage', function (done) {
       config.set('media.storage', 'disk')
 
       // create the handler
-      var storage = StorageFactory.create('test.jpg')
+      const storage = StorageFactory.create('test.jpg')
+
       return should.not.exist(storage.s3)
     })
 
@@ -34,7 +35,8 @@ describe('Storage', function (done) {
       config.set('media.storage', 'xxx')
 
       // create the handler
-      var storage = StorageFactory.create('test.jpg')
+      const storage = StorageFactory.create('test.jpg')
+
       return should.not.exist(storage.s3)
     })
 
@@ -44,8 +46,10 @@ describe('Storage', function (done) {
       config.set('media.basePath', '/tmp')
 
       // create the handler
-      var storage = StorageFactory.create('test.jpg')
+      const storage = StorageFactory.create('test.jpg')
+
       storage.setFullPath('1234/5678')
+
       return storage.path.should.eql('/tmp/1234/5678')
     })
 
@@ -55,8 +59,10 @@ describe('Storage', function (done) {
       config.set('media.basePath', '/tmp')
 
       // create the handler
-      var storage = StorageFactory.create('test.jpg')
+      const storage = StorageFactory.create('test.jpg')
+
       storage.setFullPath('1234/5678')
+
       return storage.getFullUrl().should.eql('/tmp/1234/5678/test.jpg')
     })
 
@@ -66,16 +72,17 @@ describe('Storage', function (done) {
       config.set('media.basePath', 'test/temp-workspace/media')
 
       // create the handler
-      var storage = StorageFactory.create('test.jpg')
+      const storage = StorageFactory.create('test.jpg')
 
       // mock the call to fs.stat, returning no error so we can
       // test the file renaming sequence
       sinon.stub(fs, 'stat').yields(null, {
-        isDirectory: function (path) { return true }
+        isDirectory (path) { return true }
       })
 
       // dummy stream
-      var readable = new stream.Readable()
+      const readable = new stream.Readable()
+
       readable.push('xxx')
       readable.push(null)
 

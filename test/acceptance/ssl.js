@@ -1,18 +1,19 @@
-var should = require('should')
-var request = require('supertest')
-var api = require(__dirname + '/../../dadi/lib/api')
-var config = require(__dirname + '/../../config')
+const should = require('should')
+const request = require('supertest')
+const api = require(__dirname + '/../../dadi/lib/api')
+const config = require(__dirname + '/../../config')
 
-var clientHost = 'http://' + config.get('server.host') + ':' + config.get('server.port')
-var secureClientHost = 'https://' + config.get('server.host') + ':' + config.get('server.port')
+const clientHost = 'http://' + config.get('server.host') + ':' + config.get('server.port')
+const secureClientHost = 'https://' + config.get('server.host') + ':' + config.get('server.port')
 
-var client = request(clientHost)
-var secureClient = request(secureClientHost)
+const client = request(clientHost)
+const secureClient = request(secureClientHost)
 
-var server
+let server
 
-var defaultResponse = function defaultResponse (req, res, next) {
-  var body = JSON.stringify({ foo: 'bar' })
+const defaultResponse = function defaultResponse (req, res, next) {
+  const body = JSON.stringify({ foo: 'bar' })
+
   res.writeHead(200, {
     'content-length': body.length,
     'content-type': 'application/json'
@@ -78,7 +79,8 @@ describe('SSL', () => {
     server.use(defaultResponse)
     server.listen()
 
-    var httpClient = request('http://' + config.get('server.host') + ':9999')
+    const httpClient = request('http://' + config.get('server.host') + ':9999')
+
     httpClient
       .get('/')
       .expect(301)

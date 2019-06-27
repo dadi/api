@@ -1,13 +1,14 @@
-var util = require('util')
-var EventEmitter = require('events').EventEmitter
-var fs = require('fs')
+const util = require('util')
+const EventEmitter = require('events').EventEmitter
+const fs = require('fs')
 
-var Monitor = function (path) {
+const Monitor = function (path) {
   if (!path) throw new Error('Must provide path to instantiate Monitor')
 
   this.path = path
 
-  var self = this
+  const self = this
+
   this.watcher = fs.watch(this.path, function (eventName, filename) {
     setTimeout(function () {
       self.emit('change', filename)

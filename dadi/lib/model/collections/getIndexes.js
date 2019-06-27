@@ -30,7 +30,7 @@ module.exports = function () {
   // Compatibility with legacy model API.
   // Signature: done
   if (arguments.length > 0) {
-    let callback = arguments[0]
+    const callback = arguments[0]
 
     getIndexes.call(this)
       .then(response => callback && callback(response))

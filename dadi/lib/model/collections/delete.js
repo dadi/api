@@ -34,7 +34,7 @@ function deleteFn ({
   }
 
   // Is this a RESTful query by ID?
-  let isRestIDQuery = req && req.params && req.params.id
+  const isRestIDQuery = req && req.params && req.params.id
 
   // A reference to all documents in the collection, so that we
   // know how many are left after the operation.
@@ -48,10 +48,10 @@ function deleteFn ({
     query,
     type: 'delete'
   }).then(({query: aclQuery}) => {
-    let validation = this.validateQuery(aclQuery)
+    const validation = this.validateQuery(aclQuery)
 
     if (!validation.success) {
-      let error = this._createValidationError('Validation Failed')
+      const error = this._createValidationError('Validation Failed')
 
       error.json = validation
 
@@ -100,7 +100,7 @@ function deleteFn ({
       deletedDocuments = results
 
       if (isRestIDQuery && (deletedDocuments.length === 0)) {
-        let error = new Error('Document not found')
+        const error = new Error('Document not found')
 
         error.statusCode = 404
 
@@ -121,8 +121,8 @@ function deleteFn ({
             this.settings.hooks.beforeDelete,
             query,
             (current, hookConfig, callback) => {
-              let hook = new Hook(hookConfig, 'beforeDelete')
-              let hookError = {}
+              const hook = new Hook(hookConfig, 'beforeDelete')
+              const hookError = {}
 
               Promise.resolve(
                 hook.apply(
@@ -159,7 +159,7 @@ function deleteFn ({
           // Run any `afterDelete` hooks.
           if (this.settings.hooks && (typeof this.settings.hooks.afterDelete === 'object')) {
             this.settings.hooks.afterDelete.forEach(hookConfig => {
-              let hook = new Hook(hookConfig, 'afterDelete')
+              const hook = new Hook(hookConfig, 'afterDelete')
 
               return hook.apply(
                 query,
@@ -198,7 +198,7 @@ module.exports = function () {
   // Signature: query, done, req
   if (arguments.length > 1) {
     let callback
-    let legacyArguments = {
+    const legacyArguments = {
       query: arguments[0],
       req: arguments[2]
     }

@@ -12,23 +12,23 @@ module.exports.beforeOutput = function ({
   input,
   schema
 }) {
-  let bucket = (schema.settings && schema.settings.mediaBucket) || config.get('media.defaultBucket')
-  let model = this.getForeignModel(bucket)
+  const bucket = (schema.settings && schema.settings.mediaBucket) || config.get('media.defaultBucket')
+  const model = this.getForeignModel(bucket)
 
   if (!model) {
     return input
   }
 
-  let isArraySyntax = Array.isArray(input[field])
-  let normalisedValue = isArraySyntax ? input[field] : [input[field]]
-  let mediaObjectIDs = normalisedValue.map(value => {
+  const isArraySyntax = Array.isArray(input[field])
+  const normalisedValue = isArraySyntax ? input[field] : [input[field]]
+  const mediaObjectIDs = normalisedValue.map(value => {
     if (value && typeof value !== 'string') {
       return value._id.toString()
     }
 
     return value ? value.toString() : value
   }).filter(Boolean)
-  let composedIDs = []
+  const composedIDs = []
 
   if (mediaObjectIDs.length === 0) {
     return input
@@ -49,15 +49,15 @@ module.exports.beforeOutput = function ({
     }, {})
   }).then(mediaObjects => {
     return mediaObjectIDs.map((id, index) => {
-      let value = typeof normalisedValue[index] === 'object'
+      const value = typeof normalisedValue[index] === 'object'
         ? normalisedValue[index]
         : {}
 
       if (mediaObjects[id]) {
-        let mergedValue = Object.assign({}, mediaObjects[id], value, {
+        const mergedValue = Object.assign({}, mediaObjects[id], value, {
           _id: id
         })
-        let sortedValue = Object.keys(mergedValue).sort().reduce((sortedValue, field) => {
+        const sortedValue = Object.keys(mergedValue).sort().reduce((sortedValue, field) => {
           sortedValue[field] = mergedValue[field]
 
           return sortedValue
@@ -71,8 +71,8 @@ module.exports.beforeOutput = function ({
       return id
     })
   }).then(composedValue => {
-    let formattedValue = mediaModel.formatDocuments(composedValue)
-    let output = Object.assign(input, {
+    const formattedValue = mediaModel.formatDocuments(composedValue)
+    const output = Object.assign(input, {
       [field]: isArraySyntax ? formattedValue : formattedValue[0]
     })
 
@@ -92,8 +92,8 @@ module.exports.beforeSave = function ({
   input,
   schema
 }) {
-  let isArraySyntax = Array.isArray(input[field])
-  let normalisedValue = (isArraySyntax ? input[field] : [input[field]]).map(value => {
+  const isArraySyntax = Array.isArray(input[field])
+  const normalisedValue = (isArraySyntax ? input[field] : [input[field]]).map(value => {
     if (typeof value === 'string') {
       return {
         _id: value
@@ -122,10 +122,10 @@ module.exports.beforeSave = function ({
   //    type or has one that isn't included in the list of valid MIME types;
   // 4) Reject the request if the list produced in 3) is not empty.
   if (schema.validation && Array.isArray(schema.validation.mimeTypes)) {
-    let allowedMimeTypes = schema.validation.mimeTypes
-    let bucketName = (schema.settings && schema.settings.mediaBucket) ||
+    const allowedMimeTypes = schema.validation.mimeTypes
+    const bucketName = (schema.settings && schema.settings.mediaBucket) ||
       config.get('media.defaultBucket')
-    let model = this.getForeignModel(bucketName)
+    const model = this.getForeignModel(bucketName)
 
     queue = queue.then(() => {
       return model.find({
@@ -136,21 +136,21 @@ module.exports.beforeSave = function ({
         }
       }).then(({results}) => {
         if (results.length < normalisedValue.length) {
-          let error = new Error('has one or more values that do not match valid media objects')
+          const error = new Error('has one or more values that do not match valid media objects')
 
           error.code = 'ERROR_INVALID_ID'
 
           return Promise.reject(error)
         }
 
-        let invalidResults = results.find(result => {
-          let mimeType = result.mimeType || result.mimetype
+        const invalidResults = results.find(result => {
+          const mimeType = result.mimeType || result.mimetype
 
           return !mimeType || !allowedMimeTypes.includes(mimeType)
         })
 
         if (invalidResults) {
-          let error = new Error(`has invalid MIME type. Expected: ${allowedMimeTypes.join(', ')}`)
+          const error = new Error(`has invalid MIME type. Expected: ${allowedMimeTypes.join(', ')}`)
 
           error.code = 'ERROR_INVALID_MIME_TYPE'
 

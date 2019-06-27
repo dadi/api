@@ -1,4 +1,3 @@
-/* global before after describe it */
 const should = require('should')
 const sinon = require('sinon')
 const path = require('path')
@@ -36,7 +35,7 @@ describe('Collections API – GET', function () {
 
         bearerToken = token
 
-        let schema = {
+        const schema = {
           'fields': {
             'field1': {
               'type': 'String',
@@ -91,14 +90,14 @@ describe('Collections API – GET', function () {
   })
 
   it('should get documents', function (done) {
-    let doc = {
+    const doc = {
       field1: 'something'
     }
 
     help.createDocWithParams(bearerToken, doc, function (err, doc) {
       if (err) return done(err)
 
-      var client = request(connectionString)
+      const client = request(connectionString)
 
       client
         .get('/vtest/testdb/test-schema?cache=false')
@@ -117,14 +116,14 @@ describe('Collections API – GET', function () {
   })
 
   it('should get documents with the internal fields prefixed with the character defined in config', function (done) {
-    var originalPrefix = config.get('internalFieldsPrefix')
+    const originalPrefix = config.get('internalFieldsPrefix')
 
     help.createDoc(bearerToken, function (err, doc) {
       if (err) return done(err)
 
       config.set('internalFieldsPrefix', '$')
 
-      var client = request(connectionString)
+      const client = request(connectionString)
 
       client
         .get('/vtest/testdb/test-schema/' + doc._id)
@@ -155,7 +154,7 @@ describe('Collections API – GET', function () {
     .set('Authorization', 'Bearer ' + bearerToken)
     .expect(200)
     .end((_err, res) => {
-      var id = res.body.results[0]._id
+      let id = res.body.results[0]._id
 
       client
       .post('/1.0/library/person')
@@ -173,8 +172,9 @@ describe('Collections API – GET', function () {
         .set('Authorization', 'Bearer ' + bearerToken)
         .expect(200)
         .end((_err, res) => {
-          var bookid = res.body.results[0]._id
-          var books = []
+          const bookid = res.body.results[0]._id
+          const books = []
+
           books.push(bookid)
 
           client
@@ -186,8 +186,8 @@ describe('Collections API – GET', function () {
           .end((_err, res) => {
             // find a book
 
-            var Model = require(path.join(__dirname, '/../../../../dadi/lib/model/index.js'))
-            var spy = sinon.spy(Model.Model.prototype, 'find')
+            const Model = require(path.join(__dirname, '/../../../../dadi/lib/model/index.js'))
+            const spy = sinon.spy(Model.Model.prototype, 'find')
 
             client
             .get('/1.0/library/book?filter={ "title": "Harry Potter 2" }')
@@ -196,7 +196,8 @@ describe('Collections API – GET', function () {
             .set('Authorization', 'Bearer ' + bearerToken)
             .expect(200)
             .end((_err, res) => {
-              var args = spy.args
+              const args = spy.args
+
               spy.restore()
               config.set('query.useVersionFilter', false)
 
@@ -205,7 +206,8 @@ describe('Collections API – GET', function () {
                 should.exist(arg[0].query._apiVersion)
               })
 
-              var results = res.body.results
+              const results = res.body.results
+
               results.should.be.Array
               results.length.should.eql(1)
 
@@ -261,7 +263,7 @@ describe('Collections API – GET', function () {
     .set('Authorization', 'Bearer ' + bearerToken)
     .expect(200)
     .end((_err, res) => {
-      var id = res.body.results[0]._id
+      let id = res.body.results[0]._id
 
       client
       .post('/1.0/library/person')
@@ -279,8 +281,9 @@ describe('Collections API – GET', function () {
         .set('Authorization', 'Bearer ' + bearerToken)
         .expect(200)
         .end((_err, res) => {
-          var bookid = res.body.results[0]._id
-          var books = []
+          const bookid = res.body.results[0]._id
+          const books = []
+
           books.push(bookid)
 
           client
@@ -292,8 +295,8 @@ describe('Collections API – GET', function () {
           .end((_err, res) => {
             // find a book
 
-            var Model = require(path.join(__dirname, '/../../../../dadi/lib/model/index.js'))
-            var spy = sinon.spy(Model.Model.prototype, 'find')
+            const Model = require(path.join(__dirname, '/../../../../dadi/lib/model/index.js'))
+            const spy = sinon.spy(Model.Model.prototype, 'find')
 
             client
             .get('/1.0/library/book?filter={ "title": "Harry Potter 2" }&compose=true')
@@ -302,7 +305,8 @@ describe('Collections API – GET', function () {
             .set('Authorization', 'Bearer ' + bearerToken)
             .expect(200)
             .end((_err, res) => {
-              var args = spy.args
+              const args = spy.args
+
               spy.restore()
 
               config.set('query.useVersionFilter', true)
@@ -312,7 +316,8 @@ describe('Collections API – GET', function () {
                 should.not.exist(arg[0].query._apiVersion)
               })
 
-              var results = res.body.results
+              const results = res.body.results
+
               results.should.be.Array
               results.length.should.be.above(0)
 
@@ -332,7 +337,8 @@ describe('Collections API – GET', function () {
 
       doc._apiVersion.should.equal('vtest')
 
-      var testdoc = { field1: 'test string' }
+      const testdoc = { field1: 'test string' }
+
       help.createDocWithSpecificVersion(bearerToken, 'v1', testdoc, function (err, doc) {
         if (err) return done(err)
 
@@ -365,7 +371,8 @@ describe('Collections API – GET', function () {
 
       doc._apiVersion.should.equal('vtest')
 
-      var testdoc = { field1: 'doc with v1' }
+      const testdoc = { field1: 'doc with v1' }
+
       help.createDocWithSpecificVersion(bearerToken, 'v1', testdoc, function (err, doc) {
         if (err) return done(err)
 
@@ -391,13 +398,13 @@ describe('Collections API – GET', function () {
   })
 
   it('should allow case insensitive query', function (done) {
-    var doc = { field1: 'Test', field2: null }
+    const doc = { field1: 'Test', field2: null }
 
     help.createDocWithParams(bearerToken, doc, function (err) {
       if (err) return done(err)
 
-      var client = request(connectionString)
-      var query = {
+      const client = request(connectionString)
+      let query = {
         field1: 'test'
       }
 
@@ -421,13 +428,13 @@ describe('Collections API – GET', function () {
   })
 
   it('should allow case insensitive regex query', function (done) {
-    var doc = { field1: 'Test', field2: null }
+    const doc = { field1: 'Test', field2: null }
 
     help.createDocWithParams(bearerToken, doc, function (err) {
       if (err) return done(err)
 
-      var client = request(connectionString)
-      var query = {
+      const client = request(connectionString)
+      let query = {
         field1: { '$regex': 'tes' }
       }
 
@@ -441,7 +448,7 @@ describe('Collections API – GET', function () {
         .end(function (err, res) {
           if (err) return done(err)
 
-          var found = false
+          let found = false
 
           res.body['results'].should.exist
           res.body['results'].should.be.Array
@@ -458,13 +465,13 @@ describe('Collections API – GET', function () {
   })
 
   it('should allow null values in query when converting to case insensitive', function (done) {
-    var doc = { field1: 'Test', field2: null }
+    const doc = { field1: 'Test', field2: null }
 
     help.createDocWithParams(bearerToken, doc, function (err) {
       if (err) return done(err)
 
-      var client = request(connectionString)
-      var query = {
+      const client = request(connectionString)
+      let query = {
         field2: null
       }
 
@@ -478,7 +485,7 @@ describe('Collections API – GET', function () {
         .end(function (err, res) {
           if (err) return done(err)
 
-          var found = false
+          let found = false
 
           res.body['results'].should.exist
           res.body['results'].should.be.Array
@@ -495,12 +502,12 @@ describe('Collections API – GET', function () {
   })
 
   it('should not display fields with null values', function (done) {
-    var doc = { field1: null }
+    const doc = { field1: null }
 
     help.createDocWithParams(bearerToken, doc, function (err, doc) {
       if (err) return done(err)
 
-      var client = request(connectionString)
+      const client = request(connectionString)
 
       client
         .get('/vtest/testdb/test-schema/' + doc._id)
@@ -522,18 +529,19 @@ describe('Collections API – GET', function () {
   })
 
   it('should return specified fields only when supplying `fields` param', function (done) {
-    var doc = { field1: 'Test', field2: null }
+    const doc = { field1: 'Test', field2: null }
 
     help.createDocWithParams(bearerToken, doc, function (err) {
       if (err) return done(err)
 
-      var client = request(connectionString)
+      const client = request(connectionString)
 
-      var fields = {
+      const fields = {
         'field1': 1
       }
 
-      let query = encodeURIComponent(JSON.stringify(fields))
+      const query = encodeURIComponent(JSON.stringify(fields))
+
       client
         .get('/vtest/testdb/test-schema?cache=false&fields=' + query)
         .set('Authorization', 'Bearer ' + bearerToken)
@@ -545,11 +553,7 @@ describe('Collections API – GET', function () {
           res.body['results'].should.exist
           res.body['results'].should.be.Array
 
-          var obj = res.body['results'].map(x => {
-            if (x.hasOwnProperty('field1')) {
-              return x
-            }
-          }).filter(Boolean)
+          let obj = res.body['results'].map(x => x.field1).filter(Boolean)
 
           obj = obj[0]
 
@@ -564,18 +568,19 @@ describe('Collections API – GET', function () {
   })
 
   it('should allow specifying fields with underscores  (issue #140)', function (done) {
-    var doc = { field1: 'Test', field2: null, _fieldWithUnderscore: { first: 'Ernest', last: 'Hemingway' } }
+    const doc = { field1: 'Test', field2: null, _fieldWithUnderscore: { first: 'Ernest', last: 'Hemingway' } }
 
     help.createDocWithParams(bearerToken, doc, function (err) {
       if (err) return done(err)
 
-      var client = request(connectionString)
+      const client = request(connectionString)
 
-      var fields = {
+      const fields = {
         '_fieldWithUnderscore': 1
       }
 
-      let query = encodeURIComponent(JSON.stringify(fields))
+      const query = encodeURIComponent(JSON.stringify(fields))
+
       client
         .get('/vtest/testdb/test-schema?cache=false&fields=' + query)
         .set('Authorization', 'Bearer ' + bearerToken)
@@ -587,11 +592,7 @@ describe('Collections API – GET', function () {
           res.body['results'].should.exist
           res.body['results'].should.be.Array
 
-          var obj = res.body['results'].map(x => {
-            if (x.hasOwnProperty('_fieldWithUnderscore')) {
-              return x
-            }
-          }).filter(Boolean)
+          let obj = res.body['results'].map(x => x._fieldWithUnderscore).filter(Boolean)
 
           obj = obj[0]
 
@@ -608,9 +609,9 @@ describe('Collections API – GET', function () {
       help.createDoc(bearerToken, function (err, doc2) {
         if (err) return done(err)
 
-        var client = request(connectionString)
+        const client = request(connectionString)
 
-        var query = {
+        let query = {
           uncle: 'bob'
         }
 
@@ -639,9 +640,9 @@ describe('Collections API – GET', function () {
       help.createDoc(bearerToken, function (err, doc2) {
         if (err) return done(err)
 
-        var client = request(connectionString)
-        var docId = doc2._id
-        var query = {
+        const client = request(connectionString)
+        const docId = doc2._id
+        let query = {
           _id: doc2._id
         }
 
@@ -665,15 +666,15 @@ describe('Collections API – GET', function () {
   })
 
   it('should apply configured prefix to any internal fields present in the filter param', function (done) {
-    var originalPrefix = config.get('internalFieldsPrefix')
+    const originalPrefix = config.get('internalFieldsPrefix')
 
     help.createDoc(bearerToken, function (err, doc) {
       if (err) return done(err)
 
       config.set('internalFieldsPrefix', '$')
 
-      var client = request(connectionString)
-      var query = {
+      const client = request(connectionString)
+      let query = {
         $id: doc._id
       }
 
@@ -706,8 +707,8 @@ describe('Collections API – GET', function () {
       help.createDoc(bearerToken, function (err, doc2) {
         if (err) return done(err)
 
-        var client = request(connectionString)
-        var docId = doc2._id
+        const client = request(connectionString)
+        const docId = doc2._id
 
         client
           .get('/vtest/testdb/test-schema/' + doc2._id)
@@ -734,9 +735,9 @@ describe('Collections API – GET', function () {
         if (err) return done(err)
 
         setTimeout(function () {
-          var client = request(connectionString)
-          var docId = doc2._id
-          var query = {
+          const client = request(connectionString)
+          const docId = doc2._id
+          let query = {
             field1: { '$gt': '0' }
           }
 
@@ -767,9 +768,9 @@ describe('Collections API – GET', function () {
       help.createDoc(bearerToken, function (err, doc2) {
         if (err) return done(err)
 
-        var client = request(connectionString)
-        var docId = doc2._id
-        var query = {
+        const client = request(connectionString)
+        const docId = doc2._id
+        let query = {
           _id: doc2._id
         }
 
@@ -798,8 +799,8 @@ describe('Collections API – GET', function () {
       help.createDoc(bearerToken, function (err, doc2) {
         if (err) return done(err)
 
-        var client = request(connectionString)
-        var query = {
+        const client = request(connectionString)
+        let query = {
 
         }
 
@@ -827,7 +828,7 @@ describe('Collections API – GET', function () {
       help.createDoc(bearerToken, function (err, doc2) {
         if (err) return done(err)
 
-        var client = request(connectionString)
+        const client = request(connectionString)
 
         client
           .get('/vtest/testdb/test-schema?count=1&cache=false')
@@ -848,11 +849,12 @@ describe('Collections API – GET', function () {
 
   it('should return single document when querystring param count=1', function (done) {
     // create a bunch of docs
-    var ac = new EventEmitter()
-    var count = 0
+    const ac = new EventEmitter()
+    let count = 0
 
-    for (var i = 0; i < 10; ++i) {
-      var doc = {field1: ((Math.random() * 10) | 0).toString(), field2: (Math.random() * 10) | 0}
+    for (let i = 0; i < 10; ++i) {
+      const doc = {field1: ((Math.random() * 10) | 0).toString(), field2: (Math.random() * 10) | 0}
+
       help.createDocWithParams(bearerToken, doc, function (err) {
         if (err) return ac.emit('error', err)
         count += 1
@@ -862,7 +864,7 @@ describe('Collections API – GET', function () {
 
     ac.on('ready', function () {
       // documents are loaded and test can start
-      var client = request(connectionString)
+      const client = request(connectionString)
 
       client
         .get('/vtest/testdb/test-schema?count=1')
@@ -883,7 +885,7 @@ describe('Collections API – GET', function () {
   describe('query string params', function () {
     beforeEach(() => {
       const total = 46
-      let data = []
+      const data = []
 
       for (let i = 0; i < total; ++i) {
         const number = i % 2 === 0 ? i : (total - i)
@@ -904,8 +906,8 @@ describe('Collections API – GET', function () {
     })
 
     it('should paginate results', function (done) {
-      var client = request(connectionString)
-      var docCount = 20
+      const client = request(connectionString)
+      const docCount = 20
 
       client
         .get('/vtest/testdb/test-schema?page=1&count=' + docCount)
@@ -924,8 +926,8 @@ describe('Collections API – GET', function () {
     })
 
     it('should return pagination metadata', function (done) {
-      var client = request(connectionString)
-      var docCount = 20
+      const client = request(connectionString)
+      const docCount = 20
 
       client
         .get('/vtest/testdb/test-schema?page=1&count=' + docCount)
@@ -946,8 +948,8 @@ describe('Collections API – GET', function () {
     })
 
     it('should return correct pagination nextPage value', function (done) {
-      var client = request(connectionString)
-      var docCount = 20
+      const client = request(connectionString)
+      const docCount = 20
 
       client
         .get('/vtest/testdb/test-schema?page=2&count=' + docCount)
@@ -967,7 +969,7 @@ describe('Collections API – GET', function () {
     })
 
     it('should use schema defaults if not provided', function (done) {
-      var client = request(connectionString)
+      const client = request(connectionString)
 
       client
         .get('/vtest/testdb/test-schema?cache=false') // make sure not hitting cache
@@ -985,7 +987,7 @@ describe('Collections API – GET', function () {
     })
 
     it('should show later pages', function (done) {
-      var client = request(connectionString)
+      const client = request(connectionString)
 
       client
         .get('/vtest/testdb/test-schema?count=20&page=1')
@@ -999,7 +1001,7 @@ describe('Collections API – GET', function () {
           res.body['results'].should.be.Array
           res.body['results'].length.should.equal(20)
 
-          var eleventhDoc = res.body['results'][10]
+          const eleventhDoc = res.body['results'][10]
 
           client
             .get('/vtest/testdb/test-schema?count=10&page=2')
@@ -1022,7 +1024,7 @@ describe('Collections API – GET', function () {
     })
 
     it('should allow sorting results', function (done) {
-      var client = request(connectionString)
+      const client = request(connectionString)
 
       client
         .get('/vtest/testdb/test-schema?sort=field1')
@@ -1036,7 +1038,8 @@ describe('Collections API – GET', function () {
           res.body['results'].should.be.Array
           res.body['results'].length.should.equal(40)
 
-          var max = ''
+          let max = ''
+
           res.body['results'].forEach(function (doc) {
             if (doc.field1) {
               doc.field1.should.not.be.below(max)
@@ -1049,7 +1052,7 @@ describe('Collections API – GET', function () {
     })
 
     it('should allow specifying descending sort order', function (done) {
-      var client = request(connectionString)
+      const client = request(connectionString)
 
       client
         .get('/vtest/testdb/test-schema?sort=field1&sortOrder=desc')
@@ -1063,7 +1066,8 @@ describe('Collections API – GET', function () {
           res.body['results'].should.be.Array
           res.body['results'].length.should.equal(40)
 
-          var last = ''
+          let last = ''
+
           res.body['results'].forEach(function (doc) {
             if (last) doc.field1.should.not.be.above(last)
             last = doc.field1
@@ -1074,7 +1078,7 @@ describe('Collections API – GET', function () {
     })
 
     it('should allow specifying ascending sort order', function (done) {
-      var client = request(connectionString)
+      const client = request(connectionString)
 
       client
         .get('/vtest/testdb/test-schema?sort=field1&sortOrder=asc')
@@ -1088,7 +1092,8 @@ describe('Collections API – GET', function () {
           res.body['results'].should.be.Array
           res.body['results'].length.should.equal(40)
 
-          var last = ''
+          let last = ''
+
           res.body['results'].forEach(function (doc) {
             if (last) doc.field1.should.not.be.below(last)
             last = doc.field1
@@ -1099,7 +1104,7 @@ describe('Collections API – GET', function () {
     })
 
     it('should return 400 if invalid skip option is provided', function (done) {
-      var client = request(connectionString)
+      const client = request(connectionString)
 
       client
         .get('/vtest/testdb/test-schema?skip=-1')
@@ -1117,7 +1122,7 @@ describe('Collections API – GET', function () {
     })
 
     it('should return 400 if skip option is alphabetical', function (done) {
-      var client = request(connectionString)
+      const client = request(connectionString)
 
       client
         .get('/vtest/testdb/test-schema?skip=a')
@@ -1135,7 +1140,7 @@ describe('Collections API – GET', function () {
     })
 
     it('should return 400 if invalid page option is provided', function (done) {
-      var client = request(connectionString)
+      const client = request(connectionString)
 
       client
         .get('/vtest/testdb/test-schema?page=-1')
@@ -1153,7 +1158,7 @@ describe('Collections API – GET', function () {
     })
 
     it('should return multiple errors if invalid page and skip options are provided', function (done) {
-      var client = request(connectionString)
+      const client = request(connectionString)
 
       client
         .get('/vtest/testdb/test-schema?page=-1&skip=-8')
@@ -1171,8 +1176,8 @@ describe('Collections API – GET', function () {
     })
 
     it('should return javascript if `callback` is provided', function (done) {
-      var client = request(connectionString)
-      var callbackName = 'testCallback'
+      const client = request(connectionString)
+      const callbackName = 'testCallback'
 
       client
         .get('/vtest/testdb/test-schema?callback=' + callbackName)
@@ -1194,7 +1199,8 @@ describe('Collections API – GET', function () {
         help.createDoc(bearerToken, function (err, doc2) {
           if (err) return done(err)
 
-          var client = request(connectionString)
+          const client = request(connectionString)
+
           client
             .get('/vtest/testdb/test-schema')
             .set('Accept-Encoding', 'gzip, deflate')
@@ -1219,7 +1225,8 @@ describe('Collections API – GET', function () {
         help.createDoc(bearerToken, function (err, doc2) {
           if (err) return done(err)
 
-          var client = request(connectionString)
+          const client = request(connectionString)
+
           client
             .get('/vtest/testdb/test-schema')
             .set('Accept-Encoding', 'identity')
@@ -1242,7 +1249,8 @@ describe('Collections API – GET', function () {
         help.createDoc(bearerToken, function (err, doc2) {
           if (err) return done(err)
 
-          var client = request(connectionString)
+          const client = request(connectionString)
+
           client
             .get('/vtest/testdb/test-schema')
             .set('Authorization', 'Bearer ' + bearerToken)
@@ -1251,7 +1259,7 @@ describe('Collections API – GET', function () {
             .end((err, res) => {
               if (err) return done(err)
 
-              let etag = res.headers['etag']
+              const etag = res.headers['etag']
 
               client
                 .get('/vtest/testdb/test-schema')

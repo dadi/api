@@ -7,7 +7,7 @@ const app = require(__dirname + '/../../../../dadi/lib/')
 // variables scoped for use throughout tests
 const connectionString = 'http://' + config.get('server.host') + ':' + config.get('server.port')
 let bearerToken
-let lastModifiedAt = 0
+const lastModifiedAt = 0
 
 describe('Collections API – POST', function () {
   this.timeout(4000)
@@ -24,7 +24,7 @@ describe('Collections API – POST', function () {
 
           bearerToken = token
 
-          let schema = {
+          const schema = {
             'fields': {
               'field1': {
                 'type': 'String',
@@ -70,7 +70,8 @@ describe('Collections API – POST', function () {
   })
 
   it('should create new documents', function (done) {
-    var client = request(connectionString)
+    const client = request(connectionString)
+
     client
       .post('/vtest/testdb/test-schema')
       .set('Authorization', 'Bearer ' + bearerToken)
@@ -89,11 +90,12 @@ describe('Collections API – POST', function () {
   })
 
   it('should create new documents and return its representation containing the internal fields prefixed with the character defined in config', function (done) {
-    var originalPrefix = config.get('internalFieldsPrefix')
+    const originalPrefix = config.get('internalFieldsPrefix')
 
     config.set('internalFieldsPrefix', '$')
 
-    var client = request(connectionString)
+    const client = request(connectionString)
+
     client
       .post('/vtest/testdb/test-schema')
       .set('Authorization', 'Bearer ' + bearerToken)
@@ -117,8 +119,8 @@ describe('Collections API – POST', function () {
   })
 
   it('should create new documents when body is urlencoded', function (done) {
-    var body = 'field1=foo!'
-    var client = request(connectionString)
+    const body = 'field1=foo!'
+    const client = request(connectionString)
 
     client
       .post('/vtest/testdb/test-schema')
@@ -140,11 +142,11 @@ describe('Collections API – POST', function () {
   })
 
   it('should create new documents when content-type is text/plain', function (done) {
-    var body = JSON.stringify({
+    const body = JSON.stringify({
       field1: 'foo!'
     })
 
-    var client = request(connectionString)
+    const client = request(connectionString)
 
     client
       .post('/vtest/testdb/test-schema')
@@ -167,11 +169,11 @@ describe('Collections API – POST', function () {
   })
 
   it('should create new documents when content-type includes a charset', function (done) {
-    var body = JSON.stringify({
+    const body = JSON.stringify({
       field1: 'foo!'
     })
 
-    var client = request(connectionString)
+    const client = request(connectionString)
 
     client
       .post('/vtest/testdb/test-schema')
@@ -194,8 +196,9 @@ describe('Collections API – POST', function () {
   })
 
   it('should create new documents with ObjectIDs from single value', function (done) {
-    var body = { field1: 'foo!', field2: 1278, field3: '55cb1658341a0a804d4dadcc' }
-    var client = request(connectionString)
+    const body = { field1: 'foo!', field2: 1278, field3: '55cb1658341a0a804d4dadcc' }
+    const client = request(connectionString)
+
     client
       .post('/vtest/testdb/test-schema')
       .set('Authorization', 'Bearer ' + bearerToken)
@@ -216,8 +219,9 @@ describe('Collections API – POST', function () {
   })
 
   it('should create new documents with ObjectIDs from array', function (done) {
-    var body = { field1: 'foo!', field2: 1278, field3: ['55cb1658341a0a804d4dadcc', '55cb1658341a0a804d4dadff'] }
-    var client = request(connectionString)
+    const body = { field1: 'foo!', field2: 1278, field3: ['55cb1658341a0a804d4dadcc', '55cb1658341a0a804d4dadff'] }
+    const client = request(connectionString)
+
     client
       .post('/vtest/testdb/test-schema')
       .set('Authorization', 'Bearer ' + bearerToken)
@@ -238,7 +242,8 @@ describe('Collections API – POST', function () {
   })
 
   it('should add internal fields to new documents', function (done) {
-    var client = request(connectionString)
+    const client = request(connectionString)
+
     client
       .post('/vtest/testdb/test-schema')
       .set('Authorization', 'Bearer ' + bearerToken)
@@ -260,9 +265,9 @@ describe('Collections API – POST', function () {
   })
 
   it('should ignore any internal properties supplied by the client when creating a new document', function (done) {
-    var client = request(connectionString)
+    const client = request(connectionString)
 
-    let input = {
+    const input = {
       _id: 12345,
       _createdBy: 'johndoe',
       _createdAt: 1010101,
@@ -300,7 +305,7 @@ describe('Collections API – POST', function () {
   })
 
   it('should return 404 when updating a non-existing document by ID (RESTful)', function (done) {
-    var client = request(connectionString)
+    const client = request(connectionString)
 
     client
       .post('/vtest/testdb/test-schema/59f1b3e038ad765e669ac47f')
@@ -317,7 +322,7 @@ describe('Collections API – POST', function () {
   })
 
   it('should return 200 when updating a non-existing document by ID, supplying the query in the request body', function (done) {
-    var client = request(connectionString)
+    const client = request(connectionString)
 
     client
       .post('/vtest/testdb/test-schema')

@@ -59,8 +59,8 @@ function create ({
     return document
   })
 
-  let {hooks} = this.settings
-  let originalDocuments = documents
+  const {hooks} = this.settings
+  const originalDocuments = documents
 
   // If an ACL check is performed, this variable will contain the resulting
   // access matrix.
@@ -84,14 +84,14 @@ function create ({
       documents,
       schema
     }).catch(errors => {
-      let error = this._createValidationError('Validation Failed', errors, {
+      const error = this._createValidationError('Validation Failed', errors, {
         originalDocuments
       })
 
       return Promise.reject(error)
     })
   }).then(() => {
-    let transformQueue = Promise.all(documents.map(document => {
+    const transformQueue = Promise.all(documents.map(document => {
       // Add internal properties to documents
       if (typeof internals === 'object' && internals !== null) {
         Object.assign(document, internals)
@@ -129,7 +129,7 @@ function create ({
 
         documents.forEach(doc => {
           async.reduce(hooks.beforeCreate, doc, (current, hookConfig, callback) => {
-            let hook = new Hook(hookConfig, 'beforeCreate')
+            const hook = new Hook(hookConfig, 'beforeCreate')
 
             Promise.resolve(hook.apply(current, this.schema, this.name, req))
               .then(newDoc => {
@@ -173,7 +173,7 @@ function create ({
       if (hooks && Array.isArray(hooks.afterCreate)) {
         results.forEach(document => {
           hooks.afterCreate.forEach(hookConfig => {
-            let hook = new Hook(hookConfig, 'afterCreate')
+            const hook = new Hook(hookConfig, 'afterCreate')
 
             return hook.apply(document, this.schema, this.name)
           })
@@ -200,7 +200,7 @@ module.exports = function () {
   // Signature: documents, internals, done, req, bypassOutputFormatting
   if (arguments.length > 1) {
     let callback
-    let legacyArguments = {
+    const legacyArguments = {
       documents: arguments[0],
       rawOutput: arguments[4],
       req: arguments[3]

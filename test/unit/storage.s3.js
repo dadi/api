@@ -1,11 +1,11 @@
-var AWS = require('aws-sdk-mock')
-var fs = require('fs')
-var should = require('should')
-var stream = require('stream')
-var StorageFactory = require(__dirname + '/../../dadi/lib/storage/factory')
-var S3Storage = require(__dirname + '/../../dadi/lib/storage/s3')
+const AWS = require('aws-sdk-mock')
+const fs = require('fs')
+const should = require('should')
+const stream = require('stream')
+const StorageFactory = require(__dirname + '/../../dadi/lib/storage/factory')
+const S3Storage = require(__dirname + '/../../dadi/lib/storage/s3')
 
-var config = require(__dirname + '/../../config')
+const config = require(__dirname + '/../../config')
 
 describe('Storage', function (done) {
   beforeEach(function (done) {
@@ -23,7 +23,8 @@ describe('Storage', function (done) {
       config.set('media.s3.bucketName', 'testbucket')
 
       // create the s3 handler
-      var storage = StorageFactory.create('test.jpg')
+      const storage = StorageFactory.create('test.jpg')
+
       return should.exist(storage.s3)
     })
 
@@ -32,8 +33,8 @@ describe('Storage', function (done) {
       config.set('media.storage', 's3')
       config.set('media.s3.bucketName', 'testbucket')
 
-      var settings = config.get('media')
-      var s3Storage = new S3Storage('test.jpg')
+      const settings = config.get('media')
+      const s3Storage = new S3Storage('test.jpg')
 
       return s3Storage.getBucket().should.eql(settings.s3.bucketName)
     })
@@ -44,8 +45,8 @@ describe('Storage', function (done) {
       config.set('media.s3.bucketName', 'testbucket')
       config.set('media.s3.endpoint', 'nyc1')
 
-      var settings = config.get('media')
-      var s3Storage = new S3Storage('test.jpg')
+      const settings = config.get('media')
+      const s3Storage = new S3Storage('test.jpg')
 
       return s3Storage.providerType.should.eql('DigitalOcean')
     })
@@ -55,10 +56,10 @@ describe('Storage', function (done) {
       config.set('media.storage', 's3')
       config.set('media.s3.bucketName', 'testbucket')
 
-      var settings = config.get('media')
+      const settings = config.get('media')
 
       // set expected key value
-      var expected = settings.basePath + '/test.jpg'
+      const expected = settings.basePath + '/test.jpg'
 
       // mock the s3 request
       AWS.mock('S3', 'putObject', (data) => {
@@ -72,9 +73,10 @@ describe('Storage', function (done) {
       })
 
       // create the s3 handler
-      var storage = StorageFactory.create('test.jpg')
+      const storage = StorageFactory.create('test.jpg')
 
-      var readable = new stream.Readable()
+      const readable = new stream.Readable()
+
       readable.push('xxx')
       readable.push(null)
 
@@ -90,12 +92,12 @@ describe('Storage', function (done) {
       config.set('media.storage', 's3')
       config.set('media.s3.bucketName', 'testbucket')
 
-      var settings = config.get('media')
+      const settings = config.get('media')
 
       // set expected key value
-      var expected = settings.basePath + '/test.jpg'
+      const expected = settings.basePath + '/test.jpg'
 
-      var file = {
+      const file = {
         fileName: 'test.jpg',
         path: expected
       }
@@ -111,7 +113,7 @@ describe('Storage', function (done) {
       })
 
       // create the s3 handler
-      var storage = StorageFactory.create('test.jpg')
+      const storage = StorageFactory.create('test.jpg')
 
       storage.delete(file).then(() => {
         // nothing
@@ -123,12 +125,12 @@ describe('Storage', function (done) {
       config.set('media.storage', 's3')
       config.set('media.s3.bucketName', 'testbucket')
 
-      var settings = config.get('media')
+      const settings = config.get('media')
 
       // set expected key value
-      var expected = 'test.jpg'
+      const expected = 'test.jpg'
 
-      var file = {
+      const file = {
         fileName: 'test.jpg',
         path: expected
       }
@@ -145,7 +147,7 @@ describe('Storage', function (done) {
       })
 
       // create the s3 handler
-      var storage = StorageFactory.create('test.jpg')
+      const storage = StorageFactory.create('test.jpg')
 
       storage.get(file.fileName, 'media', {}, {}, function () {}).then(() => {
         // nothing
@@ -159,15 +161,15 @@ describe('Storage', function (done) {
       config.set('media.s3.endpoint', 'nyc3.digitalocean.com')
 
       // set expected key value
-      var expected = 'test.jpg'
+      const expected = 'test.jpg'
 
-      var file = {
+      const file = {
         fileName: 'test.jpg',
         path: expected
       }
 
       // create the s3 handler
-      let storage = StorageFactory.create('test.jpg')
+      const storage = StorageFactory.create('test.jpg')
 
       config.set('media.s3.endpoint', '')
 

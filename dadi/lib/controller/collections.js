@@ -17,7 +17,7 @@ Collections.prototype.get = function (req, res, next) {
     )
   }
 
-  let clientIsAdmin = acl.client.isAdmin(req.dadiApiClient)
+  const clientIsAdmin = acl.client.isAdmin(req.dadiApiClient)
   let accessCheck
 
   if (!clientIsAdmin) {
@@ -25,12 +25,12 @@ Collections.prototype.get = function (req, res, next) {
   }
 
   return Promise.resolve(accessCheck).then((access = {}) => {
-    let collections = Object.keys(this.server.components).filter(key => {
+    const collections = Object.keys(this.server.components).filter(key => {
       if (this.server.components[key]._type !== this.server.COMPONENT_TYPE.COLLECTION) {
         return false
       }
 
-      let aclKey = this.server.components[key].model.getAclKey()
+      const aclKey = this.server.components[key].model.getAclKey()
 
       if (!clientIsAdmin && (!access[aclKey] || !access[aclKey].read)) {
         return false
@@ -38,10 +38,10 @@ Collections.prototype.get = function (req, res, next) {
 
       return true
     }).map(key => {
-      let model = this.server.components[key].model
-      let parts = key.split('/')
+      const model = this.server.components[key].model
+      const parts = key.split('/')
 
-      let data = {
+      const data = {
         version: parts[1],
         database: parts[2],
         name: (model.settings && model.settings.displayName) || model.name,
@@ -77,17 +77,17 @@ Collections.prototype.get = function (req, res, next) {
     })
 
     // Adding media buckets.
-    let mediaBuckets = config.get('media.buckets').concat(config.get('media.defaultBucket'))
-    let allowedMediaBuckets = mediaBuckets.filter(bucket => {
+    const mediaBuckets = config.get('media.buckets').concat(config.get('media.defaultBucket'))
+    const allowedMediaBuckets = mediaBuckets.filter(bucket => {
       if (clientIsAdmin) {
         return true
       }
 
-      let matrix = access[`media:${bucket}`] || {}
+      const matrix = access[`media:${bucket}`] || {}
 
       return matrix.read || matrix.create
     })
-    let media = {
+    const media = {
       buckets: allowedMediaBuckets,
       defaultBucket: allowedMediaBuckets.includes(config.get('media.defaultBucket'))
         ? config.get('media.defaultBucket')

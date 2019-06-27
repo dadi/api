@@ -7,7 +7,7 @@ function currentBranch () {
     exec('git branch --no-color', (err, out) => {
       if (err) return reject(err)
 
-      let branches = out.split('\n')
+      const branches = out.split('\n')
       let branch = branches.find(branch => {
         return /^\*/.test(branch)
       })

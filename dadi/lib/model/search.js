@@ -195,13 +195,13 @@ Search.prototype.find = function ({
   }).then(resultsMap => {
     const documents = new Map()
 
-    let indexableFields = {}
+    const indexableFields = {}
 
     // We must retrieve all the documents using their respective models.
     const queue = Object.keys(resultsMap).map(collection => {
       const model = modelFactory(collection)
 
-      if (!model) return
+      if (!model) return undefined
 
       indexableFields[collection] = indexableFields[collection] ||
         this.getIndexableFields(model.schema)
@@ -416,7 +416,7 @@ Search.prototype.getIndexResults = function ({
   settings,
   words
 }) {
-  let query = {
+  const query = {
     word: {
       '$containsAny': words
     }
@@ -442,7 +442,7 @@ Search.prototype.getIndexResults = function ({
     // This is a multi-level map. On the first level, keys are names of
     // collections. On the second level, keys are document IDs mapping
     // to the total weight of the corresponding document.
-    let resultsMap = {}
+    const resultsMap = {}
 
     results.forEach(({collection, document, weight}) => {
       resultsMap[collection] = resultsMap[collection] || {}

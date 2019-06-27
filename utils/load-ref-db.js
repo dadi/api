@@ -1,9 +1,9 @@
-var connection = require(__dirname + '/../dadi/lib/model/connection')
-var config = require(__dirname + '/../config').database
+const connection = require(__dirname + '/../dadi/lib/model/connection')
+const config = require(__dirname + '/../config').database
 
 config.database = 'testdb'
 
-var conn = connection(config)
+const conn = connection(config)
 
 conn.on('connect', function (db) {
     // Note: this is for QA testing or example purposes only

@@ -12,7 +12,7 @@ const zlib = require('zlib')
  * Remove each file in the specified cache folder.
  */
 module.exports.clearCache = function (pathname, callback) {
-  var pattern = ''
+  let pattern = ''
 
   pattern = crypto.createHash('sha1').update(pathname).digest('hex')
 
@@ -41,7 +41,7 @@ module.exports.isJSON = function (jsonString) {
   if (!jsonString) return false
 
   try {
-    var o = JSON.parse(jsonString)
+    const o = JSON.parse(jsonString)
 
     // Handle non-exception-throwing cases:
     // Neither JSON.parse(false) or JSON.parse(1234) throw errors, hence the type-checking,
@@ -59,15 +59,15 @@ module.exports.isJSON = function (jsonString) {
 
 module.exports.sendBackErrorTrace = function (res, next) {
   return err => {
-    let body = {
+    const body = {
       success: false
     }
-    let trace = stackTrace.parse(err)
+    const trace = stackTrace.parse(err)
 
     if (trace) {
       let stack = 'Error "' + err + '"\n'
 
-      for (var i = 0; i < trace.length; i++) {
+      for (let i = 0; i < trace.length; i++) {
         stack += `  at ${trace[i].methodName} (${trace[i].fileName}:${trace[i].lineNumber}:${trace[i].columnNumber})\n`
       }
 
@@ -76,7 +76,7 @@ module.exports.sendBackErrorTrace = function (res, next) {
       console.log(stack)
     }
 
-    let resBody = JSON.stringify(body)
+    const resBody = JSON.stringify(body)
 
     res.setHeader('content-type', 'application/json')
     res.setHeader('content-length', Buffer.byteLength(resBody))
@@ -94,7 +94,7 @@ module.exports.sendBackErrorWithCode = function (errorCode, statusCode, res, nex
     statusCode = 500
   }
 
-  let errorObject = formatError.createError('api', errorCode, null, ERROR_CODES)
+  const errorObject = formatError.createError('api', errorCode, null, ERROR_CODES)
 
   return module.exports.sendBackJSON(statusCode, res, next)(null, errorObject)
 }
@@ -151,11 +151,13 @@ module.exports.sendBackJSON = function (successCode, res, next) {
       res.setHeader('Content-Type', 'application/json')
 
       if (resBody) {
-        let etagResult = etag(resBody)
+        const etagResult = etag(resBody)
+
         res.setHeader('ETag', etagResult)
 
         if (originalRequest && originalRequest.headers['if-none-match'] === etagResult) {
           res.statusCode = 304
+
           return res.end()
         }
       }
@@ -175,7 +177,8 @@ module.exports.sendBackJSONP = function (callbackName, res, next) {
 
     res.statusCode = 200
 
-    var resBody = JSON.stringify(results)
+    let resBody = JSON.stringify(results)
+
     resBody = callbackName + '(' + resBody + ');'
 
     res.setHeader('content-type', 'text/javascript')
@@ -189,7 +192,7 @@ module.exports.sendBackText = function (successCode, res, next) {
   return function (err, results) {
     if (err) return next(err)
 
-    var resBody = results
+    const resBody = results
 
     res.setHeader('content-type', 'application/text')
     res.setHeader('content-length', Buffer.byteLength(resBody))
@@ -208,14 +211,15 @@ module.exports.sendBackText = function (successCode, res, next) {
  * @returns Boolean
  */
 module.exports.shouldCompress = function (req) {
-  let acceptHeader = req.headers['accept-encoding'] || ''
+  const acceptHeader = req.headers['accept-encoding'] || ''
 
   return acceptHeader.split(',').includes('gzip')
 }
 
 // function to wrap try - catch for JSON.parse to mitigate pref losses
 module.exports.parseQuery = function (queryStr) {
-  var ret
+  let ret
+
   try {
     ret = JSON.parse(queryStr)
   } catch (e) {
@@ -224,5 +228,6 @@ module.exports.parseQuery = function (queryStr) {
 
   // handle case where queryStr is "null" or some other malicious string
   if (typeof ret !== 'object' || ret === null) ret = {}
+
   return ret
 }

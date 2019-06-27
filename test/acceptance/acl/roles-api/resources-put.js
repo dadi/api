@@ -4,11 +4,11 @@ const help = require('./../../help')
 const request = require('supertest')
 const should = require('should')
 
-let configBackup = config.get()
-let client = request(`http://${config.get('server.host')}:${config.get('server.port')}`)
+const configBackup = config.get()
+const client = request(`http://${config.get('server.host')}:${config.get('server.port')}`)
 
 module.exports = () => {
-  let initialResource = {
+  const initialResource = {
     name: 'collection:library_book',
     access: {
       create: true,
@@ -27,7 +27,7 @@ module.exports = () => {
 
   describe('error states', () => {
     it('should return 401 if the request does not include a valid bearer token', done => {
-      let newAccess = {
+      const newAccess = {
         delete: false,
         update: true
       }
@@ -45,7 +45,7 @@ module.exports = () => {
     })
 
     it('should return 403 if the request includes a valid bearer token without sufficient permissions on the "roles" resource (no resource)', done => {
-      let testClient = {
+      const testClient = {
         clientId: 'apiClient',
         secret: 'someSecret',
         resources: {
@@ -58,7 +58,7 @@ module.exports = () => {
         },
         roles: ['child']
       }
-      let newAccess = {
+      const newAccess = {
         delete: false,
         update: true
       }
@@ -78,7 +78,7 @@ module.exports = () => {
 
           res.body.accessToken.should.be.String
 
-          let bearerToken = res.body.accessToken
+          const bearerToken = res.body.accessToken
 
           client
           .put('/api/roles/child/resources/collection:library_book')
@@ -96,7 +96,7 @@ module.exports = () => {
     })
 
     it('should return 403 if the request includes a valid bearer token without sufficient permissions (falsy "update" access to "roles" resource)', done => {
-      let testClient = {
+      const testClient = {
         clientId: 'apiClient',
         secret: 'someSecret',
         resources: {
@@ -112,7 +112,7 @@ module.exports = () => {
         },
         roles: ['child']
       }
-      let newAccess = {
+      const newAccess = {
         delete: false,
         update: true
       }      
@@ -132,7 +132,7 @@ module.exports = () => {
 
           res.body.accessToken.should.be.String
 
-          let bearerToken = res.body.accessToken
+          const bearerToken = res.body.accessToken
 
           client
           .put('/api/roles/child/resources/collection:library_book')
@@ -150,7 +150,7 @@ module.exports = () => {
     })
 
     it('should return 403 if the request includes a valid bearer token without sufficient permissions (no access to role)', done => {
-      let testClient = {
+      const testClient = {
         clientId: 'apiClient',
         secret: 'someSecret',
         resources: {
@@ -163,7 +163,7 @@ module.exports = () => {
           }
         }
       }
-      let newAccess = {
+      const newAccess = {
         delete: false,
         update: true
       }
@@ -183,7 +183,7 @@ module.exports = () => {
 
           res.body.accessToken.should.be.String
 
-          let bearerToken = res.body.accessToken
+          const bearerToken = res.body.accessToken
 
           client
           .put('/api/roles/child/resources/collection:library_book')
@@ -201,7 +201,7 @@ module.exports = () => {
     })
 
     it('should return 403 if the request includes a valid bearer token without sufficient permissions (no access to referenced resource)', done => {
-      let testClient = {
+      const testClient = {
         clientId: 'apiClient',
         secret: 'someSecret',
         resources: {
@@ -215,7 +215,7 @@ module.exports = () => {
         },
         roles: ['child']
       }
-      let newAccess = {
+      const newAccess = {
         delete: false,
         update: true
       }
@@ -235,7 +235,7 @@ module.exports = () => {
 
           res.body.accessToken.should.be.String
 
-          let bearerToken = res.body.accessToken
+          const bearerToken = res.body.accessToken
 
           client
           .put('/api/roles/child/resources/collection:library_book')
@@ -253,12 +253,12 @@ module.exports = () => {
     })
 
     it('should return 400 if the access matrix is invalid', done => {
-      let testClient = {
+      const testClient = {
         clientId: 'apiClient',
         secret: 'someSecret',
         accessType: 'admin'
       }
-      let newAccess = {
+      const newAccess = {
         invalidType: true,
         read: {
           invalidField: 35
@@ -280,7 +280,7 @@ module.exports = () => {
 
           res.body.accessToken.should.be.String
 
-          let bearerToken = res.body.accessToken
+          const bearerToken = res.body.accessToken
 
           client
           .put('/api/roles/child/resources/collection:library_book')
@@ -307,12 +307,12 @@ module.exports = () => {
     })      
 
     it('should return 404 if the role does not have the referenced resource', done => {
-      let testClient = {
+      const testClient = {
         clientId: 'apiClient',
         secret: 'someSecret',
         accessType: 'admin'
       }
-      let newAccess = {
+      const newAccess = {
         read: true
       }
 
@@ -331,7 +331,7 @@ module.exports = () => {
 
           res.body.accessToken.should.be.String
 
-          let bearerToken = res.body.accessToken
+          const bearerToken = res.body.accessToken
 
           client
           .put('/api/roles/child/resources/collection:non_existing')
@@ -351,7 +351,7 @@ module.exports = () => {
 
   describe('success states (the client has "update" access to the "roles" resource, has access to the role being edited as well as access to the referenced resource for each of the access types they are attempting to update)', () => {
     it('should update the role\'s permissions to access a resource', done => {
-      let testClient = {
+      const testClient = {
         clientId: 'apiClient',
         secret: 'someSecret',
         resources: {
@@ -365,7 +365,7 @@ module.exports = () => {
         },
         roles: ['child']
       }
-      let newAccess = {
+      const newAccess = {
         read: true
       }      
 
@@ -384,7 +384,7 @@ module.exports = () => {
 
           res.body.accessToken.should.be.String
 
-          let bearerToken = res.body.accessToken
+          const bearerToken = res.body.accessToken
 
           client
           .get('/api/roles/child')
@@ -397,7 +397,7 @@ module.exports = () => {
             res.body.results.should.be.Array
             res.body.results.length.should.eql(1)
 
-            let result = res.body.results[0]
+            const result = res.body.results[0]
 
             result.resources[initialResource.name].create.should.eql(true)
             result.resources[initialResource.name].delete.should.eql(true)
@@ -419,7 +419,7 @@ module.exports = () => {
               res.body.results.should.be.Array
               res.body.results.length.should.eql(1)
 
-              let result = res.body.results[0]
+              const result = res.body.results[0]
 
               result.name.should.eql('child')
               result.resources[initialResource.name].create.should.eql(true)
@@ -441,7 +441,7 @@ module.exports = () => {
                 res.body.results.should.be.Array
                 res.body.results.length.should.eql(1)
 
-                let result = res.body.results[0]
+                const result = res.body.results[0]
 
                 result.name.should.eql('child')
                 result.resources[initialResource.name].create.should.eql(true)
@@ -461,7 +461,7 @@ module.exports = () => {
     })
 
     it('should update the role\'s permissions to access a resource without affecting existing permissions for other roles', done => {
-      let testClient = {
+      const testClient = {
         clientId: 'apiClient',
         secret: 'someSecret',
         resources: {
@@ -482,7 +482,7 @@ module.exports = () => {
         },
         roles: ['child']
       }
-      let newResource = {
+      const newResource = {
         name: 'collection:library_person',
         access: {
           read: true,
@@ -505,7 +505,7 @@ module.exports = () => {
 
           res.body.accessToken.should.be.String
 
-          let bearerToken = res.body.accessToken
+          const bearerToken = res.body.accessToken
 
           client
           .post('/api/roles/child/resources')
@@ -519,7 +519,7 @@ module.exports = () => {
             res.body.results.should.be.Array
             res.body.results.length.should.eql(1)
 
-            let result = res.body.results[0]
+            const result = res.body.results[0]
 
             result.name.should.eql('child')
             result.resources[newResource.name].create.should.eql(newResource.access.create || false)
@@ -547,7 +547,7 @@ module.exports = () => {
               res.body.results.should.be.Array
               res.body.results.length.should.eql(1)
 
-              let result = res.body.results[0]
+              const result = res.body.results[0]
 
               Object.keys(result.resources).length.should.eql(2)
 
@@ -571,7 +571,7 @@ module.exports = () => {
                 res.body.results.should.be.Array
                 res.body.results.length.should.eql(1)
 
-                let result = res.body.results[0]
+                const result = res.body.results[0]
 
                 Object.keys(result.resources).length.should.eql(2)
 

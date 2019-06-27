@@ -12,7 +12,7 @@ const HooksController = function (server, hooksPath) {
   this.server = server
 
   server.app.use('/api/hooks', (req, res, next) => {
-    let method = req.method && req.method.toLowerCase()
+    const method = req.method && req.method.toLowerCase()
 
     if (method === 'get') {
       return this.get(req, res, next)
@@ -22,7 +22,7 @@ const HooksController = function (server, hooksPath) {
   })
 
   server.app.use('/api/hooks/:hookName/config', (req, res, next) => {
-    let method = req.method && req.method.toLowerCase()
+    const method = req.method && req.method.toLowerCase()
 
     if (typeof this[method] === 'function') {
       return this[method](req, res, next)
@@ -45,22 +45,22 @@ HooksController.prototype._deleteHook = function (name) {
 }
 
 HooksController.prototype._findHooks = function (filterByName) {
-  let hooks = []
+  const hooks = []
 
   Object.keys(this.server.components).find(key => {
     if (key.indexOf(HOOK_PREFIX) === 0) {
       const hookName = key.replace(HOOK_PREFIX, '')
 
       if (filterByName && filterByName !== hookName) {
-        return
+        return false
       }
 
       hooks.push(hookName)
 
-      if (filterByName) {
-        return true
-      }
+      return Boolean(filterByName)
     }
+
+    return false
   })
 
   return hooks.sort()
@@ -87,8 +87,8 @@ HooksController.prototype.get = function (req, res, next) {
 
   // Return the content of a specific hook
   if (req.params.hookName) {
-    let name = req.params.hookName
-    let hook = this._findHooks(name)[0]
+    const name = req.params.hookName
+    const hook = this._findHooks(name)[0]
 
     if (!hook) {
       return help.sendBackText(404, res, next)(null, '')
@@ -99,12 +99,12 @@ HooksController.prototype.get = function (req, res, next) {
     })
   } else {
     // List all hooks
-    let hooks = this._findHooks().map(key => {
-      let hook = {
+    const hooks = this._findHooks().map(key => {
+      const hook = {
         name: key
       }
 
-      let docs = this.server.docs[HOOK_PREFIX + key]
+      const docs = this.server.docs[HOOK_PREFIX + key]
 
       if (docs && docs[0]) {
         hook.description = docs[0].description

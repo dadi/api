@@ -1,13 +1,15 @@
-var should = require('should')
-var request = require('supertest')
-var api = require(__dirname + '/../../dadi/lib/api')
-var config = require(__dirname + '/../../config')
+const should = require('should')
+const request = require('supertest')
+const api = require(__dirname + '/../../dadi/lib/api')
+const config = require(__dirname + '/../../config')
 
 describe('Server', function () {
   it('should respond to request', function (done) {
-    var app = api()
+    const app = api()
+
     app.use(function (req, res, next) {
-      var body = JSON.stringify({foo: 'bar'})
+      const body = JSON.stringify({foo: 'bar'})
+
       res.writeHead(200, {
         'content-length': body.length,
         'content-type': 'application/json'
@@ -15,7 +17,7 @@ describe('Server', function () {
       res.end(body)
     })
 
-    var server = app.listen(config.get('server.port'), config.get('server.host'))
+    const server = app.listen(config.get('server.port'), config.get('server.host'))
 
     request(server)
         .get('/')
@@ -25,8 +27,9 @@ describe('Server', function () {
 
   describe('middleware', function () {
     it('should allow multiple', function (done) {
-      var app = api()
-      var body = JSON.stringify({foo: 'bar'})
+      const app = api()
+      const body = JSON.stringify({foo: 'bar'})
+
       app.use(function (req, res, next) {
         res.writeHead(200, {
           'content-length': body.length,
@@ -40,7 +43,7 @@ describe('Server', function () {
         res.end()
       })
 
-      var server = app.listen(config.get('server.port'), config.get('server.host'))
+      const server = app.listen(config.get('server.port'), config.get('server.host'))
 
       request(server)
             .get('/')
@@ -49,14 +52,14 @@ describe('Server', function () {
     })
 
     it('should be able to pass error to next', function (done) {
-      var app = api()
-      var body = JSON.stringify({foo: 'bar'})
+      const app = api()
+      const body = JSON.stringify({foo: 'bar'})
 
       app.use(function (req, res, next) {
         next(new Error('error handle test'))
       })
 
-      var server = app.listen(config.get('server.port'), config.get('server.host'))
+      const server = app.listen(config.get('server.port'), config.get('server.host'))
 
       request(server)
             .get('/')
@@ -66,8 +69,8 @@ describe('Server', function () {
 
   describe('routes', function () {
     it('should respond to requests', function (done) {
-      var app = api()
-      var body = JSON.stringify({foo: 'bar'})
+      const app = api()
+      const body = JSON.stringify({foo: 'bar'})
 
       app.use(function (req, res, next) {
         res.setHeader('x-is-test', 'true')
@@ -82,7 +85,7 @@ describe('Server', function () {
         res.end(body)
       })
 
-      var server = app.listen(config.get('server.port'), config.get('server.host'))
+      const server = app.listen(config.get('server.port'), config.get('server.host'))
 
       request(server)
             .get('/')
@@ -97,7 +100,7 @@ describe('Server', function () {
     })
 
     it('should send 404', function (done) {
-      var app = api()
+      const app = api()
 
       app.use(function (req, res, next) {
         res.setHeader('x-is-test', 'true')
@@ -109,7 +112,7 @@ describe('Server', function () {
         res.end()
       })
 
-      var server = app.listen(config.get('server.port'), config.get('server.host'))
+      const server = app.listen(config.get('server.port'), config.get('server.host'))
 
       request(server)
             .get('/doesnotexist')
@@ -118,7 +121,7 @@ describe('Server', function () {
     })
 
     it('should send 500', function (done) {
-      var app = api()
+      const app = api()
 
       app.use(function (req, res, next) {
         res.setHeader('x-is-test', 'true')
@@ -129,7 +132,7 @@ describe('Server', function () {
         next(new Error('500 test'))
       })
 
-      var server = app.listen(config.get('server.port'), config.get('server.host'))
+      const server = app.listen(config.get('server.port'), config.get('server.host'))
 
       request(server)
             .get('/')
@@ -138,8 +141,8 @@ describe('Server', function () {
     })
 
     it('should parse `req.params` from path', function (done) {
-      var app = api()
-      var id = 'test123'
+      const app = api()
+      const id = 'test123'
 
       app.use('/model/:id', function (req, res, next) {
         req.params.id.should.equal(id)
@@ -147,7 +150,7 @@ describe('Server', function () {
         res.end()
       })
 
-      var server = app.listen(config.get('server.port'), config.get('server.host'))
+      const server = app.listen(config.get('server.port'), config.get('server.host'))
 
       request(server)
             .get('/model/' + id)

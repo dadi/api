@@ -9,7 +9,7 @@ let packageData = require('./../../../package.json')
  * @constructor
  * @classdesc
  */
-const DataStore = function (storeName) {
+const DataStore = function(storeName) {
   const store = storeName || config.get('datastore')
   const minimumVersion = packageData.dataConnectorDependencies[store]
 
@@ -44,9 +44,19 @@ const DataStore = function (storeName) {
     return instance
   } catch (err) {
     if (err.message.indexOf('Cannot find module') > -1) {
-      console.error('\n  Error: API configured to use a datastore that has not been installed: "' + store + '"\n')
+      console.error(
+        '\n  Error: API configured to use a datastore that has not been installed: "' +
+          store +
+          '"\n'
+      )
     } else {
-      console.error('\n  Error: Loading datastore "' + store + '" caused an error: ' + err.message + '\n')
+      console.error(
+        '\n  Error: Loading datastore "' +
+          store +
+          '" caused an error: ' +
+          err.message +
+          '\n'
+      )
     }
 
     throw err

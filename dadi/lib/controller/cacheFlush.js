@@ -2,13 +2,13 @@ const acl = require('./../model/acl')
 const formatError = require('@dadi/format-error')
 const help = require('./../help')
 
-const CacheFlush = function (server) {
+const CacheFlush = function(server) {
   server.app.routeMethods('/api/flush', {
     post: this.post.bind(this)
   })
 }
 
-CacheFlush.prototype.post = function (req, res, next) {
+CacheFlush.prototype.post = function(req, res, next) {
   if (!acl.client.isAdmin(req.dadiApiClient)) {
     return help.sendBackJSON(null, res, next)(
       acl.createError(req.dadiApiClient)
@@ -22,7 +22,7 @@ CacheFlush.prototype.post = function (req, res, next) {
     )
   }
 
-  return help.clearCache(req.body.path, function (err) {
+  return help.clearCache(req.body.path, function(err) {
     help.sendBackJSON(200, res, next)(err, {
       result: 'success',
       message: 'Cache flush successful'

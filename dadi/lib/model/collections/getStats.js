@@ -15,13 +15,9 @@
  * @param  {Object} client - client to check permissions for
  * @return {Promise<Stats>}
  */
-function getStats ({
-  client
-} = {}) {
+function getStats({client} = {}) {
   if (!this.connection.db) {
-    return Promise.reject(
-      new Error('DB_DISCONNECTED')
-    )
+    return Promise.reject(new Error('DB_DISCONNECTED'))
   }
 
   return this.validateAccess({

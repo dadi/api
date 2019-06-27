@@ -3,16 +3,14 @@ const config = require('./../../../config')
 const help = require('./../help')
 const jwt = require('jsonwebtoken')
 
-const AuthMiddleware = function (server) {
+const AuthMiddleware = function(server) {
   this.tokenRoute = config.get('auth.tokenUrl')
 
   server.routeMethods(this.tokenRoute, {
     post: this.generateToken.bind(this)
   })
 
-  server.use(
-    this.authenticateRequest.bind(this)
-  )
+  server.use(this.authenticateRequest.bind(this))
 }
 
 /**
@@ -26,7 +24,7 @@ const AuthMiddleware = function (server) {
  * @param  {http.ServerResponse}    res
  * @param  {Function}               next
  */
-AuthMiddleware.prototype.authenticateRequest = function (req, res, next) {
+AuthMiddleware.prototype.authenticateRequest = function(req, res, next) {
   if (req.url === this.tokenRoute) return next()
 
   const header = req.headers && req.headers.authorization
@@ -38,17 +36,11 @@ AuthMiddleware.prototype.authenticateRequest = function (req, res, next) {
     return next()
   }
 
-  jwt.verify(
-    match[1],
-    config.get('auth.tokenKey'),
-    (err, decoded) => {
-      req.dadiApiClient = err
-        ? { error: err }
-        : decoded
+  jwt.verify(match[1], config.get('auth.tokenKey'), (err, decoded) => {
+    req.dadiApiClient = err ? {error: err} : decoded
 
-      next()
-    }
-  )
+    next()
+  })
 }
 
 /**
@@ -59,7 +51,7 @@ AuthMiddleware.prototype.authenticateRequest = function (req, res, next) {
  * @param  {http.ServerResponse}    res
  * @param  {Function}               next
  */
-AuthMiddleware.prototype.handleInvalidCredentials = function (req, res, next) {
+AuthMiddleware.prototype.handleInvalidCredentials = function(req, res, next) {
   const error = new Error('Invalid Credentials')
 
   error.statusCode = 401
@@ -79,7 +71,11 @@ AuthMiddleware.prototype.handleInvalidCredentials = function (req, res, next) {
  * @param  {http.ServerResponse}    res
  * @param  {Function}               next
  */
-AuthMiddleware.prototype.handleClientInNeedOfUpgrade = function (req, res, next) {
+AuthMiddleware.prototype.handleClientInNeedOfUpgrade = function(
+  req,
+  res,
+  next
+) {
   const error = new Error('Client must be upgraded')
 
   error.statusCode = 401
@@ -102,57 +98,62 @@ AuthMiddleware.prototype.handleClientInNeedOfUpgrade = function (req, res, next)
  * @param  {http.ServerResponse}    res
  * @param  {Function}               next
  */
-AuthMiddleware.prototype.generateToken = function (req, res, next) {
+AuthMiddleware.prototype.generateToken = function(req, res, next) {
   const {clientId, secret} = req.body
 
   res.setHeader('Content-Type', 'application/json')
   res.setHeader('Cache-Control', 'no-store')
   res.setHeader('Pragma', 'no-cache')
 
-  if (
-    typeof clientId !== 'string' ||
-    typeof secret !== 'string'
-  ) {
+  if (typeof clientId !== 'string' || typeof secret !== 'string') {
     return this.handleInvalidCredentials(req, res, next)
   }
 
-  clientModel.get(clientId, secret).then(({results}) => {
-    if (results.length === 0) {
-      return this.handleInvalidCredentials(req, res, next)
-    }
-
-    const client = clientModel.formatForOutput(results[0])
-    const payload = {
-      clientId,
-      accessType: client.accessType
-    }
-
-    jwt.sign(payload, config.get('auth.tokenKey'), {
-      expiresIn: config.get('auth.tokenTtl')
-    }, (err, token) => {
-      if (err) {
+  clientModel
+    .get(clientId, secret)
+    .then(({results}) => {
+      if (results.length === 0) {
         return this.handleInvalidCredentials(req, res, next)
       }
 
-      const response = {
-        accessToken: token,
-        tokenType: 'Bearer',
-        expiresIn: config.get('auth.tokenTtl'),
-        permissions: {
-          resources: client.resources,
-          roles: client.roles
-        }
+      const client = clientModel.formatForOutput(results[0])
+      const payload = {
+        clientId,
+        accessType: client.accessType
       }
 
-      return res.end(JSON.stringify(response))
-    })
-  }).catch(error => {
-    if (error.message === 'CLIENT_NEEDS_UPGRADE') {
-      return this.handleClientInNeedOfUpgrade(req, res, next)
-    }
+      jwt.sign(
+        payload,
+        config.get('auth.tokenKey'),
+        {
+          expiresIn: config.get('auth.tokenTtl')
+        },
+        (err, token) => {
+          if (err) {
+            return this.handleInvalidCredentials(req, res, next)
+          }
 
-    return help.sendBackJSON(null, res, next)(error)
-  })
+          const response = {
+            accessToken: token,
+            tokenType: 'Bearer',
+            expiresIn: config.get('auth.tokenTtl'),
+            permissions: {
+              resources: client.resources,
+              roles: client.roles
+            }
+          }
+
+          return res.end(JSON.stringify(response))
+        }
+      )
+    })
+    .catch(error => {
+      if (error.message === 'CLIENT_NEEDS_UPGRADE') {
+        return this.handleClientInNeedOfUpgrade(req, res, next)
+      }
+
+      return help.sendBackJSON(null, res, next)(error)
+    })
 }
 
 module.exports = server => new AuthMiddleware(server)

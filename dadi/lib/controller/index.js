@@ -4,15 +4,15 @@ const url = require('url')
 
 const ID_PATTERN = '[a-fA-F0-9-]*'
 
-const Controller = function () {}
+const Controller = function() {}
 
-Controller.prototype._getURLParameters = function (requestUrl) {
+Controller.prototype._getURLParameters = function(requestUrl) {
   const parsedUrl = url.parse(requestUrl, true)
 
   return parsedUrl.query
 }
 
-Controller.prototype._prepareQuery = function (req) {
+Controller.prototype._prepareQuery = function(req) {
   const path = url.parse(req.url, true)
   const apiVersion = path.pathname.split('/')[1]
   const options = this._getURLParameters(req.url)
@@ -43,8 +43,8 @@ Controller.prototype._prepareQuery = function (req) {
   return query
 }
 
-Controller.prototype._prepareQueryOptions = function (options) {
-  const response = { errors: [] }
+Controller.prototype._prepareQueryOptions = function(options) {
+  const response = {errors: []}
   const queryOptions = {}
   const settings = this.model.settings || {}
   let parsedSkip
@@ -63,42 +63,33 @@ Controller.prototype._prepareQueryOptions = function (options) {
 
     if (parsedSkip.toString() !== options.skip) {
       response.errors.push(
-        Object.assign(
-          new Error(),
-          {
-            status: 'Bad Request',
-            code: 'Invalid Parameter',
-            details: 'The `skip` parameter must a number',
-            title: 'Invalid Skip Parameter Provided'
-          }
-        )
+        Object.assign(new Error(), {
+          status: 'Bad Request',
+          code: 'Invalid Parameter',
+          details: 'The `skip` parameter must a number',
+          title: 'Invalid Skip Parameter Provided'
+        })
       )
     } else if (parsedSkip < 0) {
       response.errors.push(
-        Object.assign(
-          new Error(),
-          {
-            status: 'Bad Request',
-            code: 'Invalid Parameter',
-            details: 'The `skip` parameter must be greater than or equal to zero',
-            title: 'Invalid Skip Parameter Provided'
-          }
-        )
+        Object.assign(new Error(), {
+          status: 'Bad Request',
+          code: 'Invalid Parameter',
+          details: 'The `skip` parameter must be greater than or equal to zero',
+          title: 'Invalid Skip Parameter Provided'
+        })
       )
     }
   }
 
   if (options.page && options.page <= 0) {
     response.errors.push(
-      Object.assign(
-        new Error(),
-        {
-          status: 'Bad Request',
-          code: 'Invalid Parameter',
-          details: 'The `page` parameter must be greater than zero',
-          title: 'Invalid Page Parameter Provided'
-        }
-      )
+      Object.assign(new Error(), {
+        status: 'Bad Request',
+        code: 'Invalid Parameter',
+        details: 'The `page` parameter must be greater than zero',
+        title: 'Invalid Page Parameter Provided'
+      })
     )
   }
 
@@ -158,7 +149,7 @@ Controller.prototype._prepareQueryOptions = function (options) {
 
 Controller.prototype.ID_PATTERN = ID_PATTERN
 
-module.exports = function (model) {
+module.exports = function(model) {
   return new Controller(model)
 }
 

@@ -7,7 +7,7 @@ const roleModel = require('./role')
 // hashing algorithm.
 const HASH_VERSION = 1
 
-const Client = function () {
+const Client = function() {
   this.schema = {
     clientId: {
       required: true,
@@ -49,7 +49,7 @@ const Client = function () {
  * @param  {Object} input
  * @return {Promise}
  */
-Client.prototype.broadcastWrite = function (input) {
+Client.prototype.broadcastWrite = function(input) {
   if (typeof this.saveCallback === 'function') {
     return this.saveCallback().then(() => input)
   }
@@ -64,43 +64,43 @@ Client.prototype.broadcastWrite = function (input) {
  * @param  {Boolean} options.allowAccessType
  * @return {Promise<Object>}
  */
-Client.prototype.create = function (client, {
-  allowAccessType = false
-} = {}) {
+Client.prototype.create = function(client, {allowAccessType = false} = {}) {
   const allowedFields = allowAccessType ? ['accessType'] : []
 
   return this.validate(client, {
     allowedFields
-  }).then(() => {
-    return this.model.find({
-      options: {
-        fields: {
-          _id: 1
-        }
-      },
-      query: {
-        clientId: client.clientId
-      }
-    })
-  }).then(({results}) => {
-    if (results.length > 0) {
-      return Promise.reject(
-        new Error('CLIENT_EXISTS')
-      )
-    }
-
-    return this.hashSecret(client.secret, client)
-  }).then(hashedsecret => {
-    client.secret = hashedsecret
-
-    return this.model.create({
-      documents: [client],
-      rawOutput: true,
-      validate: false
-    })
-  }).then(result => {
-    return this.broadcastWrite(result)
   })
+    .then(() => {
+      return this.model.find({
+        options: {
+          fields: {
+            _id: 1
+          }
+        },
+        query: {
+          clientId: client.clientId
+        }
+      })
+    })
+    .then(({results}) => {
+      if (results.length > 0) {
+        return Promise.reject(new Error('CLIENT_EXISTS'))
+      }
+
+      return this.hashSecret(client.secret, client)
+    })
+    .then(hashedsecret => {
+      client.secret = hashedsecret
+
+      return this.model.create({
+        documents: [client],
+        rawOutput: true,
+        validate: false
+      })
+    })
+    .then(result => {
+      return this.broadcastWrite(result)
+    })
 }
 
 /**
@@ -109,14 +109,16 @@ Client.prototype.create = function (client, {
  * @param  {String} clientId
  * @return {Promise<Object>}
  */
-Client.prototype.delete = function (clientId) {
-  return this.model.delete({
-    query: {
-      clientId
-    }
-  }).then(result => {
-    return this.broadcastWrite(result)
-  })
+Client.prototype.delete = function(clientId) {
+  return this.model
+    .delete({
+      query: {
+        clientId
+      }
+    })
+    .then(result => {
+      return this.broadcastWrite(result)
+    })
 }
 
 /**
@@ -127,7 +129,7 @@ Client.prototype.delete = function (clientId) {
  * @param  {Object} client
  * @return {Object}
  */
-Client.prototype.formatForOutput = function (client) {
+Client.prototype.formatForOutput = function(client) {
   const sanitisedClient = Object.keys(this.schema).reduce((output, key) => {
     if (!this.schema[key].hidden) {
       let value = client[key] || this.schema[key].default
@@ -158,42 +160,45 @@ Client.prototype.formatForOutput = function (client) {
  * @param  {String} secret
  * @return {Promise<Object>}
  */
-Client.prototype.get = function (clientId, secret) {
+Client.prototype.get = function(clientId, secret) {
   const query = {}
 
   if (typeof clientId === 'string') {
     query.clientId = clientId
   }
 
-  return this.model.find({
-    query
-  }).then(response => {
-    const {results} = response
-    const mustValidateSecret = results.length === 1 &&
-      typeof secret === 'string'
-    const [record] = results
-    const secretValidation = mustValidateSecret
-      ? this.validateSecret(record.secret, secret, record._hashVersion)
-      : Promise.resolve(true)
+  return this.model
+    .find({
+      query
+    })
+    .then(response => {
+      const {results} = response
+      const mustValidateSecret =
+        results.length === 1 && typeof secret === 'string'
+      const [record] = results
+      const secretValidation = mustValidateSecret
+        ? this.validateSecret(record.secret, secret, record._hashVersion)
+        : Promise.resolve(true)
 
-    return secretValidation.then(secretIsValid => {
-      if (!secretIsValid) {
-        return []
-      }
+      return secretValidation.then(secretIsValid => {
+        if (!secretIsValid) {
+          return []
+        }
 
-      return results.map(result => {
-        const resources = new ACLMatrix(result.resources)
+        return results.map(result => {
+          const resources = new ACLMatrix(result.resources)
 
-        return Object.assign({}, result, {
-          resources: resources.getAll()
+          return Object.assign({}, result, {
+            resources: resources.getAll()
+          })
         })
       })
     })
-  }).then(results => {
-    return {
-      results
-    }
-  })
+    .then(results => {
+      return {
+        results
+      }
+    })
 }
 
 /**
@@ -204,7 +209,7 @@ Client.prototype.get = function (clientId, secret) {
  * @param  {Object}  target
  * @return {Promise<String>}
  */
-Client.prototype.hashSecret = function (secret, target) {
+Client.prototype.hashSecret = function(secret, target) {
   if (!config.get('auth.hashSecrets')) {
     return Promise.resolve(secret)
   }
@@ -224,8 +229,8 @@ Client.prototype.hashSecret = function (secret, target) {
  * @param  {Object}  client
  * @return {Boolean}
  */
-Client.prototype.isAdmin = function (client) {
-  return client && (client.accessType === 'admin')
+Client.prototype.isAdmin = function(client) {
+  return client && client.accessType === 'admin'
 }
 
 /**
@@ -236,57 +241,55 @@ Client.prototype.isAdmin = function (client) {
  * @param  {Object} access   Access matrix
  * @return {Promise<Object>}
  */
-Client.prototype.resourceAdd = function (clientId, resource, access) {
-  return this.model.find({
-    options: {
-      fields: {
-        resources: 1
-      }
-    },
-    query: {
-      clientId
-    }
-  }).then(({results}) => {
-    if (results.length === 0) {
-      return Promise.reject(
-        new Error('CLIENT_NOT_FOUND')
-      )
-    }
-
-    const resources = new ACLMatrix(
-      results[0].resources
-    )
-
-    resources.validate(access)
-
-    if (resources.get(resource)) {
-      return Promise.reject(
-        new Error('CLIENT_HAS_RESOURCE')
-      )
-    }
-
-    resources.set(resource, access)
-
-    return this.model.update({
+Client.prototype.resourceAdd = function(clientId, resource, access) {
+  return this.model
+    .find({
+      options: {
+        fields: {
+          resources: 1
+        }
+      },
       query: {
         clientId
-      },
-      rawOutput: true,
-      update: {
-        resources: resources.getAll({
-          getArrayNotation: true,
-          stringifyObjects: true
-        })
-      },
-      validate: false
+      }
     })
-  }).then(result => {
-    return this.broadcastWrite(result)
-  }).then(({results}) => {
-    return {
-      results: results.map(client => this.formatForOutput(client))
-    }
-  })
+    .then(({results}) => {
+      if (results.length === 0) {
+        return Promise.reject(new Error('CLIENT_NOT_FOUND'))
+      }
+
+      const resources = new ACLMatrix(results[0].resources)
+
+      resources.validate(access)
+
+      if (resources.get(resource)) {
+        return Promise.reject(new Error('CLIENT_HAS_RESOURCE'))
+      }
+
+      resources.set(resource, access)
+
+      return this.model.update({
+        query: {
+          clientId
+        },
+        rawOutput: true,
+        update: {
+          resources: resources.getAll({
+            getArrayNotation: true,
+            stringifyObjects: true
+          })
+        },
+        validate: false
+      })
+    })
+    .then(result => {
+      return this.broadcastWrite(result)
+    })
+    .then(({results}) => {
+      return {
+        results: results.map(client => this.formatForOutput(client))
+      }
+    })
 }
 
 /**
@@ -296,52 +299,50 @@ Client.prototype.resourceAdd = function (clientId, resource, access) {
  * @param  {String} resource The name of the resource
  * @return {Promise<Object>}
  */
-Client.prototype.resourceRemove = function (clientId, resource) {
-  return this.model.find({
-    options: {
-      fields: {
-        resources: 1
-      }
-    },
-    query: {
-      clientId
-    }
-  }).then(({results}) => {
-    if (results.length === 0) {
-      return Promise.reject(
-        new Error('CLIENT_NOT_FOUND')
-      )
-    }
-
-    const resources = new ACLMatrix(
-      results[0].resources
-    )
-
-    if (!resources.get(resource)) {
-      return Promise.reject(
-        new Error('CLIENT_DOES_NOT_HAVE_RESOURCE')
-      )
-    }
-
-    resources.remove(resource)
-
-    return this.model.update({
+Client.prototype.resourceRemove = function(clientId, resource) {
+  return this.model
+    .find({
+      options: {
+        fields: {
+          resources: 1
+        }
+      },
       query: {
         clientId
-      },
-      rawOutput: true,
-      update: {
-        resources: resources.getAll()
-      },
-      validate: false
+      }
     })
-  }).then(result => {
-    return this.broadcastWrite(result)
-  }).then(({results}) => {
-    return {
-      results: results.map(client => this.formatForOutput(client))
-    }
-  })
+    .then(({results}) => {
+      if (results.length === 0) {
+        return Promise.reject(new Error('CLIENT_NOT_FOUND'))
+      }
+
+      const resources = new ACLMatrix(results[0].resources)
+
+      if (!resources.get(resource)) {
+        return Promise.reject(new Error('CLIENT_DOES_NOT_HAVE_RESOURCE'))
+      }
+
+      resources.remove(resource)
+
+      return this.model.update({
+        query: {
+          clientId
+        },
+        rawOutput: true,
+        update: {
+          resources: resources.getAll()
+        },
+        validate: false
+      })
+    })
+    .then(result => {
+      return this.broadcastWrite(result)
+    })
+    .then(({results}) => {
+      return {
+        results: results.map(client => this.formatForOutput(client))
+      }
+    })
 }
 
 /**
@@ -352,56 +353,54 @@ Client.prototype.resourceRemove = function (clientId, resource) {
  * @param  {Object} access   Update to access matrix
  * @return {Promise<Object>}
  */
-Client.prototype.resourceUpdate = function (clientId, resource, access) {
-  return this.model.find({
-    options: {
-      fields: {
-        resources: 1
-      }
-    },
-    query: {
-      clientId
-    }
-  }).then(({results}) => {
-    if (results.length === 0) {
-      return Promise.reject(
-        new Error('CLIENT_NOT_FOUND')
-      )
-    }
-
-    const resources = new ACLMatrix(
-      results[0].resources
-    )
-
-    if (!resources.get(resource)) {
-      return Promise.reject(
-        new Error('CLIENT_DOES_NOT_HAVE_RESOURCE')
-      )
-    }
-
-    resources.validate(access)
-    resources.set(resource, access)
-
-    return this.model.update({
+Client.prototype.resourceUpdate = function(clientId, resource, access) {
+  return this.model
+    .find({
+      options: {
+        fields: {
+          resources: 1
+        }
+      },
       query: {
         clientId
-      },
-      rawOutput: true,
-      update: {
-        resources: resources.getAll({
-          getArrayNotation: true,
-          stringifyObjects: true
-        })
-      },
-      validate: false
+      }
     })
-  }).then(result => {
-    return this.broadcastWrite(result)
-  }).then(({results}) => {
-    return {
-      results: results.map(client => this.formatForOutput(client))
-    }
-  })
+    .then(({results}) => {
+      if (results.length === 0) {
+        return Promise.reject(new Error('CLIENT_NOT_FOUND'))
+      }
+
+      const resources = new ACLMatrix(results[0].resources)
+
+      if (!resources.get(resource)) {
+        return Promise.reject(new Error('CLIENT_DOES_NOT_HAVE_RESOURCE'))
+      }
+
+      resources.validate(access)
+      resources.set(resource, access)
+
+      return this.model.update({
+        query: {
+          clientId
+        },
+        rawOutput: true,
+        update: {
+          resources: resources.getAll({
+            getArrayNotation: true,
+            stringifyObjects: true
+          })
+        },
+        validate: false
+      })
+    })
+    .then(result => {
+      return this.broadcastWrite(result)
+    })
+    .then(({results}) => {
+      return {
+        results: results.map(client => this.formatForOutput(client))
+      }
+    })
 }
 
 /**
@@ -411,61 +410,64 @@ Client.prototype.resourceUpdate = function (clientId, resource, access) {
  * @param  {Array<String>}  roles
  * @return {Promise<Object>}
  */
-Client.prototype.roleAdd = function (clientId, roles) {
-  return this.model.find({
-    options: {
-      fields: {
-        _id: 1,
-        roles: 1
-      }
-    },
-    query: {
-      clientId
-    }
-  }).then(({results}) => {
-    if (results.length === 0) {
-      return Promise.reject(
-        new Error('CLIENT_NOT_FOUND')
-      )
-    }
-
-    const existingRoles = results[0].roles || []
-
-    return roleModel.get(roles).then(({results}) => {
-      const invalidRoles = roles.filter(role => {
-        return !results.find(dbRole => dbRole.name === role)
-      })
-
-      if (invalidRoles.length > 0) {
-        const error = new Error('INVALID_ROLE')
-
-        error.data = invalidRoles
-
-        return Promise.reject(error)
-      }
-
-      return existingRoles
-    })
-  }).then(existingRoles => {
-    const newRoles = [...new Set(existingRoles.concat(roles).sort())]
-
-    return this.model.update({
+Client.prototype.roleAdd = function(clientId, roles) {
+  return this.model
+    .find({
+      options: {
+        fields: {
+          _id: 1,
+          roles: 1
+        }
+      },
       query: {
         clientId
-      },
-      rawOutput: true,
-      update: {
-        roles: newRoles
-      },
-      validate: false
+      }
     })
-  }).then(result => {
-    return this.broadcastWrite(result)
-  }).then(({results}) => {
-    return {
-      results: results.map(client => this.formatForOutput(client))
-    }
-  })
+    .then(({results}) => {
+      if (results.length === 0) {
+        return Promise.reject(new Error('CLIENT_NOT_FOUND'))
+      }
+
+      const existingRoles = results[0].roles || []
+
+      return roleModel.get(roles).then(({results}) => {
+        const invalidRoles = roles.filter(role => {
+          return !results.find(dbRole => dbRole.name === role)
+        })
+
+        if (invalidRoles.length > 0) {
+          const error = new Error('INVALID_ROLE')
+
+          error.data = invalidRoles
+
+          return Promise.reject(error)
+        }
+
+        return existingRoles
+      })
+    })
+    .then(existingRoles => {
+      const newRoles = [...new Set(existingRoles.concat(roles).sort())]
+
+      return this.model.update({
+        query: {
+          clientId
+        },
+        rawOutput: true,
+        update: {
+          roles: newRoles
+        },
+        validate: false
+      })
+    })
+    .then(result => {
+      return this.broadcastWrite(result)
+    })
+    .then(({results}) => {
+      return {
+        results: results.map(client => this.formatForOutput(client))
+      }
+    })
 }
 
 /**
@@ -475,57 +477,63 @@ Client.prototype.roleAdd = function (clientId, roles) {
  * @param  {Array<String>}  roles
  * @return {Promise<Object>}
  */
-Client.prototype.roleRemove = function (clientId, roles) {
+Client.prototype.roleRemove = function(clientId, roles) {
   const rolesRemoved = []
 
-  return this.model.find({
-    options: {
-      fields: {
-        _id: 1,
-        roles: 1
-      }
-    },
-    query: {
-      clientId
-    }
-  }).then(({results}) => {
-    if (results.length === 0) {
-      return Promise.reject(
-        new Error('CLIENT_NOT_FOUND')
-      )
-    }
-
-    const existingRoles = results[0].roles || []
-    const newRoles = [...new Set(
-      existingRoles.filter(role => {
-        if (roles.includes(role)) {
-          rolesRemoved.push(role)
-
-          return false
+  return this.model
+    .find({
+      options: {
+        fields: {
+          _id: 1,
+          roles: 1
         }
-
-        return true
-      }).sort()
-    )]
-
-    return this.model.update({
+      },
       query: {
         clientId
-      },
-      rawOutput: true,
-      update: {
-        roles: newRoles
-      },
-      validate: false
+      }
     })
-  }).then(result => {
-    return this.broadcastWrite(result)
-  }).then(({results}) => {
-    return {
-      removed: rolesRemoved,
-      results: results.map(client => this.formatForOutput(client))
-    }
-  })
+    .then(({results}) => {
+      if (results.length === 0) {
+        return Promise.reject(new Error('CLIENT_NOT_FOUND'))
+      }
+
+      const existingRoles = results[0].roles || []
+      const newRoles = [
+        ...new Set(
+          existingRoles
+            .filter(role => {
+              if (roles.includes(role)) {
+                rolesRemoved.push(role)
+
+                return false
+              }
+
+              return true
+            })
+            .sort()
+        )
+      ]
+
+      return this.model.update({
+        query: {
+          clientId
+        },
+        rawOutput: true,
+        update: {
+          roles: newRoles
+        },
+        validate: false
+      })
+    })
+    .then(result => {
+      return this.broadcastWrite(result)
+    })
+    .then(({results}) => {
+      return {
+        removed: rolesRemoved,
+        results: results.map(client => this.formatForOutput(client))
+      }
+    })
 }
 
 /**
@@ -533,7 +541,7 @@ Client.prototype.roleRemove = function (clientId, roles) {
  *
  * @param {Object} model
  */
-Client.prototype.setModel = function (model) {
+Client.prototype.setModel = function(model) {
   this.model = model
 }
 
@@ -543,7 +551,7 @@ Client.prototype.setModel = function (model) {
  *
  * @param {Function} callback
  */
-Client.prototype.setWriteCallback = function (callback) {
+Client.prototype.setWriteCallback = function(callback) {
   this.saveCallback = callback
 }
 
@@ -556,7 +564,7 @@ Client.prototype.setWriteCallback = function (callback) {
  * @param  {Object} update
  * @return {Promise<Object>}
  */
-Client.prototype.update = function (clientId, update) {
+Client.prototype.update = function(clientId, update) {
   const {currentSecret, secret} = update
   const findQuery = {
     clientId
@@ -568,79 +576,79 @@ Client.prototype.update = function (clientId, update) {
   return this.validate(update, {
     blockedFields: ['clientId'],
     partial: true
-  }).then(() => {
-    return this.model.find({
-      options: {
-        fields: {
-          _hashVersion: 1,
-          data: 1,
-          secret: 1
-        }
-      },
-      query: findQuery
-    })
-  }).then(({results}) => {
-    if (results.length === 0) {
-      return Promise.reject(
-        new Error('CLIENT_NOT_FOUND')
-      )
-    }
-
-    const [record] = results
-
-    // If a `currentSecret` property was sent, we must validate it against the
-    // hashed secret in the database.
-    if (typeof currentSecret === 'string') {
-      return this.validateSecret(
-        record.secret,
-        currentSecret,
-        record._hashVersion
-      ).then(secretIsValid => {
-        if (!secretIsValid) {
-          return Promise.reject(
-            new Error('INVALID_SECRET')
-          )
-        }
-
-        return results
-      })
-    }
-
-    return results
-  }).then(results => {
-    // If we're trying to update the client's secret, we must hash it
-    // before sending it to the database.
-    if (typeof secret === 'string') {
-      return this.hashSecret(secret, update).then(hashedSecret => {
-        update.secret = hashedSecret
-
-        return results
-      })
-    }
-
-    return results
-  }).then(results => {
-    if (update.data) {
-      const mergedData = Object.assign({}, results[0].data, update.data)
-
-      Object.keys(mergedData).forEach(key => {
-        if (mergedData[key] === null) {
-          delete mergedData[key]
-        }
-      })
-
-      update.data = mergedData
-    }
-
-    return this.model.update({
-      query: {
-        clientId
-      },
-      rawOutput: true,
-      update,
-      validate: false
-    })
   })
+    .then(() => {
+      return this.model.find({
+        options: {
+          fields: {
+            _hashVersion: 1,
+            data: 1,
+            secret: 1
+          }
+        },
+        query: findQuery
+      })
+    })
+    .then(({results}) => {
+      if (results.length === 0) {
+        return Promise.reject(new Error('CLIENT_NOT_FOUND'))
+      }
+
+      const [record] = results
+
+      // If a `currentSecret` property was sent, we must validate it against the
+      // hashed secret in the database.
+      if (typeof currentSecret === 'string') {
+        return this.validateSecret(
+          record.secret,
+          currentSecret,
+          record._hashVersion
+        ).then(secretIsValid => {
+          if (!secretIsValid) {
+            return Promise.reject(new Error('INVALID_SECRET'))
+          }
+
+          return results
+        })
+      }
+
+      return results
+    })
+    .then(results => {
+      // If we're trying to update the client's secret, we must hash it
+      // before sending it to the database.
+      if (typeof secret === 'string') {
+        return this.hashSecret(secret, update).then(hashedSecret => {
+          update.secret = hashedSecret
+
+          return results
+        })
+      }
+
+      return results
+    })
+    .then(results => {
+      if (update.data) {
+        const mergedData = Object.assign({}, results[0].data, update.data)
+
+        Object.keys(mergedData).forEach(key => {
+          if (mergedData[key] === null) {
+            delete mergedData[key]
+          }
+        })
+
+        update.data = mergedData
+      }
+
+      return this.model.update({
+        query: {
+          clientId
+        },
+        rawOutput: true,
+        update,
+        validate: false
+      })
+    })
 }
 
 /**
@@ -654,11 +662,10 @@ Client.prototype.update = function (clientId, update) {
  * @param  {Boolean}  options.partial Whether this is a partial value
  * @return {Promise}
  */
-Client.prototype.validate = function (client, {
-  allowedFields = [],
-  blockedFields = [],
-  partial = false
-} = {}) {
+Client.prototype.validate = function(
+  client,
+  {allowedFields = [], blockedFields = [], partial = false} = {}
+) {
   const missingFields = Object.keys(this.schema).filter(field => {
     return this.schema[field].required && client[field] === undefined
   })
@@ -712,15 +719,13 @@ Client.prototype.validate = function (client, {
  * @param  {String}   candidate
  * @return {Promise<Boolean>}
  */
-Client.prototype.validateSecret = function (hash, candidate, hashVersion) {
+Client.prototype.validateSecret = function(hash, candidate, hashVersion) {
   if (!config.get('auth.hashSecrets')) {
     return Promise.resolve(hash === candidate)
   }
 
   if (hashVersion !== HASH_VERSION) {
-    return Promise.reject(
-      new Error('CLIENT_NEEDS_UPGRADE')
-    )
+    return Promise.reject(new Error('CLIENT_NEEDS_UPGRADE'))
   }
 
   return bcrypt.compare(candidate, hash)

@@ -8,21 +8,19 @@ const role = require('./role')
 const ERROR_FORBIDDEN = 'FORBIDDEN'
 const ERROR_UNAUTHORISED = 'UNAUTHORISED'
 
-const ACL = function () {
+const ACL = function() {
   this.resources = {}
 
   this.connect()
 }
 
-ACL.prototype.connect = function () {
+ACL.prototype.connect = function() {
   // Establishing connection for access model.
-  const accessConnection = Connection(
-    {
-      collection: config.get('auth.accessCollection'),
-      database: config.get('auth.database'),
-      override: true
-    }
-  )
+  const accessConnection = Connection({
+    collection: config.get('auth.accessCollection'),
+    database: config.get('auth.database'),
+    override: true
+  })
   const accessModel = Model(
     config.get('auth.accessCollection'),
     {},
@@ -60,13 +58,11 @@ ACL.prototype.connect = function () {
   client.setModel(clientModel)
 
   // Establishing connection for role model.
-  const roleConnection = Connection(
-    {
-      collection: config.get('auth.roleCollection'),
-      database: config.get('auth.database'),
-      override: true
-    }
-  )
+  const roleConnection = Connection({
+    collection: config.get('auth.roleCollection'),
+    database: config.get('auth.database'),
+    override: true
+  })
 
   const roleModel = Model(
     config.get('auth.roleCollection'),
@@ -82,7 +78,7 @@ ACL.prototype.connect = function () {
   role.setModel(roleModel)
 }
 
-ACL.prototype.createError = function (client) {
+ACL.prototype.createError = function(client) {
   // If the client exists and there is no error associated with it, it
   // means that a valid bearer token was supplied, but it doesn't have the
   // right permissions to perform the operation - i.e. the request is
@@ -95,15 +91,15 @@ ACL.prototype.createError = function (client) {
   return new Error(ERROR_UNAUTHORISED)
 }
 
-ACL.prototype.getResources = function () {
+ACL.prototype.getResources = function() {
   return this.resources
 }
 
-ACL.prototype.hasResource = function (resource) {
+ACL.prototype.hasResource = function(resource) {
   return this.resources[resource] !== undefined
 }
 
-ACL.prototype.registerResource = function (name, description = null) {
+ACL.prototype.registerResource = function(name, description = null) {
   this.resources[name] = {
     description
   }

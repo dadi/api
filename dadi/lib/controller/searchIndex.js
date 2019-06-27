@@ -4,7 +4,7 @@ const help = require('../help')
 const log = require('@dadi/logger')
 const search = require('../model/search')
 
-const SearchIndex = function (server) {
+const SearchIndex = function(server) {
   this.server = server
 
   server.app.routeMethods('/api/index', {
@@ -12,7 +12,7 @@ const SearchIndex = function (server) {
   })
 }
 
-SearchIndex.prototype.post = function (req, res, next) {
+SearchIndex.prototype.post = function(req, res, next) {
   if (!req.dadiApiClient.clientId) {
     return help.sendBackJSON(null, res, next)(
       acl.createError(req.dadiApiClient)
@@ -30,8 +30,8 @@ SearchIndex.prototype.post = function (req, res, next) {
   const models = Object.keys(this.server.components)
     .map(key => {
       const component = this.server.components[key]
-      const hasModel = component.model &&
-        component.model.constructor.name === 'Model'
+      const hasModel =
+        component.model && component.model.constructor.name === 'Model'
 
       return hasModel ? component.model : null
     })

@@ -11,7 +11,7 @@ const config = require(path.join(__dirname, '/../../../config'))
  * @constructor
  * @classdesc
  */
-const DiskStorage = function (fileName) {
+const DiskStorage = function(fileName) {
   this.basePath = path.resolve(config.get('media.basePath'))
   this.fileName = fileName
 }
@@ -19,18 +19,18 @@ const DiskStorage = function (fileName) {
 /**
  * Set the path for uploading a file
  */
-DiskStorage.prototype.setFullPath = function (folderPath) {
+DiskStorage.prototype.setFullPath = function(folderPath) {
   this.path = path.join(this.basePath, folderPath)
 }
 
 /**
  * Get the full URL for the file, including path and filename
  */
-DiskStorage.prototype.getFullUrl = function () {
+DiskStorage.prototype.getFullUrl = function() {
   return path.join(this.path, this.fileName)
 }
 
-DiskStorage.prototype.get = function (filePath, route, req, res, next) {
+DiskStorage.prototype.get = function(filePath, route, req, res, next) {
   // `serveStatic` will look at the entire URL to find the file it needs to
   // serve, but we're not serving files from the root. To get around this, we
   // pass it a modified version of the URL, where the root URL becomes just the
@@ -55,7 +55,7 @@ DiskStorage.prototype.get = function (filePath, route, req, res, next) {
  * @param {Stream} stream - the stream containing the uploaded file
  * @param {string} folderPath - the directory structure in which to store the file
  */
-DiskStorage.prototype.put = function (stream, folderPath) {
+DiskStorage.prototype.put = function(stream, folderPath) {
   this.setFullPath(folderPath)
 
   return new Promise((resolve, reject) => {
@@ -74,7 +74,8 @@ DiskStorage.prototype.put = function (stream, folderPath) {
           // file exists, give it a new name
           const pathParts = path.parse(filePath)
 
-          newFileName = pathParts.name + '-' + Date.now().toString() + pathParts.ext
+          newFileName =
+            pathParts.name + '-' + Date.now().toString() + pathParts.ext
           filePath = path.join(this.path, newFileName)
         }
 
@@ -82,7 +83,7 @@ DiskStorage.prototype.put = function (stream, folderPath) {
           path: `${folderPath}/${newFileName || this.fileName}`
         }
 
-        function lengthListener (length) {
+        function lengthListener(length) {
           data.contentLength = length
         }
 
@@ -101,7 +102,7 @@ DiskStorage.prototype.put = function (stream, folderPath) {
  *
  * @param {Object} file - the media file's database record
  */
-DiskStorage.prototype.delete = function (fileDocument) {
+DiskStorage.prototype.delete = function(fileDocument) {
   return new Promise((resolve, reject) => {
     const filePath = path.join(this.basePath, fileDocument.path)
 
@@ -115,7 +116,7 @@ DiskStorage.prototype.delete = function (fileDocument) {
   })
 }
 
-module.exports = function (fileName) {
+module.exports = function(fileName) {
   return new DiskStorage(fileName)
 }
 

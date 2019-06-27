@@ -5,7 +5,10 @@ const mkdirp = require('mkdirp')
 const path = require('path')
 
 const currentPath = process.cwd() // should be node_modules/@dadi/api
-const configPath = path.join(__dirname, '../config/config.development.json.sample')
+const configPath = path.join(
+  __dirname,
+  '../config/config.development.json.sample'
+)
 const destinationDir = path.join(currentPath, '../../../config')
 const destinationFile = path.join(destinationDir, 'config.development.json')
 
@@ -21,7 +24,7 @@ if (currentPath.indexOf('node_modules') !== -1) {
         fs.readFile(configPath, (err, data) => {
           if (err) throw err
 
-          fs.writeFile(destinationFile, data, (err) => {
+          fs.writeFile(destinationFile, data, err => {
             if (err) throw err
 
             console.log('API configuration created at', destinationFile)

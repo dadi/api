@@ -10,7 +10,7 @@ const ACCESS_TYPES = [
   'updateOwn'
 ]
 
-const Matrix = function (map) {
+const Matrix = function(map) {
   map = this._convertArrayNotationToObjectNotation(map)
 
   this.map = this._convertACLObjects(map || {}, {
@@ -27,7 +27,7 @@ const Matrix = function (map) {
  * @param  {Object} map
  * @return {Object}
  */
-Matrix.prototype._addFalsyTypes = function (map) {
+Matrix.prototype._addFalsyTypes = function(map) {
   return Object.keys(map).reduce((output, resource) => {
     const formattedResource = {}
 
@@ -50,14 +50,11 @@ Matrix.prototype._addFalsyTypes = function (map) {
  * @param  {Boolean} options.shouldStringify
  * @return {Object}
  */
-Matrix.prototype._convertACLObjects = function (map, {
-  shouldStringify
-} = {}) {
+Matrix.prototype._convertACLObjects = function(map, {shouldStringify} = {}) {
   return Object.keys(map).reduce((output, resource) => {
-    output[resource] = this._convertACLObjectsInMatrix(
-      map[resource],
-      {shouldStringify}
-    )
+    output[resource] = this._convertACLObjectsInMatrix(map[resource], {
+      shouldStringify
+    })
 
     return output
   }, {})
@@ -72,37 +69,44 @@ Matrix.prototype._convertACLObjects = function (map, {
  * @param  {Boolean} options.shouldStringify
  * @return {Object}
  */
-Matrix.prototype._convertACLObjectsInMatrix = function (matrix, {
-  shouldStringify
-} = {}) {
+Matrix.prototype._convertACLObjectsInMatrix = function(
+  matrix,
+  {shouldStringify} = {}
+) {
   const fromType = shouldStringify ? 'object' : 'string'
   const transformFn = shouldStringify ? JSON.stringify : JSON.parse
 
   return Object.keys(matrix).reduce((sanitised, accessType) => {
     if (typeof matrix[accessType] === 'object') {
-      sanitised[accessType] = Object.keys(matrix[accessType]).reduce((value, key) => {
-        if (value === false) {
-          return value
-        }
-
-        if (typeof matrix[accessType][key] === fromType) {
-          try {
-            const transformedValue = transformFn(matrix[accessType][key])
-
-            value[key] = transformedValue
-          } catch (error) {
-            log.error({
-              module: 'ACL matrix'
-            }, error)
-
-            value = false
+      sanitised[accessType] = Object.keys(matrix[accessType]).reduce(
+        (value, key) => {
+          if (value === false) {
+            return value
           }
-        } else {
-          value[key] = matrix[accessType][key]
-        }
 
-        return value
-      }, {})
+          if (typeof matrix[accessType][key] === fromType) {
+            try {
+              const transformedValue = transformFn(matrix[accessType][key])
+
+              value[key] = transformedValue
+            } catch (error) {
+              log.error(
+                {
+                  module: 'ACL matrix'
+                },
+                error
+              )
+
+              value = false
+            }
+          } else {
+            value[key] = matrix[accessType][key]
+          }
+
+          return value
+        },
+        {}
+      )
     } else {
       sanitised[accessType] = matrix[accessType]
     }
@@ -118,7 +122,7 @@ Matrix.prototype._convertACLObjectsInMatrix = function (matrix, {
  * @param  {Array} input
  * @return {Object}
  */
-Matrix.prototype._convertArrayNotationToObjectNotation = function (input) {
+Matrix.prototype._convertArrayNotationToObjectNotation = function(input) {
   if (!Array.isArray(input)) {
     return input
   }
@@ -139,7 +143,7 @@ Matrix.prototype._convertArrayNotationToObjectNotation = function (input) {
  * @param  {Object} input
  * @return {Array}
  */
-Matrix.prototype._convertObjectNotationToArrayNotation = function (input) {
+Matrix.prototype._convertObjectNotationToArrayNotation = function(input) {
   if (Array.isArray(input)) {
     return input
   }
@@ -164,12 +168,10 @@ Matrix.prototype._convertObjectNotationToArrayNotation = function (input) {
  * @param  {Boolean} options.stringifyObjects Get stringified version of ACL objects
  * @return {Object}
  */
-Matrix.prototype.get = function (name, {
-  addFalsyTypes,
-  getArrayNotation,
-  parseObjects,
-  stringifyObjects
-} = {}) {
+Matrix.prototype.get = function(
+  name,
+  {addFalsyTypes, getArrayNotation, parseObjects, stringifyObjects} = {}
+) {
   const map = this.getAll({
     addFalsyTypes,
     getArrayNotation,
@@ -189,7 +191,7 @@ Matrix.prototype.get = function (name, {
  * @param  {Boolean} options.stringifyObjects Get stringified version of ACL objects
  * @return {Object}
  */
-Matrix.prototype.getAll = function ({
+Matrix.prototype.getAll = function({
   addFalsyTypes,
   getArrayNotation,
   parseObjects,
@@ -223,7 +225,7 @@ Matrix.prototype.getAll = function ({
  *
  * @param  {String} name
  */
-Matrix.prototype.remove = function (name) {
+Matrix.prototype.remove = function(name) {
   delete this.map[name]
 }
 
@@ -233,17 +235,12 @@ Matrix.prototype.remove = function (name) {
  * @param {String} name
  * @param {Object} matrix
  */
-Matrix.prototype.set = function (name, matrix) {
-  const sanitisedMatrix = this._convertACLObjectsInMatrix(
-    matrix,
-    {shouldStringify: false}
-  )
+Matrix.prototype.set = function(name, matrix) {
+  const sanitisedMatrix = this._convertACLObjectsInMatrix(matrix, {
+    shouldStringify: false
+  })
 
-  this.map[name] = Object.assign(
-    {},
-    this.map[name],
-    sanitisedMatrix
-  )
+  this.map[name] = Object.assign({}, this.map[name], sanitisedMatrix)
 }
 
 /**
@@ -252,7 +249,7 @@ Matrix.prototype.set = function (name, matrix) {
  *
  * @param  {Object} matrix
  */
-Matrix.prototype.validate = function (matrix) {
+Matrix.prototype.validate = function(matrix) {
   const errors = []
 
   if (typeof matrix === 'object') {
@@ -302,18 +299,14 @@ Matrix.prototype.validate = function (matrix) {
                 }
               }
             } else {
-              errors.push(
-                `Invalid key in access matrix: ${type}.${key}`
-              )
+              errors.push(`Invalid key in access matrix: ${type}.${key}`)
             }
           })
 
           break
 
         default:
-          errors.push(
-            `Invalid value for ${type}. Expected Boolean or Object`
-          )
+          errors.push(`Invalid value for ${type}. Expected Boolean or Object`)
       }
     })
   } else {

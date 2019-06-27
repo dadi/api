@@ -33,7 +33,7 @@ const logger = require('@dadi/logger')
  * @param  {Number}  version - version of the document to retrieve
  * @return {Promise<ResultSet>}
  */
-function get ({
+function get({
   client,
   language,
   query = {},
@@ -57,7 +57,8 @@ function get ({
           Promise.resolve(hook.apply(current, this.schema, this.name, req))
             .then(newQuery => {
               callback(null, newQuery)
-            }).catch(error => {
+            })
+            .catch(error => {
               callback(hook.formatError(error))
             })
         },
@@ -72,73 +73,74 @@ function get ({
     } else {
       resolve(query)
     }
-  }).then(query => {
-    return this.find({
-      client,
-      isRestIDQuery,
-      language,
-      query,
-      options,
-      version
-    })
-  }).then(({metadata, results}) => {
-    if (isRestIDQuery && results.length === 0) {
-      const error = new Error('Document not found')
-
-      error.statusCode = 404
-
-      return Promise.reject(error)
-    }
-
-    const formatter = rawOutput
-      ? Promise.resolve(results)
-      : this.formatForOutput(
-          results,
-        {
-          client,
-          composeOverride: options.compose,
-          language,
-          urlFields: options.fields
-        }
-        )
-
-    return formatter.then(results => {
-      return {results, metadata}
-    })
-  }).then(response => {
-    const {hooks} = this.settings
-
-    if (hooks && hooks.afterGet) {
-      return new Promise((resolve, reject) => {
-        async.reduce(
-          hooks.afterGet,
-          response,
-          (current, hookConfig, callback) => {
-            const hook = new Hook(hookConfig, 'afterGet')
-
-            Promise.resolve(hook.apply(current, this.schema, this.name, req))
-              .then(newResults => {
-                callback((newResults === null) ? {} : null, newResults)
-              }).catch(error => {
-                callback(hook.formatError(error))
-              })
-          },
-          (error, resultsAfterHooks) => {
-            if (error) {
-              logger.error({ module: 'model' }, error)
-            }
-
-            resolve(resultsAfterHooks)
-          }
-        )
-      })
-    }
-
-    return response
   })
+    .then(query => {
+      return this.find({
+        client,
+        isRestIDQuery,
+        language,
+        query,
+        options,
+        version
+      })
+    })
+    .then(({metadata, results}) => {
+      if (isRestIDQuery && results.length === 0) {
+        const error = new Error('Document not found')
+
+        error.statusCode = 404
+
+        return Promise.reject(error)
+      }
+
+      const formatter = rawOutput
+        ? Promise.resolve(results)
+        : this.formatForOutput(results, {
+            client,
+            composeOverride: options.compose,
+            language,
+            urlFields: options.fields
+          })
+
+      return formatter.then(results => {
+        return {results, metadata}
+      })
+    })
+    .then(response => {
+      const {hooks} = this.settings
+
+      if (hooks && hooks.afterGet) {
+        return new Promise((resolve, reject) => {
+          async.reduce(
+            hooks.afterGet,
+            response,
+            (current, hookConfig, callback) => {
+              const hook = new Hook(hookConfig, 'afterGet')
+
+              Promise.resolve(hook.apply(current, this.schema, this.name, req))
+                .then(newResults => {
+                  callback(newResults === null ? {} : null, newResults)
+                })
+                .catch(error => {
+                  callback(hook.formatError(error))
+                })
+            },
+            (error, resultsAfterHooks) => {
+              if (error) {
+                logger.error({module: 'model'}, error)
+              }
+
+              resolve(resultsAfterHooks)
+            }
+          )
+        })
+      }
+
+      return response
+    })
 }
 
-module.exports = function () {
+module.exports = function() {
   // Compatibility with legacy model API.
   // Signature: query, options, done, req
   if (arguments.length > 1) {
@@ -156,7 +158,8 @@ module.exports = function () {
       legacyArguments.options = arguments[1]
     }
 
-    get.call(this, legacyArguments)
+    get
+      .call(this, legacyArguments)
       .then(response => callback && callback(null, response))
       .catch(error => callback && callback(error))
 

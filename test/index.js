@@ -35,15 +35,17 @@ beforeEach(function() {
 })
 
 after(() => {
-  const payload = global.___dbOps.map(op => {
-    if (typeof op.file === 'string') {
-      return `#${op.file}`
-    } else if (typeof op.test === 'string') {
-      return `>${op.test}`
-    }
+  const payload = global.___dbOps
+    .map(op => {
+      if (typeof op.file === 'string') {
+        return `#${op.file}`
+      } else if (typeof op.test === 'string') {
+        return `>${op.test}`
+      }
 
-    return JSON.stringify(op, serialiser)
-  }).join('\n')
+      return JSON.stringify(op, serialiser)
+    })
+    .join('\n')
   const filePath = path.join(__dirname, 'data.apisnapshot')
 
   fs.writeFileSync(filePath, payload)

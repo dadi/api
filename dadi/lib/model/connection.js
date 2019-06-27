@@ -30,33 +30,32 @@ let connectionPool = {}
  * @param {ConnectionOptions} options
  * @api public
  */
-const Connection = function (options, storeName) {
+const Connection = function(options, storeName) {
   this.datastore = require('../datastore')(storeName)
 
   this.recovery = new Recovery({
     retries: config.get('databaseConnection.maxRetries')
   })
 
-  if (
-    options &&
-    this.datastore.settings.connectWithCollection !== true
-  ) {
+  if (options && this.datastore.settings.connectWithCollection !== true) {
     delete options.collection
   }
 
   // Setting up the reconnect method
   this.recovery.on('reconnect', opts => {
-    this.connect(options).then(db => {
-      let connectionError
+    this.connect(options)
+      .then(db => {
+        let connectionError
 
-      if (db.readyState !== 1) {
-        connectionError = new Error('Not connected')
-      }
+        if (db.readyState !== 1) {
+          connectionError = new Error('Not connected')
+        }
 
-      this.recovery.reconnected(connectionError)
-    }).catch(err => {
-      this.recovery.reconnected(err)
-    })
+        this.recovery.reconnected(connectionError)
+      })
+      .catch(err => {
+        this.recovery.reconnected(err)
+      })
   })
 
   this.recovery.on('reconnected', () => {
@@ -75,7 +74,7 @@ util.inherits(Connection, EventEmitter)
  *
  *
  */
-Connection.prototype.connect = function (options) {
+Connection.prototype.connect = function(options) {
   this.readyState = STATE_CONNECTING
 
   if (this.db) {
@@ -86,33 +85,38 @@ Connection.prototype.connect = function (options) {
 
   debug('connect %o', options)
 
-  return this.datastore.connect(options).then(() => {
-    this.readyState = STATE_CONNECTED
-    this.db = this.datastore
+  return this.datastore
+    .connect(options)
+    .then(() => {
+      this.readyState = STATE_CONNECTED
+      this.db = this.datastore
 
-    this.emit('connect', this.db)
+      this.emit('connect', this.db)
 
-    debug('DB connected: %o', this.db)
+      debug('DB connected: %o', this.db)
 
-    this.setUpEventListeners(this.db)
+      this.setUpEventListeners(this.db)
 
-    return this.db
-  }).catch(err => {
-    log.error({module: 'connection'}, err)
+      return this.db
+    })
+    .catch(err => {
+      log.error({module: 'connection'}, err)
 
-    if (!this.recovery.reconnecting()) {
-      this.recovery.reconnect()
-    }
+      if (!this.recovery.reconnecting()) {
+        this.recovery.reconnect()
+      }
 
-    const errorMessage = 'DB connection failed with connection string ' + this.datastore.connectionString
+      const errorMessage =
+        'DB connection failed with connection string ' +
+        this.datastore.connectionString
 
-    this.emit('disconnect', errorMessage)
+      this.emit('disconnect', errorMessage)
 
-    return Promise.reject(new Error(errorMessage))
-  })
+      return Promise.reject(new Error(errorMessage))
+    })
 }
 
-Connection.prototype.destroy = function () {
+Connection.prototype.destroy = function() {
   if (typeof this.datastore.destroy === 'function') {
     return Promise.resolve(this.datastore.destroy())
   }
@@ -120,11 +124,15 @@ Connection.prototype.destroy = function () {
   return Promise.resolve()
 }
 
-Connection.prototype.setUpEventListeners = function (db) {
+Connection.prototype.setUpEventListeners = function(db) {
   db.on('DB_ERROR', err => {
     log.error({module: 'connection'}, err)
 
-    this.emit('disconnect', 'DB connection failed with connection string ' + this.datastore.connectionString)
+    this.emit(
+      'disconnect',
+      'DB connection failed with connection string ' +
+        this.datastore.connectionString
+    )
 
     if (!this.recovery.reconnecting()) {
       this.recovery.reconnect()
@@ -145,7 +153,7 @@ Connection.prototype.setUpEventListeners = function (db) {
  * @returns {object}
  * @api public
  */
-module.exports = function (options, collection, storeName) {
+module.exports = function(options, collection, storeName) {
   try {
     const storeSettings = require(storeName).settings
 
@@ -154,7 +162,11 @@ module.exports = function (options, collection, storeName) {
     }
   } catch (err) {} // eslint-disable-line
 
-  const connectionKey = Object.keys(options).map(option => { return options[option] }).join(':')
+  const connectionKey = Object.keys(options)
+    .map(option => {
+      return options[option]
+    })
+    .join(':')
 
   // if a connection exists for the specified database, return it
   if (connectionPool[connectionKey]) {

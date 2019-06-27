@@ -2,7 +2,7 @@
 
 const exec = require('child_process').exec
 
-function currentBranch () {
+function currentBranch() {
   return new Promise((resolve, reject) => {
     exec('git branch --no-color', (err, out) => {
       if (err) return reject(err)
@@ -23,7 +23,8 @@ function currentBranch () {
 currentBranch().then(branch => {
   console.log('Checking branch name...')
 
-  if (branch !== 'master' &&
+  if (
+    branch !== 'master' &&
     branch !== 'develop' &&
     !/^feature\//.test(branch) &&
     !/^patch\//.test(branch) &&

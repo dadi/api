@@ -32,17 +32,9 @@ const debug = require('debug')('api:model')
  * @param  {Number}  version - version of the document to retrieve
  * @return {Promise<ResultSet>}
  */
-function find ({
-  client,
-  isRestIDQuery,
-  query = {},
-  options = {},
-  version
-} = {}) {
+function find({client, isRestIDQuery, query = {}, options = {}, version} = {}) {
   if (!this.connection.db) {
-    return Promise.reject(
-      new Error('DB_DISCONNECTED')
-    )
+    return Promise.reject(new Error('DB_DISCONNECTED'))
   }
 
   debug('Model find: %o %o', query, options)
@@ -61,7 +53,7 @@ function find ({
       // (e.g. author@people.name) and that collection is not the
       // one we're operating one, we exclude the field from the
       // projection.
-      if (collection && (collection !== this.name)) {
+      if (collection && collection !== this.name) {
         return
       }
 
@@ -75,7 +67,8 @@ function find ({
       // include a field and request a certain language, we must also include
       // that corresponding variation).
       config.get('i18n.languages').forEach(supportedLanguage => {
-        const langField = name + config.get('i18n.fieldCharacter') + supportedLanguage
+        const langField =
+          name + config.get('i18n.fieldCharacter') + supportedLanguage
 
         queryFields[langField] = options.fields[field]
       })
@@ -114,10 +107,7 @@ function find ({
     // If merging the request query with ACL data resulted in
     // an impossible query, we can simply return an empty result
     // set without even going to the database.
-    if (
-      query instanceof Error &&
-      query.message === 'EMPTY_RESULT_SET'
-    ) {
+    if (query instanceof Error && query.message === 'EMPTY_RESULT_SET') {
       return this._buildEmptyResponse(options)
     }
 
@@ -143,7 +133,7 @@ function find ({
   })
 }
 
-module.exports = function () {
+module.exports = function() {
   // Compatibility with legacy model API.
   // Signature: query, options, done
   if (arguments.length > 1) {
@@ -160,7 +150,8 @@ module.exports = function () {
       legacyArguments.options = arguments[1]
     }
 
-    find.call(this, legacyArguments)
+    find
+      .call(this, legacyArguments)
       .then(response => callback && callback(null, response))
       .catch(error => callback && callback(error))
 

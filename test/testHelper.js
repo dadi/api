@@ -5,11 +5,11 @@ const config = require(__dirname + '/../config.js')
 
 const _configs = []
 
-const TestHelper = function () {
+const TestHelper = function() {
   this.baseConfigPath = path.join(__dirname, '../config')
 }
 
-TestHelper.prototype.getConfig = function () {
+TestHelper.prototype.getConfig = function() {
   return new Promise((resolve, reject) => {
     const originalConfig = JSON.parse(this.originalConfigString)
 
@@ -17,17 +17,24 @@ TestHelper.prototype.getConfig = function () {
   })
 }
 
-TestHelper.prototype.updateConfig = function (configFile, configBlock) {
+TestHelper.prototype.updateConfig = function(configFile, configBlock) {
   debug('update config %s %o', configFile, configBlock)
 
   _configs.push(configFile)
 
   return new Promise((resolve, reject) => {
-    const configPath = path.join(this.baseConfigPath, configFile + '.' + config.get('env') + '.json')
+    const configPath = path.join(
+      this.baseConfigPath,
+      configFile + '.' + config.get('env') + '.json'
+    )
 
     this.originalConfigString = fs.readFileSync(configPath).toString()
 
-    const newConfig = Object.assign({}, JSON.parse(this.originalConfigString), configBlock)
+    const newConfig = Object.assign(
+      {},
+      JSON.parse(this.originalConfigString),
+      configBlock
+    )
 
     fs.writeFileSync(configPath, JSON.stringify(newConfig, null, 2))
     // config.loadFile(path.resolve(config.configPath()))
@@ -44,20 +51,26 @@ TestHelper.prototype.updateConfig = function (configFile, configBlock) {
   })
 }
 
-TestHelper.prototype.resetConfigs = function () {
+TestHelper.prototype.resetConfigs = function() {
   _configs.forEach(conf => {
     delete _configs[conf]
     this.resetConfig(conf).then(() => {})
   })
 }
 
-TestHelper.prototype.resetConfig = function (configFile) {
+TestHelper.prototype.resetConfig = function(configFile) {
   debug('reset config %s', configFile)
 
   return new Promise((resolve, reject) => {
-    const configPath = path.join(this.baseConfigPath, configFile + '.' + config.get('env') + '.json')
+    const configPath = path.join(
+      this.baseConfigPath,
+      configFile + '.' + config.get('env') + '.json'
+    )
 
-    fs.writeFileSync(configPath, JSON.stringify(JSON.parse(this.originalConfigString), null, 2))
+    fs.writeFileSync(
+      configPath,
+      JSON.stringify(JSON.parse(this.originalConfigString), null, 2)
+    )
     // config.loadFile(path.resolve(config.configPath()))
     delete require.cache[configPath]
 
@@ -67,7 +80,7 @@ TestHelper.prototype.resetConfig = function (configFile) {
 
 let instance
 
-module.exports = function () {
+module.exports = function() {
   if (!instance) {
     instance = new TestHelper()
   }

@@ -17,22 +17,52 @@ const AuthMiddleware = require(path.join(__dirname, '/auth'))
 const cache = require(path.join(__dirname, '/cache'))
 const Connection = require(path.join(__dirname, '/model/connection'))
 const cors = require(path.join(__dirname, '/cors'))
-const ApiConfigController = require(path.join(__dirname, '/controller/apiConfig'))
-const CacheFlushController = require(path.join(__dirname, '/controller/cacheFlush'))
+const ApiConfigController = require(path.join(
+  __dirname,
+  '/controller/apiConfig'
+))
+const CacheFlushController = require(path.join(
+  __dirname,
+  '/controller/cacheFlush'
+))
 const ClientsController = require(path.join(__dirname, '/controller/clients'))
-const CollectionsController = require(path.join(__dirname, '/controller/collections'))
-const DocumentController = require(path.join(__dirname, '/controller/documents'))
-const FeatureQueryHandler = require(path.join(__dirname, '/controller/featureQueryHandler'))
+const CollectionsController = require(path.join(
+  __dirname,
+  '/controller/collections'
+))
+const DocumentController = require(path.join(
+  __dirname,
+  '/controller/documents'
+))
+const FeatureQueryHandler = require(path.join(
+  __dirname,
+  '/controller/featureQueryHandler'
+))
 const EndpointController = require(path.join(__dirname, '/controller/endpoint'))
-const EndpointsController = require(path.join(__dirname, '/controller/endpoints'))
+const EndpointsController = require(path.join(
+  __dirname,
+  '/controller/endpoints'
+))
 const HooksController = require(path.join(__dirname, '/controller/hooks'))
-const LanguagesController = require(path.join(__dirname, '/controller/languages'))
+const LanguagesController = require(path.join(
+  __dirname,
+  '/controller/languages'
+))
 const MediaController = require(path.join(__dirname, '/controller/media'))
-const ResourcesController = require(path.join(__dirname, '/controller/resources'))
+const ResourcesController = require(path.join(
+  __dirname,
+  '/controller/resources'
+))
 const RolesController = require(path.join(__dirname, '/controller/roles'))
 const SearchController = require(path.join(__dirname, '/controller/search'))
-const SearchIndexController = require(path.join(__dirname, '/controller/searchIndex'))
-const StatusEndpointController = require(path.join(__dirname, '/controller/status'))
+const SearchIndexController = require(path.join(
+  __dirname,
+  '/controller/searchIndex'
+))
+const StatusEndpointController = require(path.join(
+  __dirname,
+  '/controller/status'
+))
 const dadiBoot = require('@dadi/boot')
 const Model = require(path.join(__dirname, '/model'))
 const mediaModel = require(path.join(__dirname, '/model/media'))
@@ -53,7 +83,7 @@ if (config.get('env') !== 'test') {
 // var idParam = ':id([a-fA-F0-9-]*)?'
 // TODO: allow configurable id param?
 
-const Server = function () {
+const Server = function() {
   this.COMPONENT_TYPE = {
     COLLECTION: 1,
     CUSTOM_ENDPOINT: 2,
@@ -65,14 +95,16 @@ const Server = function () {
   this.docs = {}
 }
 
-Server.prototype.run = function (done) {
+Server.prototype.run = function(done) {
   require('console-stamp')(console, 'yyyy-mm-dd HH:MM:ss.l')
 
   if (config.get('cluster')) {
     if (cluster.isMaster) {
       const numWorkers = require('os').cpus().length
 
-      log.info('Starting DADI API in cluster mode, using ' + numWorkers + ' workers.')
+      log.info(
+        'Starting DADI API in cluster mode, using ' + numWorkers + ' workers.'
+      )
       log.info('Master cluster setting up ' + numWorkers + ' workers...')
 
       // Start new workers
@@ -81,13 +113,20 @@ Server.prototype.run = function (done) {
       }
 
       // New worker alive
-      cluster.on('online', function (worker) {
+      cluster.on('online', function(worker) {
         log.info('Worker ' + worker.process.pid + ' is online')
       })
 
       // Handle a thread exit, start a new worker
-      cluster.on('exit', function (worker, code, signal) {
-        log.info('Worker ' + worker.process.pid + ' died with code: ' + code + ', and signal: ' + signal)
+      cluster.on('exit', function(worker, code, signal) {
+        log.info(
+          'Worker ' +
+            worker.process.pid +
+            ' died with code: ' +
+            code +
+            ', and signal: ' +
+            signal
+        )
         log.info('Starting a new worker')
 
         cluster.fork()
@@ -96,11 +135,11 @@ Server.prototype.run = function (done) {
       // Watch the current directory for a "restart.api" file
       const watcher = chokidar.watch(process.cwd(), {
         depth: 1,
-        ignored: /(^|[/\\])\../,  // ignores dotfiles, see https://regex101.com/r/7VuO4e/1
+        ignored: /(^|[/\\])\../, // ignores dotfiles, see https://regex101.com/r/7VuO4e/1
         ignoreInitial: true
       })
 
-      watcher.on('add', function (filePath) {
+      watcher.on('add', function(filePath) {
         if (path.basename(filePath) === 'restart.api') {
           log.info('Shutdown requested')
           fs.unlinkSync(filePath)
@@ -108,18 +147,20 @@ Server.prototype.run = function (done) {
         }
       })
 
-    // watcher.on('change', function(filePath) {
-    //   if (/config\.(.*)\.json/.test(path.basename(filePath))) {
-    //     log.info('Shutdown requested')
-    //     restartWorkers()
-    //   }
-    // })
+      // watcher.on('change', function(filePath) {
+      //   if (/config\.(.*)\.json/.test(path.basename(filePath))) {
+      //     log.info('Shutdown requested')
+      //     restartWorkers()
+      //   }
+      // })
     } else {
       // Start Workers
-      this.start(function () {
-        log.info('Process ' + process.pid + ' is listening for incoming requests')
+      this.start(function() {
+        log.info(
+          'Process ' + process.pid + ' is listening for incoming requests'
+        )
 
-        process.on('message', function (message) {
+        process.on('message', function(message) {
           if (message.type === 'shutdown') {
             log.info('Process ' + process.pid + ' is shutting down...')
 
@@ -136,12 +177,12 @@ Server.prototype.run = function (done) {
     // Single thread start
     debug('Starting DADI API in single thread mode')
 
-    this.start(function () {
+    this.start(function() {
       debug('Process ' + process.pid + ' is listening for incoming requests')
     })
   }
 
-  function restartWorkers () {
+  function restartWorkers() {
     let wid
     const workerIds = []
 
@@ -149,14 +190,14 @@ Server.prototype.run = function (done) {
       workerIds.push(wid)
     }
 
-    workerIds.forEach(function (wid) {
+    workerIds.forEach(function(wid) {
       if (cluster.workers[wid]) {
         cluster.workers[wid].send({
           type: 'shutdown',
           from: 'master'
         })
 
-        setTimeout(function () {
+        setTimeout(function() {
           if (cluster.workers[wid]) {
             cluster.workers[wid].kill('SIGKILL')
           }
@@ -166,7 +207,7 @@ Server.prototype.run = function (done) {
   }
 }
 
-Server.prototype.start = function (done) {
+Server.prototype.start = function(done) {
   this.readyState = 2
 
   // Initialise the ACL.
@@ -183,12 +224,12 @@ Server.prototype.start = function (done) {
 
   let options = {}
 
-  this.loadPaths(config.get('paths') || defaultPaths, function (paths) {
+  this.loadPaths(config.get('paths') || defaultPaths, function(paths) {
     options = paths
   })
 
   // create app
-  const app = this.app = api()
+  const app = (this.app = api())
 
   // add necessary middlewares in order below here...
 
@@ -203,40 +244,49 @@ Server.prototype.start = function (done) {
     }
   })
 
-  app.use(bodyParser.json({ limit: '50mb',
-    type: req => {
-      const contentType = req.headers['content-type'] || ''
+  app.use(
+    bodyParser.json({
+      limit: '50mb',
+      type: req => {
+        const contentType = req.headers['content-type'] || ''
 
-      if (['text/plain', 'text/plain; charset=utf-8', 'application/json', 'application/json; charset=utf-8'].includes(contentType.toLowerCase())) {
-        const parts = req.url.split('/').filter(Boolean)
-
-        // don't allow parsing into JSON if:
         if (
-          parts[parts.length - 1] === 'config' && // if it's a config URL
-          (parts.length === 3 || // and it's an endpoint file being posted
-          parts.includes('hooks')) // or it's a hook file being posted
+          [
+            'text/plain',
+            'text/plain; charset=utf-8',
+            'application/json',
+            'application/json; charset=utf-8'
+          ].includes(contentType.toLowerCase())
         ) {
-          return false
+          const parts = req.url.split('/').filter(Boolean)
+
+          // don't allow parsing into JSON if:
+          if (
+            parts[parts.length - 1] === 'config' && // if it's a config URL
+            (parts.length === 3 || // and it's an endpoint file being posted
+              parts.includes('hooks')) // or it's a hook file being posted
+          ) {
+            return false
+          }
+
+          // else allow parsing into JSON
+          return true
         }
 
-        // else allow parsing into JSON
-        return true
-      }
- 
         // not a content-type that supports JSON
         return false
-      
-    }
-  }))
-  app.use(bodyParser.urlencoded({ extended: true, limit: '50mb' }))
-  app.use(bodyParser.text({ limit: '50mb' }))
+      }
+    })
+  )
+  app.use(bodyParser.urlencoded({extended: true, limit: '50mb'}))
+  app.use(bodyParser.text({limit: '50mb'}))
 
   cors(this)
 
   // update configuration based on domain
   let domainConfigLoaded
 
-  app.use(function (req, res, next) {
+  app.use(function(req, res, next) {
     if (domainConfigLoaded) return next()
     config.updateConfigDataForDomain(req.headers.host)
     domainConfigLoaded = true
@@ -259,9 +309,11 @@ Server.prototype.start = function (done) {
   cache(this).init()
 
   // start listening
-  const server = this.server = app.listen()
+  const server = (this.server = app.listen())
 
-  server.on('listening', function () { onListening(this) })
+  server.on('listening', function() {
+    onListening(this)
+  })
   server.on('error', onError)
 
   this.loadApi(options)
@@ -283,7 +335,7 @@ Server.prototype.start = function (done) {
 }
 
 // this is mostly needed for tests
-Server.prototype.stop = function (done) {
+Server.prototype.stop = function(done) {
   const self = this
 
   this.readyState = 3
@@ -294,7 +346,7 @@ Server.prototype.stop = function (done) {
     this.removeComponent(route, this.components[route])
   })
 
-  this.server.close(function (err) {
+  this.server.close(function(err) {
     self.readyState = 0
 
     Connection.resetConnections().then(() => {
@@ -305,13 +357,19 @@ Server.prototype.stop = function (done) {
   })
 }
 
-Server.prototype.loadPaths = function (paths, done) {
+Server.prototype.loadPaths = function(paths, done) {
   const self = this
   const options = {}
 
-  options.collectionPath = path.resolve(paths.collections || path.join(__dirname, '/../../workspace/collections'))
-  options.endpointPath = path.resolve(paths.endpoints || path.join(__dirname, '/../../workspace/endpoints'))
-  options.hookPath = path.resolve(paths.hooks || path.join(__dirname, '/../../workspace/hooks'))
+  options.collectionPath = path.resolve(
+    paths.collections || path.join(__dirname, '/../../workspace/collections')
+  )
+  options.endpointPath = path.resolve(
+    paths.endpoints || path.join(__dirname, '/../../workspace/endpoints')
+  )
+  options.hookPath = path.resolve(
+    paths.hooks || path.join(__dirname, '/../../workspace/hooks')
+  )
 
   let idx = 0
 
@@ -320,7 +378,7 @@ Server.prototype.loadPaths = function (paths, done) {
       var stats = fs.statSync(options[key]) // eslint-disable-line
     } catch (err) {
       if (err.code === 'ENOENT') {
-        self.ensureDirectories(options, function () {
+        self.ensureDirectories(options, function() {
           //
         })
       }
@@ -332,29 +390,34 @@ Server.prototype.loadPaths = function (paths, done) {
   })
 }
 
-Server.prototype.loadApi = function (options) {
+Server.prototype.loadApi = function(options) {
   const self = this
-  const collectionPath = this.collectionPath = options.collectionPath || path.join(__dirname, '/../../workspace/collections')
-  const endpointPath = this.endpointPath = options.endpointPath || path.join(__dirname, '/../../workspace/endpoints')
-  const hookPath = this.hookPath = options.hookPath || path.join(__dirname, '/../../workspace/hooks')
+  const collectionPath = (this.collectionPath =
+    options.collectionPath ||
+    path.join(__dirname, '/../../workspace/collections'))
+  const endpointPath = (this.endpointPath =
+    options.endpointPath || path.join(__dirname, '/../../workspace/endpoints'))
+  const hookPath = (this.hookPath =
+    options.hookPath || path.join(__dirname, '/../../workspace/hooks'))
 
   self.updateHooks(hookPath)
-  self.addMonitor(hookPath, function (hook) {
+  self.addMonitor(hookPath, function(hook) {
     self.updateHooks(hookPath)
   })
 
   // Load initial api descriptions
   this.updateVersions(collectionPath)
 
-  this.addMonitor(collectionPath, function (versionName) {
-    if (path) return self.updateDatabases(path.join(collectionPath, versionName))
+  this.addMonitor(collectionPath, function(versionName) {
+    if (path)
+      return self.updateDatabases(path.join(collectionPath, versionName))
     self.updateVersions(collectionPath)
   })
 
   // this.updateEndpoints(endpointPath)
   this.updateVersions(endpointPath)
 
-  this.addMonitor(endpointPath, function (endpointFile) {
+  this.addMonitor(endpointPath, function(endpointFile) {
     self.updateVersions(endpointPath)
   })
 
@@ -363,7 +426,7 @@ Server.prototype.loadApi = function (options) {
   CacheFlushController(this)
   StatusEndpointController(this)
 
-  this.app.use('/hello', function (req, res, next) {
+  this.app.use('/hello', function(req, res, next) {
     const method = req.method && req.method.toLowerCase()
 
     if (method !== 'get') {
@@ -375,28 +438,28 @@ Server.prototype.loadApi = function (options) {
     return res.end('Welcome to API')
   })
 
-// need to ensure filepath exists since this could be a removal
-//     if (endpointFile && fs.existsSync(filepath)) {
-//         return self.addEndpointResource({
-//             endpoint: endpointFile,
-//             filepath: filepath
-//         })
-//     }
-//     self.updateEndpoints(endpointPath)
-// })
+  // need to ensure filepath exists since this could be a removal
+  //     if (endpointFile && fs.existsSync(filepath)) {
+  //         return self.addEndpointResource({
+  //             endpoint: endpointFile,
+  //             filepath: filepath
+  //         })
+  //     }
+  //     self.updateEndpoints(endpointPath)
+  // })
 }
 
-Server.prototype.loadConfigApi = function () {
+Server.prototype.loadConfigApi = function() {
   ApiConfigController(this)
 }
 
-Server.prototype.updateVersions = function (versionsPath) {
+Server.prototype.updateVersions = function(versionsPath) {
   const self = this
 
   // Load initial api descriptions
   const versions = fs.readdirSync(versionsPath)
 
-  versions.forEach(function (version) {
+  versions.forEach(function(version) {
     if (version.indexOf('.') === 0) return
 
     const dirname = path.join(versionsPath, version)
@@ -404,21 +467,22 @@ Server.prototype.updateVersions = function (versionsPath) {
     if (dirname.indexOf('collections') > 0) {
       self.updateDatabases(dirname)
 
-      self.addMonitor(dirname, function (databaseName) {
-        if (databaseName) return self.updateCollections(path.join(dirname, databaseName))
+      self.addMonitor(dirname, function(databaseName) {
+        if (databaseName)
+          return self.updateCollections(path.join(dirname, databaseName))
         self.updateDatabases(dirname)
       })
     } else {
       self.updateEndpoints(dirname)
 
-      self.addMonitor(dirname, function (endpoint) {
+      self.addMonitor(dirname, function(endpoint) {
         self.updateEndpoints(dirname)
       })
     }
   })
 }
 
-Server.prototype.updateDatabases = function (databasesPath) {
+Server.prototype.updateDatabases = function(databasesPath) {
   const self = this
   let databases
 
@@ -430,20 +494,20 @@ Server.prototype.updateDatabases = function (databasesPath) {
     return
   }
 
-  databases.forEach(function (database) {
+  databases.forEach(function(database) {
     if (database.indexOf('.') === 0) return
 
     const dirname = path.join(databasesPath, database)
 
     self.updateCollections(dirname)
 
-    self.addMonitor(dirname, function (collectionFile) {
+    self.addMonitor(dirname, function(collectionFile) {
       self.updateCollections(dirname)
     })
   })
 }
 
-Server.prototype.updateCollections = function (collectionsPath) {
+Server.prototype.updateCollections = function(collectionsPath) {
   if (!fs.existsSync(collectionsPath)) return
   if (!fs.lstatSync(collectionsPath).isDirectory()) return
 
@@ -465,10 +529,15 @@ Server.prototype.updateCollections = function (collectionsPath) {
 
     // get the schema
     const schema = require(cpath)
-    let name = collection.slice(collection.indexOf('.') + 1, collection.indexOf('.json'))
+    let name = collection.slice(
+      collection.indexOf('.') + 1,
+      collection.indexOf('.json')
+    )
 
     if (name === defaultMediaBucket || mediaBuckets.indexOf(name) !== -1) {
-      throw new Error(`Naming conflict: '${name}' is defined as both a collection and media bucket`)
+      throw new Error(
+        `Naming conflict: '${name}' is defined as both a collection and media bucket`
+      )
     }
 
     // override the default name using the supplied property
@@ -486,7 +555,7 @@ Server.prototype.updateCollections = function (collectionsPath) {
   })
 }
 
-Server.prototype.loadMediaCollections = function () {
+Server.prototype.loadMediaCollections = function() {
   const mediaBuckets = config.get('media.buckets')
   const defaultMediaBucket = config.get('media.defaultBucket')
 
@@ -525,9 +594,11 @@ Server.prototype.loadMediaCollections = function () {
  * We then add the component to the api by adding a route to the app and mapping
  * req.method` to component methods
  */
-Server.prototype.addCollectionResource = function (options) {
+Server.prototype.addCollectionResource = function(options) {
   const fields = Object.assign({}, options.schema.fields)
-  const settings = Object.assign({}, options.schema.settings, { database: options.database })
+  const settings = Object.assign({}, options.schema.settings, {
+    database: options.database
+  })
   const model = Model(options.name, fields, null, settings, settings.database)
   const isMediaCollection = settings.type && settings.type === 'mediaCollection'
   const controller = isMediaCollection
@@ -537,11 +608,14 @@ Server.prototype.addCollectionResource = function (options) {
     ? this.COMPONENT_TYPE.MEDIA_COLLECTION
     : this.COMPONENT_TYPE.COLLECTION
 
-  this.addComponent({
-    route: options.route,
-    component: controller,
-    filepath: options.filepath
-  }, componentType)
+  this.addComponent(
+    {
+      route: options.route,
+      component: controller,
+      filepath: options.filepath
+    },
+    componentType
+  )
 
   acl.registerResource(
     model.aclKey,
@@ -569,7 +643,7 @@ Server.prototype.addCollectionResource = function (options) {
   })
 }
 
-Server.prototype.addMediaCollectionResource = function (options) {
+Server.prototype.addMediaCollectionResource = function(options) {
   const aclKey = `media:${options.name}`
   const model = Model(
     options.name,
@@ -581,22 +655,22 @@ Server.prototype.addMediaCollectionResource = function (options) {
   )
   const controller = MediaController(model, this)
 
-  acl.registerResource(
-    aclKey,
-    `${options.name} media bucket`
-  )
+  acl.registerResource(aclKey, `${options.name} media bucket`)
 
-  this.addComponent({
-    route: options.route,
-    component: controller
-  }, this.COMPONENT_TYPE.MEDIA_COLLECTION)
+  this.addComponent(
+    {
+      route: options.route,
+      component: controller
+    },
+    this.COMPONENT_TYPE.MEDIA_COLLECTION
+  )
 
   if (config.get('env') !== 'test') {
     debug('collection loaded: %s', options.name)
   }
 }
 
-Server.prototype.updateEndpoints = function (endpointsPath) {
+Server.prototype.updateEndpoints = function(endpointsPath) {
   const endpoints = fs.readdirSync(endpointsPath)
 
   endpoints.forEach(endpoint => {
@@ -613,14 +687,17 @@ Server.prototype.updateEndpoints = function (endpointsPath) {
   })
 }
 
-Server.prototype.addEndpointResource = function (options) {
+Server.prototype.addEndpointResource = function(options) {
   const endpoint = options.endpoint
 
-  if ((endpoint.indexOf('.') === 0 || endpoint.indexOf('endpoint.') !== 0)) {
+  if (endpoint.indexOf('.') === 0 || endpoint.indexOf('endpoint.') !== 0) {
     return
   }
 
-  const name = endpoint.slice(endpoint.indexOf('.') + 1, endpoint.indexOf('.js'))
+  const name = endpoint.slice(
+    endpoint.indexOf('.') + 1,
+    endpoint.indexOf('.js')
+  )
   const aclKey = `endpoint:${options.version}_${name}`
   const filepath = options.filepath
   const route = `/${options.version}/${name}`
@@ -634,24 +711,20 @@ Server.prototype.addEndpointResource = function (options) {
         return console.log(err)
       }
 
-      acl.registerResource(
-        aclKey,
-        `${options.version}/${name} custom endpoint`
-      )
+      acl.registerResource(aclKey, `${options.version}/${name} custom endpoint`)
 
-      component = EndpointController(
-        require(filepath),
-        this,
-        aclKey
-      )
+      component = EndpointController(require(filepath), this, aclKey)
 
-      this.addComponent({
-        aclKey,
-        docs: new ParseComments().parse(content),
-        component,
-        filepath,
-        route
-      }, this.COMPONENT_TYPE.CUSTOM_ENDPOINT)
+      this.addComponent(
+        {
+          aclKey,
+          docs: new ParseComments().parse(content),
+          component,
+          filepath,
+          route
+        },
+        this.COMPONENT_TYPE.CUSTOM_ENDPOINT
+      )
     })
   } catch (e) {
     console.log(e)
@@ -676,11 +749,11 @@ Server.prototype.addEndpointResource = function (options) {
   }
 }
 
-Server.prototype.updateHooks = function (hookPath) {
+Server.prototype.updateHooks = function(hookPath) {
   const self = this
   const hooks = fs.readdirSync(hookPath)
 
-  hooks.forEach(function (hook) {
+  hooks.forEach(function(hook) {
     self.addHook({
       hook,
       filepath: path.join(hookPath, hook)
@@ -688,7 +761,7 @@ Server.prototype.updateHooks = function (hookPath) {
   })
 }
 
-Server.prototype.addHook = function (options) {
+Server.prototype.addHook = function(options) {
   if (path.extname(options.filepath) !== '.js') return
   const hook = options.hook
 
@@ -715,7 +788,7 @@ Server.prototype.addHook = function (options) {
     console.log(e)
   }
 
-  self.addMonitor(filepath, function (filename) {
+  self.addMonitor(filepath, function(filename) {
     delete require.cache[filepath]
 
     try {
@@ -730,7 +803,7 @@ Server.prototype.addHook = function (options) {
   if (config.get('env') !== 'test') debug('hook loaded: %s', name)
 }
 
-Server.prototype.addComponent = function (options, type) {
+Server.prototype.addComponent = function(options, type) {
   // Check if the endpoint is supplying a custom config block.
   if (typeof options.component.getConfig === 'function') {
     const componentConfig = options.component.getConfig()
@@ -759,12 +832,12 @@ Server.prototype.addComponent = function (options, type) {
   }
 }
 
-Server.prototype.removeComponent = function (route, component) {
+Server.prototype.removeComponent = function(route, component) {
   if (this.app.paths[route]) {
     this.app.unuse(route)
   }
 
-  if (component && (typeof component.unregisterRoutes === 'function')) {
+  if (component && typeof component.unregisterRoutes === 'function') {
     component.unregisterRoutes(route)
   }
 
@@ -774,7 +847,7 @@ Server.prototype.removeComponent = function (route, component) {
   delete this.docs[route]
 }
 
-Server.prototype.addMonitor = function (filepath, callback) {
+Server.prototype.addMonitor = function(filepath, callback) {
   filepath = path.normalize(filepath)
 
   // only add one watcher per path
@@ -786,19 +859,19 @@ Server.prototype.addMonitor = function (filepath, callback) {
   this.monitors[filepath] = m
 }
 
-Server.prototype.removeMonitor = function (filepath) {
+Server.prototype.removeMonitor = function(filepath) {
   this.monitors[filepath] && this.monitors[filepath].close()
   delete this.monitors[filepath]
 }
 
 // Synchronously create directory structure to match path
-Server.prototype.createDirectoryStructure = function (dpath) {
+Server.prototype.createDirectoryStructure = function(dpath) {
   const self = this
 
   const directories = dpath.split(path.sep)
   let npath = self.collectionPath
 
-  directories.forEach(function (dirname) {
+  directories.forEach(function(dirname) {
     npath = path.join(npath, dirname)
     try {
       fs.mkdirSync(npath)
@@ -815,7 +888,7 @@ Server.prototype.createDirectoryStructure = function (dpath) {
  *  @return
  *  @api public
  */
-Server.prototype.ensureDirectories = function (options, done) {
+Server.prototype.ensureDirectories = function(options, done) {
   // create workspace directories if they don't exist
   // permissions default to 0755
   const _0755 = parseInt('0755', 8)
@@ -862,12 +935,12 @@ module.exports = new Server()
 // generate a method for http request methods matching `verb`
 // if a route is passed, the node module `path-to-regexp` is
 // used to create the RegExp that will test requests for this route
-function buildVerbMethod (verb) {
-  return function () {
+function buildVerbMethod(verb) {
+  return function() {
     const args = [].slice.call(arguments, 0)
     const route = typeof arguments[0] === 'string' ? args.shift() : null
 
-    const handler = function (req, res, next) {
+    const handler = function(req, res, next) {
       if (!(req.method && req.method.toLowerCase() === verb)) {
         next()
       }
@@ -875,8 +948,8 @@ function buildVerbMethod (verb) {
       // push the next route on to the bottom of callback stack in case none of these callbacks send a response
       args.push(next)
 
-      const doCallbacks = function (i) {
-        return function (err) {
+      const doCallbacks = function(i) {
+        return function(err) {
           if (err) return next(err)
 
           args[i](req, res, doCallbacks(++i))
@@ -896,21 +969,23 @@ function buildVerbMethod (verb) {
   }
 }
 
-function onListening (server) {
+function onListening(server) {
   const address = server.address()
   const env = config.get('env')
 
   if (env !== 'test') {
     dadiBoot.started({
-      server: `${config.get('server.protocol')}://${address.address}:${address.port}`,
+      server: `${config.get('server.protocol')}://${address.address}:${
+        address.port
+      }`,
       header: {
         app: config.get('app.name')
       },
       body: {
-        'Protocol': config.get('server.protocol'),
-        'Version': version,
+        Protocol: config.get('server.protocol'),
+        Version: version,
         'Node.js': nodeVersion,
-        'Environment': env
+        Environment: env
       },
       footer: {}
     })
@@ -938,9 +1013,19 @@ function onListening (server) {
   }
 }
 
-function onError (err) {
+function onError(err) {
   if (err.code === 'EADDRINUSE') {
-    console.log('Error ' + err.code + ': Address ' + config.get('server.host') + ':' + config.get('server.port') + ' is already in use, is something else listening on port ' + config.get('server.port') + '?\n\n')
+    console.log(
+      'Error ' +
+        err.code +
+        ': Address ' +
+        config.get('server.host') +
+        ':' +
+        config.get('server.port') +
+        ' is already in use, is something else listening on port ' +
+        config.get('server.port') +
+        '?\n\n'
+    )
     process.exit(1)
   }
 }

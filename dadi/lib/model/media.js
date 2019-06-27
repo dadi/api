@@ -3,11 +3,11 @@
 const path = require('path')
 const config = require(path.join(__dirname, '/../../../config'))
 
-const MediaModel = function (document) {
+const MediaModel = function(document) {
   this.document = document
 }
 
-MediaModel.prototype.formatDocuments = function (documents) {
+MediaModel.prototype.formatDocuments = function(documents) {
   const multiple = documents instanceof Array
   const output = (multiple ? documents : [documents]).map(document => {
     const formattedDocument = Object.assign({}, document)
@@ -19,8 +19,8 @@ MediaModel.prototype.formatDocuments = function (documents) {
     }
 
     // To maintain backwards compatibility.
-    formattedDocument.mimeType = formattedDocument.mimeType ||
-      formattedDocument.mimetype
+    formattedDocument.mimeType =
+      formattedDocument.mimeType || formattedDocument.mimetype
 
     delete formattedDocument._apiVersion
 
@@ -32,7 +32,7 @@ MediaModel.prototype.formatDocuments = function (documents) {
 
 // At some point we'll return a different schema based on MIME type, but for
 // now we hardcode this one.
-MediaModel.prototype.getSchema = function () {
+MediaModel.prototype.getSchema = function() {
   return {
     fields: {
       fileName: {
@@ -84,15 +84,17 @@ MediaModel.prototype.getSchema = function () {
   }
 }
 
-MediaModel.prototype.getURLForPath = function (path) {
+MediaModel.prototype.getURLForPath = function(path) {
   const portString = config.get('publicUrl.port')
     ? `:${config.get('publicUrl.port')}`
     : ''
 
-  return `${config.get('publicUrl.protocol')}://${config.get('publicUrl.host')}${portString}${path}`
+  return `${config.get('publicUrl.protocol')}://${config.get(
+    'publicUrl.host'
+  )}${portString}${path}`
 }
 
-MediaModel.prototype.isValidUpdate = function (update) {
+MediaModel.prototype.isValidUpdate = function(update) {
   const reservedProperties = Object.keys(this.getSchema().fields)
   const hasReservedFields = Object.keys(update).some(field => {
     if (field.indexOf(config.get('internalFieldsPrefix')) === 0) {

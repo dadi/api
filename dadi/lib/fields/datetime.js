@@ -2,17 +2,14 @@ const moment = require('moment')
 
 module.exports.type = 'datetime'
 
-function convertDateTimeInQuery (input, schema, recursive) {
+function convertDateTimeInQuery(input, schema, recursive) {
   if (input === null) return input
 
   if (input === '$now') {
     return Date.now()
   }
 
-  if (
-    typeof input === 'string' ||
-    typeof input === 'number'
-  ) {
+  if (typeof input === 'string' || typeof input === 'number') {
     let format
 
     if (
@@ -46,7 +43,7 @@ function convertDateTimeInQuery (input, schema, recursive) {
   return output
 }
 
-module.exports.beforeOutput = function ({field, input, schema}) {
+module.exports.beforeOutput = function({field, input, schema}) {
   if (!input[field]) {
     return {
       [field]: null
@@ -79,11 +76,11 @@ module.exports.beforeOutput = function ({field, input, schema}) {
   }
 }
 
-module.exports.beforeQuery = function ({field, input, schema}) {
+module.exports.beforeQuery = function({field, input, schema}) {
   return convertDateTimeInQuery(input, schema, true)
 }
 
-module.exports.beforeSave = function ({field, input, schema}) {
+module.exports.beforeSave = function({field, input, schema}) {
   return {
     [field]: convertDateTimeInQuery(input[field], schema, false)
   }

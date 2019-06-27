@@ -19,11 +19,7 @@
  * @param {Object} query - the search query
  * @returns {Promise<Metadata>}
  */
-function count ({
-  client,
-  options = {},
-  query = {}
-} = {}) {
+function count({client, options = {}, query = {}} = {}) {
   return this.validateAccess({
     client,
     query,
@@ -40,9 +36,7 @@ function count ({
     }
 
     if (typeof query !== 'object') {
-      return Promise.reject(
-        this._createValidationError('Bad Query')
-      )
+      return Promise.reject(this._createValidationError('Bad Query'))
     }
 
     return this.find({
@@ -56,7 +50,7 @@ function count ({
   })
 }
 
-module.exports = function () {
+module.exports = function() {
   // Compatibility with legacy model API.
   // Signature: query, options, done
   if (arguments.length > 1) {
@@ -74,7 +68,8 @@ module.exports = function () {
     }
 
     // Legacy arguments: query, options, done
-    count.call(this, legacyArguments)
+    count
+      .call(this, legacyArguments)
       .then(response => callback && callback(null, response))
       .catch(error => callback && callback(error))
 

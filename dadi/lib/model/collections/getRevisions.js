@@ -7,10 +7,7 @@ const debug = require('debug')('api:model')
  * @param {Object} options
  * @returns {Promise<Array>} array of revision documents
  */
-function getRevisions ({
-  id,
-  options = {}
-}) {
+function getRevisions({id, options = {}}) {
   const fields = options.fields || {}
   let historyQuery = {}
 
@@ -22,34 +19,38 @@ function getRevisions ({
     }
   }
 
-  return this.connection.db.find({
-    query: { '_id': id },
-    collection: this.name,
-    options: { history: 1, limit: 1 },
-    schema: this.schema,
-    settings: this.settings
-  }).then(({metadata, results}) => {
-    debug('Model find in history: %o', results)
+  return this.connection.db
+    .find({
+      query: {_id: id},
+      collection: this.name,
+      options: {history: 1, limit: 1},
+      schema: this.schema,
+      settings: this.settings
+    })
+    .then(({metadata, results}) => {
+      debug('Model find in history: %o', results)
 
-    if (results && results.length && this.history) {
-      historyQuery._id = {
-        '$in': results[0]._history.map(id => id.toString())
+      if (results && results.length && this.history) {
+        historyQuery._id = {
+          $in: results[0]._history.map(id => id.toString())
+        }
+
+        return this.connection.db
+          .find({
+            query: historyQuery,
+            collection: this.revisionCollection,
+            options: fields,
+            schema: this.schema,
+            settings: this.settings
+          })
+          .then(({metadata, results}) => results)
       }
 
-      return this.connection.db.find({
-        query: historyQuery,
-        collection: this.revisionCollection,
-        options: fields,
-        schema: this.schema,
-        settings: this.settings
-      }).then(({metadata, results}) => results)
-    }
-
-    return []
-  })
+      return []
+    })
 }
 
-module.exports = function () {
+module.exports = function() {
   // Compatibility with legacy model API.
   // Signature: id, options, done
   if (arguments.length > 1) {
@@ -59,7 +60,8 @@ module.exports = function () {
       options: arguments[1]
     }
 
-    getRevisions.call(this, legacyArguments)
+    getRevisions
+      .call(this, legacyArguments)
       .then(response => callback && callback(null, response))
       .catch(error => callback && callback(error))
 

@@ -11,10 +11,13 @@ const zlib = require('zlib')
 /**
  * Remove each file in the specified cache folder.
  */
-module.exports.clearCache = function (pathname, callback) {
+module.exports.clearCache = function(pathname, callback) {
   let pattern = ''
 
-  pattern = crypto.createHash('sha1').update(pathname).digest('hex')
+  pattern = crypto
+    .createHash('sha1')
+    .update(pathname)
+    .digest('hex')
 
   if (config.get('caching.redis.enabled')) {
     pattern = pattern + '*'
@@ -28,7 +31,7 @@ module.exports.clearCache = function (pathname, callback) {
     }
   }
 
-  cache.delete(pattern, function (err) {
+  cache.delete(pattern, function(err) {
     if (err) console.log(err)
 
     if (typeof callback === 'function') {
@@ -37,7 +40,7 @@ module.exports.clearCache = function (pathname, callback) {
   })
 }
 
-module.exports.isJSON = function (jsonString) {
+module.exports.isJSON = function(jsonString) {
   if (!jsonString) return false
 
   try {
@@ -57,7 +60,7 @@ module.exports.isJSON = function (jsonString) {
   return false
 }
 
-module.exports.sendBackErrorTrace = function (res, next) {
+module.exports.sendBackErrorTrace = function(res, next) {
   return err => {
     const body = {
       success: false
@@ -87,21 +90,31 @@ module.exports.sendBackErrorTrace = function (res, next) {
   }
 }
 
-module.exports.sendBackErrorWithCode = function (errorCode, statusCode, res, next) {
+module.exports.sendBackErrorWithCode = function(
+  errorCode,
+  statusCode,
+  res,
+  next
+) {
   if (typeof statusCode !== 'number') {
     next = res
     res = statusCode
     statusCode = 500
   }
 
-  const errorObject = formatError.createError('api', errorCode, null, ERROR_CODES)
+  const errorObject = formatError.createError(
+    'api',
+    errorCode,
+    null,
+    ERROR_CODES
+  )
 
   return module.exports.sendBackJSON(statusCode, res, next)(null, errorObject)
 }
 
 // helper that sends json response
-module.exports.sendBackJSON = function (successCode, res, next) {
-  return function (err, results, originalRequest) {
+module.exports.sendBackJSON = function(successCode, res, next) {
+  return function(err, results, originalRequest) {
     let body = results
     let statusCode = successCode
 
@@ -155,7 +168,10 @@ module.exports.sendBackJSON = function (successCode, res, next) {
 
         res.setHeader('ETag', etagResult)
 
-        if (originalRequest && originalRequest.headers['if-none-match'] === etagResult) {
+        if (
+          originalRequest &&
+          originalRequest.headers['if-none-match'] === etagResult
+        ) {
           res.statusCode = 304
 
           return res.end()
@@ -168,8 +184,8 @@ module.exports.sendBackJSON = function (successCode, res, next) {
   }
 }
 
-module.exports.sendBackJSONP = function (callbackName, res, next) {
-  return function (err, results) {
+module.exports.sendBackJSONP = function(callbackName, res, next) {
+  return function(err, results) {
     if (err) return next(err)
 
     // callback MUST be made up of letters only
@@ -188,8 +204,8 @@ module.exports.sendBackJSONP = function (callbackName, res, next) {
 }
 
 // helper that sends text response
-module.exports.sendBackText = function (successCode, res, next) {
-  return function (err, results) {
+module.exports.sendBackText = function(successCode, res, next) {
+  return function(err, results) {
     if (err) return next(err)
 
     const resBody = results
@@ -210,14 +226,14 @@ module.exports.sendBackText = function (successCode, res, next) {
  * @param {IncomingMessage} req - the original HTTP request
  * @returns Boolean
  */
-module.exports.shouldCompress = function (req) {
+module.exports.shouldCompress = function(req) {
   const acceptHeader = req.headers['accept-encoding'] || ''
 
   return acceptHeader.split(',').includes('gzip')
 }
 
 // function to wrap try - catch for JSON.parse to mitigate pref losses
-module.exports.parseQuery = function (queryStr) {
+module.exports.parseQuery = function(queryStr) {
   let ret
 
   try {

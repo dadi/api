@@ -7,7 +7,7 @@ const path = require('path')
 
 const HOOK_PREFIX = 'hook:'
 
-const HooksController = function (server, hooksPath) {
+const HooksController = function(server, hooksPath) {
   this.path = hooksPath
   this.server = server
 
@@ -18,7 +18,7 @@ const HooksController = function (server, hooksPath) {
       return this.get(req, res, next)
     }
 
-    return help.sendBackJSON(405, res, next)(null, {'error': 'Invalid method'})
+    return help.sendBackJSON(405, res, next)(null, {error: 'Invalid method'})
   })
 
   server.app.use('/api/hooks/:hookName/config', (req, res, next) => {
@@ -28,11 +28,11 @@ const HooksController = function (server, hooksPath) {
       return this[method](req, res, next)
     }
 
-    return help.sendBackJSON(405, res, next)(null, {'error': 'Invalid method'})
+    return help.sendBackJSON(405, res, next)(null, {error: 'Invalid method'})
   })
 }
 
-HooksController.prototype._deleteHook = function (name) {
+HooksController.prototype._deleteHook = function(name) {
   const filePath = path.join(this.path, name + '.js')
 
   return new Promise((resolve, reject) => {
@@ -44,7 +44,7 @@ HooksController.prototype._deleteHook = function (name) {
   })
 }
 
-HooksController.prototype._findHooks = function (filterByName) {
+HooksController.prototype._findHooks = function(filterByName) {
   const hooks = []
 
   Object.keys(this.server.components).find(key => {
@@ -66,7 +66,7 @@ HooksController.prototype._findHooks = function (filterByName) {
   return hooks.sort()
 }
 
-HooksController.prototype._writeHook = function (name, content) {
+HooksController.prototype._writeHook = function(name, content) {
   const filePath = path.join(this.path, name + '.js')
 
   return new Promise((resolve, reject) => {
@@ -78,7 +78,7 @@ HooksController.prototype._writeHook = function (name, content) {
   })
 }
 
-HooksController.prototype.get = function (req, res, next) {
+HooksController.prototype.get = function(req, res, next) {
   if (!acl.client.isAdmin(req.dadiApiClient)) {
     return help.sendBackJSON(null, res, next)(
       acl.createError(req.dadiApiClient)

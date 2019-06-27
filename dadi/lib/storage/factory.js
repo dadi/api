@@ -5,7 +5,7 @@ const DiskStorage = require(path.join(__dirname, '/disk'))
 const config = require(path.join(__dirname, '/../../../config'))
 
 module.exports = {
-  create: function create (fileName) {
+  create: function create(fileName) {
     const storageAdapter = config.get('media.storage')
 
     switch (storageAdapter) {

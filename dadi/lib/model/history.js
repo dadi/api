@@ -8,7 +8,7 @@ const logger = require('@dadi/logger')
  * @param {String} options.database Name of the database
  * @param {String} options.name     Name of the collection
  */
-const History = function ({database, name}) {
+const History = function({database, name}) {
   this.name = name
   this.connection = Connection(
     {
@@ -26,7 +26,7 @@ const History = function ({database, name}) {
  * @param {Array<Object>} documents           Documents to add
  * @param {String}        options.description Optional message describing the operation
  */
-History.prototype.addVersion = function (documents, {description}) {
+History.prototype.addVersion = function(documents, {description}) {
   const versions = documents.map(document => {
     const version = Object.assign({}, document, {
       _document: document._id
@@ -53,32 +53,35 @@ History.prototype.addVersion = function (documents, {description}) {
  * @param  {String} version  ID of a previous version
  * @return {Object}
  */
-History.prototype.getVersion = function (version, options = {}) {
-  return this.connection.db.find({
-    collection: this.name,
-    options,
-    query: {
-      _id: version
-    }
-  }).then(({metadata, results}) => {
-    return {
-      results: results.map(result => {
-        return Object.assign({}, result, {
-          _id: result._document,
-          _document: undefined
+History.prototype.getVersion = function(version, options = {}) {
+  return this.connection.db
+    .find({
+      collection: this.name,
+      options,
+      query: {
+        _id: version
+      }
+    })
+    .then(({metadata, results}) => {
+      return {
+        results: results.map(result => {
+          return Object.assign({}, result, {
+            _id: result._document,
+            _document: undefined
+          })
+        }),
+        metadata: Object.assign({}, metadata, {
+          version
         })
-      }),
-      metadata: Object.assign({}, metadata, {
-        version
-      })
-    }
-  }).catch(error => {
-    logger.error({module: 'history'}, error)
+      }
+    })
+    .catch(error => {
+      logger.error({module: 'history'}, error)
 
-    return {
-      results: []
-    }
-  })
+      return {
+        results: []
+      }
+    })
 }
 
 /**
@@ -87,7 +90,7 @@ History.prototype.getVersion = function (version, options = {}) {
  * @param  {String}         documentId
  * @return {Array<Object>}
  */
-History.prototype.getVersions = function (documentId) {
+History.prototype.getVersions = function(documentId) {
   return this.connection.db.find({
     collection: this.name,
     options: {

@@ -1,10 +1,10 @@
 module.exports.type = 'string'
 
-function escapeRegExp (string) {
+function escapeRegExp(string) {
   return string.replace(/([.?*+^$[\]\\(){}|-])/g, '\\$1')
 }
 
-function sanitise (input, schema = {}) {
+function sanitise(input, schema = {}) {
   if (typeof input === 'string') {
     switch (schema.matchType) {
       case undefined:
@@ -26,7 +26,7 @@ function sanitise (input, schema = {}) {
   return input
 }
 
-module.exports.beforeOutput = function ({
+module.exports.beforeOutput = function({
   config,
   document,
   field,

@@ -30,13 +30,13 @@ const SCHEMA_SEARCH = {
     cache: true,
     index: [
       {
-        keys: { word: 1 }
+        keys: {word: 1}
       },
       {
-        keys: { document: 1 }
+        keys: {document: 1}
       },
       {
-        keys: { weight: 1 }
+        keys: {weight: 1}
       }
     ]
   }
@@ -50,10 +50,12 @@ const SCHEMA_WORDS = {
   },
   settings: {
     cache: true,
-    index: [{
-      keys: { word: 1 },
-      options: { unique: true }
-    }]
+    index: [
+      {
+        keys: {word: 1},
+        options: {unique: true}
+      }
+    ]
   }
 }
 
@@ -64,40 +66,45 @@ const SCHEMA_WORDS = {
  * @classdesc Indexes documents as they are inserted/updated, and performs
  *            search tasks.
  */
-const Search = function () {}
+const Search = function() {}
 
 /**
  * Indexes for search every document in the given collection.
  *
  * @param {Object} model
  */
-Search.prototype.batchIndexCollection = function (model, {pageNumber = 1, pageSize = 1} = {}) {
+Search.prototype.batchIndexCollection = function(
+  model,
+  {pageNumber = 1, pageSize = 1} = {}
+) {
   const options = {
     limit: pageSize,
     skip: (pageNumber - 1) * pageSize
   }
 
-  return model.find({
-    options,
-    query: {}
-  }).then(({metadata, results}) => {
-    const indexableFields = this.getIndexableFields(model.schema)
-    const factoryFn = document => {
-      return this.indexDocument({
-        collection: model.name,
-        document,
-        indexableFields
-      })
-    }
-
-    return promiseQueue(results, factoryFn, {interval: 20}).then(() => {
-      if ((pageNumber * pageSize) < metadata.totalCount) {
-        return this.batchIndexCollection(model, {
-          pageNumber: pageNumber + 1
+  return model
+    .find({
+      options,
+      query: {}
+    })
+    .then(({metadata, results}) => {
+      const indexableFields = this.getIndexableFields(model.schema)
+      const factoryFn = document => {
+        return this.indexDocument({
+          collection: model.name,
+          document,
+          indexableFields
         })
       }
+
+      return promiseQueue(results, factoryFn, {interval: 20}).then(() => {
+        if (pageNumber * pageSize < metadata.totalCount) {
+          return this.batchIndexCollection(model, {
+            pageNumber: pageNumber + 1
+          })
+        }
+      })
     })
-  })
 }
 
 /**
@@ -106,7 +113,7 @@ Search.prototype.batchIndexCollection = function (model, {pageNumber = 1, pageSi
  *
  * @param {Array} models
  */
-Search.prototype.batchIndexCollections = function (models) {
+Search.prototype.batchIndexCollections = function(models) {
   // We're only interested in models with at least one indexable field.
   const indexableModels = models.filter(model => {
     const fields = this.getIndexableFields(model.schema)
@@ -127,7 +134,7 @@ Search.prototype.batchIndexCollections = function (models) {
  *                            word instances
  * @return {Promise} - Query to delete instances with matching document ids.
  */
-Search.prototype.delete = function (documents) {
+Search.prototype.delete = function(documents) {
   if (!config.get('search.enabled') || !Array.isArray(documents)) {
     return Promise.resolve()
   }
@@ -140,7 +147,7 @@ Search.prototype.delete = function (documents) {
     collection: this.indexCollection,
     query: {
       document: {
-        '$containsAny': ids
+        $containsAny: ids
       }
     },
     schema: SCHEMA_WORDS.fields
@@ -164,7 +171,7 @@ Search.prototype.delete = function (documents) {
  * @return {Promise} - a query containing IDs of documents that contain the
  *                     searchTerm
  */
-Search.prototype.find = function ({
+Search.prototype.find = function({
   client,
   collections,
   fields,
@@ -178,82 +185,88 @@ Search.prototype.find = function ({
   const tokens = this.tokenise(query)
 
   // Find matches for the various tokens in the words collection.
-  return this.findWords(tokens, language).then(words => {
-    const wordIds = words.results.map(word => word._id.toString())
+  return this.findWords(tokens, language)
+    .then(words => {
+      const wordIds = words.results.map(word => word._id.toString())
 
-    // Find matches for the word IDs in the search index collection,
-    // limiting the results to the collections specified.
-    return this.getIndexResults({
-      collections,
-      options: {
-        limit: POOL_SIZE
-      },
-      schema: SCHEMA_WORDS.fields,
-      settings: SCHEMA_WORDS.settings,
-      words: wordIds
+      // Find matches for the word IDs in the search index collection,
+      // limiting the results to the collections specified.
+      return this.getIndexResults({
+        collections,
+        options: {
+          limit: POOL_SIZE
+        },
+        schema: SCHEMA_WORDS.fields,
+        settings: SCHEMA_WORDS.settings,
+        words: wordIds
+      })
     })
-  }).then(resultsMap => {
-    const documents = new Map()
+    .then(resultsMap => {
+      const documents = new Map()
 
-    const indexableFields = {}
+      const indexableFields = {}
 
-    // We must retrieve all the documents using their respective models.
-    const queue = Object.keys(resultsMap).map(collection => {
-      const model = modelFactory(collection)
+      // We must retrieve all the documents using their respective models.
+      const queue = Object.keys(resultsMap).map(collection => {
+        const model = modelFactory(collection)
 
-      if (!model) return undefined
+        if (!model) return undefined
 
-      indexableFields[collection] = indexableFields[collection] ||
-        this.getIndexableFields(model.schema)
+        indexableFields[collection] =
+          indexableFields[collection] || this.getIndexableFields(model.schema)
 
-      const documentIds = Object.keys(resultsMap[collection])
+        const documentIds = Object.keys(resultsMap[collection])
 
-      return model.get({
-        client,
-        language,
-        query: {
-          _id: {
-            $containsAny: documentIds
-          }
-        }
-      }).then(({results}) => {
-        results.forEach(result => {
-          documents.set(result._id, {
-            collection,
-            document: result,
-            weight: resultsMap[collection][result._id]
+        return model
+          .get({
+            client,
+            language,
+            query: {
+              _id: {
+                $containsAny: documentIds
+              }
+            }
+          })
+          .then(({results}) => {
+            results.forEach(result => {
+              documents.set(result._id, {
+                collection,
+                document: result,
+                weight: resultsMap[collection][result._id]
+              })
+            })
+          })
+      })
+
+      return Promise.all(queue)
+        .then(() => {
+          return this.runSecondPass({
+            documents,
+            indexableFields,
+            page,
+            query
           })
         })
-      })
-    })
+        .then(results => {
+          const metadata = createMetadata({page}, documents.size)
 
-    return Promise.all(queue).then(() => {
-      return this.runSecondPass({
-        documents,
-        indexableFields,
-        page,
-        query
-      })
-    }).then(results => {
-      const metadata = createMetadata({page}, documents.size)
+          // To ensure the search algorithm works effectively, it's not a good idea
+          // to exclude from the results any fields up until this point. Now that
+          // all the results have been computed, we must remove from the results
+          // any fields that may have been excluded due to a fields projection sent
+          // in the request.
+          const filteredResults = results.map(document => {
+            return this.formatDocumentForOutput(document, {fields})
+          })
 
-      // To ensure the search algorithm works effectively, it's not a good idea
-      // to exclude from the results any fields up until this point. Now that
-      // all the results have been computed, we must remove from the results
-      // any fields that may have been excluded due to a fields projection sent
-      // in the request.
-      const filteredResults = results.map(document => {
-        return this.formatDocumentForOutput(document, {fields})
-      })
-
-      return {
-        results: filteredResults,
-        metadata: Object.assign({}, metadata, {
-          search: query
+          return {
+            results: filteredResults,
+            metadata: Object.assign({}, metadata, {
+              search: query
+            })
+          }
         })
-      }
     })
-  })
 }
 
 /**
@@ -266,43 +279,45 @@ Search.prototype.find = function ({
  * @param  {String}  language
  * @return {Promise}
  */
-Search.prototype.findWords = function (
+Search.prototype.findWords = function(
   words,
   language = config.get('i18n.defaultLanguage')
 ) {
   const {fields: schema, settings} = SCHEMA_WORDS
   const wordPairs = words.map(word => `${word}:${language}`)
   const wordQuery = {
-    word: {'$containsAny': wordPairs}
+    word: {$containsAny: wordPairs}
   }
 
-  return this.wordConnection.datastore.find({
-    collection: this.wordCollection,
-    options: {},
-    query: wordQuery,
-    schema,
-    settings
-  }).then(response => {
-    // Try a second pass with regular expressions.
-    if (response.results.length === 0) {
-      const regexWords = words.map(word => {
-        return new RegExp(`${word}(.*):${language}`)
-      })
-      const regexQuery = Object.assign({}, wordQuery, {
-        word: {'$containsAny': regexWords}
-      })
+  return this.wordConnection.datastore
+    .find({
+      collection: this.wordCollection,
+      options: {},
+      query: wordQuery,
+      schema,
+      settings
+    })
+    .then(response => {
+      // Try a second pass with regular expressions.
+      if (response.results.length === 0) {
+        const regexWords = words.map(word => {
+          return new RegExp(`${word}(.*):${language}`)
+        })
+        const regexQuery = Object.assign({}, wordQuery, {
+          word: {$containsAny: regexWords}
+        })
 
-      return this.wordConnection.datastore.find({
-        collection: this.wordCollection,
-        options: {},
-        query: regexQuery,
-        schema,
-        settings
-      })
-    }
+        return this.wordConnection.datastore.find({
+          collection: this.wordCollection,
+          options: {},
+          query: regexQuery,
+          schema,
+          settings
+        })
+      }
 
-    return response
-  })
+      return response
+    })
 }
 
 /**
@@ -312,10 +327,11 @@ Search.prototype.findWords = function (
  * @param  {Object} document
  * @param  {Object} fields
  */
-Search.prototype.formatDocumentForOutput = function (document, {fields}) {
+Search.prototype.formatDocumentForOutput = function(document, {fields}) {
   const languageFieldCharacter = config.get('i18n.fieldCharacter')
   const hasFieldsProjection = Boolean(fields)
-  const fieldsProjectionIsInclusive = hasFieldsProjection &&
+  const fieldsProjectionIsInclusive =
+    hasFieldsProjection &&
     Object.keys(fields).find(field => fields[field] === 1)
   const idField = `${config.get('internalFieldsPrefix')}id`
 
@@ -325,8 +341,8 @@ Search.prototype.formatDocumentForOutput = function (document, {fields}) {
     const [field] = fieldString.split(languageFieldCharacter)
 
     if (
-      fieldsProjectionIsInclusive && fields[field] === 1 ||
-      !fieldsProjectionIsInclusive && fields[field] !== 0 ||
+      (fieldsProjectionIsInclusive && fields[field] === 1) ||
+      (!fieldsProjectionIsInclusive && fields[field] !== 0) ||
       fieldString === idField
     ) {
       newDocument[fieldString] = document[fieldString]
@@ -345,7 +361,7 @@ Search.prototype.formatDocumentForOutput = function (document, {fields}) {
  * @param  {Map}     wordsByLanguage
  * @return {Promise}
  */
-Search.prototype.getExistingWords = function (wordsByLanguage) {
+Search.prototype.getExistingWords = function(wordsByLanguage) {
   const {fields: schema, settings} = SCHEMA_WORDS
   const queries = Array.from(wordsByLanguage.keys()).map(language => {
     const wordsArray = wordsByLanguage.get(language).map(word => {
@@ -356,7 +372,7 @@ Search.prototype.getExistingWords = function (wordsByLanguage) {
       collection: this.wordCollection,
       options: {},
       query: {
-        word: {'$containsAny': wordsArray}
+        word: {$containsAny: wordsArray}
       },
       schema,
       settings
@@ -382,11 +398,13 @@ Search.prototype.getExistingWords = function (wordsByLanguage) {
  * { "title": { "weight": 2 } }
  * ```
  */
-Search.prototype.getIndexableFields = function (schema) {
+Search.prototype.getIndexableFields = function(schema) {
   const indexableFields = Object.keys(schema).filter(key => {
-    return typeof schema[key] === 'object' &&
+    return (
+      typeof schema[key] === 'object' &&
       schema[key].search &&
       !isNaN(schema[key].search.weight)
+    )
   })
   const fields = indexableFields.reduce((result, key) => {
     result[key] = schema[key].search
@@ -409,7 +427,7 @@ Search.prototype.getIndexableFields = function (schema) {
  * @param   {Object|Array} words
  * @returns {Promise.<Array, Error>}
  */
-Search.prototype.getIndexResults = function ({
+Search.prototype.getIndexResults = function({
   collections,
   options = {},
   schema,
@@ -418,40 +436,42 @@ Search.prototype.getIndexResults = function ({
 }) {
   const query = {
     word: {
-      '$containsAny': words
+      $containsAny: words
     }
   }
 
   if (collections) {
     query.collection = {
-      '$containsAny': collections
+      $containsAny: collections
     }
   }
 
-  return this.indexConnection.datastore.find({
-    collection: this.indexCollection,
-    options: Object.assign({}, options, {
-      sort: {
-        weight: -1
-      }
-    }),
-    query,
-    schema,
-    settings
-  }).then(({results}) => {
-    // This is a multi-level map. On the first level, keys are names of
-    // collections. On the second level, keys are document IDs mapping
-    // to the total weight of the corresponding document.
-    const resultsMap = {}
-
-    results.forEach(({collection, document, weight}) => {
-      resultsMap[collection] = resultsMap[collection] || {}
-      resultsMap[collection][document] = resultsMap[collection][document] || 0
-      resultsMap[collection][document] += weight
+  return this.indexConnection.datastore
+    .find({
+      collection: this.indexCollection,
+      options: Object.assign({}, options, {
+        sort: {
+          weight: -1
+        }
+      }),
+      query,
+      schema,
+      settings
     })
+    .then(({results}) => {
+      // This is a multi-level map. On the first level, keys are names of
+      // collections. On the second level, keys are document IDs mapping
+      // to the total weight of the corresponding document.
+      const resultsMap = {}
 
-    return resultsMap
-  })
+      results.forEach(({collection, document, weight}) => {
+        resultsMap[collection] = resultsMap[collection] || {}
+        resultsMap[collection][document] = resultsMap[collection][document] || 0
+        resultsMap[collection][document] += weight
+      })
+
+      return resultsMap
+    })
 }
 
 /**
@@ -476,25 +496,24 @@ Search.prototype.getIndexResults = function ({
  *     "world": 0.5
  *   },
  *   "pt": {
-*      "ola": 0.5,
-*      "mundo": 0.5
-*    }
+ *      "ola": 0.5,
+ *      "mundo": 0.5
+ *    }
  * }
  * ```
  *
  * @param   {Object} document
  * @returns {Map}
  */
-Search.prototype.getWordsForDocument = function (document, indexableFields) {
+Search.prototype.getWordsForDocument = function(document, indexableFields) {
   const documentWords = new Map()
   const defaultLanguage = config.get('i18n.defaultLanguage')
   const languageFieldCharacter = config.get('i18n.fieldCharacter')
 
   Object.keys(document).forEach(fieldString => {
-    const [
-      field,
-      language = defaultLanguage
-    ] = fieldString.split(languageFieldCharacter)
+    const [field, language = defaultLanguage] = fieldString.split(
+      languageFieldCharacter
+    )
     const value = document[fieldString]
 
     // Ignore non-indexable fields.
@@ -551,7 +570,7 @@ Search.prototype.getWordsForDocument = function (document, indexableFields) {
  * @param {Object} document - a document to be indexed
  * @return {[type]}     [description]
  */
-Search.prototype.indexDocument = function ({
+Search.prototype.indexDocument = function({
   collection,
   document,
   indexableFields
@@ -586,64 +605,74 @@ Search.prototype.indexDocument = function ({
   // Look into the words collection to determine which of the document's words,
   // if any, already exist in the words collection. The ones that don't, must
   // be inserted.
-  return this.getExistingWords(wordsByLanguage).then(existingWords => {
-    const newWords = wordPairs.filter(({language, word}) => {
-      return existingWords.every(entry => entry.word !== `${word}:${language}`)
-    })
-    const data = newWords.map(({language, word}) => {
-      return {word: `${word}:${language}`}
-    })
-
-    if (newWords.length > 0) {
-      return this.wordConnection.datastore.insert({
-        data,
-        collection: this.wordCollection,
-        options: {},
-        schema: SCHEMA_WORDS.fields,
-        settings: SCHEMA_WORDS.settings
-      }).then(newWordEntries => {
-        return existingWords.concat(newWordEntries)
+  return this.getExistingWords(wordsByLanguage)
+    .then(existingWords => {
+      const newWords = wordPairs.filter(({language, word}) => {
+        return existingWords.every(
+          entry => entry.word !== `${word}:${language}`
+        )
       })
-    }
+      const data = newWords.map(({language, word}) => {
+        return {word: `${word}:${language}`}
+      })
 
-    return existingWords
-  }).then(wordEntries => {
-    // We must now delete from the search collection any records that reference
-    // this document, which is effectively "de-indexing" it.
-    return this.indexConnection.datastore.delete({
-      collection: this.indexCollection,
-      query: {
-        document: document._id
-      },
-      schema: SCHEMA_SEARCH.fields
-    }).then(() => {
-      return wordEntries
-    })
-  }).then(wordEntries => {
-    // We're now ready to insert the results from processing the document into
-    // the search collection. Entries will contain the ID of the document, the
-    // ID of the word and its weight relative to the document.
-    const data = wordEntries.map(({_id, word: wordPair}) => {
-      const [word, language] = wordPair.split(':')
-
-      return {
-        collection,
-        document: document._id,
-        weight: wordsAndWeightsByLanguage.get(language).get(word),
-        word: _id
+      if (newWords.length > 0) {
+        return this.wordConnection.datastore
+          .insert({
+            data,
+            collection: this.wordCollection,
+            options: {},
+            schema: SCHEMA_WORDS.fields,
+            settings: SCHEMA_WORDS.settings
+          })
+          .then(newWordEntries => {
+            return existingWords.concat(newWordEntries)
+          })
       }
-    })
 
-    return this.indexConnection.datastore.insert({
-      data,
-      collection: this.indexCollection,
-      options: {},
-      schema: SCHEMA_SEARCH.fields,
-      settings: SCHEMA_SEARCH.settings
+      return existingWords
     })
-  }).catch(error => {
-    logger.error({module: 'search'}, error)
-  })
+    .then(wordEntries => {
+      // We must now delete from the search collection any records that reference
+      // this document, which is effectively "de-indexing" it.
+      return this.indexConnection.datastore
+        .delete({
+          collection: this.indexCollection,
+          query: {
+            document: document._id
+          },
+          schema: SCHEMA_SEARCH.fields
+        })
+        .then(() => {
+          return wordEntries
+        })
+    })
+    .then(wordEntries => {
+      // We're now ready to insert the results from processing the document into
+      // the search collection. Entries will contain the ID of the document, the
+      // ID of the word and its weight relative to the document.
+      const data = wordEntries.map(({_id, word: wordPair}) => {
+        const [word, language] = wordPair.split(':')
+
+        return {
+          collection,
+          document: document._id,
+          weight: wordsAndWeightsByLanguage.get(language).get(word),
+          word: _id
+        }
+      })
+
+      return this.indexConnection.datastore.insert({
+        data,
+        collection: this.indexCollection,
+        options: {},
+        schema: SCHEMA_SEARCH.fields,
+        settings: SCHEMA_SEARCH.settings
+      })
+    })
+    .catch(error => {
+      logger.error({module: 'search'}, error)
+    })
 }
 
 /**
@@ -656,7 +685,7 @@ Search.prototype.indexDocument = function ({
  * @param  {Array} documents
  * @param  {Array} original
  */
-Search.prototype.indexDocumentsInTheBackground = function ({
+Search.prototype.indexDocumentsInTheBackground = function({
   documents,
   model,
   original
@@ -700,7 +729,7 @@ Search.prototype.indexDocumentsInTheBackground = function ({
 /**
  * Initialises the word and search collections.
  */
-Search.prototype.initialise = function () {
+Search.prototype.initialise = function() {
   if (!config.get('search.enabled')) {
     return
   }
@@ -750,7 +779,7 @@ Search.prototype.initialise = function () {
  *
  * @return {Boolean}
  */
-Search.prototype.isEnabled = function () {
+Search.prototype.isEnabled = function() {
   return config.get('search.enabled')
 }
 
@@ -767,7 +796,7 @@ Search.prototype.isEnabled = function () {
  * @param  {Number} pageSize
  * @param  {String} query
  */
-Search.prototype.runSecondPass = function ({
+Search.prototype.runSecondPass = function({
   documents,
   indexableFields,
   page = 1,
@@ -796,7 +825,7 @@ Search.prototype.runSecondPass = function ({
       })
       const distanceFactor = 1 / (distance + 1)
 
-      return weight + (indexWeight * distanceFactor)
+      return weight + indexWeight * distanceFactor
     }, 0)
 
     weights.set(document._id, weight)
@@ -828,7 +857,7 @@ Search.prototype.runSecondPass = function ({
  * @param   {String} query
  * @returns {Array<String>}
  */
-Search.prototype.tokenise = function (query) {
+Search.prototype.tokenise = function(query) {
   const tokeniser = new natural.RegexpTokenizer({
     pattern: new RegExp(/[^a-zA-Z\u00C0-\u017F]/i)
   })

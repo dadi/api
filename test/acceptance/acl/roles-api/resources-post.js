@@ -5,22 +5,27 @@ const request = require('supertest')
 const should = require('should')
 
 const configBackup = config.get()
-const client = request(`http://${config.get('server.host')}:${config.get('server.port')}`)
+const client = request(
+  `http://${config.get('server.host')}:${config.get('server.port')}`
+)
 
 module.exports = () => {
   beforeEach(() => {
-    return help.createACLRole({
-      name: 'parent'
-    }).then(() => {
-      return help.createACLRole({
-        name: 'child',
-        extends: 'parent'
+    return help
+      .createACLRole({
+        name: 'parent'
       })
-    }).then(() => {
-      return help.createACLRole({
-        name: 'cousin'
+      .then(() => {
+        return help.createACLRole({
+          name: 'child',
+          extends: 'parent'
+        })
       })
-    })
+      .then(() => {
+        return help.createACLRole({
+          name: 'cousin'
+        })
+      })
   })
 
   describe('error states', () => {
@@ -33,15 +38,15 @@ module.exports = () => {
       }
 
       client
-      .post('/api/roles/child/resources')
-      .send(resource)
-      .set('content-type', 'application/json')
-      .expect('content-type', 'application/json')
-      .end((err, res) => {
-        res.statusCode.should.eql(401)
+        .post('/api/roles/child/resources')
+        .send(resource)
+        .set('content-type', 'application/json')
+        .expect('content-type', 'application/json')
+        .end((err, res) => {
+          res.statusCode.should.eql(401)
 
-        done()
-      })
+          done()
+        })
     })
 
     it('should return 403 if the request includes a valid bearer token without sufficient permissions on the "roles" resource (no resource)', done => {
@@ -67,33 +72,33 @@ module.exports = () => {
 
       help.createACLClient(testClient).then(() => {
         client
-        .post(config.get('auth.tokenUrl'))
-        .set('content-type', 'application/json')
-        .send({
-          clientId: testClient.clientId,
-          secret: testClient.secret
-        })
-        .expect(200)
-        .expect('content-type', 'application/json')
-        .end((err, res) => {
-          if (err) return done(err)
-
-          res.body.accessToken.should.be.String
-
-          const bearerToken = res.body.accessToken
-
-          client
-          .post('/api/roles/child/resources')
-          .send(resource)
+          .post(config.get('auth.tokenUrl'))
           .set('content-type', 'application/json')
-          .set('Authorization', `Bearer ${bearerToken}`)
+          .send({
+            clientId: testClient.clientId,
+            secret: testClient.secret
+          })
+          .expect(200)
           .expect('content-type', 'application/json')
           .end((err, res) => {
-            res.statusCode.should.eql(403)
+            if (err) return done(err)
 
-            done()
+            res.body.accessToken.should.be.String
+
+            const bearerToken = res.body.accessToken
+
+            client
+              .post('/api/roles/child/resources')
+              .send(resource)
+              .set('content-type', 'application/json')
+              .set('Authorization', `Bearer ${bearerToken}`)
+              .expect('content-type', 'application/json')
+              .end((err, res) => {
+                res.statusCode.should.eql(403)
+
+                done()
+              })
           })
-        })
       })
     })
 
@@ -104,7 +109,7 @@ module.exports = () => {
         resources: {
           roles: {
             update: false
-          },            
+          },
           'collection:library_book': {
             create: true,
             delete: true,
@@ -119,37 +124,37 @@ module.exports = () => {
         access: {
           read: true
         }
-      }      
+      }
 
       help.createACLClient(testClient).then(() => {
         client
-        .post(config.get('auth.tokenUrl'))
-        .set('content-type', 'application/json')
-        .send({
-          clientId: testClient.clientId,
-          secret: testClient.secret
-        })
-        .expect(200)
-        .expect('content-type', 'application/json')
-        .end((err, res) => {
-          if (err) return done(err)
-
-          res.body.accessToken.should.be.String
-
-          const bearerToken = res.body.accessToken
-
-          client
-          .post('/api/roles/child/resources')
-          .send(resource)
+          .post(config.get('auth.tokenUrl'))
           .set('content-type', 'application/json')
-          .set('Authorization', `Bearer ${bearerToken}`)
+          .send({
+            clientId: testClient.clientId,
+            secret: testClient.secret
+          })
+          .expect(200)
           .expect('content-type', 'application/json')
           .end((err, res) => {
-            res.statusCode.should.eql(403)
+            if (err) return done(err)
 
-            done()
+            res.body.accessToken.should.be.String
+
+            const bearerToken = res.body.accessToken
+
+            client
+              .post('/api/roles/child/resources')
+              .send(resource)
+              .set('content-type', 'application/json')
+              .set('Authorization', `Bearer ${bearerToken}`)
+              .expect('content-type', 'application/json')
+              .end((err, res) => {
+                res.statusCode.should.eql(403)
+
+                done()
+              })
           })
-        })
       })
     })
 
@@ -160,7 +165,7 @@ module.exports = () => {
         resources: {
           roles: {
             update: true
-          },            
+          },
           'collection:library_book': {
             create: true,
             read: false
@@ -176,33 +181,33 @@ module.exports = () => {
 
       help.createACLClient(testClient).then(() => {
         client
-        .post(config.get('auth.tokenUrl'))
-        .set('content-type', 'application/json')
-        .send({
-          clientId: testClient.clientId,
-          secret: testClient.secret
-        })
-        .expect(200)
-        .expect('content-type', 'application/json')
-        .end((err, res) => {
-          if (err) return done(err)
-
-          res.body.accessToken.should.be.String
-
-          const bearerToken = res.body.accessToken
-
-          client
-          .post('/api/roles/child/resources')
-          .send(resource)
+          .post(config.get('auth.tokenUrl'))
           .set('content-type', 'application/json')
-          .set('Authorization', `Bearer ${bearerToken}`)
+          .send({
+            clientId: testClient.clientId,
+            secret: testClient.secret
+          })
+          .expect(200)
           .expect('content-type', 'application/json')
           .end((err, res) => {
-            res.statusCode.should.eql(403)
+            if (err) return done(err)
 
-            done()
+            res.body.accessToken.should.be.String
+
+            const bearerToken = res.body.accessToken
+
+            client
+              .post('/api/roles/child/resources')
+              .send(resource)
+              .set('content-type', 'application/json')
+              .set('Authorization', `Bearer ${bearerToken}`)
+              .expect('content-type', 'application/json')
+              .end((err, res) => {
+                res.statusCode.should.eql(403)
+
+                done()
+              })
           })
-        })
       })
     })
 
@@ -213,7 +218,7 @@ module.exports = () => {
         resources: {
           roles: {
             update: true
-          },            
+          },
           'collection:library_book': {
             create: true,
             read: false
@@ -230,33 +235,33 @@ module.exports = () => {
 
       help.createACLClient(testClient).then(() => {
         client
-        .post(config.get('auth.tokenUrl'))
-        .set('content-type', 'application/json')
-        .send({
-          clientId: testClient.clientId,
-          secret: testClient.secret
-        })
-        .expect(200)
-        .expect('content-type', 'application/json')
-        .end((err, res) => {
-          if (err) return done(err)
-
-          res.body.accessToken.should.be.String
-
-          const bearerToken = res.body.accessToken
-
-          client
-          .post('/api/roles/child/resources')
-          .send(resource)
+          .post(config.get('auth.tokenUrl'))
           .set('content-type', 'application/json')
-          .set('Authorization', `Bearer ${bearerToken}`)
+          .send({
+            clientId: testClient.clientId,
+            secret: testClient.secret
+          })
+          .expect(200)
           .expect('content-type', 'application/json')
           .end((err, res) => {
-            res.statusCode.should.eql(403)
+            if (err) return done(err)
 
-            done()
+            res.body.accessToken.should.be.String
+
+            const bearerToken = res.body.accessToken
+
+            client
+              .post('/api/roles/child/resources')
+              .send(resource)
+              .set('content-type', 'application/json')
+              .set('Authorization', `Bearer ${bearerToken}`)
+              .expect('content-type', 'application/json')
+              .end((err, res) => {
+                res.statusCode.should.eql(403)
+
+                done()
+              })
           })
-        })
       })
     })
 
@@ -267,7 +272,7 @@ module.exports = () => {
         resources: {
           roles: {
             update: true
-          },            
+          },
           'collection:library_book': {
             read: true
           }
@@ -277,43 +282,43 @@ module.exports = () => {
         access: {
           read: true
         }
-      }      
+      }
 
       help.createACLClient(testClient).then(() => {
         client
-        .post(config.get('auth.tokenUrl'))
-        .set('content-type', 'application/json')
-        .send({
-          clientId: testClient.clientId,
-          secret: testClient.secret
-        })
-        .expect(200)
-        .expect('content-type', 'application/json')
-        .end((err, res) => {
-          if (err) return done(err)
-
-          res.body.accessToken.should.be.String
-
-          const bearerToken = res.body.accessToken
-
-          client
-          .post('/api/roles/child/resources')
-          .send(resource)
+          .post(config.get('auth.tokenUrl'))
           .set('content-type', 'application/json')
-          .set('Authorization', `Bearer ${bearerToken}`)
+          .send({
+            clientId: testClient.clientId,
+            secret: testClient.secret
+          })
+          .expect(200)
           .expect('content-type', 'application/json')
           .end((err, res) => {
-            res.statusCode.should.eql(400)
+            if (err) return done(err)
 
-            res.body.success.should.eql(false)
-            res.body.errors.should.be.Array
-            res.body.errors[0].should.eql(
-              'Invalid input. Expected: {"name": String, "access": Object}'
-            )
+            res.body.accessToken.should.be.String
 
-            done()
+            const bearerToken = res.body.accessToken
+
+            client
+              .post('/api/roles/child/resources')
+              .send(resource)
+              .set('content-type', 'application/json')
+              .set('Authorization', `Bearer ${bearerToken}`)
+              .expect('content-type', 'application/json')
+              .end((err, res) => {
+                res.statusCode.should.eql(400)
+
+                res.body.success.should.eql(false)
+                res.body.errors.should.be.Array
+                res.body.errors[0].should.eql(
+                  'Invalid input. Expected: {"name": String, "access": Object}'
+                )
+
+                done()
+              })
           })
-        })
       })
     })
 
@@ -324,7 +329,7 @@ module.exports = () => {
         resources: {
           roles: {
             update: true
-          },            
+          },
           'collection:library_book': {
             read: true
           }
@@ -336,39 +341,39 @@ module.exports = () => {
 
       help.createACLClient(testClient).then(() => {
         client
-        .post(config.get('auth.tokenUrl'))
-        .set('content-type', 'application/json')
-        .send({
-          clientId: testClient.clientId,
-          secret: testClient.secret
-        })
-        .expect(200)
-        .expect('content-type', 'application/json')
-        .end((err, res) => {
-          if (err) return done(err)
-
-          res.body.accessToken.should.be.String
-
-          const bearerToken = res.body.accessToken
-
-          client
-          .post('/api/roles/child/resources')
-          .send(resource)
+          .post(config.get('auth.tokenUrl'))
           .set('content-type', 'application/json')
-          .set('Authorization', `Bearer ${bearerToken}`)
+          .send({
+            clientId: testClient.clientId,
+            secret: testClient.secret
+          })
+          .expect(200)
           .expect('content-type', 'application/json')
           .end((err, res) => {
-            res.statusCode.should.eql(400)
+            if (err) return done(err)
 
-            res.body.success.should.eql(false)
-            res.body.errors.should.be.Array
-            res.body.errors[0].should.eql(
-              'Invalid input. Expected: {"name": String, "access": Object}'
-            )
+            res.body.accessToken.should.be.String
 
-            done()
+            const bearerToken = res.body.accessToken
+
+            client
+              .post('/api/roles/child/resources')
+              .send(resource)
+              .set('content-type', 'application/json')
+              .set('Authorization', `Bearer ${bearerToken}`)
+              .expect('content-type', 'application/json')
+              .end((err, res) => {
+                res.statusCode.should.eql(400)
+
+                res.body.success.should.eql(false)
+                res.body.errors.should.be.Array
+                res.body.errors[0].should.eql(
+                  'Invalid input. Expected: {"name": String, "access": Object}'
+                )
+
+                done()
+              })
           })
-        })
       })
     })
 
@@ -390,44 +395,42 @@ module.exports = () => {
 
       help.createACLClient(testClient).then(() => {
         client
-        .post(config.get('auth.tokenUrl'))
-        .set('content-type', 'application/json')
-        .send({
-          clientId: testClient.clientId,
-          secret: testClient.secret
-        })
-        .expect(200)
-        .expect('content-type', 'application/json')
-        .end((err, res) => {
-          if (err) return done(err)
-
-          res.body.accessToken.should.be.String
-
-          const bearerToken = res.body.accessToken
-
-          client
-          .post('/api/roles/child/resources')
-          .send(resource)
+          .post(config.get('auth.tokenUrl'))
           .set('content-type', 'application/json')
-          .set('Authorization', `Bearer ${bearerToken}`)
+          .send({
+            clientId: testClient.clientId,
+            secret: testClient.secret
+          })
+          .expect(200)
           .expect('content-type', 'application/json')
           .end((err, res) => {
-            res.statusCode.should.eql(400)
+            if (err) return done(err)
 
-            res.body.success.should.eql(false)
-            res.body.errors.should.be.Array
-            res.body.errors.includes(
-              'Invalid access type: invalidType'
-            )
-            res.body.errors.includes(
-              'Invalid key in access matrix: invalidField'
-            )
+            res.body.accessToken.should.be.String
 
-            done()
+            const bearerToken = res.body.accessToken
+
+            client
+              .post('/api/roles/child/resources')
+              .send(resource)
+              .set('content-type', 'application/json')
+              .set('Authorization', `Bearer ${bearerToken}`)
+              .expect('content-type', 'application/json')
+              .end((err, res) => {
+                res.statusCode.should.eql(400)
+
+                res.body.success.should.eql(false)
+                res.body.errors.should.be.Array
+                res.body.errors.includes('Invalid access type: invalidType')
+                res.body.errors.includes(
+                  'Invalid key in access matrix: invalidField'
+                )
+
+                done()
+              })
           })
-        })
       })
-    })      
+    })
 
     it('should return 400 if the referenced resource does not exist', done => {
       const testClient = {
@@ -440,43 +443,43 @@ module.exports = () => {
         access: {
           read: true
         }
-      }      
+      }
 
       help.createACLClient(testClient).then(() => {
         client
-        .post(config.get('auth.tokenUrl'))
-        .set('content-type', 'application/json')
-        .send({
-          clientId: testClient.clientId,
-          secret: testClient.secret
-        })
-        .expect(200)
-        .expect('content-type', 'application/json')
-        .end((err, res) => {
-          if (err) return done(err)
-
-          res.body.accessToken.should.be.String
-
-          const bearerToken = res.body.accessToken
-
-          client
-          .post('/api/roles/child/resources')
-          .send(resource)
+          .post(config.get('auth.tokenUrl'))
           .set('content-type', 'application/json')
-          .set('Authorization', `Bearer ${bearerToken}`)
+          .send({
+            clientId: testClient.clientId,
+            secret: testClient.secret
+          })
+          .expect(200)
           .expect('content-type', 'application/json')
           .end((err, res) => {
-            res.statusCode.should.eql(400)
+            if (err) return done(err)
 
-            res.body.success.should.eql(false)
-            res.body.errors.should.be.Array
-            res.body.errors[0].should.eql(
-              `Invalid resource: ${resource.name}`
-            )
+            res.body.accessToken.should.be.String
 
-            done()
+            const bearerToken = res.body.accessToken
+
+            client
+              .post('/api/roles/child/resources')
+              .send(resource)
+              .set('content-type', 'application/json')
+              .set('Authorization', `Bearer ${bearerToken}`)
+              .expect('content-type', 'application/json')
+              .end((err, res) => {
+                res.statusCode.should.eql(400)
+
+                res.body.success.should.eql(false)
+                res.body.errors.should.be.Array
+                res.body.errors[0].should.eql(
+                  `Invalid resource: ${resource.name}`
+                )
+
+                done()
+              })
           })
-        })
       })
     })
   })
@@ -490,7 +493,7 @@ module.exports = () => {
           roles: {
             read: true,
             update: true
-          },            
+          },
           'collection:library_book': {
             read: true
           }
@@ -502,64 +505,26 @@ module.exports = () => {
         access: {
           read: true
         }
-      }      
+      }
 
       help.createACLClient(testClient).then(() => {
         client
-        .post(config.get('auth.tokenUrl'))
-        .set('content-type', 'application/json')
-        .send({
-          clientId: testClient.clientId,
-          secret: testClient.secret
-        })
-        .expect(200)
-        .expect('content-type', 'application/json')
-        .end((err, res) => {
-          if (err) return done(err)
-
-          res.body.accessToken.should.be.String
-
-          const bearerToken = res.body.accessToken
-
-          client
-          .get('/api/roles/child')
+          .post(config.get('auth.tokenUrl'))
           .set('content-type', 'application/json')
-          .set('Authorization', `Bearer ${bearerToken}`)
+          .send({
+            clientId: testClient.clientId,
+            secret: testClient.secret
+          })
+          .expect(200)
           .expect('content-type', 'application/json')
           .end((err, res) => {
-            res.statusCode.should.eql(200)
+            if (err) return done(err)
 
-            res.body.results.should.be.Array
-            res.body.results.length.should.eql(1)
+            res.body.accessToken.should.be.String
 
-            const result = res.body.results[0]
-
-            result.resources.should.eql({})
+            const bearerToken = res.body.accessToken
 
             client
-            .post('/api/roles/child/resources')
-            .send(resource)
-            .set('content-type', 'application/json')
-            .set('Authorization', `Bearer ${bearerToken}`)
-            .expect('content-type', 'application/json')
-            .end((err, res) => {
-              res.statusCode.should.eql(201)
-
-              res.body.results.should.be.Array
-              res.body.results.length.should.eql(1)
-
-              const result = res.body.results[0]
-
-              result.name.should.eql('child')
-              result.resources[resource.name].create.should.eql(false)
-              result.resources[resource.name].delete.should.eql(false)
-              result.resources[resource.name].deleteOwn.should.eql(false)
-              result.resources[resource.name].read.should.eql(resource.access.read)
-              result.resources[resource.name].readOwn.should.eql(false)
-              result.resources[resource.name].update.should.eql(false)
-              result.resources[resource.name].updateOwn.should.eql(false)
-
-              client
               .get('/api/roles/child')
               .set('content-type', 'application/json')
               .set('Authorization', `Bearer ${bearerToken}`)
@@ -572,19 +537,67 @@ module.exports = () => {
 
                 const result = res.body.results[0]
 
-                result.resources[resource.name].create.should.eql(false)
-                result.resources[resource.name].delete.should.eql(false)
-                result.resources[resource.name].deleteOwn.should.eql(false)
-                result.resources[resource.name].read.should.eql(resource.access.read)
-                result.resources[resource.name].readOwn.should.eql(false)
-                result.resources[resource.name].update.should.eql(false)
-                result.resources[resource.name].updateOwn.should.eql(false)
+                result.resources.should.eql({})
 
-                done()
+                client
+                  .post('/api/roles/child/resources')
+                  .send(resource)
+                  .set('content-type', 'application/json')
+                  .set('Authorization', `Bearer ${bearerToken}`)
+                  .expect('content-type', 'application/json')
+                  .end((err, res) => {
+                    res.statusCode.should.eql(201)
+
+                    res.body.results.should.be.Array
+                    res.body.results.length.should.eql(1)
+
+                    const result = res.body.results[0]
+
+                    result.name.should.eql('child')
+                    result.resources[resource.name].create.should.eql(false)
+                    result.resources[resource.name].delete.should.eql(false)
+                    result.resources[resource.name].deleteOwn.should.eql(false)
+                    result.resources[resource.name].read.should.eql(
+                      resource.access.read
+                    )
+                    result.resources[resource.name].readOwn.should.eql(false)
+                    result.resources[resource.name].update.should.eql(false)
+                    result.resources[resource.name].updateOwn.should.eql(false)
+
+                    client
+                      .get('/api/roles/child')
+                      .set('content-type', 'application/json')
+                      .set('Authorization', `Bearer ${bearerToken}`)
+                      .expect('content-type', 'application/json')
+                      .end((err, res) => {
+                        res.statusCode.should.eql(200)
+
+                        res.body.results.should.be.Array
+                        res.body.results.length.should.eql(1)
+
+                        const result = res.body.results[0]
+
+                        result.resources[resource.name].create.should.eql(false)
+                        result.resources[resource.name].delete.should.eql(false)
+                        result.resources[resource.name].deleteOwn.should.eql(
+                          false
+                        )
+                        result.resources[resource.name].read.should.eql(
+                          resource.access.read
+                        )
+                        result.resources[resource.name].readOwn.should.eql(
+                          false
+                        )
+                        result.resources[resource.name].update.should.eql(false)
+                        result.resources[resource.name].updateOwn.should.eql(
+                          false
+                        )
+
+                        done()
+                      })
+                  })
               })
-            })
           })
-        })
       })
     })
 
@@ -596,7 +609,7 @@ module.exports = () => {
           roles: {
             read: true,
             update: true
-          },            
+          },
           'collection:library_book': {
             read: true,
             updateOwn: true
@@ -604,7 +617,7 @@ module.exports = () => {
           'collection:library_person': {
             read: true,
             create: true
-          }          
+          }
         },
         roles: ['child']
       }
@@ -625,122 +638,186 @@ module.exports = () => {
 
       help.createACLClient(testClient).then(() => {
         client
-        .post(config.get('auth.tokenUrl'))
-        .set('content-type', 'application/json')
-        .send({
-          clientId: testClient.clientId,
-          secret: testClient.secret
-        })
-        .expect(200)
-        .expect('content-type', 'application/json')
-        .end((err, res) => {
-          if (err) return done(err)
-
-          res.body.accessToken.should.be.String
-
-          const bearerToken = res.body.accessToken
-
-          client
-          .get('/api/roles/child')
+          .post(config.get('auth.tokenUrl'))
           .set('content-type', 'application/json')
-          .set('Authorization', `Bearer ${bearerToken}`)
+          .send({
+            clientId: testClient.clientId,
+            secret: testClient.secret
+          })
+          .expect(200)
           .expect('content-type', 'application/json')
           .end((err, res) => {
-            res.statusCode.should.eql(200)
+            if (err) return done(err)
 
-            res.body.results.should.be.Array
-            res.body.results.length.should.eql(1)
+            res.body.accessToken.should.be.String
 
-            const result = res.body.results[0]
-
-            result.resources.should.eql({})
+            const bearerToken = res.body.accessToken
 
             client
-            .post('/api/roles/child/resources')
-            .send(resource1)
-            .set('content-type', 'application/json')
-            .set('Authorization', `Bearer ${bearerToken}`)
-            .expect('content-type', 'application/json')
-            .end((err, res) => {
-              res.statusCode.should.eql(201)
-
-              res.body.results.should.be.Array
-              res.body.results.length.should.eql(1)
-
-              const result = res.body.results[0]
-
-              result.name.should.eql('child')
-              result.resources[resource1.name].create.should.eql(resource1.access.create || false)
-              result.resources[resource1.name].delete.should.eql(resource1.access.delete || false)
-              result.resources[resource1.name].deleteOwn.should.eql(resource1.access.deleteOwn || false)
-              result.resources[resource1.name].read.should.eql(resource1.access.read || false)
-              result.resources[resource1.name].readOwn.should.eql(resource1.access.readOwn || false)
-              result.resources[resource1.name].update.should.eql(resource1.access.update || false)
-              result.resources[resource1.name].updateOwn.should.eql(resource1.access.updateOwn || false)
-
-              client
-              .post('/api/roles/child/resources')
-              .send(resource2)
+              .get('/api/roles/child')
               .set('content-type', 'application/json')
               .set('Authorization', `Bearer ${bearerToken}`)
               .expect('content-type', 'application/json')
               .end((err, res) => {
-                res.statusCode.should.eql(201)
+                res.statusCode.should.eql(200)
 
                 res.body.results.should.be.Array
                 res.body.results.length.should.eql(1)
 
                 const result = res.body.results[0]
 
-                Object.keys(result.resources).length.should.eql(2)
-
-                result.name.should.eql('child')
-                result.resources[resource2.name].create.should.eql(resource2.access.create || false)
-                result.resources[resource2.name].delete.should.eql(resource2.access.delete || false)
-                result.resources[resource2.name].deleteOwn.should.eql(resource2.access.deleteOwn || false)
-                result.resources[resource2.name].read.should.eql(resource2.access.read || false)
-                result.resources[resource2.name].readOwn.should.eql(resource2.access.readOwn || false)
-                result.resources[resource2.name].update.should.eql(resource2.access.update || false)
-                result.resources[resource2.name].updateOwn.should.eql(resource2.access.updateOwn || false)              
+                result.resources.should.eql({})
 
                 client
-                .get('/api/roles/child')
-                .set('content-type', 'application/json')
-                .set('Authorization', `Bearer ${bearerToken}`)
-                .expect('content-type', 'application/json')
-                .end((err, res) => {
-                  res.statusCode.should.eql(200)
+                  .post('/api/roles/child/resources')
+                  .send(resource1)
+                  .set('content-type', 'application/json')
+                  .set('Authorization', `Bearer ${bearerToken}`)
+                  .expect('content-type', 'application/json')
+                  .end((err, res) => {
+                    res.statusCode.should.eql(201)
 
-                  res.body.results.should.be.Array
-                  res.body.results.length.should.eql(1)
+                    res.body.results.should.be.Array
+                    res.body.results.length.should.eql(1)
 
-                  const result = res.body.results[0]
+                    const result = res.body.results[0]
 
-                  Object.keys(result.resources).length.should.eql(2)
+                    result.name.should.eql('child')
+                    result.resources[resource1.name].create.should.eql(
+                      resource1.access.create || false
+                    )
+                    result.resources[resource1.name].delete.should.eql(
+                      resource1.access.delete || false
+                    )
+                    result.resources[resource1.name].deleteOwn.should.eql(
+                      resource1.access.deleteOwn || false
+                    )
+                    result.resources[resource1.name].read.should.eql(
+                      resource1.access.read || false
+                    )
+                    result.resources[resource1.name].readOwn.should.eql(
+                      resource1.access.readOwn || false
+                    )
+                    result.resources[resource1.name].update.should.eql(
+                      resource1.access.update || false
+                    )
+                    result.resources[resource1.name].updateOwn.should.eql(
+                      resource1.access.updateOwn || false
+                    )
 
-                  result.resources[resource1.name].create.should.eql(resource1.access.create || false)
-                  result.resources[resource1.name].delete.should.eql(resource1.access.delete || false)
-                  result.resources[resource1.name].deleteOwn.should.eql(resource1.access.deleteOwn || false)
-                  result.resources[resource1.name].read.should.eql(resource1.access.read || false)
-                  result.resources[resource1.name].readOwn.should.eql(resource1.access.readOwn || false)
-                  result.resources[resource1.name].update.should.eql(resource1.access.update || false)
-                  result.resources[resource1.name].updateOwn.should.eql(resource1.access.updateOwn || false)
+                    client
+                      .post('/api/roles/child/resources')
+                      .send(resource2)
+                      .set('content-type', 'application/json')
+                      .set('Authorization', `Bearer ${bearerToken}`)
+                      .expect('content-type', 'application/json')
+                      .end((err, res) => {
+                        res.statusCode.should.eql(201)
 
-                  result.resources[resource2.name].create.should.eql(resource2.access.create || false)
-                  result.resources[resource2.name].delete.should.eql(resource2.access.delete || false)
-                  result.resources[resource2.name].deleteOwn.should.eql(resource2.access.deleteOwn || false)
-                  result.resources[resource2.name].read.should.eql(resource2.access.read || false)
-                  result.resources[resource2.name].readOwn.should.eql(resource2.access.readOwn || false)
-                  result.resources[resource2.name].update.should.eql(resource2.access.update || false)
-                  result.resources[resource2.name].updateOwn.should.eql(resource2.access.updateOwn || false)                  
+                        res.body.results.should.be.Array
+                        res.body.results.length.should.eql(1)
 
-                  done()
-                })
+                        const result = res.body.results[0]
+
+                        Object.keys(result.resources).length.should.eql(2)
+
+                        result.name.should.eql('child')
+                        result.resources[resource2.name].create.should.eql(
+                          resource2.access.create || false
+                        )
+                        result.resources[resource2.name].delete.should.eql(
+                          resource2.access.delete || false
+                        )
+                        result.resources[resource2.name].deleteOwn.should.eql(
+                          resource2.access.deleteOwn || false
+                        )
+                        result.resources[resource2.name].read.should.eql(
+                          resource2.access.read || false
+                        )
+                        result.resources[resource2.name].readOwn.should.eql(
+                          resource2.access.readOwn || false
+                        )
+                        result.resources[resource2.name].update.should.eql(
+                          resource2.access.update || false
+                        )
+                        result.resources[resource2.name].updateOwn.should.eql(
+                          resource2.access.updateOwn || false
+                        )
+
+                        client
+                          .get('/api/roles/child')
+                          .set('content-type', 'application/json')
+                          .set('Authorization', `Bearer ${bearerToken}`)
+                          .expect('content-type', 'application/json')
+                          .end((err, res) => {
+                            res.statusCode.should.eql(200)
+
+                            res.body.results.should.be.Array
+                            res.body.results.length.should.eql(1)
+
+                            const result = res.body.results[0]
+
+                            Object.keys(result.resources).length.should.eql(2)
+
+                            result.resources[resource1.name].create.should.eql(
+                              resource1.access.create || false
+                            )
+                            result.resources[resource1.name].delete.should.eql(
+                              resource1.access.delete || false
+                            )
+                            result.resources[
+                              resource1.name
+                            ].deleteOwn.should.eql(
+                              resource1.access.deleteOwn || false
+                            )
+                            result.resources[resource1.name].read.should.eql(
+                              resource1.access.read || false
+                            )
+                            result.resources[resource1.name].readOwn.should.eql(
+                              resource1.access.readOwn || false
+                            )
+                            result.resources[resource1.name].update.should.eql(
+                              resource1.access.update || false
+                            )
+                            result.resources[
+                              resource1.name
+                            ].updateOwn.should.eql(
+                              resource1.access.updateOwn || false
+                            )
+
+                            result.resources[resource2.name].create.should.eql(
+                              resource2.access.create || false
+                            )
+                            result.resources[resource2.name].delete.should.eql(
+                              resource2.access.delete || false
+                            )
+                            result.resources[
+                              resource2.name
+                            ].deleteOwn.should.eql(
+                              resource2.access.deleteOwn || false
+                            )
+                            result.resources[resource2.name].read.should.eql(
+                              resource2.access.read || false
+                            )
+                            result.resources[resource2.name].readOwn.should.eql(
+                              resource2.access.readOwn || false
+                            )
+                            result.resources[resource2.name].update.should.eql(
+                              resource2.access.update || false
+                            )
+                            result.resources[
+                              resource2.name
+                            ].updateOwn.should.eql(
+                              resource2.access.updateOwn || false
+                            )
+
+                            done()
+                          })
+                      })
+                  })
               })
-            })
           })
-        })
       })
-    })    
+    })
   })
 }

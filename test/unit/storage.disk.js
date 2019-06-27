@@ -10,17 +10,17 @@ const cache = require(__dirname + '/../../dadi/lib/cache')
 
 const config = require(__dirname + '/../../config')
 
-describe('Storage', function (done) {
-  beforeEach(function (done) {
+describe('Storage', function(done) {
+  beforeEach(function(done) {
     done()
   })
 
-  afterEach(function (done) {
+  afterEach(function(done) {
     done()
   })
 
-  describe('Disk', function (done) {
-    it('should use disk storage handler when set in config', function () {
+  describe('Disk', function(done) {
+    it('should use disk storage handler when set in config', function() {
       config.set('media.enabled', true)
       config.set('media.storage', 'disk')
 
@@ -30,7 +30,7 @@ describe('Storage', function (done) {
       return should.not.exist(storage.s3)
     })
 
-    it('should use disk storage handler as default', function () {
+    it('should use disk storage handler as default', function() {
       config.set('media.enabled', true)
       config.set('media.storage', 'xxx')
 
@@ -40,7 +40,7 @@ describe('Storage', function (done) {
       return should.not.exist(storage.s3)
     })
 
-    it('should set full path to image directory', function () {
+    it('should set full path to image directory', function() {
       config.set('media.enabled', true)
       config.set('media.storage', 'disk')
       config.set('media.basePath', '/tmp')
@@ -53,7 +53,7 @@ describe('Storage', function (done) {
       return storage.path.should.eql('/tmp/1234/5678')
     })
 
-    it('should return full path to image file', function () {
+    it('should return full path to image file', function() {
       config.set('media.enabled', true)
       config.set('media.storage', 'disk')
       config.set('media.basePath', '/tmp')
@@ -66,7 +66,7 @@ describe('Storage', function (done) {
       return storage.getFullUrl().should.eql('/tmp/1234/5678/test.jpg')
     })
 
-    it('should set a new filename if a file exists with the specified name', function (done) {
+    it('should set a new filename if a file exists with the specified name', function(done) {
       config.set('media.enabled', true)
       config.set('media.storage', 'disk')
       config.set('media.basePath', 'test/temp-workspace/media')
@@ -77,7 +77,9 @@ describe('Storage', function (done) {
       // mock the call to fs.stat, returning no error so we can
       // test the file renaming sequence
       sinon.stub(fs, 'stat').yields(null, {
-        isDirectory (path) { return true }
+        isDirectory(path) {
+          return true
+        }
       })
 
       // dummy stream
@@ -86,13 +88,15 @@ describe('Storage', function (done) {
       readable.push('xxx')
       readable.push(null)
 
-      storage.put(readable, '1234/5678').then((data) => {
+      storage.put(readable, '1234/5678').then(data => {
         fs.stat.restore()
 
-        new RegExp('^test-[0-9]*.jpg$').test(path.basename(data.path)).should.eql(true)
+        new RegExp('^test-[0-9]*.jpg$')
+          .test(path.basename(data.path))
+          .should.eql(true)
 
         // remove the file
-        setTimeout(function () {
+        setTimeout(function() {
           fs.unlinkSync(path.join(storage.path, path.basename(data.path)))
           done()
         }, 1000)

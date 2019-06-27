@@ -4,8 +4,8 @@ const should = require('should')
 const sinon = require('sinon')
 const help = require(__dirname + '/../../dadi/lib/help')
 
-describe('Help', function (done) {
-  describe('sendBackErrorTrace', function () {
+describe('Help', function(done) {
+  describe('sendBackErrorTrace', function() {
     it('should send a 500 with the error trace', done => {
       let mockError
 
@@ -33,17 +33,19 @@ describe('Help', function (done) {
       const body = JSON.parse(res.end.args[0][0])
 
       body.success.should.eql(false)
-      body.error.includes('ReferenceError: thisWillBreak is not defined').should.eql(true)
+      body.error
+        .includes('ReferenceError: thisWillBreak is not defined')
+        .should.eql(true)
       res.statusCode.should.eql(500)
 
       done()
     })
   })
 
-  describe('sendBackErrorWithCode', function () {
+  describe('sendBackErrorWithCode', function() {
     it('should send an error with the formatted message corresponding to the API error code with the status code provided', done => {
       const res = {
-        end: function end (resBody) {
+        end: function end(resBody) {
           this.setHeader.callCount.should.eql(3)
           this.setHeader.args[0][0].should.eql('Content-Length')
           this.setHeader.args[0][1].should.be.Number
@@ -67,7 +69,7 @@ describe('Help', function (done) {
 
     it('should send an error with the formatted message corresponding to the API error code with the status code 500 if one is not provided', done => {
       const res = {
-        end: function end (resBody) {
+        end: function end(resBody) {
           this.setHeader.callCount.should.eql(3)
           this.setHeader.args[0][0].should.eql('Content-Length')
           this.setHeader.args[0][1].should.be.Number
@@ -90,13 +92,11 @@ describe('Help', function (done) {
     })
   })
 
-  describe('sendBackJSONP', function () {
+  describe('sendBackJSONP', function() {
     it('should call the next handler if there is an error', done => {
       const nextFn = sinon.stub()
 
-      help.sendBackJSONP('foobar', {}, nextFn)(
-        new Error('Something')
-      )
+      help.sendBackJSONP('foobar', {}, nextFn)(new Error('Something'))
 
       nextFn.callCount.should.eql(1)
 
@@ -108,10 +108,7 @@ describe('Help', function (done) {
         send: sinon.stub()
       }
 
-      help.sendBackJSONP('foobar123', res)(
-        null,
-        {}
-      )
+      help.sendBackJSONP('foobar123', res)(null, {})
 
       res.send.callCount.should.eql(1)
       res.send.args[0][0].should.eql(400)
@@ -125,15 +122,10 @@ describe('Help', function (done) {
         setHeader: sinon.stub()
       }
       const data = {
-        results: [
-          { _id: '123', name: 'Restful Jim' }
-        ]
+        results: [{_id: '123', name: 'Restful Jim'}]
       }
 
-      help.sendBackJSONP('foobar', res)(
-        null,
-        data
-      )
+      help.sendBackJSONP('foobar', res)(null, data)
 
       res.setHeader.callCount.should.eql(2)
       res.setHeader.args[0][0].should.eql('content-type')
@@ -148,17 +140,18 @@ describe('Help', function (done) {
     })
   })
 
-  describe('parseQuery', function () {
-    it('should export method', function (done) {
+  describe('parseQuery', function() {
+    it('should export method', function(done) {
       help.parseQuery.should.be.Function
       done()
     })
 
-    it('should return correct JSON object for valid querystring', function (done) {
+    it('should return correct JSON object for valid querystring', function(done) {
       const querystring = '{ "cap_id": 2337,"year":2224,"plate":4 }'
       const query = help.parseQuery(querystring)
 
-      let k = '', v = ''
+      let k = '',
+        v = ''
 
       for (const key in query) {
         if (key === 'plate') {
@@ -173,11 +166,12 @@ describe('Help', function (done) {
       done()
     })
 
-    it('should return empty JSON object for invalid querystring', function (done) {
+    it('should return empty JSON object for invalid querystring', function(done) {
       const querystring = '{ "cap_id: 2337,"year":2224,"plate":4 }'
       const query = help.parseQuery(querystring)
 
-      let k = '', v = ''
+      let k = '',
+        v = ''
 
       for (const key in query) {
         v = query[key]
@@ -191,11 +185,12 @@ describe('Help', function (done) {
       done()
     })
 
-    it('should do nothing for querystring with leading zeroes', function (done) {
+    it('should do nothing for querystring with leading zeroes', function(done) {
       const querystring = '{ "title": "My 007 Movie" }'
       const query = help.parseQuery(querystring)
 
-      let k = '', v = ''
+      let k = '',
+        v = ''
 
       for (const key in query) {
         if (key === 'title') {

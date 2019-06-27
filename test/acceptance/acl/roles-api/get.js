@@ -6,34 +6,39 @@ const should = require('should')
 
 module.exports = () => {
   const configBackup = config.get()
-  const client = request(`http://${config.get('server.host')}:${config.get('server.port')}`)
+  const client = request(
+    `http://${config.get('server.host')}:${config.get('server.port')}`
+  )
 
   beforeEach(() => {
-    return help.createACLRole({
-      name: 'parent'
-    }).then(() => {
-      return help.createACLRole({
-        name: 'child',
-        extends: 'parent'
+    return help
+      .createACLRole({
+        name: 'parent'
       })
-    }).then(() => {
-      return help.createACLRole({
-        name: 'cousin'
+      .then(() => {
+        return help.createACLRole({
+          name: 'child',
+          extends: 'parent'
+        })
       })
-    })
-  })  
+      .then(() => {
+        return help.createACLRole({
+          name: 'cousin'
+        })
+      })
+  })
 
   describe('error states', () => {
     it('should return 401 if the request does not include a valid bearer token', done => {
       client
-      .get('/api/roles')
-      .set('content-type', 'application/json')
-      .expect('content-type', 'application/json')
-      .end((err, res) => {
-        res.statusCode.should.eql(401)
+        .get('/api/roles')
+        .set('content-type', 'application/json')
+        .expect('content-type', 'application/json')
+        .end((err, res) => {
+          res.statusCode.should.eql(401)
 
-        done()
-      })
+          done()
+        })
     })
 
     it('should return 403 if the request includes a valid bearer token without sufficient permissions on the "roles" resource (no resource)', done => {
@@ -44,32 +49,32 @@ module.exports = () => {
 
       help.createACLClient(testClient).then(() => {
         client
-        .post(config.get('auth.tokenUrl'))
-        .set('content-type', 'application/json')
-        .send({
-          clientId: testClient.clientId,
-          secret: testClient.secret
-        })
-        .expect(200)
-        .expect('content-type', 'application/json')
-        .end((err, res) => {
-          if (err) return done(err)
-
-          res.body.accessToken.should.be.String
-
-          const bearerToken = res.body.accessToken
-
-          client
-          .get('/api/roles')
+          .post(config.get('auth.tokenUrl'))
           .set('content-type', 'application/json')
-          .set('Authorization', `Bearer ${bearerToken}`)
+          .send({
+            clientId: testClient.clientId,
+            secret: testClient.secret
+          })
+          .expect(200)
           .expect('content-type', 'application/json')
           .end((err, res) => {
-            res.statusCode.should.eql(403)
+            if (err) return done(err)
 
-            done()
+            res.body.accessToken.should.be.String
+
+            const bearerToken = res.body.accessToken
+
+            client
+              .get('/api/roles')
+              .set('content-type', 'application/json')
+              .set('Authorization', `Bearer ${bearerToken}`)
+              .expect('content-type', 'application/json')
+              .end((err, res) => {
+                res.statusCode.should.eql(403)
+
+                done()
+              })
           })
-        })
       })
     })
 
@@ -86,32 +91,32 @@ module.exports = () => {
 
       help.createACLClient(testClient).then(() => {
         client
-        .post(config.get('auth.tokenUrl'))
-        .set('content-type', 'application/json')
-        .send({
-          clientId: testClient.clientId,
-          secret: testClient.secret
-        })
-        .expect(200)
-        .expect('content-type', 'application/json')
-        .end((err, res) => {
-          if (err) return done(err)
-
-          res.body.accessToken.should.be.String
-
-          const bearerToken = res.body.accessToken
-
-          client
-          .get('/api/roles')
+          .post(config.get('auth.tokenUrl'))
           .set('content-type', 'application/json')
-          .set('Authorization', `Bearer ${bearerToken}`)
+          .send({
+            clientId: testClient.clientId,
+            secret: testClient.secret
+          })
+          .expect(200)
           .expect('content-type', 'application/json')
           .end((err, res) => {
-            res.statusCode.should.eql(403)
+            if (err) return done(err)
 
-            done()
+            res.body.accessToken.should.be.String
+
+            const bearerToken = res.body.accessToken
+
+            client
+              .get('/api/roles')
+              .set('content-type', 'application/json')
+              .set('Authorization', `Bearer ${bearerToken}`)
+              .expect('content-type', 'application/json')
+              .end((err, res) => {
+                res.statusCode.should.eql(403)
+
+                done()
+              })
           })
-        })
       })
     })
 
@@ -128,32 +133,32 @@ module.exports = () => {
 
       help.createACLClient(testClient).then(() => {
         client
-        .post(config.get('auth.tokenUrl'))
-        .set('content-type', 'application/json')
-        .send({
-          clientId: testClient.clientId,
-          secret: testClient.secret
-        })
-        .expect(200)
-        .expect('content-type', 'application/json')
-        .end((err, res) => {
-          if (err) return done(err)
-
-          res.body.accessToken.should.be.String
-
-          const bearerToken = res.body.accessToken
-
-          client
-          .get('/api/roles/does-not-exist')
+          .post(config.get('auth.tokenUrl'))
           .set('content-type', 'application/json')
-          .set('Authorization', `Bearer ${bearerToken}`)
+          .send({
+            clientId: testClient.clientId,
+            secret: testClient.secret
+          })
+          .expect(200)
           .expect('content-type', 'application/json')
           .end((err, res) => {
-            res.statusCode.should.eql(404)
+            if (err) return done(err)
 
-            done()
+            res.body.accessToken.should.be.String
+
+            const bearerToken = res.body.accessToken
+
+            client
+              .get('/api/roles/does-not-exist')
+              .set('content-type', 'application/json')
+              .set('Authorization', `Bearer ${bearerToken}`)
+              .expect('content-type', 'application/json')
+              .end((err, res) => {
+                res.statusCode.should.eql(404)
+
+                done()
+              })
           })
-        })
       })
     })
   })
@@ -172,49 +177,49 @@ module.exports = () => {
 
       help.createACLClient(testClient).then(() => {
         client
-        .post(config.get('auth.tokenUrl'))
-        .set('content-type', 'application/json')
-        .send({
-          clientId: testClient.clientId,
-          secret: testClient.secret
-        })
-        .expect(200)
-        .expect('content-type', 'application/json')
-        .end((err, res) => {
-          if (err) return done(err)
-
-          res.body.accessToken.should.be.String
-
-          const bearerToken = res.body.accessToken
-
-          client
-          .get('/api/roles')
+          .post(config.get('auth.tokenUrl'))
           .set('content-type', 'application/json')
-          .set('Authorization', `Bearer ${bearerToken}`)
+          .send({
+            clientId: testClient.clientId,
+            secret: testClient.secret
+          })
+          .expect(200)
           .expect('content-type', 'application/json')
           .end((err, res) => {
-            res.statusCode.should.eql(200)
+            if (err) return done(err)
 
-            const results = res.body.results
+            res.body.accessToken.should.be.String
 
-            results.should.be.Array
-            results.length.should.eql(3)
+            const bearerToken = res.body.accessToken
 
-            results[0].name.should.eql('child')
-            results[0].extends.should.eql('parent')
-            Object.keys(results[0].resources).length.should.eql(0)
+            client
+              .get('/api/roles')
+              .set('content-type', 'application/json')
+              .set('Authorization', `Bearer ${bearerToken}`)
+              .expect('content-type', 'application/json')
+              .end((err, res) => {
+                res.statusCode.should.eql(200)
 
-            results[1].name.should.eql('cousin')
-            should.equal(results[1].extends, null)
-            Object.keys(results[1].resources).length.should.eql(0)
+                const results = res.body.results
 
-            results[2].name.should.eql('parent')
-            should.equal(results[2].extends, null)
-            Object.keys(results[2].resources).length.should.eql(0)
+                results.should.be.Array
+                results.length.should.eql(3)
 
-            done()
+                results[0].name.should.eql('child')
+                results[0].extends.should.eql('parent')
+                Object.keys(results[0].resources).length.should.eql(0)
+
+                results[1].name.should.eql('cousin')
+                should.equal(results[1].extends, null)
+                Object.keys(results[1].resources).length.should.eql(0)
+
+                results[2].name.should.eql('parent')
+                should.equal(results[2].extends, null)
+                Object.keys(results[2].resources).length.should.eql(0)
+
+                done()
+              })
           })
-        })
       })
     })
 
@@ -237,62 +242,22 @@ module.exports = () => {
 
       help.createACLClient(testClient).then(() => {
         client
-        .post(config.get('auth.tokenUrl'))
-        .set('content-type', 'application/json')
-        .send({
-          clientId: testClient.clientId,
-          secret: testClient.secret
-        })
-        .expect(200)
-        .expect('content-type', 'application/json')
-        .end((err, res) => {
-          if (err) return done(err)
-
-          res.body.accessToken.should.be.String
-
-          const bearerToken = res.body.accessToken
-
-          client
-          .get('/api/roles')
+          .post(config.get('auth.tokenUrl'))
           .set('content-type', 'application/json')
-          .set('Authorization', `Bearer ${bearerToken}`)
+          .send({
+            clientId: testClient.clientId,
+            secret: testClient.secret
+          })
+          .expect(200)
           .expect('content-type', 'application/json')
           .end((err, res) => {
-            res.statusCode.should.eql(200)
+            if (err) return done(err)
 
-            const results = res.body.results
+            res.body.accessToken.should.be.String
 
-            results.should.be.Array
-            results.length.should.eql(3)
-
-            results[0].name.should.eql('child')
-            results[0].extends.should.eql('parent')
-            Object.keys(results[0].resources).length.should.eql(0)
-
-            results[1].name.should.eql('cousin')
-            should.equal(results[1].extends, null)
-            Object.keys(results[1].resources).length.should.eql(0)
-
-            results[2].name.should.eql('parent')
-            should.equal(results[2].extends, null)
-            Object.keys(results[2].resources).length.should.eql(0)
+            const bearerToken = res.body.accessToken
 
             client
-            .post('/api/roles')
-            .send(newRole)
-            .set('content-type', 'application/json')
-            .set('Authorization', `Bearer ${bearerToken}`)
-            .expect('content-type', 'application/json')
-            .end((err, res) => {
-              res.statusCode.should.eql(201)
-
-              res.body.results.should.be.Array
-              res.body.results.length.should.eql(1)
-              res.body.results[0].name.should.eql(newRole.name)
-              res.body.results[0].extends.should.eql(newRole.extends)
-              Object.keys(res.body.results[0].resources).should.eql(0)
-
-              client
               .get('/api/roles')
               .set('content-type', 'application/json')
               .set('Authorization', `Bearer ${bearerToken}`)
@@ -303,29 +268,69 @@ module.exports = () => {
                 const results = res.body.results
 
                 results.should.be.Array
-                results.length.should.eql(4)
+                results.length.should.eql(3)
 
-                results[0].name.should.eql(newRole.name)
-                results[0].extends.should.eql(newRole.extends)
+                results[0].name.should.eql('child')
+                results[0].extends.should.eql('parent')
                 Object.keys(results[0].resources).length.should.eql(0)
 
-                results[1].name.should.eql('child')
-                results[1].extends.should.eql('parent')
+                results[1].name.should.eql('cousin')
+                should.equal(results[1].extends, null)
                 Object.keys(results[1].resources).length.should.eql(0)
 
-                results[2].name.should.eql('cousin')
+                results[2].name.should.eql('parent')
                 should.equal(results[2].extends, null)
                 Object.keys(results[2].resources).length.should.eql(0)
 
-                results[3].name.should.eql('parent')
-                should.equal(results[3].extends, null)
-                Object.keys(results[3].resources).length.should.eql(0)
+                client
+                  .post('/api/roles')
+                  .send(newRole)
+                  .set('content-type', 'application/json')
+                  .set('Authorization', `Bearer ${bearerToken}`)
+                  .expect('content-type', 'application/json')
+                  .end((err, res) => {
+                    res.statusCode.should.eql(201)
 
-                done()
+                    res.body.results.should.be.Array
+                    res.body.results.length.should.eql(1)
+                    res.body.results[0].name.should.eql(newRole.name)
+                    res.body.results[0].extends.should.eql(newRole.extends)
+                    Object.keys(res.body.results[0].resources).should.eql(0)
+
+                    client
+                      .get('/api/roles')
+                      .set('content-type', 'application/json')
+                      .set('Authorization', `Bearer ${bearerToken}`)
+                      .expect('content-type', 'application/json')
+                      .end((err, res) => {
+                        res.statusCode.should.eql(200)
+
+                        const results = res.body.results
+
+                        results.should.be.Array
+                        results.length.should.eql(4)
+
+                        results[0].name.should.eql(newRole.name)
+                        results[0].extends.should.eql(newRole.extends)
+                        Object.keys(results[0].resources).length.should.eql(0)
+
+                        results[1].name.should.eql('child')
+                        results[1].extends.should.eql('parent')
+                        Object.keys(results[1].resources).length.should.eql(0)
+
+                        results[2].name.should.eql('cousin')
+                        should.equal(results[2].extends, null)
+                        Object.keys(results[2].resources).length.should.eql(0)
+
+                        results[3].name.should.eql('parent')
+                        should.equal(results[3].extends, null)
+                        Object.keys(results[3].resources).length.should.eql(0)
+
+                        done()
+                      })
+                  })
               })
-            })
           })
-        })
       })
     })
 
@@ -344,55 +349,22 @@ module.exports = () => {
 
       help.createACLClient(testClient).then(() => {
         client
-        .post(config.get('auth.tokenUrl'))
-        .set('content-type', 'application/json')
-        .send({
-          clientId: testClient.clientId,
-          secret: testClient.secret
-        })
-        .expect(200)
-        .expect('content-type', 'application/json')
-        .end((err, res) => {
-          if (err) return done(err)
-
-          res.body.accessToken.should.be.String
-
-          const bearerToken = res.body.accessToken
-
-          client
-          .get('/api/roles')
+          .post(config.get('auth.tokenUrl'))
           .set('content-type', 'application/json')
-          .set('Authorization', `Bearer ${bearerToken}`)
+          .send({
+            clientId: testClient.clientId,
+            secret: testClient.secret
+          })
+          .expect(200)
           .expect('content-type', 'application/json')
           .end((err, res) => {
-            res.statusCode.should.eql(200)
+            if (err) return done(err)
 
-            const results = res.body.results
+            res.body.accessToken.should.be.String
 
-            results.should.be.Array
-            results.length.should.eql(3)
-
-            results[0].name.should.eql('child')
-            results[0].extends.should.eql('parent')
-            Object.keys(results[0].resources).length.should.eql(0)
-
-            results[1].name.should.eql('cousin')
-            should.equal(results[1].extends, null)
-            Object.keys(results[1].resources).length.should.eql(0)
-
-            results[2].name.should.eql('parent')
-            should.equal(results[2].extends, null)
-            Object.keys(results[2].resources).length.should.eql(0)
+            const bearerToken = res.body.accessToken
 
             client
-            .delete('/api/roles/cousin')
-            .set('content-type', 'application/json')
-            .set('Authorization', `Bearer ${bearerToken}`)
-            .expect('content-type', 'application/json')
-            .end((err, res) => {
-              res.statusCode.should.eql(204)
-
-              client
               .get('/api/roles')
               .set('content-type', 'application/json')
               .set('Authorization', `Bearer ${bearerToken}`)
@@ -403,21 +375,54 @@ module.exports = () => {
                 const results = res.body.results
 
                 results.should.be.Array
-                results.length.should.eql(2)
+                results.length.should.eql(3)
 
                 results[0].name.should.eql('child')
                 results[0].extends.should.eql('parent')
                 Object.keys(results[0].resources).length.should.eql(0)
 
-                results[1].name.should.eql('parent')
+                results[1].name.should.eql('cousin')
                 should.equal(results[1].extends, null)
                 Object.keys(results[1].resources).length.should.eql(0)
 
-                done()
+                results[2].name.should.eql('parent')
+                should.equal(results[2].extends, null)
+                Object.keys(results[2].resources).length.should.eql(0)
+
+                client
+                  .delete('/api/roles/cousin')
+                  .set('content-type', 'application/json')
+                  .set('Authorization', `Bearer ${bearerToken}`)
+                  .expect('content-type', 'application/json')
+                  .end((err, res) => {
+                    res.statusCode.should.eql(204)
+
+                    client
+                      .get('/api/roles')
+                      .set('content-type', 'application/json')
+                      .set('Authorization', `Bearer ${bearerToken}`)
+                      .expect('content-type', 'application/json')
+                      .end((err, res) => {
+                        res.statusCode.should.eql(200)
+
+                        const results = res.body.results
+
+                        results.should.be.Array
+                        results.length.should.eql(2)
+
+                        results[0].name.should.eql('child')
+                        results[0].extends.should.eql('parent')
+                        Object.keys(results[0].resources).length.should.eql(0)
+
+                        results[1].name.should.eql('parent')
+                        should.equal(results[1].extends, null)
+                        Object.keys(results[1].resources).length.should.eql(0)
+
+                        done()
+                      })
+                  })
               })
-            })
           })
-        })
       })
     })
 
@@ -434,42 +439,42 @@ module.exports = () => {
 
       help.createACLClient(testClient).then(() => {
         client
-        .post(config.get('auth.tokenUrl'))
-        .set('content-type', 'application/json')
-        .send({
-          clientId: testClient.clientId,
-          secret: testClient.secret
-        })
-        .expect(200)
-        .expect('content-type', 'application/json')
-        .end((err, res) => {
-          if (err) return done(err)
-
-          res.body.accessToken.should.be.String
-
-          const bearerToken = res.body.accessToken
-
-          client
-          .get('/api/roles/child')
+          .post(config.get('auth.tokenUrl'))
           .set('content-type', 'application/json')
-          .set('Authorization', `Bearer ${bearerToken}`)
+          .send({
+            clientId: testClient.clientId,
+            secret: testClient.secret
+          })
+          .expect(200)
           .expect('content-type', 'application/json')
           .end((err, res) => {
-            res.statusCode.should.eql(200)
+            if (err) return done(err)
 
-            const results = res.body.results
+            res.body.accessToken.should.be.String
 
-            results.should.be.Array
-            results.length.should.eql(1)
+            const bearerToken = res.body.accessToken
 
-            results[0].name.should.eql('child')
-            results[0].extends.should.eql('parent')
-            Object.keys(results[0].resources).length.should.eql(0)
+            client
+              .get('/api/roles/child')
+              .set('content-type', 'application/json')
+              .set('Authorization', `Bearer ${bearerToken}`)
+              .expect('content-type', 'application/json')
+              .end((err, res) => {
+                res.statusCode.should.eql(200)
 
-            done()
+                const results = res.body.results
+
+                results.should.be.Array
+                results.length.should.eql(1)
+
+                results[0].name.should.eql('child')
+                results[0].extends.should.eql('parent')
+                Object.keys(results[0].resources).length.should.eql(0)
+
+                done()
+              })
           })
-        })
       })
-    })    
+    })
   })
 }

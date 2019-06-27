@@ -6,7 +6,9 @@ const should = require('should')
 
 describe('Roles API', () => {
   const configBackup = config.get()
-  const client = request(`http://${config.get('server.host')}:${config.get('server.port')}`)
+  const client = request(
+    `http://${config.get('server.host')}:${config.get('server.port')}`
+  )
 
   before(done => {
     app.start(err => {

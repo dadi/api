@@ -5,40 +5,41 @@ const help = require(__dirname + '/../../help')
 const app = require(__dirname + '/../../../../dadi/lib/')
 
 // variables scoped for use throughout tests
-const connectionString = 'http://' + config.get('server.host') + ':' + config.get('server.port')
+const connectionString =
+  'http://' + config.get('server.host') + ':' + config.get('server.port')
 const client = request(connectionString)
 let bearerToken
 const lastModifiedAt = 0
 
-describe('Collections API – PUT', function () {
+describe('Collections API – PUT', function() {
   this.timeout(4000)
 
   let cleanupFn
 
-  before(function (done) {
-    help.dropDatabase('testdb', function (err) {
+  before(function(done) {
+    help.dropDatabase('testdb', function(err) {
       if (err) return done(err)
 
       const schema = {
-        'fields': {
-          'field1': {
-            'type': 'String',
-            'required': false
+        fields: {
+          field1: {
+            type: 'String',
+            required: false
           },
-          'field2': {
-            'type': 'Number',
-            'required': false
+          field2: {
+            type: 'Number',
+            required: false
           },
-          'field3': {
-            'type': 'ObjectID',
-            'required': false
+          field3: {
+            type: 'ObjectID',
+            required: false
           },
-          '_fieldWithUnderscore': {
-            'type': 'Object',
-            'required': false
+          _fieldWithUnderscore: {
+            type: 'Object',
+            required: false
           }
         },
-        'settings': {}
+        settings: {}
       }
 
       const schemaNoHistory = Object.assign({}, schema, {
@@ -70,8 +71,11 @@ describe('Collections API – PUT', function () {
                         callback4()
                       }
 
-                      app.start(function () {
-                        help.getBearerTokenWithAccessType('admin', function (err, token) {
+                      app.start(function() {
+                        help.getBearerTokenWithAccessType('admin', function(
+                          err,
+                          token
+                        ) {
                           if (err) return done(err)
 
                           bearerToken = token
@@ -90,7 +94,7 @@ describe('Collections API – PUT', function () {
     })
   })
 
-  after(function (done) {
+  after(function(done) {
     app.stop(() => {
       cleanupFn()
 
@@ -98,13 +102,13 @@ describe('Collections API – PUT', function () {
     })
   })
 
-  it('should update existing documents when passing ID', function (done) {
+  it('should update existing documents when passing ID', function(done) {
     client
       .post('/vtest/testdb/put-test-schema')
       .set('Authorization', 'Bearer ' + bearerToken)
       .send({field1: 'doc to update'})
       .expect(200)
-      .end(function (err, res) {
+      .end(function(err, res) {
         if (err) return done(err)
 
         const doc = res.body.results[0]
@@ -119,17 +123,21 @@ describe('Collections API – PUT', function () {
           .set('Authorization', 'Bearer ' + bearerToken)
           .send({field1: 'updated doc'})
           .expect(200)
-          .end(function (err, res) {
+          .end(function(err, res) {
             if (err) return done(err)
             res.body.results[0]._id.should.equal(doc._id)
             res.body.results[0].field1.should.equal('updated doc')
 
             client
-              .get('/vtest/testdb/put-test-schema?filter={"_id": "' + doc._id + '"}')
+              .get(
+                '/vtest/testdb/put-test-schema?filter={"_id": "' +
+                  doc._id +
+                  '"}'
+              )
               .set('Authorization', 'Bearer ' + bearerToken)
               .expect(200)
               .expect('content-type', 'application/json')
-              .end(function (err, res) {
+              .end(function(err, res) {
                 if (err) return done(err)
 
                 res.body['results'].should.exist
@@ -143,13 +151,13 @@ describe('Collections API – PUT', function () {
       })
   })
 
-  it('should return 404 when updating a non-existing document by ID (RESTful)', function (done) {
+  it('should return 404 when updating a non-existing document by ID (RESTful)', function(done) {
     client
       .put('/vtest/testdb/put-test-schema/59f1b3e038ad765e669ac47f')
       .set('Authorization', 'Bearer ' + bearerToken)
       .send({field1: 'updated doc'})
       .expect(404)
-      .end(function (err, res) {
+      .end(function(err, res) {
         if (err) return done(err)
 
         res.body.statusCode.should.eql(404)
@@ -158,7 +166,7 @@ describe('Collections API – PUT', function () {
       })
   })
 
-  it('should return 200 when updating a non-existing document by ID, supplying the query in the request body', function (done) {
+  it('should return 200 when updating a non-existing document by ID, supplying the query in the request body', function(done) {
     client
       .put('/vtest/testdb/put-test-schema')
       .set('Authorization', 'Bearer ' + bearerToken)
@@ -171,7 +179,7 @@ describe('Collections API – PUT', function () {
         }
       })
       .expect(200)
-      .end(function (err, res) {
+      .end(function(err, res) {
         if (err) return done(err)
 
         res.body.results.should.eql([])
@@ -180,7 +188,7 @@ describe('Collections API – PUT', function () {
       })
   })
 
-  it('should update existing documents when passing ID, giving back the updated document with internal fields prefixed with the character defined in config', function (done) {
+  it('should update existing documents when passing ID, giving back the updated document with internal fields prefixed with the character defined in config', function(done) {
     const client = request(connectionString)
     const originalPrefix = config.get('internalFieldsPrefix')
 
@@ -191,7 +199,7 @@ describe('Collections API – PUT', function () {
       .set('Authorization', 'Bearer ' + bearerToken)
       .send({field1: 'doc to update'})
       .expect(200)
-      .end(function (err, res) {
+      .end(function(err, res) {
         if (err) return done(err)
 
         const doc = res.body.results[0]
@@ -206,7 +214,7 @@ describe('Collections API – PUT', function () {
           .set('Authorization', 'Bearer ' + bearerToken)
           .send({field1: 'updated doc'})
           .expect(200)
-          .end(function (err, res) {
+          .end(function(err, res) {
             if (err) return done(err)
 
             res.body.results[0].$id.should.equal(doc.$id)
@@ -218,13 +226,13 @@ describe('Collections API – PUT', function () {
       })
   })
 
-  it('should update existing document by ID when passing a query', function (done) {
+  it('should update existing document by ID when passing a query', function(done) {
     client
       .post('/vtest/testdb/put-test-schema')
       .set('Authorization', 'Bearer ' + bearerToken)
       .send({field1: 'doc to update'})
       .expect(200)
-      .end(function (err, res) {
+      .end(function(err, res) {
         if (err) return done(err)
 
         const doc = res.body.results[0]
@@ -233,7 +241,7 @@ describe('Collections API – PUT', function () {
         doc.field1.should.equal('doc to update')
 
         const body = {
-          query: { _id: doc._id },
+          query: {_id: doc._id},
           update: {field1: 'updated doc'}
         }
 
@@ -242,7 +250,7 @@ describe('Collections API – PUT', function () {
           .set('Authorization', 'Bearer ' + bearerToken)
           .send(body)
           .expect(200)
-          .end(function (err, res) {
+          .end(function(err, res) {
             if (err) return done(err)
 
             // console.log(res.body)
@@ -250,11 +258,15 @@ describe('Collections API – PUT', function () {
             res.body.results[0].field1.should.equal('updated doc')
 
             client
-              .get('/vtest/testdb/put-test-schema?filter={"_id": "' + doc._id + '"}')
+              .get(
+                '/vtest/testdb/put-test-schema?filter={"_id": "' +
+                  doc._id +
+                  '"}'
+              )
               .set('Authorization', 'Bearer ' + bearerToken)
               .expect(200)
               .expect('content-type', 'application/json')
-              .end(function (err, res) {
+              .end(function(err, res) {
                 if (err) return done(err)
 
                 res.body['results'].should.exist
@@ -268,7 +280,7 @@ describe('Collections API – PUT', function () {
       })
   })
 
-  it('should update existing document by ID when passing a query, translating any internal field to the prefix defined in config', function (done) {
+  it('should update existing document by ID when passing a query, translating any internal field to the prefix defined in config', function(done) {
     const client = request(connectionString)
     const originalPrefix = config.get('internalFieldsPrefix')
 
@@ -279,7 +291,7 @@ describe('Collections API – PUT', function () {
       .set('Authorization', 'Bearer ' + bearerToken)
       .send({field1: 'doc to update'})
       .expect(200)
-      .end(function (err, res) {
+      .end(function(err, res) {
         if (err) return done(err)
 
         const doc = res.body.results[0]
@@ -288,7 +300,7 @@ describe('Collections API – PUT', function () {
         doc.field1.should.equal('doc to update')
 
         const body = {
-          query: { $id: doc.$id },
+          query: {$id: doc.$id},
           update: {field1: 'updated doc'}
         }
 
@@ -297,18 +309,22 @@ describe('Collections API – PUT', function () {
           .set('Authorization', 'Bearer ' + bearerToken)
           .send(body)
           .expect(200)
-          .end(function (err, res) {
+          .end(function(err, res) {
             if (err) return done(err)
 
             res.body.results[0].$id.should.equal(doc.$id)
             res.body.results[0].field1.should.equal('updated doc')
 
             client
-              .get('/vtest/testdb/put-test-schema?filter={"$id": "' + doc.$id + '"}')
+              .get(
+                '/vtest/testdb/put-test-schema?filter={"$id": "' +
+                  doc.$id +
+                  '"}'
+              )
               .set('Authorization', 'Bearer ' + bearerToken)
               .expect(200)
               .expect('content-type', 'application/json')
-              .end(function (err, res) {
+              .end(function(err, res) {
                 if (err) return done(err)
 
                 res.body['results'].should.exist
@@ -324,14 +340,14 @@ describe('Collections API – PUT', function () {
       })
   })
 
-  it('should update all existing documents when passing a query with a filter', function (done) {
+  it('should update all existing documents when passing a query with a filter', function(done) {
     // add three docs
     client
       .post('/vtest/testdb/put-test-schema')
       .set('Authorization', 'Bearer ' + bearerToken)
       .send({field1: 'draft'})
       .expect(200)
-      .end(function (err, res) {
+      .end(function(err, res) {
         if (err) return done(err)
 
         client
@@ -339,7 +355,7 @@ describe('Collections API – PUT', function () {
           .set('Authorization', 'Bearer ' + bearerToken)
           .send({field1: 'draft'})
           .expect(200)
-          .end(function (err, res) {
+          .end(function(err, res) {
             if (err) return done(err)
 
             client
@@ -347,12 +363,12 @@ describe('Collections API – PUT', function () {
               .set('Authorization', 'Bearer ' + bearerToken)
               .send({field1: 'draft'})
               .expect(200)
-              .end(function (err, res) {
+              .end(function(err, res) {
                 if (err) return done(err)
 
                 // update query
                 const body = {
-                  query: { field1: 'draft' },
+                  query: {field1: 'draft'},
                   update: {field1: 'published'}
                 }
 
@@ -361,7 +377,7 @@ describe('Collections API – PUT', function () {
                   .set('Authorization', 'Bearer ' + bearerToken)
                   .send(body)
                   .expect(200)
-                  .end(function (err, res) {
+                  .end(function(err, res) {
                     if (err) return done(err)
 
                     res.body['results'].should.exist
@@ -378,7 +394,7 @@ describe('Collections API – PUT', function () {
       })
   })
 
-  it('should update documents when passing a query with a filter, translating any internal field to the prefix defined in config', function (done) {
+  it('should update documents when passing a query with a filter, translating any internal field to the prefix defined in config', function(done) {
     const client = request(connectionString)
     const originalPrefix = config.get('internalFieldsPrefix')
 
@@ -389,7 +405,7 @@ describe('Collections API – PUT', function () {
       .set('Authorization', 'Bearer ' + bearerToken)
       .send({field1: 'some value'})
       .expect(200)
-      .end(function (err, res) {
+      .end(function(err, res) {
         if (err) return done(err)
 
         const doc = res.body.results[0]
@@ -408,7 +424,7 @@ describe('Collections API – PUT', function () {
           .send(body)
           .expect(200)
           .expect('content-type', 'application/json')
-          .end(function (err, res) {
+          .end(function(err, res) {
             if (err) return done(err)
 
             res.body.results.should.be.Array
@@ -420,7 +436,7 @@ describe('Collections API – PUT', function () {
               .set('Authorization', 'Bearer ' + bearerToken)
               .expect(200)
               .expect('content-type', 'application/json')
-              .end(function (err, res) {
+              .end(function(err, res) {
                 if (err) return done(err)
 
                 res.body.results.should.be.Array
@@ -435,13 +451,13 @@ describe('Collections API – PUT', function () {
       })
   })
 
-  it('should add internal fields to updated documents', function (done) {
+  it('should add internal fields to updated documents', function(done) {
     client
       .post('/vtest/testdb/put-test-schema')
       .set('Authorization', 'Bearer ' + bearerToken)
       .send({field1: 'doc to update'})
       .expect(200)
-      .end(function (err, res) {
+      .end(function(err, res) {
         if (err) return done(err)
 
         const doc = res.body.results[0]
@@ -454,18 +470,22 @@ describe('Collections API – PUT', function () {
           .set('Authorization', 'Bearer ' + bearerToken)
           .send({field1: 'updated doc'})
           .expect(200)
-          .end(function (err, res) {
+          .end(function(err, res) {
             if (err) return done(err)
 
             res.body.results[0]._id.should.equal(doc._id)
             res.body.results[0].field1.should.equal('updated doc')
 
             client
-              .get('/vtest/testdb/put-test-schema?filter={"_id": "' + doc._id + '"}')
+              .get(
+                '/vtest/testdb/put-test-schema?filter={"_id": "' +
+                  doc._id +
+                  '"}'
+              )
               .set('Authorization', 'Bearer ' + bearerToken)
               .expect(200)
               .expect('content-type', 'application/json')
-              .end(function (err, res) {
+              .end(function(err, res) {
                 if (err) return done(err)
 
                 res.body['results'].should.exist
@@ -473,7 +493,9 @@ describe('Collections API – PUT', function () {
                 res.body['results'].length.should.equal(1)
                 res.body['results'][0]._lastModifiedBy.should.equal('test123')
                 res.body['results'][0]._lastModifiedAt.should.be.Number
-                res.body['results'][0]._lastModifiedAt.should.not.be.above(Date.now())
+                res.body['results'][0]._lastModifiedAt.should.not.be.above(
+                  Date.now()
+                )
                 res.body['results'][0]._apiVersion.should.equal('vtest')
 
                 done()
@@ -482,7 +504,7 @@ describe('Collections API – PUT', function () {
       })
   })
 
-  it('should ignore any internal properties supplied by the client when updating a document', function (done) {
+  it('should ignore any internal properties supplied by the client when updating a document', function(done) {
     const initial = {
       field1: 'initial'
     }
@@ -499,7 +521,7 @@ describe('Collections API – PUT', function () {
       .set('Authorization', 'Bearer ' + bearerToken)
       .send(initial)
       .expect(200)
-      .end(function (err, res) {
+      .end(function(err, res) {
         if (err) return done(err)
 
         const doc = res.body.results[0]
@@ -512,7 +534,7 @@ describe('Collections API – PUT', function () {
           .set('Authorization', 'Bearer ' + bearerToken)
           .send(update)
           .expect(200)
-          .end(function (err, res) {
+          .end(function(err, res) {
             if (err) return done(err)
 
             res.body.results[0]._id.should.equal(doc._id)
@@ -530,11 +552,15 @@ describe('Collections API – PUT', function () {
             should.not.exist(res.body.results[0]._version)
 
             client
-              .get('/vtest/testdb/put-test-schema?filter={"_id": "' + doc._id + '"}')
+              .get(
+                '/vtest/testdb/put-test-schema?filter={"_id": "' +
+                  doc._id +
+                  '"}'
+              )
               .set('Authorization', 'Bearer ' + bearerToken)
               .expect(200)
               .expect('content-type', 'application/json')
-              .end(function (err, res) {
+              .end(function(err, res) {
                 if (err) return done(err)
 
                 res.body['results'].should.exist
@@ -542,7 +568,9 @@ describe('Collections API – PUT', function () {
                 res.body['results'].length.should.equal(1)
                 res.body['results'][0]._lastModifiedBy.should.equal('test123')
                 res.body['results'][0]._lastModifiedAt.should.be.Number
-                res.body['results'][0]._lastModifiedAt.should.not.be.above(Date.now())
+                res.body['results'][0]._lastModifiedAt.should.not.be.above(
+                  Date.now()
+                )
                 res.body['results'][0]._apiVersion.should.equal('vtest')
 
                 should.exist(res.body.results[0]._createdBy)
@@ -562,7 +590,7 @@ describe('Collections API – PUT', function () {
       })
   })
 
-  it('should use apiVersion to filter when selecting update documents if configured', function (done) {
+  it('should use apiVersion to filter when selecting update documents if configured', function(done) {
     this.timeout(6000)
     config.set('query.useVersionFilter', true)
 
@@ -571,7 +599,7 @@ describe('Collections API – PUT', function () {
       .set('Authorization', 'Bearer ' + bearerToken)
       .send({field1: 'doc'})
       .expect(200)
-      .end(function (err, res) {
+      .end(function(err, res) {
         if (err) return done(err)
 
         client
@@ -579,7 +607,7 @@ describe('Collections API – PUT', function () {
           .set('Authorization', 'Bearer ' + bearerToken)
           .send({field1: 'doc'})
           .expect(200)
-          .end(function (err, res) {
+          .end(function(err, res) {
             if (err) return done(err)
 
             const doc = res.body.results[0]
@@ -589,7 +617,7 @@ describe('Collections API – PUT', function () {
             doc.field1.should.equal('doc')
 
             const body = {
-              query: { field1: 'doc' },
+              query: {field1: 'doc'},
               update: {field1: 'updated doc'}
             }
 
@@ -598,7 +626,7 @@ describe('Collections API – PUT', function () {
               .set('Authorization', 'Bearer ' + bearerToken)
               .send(body)
               .expect(200)
-              .end(function (err, res) {
+              .end(function(err, res) {
                 if (err) return done(err)
 
                 client
@@ -606,7 +634,7 @@ describe('Collections API – PUT', function () {
                   .set('Authorization', 'Bearer ' + bearerToken)
                   .expect(200)
                   .expect('content-type', 'application/json')
-                  .end(function (err, res) {
+                  .end(function(err, res) {
                     if (err) return done(err)
 
                     res.body['results'].should.exist
@@ -624,10 +652,10 @@ describe('Collections API – PUT', function () {
       })
   })
 
-  it('should update correct documents and return when history is off', function (done) {
+  it('should update correct documents and return when history is off', function(done) {
     config.set('query.useVersionFilter', true)
 
-    help.getBearerTokenWithAccessType('admin', function (err, token) {
+    help.getBearerTokenWithAccessType('admin', function(err, token) {
       if (err) return done(err)
 
       client
@@ -635,7 +663,7 @@ describe('Collections API – PUT', function () {
         .set('Authorization', 'Bearer ' + token)
         .send({field1: 'doc'})
         // .expect(200)
-        .end(function (err, res) {
+        .end(function(err, res) {
           if (err) return done(err)
 
           client
@@ -643,7 +671,7 @@ describe('Collections API – PUT', function () {
             .set('Authorization', 'Bearer ' + token)
             .send({field1: 'doc'})
             .expect(200)
-            .end(function (err, res) {
+            .end(function(err, res) {
               if (err) return done(err)
               const doc = res.body.results[0]
 
@@ -651,7 +679,7 @@ describe('Collections API – PUT', function () {
               doc.field1.should.equal('doc')
 
               const body = {
-                query: { field1: 'doc' },
+                query: {field1: 'doc'},
                 update: {field1: 'updated doc'}
               }
 
@@ -660,7 +688,7 @@ describe('Collections API – PUT', function () {
                 .set('Authorization', 'Bearer ' + token)
                 .send(body)
                 .expect(200)
-                .end(function (err, res) {
+                .end(function(err, res) {
                   if (err) return done(err)
 
                   res.body['results'].should.exist
@@ -670,11 +698,13 @@ describe('Collections API – PUT', function () {
                   res.body['results'][0]._apiVersion.should.equal('vtest')
 
                   client
-                    .get('/vjoin/testdb/put-test-schema-no-history?filter={"field1": { "$ne" : "" } }')
+                    .get(
+                      '/vjoin/testdb/put-test-schema-no-history?filter={"field1": { "$ne" : "" } }'
+                    )
                     .set('Authorization', 'Bearer ' + token)
                     .expect(200)
                     .expect('content-type', 'application/json')
-                    .end(function (err, res) {
+                    .end(function(err, res) {
                       if (err) return done(err)
 
                       res.body['results'].should.exist

@@ -12,7 +12,7 @@ const EMPTY_MATRIX = {
   updateOwn: false
 }
 
-describe('ACL access matrix', function () {
+describe('ACL access matrix', function() {
   it('should export function', () => {
     Matrix.should.be.Function
   })
@@ -57,9 +57,7 @@ describe('ACL access matrix', function () {
       }
       const matrix = new Matrix(map)
 
-      matrix.get('collection:db_one').should.eql(
-        map['collection:db_one']
-      )
+      matrix.get('collection:db_one').should.eql(map['collection:db_one'])
     })
 
     it('should return the access matrix for a given resource and add missing access types', () => {
@@ -75,12 +73,12 @@ describe('ACL access matrix', function () {
       }
       const matrix = new Matrix(map)
 
-      matrix.get('collection:db_one', {
-        addFalsyTypes: true
-      }).should.eql(
-        Object.assign({}, EMPTY_MATRIX, map['collection:db_one'])
-      )
-    })    
+      matrix
+        .get('collection:db_one', {
+          addFalsyTypes: true
+        })
+        .should.eql(Object.assign({}, EMPTY_MATRIX, map['collection:db_one']))
+    })
 
     it('should return the access matrix for a given resource and stringify ACL objects', () => {
       const map = {
@@ -98,19 +96,17 @@ describe('ACL access matrix', function () {
       }
       const matrix = new Matrix(map)
 
-      matrix.get('collection:db_one', {
-        stringifyObjects: true
-      }).should.eql(
-        Object.assign(
-          {},
-          map['collection:db_one'],
-          {
+      matrix
+        .get('collection:db_one', {
+          stringifyObjects: true
+        })
+        .should.eql(
+          Object.assign({}, map['collection:db_one'], {
             delete: {
               filter: JSON.stringify(map['collection:db_one'].delete.filter)
             }
-          }
+          })
         )
-      )
     })
 
     it('should return the access matrix for a given resource and parse ACL objects', () => {
@@ -129,19 +125,17 @@ describe('ACL access matrix', function () {
       }
       const matrix = new Matrix(map)
 
-      matrix.get('collection:db_one', {
-        parseObjects: true
-      }).should.eql(
-        Object.assign(
-          {},
-          map['collection:db_one'],
-          {
+      matrix
+        .get('collection:db_one', {
+          parseObjects: true
+        })
+        .should.eql(
+          Object.assign({}, map['collection:db_one'], {
             delete: {
               filter: JSON.parse(map['collection:db_one'].delete.filter)
             }
-          }
+          })
         )
-      )
     })
 
     it('should gracefully handle an ACL filter with a malformed JSON payload', () => {
@@ -156,18 +150,16 @@ describe('ACL access matrix', function () {
       }
       const matrix = new Matrix(map)
 
-      matrix.get('collection:db_one', {
-        parseObjects: true
-      }).should.eql(
-        Object.assign(
-          {},
-          map['collection:db_one'],
-          {
+      matrix
+        .get('collection:db_one', {
+          parseObjects: true
+        })
+        .should.eql(
+          Object.assign({}, map['collection:db_one'], {
             delete: false
-          }
+          })
         )
-      )      
-    })    
+    })
   })
 
   describe('getAll()', () => {
@@ -200,21 +192,23 @@ describe('ACL access matrix', function () {
       }
       const matrix = new Matrix(map)
 
-      matrix.getAll({
-        addFalsyTypes: true
-      }).should.eql({
-        'collection:db_one': Object.assign(
-          {},
-          EMPTY_MATRIX,
-          map['collection:db_one']
-        ),
-        'collection:db_two': Object.assign(
-          {},
-          EMPTY_MATRIX,
-          map['collection:db_two']
-        )
-      })
-    })    
+      matrix
+        .getAll({
+          addFalsyTypes: true
+        })
+        .should.eql({
+          'collection:db_one': Object.assign(
+            {},
+            EMPTY_MATRIX,
+            map['collection:db_one']
+          ),
+          'collection:db_two': Object.assign(
+            {},
+            EMPTY_MATRIX,
+            map['collection:db_two']
+          )
+        })
+    })
 
     it('should return the access matrix for all resources and stringify ACL objects', () => {
       const map = {
@@ -226,7 +220,7 @@ describe('ACL access matrix', function () {
                 $in: ['valueOne', 'valueTwo']
               }
             }
-          },          
+          },
           readOwn: true
         },
         'collection:db_two': {
@@ -237,34 +231,28 @@ describe('ACL access matrix', function () {
                 $in: ['valueThree', 'valueFour']
               }
             }
-          },          
+          },
           updateOwn: true
         }
       }
       const matrix = new Matrix(map)
 
-      matrix.getAll({
-        stringifyObjects: true
-      }).should.eql({
-        'collection:db_one': Object.assign(
-          {},
-          map['collection:db_one'],
-          {
+      matrix
+        .getAll({
+          stringifyObjects: true
+        })
+        .should.eql({
+          'collection:db_one': Object.assign({}, map['collection:db_one'], {
             delete: {
               filter: JSON.stringify(map['collection:db_one'].delete.filter)
             }
-          }          
-        ),
-        'collection:db_two': Object.assign(
-          {},
-          map['collection:db_two'],
-          {
+          }),
+          'collection:db_two': Object.assign({}, map['collection:db_two'], {
             delete: {
               filter: JSON.stringify(map['collection:db_two'].delete.filter)
             }
-          }
-        )
-      })
+          })
+        })
     })
 
     it('should return the access matrix for all resources and parse ACL objects', () => {
@@ -273,41 +261,35 @@ describe('ACL access matrix', function () {
           create: true,
           delete: {
             filter: '{"fieldOne":{"$in":["valueOne","valueTwo"]}}'
-          },          
+          },
           readOwn: true
         },
         'collection:db_two': {
           create: false,
           delete: {
             filter: '{"fieldTwo":{"$in":["valueThree","valueFour"]}}'
-          },          
+          },
           updateOwn: true
         }
       }
       const matrix = new Matrix(map)
 
-      matrix.getAll({
-        parseObjects: true
-      }).should.eql({
-        'collection:db_one': Object.assign(
-          {},
-          map['collection:db_one'],
-          {
+      matrix
+        .getAll({
+          parseObjects: true
+        })
+        .should.eql({
+          'collection:db_one': Object.assign({}, map['collection:db_one'], {
             delete: {
               filter: JSON.parse(map['collection:db_one'].delete.filter)
             }
-          }          
-        ),
-        'collection:db_two': Object.assign(
-          {},
-          map['collection:db_two'],
-          {
+          }),
+          'collection:db_two': Object.assign({}, map['collection:db_two'], {
             delete: {
               filter: JSON.parse(map['collection:db_two'].delete.filter)
             }
-          }          
-        )
-      })
+          })
+        })
     })
   })
 
@@ -372,7 +354,9 @@ describe('ACL access matrix', function () {
       } catch (error) {
         error.should.be.Error
         error.message.should.eql('ACCESS_MATRIX_VALIDATION_FAILED')
-        error.data.includes('Invalid access type: somethingElse').should.eql(true)
+        error.data
+          .includes('Invalid access type: somethingElse')
+          .should.eql(true)
 
         done()
       }
@@ -389,13 +373,13 @@ describe('ACL access matrix', function () {
       } catch (error) {
         error.should.be.Error
         error.message.should.eql('ACCESS_MATRIX_VALIDATION_FAILED')
-        error.data.includes(
-          'Invalid value for read. Expected Boolean or Object'
-        ).should.eql(true)
+        error.data
+          .includes('Invalid value for read. Expected Boolean or Object')
+          .should.eql(true)
 
         done()
       }
-    })    
+    })
 
     it('should throw an error for an invalid key in a complex access type', done => {
       const matrix = new Matrix()
@@ -412,9 +396,9 @@ describe('ACL access matrix', function () {
       } catch (error) {
         error.should.be.Error
         error.message.should.eql('ACCESS_MATRIX_VALIDATION_FAILED')
-        error.data.includes(
-          'Invalid key in access matrix: create.somethingElse'
-        ).should.eql(true)
+        error.data
+          .includes('Invalid key in access matrix: create.somethingElse')
+          .should.eql(true)
 
         done()
       }
@@ -435,12 +419,16 @@ describe('ACL access matrix', function () {
       } catch (error) {
         error.should.be.Error
         error.message.should.eql('ACCESS_MATRIX_VALIDATION_FAILED')
-        error.data.includes(
-          'Invalid value in access matrix for key create.filter (expected object)'
-        ).should.eql(true)
-        error.data.includes(
-          'Invalid value in access matrix for key read.fields (expected object)'
-        ).should.eql(true)
+        error.data
+          .includes(
+            'Invalid value in access matrix for key create.filter (expected object)'
+          )
+          .should.eql(true)
+        error.data
+          .includes(
+            'Invalid value in access matrix for key read.fields (expected object)'
+          )
+          .should.eql(true)
 
         done()
       }
@@ -460,9 +448,11 @@ describe('ACL access matrix', function () {
       } catch (error) {
         error.should.be.Error
         error.message.should.eql('ACCESS_MATRIX_VALIDATION_FAILED')
-        error.data.includes(
-          'Invalid field projection in access matrix for read access type. Accepted values for keys are either 0 or 1 and they cannot be combined in the same projection'
-        ).should.eql(true)
+        error.data
+          .includes(
+            'Invalid field projection in access matrix for read access type. Accepted values for keys are either 0 or 1 and they cannot be combined in the same projection'
+          )
+          .should.eql(true)
 
         done()
       }
@@ -484,9 +474,11 @@ describe('ACL access matrix', function () {
       } catch (error) {
         error.should.be.Error
         error.message.should.eql('ACCESS_MATRIX_VALIDATION_FAILED')
-        error.data.includes(
-          'Invalid field projection in access matrix for read access type. Accepted values for keys are either 0 or 1 and they cannot be combined in the same projection'
-        ).should.eql(true)
+        error.data
+          .includes(
+            'Invalid field projection in access matrix for read access type. Accepted values for keys are either 0 or 1 and they cannot be combined in the same projection'
+          )
+          .should.eql(true)
 
         done()
       }
@@ -592,7 +584,7 @@ describe('ACL access matrix', function () {
       ]
 
       matrix._convertObjectNotationToArrayNotation(input).should.eql(input)
-    })    
+    })
 
     it('should convert an empty map from object notation to array notation', () => {
       const matrix = new Matrix()
@@ -615,18 +607,16 @@ describe('ACL access matrix', function () {
         }
       }
 
-      matrix._convertObjectNotationToArrayNotation(input).should.eql(
-        [
-          {
-            r: 'resource:one',
-            a: input['resource:one']
-          },
-          {
-            r: 'resource:two',
-            a: input['resource:two']
-          }
-        ]
-      )
-    })    
+      matrix._convertObjectNotationToArrayNotation(input).should.eql([
+        {
+          r: 'resource:one',
+          a: input['resource:one']
+        },
+        {
+          r: 'resource:two',
+          a: input['resource:two']
+        }
+      ])
+    })
   })
 })

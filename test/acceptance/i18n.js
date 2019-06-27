@@ -7,13 +7,15 @@ const request = require('supertest')
 const should = require('should')
 const sinon = require('sinon')
 
-const connectionString = `http://${config.get('server.host')}:${config.get('server.port')}`
+const connectionString = `http://${config.get('server.host')}:${config.get(
+  'server.port'
+)}`
 const client = request(connectionString)
 const configBackup = config.get()
 let bearerToken
 const lastModifiedAt = 0
 
-describe('Multi-language', function () {
+describe('Multi-language', function() {
   this.timeout(4000)
 
   before(() => {
@@ -46,9 +48,7 @@ describe('Multi-language', function () {
 
   describe('Languages endpoint', () => {
     it('should return 401 if the request does not contain a valid bearer token', done => {
-      client
-      .get('/api/languages')
-      .end((err, res) => {
+      client.get('/api/languages').end((err, res) => {
         if (err) return done(err)
 
         res.statusCode.should.eql(401)
@@ -61,94 +61,89 @@ describe('Multi-language', function () {
       config.set('i18n.languages', ['en', 'fr', 'pt'])
 
       client
-      .get('/api/languages')
-      .set('Authorization', `Bearer ${bearerToken}`)
-      .expect(200)
-      .end((err, res) => {
-        if (err) return done(err)
+        .get('/api/languages')
+        .set('Authorization', `Bearer ${bearerToken}`)
+        .expect(200)
+        .end((err, res) => {
+          if (err) return done(err)
 
-        const defaultLanguage = config.get('i18n.defaultLanguage')
-        const supportedLanguages = config.get('i18n.languages')
+          const defaultLanguage = config.get('i18n.defaultLanguage')
+          const supportedLanguages = config.get('i18n.languages')
 
-        res.body.results.length.should.eql(3)
-        res.body.results.forEach(language => {
-          language.code.should.be.String
-          language.name.should.be.String
-          language.local.should.be.String
-          language.default.should.be.Boolean
+          res.body.results.length.should.eql(3)
+          res.body.results.forEach(language => {
+            language.code.should.be.String
+            language.name.should.be.String
+            language.local.should.be.String
+            language.default.should.be.Boolean
 
-          language.default.should.eql(
-            language.code === defaultLanguage
-          )
+            language.default.should.eql(language.code === defaultLanguage)
 
-          supportedLanguages.includes(language.code).should.eql(true)
+            supportedLanguages.includes(language.code).should.eql(true)
+          })
+
+          res.body.metadata.defaultLanguage.code.should.eql(defaultLanguage)
+          res.body.metadata.totalCount.should.eql(3)
+
+          config.set('i18n.languages', configBackup.i18n.languages)
+
+          done()
         })
-
-        res.body.metadata.defaultLanguage.code.should.eql(
-          defaultLanguage
-        )
-        res.body.metadata.totalCount.should.eql(3)
-
-        config.set('i18n.languages', configBackup.i18n.languages)
-
-        done()
-      })
     })
 
-    it('should include the default language in the list of supported languages even if it\'s not part of `i18n.languages`', done => {
+    it("should include the default language in the list of supported languages even if it's not part of `i18n.languages`", done => {
       config.set('i18n.languages', ['es', 'fr', 'pt'])
 
       client
-      .get('/api/languages')
-      .set('Authorization', `Bearer ${bearerToken}`)
-      .expect(200)
-      .end((err, res) => {
-        if (err) return done(err)
+        .get('/api/languages')
+        .set('Authorization', `Bearer ${bearerToken}`)
+        .expect(200)
+        .end((err, res) => {
+          if (err) return done(err)
 
-        const defaultLanguage = config.get('i18n.defaultLanguage')
-        const supportedLanguages = config.get('i18n.languages')
+          const defaultLanguage = config.get('i18n.defaultLanguage')
+          const supportedLanguages = config.get('i18n.languages')
 
-        res.body.results.length.should.eql(4)
-        res.body.results.forEach(language => {
-          language.code.should.be.String
-          language.name.should.be.String
-          language.local.should.be.String
-          language.default.should.be.Boolean
+          res.body.results.length.should.eql(4)
+          res.body.results.forEach(language => {
+            language.code.should.be.String
+            language.name.should.be.String
+            language.local.should.be.String
+            language.default.should.be.Boolean
 
-          language.default.should.eql(
-            language.code === defaultLanguage
-          )
+            language.default.should.eql(language.code === defaultLanguage)
 
-          supportedLanguages.concat(defaultLanguage).includes(language.code).should.eql(true)
+            supportedLanguages
+              .concat(defaultLanguage)
+              .includes(language.code)
+              .should.eql(true)
+          })
+
+          res.body.metadata.defaultLanguage.code.should.eql(defaultLanguage)
+          res.body.metadata.totalCount.should.eql(4)
+
+          config.set('i18n.languages', configBackup.i18n.languages)
+
+          done()
         })
-
-        res.body.metadata.defaultLanguage.code.should.eql(
-          defaultLanguage
-        )
-        res.body.metadata.totalCount.should.eql(4)
-
-        config.set('i18n.languages', configBackup.i18n.languages)
-
-        done()
-      })
     })
 
     it('should include a `fieldCharacter` property in the metadata block', done => {
       config.set('i18n.fieldCharacter', '@')
 
       client
-      .get('/api/languages')
-      .set('Authorization', `Bearer ${bearerToken}`)
-      .expect(200)
-      .end((err, res) => {
-        if (err) return done(err)
+        .get('/api/languages')
+        .set('Authorization', `Bearer ${bearerToken}`)
+        .expect(200)
+        .end((err, res) => {
+          if (err) return done(err)
 
-        res.body.metadata.fieldCharacter.should.eql('@')
+          res.body.metadata.fieldCharacter.should.eql('@')
 
-        config.set('i18n.fieldCharacter', configBackup.i18n.fieldCharacter)
+          config.set('i18n.fieldCharacter', configBackup.i18n.fieldCharacter)
 
-        done()
-      })
+          done()
+        })
     })
   })
 
@@ -159,19 +154,19 @@ describe('Multi-language', function () {
     }
 
     client
-    .post('/v1/library/book')
-    .set('Authorization', `Bearer ${bearerToken}`)
-    .send(document)
-    .expect(200)
-    .end((err, res) => {
-      if (err) return done(err)
+      .post('/v1/library/book')
+      .set('Authorization', `Bearer ${bearerToken}`)
+      .send(document)
+      .expect(200)
+      .end((err, res) => {
+        if (err) return done(err)
 
-      res.body.results.length.should.eql(1)
-      res.body.results[0].title.should.eql(document.title)
-      res.body.results[0]['title:pt'].should.eql(document['title:pt'])
+        res.body.results.length.should.eql(1)
+        res.body.results[0].title.should.eql(document.title)
+        res.body.results[0]['title:pt'].should.eql(document['title:pt'])
 
-      done()
-    })
+        done()
+      })
   })
 
   it('should accept a language variation of a field, separated by the character configured in `i18n.fieldCharacter`', done => {
@@ -190,21 +185,24 @@ describe('Multi-language', function () {
           bearerToken = token
 
           client
-          .post('/v1/library/book')
-          .set('Authorization', `Bearer ${bearerToken}`)
-          .send(document)
-          .expect(200)
-          .end((err, res) => {
-            if (err) return done(err)
+            .post('/v1/library/book')
+            .set('Authorization', `Bearer ${bearerToken}`)
+            .send(document)
+            .expect(200)
+            .end((err, res) => {
+              if (err) return done(err)
 
-            res.body.results.length.should.eql(1)
-            res.body.results[0].title.should.eql(document.title)
-            res.body.results[0]['title=pt'].should.eql(document['title=pt'])
+              res.body.results.length.should.eql(1)
+              res.body.results[0].title.should.eql(document.title)
+              res.body.results[0]['title=pt'].should.eql(document['title=pt'])
 
-            config.set('i18n.fieldCharacter', configBackup.i18n.fieldCharacter)
+              config.set(
+                'i18n.fieldCharacter',
+                configBackup.i18n.fieldCharacter
+              )
 
-            done()
-          })
+              done()
+            })
         })
       })
     })
@@ -219,21 +217,21 @@ describe('Multi-language', function () {
     }
 
     client
-    .post('/v1/library/book')
-    .set('Authorization', `Bearer ${bearerToken}`)
-    .send(document)
-    .expect(200)
-    .end((err, res) => {
-      if (err) return done(err)
+      .post('/v1/library/book')
+      .set('Authorization', `Bearer ${bearerToken}`)
+      .send(document)
+      .expect(200)
+      .end((err, res) => {
+        if (err) return done(err)
 
-      res.body.results.length.should.eql(1)
-      res.body.results[0].title.should.eql(document.title)
-      res.body.results[0]['title:pt'].should.eql(document['title:pt'])
+        res.body.results.length.should.eql(1)
+        res.body.results[0].title.should.eql(document.title)
+        res.body.results[0]['title:pt'].should.eql(document['title:pt'])
 
-      config.set('i18n.languages', configBackup.i18n.languages)
+        config.set('i18n.languages', configBackup.i18n.languages)
 
-      done()
-    })
+        done()
+      })
   })
 
   it('should validate language variation of a field in the same way as the main field', done => {
@@ -245,21 +243,21 @@ describe('Multi-language', function () {
     }
 
     client
-    .post('/v1/library/book')
-    .set('Authorization', `Bearer ${bearerToken}`)
-    .send(document)
-    .expect(400)
-    .end((err, res) => {
-      if (err) return done(err)
+      .post('/v1/library/book')
+      .set('Authorization', `Bearer ${bearerToken}`)
+      .send(document)
+      .expect(400)
+      .end((err, res) => {
+        if (err) return done(err)
 
-      res.body.success.should.eql(false)
-      res.body.errors[0].field.should.eql('title:pt')
-      res.body.errors[0].message.should.eql('is wrong type')
+        res.body.success.should.eql(false)
+        res.body.errors[0].field.should.eql('title:pt')
+        res.body.errors[0].message.should.eql('is wrong type')
 
-      config.get('i18n.fieldCharacter', configBackup.i18n.fieldCharacter)
+        config.get('i18n.fieldCharacter', configBackup.i18n.fieldCharacter)
 
-      done()
-    })
+        done()
+      })
   })
 
   it('should retrieve all language variations if no `lang` parameter is supplied', done => {
@@ -270,31 +268,31 @@ describe('Multi-language', function () {
     }
 
     client
-    .post('/v1/library/book')
-    .set('Authorization', `Bearer ${bearerToken}`)
-    .send(document)
-    .expect(200)
-    .end((err, res) => {
-      if (err) return done(err)
-
-      client
-      .get(`/v1/library/book/${res.body.results[0]._id}`)
+      .post('/v1/library/book')
       .set('Authorization', `Bearer ${bearerToken}`)
+      .send(document)
       .expect(200)
       .end((err, res) => {
-        res.body.results.length.should.eql(1)
+        if (err) return done(err)
 
-        const result = res.body.results[0]
+        client
+          .get(`/v1/library/book/${res.body.results[0]._id}`)
+          .set('Authorization', `Bearer ${bearerToken}`)
+          .expect(200)
+          .end((err, res) => {
+            res.body.results.length.should.eql(1)
 
-        result.title.should.eql(document.title)
-        result['title:pt'].should.eql(document['title:pt'])
-        result['title:fr'].should.eql(document['title:fr'])
+            const result = res.body.results[0]
 
-        should.not.exist(result._i18n)
+            result.title.should.eql(document.title)
+            result['title:pt'].should.eql(document['title:pt'])
+            result['title:fr'].should.eql(document['title:fr'])
 
-        done()
+            should.not.exist(result._i18n)
+
+            done()
+          })
       })
-    })
   })
 
   it('should return the translation version of a field when there is one set for the language in the `lang` parameter, falling back to the default language', done => {
@@ -312,39 +310,39 @@ describe('Multi-language', function () {
     ]
 
     client
-    .post('/v1/library/book')
-    .set('Authorization', `Bearer ${bearerToken}`)
-    .send(documents)
-    .expect(200)
-    .end((err, res) => {
-      if (err) return done(err)
-
-      client
-      .get(`/v1/library/book?lang=pt`)
+      .post('/v1/library/book')
       .set('Authorization', `Bearer ${bearerToken}`)
+      .send(documents)
       .expect(200)
       .end((err, res) => {
-        res.body.results.length.should.eql(2)
+        if (err) return done(err)
 
-        const results = res.body.results
+        client
+          .get(`/v1/library/book?lang=pt`)
+          .set('Authorization', `Bearer ${bearerToken}`)
+          .expect(200)
+          .end((err, res) => {
+            res.body.results.length.should.eql(2)
 
-        results[0].title.should.eql(documents[0]['title:pt'])
-        results[0]._i18n.title.should.eql('pt')
-        should.not.exist(results[0]['title:pt'])
-        should.not.exist(results[0]['title:fr'])
+            const results = res.body.results
 
-        results[1].title.should.eql(documents[1].title)
-        results[1]._i18n.title.should.eql(
-          config.get('i18n.defaultLanguage')
-        )
-        should.not.exist(results[1]['title:pt'])
-        should.not.exist(results[1]['title:fr'])
+            results[0].title.should.eql(documents[0]['title:pt'])
+            results[0]._i18n.title.should.eql('pt')
+            should.not.exist(results[0]['title:pt'])
+            should.not.exist(results[0]['title:fr'])
 
-        config.set('i18n.languages', configBackup.i18n.languages)
+            results[1].title.should.eql(documents[1].title)
+            results[1]._i18n.title.should.eql(
+              config.get('i18n.defaultLanguage')
+            )
+            should.not.exist(results[1]['title:pt'])
+            should.not.exist(results[1]['title:fr'])
 
-        done()
+            config.set('i18n.languages', configBackup.i18n.languages)
+
+            done()
+          })
       })
-    })
   })
 
   it('should return the translation version of a field when the fields projection is set to include the field in question (with `lang` param)', done => {
@@ -362,39 +360,39 @@ describe('Multi-language', function () {
     ]
 
     client
-    .post('/v1/library/book')
-    .set('Authorization', `Bearer ${bearerToken}`)
-    .send(documents)
-    .expect(200)
-    .end((err, res) => {
-      if (err) return done(err)
-
-      client
-      .get(`/v1/library/book?fields={"title":1}&lang=pt`)
+      .post('/v1/library/book')
       .set('Authorization', `Bearer ${bearerToken}`)
+      .send(documents)
       .expect(200)
       .end((err, res) => {
-        res.body.results.length.should.eql(2)
+        if (err) return done(err)
 
-        const results = res.body.results
+        client
+          .get(`/v1/library/book?fields={"title":1}&lang=pt`)
+          .set('Authorization', `Bearer ${bearerToken}`)
+          .expect(200)
+          .end((err, res) => {
+            res.body.results.length.should.eql(2)
 
-        results[0].title.should.eql(documents[0]['title:pt'])
-        results[0]._i18n.title.should.eql('pt')
-        should.not.exist(results[0]['title:pt'])
-        should.not.exist(results[0]['title:fr'])
+            const results = res.body.results
 
-        results[1].title.should.eql(documents[1].title)
-        results[1]._i18n.title.should.eql(
-          config.get('i18n.defaultLanguage')
-        )
-        should.not.exist(results[1]['title:pt'])
-        should.not.exist(results[1]['title:fr'])
+            results[0].title.should.eql(documents[0]['title:pt'])
+            results[0]._i18n.title.should.eql('pt')
+            should.not.exist(results[0]['title:pt'])
+            should.not.exist(results[0]['title:fr'])
 
-        config.set('i18n.languages', configBackup.i18n.languages)
+            results[1].title.should.eql(documents[1].title)
+            results[1]._i18n.title.should.eql(
+              config.get('i18n.defaultLanguage')
+            )
+            should.not.exist(results[1]['title:pt'])
+            should.not.exist(results[1]['title:fr'])
 
-        done()
+            config.set('i18n.languages', configBackup.i18n.languages)
+
+            done()
+          })
       })
-    })
   })
 
   it('should return the translation version of a field when the fields projection is set to include the field in question (without `lang` param)', done => {
@@ -412,37 +410,37 @@ describe('Multi-language', function () {
     ]
 
     client
-    .post('/v1/library/book')
-    .set('Authorization', `Bearer ${bearerToken}`)
-    .send(documents)
-    .expect(200)
-    .end((err, res) => {
-      if (err) return done(err)
-
-      client
-      .get(`/v1/library/book?fields={"title":1}`)
+      .post('/v1/library/book')
       .set('Authorization', `Bearer ${bearerToken}`)
+      .send(documents)
       .expect(200)
       .end((err, res) => {
-        res.body.results.length.should.eql(2)
+        if (err) return done(err)
 
-        const results = res.body.results
+        client
+          .get(`/v1/library/book?fields={"title":1}`)
+          .set('Authorization', `Bearer ${bearerToken}`)
+          .expect(200)
+          .end((err, res) => {
+            res.body.results.length.should.eql(2)
 
-        results[0].title.should.eql(documents[0]['title'])
-        should.not.exist(results[0]._i18n)
-        results[0]['title:pt'].should.eql(documents[0]['title:pt'])
-        results[0]['title:fr'].should.eql(documents[0]['title:fr'])
+            const results = res.body.results
 
-        results[1].title.should.eql(documents[1].title)
-        should.not.exist(results[1]._i18n)
-        should.not.exist(results[1]['title:pt'])
-        should.not.exist(results[1]['title:fr'])
+            results[0].title.should.eql(documents[0]['title'])
+            should.not.exist(results[0]._i18n)
+            results[0]['title:pt'].should.eql(documents[0]['title:pt'])
+            results[0]['title:fr'].should.eql(documents[0]['title:fr'])
 
-        config.set('i18n.languages', configBackup.i18n.languages)
+            results[1].title.should.eql(documents[1].title)
+            should.not.exist(results[1]._i18n)
+            should.not.exist(results[1]['title:pt'])
+            should.not.exist(results[1]['title:fr'])
 
-        done()
+            config.set('i18n.languages', configBackup.i18n.languages)
+
+            done()
+          })
       })
-    })
   })
 
   it('should return the original version of a field when the requested language is not part of `i18n.languages`', done => {
@@ -455,32 +453,32 @@ describe('Multi-language', function () {
     }
 
     client
-    .post('/v1/library/book')
-    .set('Authorization', `Bearer ${bearerToken}`)
-    .send(document)
-    .expect(200)
-    .end((err, res) => {
-      if (err) return done(err)
-
-      client
-      .get(`/v1/library/book?cache=false&fields={"title":1}&lang=pt`)
+      .post('/v1/library/book')
       .set('Authorization', `Bearer ${bearerToken}`)
+      .send(document)
       .expect(200)
       .end((err, res) => {
-        res.body.results.length.should.eql(1)
+        if (err) return done(err)
 
-        const results = res.body.results
+        client
+          .get(`/v1/library/book?cache=false&fields={"title":1}&lang=pt`)
+          .set('Authorization', `Bearer ${bearerToken}`)
+          .expect(200)
+          .end((err, res) => {
+            res.body.results.length.should.eql(1)
 
-        results[0].title.should.eql(document.title)
-        results[0]._i18n.title.should.eql('en')
-        should.not.exist(results[0]['title:pt'])
-        should.not.exist(results[0]['title:fr'])
+            const results = res.body.results
 
-        config.set('i18n.languages', configBackup.i18n.languages)
+            results[0].title.should.eql(document.title)
+            results[0]._i18n.title.should.eql('en')
+            should.not.exist(results[0]['title:pt'])
+            should.not.exist(results[0]['title:fr'])
 
-        done()
+            config.set('i18n.languages', configBackup.i18n.languages)
+
+            done()
+          })
       })
-    })
   })
 
   it('should populate a `_i18n` field with a mapping of the language used for each translatable field', done => {
@@ -491,46 +489,46 @@ describe('Multi-language', function () {
       occupation: 'Software engineer',
       'occupation:pt': 'Engenheiro de software',
       nationality: 'Portugal',
-      education: 'Master\'s degree',
+      education: "Master's degree",
       'education:pt': 'Mestrado'
     }
 
     client
-    .post('/v1/library/person')
-    .set('Authorization', `Bearer ${bearerToken}`)
-    .send(document)
-    .expect(200)
-    .end((err, res) => {
-      if (err) return done(err)
-
-      client
-      .get(`/v1/library/person/${res.body.results[0]._id}?lang=pt`)
+      .post('/v1/library/person')
       .set('Authorization', `Bearer ${bearerToken}`)
+      .send(document)
       .expect(200)
       .end((err, res) => {
-        res.body.results.length.should.eql(1)
+        if (err) return done(err)
 
-        const result = res.body.results[0]
+        client
+          .get(`/v1/library/person/${res.body.results[0]._id}?lang=pt`)
+          .set('Authorization', `Bearer ${bearerToken}`)
+          .expect(200)
+          .end((err, res) => {
+            res.body.results.length.should.eql(1)
 
-        result.name.should.eql(document.name)
-        result.occupation.should.eql(document['occupation:pt'])
-        result.nationality.should.eql(document.nationality)
-        result.education.should.eql(document['education:pt'])
+            const result = res.body.results[0]
 
-        should.exist(result._i18n)
+            result.name.should.eql(document.name)
+            result.occupation.should.eql(document['occupation:pt'])
+            result.nationality.should.eql(document.nationality)
+            result.education.should.eql(document['education:pt'])
 
-        const defaultLanguage = config.get('i18n.defaultLanguage')
+            should.exist(result._i18n)
 
-        result._i18n.name.should.eql(defaultLanguage)
-        result._i18n.occupation.should.eql('pt')
-        result._i18n.nationality.should.eql(defaultLanguage)
-        result._i18n.education.should.eql('pt')
+            const defaultLanguage = config.get('i18n.defaultLanguage')
 
-        config.set('i18n.languages', configBackup.i18n.languages)
+            result._i18n.name.should.eql(defaultLanguage)
+            result._i18n.occupation.should.eql('pt')
+            result._i18n.nationality.should.eql(defaultLanguage)
+            result._i18n.education.should.eql('pt')
 
-        done()
+            config.set('i18n.languages', configBackup.i18n.languages)
+
+            done()
+          })
       })
-    })
   })
 
   it('should translate fields and create a `_i18n` map in referenced documents', done => {
@@ -541,7 +539,7 @@ describe('Multi-language', function () {
       occupation: 'Software engineer',
       'occupation:pt': 'Engenheiro de software',
       nationality: 'Portugal',
-      education: 'Master\'s degree',
+      education: "Master's degree",
       'education:pt': 'Mestrado',
       friend: {
         name: 'Lord Voldemort',
@@ -554,55 +552,61 @@ describe('Multi-language', function () {
     }
 
     client
-    .post('/v1/library/person')
-    .set('Authorization', `Bearer ${bearerToken}`)
-    .send(document)
-    .expect(200)
-    .end((err, res) => {
-      if (err) return done(err)
-
-      client
-      .get(`/v1/library/person/${res.body.results[0]._id}?lang=pt&compose=true`)
+      .post('/v1/library/person')
       .set('Authorization', `Bearer ${bearerToken}`)
+      .send(document)
       .expect(200)
       .end((err, res) => {
-        res.body.results.length.should.eql(1)
+        if (err) return done(err)
 
-        const result = res.body.results[0]
+        client
+          .get(
+            `/v1/library/person/${res.body.results[0]._id}?lang=pt&compose=true`
+          )
+          .set('Authorization', `Bearer ${bearerToken}`)
+          .expect(200)
+          .end((err, res) => {
+            res.body.results.length.should.eql(1)
 
-        result.name.should.eql(document.name)
-        result.occupation.should.eql(document['occupation:pt'])
-        result.nationality.should.eql(document.nationality)
-        result.education.should.eql(document['education:pt'])
+            const result = res.body.results[0]
 
-        should.exist(result._i18n)
+            result.name.should.eql(document.name)
+            result.occupation.should.eql(document['occupation:pt'])
+            result.nationality.should.eql(document.nationality)
+            result.education.should.eql(document['education:pt'])
 
-        const defaultLanguage = config.get('i18n.defaultLanguage')
+            should.exist(result._i18n)
 
-        result._i18n.name.should.eql(defaultLanguage)
-        result._i18n.occupation.should.eql('pt')
-        result._i18n.nationality.should.eql(defaultLanguage)
-        result._i18n.education.should.eql('pt')
+            const defaultLanguage = config.get('i18n.defaultLanguage')
 
-        const referencedResult = res.body.results[0].friend
+            result._i18n.name.should.eql(defaultLanguage)
+            result._i18n.occupation.should.eql('pt')
+            result._i18n.nationality.should.eql(defaultLanguage)
+            result._i18n.education.should.eql('pt')
 
-        referencedResult.name.should.eql(document.friend.name)
-        referencedResult.occupation.should.eql(document.friend['occupation:pt'])
-        referencedResult.nationality.should.eql(document.friend.nationality)
-        referencedResult.education.should.eql(document.friend['education:pt'])
+            const referencedResult = res.body.results[0].friend
 
-        should.exist(referencedResult._i18n)
+            referencedResult.name.should.eql(document.friend.name)
+            referencedResult.occupation.should.eql(
+              document.friend['occupation:pt']
+            )
+            referencedResult.nationality.should.eql(document.friend.nationality)
+            referencedResult.education.should.eql(
+              document.friend['education:pt']
+            )
 
-        referencedResult._i18n.name.should.eql(defaultLanguage)
-        referencedResult._i18n.occupation.should.eql('pt')
-        referencedResult._i18n.nationality.should.eql(defaultLanguage)
-        referencedResult._i18n.education.should.eql('pt')
+            should.exist(referencedResult._i18n)
 
-        config.set('i18n.languages', configBackup.i18n.languages)
+            referencedResult._i18n.name.should.eql(defaultLanguage)
+            referencedResult._i18n.occupation.should.eql('pt')
+            referencedResult._i18n.nationality.should.eql(defaultLanguage)
+            referencedResult._i18n.education.should.eql('pt')
 
-        done()
+            config.set('i18n.languages', configBackup.i18n.languages)
+
+            done()
+          })
       })
-    })
   })
 
   it('should return the translation version of a referenced field when the fields projection is set to include the field in question', done => {
@@ -613,7 +617,7 @@ describe('Multi-language', function () {
       occupation: 'Software engineer',
       'occupation:pt': 'Engenheiro de software',
       nationality: 'Portugal',
-      education: 'Master\'s degree',
+      education: "Master's degree",
       'education:pt': 'Mestrado',
       friend: {
         name: 'Lord Voldemort',
@@ -626,58 +630,62 @@ describe('Multi-language', function () {
     }
 
     client
-    .post('/v1/library/person')
-    .set('Authorization', `Bearer ${bearerToken}`)
-    .send(document)
-    .expect(200)
-    .end((err, res) => {
-      if (err) return done(err)
-
-      client
-      .get(`/v1/library/person/${res.body.results[0]._id}?lang=pt&compose=true&fields={"occupation":1,"friend.occupation":1}`)
+      .post('/v1/library/person')
       .set('Authorization', `Bearer ${bearerToken}`)
+      .send(document)
       .expect(200)
       .end((err, res) => {
-        res.body.results.length.should.eql(1)
+        if (err) return done(err)
 
-        const result = res.body.results[0]
+        client
+          .get(
+            `/v1/library/person/${res.body.results[0]._id}?lang=pt&compose=true&fields={"occupation":1,"friend.occupation":1}`
+          )
+          .set('Authorization', `Bearer ${bearerToken}`)
+          .expect(200)
+          .end((err, res) => {
+            res.body.results.length.should.eql(1)
 
-        result.occupation.should.eql(document['occupation:pt'])
+            const result = res.body.results[0]
 
-        should.exist(result._i18n)
+            result.occupation.should.eql(document['occupation:pt'])
 
-        const defaultLanguage = config.get('i18n.defaultLanguage')
+            should.exist(result._i18n)
 
-        result._i18n.occupation.should.eql('pt')
+            const defaultLanguage = config.get('i18n.defaultLanguage')
 
-        const referencedResult = res.body.results[0].friend
+            result._i18n.occupation.should.eql('pt')
 
-        referencedResult.occupation.should.eql(document.friend['occupation:pt'])
+            const referencedResult = res.body.results[0].friend
 
-        should.exist(referencedResult._i18n)
+            referencedResult.occupation.should.eql(
+              document.friend['occupation:pt']
+            )
 
-        referencedResult._i18n.occupation.should.eql('pt')
+            should.exist(referencedResult._i18n)
 
-        config.set('i18n.languages', configBackup.i18n.languages)
+            referencedResult._i18n.occupation.should.eql('pt')
 
-        done()
+            config.set('i18n.languages', configBackup.i18n.languages)
+
+            done()
+          })
       })
-    })
   })
 
   it('should handle translations with special characters', done => {
     const original = {
-      name: 'I can eat glass and it doesn\'t hurt me.'
+      name: "I can eat glass and it doesn't hurt me."
     }
     const translations = {
       'name:af': 'Ek kan glas eet, maar dit doen my nie skade nie.',
-      'name:an': 'Puedo minchar beire, no me\'n fa mal .',
+      'name:an': "Puedo minchar beire, no me'n fa mal .",
       'name:ar': 'أنا قادر على أكل الزجاج و هذا لا يؤلمني.',
       'name:bg': 'Мога да ям стъкло, то не ми вреди.',
       'name:bo': 'ཤེལ་སྒོ་ཟ་ནས་ང་ན་གི་མ་རེད།',
       'name:ca': 'Puc menjar vidre, que no em fa mal.',
       'name:cs': 'Mohu jíst sklo, neublíží mi.',
-      'name:cy': 'Dw i\'n gallu bwyta gwydr, \'dyw e ddim yn gwneud dolur i mi.',
+      'name:cy': "Dw i'n gallu bwyta gwydr, 'dyw e ddim yn gwneud dolur i mi.",
       'name:da': 'Jeg kan spise glas, det gør ikke ondt på mig.',
       'name:de': 'Ich kann Glas essen, ohne mir zu schaden.',
       'name:el': 'Μπορώ να φάω σπασμένα γυαλιά χωρίς να πάθω τίποτα.',
@@ -688,12 +696,13 @@ describe('Multi-language', function () {
       'name:fi': 'Voin syödä lasia, se ei vahingoita minua.',
       'name:fo': 'Eg kann eta glas, skaðaleysur.',
       'name:fr': 'Je peux manger du verre, ça ne me fait pas mal.',
-      'name:ga': 'Is féidir liom gloinne a ithe. Ní dhéanann sí dochar ar bith dom.',
+      'name:ga':
+        'Is féidir liom gloinne a ithe. Ní dhéanann sí dochar ar bith dom.',
       'name:gd': 'S urrainn dhomh gloinne ithe; cha ghoirtich i mi.',
       'name:gl': 'Eu podo xantar cristais e non cortarme.',
       'name:he': 'אני יכול לאכול זכוכית וזה לא מזיק לי.',
       'name:hi': 'मैं काँच खा सकता हूँ और मुझे उससे कोई चोट नहीं पहुंचती.',
-      'name:ht': 'Mwen kap manje vè, li pa blese\'m.',
+      'name:ht': "Mwen kap manje vè, li pa blese'm.",
       'name:hu': 'Meg tudom enni az üveget, nem lesz tőle bajom.',
       'name:is': 'Ég get etið gler án þess að meiða mig.',
       'name:it': 'Posso mangiare il vetro e non mi fa male.',
@@ -723,7 +732,7 @@ describe('Multi-language', function () {
       'name:uk': 'Я можу їсти скло, і воно мені не зашкодить.',
       'name:ur': 'میں کانچ کھا سکتا ہوں اور مجھے تکلیف نہیں ہوتی ۔',
       'name:vi': 'Tôi có thể ăn thủy tinh mà không hại gì.',
-      'name:wa': 'Dji pou magnî do vêre, çoula m\' freut nén må.',
+      'name:wa': "Dji pou magnî do vêre, çoula m' freut nén må.",
       'name:zh': '我能吞下玻璃而不伤身体。'
     }
     const languages = Object.keys(translations).map(field => {
@@ -733,54 +742,50 @@ describe('Multi-language', function () {
     config.set('i18n.languages', languages)
 
     client
-    .post('/v1/library/person')
-    .set('Authorization', `Bearer ${bearerToken}`)
-    .send(
-      Object.assign(original, translations)
-    )
-    .expect(200)
-    .end((err, res) => {
-      if (err) return done(err)
-
-      const id = res.body.results[0]._id
-      let i = 0
-
-      client
-      .get(`/v1/library/person/${id}`)
+      .post('/v1/library/person')
       .set('Authorization', `Bearer ${bearerToken}`)
+      .send(Object.assign(original, translations))
       .expect(200)
       .end((err, res) => {
-        res.body.results.length.should.eql(1)
+        if (err) return done(err)
 
-        res.body.results[0].name.should.eql(
-          original.name
-        )
-        should.not.exist(res.body.results[0]._i18n)
+        const id = res.body.results[0]._id
+        let i = 0
 
-        languages.forEach(language => {
-          should.exist(res.body.results[0][`name:${language}`])
-
-          client
-          .get(`/v1/library/person/${id}?lang=${language}`)
+        client
+          .get(`/v1/library/person/${id}`)
           .set('Authorization', `Bearer ${bearerToken}`)
           .expect(200)
           .end((err, res) => {
             res.body.results.length.should.eql(1)
 
-            res.body.results[0].name.should.eql(
-              translations[`name:${language}`]
-            )
-            res.body.results[0]._i18n.name.should.eql(language)
+            res.body.results[0].name.should.eql(original.name)
+            should.not.exist(res.body.results[0]._i18n)
 
-            if (++i === Object.keys(translations).length) {
-              config.set('i18n.languages', configBackup.i18n.languages)
+            languages.forEach(language => {
+              should.exist(res.body.results[0][`name:${language}`])
 
-              done()
-            }
+              client
+                .get(`/v1/library/person/${id}?lang=${language}`)
+                .set('Authorization', `Bearer ${bearerToken}`)
+                .expect(200)
+                .end((err, res) => {
+                  res.body.results.length.should.eql(1)
+
+                  res.body.results[0].name.should.eql(
+                    translations[`name:${language}`]
+                  )
+                  res.body.results[0]._i18n.name.should.eql(language)
+
+                  if (++i === Object.keys(translations).length) {
+                    config.set('i18n.languages', configBackup.i18n.languages)
+
+                    done()
+                  }
+                })
+            })
           })
-        })
       })
-    })
   })
 
   it('should throw an error at startup if `i18n.fieldCharacter` contains a `.`', done => {
@@ -790,7 +795,9 @@ describe('Multi-language', function () {
       try {
         app.start()
       } catch (err) {
-        err.message.includes('character "." is not allowed in "i18n.fieldCharacter" value')
+        err.message.includes(
+          'character "." is not allowed in "i18n.fieldCharacter" value'
+        )
 
         config.set('i18n.fieldCharacter', configBackup.i18n.fieldCharacter)
 
@@ -806,7 +813,9 @@ describe('Multi-language', function () {
       try {
         app.start()
       } catch (err) {
-        err.message.includes('character "@" is not allowed in "i18n.fieldCharacter" value')
+        err.message.includes(
+          'character "@" is not allowed in "i18n.fieldCharacter" value'
+        )
 
         config.set('i18n.fieldCharacter', configBackup.i18n.fieldCharacter)
 

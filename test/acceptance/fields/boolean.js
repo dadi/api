@@ -6,15 +6,19 @@ const app = require(__dirname + '/../../../dadi/lib/')
 
 let bearerToken
 const configBackup = config.get()
-const connectionString = 'http://' + config.get('server.host') + ':' + config.get('server.port')
+const connectionString =
+  'http://' + config.get('server.host') + ':' + config.get('server.port')
 
 describe('Boolean Field', () => {
   beforeEach(done => {
-    config.set('paths.collections', 'test/acceptance/temp-workspace/collections')
+    config.set(
+      'paths.collections',
+      'test/acceptance/temp-workspace/collections'
+    )
 
     help.dropDatabase('library', 'misc', err => {
       app.start(() => {
-        help.getBearerToken(function (err, token) {
+        help.getBearerToken(function(err, token) {
           if (err) return done(err)
           bearerToken = token
           done()
@@ -32,25 +36,25 @@ describe('Boolean Field', () => {
     const client = request(connectionString)
 
     client
-    .post('/v1/library/misc')
-    .set('Authorization', 'Bearer ' + bearerToken)
-    .send({boolean: true})
-    .expect(200)
-    .end((err, res) => {
-      if (err) return done(err)
-
-      res.body.results[0].boolean.should.eql(true)
-
-      client
-      .get(`/v1/library/misc/${res.body.results[0]._id}`)
+      .post('/v1/library/misc')
       .set('Authorization', 'Bearer ' + bearerToken)
+      .send({boolean: true})
       .expect(200)
       .end((err, res) => {
+        if (err) return done(err)
+
         res.body.results[0].boolean.should.eql(true)
 
-        done()
+        client
+          .get(`/v1/library/misc/${res.body.results[0]._id}`)
+          .set('Authorization', 'Bearer ' + bearerToken)
+          .expect(200)
+          .end((err, res) => {
+            res.body.results[0].boolean.should.eql(true)
+
+            done()
+          })
       })
-    })
   })
 
   it('should retrieve all documents where the field is truthy', done => {
@@ -71,23 +75,23 @@ describe('Boolean Field', () => {
     ]
 
     client
-    .post('/v1/library/misc')
-    .set('Authorization', 'Bearer ' + bearerToken)
-    .send(docs)
-    .expect(200)
-    .end((err, res) => {
-      if (err) return done(err)
-
-      client
-      .get(`/v1/library/misc?filter={"boolean":true}`)
+      .post('/v1/library/misc')
       .set('Authorization', 'Bearer ' + bearerToken)
+      .send(docs)
       .expect(200)
       .end((err, res) => {
-        res.body.results.length.should.eql(2)
+        if (err) return done(err)
 
-        done()
+        client
+          .get(`/v1/library/misc?filter={"boolean":true}`)
+          .set('Authorization', 'Bearer ' + bearerToken)
+          .expect(200)
+          .end((err, res) => {
+            res.body.results.length.should.eql(2)
+
+            done()
+          })
       })
-    })
   })
 
   it('should retrieve all documents where the field is falsy', done => {
@@ -108,22 +112,22 @@ describe('Boolean Field', () => {
     ]
 
     client
-    .post('/v1/library/misc')
-    .set('Authorization', 'Bearer ' + bearerToken)
-    .send(docs)
-    .expect(200)
-    .end((err, res) => {
-      if (err) return done(err)
-
-      client
-      .get(`/v1/library/misc?filter={"boolean":false}`)
+      .post('/v1/library/misc')
       .set('Authorization', 'Bearer ' + bearerToken)
+      .send(docs)
       .expect(200)
       .end((err, res) => {
-        res.body.results.length.should.eql(2)
+        if (err) return done(err)
 
-        done()
+        client
+          .get(`/v1/library/misc?filter={"boolean":false}`)
+          .set('Authorization', 'Bearer ' + bearerToken)
+          .expect(200)
+          .end((err, res) => {
+            res.body.results.length.should.eql(2)
+
+            done()
+          })
       })
-    })
   })
 })

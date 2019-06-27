@@ -7,73 +7,76 @@ const request = require('supertest')
 const should = require('should')
 const sinon = require('sinon')
 
-const client = request(`http://${config.get('server.host')}:${config.get('server.port')}`)
+const client = request(
+  `http://${config.get('server.host')}:${config.get('server.port')}`
+)
 
-describe('Resources endpoint', function () {
+describe('Resources endpoint', function() {
   let bearerToken
 
   before(done => {
     help.removeACLData(() => {
-      app.start(done)  
+      app.start(done)
     })
-    
   })
 
   after(done => {
     help.removeACLData(() => {
-      app.stop(done)  
+      app.stop(done)
     })
   })
 
   it('should return 401 if the request does not contain a valid bearer token', done => {
     client
-    .get(`/api/resources`)
-    .set('content-type', 'application/json')
-    .end((err, res) => {
-      res.statusCode.should.eql(401)
-
-      done()
-    })
-  })
-
-  it('should list collection, media and custom endpoint resources', done => {
-    help.getBearerTokenWithPermissions({
-      accessType: 'admin'
-    }).then(bearerToken => {
-      client
       .get(`/api/resources`)
       .set('content-type', 'application/json')
-      .set('Authorization', `Bearer ${bearerToken}`)
       .end((err, res) => {
-        Object.keys(app.components).forEach(key => {
-          const component = app.components[key]
-          let aclKey
-
-          switch (component._type) {
-            case app.COMPONENT_TYPE.COLLECTION:
-            case app.COMPONENT_TYPE.MEDIA_COLLECTION:
-              aclKey = component.model.getAclKey()
-
-              break
-
-            case app.COMPONENT_TYPE.CUSTOM_ENDPOINT:
-              aclKey = component.aclKey
-
-              break
-          }
-
-          if (!aclKey) return
-
-          const match = res.body.results.some(result => {
-            return result.name === aclKey
-          })
-
-          match.should.eql(true)
-        })
+        res.statusCode.should.eql(401)
 
         done()
       })
-    })
+  })
+
+  it('should list collection, media and custom endpoint resources', done => {
+    help
+      .getBearerTokenWithPermissions({
+        accessType: 'admin'
+      })
+      .then(bearerToken => {
+        client
+          .get(`/api/resources`)
+          .set('content-type', 'application/json')
+          .set('Authorization', `Bearer ${bearerToken}`)
+          .end((err, res) => {
+            Object.keys(app.components).forEach(key => {
+              const component = app.components[key]
+              let aclKey
+
+              switch (component._type) {
+                case app.COMPONENT_TYPE.COLLECTION:
+                case app.COMPONENT_TYPE.MEDIA_COLLECTION:
+                  aclKey = component.model.getAclKey()
+
+                  break
+
+                case app.COMPONENT_TYPE.CUSTOM_ENDPOINT:
+                  aclKey = component.aclKey
+
+                  break
+              }
+
+              if (!aclKey) return
+
+              const match = res.body.results.some(result => {
+                return result.name === aclKey
+              })
+
+              match.should.eql(true)
+            })
+
+            done()
+          })
+      })
   })
 
   it('should only list collection, media and custom endpoint resources for which the client has any type of access to (no resources)', done => {
@@ -95,26 +98,26 @@ describe('Resources endpoint', function () {
 
     help.createACLClient(testClient).then(() => {
       client
-      .post(config.get('auth.tokenUrl'))
-      .set('content-type', 'application/json')
-      .send(testClient)
-      .expect(200)
-      .end((err, res) => {
-        if (err) return done(err)
-
-        const bearerToken = res.body.accessToken
-
-        client
-        .get(`/api/resources`)
+        .post(config.get('auth.tokenUrl'))
         .set('content-type', 'application/json')
-        .set('Authorization', `Bearer ${bearerToken}`)
+        .send(testClient)
         .expect(200)
         .end((err, res) => {
-          res.body.results.length.should.eql(0)
+          if (err) return done(err)
 
-          done(err)
+          const bearerToken = res.body.accessToken
+
+          client
+            .get(`/api/resources`)
+            .set('content-type', 'application/json')
+            .set('Authorization', `Bearer ${bearerToken}`)
+            .expect(200)
+            .end((err, res) => {
+              res.body.results.length.should.eql(0)
+
+              done(err)
+            })
         })
-      })
     })
   })
 
@@ -134,27 +137,29 @@ describe('Resources endpoint', function () {
 
     help.createACLClient(testClient).then(() => {
       client
-      .post(config.get('auth.tokenUrl'))
-      .set('content-type', 'application/json')
-      .send(testClient)
-      .expect(200)
-      .end((err, res) => {
-        if (err) return done(err)
-
-        const bearerToken = res.body.accessToken
-
-        client
-        .get(`/api/resources`)
+        .post(config.get('auth.tokenUrl'))
         .set('content-type', 'application/json')
-        .set('Authorization', `Bearer ${bearerToken}`)
+        .send(testClient)
         .expect(200)
         .end((err, res) => {
-          res.body.results.length.should.eql(1)
-          res.body.results[0].name.should.eql('collection:testdb_test-schema')
+          if (err) return done(err)
 
-          done(err)
+          const bearerToken = res.body.accessToken
+
+          client
+            .get(`/api/resources`)
+            .set('content-type', 'application/json')
+            .set('Authorization', `Bearer ${bearerToken}`)
+            .expect(200)
+            .end((err, res) => {
+              res.body.results.length.should.eql(1)
+              res.body.results[0].name.should.eql(
+                'collection:testdb_test-schema'
+              )
+
+              done(err)
+            })
         })
-      })
     })
   })
 
@@ -178,27 +183,29 @@ describe('Resources endpoint', function () {
 
     help.createACLClient(testClient).then(() => {
       client
-      .post(config.get('auth.tokenUrl'))
-      .set('content-type', 'application/json')
-      .send(testClient)
-      .expect(200)
-      .end((err, res) => {
-        if (err) return done(err)
-
-        const bearerToken = res.body.accessToken
-
-        client
-        .get(`/api/resources`)
+        .post(config.get('auth.tokenUrl'))
         .set('content-type', 'application/json')
-        .set('Authorization', `Bearer ${bearerToken}`)
+        .send(testClient)
         .expect(200)
         .end((err, res) => {
-          res.body.results.length.should.eql(1)
-          res.body.results[0].name.should.eql('collection:testdb_test-schema')
+          if (err) return done(err)
 
-          done(err)
+          const bearerToken = res.body.accessToken
+
+          client
+            .get(`/api/resources`)
+            .set('content-type', 'application/json')
+            .set('Authorization', `Bearer ${bearerToken}`)
+            .expect(200)
+            .end((err, res) => {
+              res.body.results.length.should.eql(1)
+              res.body.results[0].name.should.eql(
+                'collection:testdb_test-schema'
+              )
+
+              done(err)
+            })
         })
-      })
     })
   })
 
@@ -222,27 +229,29 @@ describe('Resources endpoint', function () {
 
     help.createACLClient(testClient).then(() => {
       client
-      .post(config.get('auth.tokenUrl'))
-      .set('content-type', 'application/json')
-      .send(testClient)
-      .expect(200)
-      .end((err, res) => {
-        if (err) return done(err)
-
-        const bearerToken = res.body.accessToken
-
-        client
-        .get(`/api/resources`)
+        .post(config.get('auth.tokenUrl'))
         .set('content-type', 'application/json')
-        .set('Authorization', `Bearer ${bearerToken}`)
+        .send(testClient)
         .expect(200)
         .end((err, res) => {
-          res.body.results.length.should.eql(1)
-          res.body.results[0].name.should.eql('collection:testdb_test-schema')
+          if (err) return done(err)
 
-          done(err)
+          const bearerToken = res.body.accessToken
+
+          client
+            .get(`/api/resources`)
+            .set('content-type', 'application/json')
+            .set('Authorization', `Bearer ${bearerToken}`)
+            .expect(200)
+            .end((err, res) => {
+              res.body.results.length.should.eql(1)
+              res.body.results[0].name.should.eql(
+                'collection:testdb_test-schema'
+              )
+
+              done(err)
+            })
         })
-      })
     })
   })
 
@@ -262,27 +271,29 @@ describe('Resources endpoint', function () {
 
     help.createACLClient(testClient).then(() => {
       client
-      .post(config.get('auth.tokenUrl'))
-      .set('content-type', 'application/json')
-      .send(testClient)
-      .expect(200)
-      .end((err, res) => {
-        if (err) return done(err)
-
-        const bearerToken = res.body.accessToken
-
-        client
-        .get(`/api/resources`)
+        .post(config.get('auth.tokenUrl'))
         .set('content-type', 'application/json')
-        .set('Authorization', `Bearer ${bearerToken}`)
+        .send(testClient)
         .expect(200)
         .end((err, res) => {
-          res.body.results.length.should.eql(1)
-          res.body.results[0].name.should.eql('collection:testdb_test-schema')
+          if (err) return done(err)
 
-          done(err)
+          const bearerToken = res.body.accessToken
+
+          client
+            .get(`/api/resources`)
+            .set('content-type', 'application/json')
+            .set('Authorization', `Bearer ${bearerToken}`)
+            .expect(200)
+            .end((err, res) => {
+              res.body.results.length.should.eql(1)
+              res.body.results[0].name.should.eql(
+                'collection:testdb_test-schema'
+              )
+
+              done(err)
+            })
         })
-      })
     })
   })
 
@@ -306,27 +317,29 @@ describe('Resources endpoint', function () {
 
     help.createACLClient(testClient).then(() => {
       client
-      .post(config.get('auth.tokenUrl'))
-      .set('content-type', 'application/json')
-      .send(testClient)
-      .expect(200)
-      .end((err, res) => {
-        if (err) return done(err)
-
-        const bearerToken = res.body.accessToken
-
-        client
-        .get(`/api/resources`)
+        .post(config.get('auth.tokenUrl'))
         .set('content-type', 'application/json')
-        .set('Authorization', `Bearer ${bearerToken}`)
+        .send(testClient)
         .expect(200)
         .end((err, res) => {
-          res.body.results.length.should.eql(1)
-          res.body.results[0].name.should.eql('collection:testdb_test-schema')
+          if (err) return done(err)
 
-          done(err)
+          const bearerToken = res.body.accessToken
+
+          client
+            .get(`/api/resources`)
+            .set('content-type', 'application/json')
+            .set('Authorization', `Bearer ${bearerToken}`)
+            .expect(200)
+            .end((err, res) => {
+              res.body.results.length.should.eql(1)
+              res.body.results[0].name.should.eql(
+                'collection:testdb_test-schema'
+              )
+
+              done(err)
+            })
         })
-      })
     })
   })
 
@@ -346,27 +359,29 @@ describe('Resources endpoint', function () {
 
     help.createACLClient(testClient).then(() => {
       client
-      .post(config.get('auth.tokenUrl'))
-      .set('content-type', 'application/json')
-      .send(testClient)
-      .expect(200)
-      .end((err, res) => {
-        if (err) return done(err)
-
-        const bearerToken = res.body.accessToken
-
-        client
-        .get(`/api/resources`)
+        .post(config.get('auth.tokenUrl'))
         .set('content-type', 'application/json')
-        .set('Authorization', `Bearer ${bearerToken}`)
+        .send(testClient)
         .expect(200)
         .end((err, res) => {
-          res.body.results.length.should.eql(1)
-          res.body.results[0].name.should.eql('collection:testdb_test-schema')
+          if (err) return done(err)
 
-          done(err)
+          const bearerToken = res.body.accessToken
+
+          client
+            .get(`/api/resources`)
+            .set('content-type', 'application/json')
+            .set('Authorization', `Bearer ${bearerToken}`)
+            .expect(200)
+            .end((err, res) => {
+              res.body.results.length.should.eql(1)
+              res.body.results[0].name.should.eql(
+                'collection:testdb_test-schema'
+              )
+
+              done(err)
+            })
         })
-      })
     })
   })
 
@@ -390,27 +405,29 @@ describe('Resources endpoint', function () {
 
     help.createACLClient(testClient).then(() => {
       client
-      .post(config.get('auth.tokenUrl'))
-      .set('content-type', 'application/json')
-      .send(testClient)
-      .expect(200)
-      .end((err, res) => {
-        if (err) return done(err)
-
-        const bearerToken = res.body.accessToken
-
-        client
-        .get(`/api/resources`)
+        .post(config.get('auth.tokenUrl'))
         .set('content-type', 'application/json')
-        .set('Authorization', `Bearer ${bearerToken}`)
+        .send(testClient)
         .expect(200)
         .end((err, res) => {
-          res.body.results.length.should.eql(1)
-          res.body.results[0].name.should.eql('collection:testdb_test-schema')
+          if (err) return done(err)
 
-          done(err)
+          const bearerToken = res.body.accessToken
+
+          client
+            .get(`/api/resources`)
+            .set('content-type', 'application/json')
+            .set('Authorization', `Bearer ${bearerToken}`)
+            .expect(200)
+            .end((err, res) => {
+              res.body.results.length.should.eql(1)
+              res.body.results[0].name.should.eql(
+                'collection:testdb_test-schema'
+              )
+
+              done(err)
+            })
         })
-      })
     })
   })
 
@@ -434,27 +451,29 @@ describe('Resources endpoint', function () {
 
     help.createACLClient(testClient).then(() => {
       client
-      .post(config.get('auth.tokenUrl'))
-      .set('content-type', 'application/json')
-      .send(testClient)
-      .expect(200)
-      .end((err, res) => {
-        if (err) return done(err)
-
-        const bearerToken = res.body.accessToken
-
-        client
-        .get(`/api/resources`)
+        .post(config.get('auth.tokenUrl'))
         .set('content-type', 'application/json')
-        .set('Authorization', `Bearer ${bearerToken}`)
+        .send(testClient)
         .expect(200)
         .end((err, res) => {
-          res.body.results.length.should.eql(1)
-          res.body.results[0].name.should.eql('collection:testdb_test-schema')
+          if (err) return done(err)
 
-          done(err)
+          const bearerToken = res.body.accessToken
+
+          client
+            .get(`/api/resources`)
+            .set('content-type', 'application/json')
+            .set('Authorization', `Bearer ${bearerToken}`)
+            .expect(200)
+            .end((err, res) => {
+              res.body.results.length.should.eql(1)
+              res.body.results[0].name.should.eql(
+                'collection:testdb_test-schema'
+              )
+
+              done(err)
+            })
         })
-      })
     })
   })
 
@@ -474,27 +493,29 @@ describe('Resources endpoint', function () {
 
     help.createACLClient(testClient).then(() => {
       client
-      .post(config.get('auth.tokenUrl'))
-      .set('content-type', 'application/json')
-      .send(testClient)
-      .expect(200)
-      .end((err, res) => {
-        if (err) return done(err)
-
-        const bearerToken = res.body.accessToken
-
-        client
-        .get(`/api/resources`)
+        .post(config.get('auth.tokenUrl'))
         .set('content-type', 'application/json')
-        .set('Authorization', `Bearer ${bearerToken}`)
+        .send(testClient)
         .expect(200)
         .end((err, res) => {
-          res.body.results.length.should.eql(1)
-          res.body.results[0].name.should.eql('collection:testdb_test-schema')
+          if (err) return done(err)
 
-          done(err)
+          const bearerToken = res.body.accessToken
+
+          client
+            .get(`/api/resources`)
+            .set('content-type', 'application/json')
+            .set('Authorization', `Bearer ${bearerToken}`)
+            .expect(200)
+            .end((err, res) => {
+              res.body.results.length.should.eql(1)
+              res.body.results[0].name.should.eql(
+                'collection:testdb_test-schema'
+              )
+
+              done(err)
+            })
         })
-      })
     })
   })
 
@@ -518,27 +539,29 @@ describe('Resources endpoint', function () {
 
     help.createACLClient(testClient).then(() => {
       client
-      .post(config.get('auth.tokenUrl'))
-      .set('content-type', 'application/json')
-      .send(testClient)
-      .expect(200)
-      .end((err, res) => {
-        if (err) return done(err)
-
-        const bearerToken = res.body.accessToken
-
-        client
-        .get(`/api/resources`)
+        .post(config.get('auth.tokenUrl'))
         .set('content-type', 'application/json')
-        .set('Authorization', `Bearer ${bearerToken}`)
+        .send(testClient)
         .expect(200)
         .end((err, res) => {
-          res.body.results.length.should.eql(1)
-          res.body.results[0].name.should.eql('collection:testdb_test-schema')
+          if (err) return done(err)
 
-          done(err)
+          const bearerToken = res.body.accessToken
+
+          client
+            .get(`/api/resources`)
+            .set('content-type', 'application/json')
+            .set('Authorization', `Bearer ${bearerToken}`)
+            .expect(200)
+            .end((err, res) => {
+              res.body.results.length.should.eql(1)
+              res.body.results[0].name.should.eql(
+                'collection:testdb_test-schema'
+              )
+
+              done(err)
+            })
         })
-      })
     })
   })
 
@@ -562,27 +585,29 @@ describe('Resources endpoint', function () {
 
     help.createACLClient(testClient).then(() => {
       client
-      .post(config.get('auth.tokenUrl'))
-      .set('content-type', 'application/json')
-      .send(testClient)
-      .expect(200)
-      .end((err, res) => {
-        if (err) return done(err)
-
-        const bearerToken = res.body.accessToken
-
-        client
-        .get(`/api/resources`)
+        .post(config.get('auth.tokenUrl'))
         .set('content-type', 'application/json')
-        .set('Authorization', `Bearer ${bearerToken}`)
+        .send(testClient)
         .expect(200)
         .end((err, res) => {
-          res.body.results.length.should.eql(1)
-          res.body.results[0].name.should.eql('collection:testdb_test-schema')
+          if (err) return done(err)
 
-          done(err)
+          const bearerToken = res.body.accessToken
+
+          client
+            .get(`/api/resources`)
+            .set('content-type', 'application/json')
+            .set('Authorization', `Bearer ${bearerToken}`)
+            .expect(200)
+            .end((err, res) => {
+              res.body.results.length.should.eql(1)
+              res.body.results[0].name.should.eql(
+                'collection:testdb_test-schema'
+              )
+
+              done(err)
+            })
         })
-      })
     })
   })
 })

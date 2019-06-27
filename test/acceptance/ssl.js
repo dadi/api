@@ -3,16 +3,18 @@ const request = require('supertest')
 const api = require(__dirname + '/../../dadi/lib/api')
 const config = require(__dirname + '/../../config')
 
-const clientHost = 'http://' + config.get('server.host') + ':' + config.get('server.port')
-const secureClientHost = 'https://' + config.get('server.host') + ':' + config.get('server.port')
+const clientHost =
+  'http://' + config.get('server.host') + ':' + config.get('server.port')
+const secureClientHost =
+  'https://' + config.get('server.host') + ':' + config.get('server.port')
 
 const client = request(clientHost)
 const secureClient = request(secureClientHost)
 
 let server
 
-const defaultResponse = function defaultResponse (req, res, next) {
-  const body = JSON.stringify({ foo: 'bar' })
+const defaultResponse = function defaultResponse(req, res, next) {
+  const body = JSON.stringify({foo: 'bar'})
 
   res.writeHead(200, {
     'content-length': body.length,
@@ -23,25 +25,25 @@ const defaultResponse = function defaultResponse (req, res, next) {
 }
 
 describe('SSL', () => {
-  before((done) => {
+  before(done => {
     // avoid [Error: self signed certificate] code: 'DEPTH_ZERO_SELF_SIGNED_CERT'
     process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0'
     done()
   })
 
-  beforeEach((done) => {
+  beforeEach(done => {
     // give the server a chance to close & release the port
     setTimeout(done, 500)
   })
 
-  afterEach((done) => {
+  afterEach(done => {
     config.set('server.protocol', 'http')
     config.set('server.redirectPort', '')
     config.set('server.sslPassphrase', '')
     config.set('server.sslPrivateKeyPath', '')
     config.set('server.sslCertificatePath', '')
 
-    server.close((err) => {
+    server.close(err => {
       if (err) {
         console.log(err) // error if server not running
       }
@@ -50,11 +52,11 @@ describe('SSL', () => {
     })
   })
 
-  after((done) => {
+  after(done => {
     done()
   })
 
-  it('should respond to a http request when ssl is disabled', (done) => {
+  it('should respond to a http request when ssl is disabled', done => {
     server = api()
     server.use(defaultResponse)
     server.listen()
@@ -69,7 +71,7 @@ describe('SSL', () => {
       })
   })
 
-  it('should redirect http request to https when redirectPort is set', (done) => {
+  it('should redirect http request to https when redirectPort is set', done => {
     config.set('server.protocol', 'https')
     config.set('server.redirectPort', '9999')
     config.set('server.sslPrivateKeyPath', 'test/ssl/unprotected/key.pem')
@@ -90,7 +92,7 @@ describe('SSL', () => {
       })
   })
 
-  it('should respond to a https request when using unprotected ssl key without a passphrase', (done) => {
+  it('should respond to a https request when using unprotected ssl key without a passphrase', done => {
     config.set('server.protocol', 'https')
     config.set('server.sslPrivateKeyPath', 'test/ssl/unprotected/key.pem')
     config.set('server.sslCertificatePath', 'test/ssl/unprotected/cert.pem')
@@ -109,7 +111,7 @@ describe('SSL', () => {
       })
   })
 
-  it('should respond to a https request when using protected ssl key with a passphrase', (done) => {
+  it('should respond to a https request when using protected ssl key with a passphrase', done => {
     config.set('server.protocol', 'https')
     config.set('server.sslPrivateKeyPath', 'test/ssl/protected/key.pem')
     config.set('server.sslCertificatePath', 'test/ssl/protected/cert.pem')
@@ -129,7 +131,7 @@ describe('SSL', () => {
       })
   })
 
-  it('should throw a bad password read exception when using protected ssl key with the wrong passphrase', (done) => {
+  it('should throw a bad password read exception when using protected ssl key with the wrong passphrase', done => {
     config.set('server.protocol', 'https')
     config.set('server.sslPrivateKeyPath', 'test/ssl/protected/key.pem')
     config.set('server.sslCertificatePath', 'test/ssl/protected/cert.pem')
@@ -146,7 +148,7 @@ describe('SSL', () => {
     done()
   })
 
-  it('should throw a bad password read exception when using protected ssl key without a passphrase', (done) => {
+  it('should throw a bad password read exception when using protected ssl key without a passphrase', done => {
     config.set('server.protocol', 'https')
     config.set('server.sslPrivateKeyPath', 'test/ssl/protected/key.pem')
     config.set('server.sslCertificatePath', 'test/ssl/protected/cert.pem')

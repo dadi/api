@@ -5,7 +5,9 @@ const request = require('supertest')
 const should = require('should')
 
 const configBackup = config.get()
-const client = request(`http://${config.get('server.host')}:${config.get('server.port')}`)
+const client = request(
+  `http://${config.get('server.host')}:${config.get('server.port')}`
+)
 
 module.exports = () => {
   const resource = 'collection:library_book'
@@ -26,14 +28,14 @@ module.exports = () => {
   describe('error states', () => {
     it('should return 401 if the request does not include a valid bearer token', done => {
       client
-      .delete(`/api/clients/${targetClient.clientId}/resources/${resource}`)
-      .set('content-type', 'application/json')
-      .expect('content-type', 'application/json')
-      .end((err, res) => {
-        res.statusCode.should.eql(401)
+        .delete(`/api/clients/${targetClient.clientId}/resources/${resource}`)
+        .set('content-type', 'application/json')
+        .expect('content-type', 'application/json')
+        .end((err, res) => {
+          res.statusCode.should.eql(401)
 
-        done()
-      })
+          done()
+        })
     })
 
     it('should return 403 if the request includes a valid bearer token without sufficient permissions on the "clients" resource (no "clients" resource)', done => {
@@ -44,32 +46,34 @@ module.exports = () => {
 
       help.createACLClient(testClient).then(() => {
         client
-        .post(config.get('auth.tokenUrl'))
-        .set('content-type', 'application/json')
-        .send({
-          clientId: testClient.clientId,
-          secret: testClient.secret
-        })
-        .expect(200)
-        .expect('content-type', 'application/json')
-        .end((err, res) => {
-          if (err) return done(err)
-
-          res.body.accessToken.should.be.String
-
-          const bearerToken = res.body.accessToken
-
-          client
-          .delete(`/api/clients/${targetClient.clientId}/resources/${resource}`)
+          .post(config.get('auth.tokenUrl'))
           .set('content-type', 'application/json')
-          .set('Authorization', `Bearer ${bearerToken}`)
+          .send({
+            clientId: testClient.clientId,
+            secret: testClient.secret
+          })
+          .expect(200)
           .expect('content-type', 'application/json')
           .end((err, res) => {
-            res.statusCode.should.eql(403)
+            if (err) return done(err)
 
-            done()
+            res.body.accessToken.should.be.String
+
+            const bearerToken = res.body.accessToken
+
+            client
+              .delete(
+                `/api/clients/${targetClient.clientId}/resources/${resource}`
+              )
+              .set('content-type', 'application/json')
+              .set('Authorization', `Bearer ${bearerToken}`)
+              .expect('content-type', 'application/json')
+              .end((err, res) => {
+                res.statusCode.should.eql(403)
+
+                done()
+              })
           })
-        })
       })
     })
 
@@ -88,36 +92,38 @@ module.exports = () => {
         access: {
           read: true
         }
-      }      
+      }
 
       help.createACLClient(testClient).then(() => {
         client
-        .post(config.get('auth.tokenUrl'))
-        .set('content-type', 'application/json')
-        .send({
-          clientId: testClient.clientId,
-          secret: testClient.secret
-        })
-        .expect(200)
-        .expect('content-type', 'application/json')
-        .end((err, res) => {
-          if (err) return done(err)
-
-          res.body.accessToken.should.be.String
-
-          const bearerToken = res.body.accessToken
-
-          client
-          .delete(`/api/clients/${targetClient.clientId}/resources/${resource}`)
+          .post(config.get('auth.tokenUrl'))
           .set('content-type', 'application/json')
-          .set('Authorization', `Bearer ${bearerToken}`)
+          .send({
+            clientId: testClient.clientId,
+            secret: testClient.secret
+          })
+          .expect(200)
           .expect('content-type', 'application/json')
           .end((err, res) => {
-            res.statusCode.should.eql(403)
+            if (err) return done(err)
 
-            done()
+            res.body.accessToken.should.be.String
+
+            const bearerToken = res.body.accessToken
+
+            client
+              .delete(
+                `/api/clients/${targetClient.clientId}/resources/${resource}`
+              )
+              .set('content-type', 'application/json')
+              .set('Authorization', `Bearer ${bearerToken}`)
+              .expect('content-type', 'application/json')
+              .end((err, res) => {
+                res.statusCode.should.eql(403)
+
+                done()
+              })
           })
-        })
       })
     })
 
@@ -129,7 +135,7 @@ module.exports = () => {
           clients: {
             read: true,
             update: true
-          },            
+          },
           [resource]: {
             create: true,
             delete: true
@@ -139,48 +145,50 @@ module.exports = () => {
 
       help.createACLClient(testClient).then(() => {
         client
-        .post(config.get('auth.tokenUrl'))
-        .set('content-type', 'application/json')
-        .send({
-          clientId: testClient.clientId,
-          secret: testClient.secret
-        })
-        .expect(200)
-        .expect('content-type', 'application/json')
-        .end((err, res) => {
-          if (err) return done(err)
-
-          res.body.accessToken.should.be.String
-
-          const bearerToken = res.body.accessToken
-
-          client
-          .get(`/api/clients/${targetClient.clientId}`)
+          .post(config.get('auth.tokenUrl'))
           .set('content-type', 'application/json')
-          .set('Authorization', `Bearer ${bearerToken}`)
+          .send({
+            clientId: testClient.clientId,
+            secret: testClient.secret
+          })
+          .expect(200)
           .expect('content-type', 'application/json')
           .end((err, res) => {
-            res.body.results.should.be.Array
-            res.body.results.length.should.eql(1)
+            if (err) return done(err)
 
-            const result = res.body.results[0]
+            res.body.accessToken.should.be.String
 
-            should.exist(result.resources[resource])
+            const bearerToken = res.body.accessToken
 
             client
-            .delete(`/api/clients/${targetClient.clientId}/resources/${resource}`)
-            .set('content-type', 'application/json')
-            .set('Authorization', `Bearer ${bearerToken}`)
-            .expect('content-type', 'application/json')
-            .end((err, res) => {
-              res.statusCode.should.eql(403)
+              .get(`/api/clients/${targetClient.clientId}`)
+              .set('content-type', 'application/json')
+              .set('Authorization', `Bearer ${bearerToken}`)
+              .expect('content-type', 'application/json')
+              .end((err, res) => {
+                res.body.results.should.be.Array
+                res.body.results.length.should.eql(1)
 
-              done()
-            })
+                const result = res.body.results[0]
+
+                should.exist(result.resources[resource])
+
+                client
+                  .delete(
+                    `/api/clients/${targetClient.clientId}/resources/${resource}`
+                  )
+                  .set('content-type', 'application/json')
+                  .set('Authorization', `Bearer ${bearerToken}`)
+                  .expect('content-type', 'application/json')
+                  .end((err, res) => {
+                    res.statusCode.should.eql(403)
+
+                    done()
+                  })
+              })
           })
-        })
       })
-    })    
+    })
 
     it('should return 404 if the referenced resource does not exist', done => {
       const testClient = {
@@ -191,38 +199,40 @@ module.exports = () => {
 
       help.createACLClient(testClient).then(() => {
         client
-        .post(config.get('auth.tokenUrl'))
-        .set('content-type', 'application/json')
-        .send({
-          clientId: testClient.clientId,
-          secret: testClient.secret
-        })
-        .expect(200)
-        .expect('content-type', 'application/json')
-        .end((err, res) => {
-          if (err) return done(err)
-
-          res.body.accessToken.should.be.String
-
-          const bearerToken = res.body.accessToken
-
-          client
-          .delete(`/api/clients/${targetClient.clientId}/resources/other:resource`)
+          .post(config.get('auth.tokenUrl'))
           .set('content-type', 'application/json')
-          .set('Authorization', `Bearer ${bearerToken}`)
+          .send({
+            clientId: testClient.clientId,
+            secret: testClient.secret
+          })
+          .expect(200)
           .expect('content-type', 'application/json')
           .end((err, res) => {
-            res.statusCode.should.eql(404)
+            if (err) return done(err)
 
-            done()
+            res.body.accessToken.should.be.String
+
+            const bearerToken = res.body.accessToken
+
+            client
+              .delete(
+                `/api/clients/${targetClient.clientId}/resources/other:resource`
+              )
+              .set('content-type', 'application/json')
+              .set('Authorization', `Bearer ${bearerToken}`)
+              .expect('content-type', 'application/json')
+              .end((err, res) => {
+                res.statusCode.should.eql(404)
+
+                done()
+              })
           })
-        })
       })
     })
   })
 
   describe('success states (the client has "update" access to the "clients" resource as well as access to the referenced resource for each of the access types they are attempting to grant)', () => {
-    it('should remove the client\'s permissions to access a resource', done => {
+    it("should remove the client's permissions to access a resource", done => {
       const testClient = {
         clientId: 'apiClient',
         secret: 'someSecret',
@@ -230,7 +240,7 @@ module.exports = () => {
           clients: {
             read: true,
             update: true
-          },            
+          },
           [resource]: {
             create: true,
             delete: true,
@@ -242,43 +252,22 @@ module.exports = () => {
 
       help.createACLClient(testClient).then(() => {
         client
-        .post(config.get('auth.tokenUrl'))
-        .set('content-type', 'application/json')
-        .send({
-          clientId: testClient.clientId,
-          secret: testClient.secret
-        })
-        .expect(200)
-        .expect('content-type', 'application/json')
-        .end((err, res) => {
-          if (err) return done(err)
-
-          res.body.accessToken.should.be.String
-
-          const bearerToken = res.body.accessToken
-
-          client
-          .get(`/api/clients/${targetClient.clientId}`)
+          .post(config.get('auth.tokenUrl'))
           .set('content-type', 'application/json')
-          .set('Authorization', `Bearer ${bearerToken}`)
+          .send({
+            clientId: testClient.clientId,
+            secret: testClient.secret
+          })
+          .expect(200)
           .expect('content-type', 'application/json')
           .end((err, res) => {
-            res.body.results.should.be.Array
-            res.body.results.length.should.eql(1)
+            if (err) return done(err)
 
-            const result = res.body.results[0]
+            res.body.accessToken.should.be.String
 
-            should.exist(result.resources[resource])
+            const bearerToken = res.body.accessToken
 
             client
-            .delete(`/api/clients/${targetClient.clientId}/resources/${resource}`)
-            .set('content-type', 'application/json')
-            .set('Authorization', `Bearer ${bearerToken}`)
-            .expect('content-type', 'application/json')
-            .end((err, res) => {
-              res.statusCode.should.eql(204)
-
-              client
               .get(`/api/clients/${targetClient.clientId}`)
               .set('content-type', 'application/json')
               .set('Authorization', `Bearer ${bearerToken}`)
@@ -289,13 +278,36 @@ module.exports = () => {
 
                 const result = res.body.results[0]
 
-                should.not.exist(result.resources[resource])
+                should.exist(result.resources[resource])
 
-                done()
+                client
+                  .delete(
+                    `/api/clients/${targetClient.clientId}/resources/${resource}`
+                  )
+                  .set('content-type', 'application/json')
+                  .set('Authorization', `Bearer ${bearerToken}`)
+                  .expect('content-type', 'application/json')
+                  .end((err, res) => {
+                    res.statusCode.should.eql(204)
+
+                    client
+                      .get(`/api/clients/${targetClient.clientId}`)
+                      .set('content-type', 'application/json')
+                      .set('Authorization', `Bearer ${bearerToken}`)
+                      .expect('content-type', 'application/json')
+                      .end((err, res) => {
+                        res.body.results.should.be.Array
+                        res.body.results.length.should.eql(1)
+
+                        const result = res.body.results[0]
+
+                        should.not.exist(result.resources[resource])
+
+                        done()
+                      })
+                  })
               })
-            })
           })
-        })
       })
     })
   })

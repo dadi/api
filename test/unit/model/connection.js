@@ -7,7 +7,7 @@ const querystring = require('querystring')
 
 const config = require(__dirname + '/../../../config')
 
-describe('Model connection', function () {
+describe('Model connection', function() {
   this.timeout(5000)
 
   // beforeEach(function (done) {
@@ -19,13 +19,13 @@ describe('Model connection', function () {
   //   done()
   // })
 
-  describe('constructor', function () {
-    it('should be exposed', function (done) {
+  describe('constructor', function() {
+    it('should be exposed', function(done) {
       connection.Connection.should.be.Function
       done()
     })
 
-    it('should inherit from EventEmitter', function (done) {
+    it('should inherit from EventEmitter', function(done) {
       const conn = new connection.Connection()
 
       conn.should.be.an.instanceOf(EventEmitter)

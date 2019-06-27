@@ -18,23 +18,17 @@ describe('Controller', () => {
 
   it('should export function that returns an instance', () => {
     controller.should.be.Function
-    const mod = model(
-      'testModel',
-      help.getModelSchema(),
-      null,
-      { database: 'testdb' }
-    )
+    const mod = model('testModel', help.getModelSchema(), null, {
+      database: 'testdb'
+    })
 
     controller(mod).should.be.an.instanceOf(controller.Controller)
   })
 
   it('should attach a model to the controller', () => {
-    const mod = model(
-      'testModel',
-      help.getModelSchema(),
-      null,
-      { database: 'testdb' }
-    )
+    const mod = model('testModel', help.getModelSchema(), null, {
+      database: 'testdb'
+    })
 
     controller(mod).model.should.equal(mod)
   })
@@ -43,26 +37,20 @@ describe('Controller', () => {
     controller.should.throw()
   })
 
-  describe('instance', function () {
-    describe('`get` method', function () {
+  describe('instance', function() {
+    describe('`get` method', function() {
       it('should be accessible', () => {
-        const mod = model(
-          'testModel',
-          help.getModelSchema(),
-          null,
-          { database: 'testdb' }
-        )
+        const mod = model('testModel', help.getModelSchema(), null, {
+          database: 'testdb'
+        })
 
         controller(mod).get.should.be.Function
       })
 
-      it('should call the Model\'s get method', () => {
-        const mod = model(
-          'testModel',
-          help.getModelSchema(),
-          null,
-          { database: 'testdb' }
-        )
+      it("should call the Model's get method", () => {
+        const mod = model('testModel', help.getModelSchema(), null, {
+          database: 'testdb'
+        })
         const stub = sinon.stub(mod, 'get').resolves({})
         const req = {
           params: {},
@@ -75,12 +63,9 @@ describe('Controller', () => {
       })
 
       it('should not strip unknown params from the query', () => {
-        const mod = model(
-          'testModel',
-          help.getModelSchema(),
-          null,
-          { database: 'testdb' }
-        )
+        const mod = model('testModel', help.getModelSchema(), null, {
+          database: 'testdb'
+        })
         const stub = sinon.stub(mod, 'get').resolves({})
         const req = {
           params: {},
@@ -99,12 +84,9 @@ describe('Controller', () => {
       })
 
       it('should allow querying for "null"', () => {
-        const mod = model(
-          'testModel',
-          help.getModelSchema(),
-          null,
-          { database: 'testdb' }
-        )
+        const mod = model('testModel', help.getModelSchema(), null, {
+          database: 'testdb'
+        })
         const stub = sinon.stub(mod, 'get').resolves({})
         const req = {
           params: {},
@@ -124,17 +106,12 @@ describe('Controller', () => {
       it('should allow querying for "null" and other fields', () => {
         const schema = Object.assign({}, help.getModelSchema(), {
           field2: {
-            'type': 'String',
-            'label': 'Title',
-            'required': false
+            type: 'String',
+            label: 'Title',
+            required: false
           }
         })
-        const mod = model(
-          'testModel',
-          schema,
-          null,
-          { database: 'testdb' }
-        )
+        const mod = model('testModel', schema, null, {database: 'testdb'})
         const stub = sinon.stub(mod, 'get').resolves({})
         const req = {
           params: {},
@@ -159,10 +136,10 @@ describe('Controller', () => {
             type: 'Mixed',
             label: 'Mixed Field',
             required: false,
-            display: { index: true, edit: true }
+            display: {index: true, edit: true}
           }
         })
-        const mod = model('schemaTest', schema, null, { database: 'testdb' })
+        const mod = model('schemaTest', schema, null, {database: 'testdb'})
         const stub = sinon.stub(mod, 'get').resolves({})
         const req = {
           params: {},
@@ -180,12 +157,9 @@ describe('Controller', () => {
       })
 
       it('should not call find() if invalid skip option is provided', done => {
-        const mod = model(
-          'testModel',
-          help.getModelSchema(),
-          null,
-          { database: 'testdb' }
-        )
+        const mod = model('testModel', help.getModelSchema(), null, {
+          database: 'testdb'
+        })
         const stub = sinon.stub(mod, 'get').resolves({})
         const req = {
           url: '/foo/bar?filter={"fieldName":"test"}&skip=-1',
@@ -194,9 +168,8 @@ describe('Controller', () => {
           }
         }
         const res = {
-          setHeader: function setHeader (str1, str2) {
-          },
-          end: function end (body) {
+          setHeader: function setHeader(str1, str2) {},
+          end: function end(body) {
             stub.restore()
             stub.callCount.should.equal(0)
             this.statusCode.should.eql(400)
@@ -204,16 +177,13 @@ describe('Controller', () => {
           }
         }
 
-        controller(mod).get(req, res, function () {})
+        controller(mod).get(req, res, function() {})
       })
 
       it('should not call find() if invalid page option is provided', done => {
-        const mod = model(
-          'testModel',
-          help.getModelSchema(),
-          null,
-          { database: 'testdb' }
-        )
+        const mod = model('testModel', help.getModelSchema(), null, {
+          database: 'testdb'
+        })
         const stub = sinon.stub(mod, 'get').resolves({})
         const req = {
           url: '/foo/bar?filter={"fieldName":"test"}&page=-1',
@@ -222,9 +192,8 @@ describe('Controller', () => {
           }
         }
         const res = {
-          setHeader: function setHeader (str1, str2) {
-          },
-          end: function end (body) {
+          setHeader: function setHeader(str1, str2) {},
+          end: function end(body) {
             stub.restore()
             stub.callCount.should.equal(0)
             this.statusCode.should.eql(400)
@@ -232,7 +201,7 @@ describe('Controller', () => {
           }
         }
 
-        controller(mod).get(req, res, function () {})
+        controller(mod).get(req, res, function() {})
       })
 
       it('should not pass apiVersion in query if not configured', () => {
@@ -297,10 +266,10 @@ describe('Controller', () => {
         queryParameters._apiVersion.should.equal('v1')
       })
 
-      it('should pass model\'s default filters to the find query', () => {
+      it("should pass model's default filters to the find query", () => {
         const settings = Object.assign({}, help.getModelSettings(), {
           database: 'testdb',
-          defaultFilters: { 'field1': 'xxx' }
+          defaultFilters: {field1: 'xxx'}
         })
         const mod = model(
           'testModel',
@@ -324,10 +293,10 @@ describe('Controller', () => {
         stub.restore()
       })
 
-      it('should pass model\'s default fields to the find query', () => {
+      it("should pass model's default fields to the find query", () => {
         const settings = Object.assign({}, help.getModelSettings(), {
           database: 'testdb',
-          fieldLimiters: { 'field1': 1 }
+          fieldLimiters: {field1: 1}
         })
         const mod = model(
           'testModel',
@@ -359,37 +328,29 @@ describe('Controller', () => {
           url: '/foo/bar'
         }
         const res = {
-          end (chunk) {
+          end(chunk) {
             done()
           },
-          setHeader () {}
+          setHeader() {}
         }
 
-        controller(mod).get(req, res, function () {
-
-        })
+        controller(mod).get(req, res, function() {})
       })
     })
 
-    describe('`post` method', function () {
+    describe('`post` method', function() {
       it('should be accessible', () => {
-        const mod = model(
-          'testModel',
-          help.getModelSchema(),
-          null,
-          { database: 'testdb' }
-        )
+        const mod = model('testModel', help.getModelSchema(), null, {
+          database: 'testdb'
+        })
 
         controller(mod).post.should.be.Function
       })
 
-      it('should call the Model\'s create method', () => {
-        const mod = model(
-          'testModel',
-          help.getModelSchema(),
-          null,
-          { database: 'testdb' }
-        )
+      it("should call the Model's create method", () => {
+        const mod = model('testModel', help.getModelSchema(), null, {
+          database: 'testdb'
+        })
         const stub = sinon.stub(mod, 'create').resolves({})
 
         sinon.stub(libHelp, 'clearCache').callsFake(pathname => {
@@ -398,7 +359,7 @@ describe('Controller', () => {
 
         controller(mod).post({
           params: {},
-          body: { field1: 'foo' },
+          body: {field1: 'foo'},
           url: '/vtest/testdb/testcoll'
         })
 
@@ -410,12 +371,9 @@ describe('Controller', () => {
       })
 
       it('should add internally calculated fields during create', () => {
-        const mod = model(
-          'testModel',
-          help.getModelSchema(),
-          null,
-          { database: 'testdb' }
-        )
+        const mod = model('testModel', help.getModelSchema(), null, {
+          database: 'testdb'
+        })
         const stub = sinon.stub(mod, 'create').resolves({})
 
         sinon.stub(libHelp, 'clearCache').callsFake(pathname => {
@@ -425,7 +383,7 @@ describe('Controller', () => {
         controller(mod).post({
           params: {},
           dadiApiClient: {clientId: 'clientTestId'},
-          body: { field1: 'foo' },
+          body: {field1: 'foo'},
           url: '/vtest/testdb/testcoll'
         })
 
@@ -444,23 +402,17 @@ describe('Controller', () => {
 
     describe('`put` method', () => {
       it('should be accessible', () => {
-        const mod = model(
-          'testModel',
-          help.getModelSchema(),
-          null,
-          { database: 'testdb' }
-        )
+        const mod = model('testModel', help.getModelSchema(), null, {
+          database: 'testdb'
+        })
 
         controller(mod).put.should.be.Function
       })
 
-      it('should call the Model\'s update method', () => {
-        const mod = model(
-          'testModel',
-          help.getModelSchema(),
-          null,
-          { database: 'testdb' }
-        )
+      it("should call the Model's update method", () => {
+        const mod = model('testModel', help.getModelSchema(), null, {
+          database: 'testdb'
+        })
         const stub = sinon.stub(mod, 'update').resolves({})
 
         sinon.stub(libHelp, 'clearCache').callsFake(pathname => {
@@ -468,8 +420,8 @@ describe('Controller', () => {
         })
 
         controller(mod).put({
-          params: { id: '1234567890'},
-          body: { field1: 'foo' },
+          params: {id: '1234567890'},
+          body: {field1: 'foo'},
           url: '/vtest/testdb/testcoll'
         })
 
@@ -482,12 +434,9 @@ describe('Controller', () => {
       })
 
       it('should add internally calculated fields during update', () => {
-        const mod = model(
-          'testModel',
-          help.getModelSchema(),
-          null,
-          { database: 'testdb' }
-        )
+        const mod = model('testModel', help.getModelSchema(), null, {
+          database: 'testdb'
+        })
         const stub = sinon.stub(mod, 'update').resolves({})
 
         sinon.stub(libHelp, 'clearCache').callsFake(pathname => {
@@ -497,7 +446,7 @@ describe('Controller', () => {
         controller(mod).put({
           params: {id: '1234567890'},
           dadiApiClient: {clientId: 'clientTestId'},
-          body: { field1: 'bar' },
+          body: {field1: 'bar'},
           url: '/vtest/testdb/testcoll/1234567890'
         })
 
@@ -515,30 +464,24 @@ describe('Controller', () => {
       })
     })
 
-    describe('`delete` method', function () {
+    describe('`delete` method', function() {
       it('should be accessible', () => {
-        const mod = model(
-          'testModel',
-          help.getModelSchema(),
-          null,
-          { database: 'testdb' }
-        )
+        const mod = model('testModel', help.getModelSchema(), null, {
+          database: 'testdb'
+        })
 
         controller(mod).delete.should.be.Function
       })
 
-      it('should call the Model\'s delete method', () => {
-        const mod = model(
-          'testModel',
-          help.getModelSchema(),
-          null,
-          { database: 'testdb' }
-        )
+      it("should call the Model's delete method", () => {
+        const mod = model('testModel', help.getModelSchema(), null, {
+          database: 'testdb'
+        })
         const stub = sinon.stub(mod, 'delete').resolves({})
 
         const req = {
           url: '/vtest/testdb/testModel',
-          params: { id: 'test123' }
+          params: {id: 'test123'}
         }
 
         sinon.stub(libHelp, 'clearCache').callsFake(pathname => {
@@ -554,25 +497,19 @@ describe('Controller', () => {
       })
     })
 
-    describe('`stats` method', function () {
+    describe('`stats` method', function() {
       it('should be accessible', () => {
-        const mod = model(
-          'testModel',
-          help.getModelSchema(),
-          null,
-          { database: 'testdb' }
-        )
+        const mod = model('testModel', help.getModelSchema(), null, {
+          database: 'testdb'
+        })
 
         controller(mod).stats.should.be.Function
       })
 
-      it('should call the Model\'s stats method', () => {
-        const mod = model(
-          'testModel',
-          help.getModelSchema(),
-          null,
-          { database: 'testdb' }
-        )
+      it("should call the Model's stats method", () => {
+        const mod = model('testModel', help.getModelSchema(), null, {
+          database: 'testdb'
+        })
         const stub = sinon.stub(mod, 'getStats').resolves({})
         const req = {
           method: 'get',

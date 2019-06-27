@@ -44,7 +44,7 @@ const mockConnection = {
  * @classdesc DataStore adapter for using LokiJS with DADI API
  * @implements EventEmitter
  */
-const DataStore = function (options) {
+const DataStore = function(options) {
   this.databasePath = __dirname
 
   this.internalProperties = ['$loki', 'meta']
@@ -60,7 +60,7 @@ const DataStore = function (options) {
 
 util.inherits(DataStore, EventEmitter)
 
-DataStore.prototype._debug = function (title, data = {}) {
+DataStore.prototype._debug = function(title, data = {}) {
   if (!DEBUG) return
 
   if (this.database.___id.name !== 'testdb') return
@@ -77,17 +77,19 @@ DataStore.prototype._debug = function (title, data = {}) {
   })
 
   console.log('')
-  console.log('\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\')
+  console.log(
+    '\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\'
+  )
   console.log('')
 }
 
-DataStore.prototype._mockConnect = function () {
+DataStore.prototype._mockConnect = function() {
   this.readyState = STATE_CONNECTED
 
   mockConnection.failed = false
 }
 
-DataStore.prototype._mockDisconnect = function () {
+DataStore.prototype._mockDisconnect = function() {
   this.readyState = STATE_DISCONNECTED
 
   mockConnection.failed = true
@@ -95,7 +97,7 @@ DataStore.prototype._mockDisconnect = function () {
   this.emit('DB_ERROR', {})
 }
 
-DataStore.prototype._mockIsDisconnected = function (collection) {
+DataStore.prototype._mockIsDisconnected = function(collection) {
   return mockConnection.failed
 }
 
@@ -108,17 +110,17 @@ DataStore.prototype._mockIsDisconnected = function (collection) {
  * @param {Array}        documents - an array of documents
  * @returns {Array} an array of filtered documents
  */
-DataStore.prototype.applyFieldsFilterToResults = function (fields, documents) {
+DataStore.prototype.applyFieldsFilterToResults = function(fields, documents) {
   if (!fields || Object.keys(fields).length === 0) {
     return documents
   }
 
   const projection = Array.isArray(fields)
     ? fields.reduce((result, field) => {
-      result[field] = 1
+        result[field] = 1
 
-      return result
-    }, {})
+        return result
+      }, {})
     : fields
   const isExclusion = Object.keys(projection).some(field => {
     return projection[field] === 0
@@ -128,8 +130,8 @@ DataStore.prototype.applyFieldsFilterToResults = function (fields, documents) {
     return Object.keys(document).reduce((result, field) => {
       if (
         field === '_id' ||
-        isExclusion && projection[field] === undefined ||
-        !isExclusion && projection[field] === 1
+        (isExclusion && projection[field] === undefined) ||
+        (!isExclusion && projection[field] === 1)
       ) {
         result[field] = document[field]
       }
@@ -144,7 +146,7 @@ DataStore.prototype.applyFieldsFilterToResults = function (fields, documents) {
  *
  * @param {ConnectionOptions} options
  */
-DataStore.prototype.connect = function ({database = 'default', collection}) {
+DataStore.prototype.connect = function({database = 'default', collection}) {
   if (this._mockIsDisconnected(collection)) {
     this.readyState = STATE_DISCONNECTED
 
@@ -190,7 +192,7 @@ DataStore.prototype.connect = function ({database = 'default', collection}) {
  * @returns {Promise.<Array, Error>} A promise that returns an Object with one property `deletedCount`,
  *     or an Error if the operation fails
  */
-DataStore.prototype.delete = function ({query, collection, schema}) {
+DataStore.prototype.delete = function({query, collection, schema}) {
   if (this._mockIsDisconnected(collection)) {
     this.readyState = STATE_DISCONNECTED
 
@@ -213,16 +215,16 @@ DataStore.prototype.delete = function ({query, collection, schema}) {
 
       results.remove()
 
-      return resolve({ deletedCount: count })
+      return resolve({deletedCount: count})
     })
   })
 }
 
-DataStore.prototype.destroy = function () {
+DataStore.prototype.destroy = function() {
   databasePool[this.name] = null
 }
 
-DataStore.prototype.dropDatabase = function (collectionName) {
+DataStore.prototype.dropDatabase = function(collectionName) {
   if (this._mockIsDisconnected(collectionName)) {
     this.readyState = STATE_DISCONNECTED
 
@@ -260,7 +262,13 @@ DataStore.prototype.dropDatabase = function (collectionName) {
  * @returns {Promise.<Array, Error>} A promise that returns an Array of results,
  *     or an Error if the operation fails
  */
-DataStore.prototype.find = function ({ query, collection: collectionName, options = {}, schema, settings }) {
+DataStore.prototype.find = function({
+  query,
+  collection: collectionName,
+  options = {},
+  schema,
+  settings
+}) {
   if (this._mockIsDisconnected(collectionName)) {
     this.readyState = STATE_DISCONNECTED
 
@@ -272,45 +280,49 @@ DataStore.prototype.find = function ({ query, collection: collectionName, option
   query = this.prepareQuery(query, schema)
 
   return new Promise((resolve, reject) => {
-    this.getCollection(collectionName).then(collection => {
-      let results
+    this.getCollection(collectionName)
+      .then(collection => {
+        let results
 
-      const sort = this.getSortParameters(options)
+        const sort = this.getSortParameters(options)
 
-      const baseResultset = collection.chain().find(query)
-      const branchedResultset = baseResultset.branch()
+        const baseResultset = collection.chain().find(query)
+        const branchedResultset = baseResultset.branch()
 
-      // count of records matching the filter
-      const count = branchedResultset.count()
+        // count of records matching the filter
+        const count = branchedResultset.count()
 
-      results = baseResultset
-        .simplesort(sort.property, sort.descending)
-        .offset(options.skip || 0)
-        .limit(options.limit || 100)
-        .data()
+        results = baseResultset
+          .simplesort(sort.property, sort.descending)
+          .offset(options.skip || 0)
+          .limit(options.limit || 100)
+          .data()
 
-      // Apply filters projection, if defined.
-      results = this.applyFieldsFilterToResults(options.fields, results)
+        // Apply filters projection, if defined.
+        results = this.applyFieldsFilterToResults(options.fields, results)
 
-      this._debug('find', {
-        collection: collectionName,
-        query,
-        results
+        this._debug('find', {
+          collection: collectionName,
+          query,
+          results
+        })
+
+        const returnData = {}
+
+        returnData.results = results.map(
+          this.formatDocumentForOutput.bind(this)
+        )
+        returnData.metadata = this.getMetadata(options, count)
+
+        return resolve(returnData)
       })
-
-      const returnData = {}
-
-      returnData.results = results.map(this.formatDocumentForOutput.bind(this))
-      returnData.metadata = this.getMetadata(options, count)
-
-      return resolve(returnData)
-    }).catch((err) => {
-      return reject(err)
-    })
+      .catch(err => {
+        return reject(err)
+      })
   })
 }
 
-DataStore.prototype.formatDocumentForOutput = function (document) {
+DataStore.prototype.formatDocumentForOutput = function(document) {
   return Object.keys(document).reduce((newDocument, key) => {
     if (this.internalProperties.includes(key)) return newDocument
 
@@ -323,12 +335,14 @@ DataStore.prototype.formatDocumentForOutput = function (document) {
 /**
  *
  */
-DataStore.prototype.getCollection = function (collectionName) {
+DataStore.prototype.getCollection = function(collectionName) {
   return new Promise((resolve, reject) => {
     let collection = this.database.getCollection(collectionName)
 
     if (!collection) {
-      collection = this.database.addCollection(collectionName, {disableChangesApi: false})
+      collection = this.database.addCollection(collectionName, {
+        disableChangesApi: false
+      })
     }
 
     return resolve(collection)
@@ -341,8 +355,8 @@ DataStore.prototype.getCollection = function (collectionName) {
  * If dot notation is used, the first part of the key is used to
  * locate the parent in the schema to determine the settings.
  */
-DataStore.prototype.getFieldOrParentSchema = function (key, schema) {
-  const keyOrParent = (key.split('.').length > 1) ? key.split('.')[0] : key
+DataStore.prototype.getFieldOrParentSchema = function(key, schema) {
+  const keyOrParent = key.split('.').length > 1 ? key.split('.')[0] : key
 
   return schema[keyOrParent]
 }
@@ -353,7 +367,7 @@ DataStore.prototype.getFieldOrParentSchema = function (key, schema) {
  * @param {string} collectionName - the name of the collection to get indexes for
  * @returns {Array} - an array of index objects, each with a name property
  */
-DataStore.prototype.getIndexes = function (collectionName) {
+DataStore.prototype.getIndexes = function(collectionName) {
   if (this._mockIsDisconnected(collectionName)) {
     this.readyState = STATE_DISCONNECTED
 
@@ -365,11 +379,11 @@ DataStore.prototype.getIndexes = function (collectionName) {
       const indexes = []
 
       Object.keys(collection.binaryIndices).forEach(key => {
-        indexes.push({ name: key })
+        indexes.push({name: key})
       })
 
       Object.keys(collection.constraints.unique).forEach(key => {
-        indexes.push({ name: key, unique: true })
+        indexes.push({name: key, unique: true})
       })
 
       return resolve(indexes)
@@ -383,14 +397,14 @@ DataStore.prototype.getIndexes = function (collectionName) {
  * @param {number} count - the number of results returned in the query
  * @returns {Object} an object containing the metadata for the query, such as totalPages, totalCount
  */
-DataStore.prototype.getMetadata = function (options, count) {
+DataStore.prototype.getMetadata = function(options, count) {
   return metadata(options, count)
 }
 
 /**
  *
  */
-DataStore.prototype.getSortParameters = function (options) {
+DataStore.prototype.getSortParameters = function(options) {
   const sort = {
     property: '$loki',
     descending: false
@@ -404,17 +418,22 @@ DataStore.prototype.getSortParameters = function (options) {
   return sort
 }
 
-DataStore.prototype.index = function (collectionName, indexes) {
+DataStore.prototype.index = function(collectionName, indexes) {
   return new Promise((resolve, reject) => {
     this.getCollection(collectionName).then(collection => {
       const results = []
 
       indexes.forEach((index, idx) => {
-        if (Object.keys(index.keys).length === 1 && Object.keys(index.keys)[0] === '_id') {
+        if (
+          Object.keys(index.keys).length === 1 &&
+          Object.keys(index.keys)[0] === '_id'
+        ) {
           // ignore _id index request, db handles this automatically
         } else {
           if (index.options && index.options.unique) {
-            const uniqIdx = collection.ensureUniqueIndex(Object.keys(index.keys)[0])
+            const uniqIdx = collection.ensureUniqueIndex(
+              Object.keys(index.keys)[0]
+            )
 
             results.push({
               collection,
@@ -447,7 +466,13 @@ DataStore.prototype.index = function (collectionName, indexes) {
  * @returns {Promise.<Array, Error>} A promise that returns an Array of inserted documents,
  *     or an Error if the operation fails
  */
-DataStore.prototype.insert = function ({data, collection, options = {}, schema, settings = {}}) {
+DataStore.prototype.insert = function({
+  data,
+  collection,
+  options = {},
+  schema,
+  settings = {}
+}) {
   if (this._mockIsDisconnected(collection)) {
     this.readyState = STATE_DISCONNECTED
 
@@ -492,14 +517,14 @@ DataStore.prototype.insert = function ({data, collection, options = {}, schema, 
 /**
  *
  */
-DataStore.prototype.prepareQuery = function (originalQuery, schema) {
+DataStore.prototype.prepareQuery = function(originalQuery, schema) {
   let query = Object.assign({}, originalQuery)
 
   Object.keys(query).forEach(key => {
     if (Object.prototype.toString.call(query[key]) === '[object RegExp]') {
       const re = new RegExp(query[key])
 
-      query[key] = { '$regex': [re.source, re.flags] }
+      query[key] = {$regex: [re.source, re.flags]}
     } else {
       if (typeof query[key] === 'object' && query[key]) {
         Object.keys(query[key]).forEach(k => {
@@ -509,7 +534,7 @@ DataStore.prototype.prepareQuery = function (originalQuery, schema) {
             typeof query[key][k] === 'object' &&
             query[key][k] === null
           ) {
-            query[key] = { '$ne': undefined }
+            query[key] = {$ne: undefined}
           }
         })
       }
@@ -548,7 +573,7 @@ DataStore.prototype.prepareQuery = function (originalQuery, schema) {
   // Construct an $and query when more than one expression is given.
   if (expressions.length > 1) {
     query = {
-      '$and': expressions
+      $and: expressions
     }
   }
 
@@ -560,7 +585,7 @@ DataStore.prototype.prepareQuery = function (originalQuery, schema) {
  * @param {Object} options - the query options passed from API, such as page, limit, skip
  * @returns {Object} an object containing the metadata about the collection
  */
-DataStore.prototype.stats = function (collection, options) {
+DataStore.prototype.stats = function(collection, options) {
   return Promise.resolve({
     count: 1,
     size: 1,
@@ -582,7 +607,13 @@ DataStore.prototype.stats = function (collection, options) {
  * @returns {Promise.<Array, Error>} A promise that returns an Array of updated documents,
  *     or an Error if the operation fails
  */
-DataStore.prototype.update = function ({query, collection, update, options = {}, schema}) {
+DataStore.prototype.update = function({
+  query,
+  collection,
+  update,
+  options = {},
+  schema
+}) {
   if (this._mockIsDisconnected(collection)) {
     this.readyState = STATE_DISCONNECTED
 
@@ -600,7 +631,10 @@ DataStore.prototype.update = function ({query, collection, update, options = {},
   return new Promise((resolve, reject) => {
     this.getCollection(collection).then(collection => {
       const updateFn = new Update(update)
-      const results = collection.chain().find(query).data()
+      const results = collection
+        .chain()
+        .find(query)
+        .data()
 
       collection.update(updateFn.update(results))
 
@@ -630,7 +664,7 @@ WRAPPED_METHODS.forEach(methodName => {
   const wrappedMethodName = '$$' + methodName
 
   DataStore.prototype[wrappedMethodName] = DataStore.prototype[methodName]
-  DataStore.prototype[methodName] = function () {
+  DataStore.prototype[methodName] = function() {
     if (global.___skipTestFromScript) {
       return this[wrappedMethodName].apply(this, arguments)
     }
@@ -653,15 +687,17 @@ WRAPPED_METHODS.forEach(methodName => {
 
     global.___dbOps.push(op)
 
-    return Promise.resolve(this[wrappedMethodName].apply(this, arguments)).then(result => {
-      op.r = result
+    return Promise.resolve(this[wrappedMethodName].apply(this, arguments))
+      .then(result => {
+        op.r = result
 
-      return result
-    }).catch(error => {
-      op.e = true
+        return result
+      })
+      .catch(error => {
+        op.e = true
 
-      return Promise.reject(error)
-    })
+        return Promise.reject(error)
+      })
   }
 })
 

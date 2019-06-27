@@ -11,7 +11,9 @@ const sinon = require('sinon')
 
 describe('Token store', () => {
   const configBackup = config.get()
-  const client = request(`http://${config.get('server.host')}:${config.get('server.port')}`)
+  const client = request(
+    `http://${config.get('server.host')}:${config.get('server.port')}`
+  )
   const testClient = {
     clientId: 'rootClient',
     secret: 'superSecret',
@@ -51,8 +53,12 @@ describe('Token store', () => {
         .expect('pragma', 'no-cache')
         .expect('Cache-Control', 'no-store')
         .expect(401, (err, res) => {
-          res.headers['www-authenticate'].includes('error="invalid_credentials"').should.eql(true)
-          res.headers['www-authenticate'].includes('error_description="Invalid credentials supplied"').should.eql(true)
+          res.headers['www-authenticate']
+            .includes('error="invalid_credentials"')
+            .should.eql(true)
+          res.headers['www-authenticate']
+            .includes('error_description="Invalid credentials supplied"')
+            .should.eql(true)
 
           done(err)
         })
@@ -70,22 +76,28 @@ describe('Token store', () => {
 
       help.createClient(unhashedClient, () => {
         client
-        .post(tokenRoute)
-        .send({
-          clientId: unhashedClient.clientId,
-          secret: unhashedClient.secret
-        })
-        .expect('content-type', 'application/json')
-        .expect('pragma', 'no-cache')
-        .expect('Cache-Control', 'no-store')
-        .expect(401, (err, res) => {
-          res.headers['www-authenticate'].includes('error="client_needs_upgrade"').should.eql(true)
-          res.headers['www-authenticate'].includes('error_description="The client record on the server must be upgraded"').should.eql(true)
+          .post(tokenRoute)
+          .send({
+            clientId: unhashedClient.clientId,
+            secret: unhashedClient.secret
+          })
+          .expect('content-type', 'application/json')
+          .expect('pragma', 'no-cache')
+          .expect('Cache-Control', 'no-store')
+          .expect(401, (err, res) => {
+            res.headers['www-authenticate']
+              .includes('error="client_needs_upgrade"')
+              .should.eql(true)
+            res.headers['www-authenticate']
+              .includes(
+                'error_description="The client record on the server must be upgraded"'
+              )
+              .should.eql(true)
 
-          config.set('auth.hashSecrets', configBackup.auth.hashSecrets)
+            config.set('auth.hashSecrets', configBackup.auth.hashSecrets)
 
-          done(err)
-        })
+            done(err)
+          })
       })
     })
 
@@ -135,8 +147,8 @@ describe('Token store', () => {
                 .expect('content-type', 'application/json')
                 .expect('pragma', 'no-cache')
                 .expect('Cache-Control', 'no-store')
-                .expect(401, done)                
-            })            
+                .expect(401, done)
+            })
         })
     })
 
@@ -153,9 +165,7 @@ describe('Token store', () => {
         .expect(200, (err, res) => {
           res.body.accessToken.should.be.String
           res.body.tokenType.should.eql('Bearer')
-          res.body.expiresIn.should.eql(
-            config.get('auth.tokenTtl')
-          )
+          res.body.expiresIn.should.eql(config.get('auth.tokenTtl'))
 
           done()
         })
@@ -230,7 +240,7 @@ describe('Token store', () => {
             )
           })
       })
-    })    
+    })
   })
 
   describe('Endpoint customisation', () => {
@@ -269,9 +279,7 @@ describe('Token store', () => {
         .expect(200, (err, res) => {
           res.body.accessToken.should.be.String
           res.body.tokenType.should.eql('Bearer')
-          res.body.expiresIn.should.eql(
-            config.get('auth.tokenTtl')
-          )
+          res.body.expiresIn.should.eql(config.get('auth.tokenTtl'))
 
           done()
         })
@@ -310,15 +318,17 @@ describe('Token store', () => {
         }
       `
 
-      fs.writeFile(endpointPath, endpointSource).then(() => {
-        help.createClient(testClient, (err, client) => {
-          app.start(err => {
-            if (err) return done(err)
+      fs.writeFile(endpointPath, endpointSource)
+        .then(() => {
+          help.createClient(testClient, (err, client) => {
+            app.start(err => {
+              if (err) return done(err)
 
-            setTimeout(done, 500)
+              setTimeout(done, 500)
+            })
           })
         })
-      }).catch(done)
+        .catch(done)
     })
 
     after(done => {
@@ -339,37 +349,37 @@ describe('Token store', () => {
           accessType: 'admin'
         }
         const spy = sinon.spy(bcrypt, 'compare')
-  
+
         help.createClient(newClient, (err, clientRecord) => {
           client
-          .post(tokenRoute)
-          .send({
-            clientId: newClient.clientId,
-            secret: newClient.secret
-          })
-          .expect('content-type', 'application/json')
-          .expect('pragma', 'no-cache')
-          .expect('Cache-Control', 'no-store')
-          .expect(200, (err, res) => {
-            res.body.accessToken.should.be.String
-  
-            spy.getCall(0).args[0].should.eql(newClient.secret)
-            spy.getCall(0).args[1].should.eql(clientRecord.secret)
-            spy.restore()
-  
-            client
-              .get('/v1/intercept-client')
-              .set('Authorization', `Bearer ${res.body.accessToken}`)
-              .expect('content-type', 'application/json')
-              .expect(200, (err, res) => {
-                res.body.clientId.should.eql(newClient.clientId)
-                res.body.accessType.should.eql(newClient.accessType)
+            .post(tokenRoute)
+            .send({
+              clientId: newClient.clientId,
+              secret: newClient.secret
+            })
+            .expect('content-type', 'application/json')
+            .expect('pragma', 'no-cache')
+            .expect('Cache-Control', 'no-store')
+            .expect(200, (err, res) => {
+              res.body.accessToken.should.be.String
 
-                config.set('auth.hashSecrets', configBackup.auth.hashSecrets)
-  
-                done()
-              })
-          })
+              spy.getCall(0).args[0].should.eql(newClient.secret)
+              spy.getCall(0).args[1].should.eql(clientRecord.secret)
+              spy.restore()
+
+              client
+                .get('/v1/intercept-client')
+                .set('Authorization', `Bearer ${res.body.accessToken}`)
+                .expect('content-type', 'application/json')
+                .expect(200, (err, res) => {
+                  res.body.clientId.should.eql(newClient.clientId)
+                  res.body.accessType.should.eql(newClient.accessType)
+
+                  config.set('auth.hashSecrets', configBackup.auth.hashSecrets)
+
+                  done()
+                })
+            })
         })
       })
     })

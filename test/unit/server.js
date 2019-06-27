@@ -3,8 +3,8 @@ const sinon = require('sinon')
 const server = require(__dirname + '/../../dadi/lib')
 const fs = require('fs')
 
-describe('Server', function () {
-  it('should export an instance', function (done) {
+describe('Server', function() {
+  it('should export an instance', function(done) {
     server.start.should.be.Function
     server.stop.should.be.Function
     server.addComponent.should.be.Function
@@ -12,9 +12,11 @@ describe('Server', function () {
     done()
   })
 
-  describe('start', function () {
-    it('should set readyState', function (done) {
-      const fakeFn = function () { return [] }
+  describe('start', function() {
+    it('should set readyState', function(done) {
+      const fakeFn = function() {
+        return []
+      }
 
       const stub = sinon.stub(fs, 'readdirSync').callsFake(fakeFn)
 
@@ -28,13 +30,15 @@ describe('Server', function () {
     })
   })
 
-  describe('stop', function () {
-    it('should set readyState', function (done) {
-      const fakeFn = function (cb) { cb() }
+  describe('stop', function() {
+    it('should set readyState', function(done) {
+      const fakeFn = function(cb) {
+        cb()
+      }
 
       const stub = sinon.stub(server.server, 'close').callsFake(fakeFn)
 
-      server.stop(function (err) {
+      server.stop(function(err) {
         if (err) return done(err)
 
         server.readyState.should.equal(0)
@@ -46,11 +50,11 @@ describe('Server', function () {
     })
   })
 
-  describe('addComponent', function () {
-    it('should keep reference to component', function (done) {
+  describe('addComponent', function() {
+    it('should keep reference to component', function(done) {
       const options = {
         name: 'test-component',
-        component () {},
+        component() {},
         route: '/server-acceptance-test-route'
       }
 

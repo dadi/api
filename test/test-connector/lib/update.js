@@ -1,11 +1,11 @@
 /**
  * @constructor Update
  */
-const Update = function Update (updateQuery) {
+const Update = function Update(updateQuery) {
   this.updateQuery = updateQuery
 }
 
-Update.prototype.update = function (docs) {
+Update.prototype.update = function(docs) {
   if (!Array.isArray(docs)) {
     docs = [docs]
   }
@@ -32,8 +32,12 @@ Update.prototype.update = function (docs) {
           for (p = 0; p < properties.length; p++) {
             prop = properties[p]
 
-            if (Number.isFinite(doc[prop]) && Number.isFinite(this.updateQuery[key][prop])) {
-              doc[prop] = parseInt(doc[prop]) + parseInt(this.updateQuery[key][prop])
+            if (
+              Number.isFinite(doc[prop]) &&
+              Number.isFinite(this.updateQuery[key][prop])
+            ) {
+              doc[prop] =
+                parseInt(doc[prop]) + parseInt(this.updateQuery[key][prop])
             }
           }
 

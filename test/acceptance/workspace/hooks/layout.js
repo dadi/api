@@ -1,27 +1,41 @@
 const url = require('url')
 
-module.exports = function (obj, type, data) {
+module.exports = function(obj, type, data) {
   if (!obj || !obj.results || Object.keys(obj.results).length === 0) {
     return obj
   }
 
   const queryParameters = data.req && url.parse(data.req.url, true).query
-  const resolveLayout = queryParameters ? (queryParameters.resolveLayout !== 'false') : true
+  const resolveLayout = queryParameters
+    ? queryParameters.resolveLayout !== 'false'
+    : true
   const layoutField = (data.options && data.options.field) || '_layout'
 
-  if (data.schema && data.schema[layoutField] && data.schema[layoutField].schema) {
+  if (
+    data.schema &&
+    data.schema[layoutField] &&
+    data.schema[layoutField].schema
+  ) {
     switch (type) {
       case 'afterGet':
         if (resolveLayout) {
-          obj.results.forEach((document) => {
+          obj.results.forEach(document => {
             // Resolve layout
-            document = resolve(data.schema[layoutField].schema, layoutField, document)
+            document = resolve(
+              data.schema[layoutField].schema,
+              layoutField,
+              document
+            )
 
             // Resolve layout in history
             if (document._history) {
-              document._history.forEach((historyDocument) => {
+              document._history.forEach(historyDocument => {
                 if (historyDocument[layoutField]) {
-                  historyDocument = resolve(data.schema[layoutField].schema, layoutField, historyDocument)
+                  historyDocument = resolve(
+                    data.schema[layoutField].schema,
+                    layoutField,
+                    historyDocument
+                  )
                 }
               })
             }
@@ -38,7 +52,12 @@ module.exports = function (obj, type, data) {
 
       case 'beforeCreate':
       case 'beforeUpdate': {
-        const validationErrors = validate(data.schema[layoutField].schema, layoutField, obj, type)
+        const validationErrors = validate(
+          data.schema[layoutField].schema,
+          layoutField,
+          obj,
+          type
+        )
 
         if (validationErrors) {
           return Promise.reject(validationErrors)
@@ -56,14 +75,14 @@ module.exports = function (obj, type, data) {
 // Layout resolve
 // --------------------------
 
-function resolve (layoutSchema, layoutField, document) {
+function resolve(layoutSchema, layoutField, document) {
   const result = []
   const freeSections = []
 
   if (!document[layoutField]) return document
 
   // Add fixed fields
-  layoutSchema.forEach(function (block, index) {
+  layoutSchema.forEach(function(block, index) {
     if (!block.source && !block.free) return
 
     if (block.free) {
@@ -74,7 +93,8 @@ function resolve (layoutSchema, layoutField, document) {
       })
     } else {
       result.push({
-        content: document[block.source] !== undefined ? document[block.source] : null,
+        content:
+          document[block.source] !== undefined ? document[block.source] : null,
         type: block.source
       })
     }
@@ -84,14 +104,16 @@ function resolve (layoutSchema, layoutField, document) {
   if (freeSections.length) {
     let counter = 0
 
-    Object.keys(document[layoutField]).forEach(function (section) {
-      const schemaSection = freeSections.find(function (obj) {
-        return (obj.name === section)
+    Object.keys(document[layoutField]).forEach(function(section) {
+      const schemaSection = freeSections.find(function(obj) {
+        return obj.name === section
       })
 
-      document[layoutField][section].forEach(function (block, blockIndex) {
+      document[layoutField][section].forEach(function(block, blockIndex) {
         result.splice(schemaSection.position + blockIndex + counter, 0, {
-          content: document[block.source] ? document[block.source][block.index] : document[block.source],
+          content: document[block.source]
+            ? document[block.source][block.index]
+            : document[block.source],
           displayName: schemaSection.displayName,
           free: true,
           name: schemaSection.name,
@@ -112,17 +134,17 @@ function resolve (layoutSchema, layoutField, document) {
 // Layout validation
 // --------------------------
 
-function validate (layoutSchema, layoutField, document, type) {
+function validate(layoutSchema, layoutField, document, type) {
   const errors = []
   const fieldCount = []
-  const freeFieldsSections = layoutSchema.filter(function (elem) {
+  const freeFieldsSections = layoutSchema.filter(function(elem) {
     return elem.free
   })
 
   if (document[layoutField]) {
-    Object.keys(document[layoutField]).forEach(function (section) {
-      const schemaSection = freeFieldsSections.find(function (obj) {
-        return (obj.name === section)
+    Object.keys(document[layoutField]).forEach(function(section) {
+      const schemaSection = freeFieldsSections.find(function(obj) {
+        return obj.name === section
       })
 
       if (!schemaSection) return
@@ -131,19 +153,34 @@ function validate (layoutSchema, layoutField, document, type) {
         fieldCount[section] = {}
       }
 
-      document[layoutField][section].forEach(function (block, blockIndex) {
-        const freeField = schemaSection.fields.find(function (elem) {
+      document[layoutField][section].forEach(function(block, blockIndex) {
+        const freeField = schemaSection.fields.find(function(elem) {
           return elem.source === block.source
         })
 
         // Check if field is part of `free`
         if (!freeField) {
-          return errors.push({field: 'layout', message: 'Layout section \'' + schemaSection.name + '\' does not accept \'' + block.source + '\' as a free field'})
+          return errors.push({
+            field: 'layout',
+            message:
+              "Layout section '" +
+              schemaSection.name +
+              "' does not accept '" +
+              block.source +
+              "' as a free field"
+          })
         }
 
         // Check if `index` is within bounds
-        if (!(document[block.source] instanceof Array) || (document[block.source].length <= block.index)) {
-          return errors.push({field: 'layout', message: block.index + ' is not a valid index for field ' + block.source})
+        if (
+          !(document[block.source] instanceof Array) ||
+          document[block.source].length <= block.index
+        ) {
+          return errors.push({
+            field: 'layout',
+            message:
+              block.index + ' is not a valid index for field ' + block.source
+          })
         }
 
         // Increment the field count and check for limits
@@ -155,28 +192,53 @@ function validate (layoutSchema, layoutField, document, type) {
       })
     })
 
-    const free = layoutSchema.filter(function (elem) {
+    const free = layoutSchema.filter(function(elem) {
       return elem.free
     })
 
-    free.forEach(function (section) {
-      section.fields.forEach(function (field) {
-        const count = (fieldCount[section.name] && fieldCount[section.name][field.source]) ? fieldCount[section.name][field.source] : 0
+    free.forEach(function(section) {
+      section.fields.forEach(function(field) {
+        const count =
+          fieldCount[section.name] && fieldCount[section.name][field.source]
+            ? fieldCount[section.name][field.source]
+            : 0
 
         // Check for `min` limit
-        if (field.min && (count < field.min)) {
-          errors.push({field: 'layout', message: 'Layout section \'' + section.name + '\' must contain at least ' + field.min + ' instances of \'' + field.source + '\''})
+        if (field.min && count < field.min) {
+          errors.push({
+            field: 'layout',
+            message:
+              "Layout section '" +
+              section.name +
+              "' must contain at least " +
+              field.min +
+              " instances of '" +
+              field.source +
+              "'"
+          })
         }
 
         // Check for `max` limit
-        if (field.max && (count > field.max)) {
-          errors.push({field: 'layout', message: 'Layout section \'' + section.name + '\' cannot contain more than ' + field.max + ' instances of \'' + field.source + '\''})
+        if (field.max && count > field.max) {
+          errors.push({
+            field: 'layout',
+            message:
+              "Layout section '" +
+              section.name +
+              "' cannot contain more than " +
+              field.max +
+              " instances of '" +
+              field.source +
+              "'"
+          })
         }
       })
     })
   } else {
     if (type === 'beforeCreate') {
-      errors.push({message: 'Field \'' + layoutField + '\' does not exist in the collection'})
+      errors.push({
+        message: "Field '" + layoutField + "' does not exist in the collection"
+      })
     }
   }
 

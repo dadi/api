@@ -8,15 +8,19 @@ const app = require(__dirname + '/../../../dadi/lib/')
 
 let bearerToken
 const configBackup = config.get()
-const connectionString = 'http://' + config.get('server.host') + ':' + config.get('server.port')
+const connectionString =
+  'http://' + config.get('server.host') + ':' + config.get('server.port')
 
 describe('Mixed Field', () => {
   beforeEach(done => {
-    config.set('paths.collections', 'test/acceptance/temp-workspace/collections')
+    config.set(
+      'paths.collections',
+      'test/acceptance/temp-workspace/collections'
+    )
 
     help.dropDatabase('library', 'misc', err => {
       app.start(() => {
-        help.getBearerToken(function (err, token) {
+        help.getBearerToken(function(err, token) {
           if (err) return done(err)
           bearerToken = token
           done()
@@ -36,25 +40,25 @@ describe('Mixed Field', () => {
       const value = 'DADI #ftw'
 
       client
-      .post('/v1/library/misc')
-      .set('Authorization', 'Bearer ' + bearerToken)
-      .send({mixed: value})
-      .expect(200)
-      .end((err, res) => {
-        if (err) return done(err)
-
-        res.body.results[0].mixed.should.eql(value)
-
-        client
-        .get(`/v1/library/misc/${res.body.results[0]._id}`)
+        .post('/v1/library/misc')
         .set('Authorization', 'Bearer ' + bearerToken)
+        .send({mixed: value})
         .expect(200)
         .end((err, res) => {
+          if (err) return done(err)
+
           res.body.results[0].mixed.should.eql(value)
 
-          done()
+          client
+            .get(`/v1/library/misc/${res.body.results[0]._id}`)
+            .set('Authorization', 'Bearer ' + bearerToken)
+            .expect(200)
+            .end((err, res) => {
+              res.body.results[0].mixed.should.eql(value)
+
+              done()
+            })
         })
-      })
     })
 
     it('should update', done => {
@@ -63,34 +67,34 @@ describe('Mixed Field', () => {
       const newValue = 'DADI #superftw'
 
       client
-      .post('/v1/library/misc')
-      .set('Authorization', 'Bearer ' + bearerToken)
-      .send({mixed: value})
-      .expect(200)
-      .end((err, res) => {
-        if (err) return done(err)
-
-        const id = res.body.results[0]._id
-
-        res.body.results[0].mixed.should.eql(value)
-
-        client
-        .put(`/v1/library/misc/${id}`)
-        .send({mixed: newValue})
+        .post('/v1/library/misc')
         .set('Authorization', 'Bearer ' + bearerToken)
+        .send({mixed: value})
         .expect(200)
         .end((err, res) => {
-          client
-          .get(`/v1/library/misc/${id}`)
-          .set('Authorization', 'Bearer ' + bearerToken)
-          .expect(200)
-          .end((err, res) => {
-            res.body.results[0].mixed.should.eql(newValue)
+          if (err) return done(err)
 
-            done()
-          })
+          const id = res.body.results[0]._id
+
+          res.body.results[0].mixed.should.eql(value)
+
+          client
+            .put(`/v1/library/misc/${id}`)
+            .send({mixed: newValue})
+            .set('Authorization', 'Bearer ' + bearerToken)
+            .expect(200)
+            .end((err, res) => {
+              client
+                .get(`/v1/library/misc/${id}`)
+                .set('Authorization', 'Bearer ' + bearerToken)
+                .expect(200)
+                .end((err, res) => {
+                  res.body.results[0].mixed.should.eql(newValue)
+
+                  done()
+                })
+            })
         })
-      })
     })
 
     it('should delete', done => {
@@ -98,29 +102,29 @@ describe('Mixed Field', () => {
       const value = 'DADI #ftw'
 
       client
-      .post('/v1/library/misc')
-      .set('Authorization', 'Bearer ' + bearerToken)
-      .send({mixed: value})
-      .expect(200)
-      .end((err, res) => {
-        if (err) return done(err)
-
-        const id = res.body.results[0]._id
-
-        res.body.results[0].mixed.should.eql(value)
-
-        client
-        .delete(`/v1/library/misc/${id}`)
+        .post('/v1/library/misc')
         .set('Authorization', 'Bearer ' + bearerToken)
+        .send({mixed: value})
         .expect(200)
         .end((err, res) => {
+          if (err) return done(err)
+
+          const id = res.body.results[0]._id
+
+          res.body.results[0].mixed.should.eql(value)
+
           client
-          .get(`/v1/library/misc/${id}`)
-          .set('Authorization', 'Bearer ' + bearerToken)
-          .expect(404)
-          .end(done)
+            .delete(`/v1/library/misc/${id}`)
+            .set('Authorization', 'Bearer ' + bearerToken)
+            .expect(200)
+            .end((err, res) => {
+              client
+                .get(`/v1/library/misc/${id}`)
+                .set('Authorization', 'Bearer ' + bearerToken)
+                .expect(404)
+                .end(done)
+            })
         })
-      })
     })
   })
 
@@ -130,25 +134,25 @@ describe('Mixed Field', () => {
       const value = 1337
 
       client
-      .post('/v1/library/misc')
-      .set('Authorization', 'Bearer ' + bearerToken)
-      .send({mixed: value})
-      .expect(200)
-      .end((err, res) => {
-        if (err) return done(err)
-
-        res.body.results[0].mixed.should.eql(value)
-
-        client
-        .get(`/v1/library/misc/${res.body.results[0]._id}`)
+        .post('/v1/library/misc')
         .set('Authorization', 'Bearer ' + bearerToken)
+        .send({mixed: value})
         .expect(200)
         .end((err, res) => {
+          if (err) return done(err)
+
           res.body.results[0].mixed.should.eql(value)
 
-          done()
+          client
+            .get(`/v1/library/misc/${res.body.results[0]._id}`)
+            .set('Authorization', 'Bearer ' + bearerToken)
+            .expect(200)
+            .end((err, res) => {
+              res.body.results[0].mixed.should.eql(value)
+
+              done()
+            })
         })
-      })
     })
 
     it('should update', done => {
@@ -157,34 +161,34 @@ describe('Mixed Field', () => {
       const newValue = 'DADI #superftw'
 
       client
-      .post('/v1/library/misc')
-      .set('Authorization', 'Bearer ' + bearerToken)
-      .send({mixed: value})
-      .expect(200)
-      .end((err, res) => {
-        if (err) return done(err)
-
-        const id = res.body.results[0]._id
-
-        res.body.results[0].mixed.should.eql(value)
-
-        client
-        .put(`/v1/library/misc/${id}`)
-        .send({mixed: newValue})
+        .post('/v1/library/misc')
         .set('Authorization', 'Bearer ' + bearerToken)
+        .send({mixed: value})
         .expect(200)
         .end((err, res) => {
-          client
-          .get(`/v1/library/misc/${id}`)
-          .set('Authorization', 'Bearer ' + bearerToken)
-          .expect(200)
-          .end((err, res) => {
-            res.body.results[0].mixed.should.eql(newValue)
+          if (err) return done(err)
 
-            done()
-          })
+          const id = res.body.results[0]._id
+
+          res.body.results[0].mixed.should.eql(value)
+
+          client
+            .put(`/v1/library/misc/${id}`)
+            .send({mixed: newValue})
+            .set('Authorization', 'Bearer ' + bearerToken)
+            .expect(200)
+            .end((err, res) => {
+              client
+                .get(`/v1/library/misc/${id}`)
+                .set('Authorization', 'Bearer ' + bearerToken)
+                .expect(200)
+                .end((err, res) => {
+                  res.body.results[0].mixed.should.eql(newValue)
+
+                  done()
+                })
+            })
         })
-      })
     })
 
     it('should delete', done => {
@@ -192,29 +196,29 @@ describe('Mixed Field', () => {
       const value = 1337
 
       client
-      .post('/v1/library/misc')
-      .set('Authorization', 'Bearer ' + bearerToken)
-      .send({mixed: value})
-      .expect(200)
-      .end((err, res) => {
-        if (err) return done(err)
-
-        const id = res.body.results[0]._id
-
-        res.body.results[0].mixed.should.eql(value)
-
-        client
-        .delete(`/v1/library/misc/${id}`)
+        .post('/v1/library/misc')
         .set('Authorization', 'Bearer ' + bearerToken)
+        .send({mixed: value})
         .expect(200)
         .end((err, res) => {
+          if (err) return done(err)
+
+          const id = res.body.results[0]._id
+
+          res.body.results[0].mixed.should.eql(value)
+
           client
-          .get(`/v1/library/misc/${id}`)
-          .set('Authorization', 'Bearer ' + bearerToken)
-          .expect(404)
-          .end(done)
+            .delete(`/v1/library/misc/${id}`)
+            .set('Authorization', 'Bearer ' + bearerToken)
+            .expect(200)
+            .end((err, res) => {
+              client
+                .get(`/v1/library/misc/${id}`)
+                .set('Authorization', 'Bearer ' + bearerToken)
+                .expect(404)
+                .end(done)
+            })
         })
-      })
     })
   })
 
@@ -232,25 +236,25 @@ describe('Mixed Field', () => {
       }
 
       client
-      .post('/v1/library/misc')
-      .set('Authorization', 'Bearer ' + bearerToken)
-      .send({mixed: value})
-      .expect(200)
-      .end((err, res) => {
-        if (err) return done(err)
-
-        res.body.results[0].mixed.should.eql(value)
-
-        client
-        .get(`/v1/library/misc/${res.body.results[0]._id}`)
+        .post('/v1/library/misc')
         .set('Authorization', 'Bearer ' + bearerToken)
+        .send({mixed: value})
         .expect(200)
         .end((err, res) => {
+          if (err) return done(err)
+
           res.body.results[0].mixed.should.eql(value)
 
-          done()
+          client
+            .get(`/v1/library/misc/${res.body.results[0]._id}`)
+            .set('Authorization', 'Bearer ' + bearerToken)
+            .expect(200)
+            .end((err, res) => {
+              res.body.results[0].mixed.should.eql(value)
+
+              done()
+            })
         })
-      })
     })
 
     it('should retrieve by nested keys', done => {
@@ -266,25 +270,27 @@ describe('Mixed Field', () => {
       }
 
       client
-      .post('/v1/library/misc')
-      .set('Authorization', 'Bearer ' + bearerToken)
-      .send({mixed: value})
-      .expect(200)
-      .end((err, res) => {
-        if (err) return done(err)
-
-        res.body.results[0].mixed.should.eql(value)
-
-        client
-        .get(`/v1/library/misc?filter={"mixed.child.name":"${value.child.name}"}`)
+        .post('/v1/library/misc')
         .set('Authorization', 'Bearer ' + bearerToken)
+        .send({mixed: value})
         .expect(200)
         .end((err, res) => {
+          if (err) return done(err)
+
           res.body.results[0].mixed.should.eql(value)
 
-          done()
+          client
+            .get(
+              `/v1/library/misc?filter={"mixed.child.name":"${value.child.name}"}`
+            )
+            .set('Authorization', 'Bearer ' + bearerToken)
+            .expect(200)
+            .end((err, res) => {
+              res.body.results[0].mixed.should.eql(value)
+
+              done()
+            })
         })
-      })
     })
 
     it('should update by id', done => {
@@ -306,34 +312,34 @@ describe('Mixed Field', () => {
       }
 
       client
-      .post('/v1/library/misc')
-      .set('Authorization', 'Bearer ' + bearerToken)
-      .send({mixed: value})
-      .expect(200)
-      .end((err, res) => {
-        if (err) return done(err)
-
-        const id = res.body.results[0]._id
-
-        res.body.results[0].mixed.should.eql(value)
-
-        client
-        .put(`/v1/library/misc/${id}`)
-        .send({mixed: newValue})
+        .post('/v1/library/misc')
         .set('Authorization', 'Bearer ' + bearerToken)
+        .send({mixed: value})
         .expect(200)
         .end((err, res) => {
-          client
-          .get(`/v1/library/misc/${id}`)
-          .set('Authorization', 'Bearer ' + bearerToken)
-          .expect(200)
-          .end((err, res) => {
-            res.body.results[0].mixed.should.eql(newValue)
+          if (err) return done(err)
 
-            done()
-          })
+          const id = res.body.results[0]._id
+
+          res.body.results[0].mixed.should.eql(value)
+
+          client
+            .put(`/v1/library/misc/${id}`)
+            .send({mixed: newValue})
+            .set('Authorization', 'Bearer ' + bearerToken)
+            .expect(200)
+            .end((err, res) => {
+              client
+                .get(`/v1/library/misc/${id}`)
+                .set('Authorization', 'Bearer ' + bearerToken)
+                .expect(200)
+                .end((err, res) => {
+                  res.body.results[0].mixed.should.eql(newValue)
+
+                  done()
+                })
+            })
         })
-      })
     })
 
     it('should update by query for nested key', done => {
@@ -355,41 +361,41 @@ describe('Mixed Field', () => {
       }
 
       client
-      .post('/v1/library/misc')
-      .set('Authorization', 'Bearer ' + bearerToken)
-      .send({mixed: value})
-      .expect(200)
-      .end((err, res) => {
-        if (err) return done(err)
-
-        const id = res.body.results[0]._id
-
-        res.body.results[0].mixed.should.eql(value)
-
-        client
-        .put(`/v1/library/misc`)
-        .send({
-          query: {
-            'mixed.child.name': value.child.name
-          },
-          update: {
-            mixed: newValue
-          }
-        })
+        .post('/v1/library/misc')
         .set('Authorization', 'Bearer ' + bearerToken)
+        .send({mixed: value})
         .expect(200)
         .end((err, res) => {
-          client
-          .get(`/v1/library/misc/${id}`)
-          .set('Authorization', 'Bearer ' + bearerToken)
-          .expect(200)
-          .end((err, res) => {
-            res.body.results[0].mixed.should.eql(newValue)
+          if (err) return done(err)
 
-            done()
-          })
+          const id = res.body.results[0]._id
+
+          res.body.results[0].mixed.should.eql(value)
+
+          client
+            .put(`/v1/library/misc`)
+            .send({
+              query: {
+                'mixed.child.name': value.child.name
+              },
+              update: {
+                mixed: newValue
+              }
+            })
+            .set('Authorization', 'Bearer ' + bearerToken)
+            .expect(200)
+            .end((err, res) => {
+              client
+                .get(`/v1/library/misc/${id}`)
+                .set('Authorization', 'Bearer ' + bearerToken)
+                .expect(200)
+                .end((err, res) => {
+                  res.body.results[0].mixed.should.eql(newValue)
+
+                  done()
+                })
+            })
         })
-      })
     })
 
     it('should delete', done => {
@@ -405,29 +411,29 @@ describe('Mixed Field', () => {
       }
 
       client
-      .post('/v1/library/misc')
-      .set('Authorization', 'Bearer ' + bearerToken)
-      .send({mixed: value})
-      .expect(200)
-      .end((err, res) => {
-        if (err) return done(err)
-
-        const id = res.body.results[0]._id
-
-        res.body.results[0].mixed.should.eql(value)
-
-        client
-        .delete(`/v1/library/misc/${id}`)
+        .post('/v1/library/misc')
         .set('Authorization', 'Bearer ' + bearerToken)
+        .send({mixed: value})
         .expect(200)
         .end((err, res) => {
+          if (err) return done(err)
+
+          const id = res.body.results[0]._id
+
+          res.body.results[0].mixed.should.eql(value)
+
           client
-          .get(`/v1/library/misc/${id}`)
-          .set('Authorization', 'Bearer ' + bearerToken)
-          .expect(404)
-          .end(done)
+            .delete(`/v1/library/misc/${id}`)
+            .set('Authorization', 'Bearer ' + bearerToken)
+            .expect(200)
+            .end((err, res) => {
+              client
+                .get(`/v1/library/misc/${id}`)
+                .set('Authorization', 'Bearer ' + bearerToken)
+                .expect(404)
+                .end(done)
+            })
         })
-      })
     })
   })
 })

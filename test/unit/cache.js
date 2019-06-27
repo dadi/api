@@ -9,12 +9,15 @@ let cache
 const app = require(path.join(__dirname, '/../../dadi/lib/'))
 const api = require(path.join(__dirname, '/../../dadi/lib/api'))
 const Server = require(path.join(__dirname, '/../../dadi/lib'))
-const acceptanceTestHelper = require(path.join(__dirname, '/../acceptance/help'))
+const acceptanceTestHelper = require(path.join(
+  __dirname,
+  '/../acceptance/help'
+))
 
 let bearerToken
 let testConfigString
 
-describe('Cache', function (done) {
+describe('Cache', function(done) {
   // before(function (done) {
   //   app.start(done)
   // })
@@ -24,7 +27,7 @@ describe('Cache', function (done) {
   //   app.stop(done)
   // })
 
-  beforeEach(function (done) {
+  beforeEach(function(done) {
     delete require.cache[path.join(__dirname, '/../../dadi/lib/cache')]
     cache = require(path.join(__dirname, '/../../dadi/lib/cache'))
 
@@ -36,24 +39,27 @@ describe('Cache', function (done) {
     done()
   })
 
-  afterEach(function (done) {
+  afterEach(function(done) {
     fs.writeFileSync(config.configPath(), testConfigString)
     done()
   })
 
-  it('should export middleware', function (done) {
+  it('should export middleware', function(done) {
     cache.should.be.Function
     cache.length.should.equal(1)
 
     done()
   })
 
-  describe('Config', function (done) {
-    it('should return default config settings for directory', function (done) {
+  describe('Config', function(done) {
+    it('should return default config settings for directory', function(done) {
       const newTestConfig = JSON.parse(testConfigString)
 
       delete newTestConfig.caching
-      fs.writeFileSync(config.configPath(), JSON.stringify(newTestConfig, null, 2))
+      fs.writeFileSync(
+        config.configPath(),
+        JSON.stringify(newTestConfig, null, 2)
+      )
 
       delete require.cache[path.join(__dirname, '/../../config')]
       config = require(path.join(__dirname, '/../../config'))
@@ -70,7 +76,7 @@ describe('Cache', function (done) {
     })
   })
 
-  it('should take a server instance as an argument', function (done) {
+  it('should take a server instance as an argument', function(done) {
     const server = sinon.mock(Server)
 
     server.object.app = api()
@@ -85,7 +91,7 @@ describe('Cache', function (done) {
     done()
   })
 
-  it('should cache if the app\'s directory config settings allow', function (done) {
+  it("should cache if the app's directory config settings allow", function(done) {
     const server = sinon.mock(Server)
 
     server.object.app = api()
@@ -94,7 +100,10 @@ describe('Cache', function (done) {
 
     newTestConfig.caching.directory.enabled = true
     newTestConfig.caching.redis.enabled = false
-    fs.writeFileSync(config.configPath(), JSON.stringify(newTestConfig, null, 2))
+    fs.writeFileSync(
+      config.configPath(),
+      JSON.stringify(newTestConfig, null, 2)
+    )
 
     config.loadFile(config.configPath())
 
@@ -105,7 +114,7 @@ describe('Cache', function (done) {
     done()
   })
 
-  it('should not cache if the app\'s config settings don\'t allow', function (done) {
+  it("should not cache if the app's config settings don't allow", function(done) {
     const server = sinon.mock(Server)
 
     server.object.app = api()
@@ -114,7 +123,10 @@ describe('Cache', function (done) {
 
     newTestConfig.caching.directory.enabled = false
     newTestConfig.caching.redis.enabled = false
-    fs.writeFileSync(config.configPath(), JSON.stringify(newTestConfig, null, 2))
+    fs.writeFileSync(
+      config.configPath(),
+      JSON.stringify(newTestConfig, null, 2)
+    )
 
     config.loadFile(config.configPath())
 
@@ -125,7 +137,7 @@ describe('Cache', function (done) {
     done()
   })
 
-  it('should cache if the app\'s redis config settings allow', function (done) {
+  it("should cache if the app's redis config settings allow", function(done) {
     const server = sinon.mock(Server)
 
     server.object.app = api()
@@ -134,7 +146,10 @@ describe('Cache', function (done) {
 
     newTestConfig.caching.directory.enabled = false
     newTestConfig.caching.redis.enabled = true
-    fs.writeFileSync(config.configPath(), JSON.stringify(newTestConfig, null, 2))
+    fs.writeFileSync(
+      config.configPath(),
+      JSON.stringify(newTestConfig, null, 2)
+    )
 
     config.loadFile(config.configPath())
 
@@ -145,15 +160,14 @@ describe('Cache', function (done) {
     done()
   })
 
-  describe('cachingEnabled', function (done) {
-    it('should not cache if the url key can\'t be found in the loaded keys', function (done) {
+  describe('cachingEnabled', function(done) {
+    it("should not cache if the url key can't be found in the loaded keys", function(done) {
       const server = sinon.mock(Server)
 
       server.object.app = api()
 
       server.object.components['/1.0/library/books'] = {
-        get () {
-        },
+        get() {},
         model: {
           name: 'books',
           settings: {
@@ -166,19 +180,20 @@ describe('Cache', function (done) {
         url: '/1.0/library/authors'
       }
 
-      cache(server.object).cachingEnabled(req).should.eql(false)
+      cache(server.object)
+        .cachingEnabled(req)
+        .should.eql(false)
 
       done()
     })
 
-    it('should cache if the url key can be found in the loaded keys and it allows caching', function (done) {
+    it('should cache if the url key can be found in the loaded keys and it allows caching', function(done) {
       const server = sinon.mock(Server)
 
       server.object.app = api()
 
       server.object.components['/1.0/library/books'] = {
-        get () {
-        },
+        get() {},
         model: {
           name: 'books',
           settings: {
@@ -192,19 +207,20 @@ describe('Cache', function (done) {
       }
 
       cache.reset()
-      cache(server.object).cachingEnabled(req).should.eql(true)
+      cache(server.object)
+        .cachingEnabled(req)
+        .should.eql(true)
 
       done()
     })
 
-    it('should not cache if the url key can be found in the loaded keys but it does not specify options', function (done) {
+    it('should not cache if the url key can be found in the loaded keys but it does not specify options', function(done) {
       const server = sinon.mock(Server)
 
       server.object.app = api()
 
       server.object.components['/1.0/library/books'] = {
-        get () {
-        },
+        get() {},
         model: {
           name: 'books'
         }
@@ -214,7 +230,9 @@ describe('Cache', function (done) {
         url: '/1.0/library/books'
       }
 
-      cache(server.object).cachingEnabled(req).should.eql(false)
+      cache(server.object)
+        .cachingEnabled(req)
+        .should.eql(false)
 
       done()
     })
@@ -244,14 +262,13 @@ describe('Cache', function (done) {
     //   done()
     // })
 
-    it('should cache if the url key can be found in the loaded keys and ?cache=true exists in the query', function (done) {
+    it('should cache if the url key can be found in the loaded keys and ?cache=true exists in the query', function(done) {
       const server = sinon.mock(Server)
 
       server.object.app = api()
 
       server.object.components['/1.0/library/books'] = {
-        get () {
-        },
+        get() {},
         model: {
           name: 'books',
           settings: {
@@ -264,7 +281,9 @@ describe('Cache', function (done) {
         url: '/1.0/library/books?cache=true'
       }
 
-      cache(server.object).cachingEnabled(req).should.eql(true)
+      cache(server.object)
+        .cachingEnabled(req)
+        .should.eql(true)
 
       done()
     })

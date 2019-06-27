@@ -12,29 +12,35 @@ const log = require('@dadi/logger')
 const DadiCache = require('@dadi/cache')
 let cache
 
-const Cache = function (server) {
+const Cache = function(server) {
   this.cache = cache = new DadiCache(config.get('caching'))
 
   this.server = server
-  this.enabled = config.get('caching.directory.enabled') || config.get('caching.redis.enabled')
+  this.enabled =
+    config.get('caching.directory.enabled') ||
+    config.get('caching.redis.enabled')
   this.encoding = 'utf8'
   this.options = {}
 }
 
 let instance
-module.exports = function (server) {
+
+module.exports = function(server) {
   if (!instance) {
     instance = new Cache(server)
   }
+
   return instance
 }
 
-Cache.prototype.cachingEnabled = function (req) {
+Cache.prototype.cachingEnabled = function(req) {
   let options = {}
-  let endpoints = this.server.components
-  let requestPath = url.parse(req.url, true).pathname
+  const endpoints = this.server.components
+  const requestPath = url.parse(req.url, true).pathname
 
-  let endpointKey = Object.keys(endpoints).find(key => pathToRegexp(key).exec(requestPath))
+  const endpointKey = Object.keys(endpoints).find(key =>
+    pathToRegexp(key).exec(requestPath)
+  )
 
   if (!endpointKey) return false
 
@@ -42,21 +48,23 @@ Cache.prototype.cachingEnabled = function (req) {
     options = endpoints[endpointKey].model.settings
   }
 
-  return (this.enabled && (options.cache || false))
+  return this.enabled && (options.cache || false)
 }
 
-Cache.prototype.getEndpointContentType = function (req) {
+Cache.prototype.getEndpointContentType = function(req) {
   // there are only two possible types javascript or json
-  let query = url.parse(req.url, true).query
+  const query = url.parse(req.url, true).query
+
   return query.callback ? 'text/javascript' : 'application/json'
 }
 
 /**
  * Adds the Cache middleware to the stack
  */
-Cache.prototype.init = function () {
+Cache.prototype.init = function() {
   this.server.app.use((req, res, next) => {
-    let enabled = this.cachingEnabled(req)
+    const enabled = this.cachingEnabled(req)
+
     if (!enabled) return next()
 
     // Only cache GET requests.
@@ -64,16 +72,24 @@ Cache.prototype.init = function () {
       return next()
     }
 
-    let query = url.parse(req.url, true).query
+    const query = url.parse(req.url, true).query
 
     // Allow query string param to bypass cache.
-    let noCache = query.cache && query.cache.toString().toLowerCase() === 'false'
+    const noCache =
+      query.cache && query.cache.toString().toLowerCase() === 'false'
+
     delete query.cache
 
     // Build the filename with a hashed hex string so it is unique
     // and avoids using file system reserved characters in the name.
-    let modelDir = crypto.createHash('sha1').update(url.parse(req.url).pathname).digest('hex')
-    let filename = crypto.createHash('sha1').update(url.parse(req.url).pathname + JSON.stringify(query)).digest('hex')
+    const modelDir = crypto
+      .createHash('sha1')
+      .update(url.parse(req.url).pathname)
+      .digest('hex')
+    const filename = crypto
+      .createHash('sha1')
+      .update(url.parse(req.url).pathname + JSON.stringify(query))
+      .digest('hex')
 
     // Prepend the model's name/folder hierarchy to the filename so it can be used
     // later to flush the cache for this model
@@ -87,52 +103,52 @@ Cache.prototype.init = function () {
     }
 
     // get contentType that current endpoint requires
-    let contentType = this.getEndpointContentType(req)
+    const contentType = this.getEndpointContentType(req)
 
     // attempt to get from the cache
     cache
       .get(cacheKey)
       .then(stream => {
-        return cache
-          .getMetadata(cacheKey)
-          .then(metadata => {
-            res.statusCode = 200
-            res.setHeader('X-Cache-Lookup', 'HIT')
+        return cache.getMetadata(cacheKey).then(metadata => {
+          res.statusCode = 200
+          res.setHeader('X-Cache-Lookup', 'HIT')
 
-            let compressed = false
+          let compressed = false
 
-            if (metadata) {
-              if (metadata.compression === 'gzip') {
-                compressed = true
-              }
+          if (metadata) {
+            if (metadata.compression === 'gzip') {
+              compressed = true
+            }
 
-              if (metadata.etag) {
-                res.setHeader('ETag', metadata.etag)
+            if (metadata.etag) {
+              res.setHeader('ETag', metadata.etag)
 
-                if (req.headers['if-none-match'] === metadata.etag) {
-                  res.statusCode = 304
-                  return res.end()
-                }
+              if (req.headers['if-none-match'] === metadata.etag) {
+                res.statusCode = 304
+
+                return res.end()
               }
             }
+          }
 
-            if (noCache) {
-              res.setHeader('X-Cache', 'MISS')
-              return next()
-            }
+          if (noCache) {
+            res.setHeader('X-Cache', 'MISS')
 
-            log.info({module: 'cache'}, `Serving ${req.url} from cache`)
+            return next()
+          }
 
-            res.statusCode = 200
-            res.setHeader('X-Cache', 'HIT')
-            res.setHeader('Content-Type', contentType)
+          log.info({module: 'cache'}, `Serving ${req.url} from cache`)
 
-            if (compressed) {
-              res.setHeader('Content-Encoding', 'gzip')
-            }
+          res.statusCode = 200
+          res.setHeader('X-Cache', 'HIT')
+          res.setHeader('Content-Type', contentType)
 
-            return _streamFile(res, stream, () => {})
-          })
+          if (compressed) {
+            res.setHeader('Content-Encoding', 'gzip')
+          }
+
+          return _streamFile(res, stream, () => {})
+        })
       })
       .catch(() => {
         res.setHeader('X-Cache', 'MISS')
@@ -143,13 +159,14 @@ Cache.prototype.init = function () {
         }
 
         res.setHeader('X-Cache-Lookup', 'MISS')
+
         return cacheResponse()
       })
 
-    function _streamFile (res, stream, cb) {
-      let streamCache = new StreamCache()
+    function _streamFile(res, stream, cb) {
+      const streamCache = new StreamCache()
 
-      let lstream = lengthStream(length => {
+      const lstream = lengthStream(length => {
         res.setHeader('Content-Length', length)
         streamCache.pipe(res)
       })
@@ -169,16 +186,16 @@ Cache.prototype.init = function () {
      * Write the current response body to either the filesystem or a Redis server,
      * depending on the configuration settings.
      */
-    function cacheResponse () {
+    function cacheResponse() {
       // file is expired or does not exist, wrap res.end and res.write to save to cache
-      let _end = res.end
-      let _write = res.write
+      const _end = res.end
+      const _write = res.write
 
-      res.write = function (chunk) {
+      res.write = function(chunk) {
         _write.apply(res, arguments)
       }
 
-      res.end = function (data) {
+      res.end = function(data) {
         // respond before attempting to cache
         _end.apply(res, arguments)
 
@@ -188,35 +205,40 @@ Cache.prototype.init = function () {
         }
 
         // Cache the content.
-        cache.set(cacheKey, data, {
-          metadata: {
-            compression: !acceptEncoding ? 'none' : acceptEncoding,
-            etag: etag(data)
-          }
-        }).then(() => {
-
-        })
+        cache
+          .set(cacheKey, data, {
+            metadata: {
+              compression: !acceptEncoding ? 'none' : acceptEncoding,
+              etag: etag(data)
+            }
+          })
+          .then(() => {})
       }
+
       return next()
     }
   })
 }
 
 // reset method for unit tests
-module.exports.reset = function () {
+module.exports.reset = function() {
   instance = null
 }
 
 /**
  *
  */
-module.exports.delete = function (pattern, callback) {
+module.exports.delete = function(pattern, callback) {
   if (!cache) return callback(null)
 
-  cache.flush(pattern).then(() => {
-    return callback(null)
-  }).catch(err => {
-    console.log(err)
-    return callback(null)
-  })
+  cache
+    .flush(pattern)
+    .then(() => {
+      return callback(null)
+    })
+    .catch(err => {
+      console.log(err)
+
+      return callback(null)
+    })
 }

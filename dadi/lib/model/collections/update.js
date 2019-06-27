@@ -45,7 +45,7 @@ const search = require('./../search')
  * @param  {Boolean} validate - whether to run validation
  * @return {Promise<Array.ResultSet>} set of updated documents
  */
-function update ({
+function update({
   client,
   compose = true,
   description,
@@ -66,16 +66,14 @@ function update ({
   )
 
   if (!this.connection.db) {
-    return Promise.reject(
-      new Error('DB_DISCONNECTED')
-    )
+    return Promise.reject(new Error('DB_DISCONNECTED'))
   }
 
   // Add `lastModifiedAt` internal field.
   internals._lastModifiedAt = internals._lastModifiedAt || Date.now()
 
   // Is this a RESTful query by ID?
-  let isRestIDQuery = req && req.params && req.params.id
+  const isRestIDQuery = req && req.params && req.params.id
 
   // Get a reference to the documents that will be updated.
   let updatedDocuments = []
@@ -85,7 +83,7 @@ function update ({
     update = this.removeInternalProperties(update)
   }
 
-  let {hooks} = this.settings
+  const {hooks} = this.settings
 
   // If an ACL check is performed, this variable will contain the resulting
   // access matrix.
@@ -96,203 +94,232 @@ function update ({
     documents: update,
     query,
     type: 'update'
-  }).then(({access, documents: newUpdate, query: aclQuery, schema}) => {
-    aclAccess = access
-    query = aclQuery
-    update = newUpdate
+  })
+    .then(({access, documents: newUpdate, query: aclQuery, schema}) => {
+      aclAccess = access
+      query = aclQuery
+      update = newUpdate
 
-    // If merging the request query with ACL data resulted in
-    // an impossible query, we can simply return an empty result
-    // set without even going to the database. We'll reject the
-    // Promise now and catch this case at the end of the chain.
-    if (query instanceof Error) {
-      return Promise.reject(query)
-    }
-
-    if (!validate) return
-
-    // Validating the query.
-    let queryValidation = this.validateQuery(query)
-
-    if (!queryValidation.success) {
-      let error = this._createValidationError('Bad Query')
-
-      error.json = queryValidation
-
-      return Promise.reject(error)
-    }
-
-    return this.validator.validateDocument({
-      document: update,
-      isUpdate: true,
-      schema
-    }).catch(errors => {
-      let error = this._createValidationError('Validation Failed', errors)
-
-      return Promise.reject(error)
-    })
-  }).then(() => {
-    // Format the query.
-    query = this.formatQuery(query)
-
-    return this.find({
-      query
-    })
-  }).then(({results}) => {
-    // Create a copy of the documents that matched the find
-    // query, as these will be updated and we need to send back
-    // to the client a full result set of modified documents.
-    updatedDocuments = results
-
-    // Add any internal fields to the update.
-    Object.assign(update, internals)
-
-    // Run `beforeSave` hooks on update fields.
-    return Object.keys(update).reduce((result, field) => {
-      if (field === '_id') {
-        return result
+      // If merging the request query with ACL data resulted in
+      // an impossible query, we can simply return an empty result
+      // set without even going to the database. We'll reject the
+      // Promise now and catch this case at the end of the chain.
+      if (query instanceof Error) {
+        return Promise.reject(query)
       }
 
-      return result.then(transformedUpdate => {
-        return this.runFieldHooks({
-          data: {
-            internals,
-            updatedDocuments
-          },
-          field,
-          input: {
-            [field]: update[field]
-          },
-          name: 'beforeSave'
-        }).then(subDocument => {
-          return Object.assign({}, transformedUpdate, subDocument)
-        })
-      })
-    }, Promise.resolve({})).then(transformedUpdate => {
-      update = transformedUpdate
+      if (!validate) return
 
-      // Run any `beforeUpdate` hooks.
-      if (hooks && hooks.beforeUpdate) {
-        return new Promise((resolve, reject) => {
-          async.reduce(hooks.beforeUpdate, update, (current, hookConfig, callback) => {
-            let hook = new Hook(hookConfig, 'beforeUpdate')
+      // Validating the query.
+      const queryValidation = this.validateQuery(query)
 
-            Promise.resolve(hook.apply(current, updatedDocuments, this.schema, this.name, req))
-              .then(newUpdate => {
-                callback((newUpdate === null) ? {} : null, newUpdate)
-              }).catch(err => {
-                callback(hook.formatError(err))
-              })
-          }, (error, newUpdate) => {
-            if (error) {
-              reject(error)
-            }
+      if (!queryValidation.success) {
+        const error = this._createValidationError('Bad Query')
 
-            resolve(newUpdate)
-          })
-        })
-      }
-
-      return update
-    }).then(update => {
-      return this.connection.db.update({
-        collection: this.name,
-        options: {
-          multi: true
-        },
-        query,
-        schema: this.schema,
-        update: {
-          $set: update
-        }
-      })
-    }).then(({matchedCount}) => {
-      if (isRestIDQuery && (matchedCount === 0)) {
-        let error = new Error('Not Found')
-
-        error.statusCode = 404
+        error.json = queryValidation
 
         return Promise.reject(error)
       }
-    }).then(() => {
-      let updatedDocumentsQuery = {
-        _id: {
-          '$in': updatedDocuments.map(doc => doc._id.toString())
-        }
-      }
+
+      return this.validator
+        .validateDocument({
+          document: update,
+          isUpdate: true,
+          schema
+        })
+        .catch(errors => {
+          const error = this._createValidationError('Validation Failed', errors)
+
+          return Promise.reject(error)
+        })
+    })
+    .then(() => {
+      // Format the query.
+      query = this.formatQuery(query)
 
       return this.find({
-        options: {
-          compose: true
-        },
-        query: updatedDocumentsQuery
+        query
       })
-    }).then(data => {
-      if (data.results.length === 0) {
-        return data
-      }
+    })
+    .then(({results}) => {
+      // Create a copy of the documents that matched the find
+      // query, as these will be updated and we need to send back
+      // to the client a full result set of modified documents.
+      updatedDocuments = results
 
-      // Run any `afterUpdate` hooks.
-      if (hooks && Array.isArray(hooks.afterUpdate)) {
-        hooks.afterUpdate.forEach(hookConfig => {
-          let hook = new Hook(hookConfig, 'afterUpdate')
+      // Add any internal fields to the update.
+      Object.assign(update, internals)
 
-          return hook.apply(data.results, this.schema, this.name)
+      // Run `beforeSave` hooks on update fields.
+      return Object.keys(update)
+        .reduce((result, field) => {
+          if (field === '_id') {
+            return result
+          }
+
+          return result.then(transformedUpdate => {
+            return this.runFieldHooks({
+              data: {
+                internals,
+                updatedDocuments
+              },
+              field,
+              input: {
+                [field]: update[field]
+              },
+              name: 'beforeSave'
+            }).then(subDocument => {
+              return Object.assign({}, transformedUpdate, subDocument)
+            })
+          })
+        }, Promise.resolve({}))
+        .then(transformedUpdate => {
+          update = transformedUpdate
+
+          // Run any `beforeUpdate` hooks.
+          if (hooks && hooks.beforeUpdate) {
+            return new Promise((resolve, reject) => {
+              async.reduce(
+                hooks.beforeUpdate,
+                update,
+                (current, hookConfig, callback) => {
+                  const hook = new Hook(hookConfig, 'beforeUpdate')
+
+                  Promise.resolve(
+                    hook.apply(
+                      current,
+                      updatedDocuments,
+                      this.schema,
+                      this.name,
+                      req
+                    )
+                  )
+                    .then(newUpdate => {
+                      callback(newUpdate === null ? {} : null, newUpdate)
+                    })
+                    .catch(err => {
+                      callback(hook.formatError(err))
+                    })
+                },
+                (error, newUpdate) => {
+                  if (error) {
+                    reject(error)
+                  }
+
+                  resolve(newUpdate)
+                }
+              )
+            })
+          }
+
+          return update
         })
-      }
-
-      // Index all the created documents for search, as a background job.
-      if (search.isEnabled()) {
-        search.indexDocumentsInTheBackground({
-          documents: data.results,
-          model: this,
-          original: updatedDocuments
-        })
-      }
-
-      // Format result set for output.
-      if (!rawOutput) {
-        return this.formatForOutput(data.results, {
-          access: aclAccess && aclAccess.read,
-          client,
-          composeOverride: compose
-        }).then(results => {
-          return Object.assign({}, data, {
-            results
+        .then(update => {
+          return this.connection.db.update({
+            collection: this.name,
+            options: {
+              multi: true
+            },
+            query,
+            schema: this.schema,
+            update: {
+              $set: update
+            }
           })
         })
+        .then(({matchedCount}) => {
+          if (isRestIDQuery && matchedCount === 0) {
+            const error = new Error('Not Found')
+
+            error.statusCode = 404
+
+            return Promise.reject(error)
+          }
+        })
+        .then(() => {
+          const updatedDocumentsQuery = {
+            _id: {
+              $in: updatedDocuments.map(doc => doc._id.toString())
+            }
+          }
+
+          return this.find({
+            options: {
+              compose: true
+            },
+            query: updatedDocumentsQuery
+          })
+        })
+        .then(data => {
+          if (data.results.length === 0) {
+            return data
+          }
+
+          // Run any `afterUpdate` hooks.
+          if (hooks && Array.isArray(hooks.afterUpdate)) {
+            hooks.afterUpdate.forEach(hookConfig => {
+              const hook = new Hook(hookConfig, 'afterUpdate')
+
+              return hook.apply(data.results, this.schema, this.name)
+            })
+          }
+
+          // Index all the created documents for search, as a background job.
+          if (search.isEnabled()) {
+            search.indexDocumentsInTheBackground({
+              documents: data.results,
+              model: this,
+              original: updatedDocuments
+            })
+          }
+
+          // Format result set for output.
+          if (!rawOutput) {
+            return this.formatForOutput(data.results, {
+              access: aclAccess && aclAccess.read,
+              client,
+              composeOverride: compose
+            }).then(results => {
+              return Object.assign({}, data, {
+                results
+              })
+            })
+          }
+
+          return data
+        })
+    })
+    .then(response => {
+      // Create a revision for each of the updated documents.
+      if (this.history && updatedDocuments.length > 0) {
+        return this.history
+          .addVersion(updatedDocuments, {
+            description
+          })
+          .then(() => response)
       }
 
-      return data
+      return response
     })
-  }).then(response => {
-    // Create a revision for each of the updated documents.
-    if (this.history && updatedDocuments.length > 0) {
-      return this.history.addVersion(updatedDocuments, {
-        description
-      }).then(() => response)
-    }
+    .catch(error => {
+      // Dealing with the case of an impossible query. We can simply return
+      // an empty result set here.
+      if (error.message === 'EMPTY_RESULT_SET') {
+        return this._buildEmptyResponse()
+      }
 
-    return response
-  }).catch(error => {
-    // Dealing with the case of an impossible query. We can simply return
-    // an empty result set here.
-    if (error.message === 'EMPTY_RESULT_SET') {
-      return this._buildEmptyResponse()
-    }
+      logger.error({module: 'model'}, error)
 
-    logger.error({ module: 'model' }, error)
-
-    return Promise.reject(error)
-  })
+      return Promise.reject(error)
+    })
 }
 
-module.exports = function () {
+module.exports = function() {
   // Compatibility with legacy model API.
   // Signature: query, update, internals, done, req, bypassOutputFormatting
   if (arguments.length > 1) {
     let callback
-    let legacyArguments = {
+    const legacyArguments = {
       query: arguments[0],
       rawOutput: arguments[5],
       req: arguments[4],
@@ -307,7 +334,8 @@ module.exports = function () {
       legacyArguments.internals = arguments[2]
     }
 
-    update.call(this, legacyArguments)
+    update
+      .call(this, legacyArguments)
       .then(response => callback && callback(null, response))
       .catch(error => callback && callback(error))
 

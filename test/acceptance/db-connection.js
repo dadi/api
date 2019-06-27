@@ -30,7 +30,7 @@ describe('Database connection', () => {
         bearerToken = token
 
         app.stop(done)
-      })        
+      })
     })
   })
 
@@ -38,7 +38,7 @@ describe('Database connection', () => {
     global.___skipTestFromScript = true
   })
 
-  describe('when available at app boot', function () {
+  describe('when available at app boot', function() {
     this.timeout(6000)
 
     let datastore
@@ -53,7 +53,9 @@ describe('Database connection', () => {
         help.dropDatabase('noauthdb', null, err => {
           if (err) return done(err)
 
-          datastore = app.components['/vtest/noauthdb/articles'].model.connection.datastore
+          datastore =
+            app.components['/vtest/noauthdb/articles'].model.connection
+              .datastore
 
           client
             .post('/vtest/noauthdb/articles')
@@ -62,7 +64,7 @@ describe('Database connection', () => {
             .set('Authorization', 'Bearer ' + bearerToken)
             .expect(200)
             .expect('content-type', 'application/json')
-            .end(function (err, res) {
+            .end(function(err, res) {
               if (err) return done(err)
 
               savedDocument = res.body.results[0]
@@ -158,7 +160,9 @@ describe('Database connection', () => {
 
           setTimeout(() => {
             client
-              .put('/vtest/noauthdb/articles/' + savedDocument._id + '?cache=false')
+              .put(
+                '/vtest/noauthdb/articles/' + savedDocument._id + '?cache=false'
+              )
               .send({
                 title: 'Yet another title'
               })
@@ -194,7 +198,9 @@ describe('Database connection', () => {
           testConnector._mock.disconnect()
 
           client
-            .put('/vtest/noauthdb/articles/59d4b35cb2cf37d706b1d706?cache=false')
+            .put(
+              '/vtest/noauthdb/articles/59d4b35cb2cf37d706b1d706?cache=false'
+            )
             .send({
               title: 'Yet another title'
             })
@@ -308,13 +314,15 @@ describe('Database connection', () => {
         .set('Authorization', 'Bearer ' + bearerToken)
         .expect(200)
         .expect('content-type', 'application/json')
-        .end(function (err, res) {
+        .end(function(err, res) {
           if (err) return done(err)
 
           const savedDocument2 = res.body.results[0]
 
           client
-            .delete('/vtest/noauthdb/articles/' + savedDocument._id + '?cache=false')
+            .delete(
+              '/vtest/noauthdb/articles/' + savedDocument._id + '?cache=false'
+            )
             .set('content-type', 'application/json')
             .set('Authorization', 'Bearer ' + bearerToken)
             .end((err, res) => {
@@ -326,7 +334,11 @@ describe('Database connection', () => {
 
               setTimeout(() => {
                 client
-                  .delete('/vtest/noauthdb/articles/' + savedDocument2._id + '?cache=false')
+                  .delete(
+                    '/vtest/noauthdb/articles/' +
+                      savedDocument2._id +
+                      '?cache=false'
+                  )
                   .set('content-type', 'application/json')
                   .set('Authorization', 'Bearer ' + bearerToken)
                   .end((err, res) => {
@@ -344,7 +356,9 @@ describe('Database connection', () => {
 
     it('should return 503 for DELETE requests when the database becomes unavailable', done => {
       client
-        .delete('/vtest/noauthdb/articles/' + savedDocument._id + '?cache=false')
+        .delete(
+          '/vtest/noauthdb/articles/' + savedDocument._id + '?cache=false'
+        )
         .set('content-type', 'application/json')
         .set('Authorization', 'Bearer ' + bearerToken)
         .end((err, res) => {
@@ -357,7 +371,9 @@ describe('Database connection', () => {
           testConnector._mock.disconnect()
 
           client
-            .delete('/vtest/noauthdb/articles/59d4b35cb2cf37d706b1d706?cache=false')
+            .delete(
+              '/vtest/noauthdb/articles/59d4b35cb2cf37d706b1d706?cache=false'
+            )
             .set('content-type', 'application/json')
             .set('Authorization', 'Bearer ' + bearerToken)
             .end((err, res) => {
@@ -373,7 +389,7 @@ describe('Database connection', () => {
     })
   })
 
-  describe('when not available at app boot', function () {
+  describe('when not available at app boot', function() {
     this.timeout(10000)
 
     let datastore
@@ -384,7 +400,8 @@ describe('Database connection', () => {
       app.start(err => {
         if (err) return done(err)
 
-        datastore = app.components['/vtest/noauthdb/articles'].model.connection.datastore
+        datastore =
+          app.components['/vtest/noauthdb/articles'].model.connection.datastore
 
         done()
       })
@@ -475,7 +492,9 @@ describe('Database connection', () => {
 
           setTimeout(() => {
             client
-              .put('/vtest/noauthdb/articles/5b0d57d04ee2a8387c83439c?cache=false')
+              .put(
+                '/vtest/noauthdb/articles/5b0d57d04ee2a8387c83439c?cache=false'
+              )
               .send({
                 title: 'Dadi'
               })
@@ -521,7 +540,11 @@ describe('Database connection', () => {
                 const savedDocument = res.body.results[0]
 
                 client
-                  .put('/vtest/noauthdb/articles/' + savedDocument._id + '?cache=false')
+                  .put(
+                    '/vtest/noauthdb/articles/' +
+                      savedDocument._id +
+                      '?cache=false'
+                  )
                   .send({
                     title: 'A new title'
                   })
@@ -641,7 +664,9 @@ describe('Database connection', () => {
 
           setTimeout(() => {
             client
-              .delete('/vtest/noauthdb/articles/5b0d57d04ee2a8387c83439c?cache=false')
+              .delete(
+                '/vtest/noauthdb/articles/5b0d57d04ee2a8387c83439c?cache=false'
+              )
               .set('content-type', 'application/json')
               .set('Authorization', 'Bearer ' + bearerToken)
               .end((err, res) => {
@@ -681,7 +706,11 @@ describe('Database connection', () => {
                 const savedDocument = res.body.results[0]
 
                 client
-                  .delete('/vtest/noauthdb/articles/' + savedDocument._id + '?cache=false')
+                  .delete(
+                    '/vtest/noauthdb/articles/' +
+                      savedDocument._id +
+                      '?cache=false'
+                  )
                   .set('content-type', 'application/json')
                   .set('Authorization', 'Bearer ' + bearerToken)
                   .end((err, res) => {

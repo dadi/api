@@ -5,7 +5,7 @@ const help = require('./../help')
 const searchModel = require('./../model/search')
 const url = require('url')
 
-const Search = function (server, modelFactory) {
+const Search = function(server, modelFactory) {
   searchModel.initialise()
 
   server.app.routeMethods('/api/search', {
@@ -17,14 +17,9 @@ const Search = function (server, modelFactory) {
  * Handle collection search endpoints
  * Example: /1.0/library/books/search?q=title
  */
-Search.prototype.get = function (req, res, next) {
+Search.prototype.get = function(req, res, next) {
   const {query: options} = url.parse(req.url, true)
-  const {
-    collections,
-    lang: language,
-    page = 1,
-    q: query
-  } = options
+  const {collections, lang: language, page = 1, q: query} = options
   const minimumQueryLength = config.get('search.minQueryLength')
 
   if (!config.get('search.enabled')) {
@@ -33,9 +28,11 @@ Search.prototype.get = function (req, res, next) {
     error.statusCode = 501
     error.json = {
       success: false,
-      errors: [{
-        message: `Search is disabled or an invalid data connector has been specified.`
-      }]
+      errors: [
+        {
+          message: `Search is disabled or an invalid data connector has been specified.`
+        }
+      ]
     }
 
     return help.sendBackJSON(null, res, next)(error)
@@ -47,18 +44,19 @@ Search.prototype.get = function (req, res, next) {
     error.statusCode = 400
     error.json = {
       success: false,
-      errors: [{
-        message: `Search query must be at least ${minimumQueryLength} characters.`
-      }]
+      errors: [
+        {
+          message: `Search query must be at least ${minimumQueryLength} characters.`
+        }
+      ]
     }
 
     return help.sendBackJSON(null, res, next)(error)
   }
 
   let aclCheck = Promise.resolve()
-  let requestCollections = typeof collections === 'string'
-    ? collections.split(',')
-    : []
+  let requestCollections =
+    typeof collections === 'string' ? collections.split(',') : []
 
   // (!) TO DO: We're currently treating collection names inconsistently
   // across the application. ACL keys contain the database name and the
@@ -84,50 +82,50 @@ Search.prototype.get = function (req, res, next) {
         return CollectionModel.getByAclKey(aclKey)
       })
 
-      return allowedModels
-        .filter(Boolean)
-        .map(collection => collection.name)
+      return allowedModels.filter(Boolean).map(collection => collection.name)
     })
   }
 
   // At this point, `collections` contains either an array of the names of
   // the collections that the user has access to, or `undefined` if we're
   // dealing with an admin user that can access everything.
-  return aclCheck.then(allowedCollections => {
-    let searchCollections = []
+  return aclCheck
+    .then(allowedCollections => {
+      let searchCollections = []
 
-    if (requestCollections.length > 0) {
-      // If `allowedCollections` is undefined, it means that the user can
-      // access any collection, so we'll search on `requestCollections`.
-      // If `allowedCollections` isn't undefined, then it holds the set of
-      // collections which the user has access to. As such, we'll search on
-      // the intersection between `allowedCollections` and `requestCollections`.
-      if (allowedCollections === undefined) {
-        searchCollections = requestCollections
+      if (requestCollections.length > 0) {
+        // If `allowedCollections` is undefined, it means that the user can
+        // access any collection, so we'll search on `requestCollections`.
+        // If `allowedCollections` isn't undefined, then it holds the set of
+        // collections which the user has access to. As such, we'll search on
+        // the intersection between `allowedCollections` and `requestCollections`.
+        if (allowedCollections === undefined) {
+          searchCollections = requestCollections
+        } else {
+          searchCollections = requestCollections.filter(collection => {
+            return allowedCollections.includes(collection)
+          })
+        }
       } else {
-        searchCollections = requestCollections.filter(collection => {
-          return allowedCollections.includes(collection)
-        })
+        searchCollections =
+          allowedCollections === undefined ? undefined : allowedCollections
       }
-    } else {
-      searchCollections = allowedCollections === undefined
-        ? undefined
-        : allowedCollections
-    }
 
-    return searchModel.find({
-      client: req.dadiApiClient,
-      collections: searchCollections,
-      language,
-      modelFactory: CollectionModel,
-      page,
-      query
+      return searchModel.find({
+        client: req.dadiApiClient,
+        collections: searchCollections,
+        language,
+        modelFactory: CollectionModel,
+        page,
+        query
+      })
     })
-  }).then(results => {
-    return help.sendBackJSON(200, res, next)(null, results)
-  }).catch(error => {
-    return help.sendBackJSON(null, res, next)(error)
-  })
+    .then(results => {
+      return help.sendBackJSON(200, res, next)(null, results)
+    })
+    .catch(error => {
+      return help.sendBackJSON(null, res, next)(error)
+    })
 }
 
 module.exports = server => new Search(server)

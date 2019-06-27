@@ -7,10 +7,10 @@
 
 ## DADI API
 
-* [Overview](#overview)
-* [Requirements](#requirements)
-* [Your First API Project](#your-first-api-project)
-* [Links](#links)
+- [Overview](#overview)
+- [Requirements](#requirements)
+- [Your First API Project](#your-first-api-project)
+- [Links](#links)
 
 ## Overview
 
@@ -28,15 +28,14 @@ It is part of DADI, a suite of components covering the full development stack, b
 
 ## Requirements
 
-* **[Node.js](https://www.nodejs.org/)** (supported versions: 6.11.x, 8.9.x)
-* A [data connector module](https://www.npmjs.com/search?q=keywords:dadi-api-connector)
+- **[Node.js](https://www.nodejs.org/)** (supported versions: 6.11.x, 8.9.x)
+- A [data connector module](https://www.npmjs.com/search?q=keywords:dadi-api-connector)
 
 ## Your first API project
 
 ### Install API
 
-The quickest way to get started with *API* is to use [DADI CLI](https://github.com/dadi/cli). See [Creating an API](https://docs.dadi.cloud/api#creating-an-api) for full installation details.
-
+The quickest way to get started with _API_ is to use [DADI CLI](https://github.com/dadi/cli). See [Creating an API](https://docs.dadi.cloud/api#creating-an-api) for full installation details.
 
 ### Configuration
 
@@ -74,15 +73,15 @@ $ curl http://localhost:3000
 ```
 
 ```json
-{ "statusCode": 401 }
+{"statusCode": 401}
 ```
-
 
 #### Check the response headers
 
 ```bash
 $ curl -I http://localhost:3000
 ```
+
 ```json
 HTTP/1.1 401 Unauthorized
 content-type: application/json
@@ -95,11 +94,11 @@ Connection: keep-alive
 
 The HTTP 401 response received in the previous step shows that the server is running. To start using the REST endpoints you'll need a user account so you can obtain access tokens for interacting with the API.
 
-User accounts provide an authentication layer for API. Each user account has a *__clientId__* and a *__secret__*. These are used to obtain access tokens for interacting with the API. See the [Authentication](https://docs.dadi.cloud/api#authentication) section of the API documentation for full details.
+User accounts provide an authentication layer for API. Each user account has a _**clientId**_ and a _**secret**_. These are used to obtain access tokens for interacting with the API. See the [Authentication](https://docs.dadi.cloud/api#authentication) section of the API documentation for full details.
 
 #### Creating the first user
 
-[CLI](https://github.com/dadi/api) contains an interactive "Client Record Generator" to help you create user accounts. Run the following command in the directory where you installed *API*:
+[CLI](https://github.com/dadi/api) contains an interactive "Client Record Generator" to help you create user accounts. Run the following command in the directory where you installed _API_:
 
 ```bash
 cd my-new-api
@@ -113,6 +112,7 @@ $ NODE_ENV=production npm explore @dadi/api -- npm run create-client
 ```
 
 ### Run API as a service
+
 To run your API application in the background as a service, install Forever and Forever Service:
 
 ```bash
@@ -142,25 +142,25 @@ $ npm test
 
 > NOTE: API installs version 4.0.1 of Mocha and uses this when calling `npm test`. If you have Mocha installed globally and want to simply run `mocha`, if using version 4 or above, add `--exit` to the command so it becomes `mocha --exit`
 
-
 ## Links
-* [API Documentation](https://docs.dadi.cloud/api/)
+
+- [API Documentation](https://docs.dadi.cloud/api/)
 
 ## Contributors
 
 DADI API is based on an original idea by Joseph Denne. It is developed and maintained by the engineering team at DADI ([https://dadi.cloud](https://dadi.cloud))
 
-* Adam K Dean <akd@dadi.co>
-* Arthur Mingard <am@dadi.co>
-* David Longworth <dl@dadi.co>
-* Eduardo Bouças <eb@dadi.co>
-* Francesco Iannuzzelli <fi@dadi.co>
-* James Lambie <jl@dadi.co>
-* Joe Wagner
-* Joseph Denne <jd@dadi.co>
-* Kevin Sowers <kevin.sowers223@gmail.com>
-* Robert Stanford <rs@dadi.co>
-* Viktor Fero <vf@dadi.co>
+- Adam K Dean <akd@dadi.co>
+- Arthur Mingard <am@dadi.co>
+- David Longworth <dl@dadi.co>
+- Eduardo Bouças <eb@dadi.co>
+- Francesco Iannuzzelli <fi@dadi.co>
+- James Lambie <jl@dadi.co>
+- Joe Wagner
+- Joseph Denne <jd@dadi.co>
+- Kevin Sowers <kevin.sowers223@gmail.com>
+- Robert Stanford <rs@dadi.co>
+- Viktor Fero <vf@dadi.co>
 
 ## Licence
 
@@ -187,7 +187,7 @@ them, to determine what licences are applicable.**
 
 DADI is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 GNU General Public License for more details.
 
 The GNU General Public License (GPL) is available at
@@ -196,4 +196,3 @@ A copy can be found in the file GPL.md distributed with
 these files.
 
 This copyright notice MUST APPEAR in all copies of the product!
-

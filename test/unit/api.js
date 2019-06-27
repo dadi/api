@@ -1,86 +1,109 @@
-var should = require('should')
-var http = require('http')
-var api = require(__dirname + '/../../dadi/lib/api')
-var controller = require(__dirname + '/../../dadi/lib/controller')
-var model = require(__dirname + '/../../dadi/lib/model')
-var help = require(__dirname + '/help')
-var config = require(__dirname + '/../../config')
+const should = require('should')
+const http = require('http')
+const api = require(__dirname + '/../../dadi/lib/api')
+const controller = require(__dirname + '/../../dadi/lib/controller')
+const model = require(__dirname + '/../../dadi/lib/model')
+const help = require(__dirname + '/help')
+const config = require(__dirname + '/../../config')
 
-describe('API server', function () {
-  it('should export function', function (done) {
+describe('API server', function() {
+  it('should export function', function(done) {
     api.should.be.Function
     done()
   })
 
-  it('should export constructor', function (done) {
+  it('should export constructor', function(done) {
     api.Api.should.be.Function
     done()
   })
 
-  it('should return api Object when called', function (done) {
-    var app = api()
+  it('should return api Object when called', function(done) {
+    const app = api()
+
     app.should.be.Object
     app.should.be.instanceOf(api.Api)
     done()
   })
 
-  describe('paths', function () {
-    var app = api()
+  describe('paths', function() {
+    const app = api()
 
-    it('should have instance of Controller attached as handler', function (done) {
-      app.use('/foo/bar', controller(model('apiTest', help.getModelSchema(), null, { database: 'testdb' })))
-      app.paths['/foo/bar'].handler.should.be.an.instanceOf(controller.Controller)
+    it('should have instance of Controller attached as handler', function(done) {
+      app.use(
+        '/foo/bar',
+        controller(
+          model('apiTest', help.getModelSchema(), null, {database: 'testdb'})
+        )
+      )
+      app.paths['/foo/bar'].handler.should.be.an.instanceOf(
+        controller.Controller
+      )
       done()
     })
 
-    it('should have regexp attached to test path matches', function (done) {
-      app.use('/foo/bar/:baz', controller(model('apiTest', help.getModelSchema(), null, { database: 'testdb' })))
+    it('should have regexp attached to test path matches', function(done) {
+      app.use(
+        '/foo/bar/:baz',
+        controller(
+          model('apiTest', help.getModelSchema(), null, {database: 'testdb'})
+        )
+      )
       app.paths['/foo/bar/:baz'].regex.should.be.an.instanceOf(RegExp)
       done()
     })
 
-    it('should have keys for each path attached', function (done) {
-      app.use('/foo/bar/baz/:qux', controller(model('apiTest', help.getModelSchema(), null, { database: 'testdb' })))
+    it('should have keys for each path attached', function(done) {
+      app.use(
+        '/foo/bar/baz/:qux',
+        controller(
+          model('apiTest', help.getModelSchema(), null, {database: 'testdb'})
+        )
+      )
       app.paths['/foo/bar/baz/:qux'].regex.keys.should.be.an.instanceOf(Array)
       app.paths['/foo/bar/baz/:qux'].regex.keys[0].name.should.equal('qux')
       done()
     })
   })
 
-  describe('errors', function () {
-    var app = api()
+  describe('errors', function() {
+    const app = api()
 
-    it('should be added to app', function (done) {
+    it('should be added to app', function(done) {
       app.errors.should.be.Array
       done()
     })
   })
 
-  describe('all', function () {
-    var app = api()
+  describe('all', function() {
+    const app = api()
 
-    it('should be added to app', function (done) {
+    it('should be added to app', function(done) {
       app.all.should.be.Array
       done()
     })
   })
 
-  describe('use method', function () {
-    var app = api()
+  describe('use method', function() {
+    const app = api()
 
-    it('should be a function', function (done) {
+    it('should be a function', function(done) {
       app.use.should.be.Function
       done()
     })
 
-    it('should add url to paths', function (done) {
-      app.use('/foo/bar', controller(model('apiTest', help.getModelSchema(), null, { database: 'testdb' })))
+    it('should add url to paths', function(done) {
+      app.use(
+        '/foo/bar',
+        controller(
+          model('apiTest', help.getModelSchema(), null, {database: 'testdb'})
+        )
+      )
       app.paths['/foo/bar'].should.be.Object
       done()
     })
 
-    it('should add error handlers to errors', function (done) {
-      var errHandle = function (err, req, res, next) {}
+    it('should add error handlers to errors', function(done) {
+      const errHandle = function(err, req, res, next) {}
 
       app.errors.should.be.Array
       app.use(errHandle)
@@ -89,8 +112,8 @@ describe('API server', function () {
       done()
     })
 
-    it('should add all requests handler to app', function (done) {
-      var allRequests = function (req, res, next) {}
+    it('should add all requests handler to app', function(done) {
+      const allRequests = function(req, res, next) {}
 
       app.use(allRequests)
       app.all.length.should.equal(1)
@@ -99,16 +122,21 @@ describe('API server', function () {
     })
   })
 
-  describe('unuse method', function () {
-    var app = api()
+  describe('unuse method', function() {
+    const app = api()
 
-    it('should be a function', function (done) {
+    it('should be a function', function(done) {
       app.unuse.should.be.Function
       done()
     })
 
-    it('should remove url from paths', function (done) {
-      app.use('/foo/bar', controller(model('apiTest', help.getModelSchema(), null, { database: 'testdb' })))
+    it('should remove url from paths', function(done) {
+      app.use(
+        '/foo/bar',
+        controller(
+          model('apiTest', help.getModelSchema(), null, {database: 'testdb'})
+        )
+      )
       app.paths['/foo/bar'].should.be.Object
 
       app.unuse('/foo/bar')
@@ -117,8 +145,8 @@ describe('API server', function () {
       done()
     })
 
-    it('should remove error handlers from errors', function (done) {
-      var errHandle = function (err, req, res, next) {}
+    it('should remove error handlers from errors', function(done) {
+      const errHandle = function(err, req, res, next) {}
 
       app.errors.should.be.Array
       app.use(errHandle)
@@ -131,8 +159,8 @@ describe('API server', function () {
       done()
     })
 
-    it('should remove all requests handler from app', function (done) {
-      var allRequests = function (req, res, next) {}
+    it('should remove all requests handler from app', function(done) {
+      const allRequests = function(req, res, next) {}
 
       app.use(allRequests)
       app.all.length.should.equal(1)
@@ -145,18 +173,19 @@ describe('API server', function () {
     })
   })
 
-  describe('_match', function (done) {
-    var app = api()
+  describe('_match', function(done) {
+    const app = api()
 
-    it('should be a function', function (done) {
+    it('should be a function', function(done) {
       app._match.should.be.Function
       done()
     })
 
-    it('should return controller(s) matching a request url', function (done) {
-      app.use('/foo/:bar', function (req, res, next) {})
+    it('should return controller(s) matching a request url', function(done) {
+      app.use('/foo/:bar', function(req, res, next) {})
 
-      var m = app._match('/foo/123', {})
+      const m = app._match('/foo/123', {})
+
       should.exist(m)
       m.length.should.equal(1)
 
@@ -165,9 +194,10 @@ describe('API server', function () {
       done()
     })
 
-    it('should add `req.params` object', function (done) {
-      var req = {}
-      var m = app._match('/foo/123', req)
+    it('should add `req.params` object', function(done) {
+      const req = {}
+      const m = app._match('/foo/123', req)
+
       should.exist(m)
       m.length.should.equal(1)
       should.exist(req.params)
@@ -177,36 +207,37 @@ describe('API server', function () {
     })
   })
 
-  describe('listen', function () {
-    var app = api()
+  describe('listen', function() {
+    const app = api()
 
-    it('should be a function', function (done) {
+    it('should be a function', function(done) {
       app.listen.should.be.Function
       done()
     })
   })
 
-  describe('listener', function () {
-    var app = api()
+  describe('listener', function() {
+    const app = api()
 
-    it('should be a function', function (done) {
+    it('should be a function', function(done) {
       app.listener.should.be.Function
       done()
     })
   })
 
-  describe('server', function () {
-    var app, server
-    before(function (done) {
+  describe('server', function() {
+    let app, server
+
+    before(function(done) {
       app = api()
       server = app.listen(null, done)
     })
 
-    after(function (done) {
+    after(function(done) {
       server.close(done)
     })
 
-    it('should be an instance of http.Server', function (done) {
+    it('should be an instance of http.Server', function(done) {
       server.should.be.an.instanceOf(http.Server)
       done()
     })

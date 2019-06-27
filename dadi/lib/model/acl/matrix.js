@@ -10,7 +10,7 @@ const ACCESS_TYPES = [
   'updateOwn'
 ]
 
-const Matrix = function (map) {
+const Matrix = function(map) {
   map = this._convertArrayNotationToObjectNotation(map)
 
   this.map = this._convertACLObjects(map || {}, {
@@ -27,9 +27,9 @@ const Matrix = function (map) {
  * @param  {Object} map
  * @return {Object}
  */
-Matrix.prototype._addFalsyTypes = function (map) {
+Matrix.prototype._addFalsyTypes = function(map) {
   return Object.keys(map).reduce((output, resource) => {
-    let formattedResource = {}
+    const formattedResource = {}
 
     ACCESS_TYPES.forEach(type => {
       formattedResource[type] = map[resource][type] || false
@@ -50,14 +50,11 @@ Matrix.prototype._addFalsyTypes = function (map) {
  * @param  {Boolean} options.shouldStringify
  * @return {Object}
  */
-Matrix.prototype._convertACLObjects = function (map, {
-  shouldStringify
-} = {}) {
+Matrix.prototype._convertACLObjects = function(map, {shouldStringify} = {}) {
   return Object.keys(map).reduce((output, resource) => {
-    output[resource] = this._convertACLObjectsInMatrix(
-      map[resource],
-      {shouldStringify}
-    )
+    output[resource] = this._convertACLObjectsInMatrix(map[resource], {
+      shouldStringify
+    })
 
     return output
   }, {})
@@ -72,37 +69,44 @@ Matrix.prototype._convertACLObjects = function (map, {
  * @param  {Boolean} options.shouldStringify
  * @return {Object}
  */
-Matrix.prototype._convertACLObjectsInMatrix = function (matrix, {
-  shouldStringify
-} = {}) {
-  let fromType = shouldStringify ? 'object' : 'string'
-  let transformFn = shouldStringify ? JSON.stringify : JSON.parse
+Matrix.prototype._convertACLObjectsInMatrix = function(
+  matrix,
+  {shouldStringify} = {}
+) {
+  const fromType = shouldStringify ? 'object' : 'string'
+  const transformFn = shouldStringify ? JSON.stringify : JSON.parse
 
   return Object.keys(matrix).reduce((sanitised, accessType) => {
     if (typeof matrix[accessType] === 'object') {
-      sanitised[accessType] = Object.keys(matrix[accessType]).reduce((value, key) => {
-        if (value === false) {
-          return value
-        }
-
-        if (typeof matrix[accessType][key] === fromType) {
-          try {
-            let transformedValue = transformFn(matrix[accessType][key])
-
-            value[key] = transformedValue
-          } catch (error) {
-            log.error({
-              module: 'ACL matrix'
-            }, error)
-
-            value = false
+      sanitised[accessType] = Object.keys(matrix[accessType]).reduce(
+        (value, key) => {
+          if (value === false) {
+            return value
           }
-        } else {
-          value[key] = matrix[accessType][key]
-        }
 
-        return value
-      }, {})
+          if (typeof matrix[accessType][key] === fromType) {
+            try {
+              const transformedValue = transformFn(matrix[accessType][key])
+
+              value[key] = transformedValue
+            } catch (error) {
+              log.error(
+                {
+                  module: 'ACL matrix'
+                },
+                error
+              )
+
+              value = false
+            }
+          } else {
+            value[key] = matrix[accessType][key]
+          }
+
+          return value
+        },
+        {}
+      )
     } else {
       sanitised[accessType] = matrix[accessType]
     }
@@ -118,12 +122,12 @@ Matrix.prototype._convertACLObjectsInMatrix = function (matrix, {
  * @param  {Array} input
  * @return {Object}
  */
-Matrix.prototype._convertArrayNotationToObjectNotation = function (input) {
+Matrix.prototype._convertArrayNotationToObjectNotation = function(input) {
   if (!Array.isArray(input)) {
     return input
   }
 
-  let output = input.reduce((mapObject, entry) => {
+  const output = input.reduce((mapObject, entry) => {
     mapObject[entry.r] = entry.a
 
     return mapObject
@@ -139,12 +143,12 @@ Matrix.prototype._convertArrayNotationToObjectNotation = function (input) {
  * @param  {Object} input
  * @return {Array}
  */
-Matrix.prototype._convertObjectNotationToArrayNotation = function (input) {
+Matrix.prototype._convertObjectNotationToArrayNotation = function(input) {
   if (Array.isArray(input)) {
     return input
   }
 
-  let output = Object.keys(input).map(resource => {
+  const output = Object.keys(input).map(resource => {
     return {
       r: resource,
       a: input[resource]
@@ -164,13 +168,11 @@ Matrix.prototype._convertObjectNotationToArrayNotation = function (input) {
  * @param  {Boolean} options.stringifyObjects Get stringified version of ACL objects
  * @return {Object}
  */
-Matrix.prototype.get = function (name, {
-  addFalsyTypes,
-  getArrayNotation,
-  parseObjects,
-  stringifyObjects
-} = {}) {
-  let map = this.getAll({
+Matrix.prototype.get = function(
+  name,
+  {addFalsyTypes, getArrayNotation, parseObjects, stringifyObjects} = {}
+) {
+  const map = this.getAll({
     addFalsyTypes,
     getArrayNotation,
     parseObjects,
@@ -189,7 +191,7 @@ Matrix.prototype.get = function (name, {
  * @param  {Boolean} options.stringifyObjects Get stringified version of ACL objects
  * @return {Object}
  */
-Matrix.prototype.getAll = function ({
+Matrix.prototype.getAll = function({
   addFalsyTypes,
   getArrayNotation,
   parseObjects,
@@ -223,7 +225,7 @@ Matrix.prototype.getAll = function ({
  *
  * @param  {String} name
  */
-Matrix.prototype.remove = function (name) {
+Matrix.prototype.remove = function(name) {
   delete this.map[name]
 }
 
@@ -233,17 +235,12 @@ Matrix.prototype.remove = function (name) {
  * @param {String} name
  * @param {Object} matrix
  */
-Matrix.prototype.set = function (name, matrix) {
-  let sanitisedMatrix = this._convertACLObjectsInMatrix(
-    matrix,
-    {shouldStringify: false}
-  )
+Matrix.prototype.set = function(name, matrix) {
+  const sanitisedMatrix = this._convertACLObjectsInMatrix(matrix, {
+    shouldStringify: false
+  })
 
-  this.map[name] = Object.assign(
-    {},
-    this.map[name],
-    sanitisedMatrix
-  )
+  this.map[name] = Object.assign({}, this.map[name], sanitisedMatrix)
 }
 
 /**
@@ -252,8 +249,8 @@ Matrix.prototype.set = function (name, matrix) {
  *
  * @param  {Object} matrix
  */
-Matrix.prototype.validate = function (matrix) {
-  let errors = []
+Matrix.prototype.validate = function(matrix) {
+  const errors = []
 
   if (typeof matrix === 'object') {
     Object.keys(matrix).forEach(type => {
@@ -273,17 +270,17 @@ Matrix.prototype.validate = function (matrix) {
                   `Invalid value in access matrix for key ${type}.${key} (expected object)`
                 )
               } else if (key === 'fields') {
-                let fieldsObj = matrix[type][key]
-                let fields = Object.keys(fieldsObj)
+                const fieldsObj = matrix[type][key]
+                const fields = Object.keys(fieldsObj)
 
                 // A valid fields projection is an object where all fields are
                 // 0 or 1, never combining the two.
-                let invalidProjection = fields.some((field, index) => {
+                const invalidProjection = fields.some((field, index) => {
                   if (fieldsObj[field] !== 0 && fieldsObj[field] !== 1) {
                     return true
                   }
 
-                  let nextField = fields[index + 1]
+                  const nextField = fields[index + 1]
 
                   if (
                     nextField !== undefined &&
@@ -291,6 +288,8 @@ Matrix.prototype.validate = function (matrix) {
                   ) {
                     return true
                   }
+
+                  return false
                 })
 
                 if (invalidProjection) {
@@ -300,18 +299,14 @@ Matrix.prototype.validate = function (matrix) {
                 }
               }
             } else {
-              errors.push(
-                `Invalid key in access matrix: ${type}.${key}`
-              )
+              errors.push(`Invalid key in access matrix: ${type}.${key}`)
             }
           })
 
           break
 
         default:
-          errors.push(
-            `Invalid value for ${type}. Expected Boolean or Object`
-          )
+          errors.push(`Invalid value for ${type}. Expected Boolean or Object`)
       }
     })
   } else {
@@ -319,7 +314,7 @@ Matrix.prototype.validate = function (matrix) {
   }
 
   if (errors.length > 0) {
-    let error = new Error('ACCESS_MATRIX_VALIDATION_FAILED')
+    const error = new Error('ACCESS_MATRIX_VALIDATION_FAILED')
 
     error.data = errors
 

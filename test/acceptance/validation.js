@@ -1,25 +1,29 @@
-var path = require('path')
-var should = require('should')
-var request = require('supertest')
-var config = require(__dirname + '/../../config')
-var help = require(__dirname + '/help')
-var app = require(__dirname + '/../../dadi/lib/')
+const path = require('path')
+const should = require('should')
+const request = require('supertest')
+const config = require(__dirname + '/../../config')
+const help = require(__dirname + '/help')
+const app = require(__dirname + '/../../dadi/lib/')
 
-var bearerToken // scoped for all tests
-var dirs = config.get('paths')
-var newSchemaPath = path.resolve(dirs.collections + '/vtest/testdb/collection.test-validation-schema.json')
+let bearerToken // scoped for all tests
+const dirs = config.get('paths')
+const newSchemaPath = path.resolve(
+  dirs.collections + '/vtest/testdb/collection.test-validation-schema.json'
+)
 
-var client = request(`http://${config.get('server.host')}:${config.get('server.port')}`)
+const client = request(
+  `http://${config.get('server.host')}:${config.get('server.port')}`
+)
 
-describe('Validation', function () {
-  before(function (done) {
-    app.start(function (err) {
+describe('Validation', function() {
+  before(function(done) {
+    app.start(function(err) {
       if (err) return done(err)
 
-      help.dropDatabase('testdb', function (err) {
+      help.dropDatabase('testdb', function(err) {
         if (err) return done(err)
 
-        help.getBearerToken(function (err, token) {
+        help.getBearerToken(function(err, token) {
           if (err) return done(err)
 
           bearerToken = token
@@ -30,15 +34,15 @@ describe('Validation', function () {
     })
   })
 
-  after(function (done) {
-    help.removeTestClients(function () {
+  after(function(done) {
+    help.removeTestClients(function() {
       app.stop(done)
     })
   })
 
-  describe('Field types', function () {
-    describe('String', function () {
-      it('should not allow setting non-string', function (done) {
+  describe('Field types', function() {
+    describe('String', function() {
+      it('should not allow setting non-string', function(done) {
         client
           .post('/vtest/testdb/test-validation-schema')
           .set('Authorization', 'Bearer ' + bearerToken)
@@ -46,7 +50,7 @@ describe('Validation', function () {
           .expect(400, done)
       })
 
-      it('should allow setting string', function (done) {
+      it('should allow setting string', function(done) {
         client
           .post('/vtest/testdb/test-validation-schema')
           .set('Authorization', 'Bearer ' + bearerToken)
@@ -55,7 +59,7 @@ describe('Validation', function () {
       })
 
       describe('`minLength` operator', () => {
-        it('should allow field lengths greater than or equal to `minLength`', function (done) {
+        it('should allow field lengths greater than or equal to `minLength`', function(done) {
           client
             .post('/vtest/testdb/test-validation-schema')
             .set('Authorization', 'Bearer ' + bearerToken)
@@ -63,7 +67,7 @@ describe('Validation', function () {
             .expect(200, done)
         })
 
-        it('should not allow field lengths less than `minLength`', function (done) {
+        it('should not allow field lengths less than `minLength`', function(done) {
           client
             .post('/vtest/testdb/test-validation-schema')
             .set('Authorization', 'Bearer ' + bearerToken)
@@ -71,14 +75,14 @@ describe('Validation', function () {
             .expect(400, done)
         })
 
-        it('should contain JSON body in failure message', function (done) {
+        it('should contain JSON body in failure message', function(done) {
           client
             .post('/vtest/testdb/test-validation-schema')
             .set('Authorization', 'Bearer ' + bearerToken)
             .send({fieldMinLength: '123'})
             .expect(400)
             .expect('content-type', 'application/json')
-            .end(function (err, res) {
+            .end(function(err, res) {
               if (err) return done(err)
 
               res.body.should.be.json
@@ -93,7 +97,7 @@ describe('Validation', function () {
       })
 
       describe('`maxLength` operator', () => {
-        it('should allow field lengths less than or equal to `maxLength`', function (done) {
+        it('should allow field lengths less than or equal to `maxLength`', function(done) {
           client
             .post('/vtest/testdb/test-validation-schema')
             .set('Authorization', 'Bearer ' + bearerToken)
@@ -101,7 +105,7 @@ describe('Validation', function () {
             .expect(200, done)
         })
 
-        it('should not allow field lengths greater than `maxLength`', function (done) {
+        it('should not allow field lengths greater than `maxLength`', function(done) {
           client
             .post('/vtest/testdb/test-validation-schema')
             .set('Authorization', 'Bearer ' + bearerToken)
@@ -109,14 +113,14 @@ describe('Validation', function () {
             .expect(400, done)
         })
 
-        it('should contain JSON body in failure message', function (done) {
+        it('should contain JSON body in failure message', function(done) {
           client
             .post('/vtest/testdb/test-validation-schema')
             .set('Authorization', 'Bearer ' + bearerToken)
             .send({fieldMaxLength: '12345678'})
             .expect(400)
             .expect('content-type', 'application/json')
-            .end(function (err, res) {
+            .end(function(err, res) {
               if (err) return done(err)
 
               res.body.should.be.json
@@ -131,7 +135,7 @@ describe('Validation', function () {
       })
 
       describe('`regex` operator', () => {
-        it('should allow fields that pass regex', function (done) {
+        it('should allow fields that pass regex', function(done) {
           client
             .post('/vtest/testdb/test-validation-schema')
             .set('Authorization', 'Bearer ' + bearerToken)
@@ -139,7 +143,7 @@ describe('Validation', function () {
             .expect(200, done)
         })
 
-        it('should not allow fields that don\'t pass regex', function (done) {
+        it("should not allow fields that don't pass regex", function(done) {
           client
             .post('/vtest/testdb/test-validation-schema')
             .set('Authorization', 'Bearer ' + bearerToken)
@@ -147,14 +151,14 @@ describe('Validation', function () {
             .expect(400, done)
         })
 
-        it('should contain JSON body in failure message', function (done) {
+        it('should contain JSON body in failure message', function(done) {
           client
             .post('/vtest/testdb/test-validation-schema')
             .set('Authorization', 'Bearer ' + bearerToken)
             .send({fieldRegex: 'qqpqq'})
             .expect(400)
             .expect('content-type', 'application/json')
-            .end(function (err, res) {
+            .end(function(err, res) {
               if (err) return done(err)
 
               res.body.should.be.json
@@ -169,9 +173,9 @@ describe('Validation', function () {
       })
     })
 
-    describe('DateTime', function () {
-      describe('POST', function () {
-        it('should not allow setting invalid DateTime', function (done) {
+    describe('DateTime', function() {
+      describe('POST', function() {
+        it('should not allow setting invalid DateTime', function(done) {
           client
             .post('/vtest/testdb/test-validation-schema')
             .set('Authorization', 'Bearer ' + bearerToken)
@@ -180,15 +184,15 @@ describe('Validation', function () {
             .end(done)
         })
 
-        it('should allow setting DateTime', function (done) {
-          var date = new Date()
+        it('should allow setting DateTime', function(done) {
+          const date = new Date()
 
           client
             .post('/vtest/testdb/test-validation-schema')
             .set('Authorization', 'Bearer ' + bearerToken)
             .send({fieldDateTime: date})
             .expect(200)
-            .end(function (err, res) {
+            .end(function(err, res) {
               new Date(res.body.results[0].fieldDateTime).should.eql(date)
 
               done(err)
@@ -196,7 +200,7 @@ describe('Validation', function () {
         })
 
         describe('`before` operator', () => {
-          it('should not allow setting DateTime that fails validation', function (done) {
+          it('should not allow setting DateTime that fails validation', function(done) {
             client
               .post('/vtest/testdb/test-validation-schema')
               .set('Authorization', 'Bearer ' + bearerToken)
@@ -205,7 +209,7 @@ describe('Validation', function () {
               .end(done)
           })
 
-          it('should allow setting DateTime that passes validation', function (done) {
+          it('should allow setting DateTime that passes validation', function(done) {
             client
               .post('/vtest/testdb/test-validation-schema')
               .set('Authorization', 'Bearer ' + bearerToken)
@@ -216,8 +220,8 @@ describe('Validation', function () {
         })
 
         describe('`after` operator', () => {
-          it('should not allow setting DateTime that fails validation', function (done) {
-            let now = new Date()
+          it('should not allow setting DateTime that fails validation', function(done) {
+            const now = new Date()
 
             now.setMonth(now.getMonth() - 1)
 
@@ -229,8 +233,8 @@ describe('Validation', function () {
               .end(done)
           })
 
-          it('should allow setting DateTime that passes validation', function (done) {
-            let now = new Date()
+          it('should allow setting DateTime that passes validation', function(done) {
+            const now = new Date()
 
             now.setMonth(now.getMonth() + 1)
 
@@ -246,18 +250,18 @@ describe('Validation', function () {
         })
       })
 
-      describe('PUT', function () {
-        it('should not allow setting invalid DateTime', function (done) {
-          var date = new Date()
+      describe('PUT', function() {
+        it('should not allow setting invalid DateTime', function(done) {
+          const date = new Date()
 
           client
             .post('/vtest/testdb/test-validation-schema')
             .set('Authorization', 'Bearer ' + bearerToken)
             .send({fieldDateTime: date})
             .expect(200)
-            .end(function (err, res) {
-              var doc = res.body.results[0]
-              var id = doc._id
+            .end(function(err, res) {
+              const doc = res.body.results[0]
+              const id = doc._id
 
               doc.fieldDateTime = 'abcdef'
               delete doc.createdAt
@@ -265,31 +269,32 @@ describe('Validation', function () {
               delete doc._id
 
               client
-              .put('/vtest/testdb/test-validation-schema/' + id)
-              .set('Authorization', 'Bearer ' + bearerToken)
-              .send(doc)
-              .expect(400)
-              .end(function (err, res) {
-                res.body.success.should.eql(false)
+                .put('/vtest/testdb/test-validation-schema/' + id)
+                .set('Authorization', 'Bearer ' + bearerToken)
+                .send(doc)
+                .expect(400)
+                .end(function(err, res) {
+                  res.body.success.should.eql(false)
 
-                done(err)
-              })
+                  done(err)
+                })
             })
         })
 
-        it('should allow setting DateTime', function (done) {
-          var date = new Date()
+        it('should allow setting DateTime', function(done) {
+          const date = new Date()
 
           client
             .post('/vtest/testdb/test-validation-schema')
             .set('Authorization', 'Bearer ' + bearerToken)
             .send({fieldDateTime: date})
             .expect(200)
-            .end(function (err, res) {
-              var doc = res.body.results[0]
-              var id = doc._id
+            .end(function(err, res) {
+              const doc = res.body.results[0]
+              const id = doc._id
 
-              var date2 = new Date()
+              const date2 = new Date()
+
               doc.fieldDateTime = date2
               delete doc._createdAt
               delete doc._createdBy
@@ -297,22 +302,22 @@ describe('Validation', function () {
               delete doc._version
 
               client
-              .put('/vtest/testdb/test-validation-schema/' + id)
-              .set('Authorization', 'Bearer ' + bearerToken)
-              .send(doc)
-              .expect(200)
-              .end(function (err, res) {
-                new Date(res.body.results[0].fieldDateTime).should.eql(date2)
+                .put('/vtest/testdb/test-validation-schema/' + id)
+                .set('Authorization', 'Bearer ' + bearerToken)
+                .send(doc)
+                .expect(200)
+                .end(function(err, res) {
+                  new Date(res.body.results[0].fieldDateTime).should.eql(date2)
 
-                done(err)
-              })
+                  done(err)
+                })
             })
         })
       })
     })
 
-    describe('Number', function () {
-      it('should not allow setting non-number', function (done) {
+    describe('Number', function() {
+      it('should not allow setting non-number', function(done) {
         client
           .post('/vtest/testdb/test-validation-schema')
           .set('Authorization', 'Bearer ' + bearerToken)
@@ -320,7 +325,7 @@ describe('Validation', function () {
           .expect(400, done)
       })
 
-      it('should allow setting number', function (done) {
+      it('should allow setting number', function(done) {
         client
           .post('/vtest/testdb/test-validation-schema')
           .set('Authorization', 'Bearer ' + bearerToken)
@@ -329,7 +334,7 @@ describe('Validation', function () {
       })
 
       describe('`equalTo` operator', () => {
-        it('should not allow setting number that fails validation', function (done) {
+        it('should not allow setting number that fails validation', function(done) {
           client
             .post('/vtest/testdb/test-validation-schema')
             .set('Authorization', 'Bearer ' + bearerToken)
@@ -338,7 +343,7 @@ describe('Validation', function () {
             .end(done)
         })
 
-        it('should allow setting number that passes validation', function (done) {
+        it('should allow setting number that passes validation', function(done) {
           client
             .post('/vtest/testdb/test-validation-schema')
             .set('Authorization', 'Bearer ' + bearerToken)
@@ -349,7 +354,7 @@ describe('Validation', function () {
       })
 
       describe('`even` operator', () => {
-        it('should not allow setting number that fails validation', function (done) {
+        it('should not allow setting number that fails validation', function(done) {
           client
             .post('/vtest/testdb/test-validation-schema')
             .set('Authorization', 'Bearer ' + bearerToken)
@@ -367,7 +372,7 @@ describe('Validation', function () {
             })
         })
 
-        it('should allow setting number that passes validation', function (done) {
+        it('should allow setting number that passes validation', function(done) {
           client
             .post('/vtest/testdb/test-validation-schema')
             .set('Authorization', 'Bearer ' + bearerToken)
@@ -387,7 +392,7 @@ describe('Validation', function () {
       })
 
       describe('`greaterThan` operator', () => {
-        it('should not allow setting number that fails validation', function (done) {
+        it('should not allow setting number that fails validation', function(done) {
           client
             .post('/vtest/testdb/test-validation-schema')
             .set('Authorization', 'Bearer ' + bearerToken)
@@ -396,7 +401,7 @@ describe('Validation', function () {
             .end(done)
         })
 
-        it('should allow setting number that passes validation', function (done) {
+        it('should allow setting number that passes validation', function(done) {
           client
             .post('/vtest/testdb/test-validation-schema')
             .set('Authorization', 'Bearer ' + bearerToken)
@@ -407,7 +412,7 @@ describe('Validation', function () {
       })
 
       describe('`greaterThanOrEqualTo` operator', () => {
-        it('should not allow setting number that fails validation', function (done) {
+        it('should not allow setting number that fails validation', function(done) {
           client
             .post('/vtest/testdb/test-validation-schema')
             .set('Authorization', 'Bearer ' + bearerToken)
@@ -416,7 +421,7 @@ describe('Validation', function () {
             .end(done)
         })
 
-        it('should allow setting number that passes validation', function (done) {
+        it('should allow setting number that passes validation', function(done) {
           client
             .post('/vtest/testdb/test-validation-schema')
             .set('Authorization', 'Bearer ' + bearerToken)
@@ -427,7 +432,7 @@ describe('Validation', function () {
       })
 
       describe('`integer` operator', () => {
-        it('should not allow setting number that fails validation', function (done) {
+        it('should not allow setting number that fails validation', function(done) {
           client
             .post('/vtest/testdb/test-validation-schema')
             .set('Authorization', 'Bearer ' + bearerToken)
@@ -445,7 +450,7 @@ describe('Validation', function () {
             })
         })
 
-        it('should allow setting number that passes validation', function (done) {
+        it('should allow setting number that passes validation', function(done) {
           client
             .post('/vtest/testdb/test-validation-schema')
             .set('Authorization', 'Bearer ' + bearerToken)
@@ -465,7 +470,7 @@ describe('Validation', function () {
       })
 
       describe('`lessThan` operator', () => {
-        it('should not allow setting number that fails validation', function (done) {
+        it('should not allow setting number that fails validation', function(done) {
           client
             .post('/vtest/testdb/test-validation-schema')
             .set('Authorization', 'Bearer ' + bearerToken)
@@ -474,7 +479,7 @@ describe('Validation', function () {
             .end(done)
         })
 
-        it('should allow setting number that passes validation', function (done) {
+        it('should allow setting number that passes validation', function(done) {
           client
             .post('/vtest/testdb/test-validation-schema')
             .set('Authorization', 'Bearer ' + bearerToken)
@@ -485,7 +490,7 @@ describe('Validation', function () {
       })
 
       describe('`lessThanOrEqualTo` operator', () => {
-        it('should not allow setting number that fails validation', function (done) {
+        it('should not allow setting number that fails validation', function(done) {
           client
             .post('/vtest/testdb/test-validation-schema')
             .set('Authorization', 'Bearer ' + bearerToken)
@@ -494,7 +499,7 @@ describe('Validation', function () {
             .end(done)
         })
 
-        it('should allow setting number that passes validation', function (done) {
+        it('should allow setting number that passes validation', function(done) {
           client
             .post('/vtest/testdb/test-validation-schema')
             .set('Authorization', 'Bearer ' + bearerToken)
@@ -505,8 +510,8 @@ describe('Validation', function () {
       })
     })
 
-    describe('Boolean', function () {
-      it('should not allow setting non-boolean', function (done) {
+    describe('Boolean', function() {
+      it('should not allow setting non-boolean', function(done) {
         client
           .post('/vtest/testdb/test-validation-schema')
           .set('Authorization', 'Bearer ' + bearerToken)
@@ -514,7 +519,7 @@ describe('Validation', function () {
           .expect(400, done)
       })
 
-      it('should allow setting boolean', function (done) {
+      it('should allow setting boolean', function(done) {
         client
           .post('/vtest/testdb/test-validation-schema')
           .set('Authorization', 'Bearer ' + bearerToken)
@@ -522,7 +527,7 @@ describe('Validation', function () {
           .expect(200, done)
       })
 
-      it('should allow setting a required boolean to `false`', function (done) {
+      it('should allow setting a required boolean to `false`', function(done) {
         client
           .post('/vtest/testdb/test-validation-schema-required-boolean')
           .set('Authorization', 'Bearer ' + bearerToken)
@@ -531,14 +536,14 @@ describe('Validation', function () {
           .end(done)
       })
 
-      it('should contain JSON body in failure message', function (done) {
+      it('should contain JSON body in failure message', function(done) {
         client
           .post('/vtest/testdb/test-validation-schema')
           .set('Authorization', 'Bearer ' + bearerToken)
           .send({fieldBool: 'true'})
           .expect(400)
           .expect('content-type', 'application/json')
-          .end(function (err, res) {
+          .end(function(err, res) {
             if (err) return done(err)
 
             res.body.should.be.json
@@ -552,14 +557,14 @@ describe('Validation', function () {
       })
     })
 
-    describe('Mixed', function () {
-      it('should allow any type', function (done) {
+    describe('Mixed', function() {
+      it('should allow any type', function(done) {
         client
           .post('/vtest/testdb/test-validation-schema')
           .set('Authorization', 'Bearer ' + bearerToken)
           .send({fieldMixed: true})
           .expect(200)
-          .end(function (err, res) {
+          .end(function(err, res) {
             if (err) return done(err)
 
             client
@@ -567,7 +572,7 @@ describe('Validation', function () {
               .set('Authorization', 'Bearer ' + bearerToken)
               .send({fieldMixed: 'stringy'})
               .expect(200)
-              .end(function (err) {
+              .end(function(err) {
                 if (err) return done(err)
 
                 client
@@ -575,21 +580,21 @@ describe('Validation', function () {
                   .set('Authorization', 'Bearer ' + bearerToken)
                   .send({fieldMixed: 1337})
                   .expect(200)
-                  .end(function (err) {
+                  .end(function(err) {
                     if (err) return done(err)
 
                     client
                       .post('/vtest/testdb/test-validation-schema')
                       .set('Authorization', 'Bearer ' + bearerToken)
-                      .send({fieldMixed: { foo: new Date() }})  // foo must be included in the schema document to be validated
+                      .send({fieldMixed: {foo: new Date()}}) // foo must be included in the schema document to be validated
                       .expect(200)
-                      .end(function (err, res) {
+                      .end(function(err, res) {
                         if (err) return done(err)
 
                         client
                           .post('/vtest/testdb/test-validation-schema')
                           .set('Authorization', 'Bearer ' + bearerToken)
-                          .send({fieldMixed: { 'foo': 'bar', 'baz': 'qux' }})
+                          .send({fieldMixed: {foo: 'bar', baz: 'qux'}})
                           .expect(200)
                           .end(done)
                       })
@@ -600,15 +605,15 @@ describe('Validation', function () {
     })
   })
 
-  describe('Default value', function () {
-    it('should be added to the request object if not supplied', function (done) {
+  describe('Default value', function() {
+    it('should be added to the request object if not supplied', function(done) {
       client
         .post('/vtest/testdb/test-validation-schema')
         .set('Authorization', 'Bearer ' + bearerToken)
         .send({fieldString: 'stringy'})
         .expect(200)
         .expect('content-type', 'application/json')
-        .end(function (err, res) {
+        .end(function(err, res) {
           if (err) return done(err)
 
           res.body.should.be.json
@@ -620,14 +625,14 @@ describe('Validation', function () {
         })
     })
 
-    it('should not be added to the request object if it is already supplied', function (done) {
+    it('should not be added to the request object if it is already supplied', function(done) {
       client
         .post('/vtest/testdb/test-validation-schema')
         .set('Authorization', 'Bearer ' + bearerToken)
         .send({fieldString: 'string', fieldDefault: 'bean'})
         .expect(200)
         .expect('content-type', 'application/json')
-        .end(function (err, res) {
+        .end(function(err, res) {
           if (err) return done(err)
 
           res.body.should.be.json
@@ -639,14 +644,14 @@ describe('Validation', function () {
         })
     })
 
-    it('should not be added to the request object if it is Boolean and already supplied', function (done) {
+    it('should not be added to the request object if it is Boolean and already supplied', function(done) {
       client
         .post('/vtest/testdb/test-validation-schema')
         .set('Authorization', 'Bearer ' + bearerToken)
         .send({fieldString: 'string', fieldDefaultBoolean: false})
         .expect(200)
         .expect('content-type', 'application/json')
-        .end(function (err, res) {
+        .end(function(err, res) {
           if (err) return done(err)
 
           res.body.should.be.json
@@ -658,14 +663,14 @@ describe('Validation', function () {
         })
     })
 
-    it('should be added to the request object if it is Boolean false', function (done) {
+    it('should be added to the request object if it is Boolean false', function(done) {
       client
         .post('/vtest/testdb/test-validation-schema')
         .set('Authorization', 'Bearer ' + bearerToken)
         .send({fieldString: 'string'})
         .expect(200)
         .expect('content-type', 'application/json')
-        .end(function (err, res) {
+        .end(function(err, res) {
           if (err) return done(err)
 
           res.body.should.be.json

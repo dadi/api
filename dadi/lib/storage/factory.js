@@ -1,12 +1,12 @@
-var path = require('path')
-var S3Storage = require(path.join(__dirname, '/s3'))
-var DiskStorage = require(path.join(__dirname, '/disk'))
+const path = require('path')
+const S3Storage = require(path.join(__dirname, '/s3'))
+const DiskStorage = require(path.join(__dirname, '/disk'))
 
-var config = require(path.join(__dirname, '/../../../config'))
+const config = require(path.join(__dirname, '/../../../config'))
 
 module.exports = {
-  create: function create (fileName) {
-    var storageAdapter = config.get('media.storage')
+  create: function create(fileName) {
+    const storageAdapter = config.get('media.storage')
 
     switch (storageAdapter) {
       case 'disk':

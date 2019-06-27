@@ -3,7 +3,7 @@ const config = require('../../config')
 const configBackup = config.get()
 const sinon = require('sinon')
 
-describe('Work queue', function () {
+describe('Work queue', function() {
   this.timeout(20000)
 
   afterEach(() => {
@@ -14,7 +14,7 @@ describe('Work queue', function () {
   it('should start foreground jobs and wait for `workQueue.debounceTime` of idle time before starting a background job', done => {
     config.set('workQueue.debounceTime', 50)
     config.set('workQueue.pollingTime', 2)
-    
+
     const stub = sinon.stub()
     const workQueue = new WorkQueue()
     const foregroundJob1 = workQueue.startForegroundJob()
@@ -134,5 +134,5 @@ describe('Work queue', function () {
         workQueue.finishForegroundJob(foregroundJob3)
       }, 1)
     }, 1300)
-  })  
+  })
 })

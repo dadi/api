@@ -8,7 +8,7 @@ const url = require('url')
 const log = require('@dadi/logger')
 const config = require(path.join(__dirname, '/../../../config'))
 
-const Api = function () {
+const Api = function() {
   this.paths = {}
   this.all = []
   this.errors = []
@@ -30,15 +30,18 @@ const Api = function () {
       this.redirectInstance = http.createServer(this.redirectListener)
     }
 
-    let readFileSyncSafe = (path) => {
-      try { return fs.readFileSync(path) } catch (ex) {}
-      return null
+    const readFileSyncSafe = path => {
+      try {
+        return fs.readFileSync(path)
+      } catch (_) {
+        return null
+      }
     }
 
-    let passphrase = config.get('server.sslPassphrase')
-    let caPath = config.get('server.sslIntermediateCertificatePath')
-    let caPaths = config.get('server.sslIntermediateCertificatePaths')
-    let serverOptions = {
+    const passphrase = config.get('server.sslPassphrase')
+    const caPath = config.get('server.sslIntermediateCertificatePath')
+    const caPaths = config.get('server.sslIntermediateCertificatePaths')
+    const serverOptions = {
       key: readFileSyncSafe(config.get('server.sslPrivateKeyPath')),
       cert: readFileSyncSafe(config.get('server.sslCertificatePath'))
     }
@@ -49,8 +52,9 @@ const Api = function () {
 
     if (caPaths && caPaths.length > 0) {
       serverOptions.ca = []
-      caPaths.forEach((path) => {
-        let data = readFileSyncSafe(path)
+      caPaths.forEach(path => {
+        const data = readFileSyncSafe(path)
+
         data && serverOptions.ca.push(data)
       })
     } else if (caPath && caPath.length > 0) {
@@ -62,7 +66,8 @@ const Api = function () {
     try {
       this.httpsInstance = https.createServer(serverOptions, this.listener)
     } catch (ex) {
-      let exPrefix = 'error starting https server: '
+      const exPrefix = 'error starting https server: '
+
       switch (ex.message) {
         case 'error:06065064:digital envelope routines:EVP_DecryptFinal_ex:bad decrypt':
           throw new Error(exPrefix + 'incorrect ssl passphrase')
@@ -82,18 +87,19 @@ const Api = function () {
  *  @return undefined
  *  @api public
  */
-Api.prototype.use = function (path, handler) {
+Api.prototype.use = function(path, handler) {
   if (typeof path === 'function') {
     if (path.length === 4) return this.errors.push(path)
+
     return this.all.push(path)
   }
 
-  let regex = pathToRegexp(path)
+  const regex = pathToRegexp(path)
 
   this.paths[path] = {
-    handler: handler,
+    handler,
     order: routePriority(path, regex.keys),
-    regex: regex
+    regex
   }
 }
 
@@ -106,9 +112,9 @@ Api.prototype.use = function (path, handler) {
  *  @return undefined
  *  @api public
  */
-Api.prototype.routeMethods = function (path, handlers) {
-  return this.use(path, function (req, res, next) {
-    let method = req.method && req.method.toLowerCase()
+Api.prototype.routeMethods = function(path, handlers) {
+  return this.use(path, function(req, res, next) {
+    const method = req.method && req.method.toLowerCase()
 
     if (typeof handlers[method] === 'function') {
       return handlers[method](req, res, next)
@@ -124,16 +130,21 @@ Api.prototype.routeMethods = function (path, handlers) {
  *  @return undefined
  *  @api public
  */
-Api.prototype.unuse = function (path) {
+Api.prototype.unuse = function(path) {
   let indx
+
   if (typeof path === 'function') {
     if (path.length === 4) {
       indx = this.errors.indexOf(path)
-      return !!~indx && this.errors.splice(indx, 1)
+
+      return Boolean(~indx) && this.errors.splice(indx, 1)
     }
+
     indx = this.all.indexOf(path)
-    return !!~indx && this.all.splice(indx, 1)
+
+    return Boolean(~indx) && this.all.splice(indx, 1)
   }
+
   delete this.paths[path]
 }
 
@@ -146,10 +157,10 @@ Api.prototype.unuse = function (path) {
  *  @return http.Server
  *  @api public
  */
-Api.prototype.listen = function (backlog, done) {
-  let port = config.get('server.port')
-  let host = config.get('server.host')
-  let redirectPort = config.get('server.redirectPort')
+Api.prototype.listen = function(backlog, done) {
+  const port = config.get('server.port')
+  const host = config.get('server.host')
+  const redirectPort = config.get('server.redirectPort')
 
   // If http only, return the http instance
   if (this.httpInstance) {
@@ -173,7 +184,7 @@ Api.prototype.listen = function (backlog, done) {
  * @param  {Function} [done]
  * @return void
  */
-Api.prototype.close = function (done) {
+Api.prototype.close = function(done) {
   try {
     if (this.redirectInstance) {
       this.redirectInstance.close()
@@ -197,24 +208,24 @@ Api.prototype.close = function (done) {
  *  @return undefined
  *  @api public
  */
-Api.prototype.listener = function (req, res) {
+Api.prototype.listener = function(req, res) {
   // clone the middleware stack
   let stack = this.all.slice(0)
-  let path = url.parse(req.url).pathname
+  const path = url.parse(req.url).pathname
 
   // get matching routes, and add req.params
-  let matches = this._match(path, req)
+  const matches = this._match(path, req)
 
-  let doStack = function (i) {
-    return function (err) {
+  const doStack = function(i) {
+    return function(err) {
       if (err) return errStack(0)(err)
       stack[i](req, res, doStack(++i))
     }
   }
 
-  let self = this
-  let errStack = function (i) {
-    return function (err) {
+  const self = this
+  const errStack = function(i) {
+    return function(err) {
       self.errors[i](err, req, res, errStack(++i))
     }
   }
@@ -236,10 +247,10 @@ Api.prototype.listener = function (req, res) {
  *  @return undefined
  *  @api public
  */
-Api.prototype.redirectListener = function (req, res) {
-  let port = config.get('server.port')
-  let hostname = req.headers.host.split(':')[0]
-  let location = 'https://' + hostname + ':' + port + req.url
+Api.prototype.redirectListener = function(req, res) {
+  const port = config.get('server.port')
+  const hostname = req.headers.host.split(':')[0]
+  const location = 'https://' + hostname + ':' + port + req.url
 
   res.setHeader('Location', location)
   res.statusCode = 301
@@ -253,23 +264,25 @@ Api.prototype.redirectListener = function (req, res) {
  *  @return Array
  *  @api private
  */
-Api.prototype._match = function (path, req) {
-  let paths = this.paths
-  let handlers = []
+Api.prototype._match = function(path, req) {
+  const paths = this.paths
+  const handlers = []
 
   // always add params object to avoid need for checking later
   req.params = {}
 
-  Object.keys(paths).forEach((key) => {
-    let match = paths[key].regex.exec(path)
+  Object.keys(paths).forEach(key => {
+    const match = paths[key].regex.exec(path)
+
     if (!match) return
 
-    let keys = paths[key].regex.keys
+    const keys = paths[key].regex.keys
 
     handlers.push(paths[key].handler)
 
     match.forEach((k, i) => {
-      let keyOpts = keys[i] || {}
+      const keyOpts = keys[i] || {}
+
       if (match[i + 1] && keyOpts.name) req.params[keyOpts.name] = match[i + 1]
     })
   })
@@ -277,15 +290,15 @@ Api.prototype._match = function (path, req) {
   return handlers
 }
 
-module.exports = function () {
+module.exports = function() {
   return new Api()
 }
 
 module.exports.Api = Api
 
 // Default error handler, in case application doesn't define error handling
-function defaultError (api) {
-  return function (err, req, res) {
+function defaultError(api) {
+  return function(err, req, res) {
     let resBody
 
     log.error({module: 'api'}, err)
@@ -299,33 +312,33 @@ function defaultError (api) {
     res.statusCode = err.statusCode || 500
     res.setHeader('content-type', 'application/json')
     res.setHeader('content-length', Buffer.byteLength(resBody))
+
     return res.end(resBody)
   }
 }
 
 // return a 404
-function notFound (req, res) {
-  return function () {
+function notFound(req, res) {
+  return function() {
     res.statusCode = 404
     res.end()
   }
 }
 
-function routePriority (path, keys) {
-  let tokens = pathToRegexp.parse(path)
+function routePriority(path, keys) {
+  const tokens = pathToRegexp.parse(path)
 
   let staticRouteLength = 0
+
   if (typeof tokens[0] === 'string') {
     staticRouteLength = tokens[0].split('/').filter(Boolean).length
   }
 
-  let requiredParamLength = keys.filter(key => !key.optional).length
-  let optionalParamLength = keys.filter(key => key.optional).length
+  const requiredParamLength = keys.filter(key => !key.optional).length
+  const optionalParamLength = keys.filter(key => key.optional).length
 
   let order =
-    staticRouteLength * 5 +
-    requiredParamLength * 2 +
-    optionalParamLength
+    staticRouteLength * 5 + requiredParamLength * 2 + optionalParamLength
 
   // make internal routes less important...
   if (path.indexOf('/api/') > 0) order = -100

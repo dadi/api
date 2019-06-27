@@ -3,7 +3,7 @@ const vary = require('vary')
 
 const config = require(path.join(__dirname, '/../../../config.js'))
 
-module.exports = function cors (server) {
+module.exports = function cors(server) {
   server.app.use((req, res, next) => {
     if (config.get('cors') !== true) {
       return next()
@@ -24,11 +24,17 @@ module.exports = function cors (server) {
       }
 
       // Permit all HTTP methods.
-      res.setHeader('Access-Control-Allow-Methods', 'GET,HEAD,PUT,PATCH,POST,DELETE')
+      res.setHeader(
+        'Access-Control-Allow-Methods',
+        'GET,HEAD,PUT,PATCH,POST,DELETE'
+      )
 
       // Reflect any requested headers.
       if (req.headers['access-control-request-headers']) {
-        res.setHeader('Access-Control-Allow-Headers', req.headers['access-control-request-headers'])
+        res.setHeader(
+          'Access-Control-Allow-Headers',
+          req.headers['access-control-request-headers']
+        )
         vary(res, 'Access-Control-Request-Headers')
       }
 

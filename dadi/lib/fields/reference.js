@@ -1,7 +1,5 @@
 const path = require('path')
-const mediaModel = require(
-  path.join(__dirname, '/../model/media')
-)
+const mediaModel = require(path.join(__dirname, '/../model/media'))
 
 module.exports.type = 'reference'
 
@@ -13,16 +11,14 @@ module.exports.type = 'reference'
  * @param  {Array<String>} fields - array of node fields
  * @return {Array<Model>}
  */
-function createModelChain (rootModel, fields) {
+function createModelChain(rootModel, fields) {
   return fields.reduce((chain, field, index) => {
     if (chain.length === 0) {
       return chain.concat(rootModel)
     }
 
-    let nodeModel = chain[chain.length - 1]
-    let referenceField = nodeModel.getField(
-      fields[index - 1].split('@')[0]
-    )
+    const nodeModel = chain[chain.length - 1]
+    const referenceField = nodeModel.getField(fields[index - 1].split('@')[0])
 
     // Validating the node and flagging an error if invalid.
     if (
@@ -33,7 +29,8 @@ function createModelChain (rootModel, fields) {
       return chain.concat(null)
     }
 
-    let referenceCollection = field.split('@')[1] ||
+    const referenceCollection =
+      field.split('@')[1] ||
       (referenceField.settings && referenceField.settings.collection)
 
     // If there isn't a `settings.collection` property, we're
@@ -42,15 +39,13 @@ function createModelChain (rootModel, fields) {
       return chain.concat(nodeModel)
     }
 
-    let referenceModel = rootModel.getForeignModel(
-      referenceCollection
-    )
+    const referenceModel = rootModel.getForeignModel(referenceCollection)
 
     return chain.concat(referenceModel)
   }, [])
 }
 
-module.exports.beforeOutput = function ({
+module.exports.beforeOutput = function({
   client,
   composeOverride,
   document,
@@ -61,7 +56,7 @@ module.exports.beforeOutput = function ({
   level = 1,
   urlFields = {}
 }) {
-  let shouldCompose = this.shouldCompose({
+  const shouldCompose = this.shouldCompose({
     composeOverride,
     level
   })
@@ -73,22 +68,20 @@ module.exports.beforeOutput = function ({
     return input
   }
 
-  let isArray = Array.isArray(input[field])
+  const isArray = Array.isArray(input[field])
 
   // We don't want to do anything if the value is an empty array.
   if (isArray && input[field].length === 0) {
     return input
   }
 
-  let newDotNotationPath = dotNotationPath.concat(field)
-  let schema = this.getField(field)
-  let isStrictCompose = schema.settings &&
-    Boolean(schema.settings.strictCompose)
-  let values = Array.isArray(input[field])
-    ? input[field]
-    : [input[field]]
+  const newDotNotationPath = dotNotationPath.concat(field)
+  const schema = this.getField(field)
+  const isStrictCompose =
+    schema.settings && Boolean(schema.settings.strictCompose)
+  const values = Array.isArray(input[field]) ? input[field] : [input[field]]
   let ids = values
-  let idMappingField = this._getIdMappingName(field)
+  const idMappingField = this._getIdMappingName(field)
 
   // If strict compose is not enabled, we want to resolve duplicates.
   if (!isStrictCompose) {
@@ -99,9 +92,10 @@ module.exports.beforeOutput = function ({
 
   // This generates an object mapping document IDs to collections, so
   // that we can batch requests instead of making one per ID.
-  let referenceCollections = ids.reduce((collections, id) => {
-    let idMapping = document[idMappingField] || {}
-    let referenceCollection = idMapping[id] ||
+  const referenceCollections = ids.reduce((collections, id) => {
+    const idMapping = document[idMappingField] || {}
+    const referenceCollection =
+      idMapping[id] ||
       (schema.settings && schema.settings.collection) ||
       this.name
 
@@ -111,8 +105,8 @@ module.exports.beforeOutput = function ({
     return collections
   }, {})
 
-  let documents = {}
-  let queryOptions = {}
+  const documents = {}
+  const queryOptions = {}
 
   // Looking at the `settings.fields` array to determine which fields
   // will be requested from the composed document.
@@ -124,20 +118,23 @@ module.exports.beforeOutput = function ({
     // ... into something like:
     //
     // {"name": 1, "address": 1, "age": 1}
-    queryOptions.fields = schema.settings.fields.reduce((fieldsObject, field) => {
-      fieldsObject[field] = 1
+    queryOptions.fields = schema.settings.fields.reduce(
+      (fieldsObject, field) => {
+        fieldsObject[field] = 1
 
-      return fieldsObject
-    }, {})
+        return fieldsObject
+      },
+      {}
+    )
   }
 
   // Looking at the `fields` URL parameter to determine which fields
   // will be requested from the composed document.
   Object.keys(urlFields).forEach(fieldPath => {
-    let fieldPathNodes = fieldPath.split('.')
+    const fieldPathNodes = fieldPath.split('.')
 
     if (fieldPath.indexOf(newDotNotationPath.join('.')) === 0) {
-      let field = fieldPathNodes[level]
+      const field = fieldPathNodes[level]
 
       if (field) {
         queryOptions.fields = queryOptions.fields || {}
@@ -152,62 +149,63 @@ module.exports.beforeOutput = function ({
 
   return Promise.all(
     Object.keys(referenceCollections).map(collection => {
-      let model = collection === this.name
-        ? this
-        : this.getForeignModel(collection)
+      const model =
+        collection === this.name ? this : this.getForeignModel(collection)
 
-      if (!model) return
+      if (!model) return undefined
 
-      return model.find({
-        client,
-        language,
-        options: queryOptions,
-        query: {
-          _id: {
-            $containsAny: referenceCollections[collection]
-          }
-        }
-      }).then(({metadata, results}) => {
-        return Promise.all(
-          results.map(result => {
-            // This isn't great. I'd like to move away from the
-            // `mediaStore` magic string in favour of an `Image`
-            // field type (https://github.com/dadi/api/issues/415).
-            //
-            // Update (Nov 18): We have the Media field in place now,
-            // but we must keep this for backwards-compatibility.
-            if (collection === 'mediaStore') {
-              result = mediaModel.formatDocuments(result)
+      return model
+        .find({
+          client,
+          language,
+          options: queryOptions,
+          query: {
+            _id: {
+              $containsAny: referenceCollections[collection]
             }
+          }
+        })
+        .then(({metadata, results}) => {
+          return Promise.all(
+            results.map(result => {
+              // This isn't great. I'd like to move away from the
+              // `mediaStore` magic string in favour of an `Image`
+              // field type (https://github.com/dadi/api/issues/415).
+              //
+              // Update (Nov 18): We have the Media field in place now,
+              // but we must keep this for backwards-compatibility.
+              if (collection === 'mediaStore') {
+                result = mediaModel.formatDocuments(result)
+              }
 
-            let nextData = Object.assign({}, arguments[0], {
-              dotNotationPath: newDotNotationPath,
-              level: level + 1
+              const nextData = Object.assign({}, arguments[0], {
+                dotNotationPath: newDotNotationPath,
+                level: level + 1
+              })
+
+              return model
+                .formatForOutput(result, nextData)
+                .then(formattedResult => {
+                  documents[result._id] = formattedResult
+                })
             })
+          )
+        })
+        .catch(err => {
+          // If the `find` has failed due to insufficient permissions,
+          // we swallow the error because we don't want the main request
+          // to fail completely due to a 403 in one of the referenced
+          // collections. If we do nothing here, the document ID will
+          // be left untouched, which is what we want.
+          if (err.message === 'FORBIDDEN') {
+            return
+          }
 
-            return model.formatForOutput(
-              result,
-              nextData
-            ).then(formattedResult => {
-              documents[result._id] = formattedResult
-            })
-          })
-        )
-      }).catch(err => {
-        // If the `find` has failed due to insufficient permissions,
-        // we swallow the error because we don't want the main request
-        // to fail completely due to a 403 in one of the referenced
-        // collections. If we do nothing here, the document ID will
-        // be left untouched, which is what we want.
-        if (err.message === 'FORBIDDEN') {
-          return
-        }
-
-        return Promise.reject(err)
-      })
+          return Promise.reject(err)
+        })
     })
   ).then(() => {
-    let composedIds = []
+    const composedIds = []
     let resolvedDocuments = ids.map(id => {
       if (documents[id]) {
         composedIds.push(ids)
@@ -229,7 +227,7 @@ module.exports.beforeOutput = function ({
       resolvedDocuments = resolvedDocuments[0]
     }
 
-    let output = {
+    const output = {
       [field]: resolvedDocuments
     }
 
@@ -243,13 +241,13 @@ module.exports.beforeOutput = function ({
   })
 }
 
-module.exports.beforeQuery = function ({config, field, input, options}) {
-  let isOperatorQuery = tree => {
+module.exports.beforeQuery = function({config, field, input, options}) {
+  const isOperatorQuery = tree => {
     return Boolean(
       tree &&
-      Object.keys(tree).every(key => {
-        return key[0] === '$'
-      })
+        Object.keys(tree).every(key => {
+          return key[0] === '$'
+        })
     )
   }
 
@@ -298,16 +296,16 @@ module.exports.beforeQuery = function ({config, field, input, options}) {
   //     "status.live": true
   //   }
   // }
-  let inputTree = {}
+  const inputTree = {}
 
   Object.keys(input).forEach(path => {
-    let nodes = path.split('.')
-    let modelChain = createModelChain(this, nodes)
+    const nodes = path.split('.')
+    const modelChain = createModelChain(this, nodes)
     let pointer = inputTree
 
-    let interrupted = nodes.slice(0, -1).some((node, index) => {
+    const interrupted = nodes.slice(0, -1).some((node, index) => {
       if (!modelChain[index + 1]) {
-        let key = nodes.slice(index).join('.')
+        const key = nodes.slice(index).join('.')
 
         pointer[key] = input[path]
 
@@ -316,6 +314,8 @@ module.exports.beforeQuery = function ({config, field, input, options}) {
 
       pointer[node] = Object.assign({}, pointer[node])
       pointer = pointer[node]
+
+      return false
     })
 
     if (!interrupted) {
@@ -326,11 +326,11 @@ module.exports.beforeQuery = function ({config, field, input, options}) {
   // This function takes a tree like the one in the example above and
   // processes it recursively, running the `find` method in the
   // appropriate models.
-  let processTree = (tree, path = []) => {
+  const processTree = (tree, path = []) => {
     let queue = Promise.resolve({})
 
     Object.keys(tree).forEach(key => {
-      let canonicalKey = key.split('@')[0]
+      const canonicalKey = key.split('@')[0]
 
       queue = queue.then(query => {
         if (
@@ -338,10 +338,7 @@ module.exports.beforeQuery = function ({config, field, input, options}) {
           typeof tree[key] === 'object' &&
           !isOperatorQuery(tree[key])
         ) {
-          return processTree(
-            tree[key],
-            path.concat(key)
-          ).then(result => {
+          return processTree(tree[key], path.concat(key)).then(result => {
             return Object.assign({}, query, {
               [canonicalKey]: result
             })
@@ -354,9 +351,9 @@ module.exports.beforeQuery = function ({config, field, input, options}) {
       })
     })
 
-    let firstKey = Object.keys(tree)[0]
-    let modelChain = createModelChain(this, path.concat(firstKey))
-    let model = modelChain && modelChain[modelChain.length - 1]
+    const firstKey = Object.keys(tree)[0]
+    const modelChain = createModelChain(this, path.concat(firstKey))
+    const model = modelChain && modelChain[modelChain.length - 1]
 
     return queue.then(query => {
       if (path.length === 0) {
@@ -367,27 +364,32 @@ module.exports.beforeQuery = function ({config, field, input, options}) {
       // any results, there's no point in processing any nodes to the left
       // because the result will always be an empty array.
       Object.keys(query).forEach(field => {
-        if (query[field].$containsAny && query[field].$containsAny.length === 0) {
+        if (
+          query[field].$containsAny &&
+          query[field].$containsAny.length === 0
+        ) {
           return {
             $containsAny: []
           }
         }
       })
 
-      return model.find({
-        query
-      }).then(({results}) => {
-        return {
-          $containsAny: results.map(item => item._id.toString())
-        }
-      })
+      return model
+        .find({
+          query
+        })
+        .then(({results}) => {
+          return {
+            $containsAny: results.map(item => item._id.toString())
+          }
+        })
     })
   }
 
   return processTree(inputTree)
 }
 
-module.exports.beforeSave = function ({
+module.exports.beforeSave = function({
   client,
   config,
   field,
@@ -395,20 +397,18 @@ module.exports.beforeSave = function ({
   input,
   schema
 }) {
-  let isArray = Array.isArray(input[field])
-  let values = isArray
-    ? input[field]
-    : [input[field]]
-  let idMapping = {}
-  let insertions = values.map(value => {
+  const isArray = Array.isArray(input[field])
+  const values = isArray ? input[field] : [input[field]]
+  const idMapping = {}
+  const insertions = values.map(value => {
     // This is an ID or it's falsy, there's nothing left to do.
     if (!value || typeof value === 'string') {
       return value
     }
 
     let needsMapping = false
-    let collectionField = `${config.get('internalFieldsPrefix')}collection`
-    let dataField = `${config.get('internalFieldsPrefix')}data`
+    const collectionField = `${config.get('internalFieldsPrefix')}collection`
+    const dataField = `${config.get('internalFieldsPrefix')}data`
     let referenceCollection
 
     // Are we looking at the multi-collection reference format?
@@ -427,51 +427,54 @@ module.exports.beforeSave = function ({
 
       needsMapping = true
     } else {
-      referenceCollection = schema.settings &&
-        schema.settings.collection
+      referenceCollection = schema.settings && schema.settings.collection
     }
 
-    let model = referenceCollection
+    const model = referenceCollection
       ? this.getForeignModel(referenceCollection)
       : this
 
     // Augment the value with the internal properties from the parent.
     Object.assign(value, internals)
 
-    return model.formatForInput(
-      value,
-      {internals}
-    ).then(document => {
-      // The document has an ID, so it's an update.
-      if (document._id) {
-        return model.update({
-          client,
-          internals: Object.assign({}, internals, {
-            _lastModifiedBy: internals._createdBy
-          }),
-          query: {
-            _id: document._id
-          },
-          rawOutput: true,
-          update: document
-        }).then(response => document._id)
-      }
+    return model
+      .formatForInput(value, {internals})
+      .then(document => {
+        // The document has an ID, so it's an update.
+        if (document._id) {
+          return model
+            .update({
+              client,
+              internals: Object.assign({}, internals, {
+                _lastModifiedBy: internals._createdBy
+              }),
+              query: {
+                _id: document._id
+              },
+              rawOutput: true,
+              update: document
+            })
+            .then(response => document._id)
+        }
 
-      return model.create({
-        client,
-        documents: document,
-        internals,
-        rawOutput: true
-      }).then(({results}) => {
-        return results[0]._id.toString()
+        return model
+          .create({
+            client,
+            documents: document,
+            internals,
+            rawOutput: true
+          })
+          .then(({results}) => {
+            return results[0]._id.toString()
+          })
       })
-    }).then(id => {
-      if (needsMapping) {
-        idMapping[id] = referenceCollection
-      }
+      .then(id => {
+        if (needsMapping) {
+          idMapping[id] = referenceCollection
+        }
 
-      return id
-    })
+        return id
+      })
   })
 
   return Promise.all(insertions).then(value => {

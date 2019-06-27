@@ -4,18 +4,18 @@ const url = require('url')
 
 const ID_PATTERN = '[a-fA-F0-9-]*'
 
-const Controller = function () {}
+const Controller = function() {}
 
-Controller.prototype._getURLParameters = function (requestUrl) {
-  let parsedUrl = url.parse(requestUrl, true)
+Controller.prototype._getURLParameters = function(requestUrl) {
+  const parsedUrl = url.parse(requestUrl, true)
 
   return parsedUrl.query
 }
 
-Controller.prototype._prepareQuery = function (req) {
-  let path = url.parse(req.url, true)
-  let apiVersion = path.pathname.split('/')[1]
-  let options = this._getURLParameters(req.url)
+Controller.prototype._prepareQuery = function(req) {
+  const path = url.parse(req.url, true)
+  const apiVersion = path.pathname.split('/')[1]
+  const options = this._getURLParameters(req.url)
   let query = help.parseQuery(options.filter)
 
   // Formatting query
@@ -43,10 +43,10 @@ Controller.prototype._prepareQuery = function (req) {
   return query
 }
 
-Controller.prototype._prepareQueryOptions = function (options) {
-  let response = { errors: [] }
-  let queryOptions = {}
-  let settings = this.model.settings || {}
+Controller.prototype._prepareQueryOptions = function(options) {
+  const response = {errors: []}
+  const queryOptions = {}
+  const settings = this.model.settings || {}
   let parsedSkip
 
   if (options.page) {
@@ -63,42 +63,33 @@ Controller.prototype._prepareQueryOptions = function (options) {
 
     if (parsedSkip.toString() !== options.skip) {
       response.errors.push(
-        Object.assign(
-          new Error(),
-          {
-            status: 'Bad Request',
-            code: 'Invalid Parameter',
-            details: 'The `skip` parameter must a number',
-            title: 'Invalid Skip Parameter Provided'
-          }
-        )
+        Object.assign(new Error(), {
+          status: 'Bad Request',
+          code: 'Invalid Parameter',
+          details: 'The `skip` parameter must a number',
+          title: 'Invalid Skip Parameter Provided'
+        })
       )
     } else if (parsedSkip < 0) {
       response.errors.push(
-        Object.assign(
-          new Error(),
-          {
-            status: 'Bad Request',
-            code: 'Invalid Parameter',
-            details: 'The `skip` parameter must be greater than or equal to zero',
-            title: 'Invalid Skip Parameter Provided'
-          }
-        )
+        Object.assign(new Error(), {
+          status: 'Bad Request',
+          code: 'Invalid Parameter',
+          details: 'The `skip` parameter must be greater than or equal to zero',
+          title: 'Invalid Skip Parameter Provided'
+        })
       )
     }
   }
 
   if (options.page && options.page <= 0) {
     response.errors.push(
-      Object.assign(
-        new Error(),
-        {
-          status: 'Bad Request',
-          code: 'Invalid Parameter',
-          details: 'The `page` parameter must be greater than zero',
-          title: 'Invalid Page Parameter Provided'
-        }
-      )
+      Object.assign(new Error(), {
+        status: 'Bad Request',
+        code: 'Invalid Parameter',
+        details: 'The `page` parameter must be greater than zero',
+        title: 'Invalid Page Parameter Provided'
+      })
     )
   }
 
@@ -108,7 +99,7 @@ Controller.prototype._prepareQueryOptions = function (options) {
   }
 
   // Specified / default number of records to return.
-  let limit = parseInt(options.count || settings.count) || 50
+  const limit = parseInt(options.count || settings.count) || 50
 
   // Skip - passed or calculated from (page# x count).
   let skip = limit * (options.page - 1)
@@ -138,11 +129,12 @@ Controller.prototype._prepareQueryOptions = function (options) {
 
   // sorting
   let sort = {}
-  let sortOptions = help.isJSON(options.sort)
+  const sortOptions = help.isJSON(options.sort)
 
   if (!sortOptions || !Object.keys(sortOptions).length) {
-    let field = !sortOptions ? options.sort || settings.sort : settings.sort
-    let order = (options.sortOrder || settings.sortOrder) === 'desc' ? -1 : 1
+    const field = !sortOptions ? options.sort || settings.sort : settings.sort
+    const order = (options.sortOrder || settings.sortOrder) === 'desc' ? -1 : 1
+
     if (field) sort[field] = order
   } else {
     sort = sortOptions
@@ -157,7 +149,7 @@ Controller.prototype._prepareQueryOptions = function (options) {
 
 Controller.prototype.ID_PATTERN = ID_PATTERN
 
-module.exports = function (model) {
+module.exports = function(model) {
   return new Controller(model)
 }
 

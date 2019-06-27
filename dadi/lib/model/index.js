@@ -65,7 +65,8 @@ const Model = function(name, schema, connection, settings) {
   this.settings = Object.assign({}, settings, this.schema.settings)
 
   // Set ACL key
-  this.aclKey = settings.aclKey || `collection:${settings.database}_${name}`
+  this.aclKey =
+    this.settings.aclKey || `collection:${this.settings.database}_${name}`
 
   // Attach display name if supplied.
   if (this.settings.displayName) {

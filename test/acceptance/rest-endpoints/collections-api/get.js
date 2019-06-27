@@ -108,9 +108,9 @@ describe('Collections API – GET', function() {
         .end(function(err, res) {
           if (err) return done(err)
 
-          res.body['results'].should.exist
-          res.body['results'].should.be.Array
-          res.body['results'].length.should.be.above(0)
+          res.body.results.should.exist
+          res.body.results.should.be.Array
+          res.body.results.length.should.be.above(0)
           done()
         })
     })
@@ -381,9 +381,9 @@ describe('Collections API – GET', function() {
             .end(function(err, res) {
               if (err) return done(err)
 
-              res.body['results'].should.exist
-              res.body['results'].should.be.Array
-              res.body['results'][0]._apiVersion.should.equal('vtest')
+              res.body.results.should.exist
+              res.body.results.should.be.Array
+              res.body.results[0]._apiVersion.should.equal('vtest')
               done()
             })
         }, 300)
@@ -420,9 +420,9 @@ describe('Collections API – GET', function() {
 
               config.set('query.useVersionFilter', false)
 
-              res.body['results'].should.exist
-              res.body['results'].should.be.Array
-              res.body['results'][0]._apiVersion.should.equal('v1')
+              res.body.results.should.exist
+              res.body.results.should.be.Array
+              res.body.results[0]._apiVersion.should.equal('v1')
               done()
             })
         }, 300)
@@ -451,10 +451,10 @@ describe('Collections API – GET', function() {
         .end(function(err, res) {
           if (err) return done(err)
 
-          res.body['results'].should.exist
-          res.body['results'].should.be.Array
-          res.body['results'].length.should.equal(1)
-          res.body['results'][0].field1.should.equal('Test')
+          res.body.results.should.exist
+          res.body.results.should.be.Array
+          res.body.results.length.should.equal(1)
+          res.body.results[0].field1.should.equal('Test')
           done()
         })
     })
@@ -483,10 +483,10 @@ describe('Collections API – GET', function() {
 
           let found = false
 
-          res.body['results'].should.exist
-          res.body['results'].should.be.Array
+          res.body.results.should.exist
+          res.body.results.should.be.Array
 
-          res.body['results'].forEach((value, key) => {
+          res.body.results.forEach((value, key) => {
             if (value.field1 === 'Test') found = true
           })
 
@@ -520,10 +520,10 @@ describe('Collections API – GET', function() {
 
           let found = false
 
-          res.body['results'].should.exist
-          res.body['results'].should.be.Array
+          res.body.results.should.exist
+          res.body.results.should.be.Array
 
-          res.body['results'].forEach((value, key) => {
+          res.body.results.forEach((value, key) => {
             if (value.field1 === 'Test') found = true
           })
 
@@ -583,24 +583,20 @@ describe('Collections API – GET', function() {
         .end(function(err, res) {
           if (err) return done(err)
 
-          res.body['results'].should.exist
-          res.body['results'].should.be.Array
+          const {results} = res.body
 
-          let obj = res.body['results'].map(x => x.field1).filter(Boolean)
-
-          obj = obj[0]
-
-          delete obj._id
-
-          Object.keys(obj).length.should.equal(1)
-          Object.keys(obj)[0].should.equal('field1')
+          results.should.exist
+          results.should.be.Array
+          results.length.should.eql(1)
+          results[0]._id.should.exist
+          Object.keys(results[0]).length.should.eql(2)
 
           done()
         })
     })
   })
 
-  it('should allow specifying fields with underscores  (issue #140)', function(done) {
+  it('should allow specifying fields with underscores (issue #140)', function(done) {
     const doc = {
       field1: 'Test',
       field2: null,
@@ -626,16 +622,13 @@ describe('Collections API – GET', function() {
         .end(function(err, res) {
           if (err) return done(err)
 
-          res.body['results'].should.exist
-          res.body['results'].should.be.Array
+          const {results} = res.body
 
-          let obj = res.body['results']
-            .map(x => x._fieldWithUnderscore)
-            .filter(Boolean)
-
-          obj = obj[0]
-
-          should.exist(obj['_fieldWithUnderscore'])
+          results.should.exist
+          results.should.be.Array
+          Object.keys(results[0]).length.should.eql(2)
+          results[0]._id.should.exist
+          results[0]._fieldWithUnderscore.should.exist
 
           done()
         })
@@ -664,9 +657,9 @@ describe('Collections API – GET', function() {
           .end(function(err, res) {
             if (err) return done(err)
 
-            res.body['results'].should.exist
-            res.body['results'].should.be.Array
-            res.body['results'].length.should.equal(0)
+            res.body.results.should.exist
+            res.body.results.should.be.Array
+            res.body.results.length.should.equal(0)
             done()
           })
       })
@@ -694,10 +687,10 @@ describe('Collections API – GET', function() {
           .end(function(err, res) {
             if (err) return done(err)
 
-            res.body['results'].should.exist
-            res.body['results'].should.be.Array
-            res.body['results'].length.should.equal(1)
-            res.body['results'][0]._id.should.equal(docId)
+            res.body.results.should.exist
+            res.body.results.should.be.Array
+            res.body.results.length.should.equal(1)
+            res.body.results[0]._id.should.equal(docId)
             done()
           })
       })
@@ -757,10 +750,10 @@ describe('Collections API – GET', function() {
           .end(function(err, res) {
             if (err) return done(err)
 
-            res.body['results'].should.exist
-            res.body['results'].should.be.Array
-            res.body['results'].length.should.equal(1)
-            res.body['results'][0]._id.should.equal(docId)
+            res.body.results.should.exist
+            res.body.results.should.be.Array
+            res.body.results.length.should.equal(1)
+            res.body.results[0]._id.should.equal(docId)
             done()
           })
       })
@@ -797,10 +790,10 @@ describe('Collections API – GET', function() {
               .end(function(err, res) {
                 if (err) return done(err)
 
-                res.body['results'].should.exist
-                res.body['results'].should.be.Array
-                res.body['results'].length.should.equal(1)
-                res.body['results'][0]._id.should.equal(docId)
+                res.body.results.should.exist
+                res.body.results.should.be.Array
+                res.body.results.length.should.equal(1)
+                res.body.results[0]._id.should.equal(docId)
                 done()
               })
           })
@@ -831,10 +824,10 @@ describe('Collections API – GET', function() {
           .end(function(err, res) {
             if (err) return done(err)
 
-            res.body['results'].should.exist
-            res.body['results'].should.be.Array
-            res.body['results'].length.should.equal(1)
-            res.body['results'][0]._id.should.equal(docId)
+            res.body.results.should.exist
+            res.body.results.should.be.Array
+            res.body.results.length.should.equal(1)
+            res.body.results[0]._id.should.equal(docId)
             done()
           })
       })
@@ -859,9 +852,9 @@ describe('Collections API – GET', function() {
           .end(function(err, res) {
             if (err) return done(err)
 
-            res.body['results'].should.exist
-            res.body['results'].should.be.Array
-            res.body['results'].length.should.be.above(1)
+            res.body.results.should.exist
+            res.body.results.should.be.Array
+            res.body.results.length.should.be.above(1)
             done()
           })
       })
@@ -884,9 +877,9 @@ describe('Collections API – GET', function() {
           .end(function(err, res) {
             if (err) return done(err)
 
-            res.body['results'].should.exist
-            res.body['results'].should.be.Array
-            res.body['results'].length.should.equal(1)
+            res.body.results.should.exist
+            res.body.results.should.be.Array
+            res.body.results.length.should.equal(1)
             done()
           })
       })
@@ -923,9 +916,9 @@ describe('Collections API – GET', function() {
         .end(function(err, res) {
           if (err) return done(err)
 
-          res.body['results'].should.exist
-          res.body['results'].should.be.Array
-          res.body['results'].length.should.equal(1)
+          res.body.results.should.exist
+          res.body.results.should.be.Array
+          res.body.results.length.should.equal(1)
           done()
         })
     })
@@ -966,9 +959,9 @@ describe('Collections API – GET', function() {
         .end(function(err, res) {
           if (err) return done(err)
 
-          res.body['results'].should.exist
-          res.body['results'].should.be.Array
-          res.body['results'].length.should.equal(docCount)
+          res.body.results.should.exist
+          res.body.results.should.be.Array
+          res.body.results.length.should.equal(docCount)
 
           done()
         })
@@ -1028,9 +1021,9 @@ describe('Collections API – GET', function() {
         .end(function(err, res) {
           if (err) return done(err)
 
-          res.body['results'].should.exist
-          res.body['results'].should.be.Array
-          res.body['results'].length.should.equal(40)
+          res.body.results.should.exist
+          res.body.results.should.be.Array
+          res.body.results.length.should.equal(40)
           done()
         })
     })
@@ -1046,11 +1039,11 @@ describe('Collections API – GET', function() {
         .end(function(err, res) {
           if (err) return done(err)
 
-          res.body['results'].should.exist
-          res.body['results'].should.be.Array
-          res.body['results'].length.should.equal(20)
+          res.body.results.should.exist
+          res.body.results.should.be.Array
+          res.body.results.length.should.equal(20)
 
-          const eleventhDoc = res.body['results'][10]
+          const eleventhDoc = res.body.results[10]
 
           client
             .get('/vtest/testdb/test-schema?count=10&page=2')
@@ -1060,12 +1053,12 @@ describe('Collections API – GET', function() {
             .end(function(err, res) {
               if (err) return done(err)
 
-              res.body['results'].should.exist
-              res.body['results'].should.be.Array
-              res.body['results'].length.should.equal(10)
+              res.body.results.should.exist
+              res.body.results.should.be.Array
+              res.body.results.length.should.equal(10)
 
               // make sure second page starts in correct position
-              res.body['results'][0]._id.should.equal(eleventhDoc._id)
+              res.body.results[0]._id.should.equal(eleventhDoc._id)
 
               done()
             })
@@ -1083,13 +1076,13 @@ describe('Collections API – GET', function() {
         .end(function(err, res) {
           if (err) return done(err)
 
-          res.body['results'].should.exist
-          res.body['results'].should.be.Array
-          res.body['results'].length.should.equal(40)
+          res.body.results.should.exist
+          res.body.results.should.be.Array
+          res.body.results.length.should.equal(40)
 
           let max = ''
 
-          res.body['results'].forEach(function(doc) {
+          res.body.results.forEach(function(doc) {
             if (doc.field1) {
               doc.field1.should.not.be.below(max)
               max = doc.field1
@@ -1111,13 +1104,13 @@ describe('Collections API – GET', function() {
         .end(function(err, res) {
           if (err) return done(err)
 
-          res.body['results'].should.exist
-          res.body['results'].should.be.Array
-          res.body['results'].length.should.equal(40)
+          res.body.results.should.exist
+          res.body.results.should.be.Array
+          res.body.results.length.should.equal(40)
 
           let last = ''
 
-          res.body['results'].forEach(function(doc) {
+          res.body.results.forEach(function(doc) {
             if (last) doc.field1.should.not.be.above(last)
             last = doc.field1
           })
@@ -1137,13 +1130,13 @@ describe('Collections API – GET', function() {
         .end(function(err, res) {
           if (err) return done(err)
 
-          res.body['results'].should.exist
-          res.body['results'].should.be.Array
-          res.body['results'].length.should.equal(40)
+          res.body.results.should.exist
+          res.body.results.should.be.Array
+          res.body.results.length.should.equal(40)
 
           let last = ''
 
-          res.body['results'].forEach(function(doc) {
+          res.body.results.forEach(function(doc) {
             if (last) doc.field1.should.not.be.below(last)
             last = doc.field1
           })

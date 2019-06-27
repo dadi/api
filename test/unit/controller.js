@@ -322,7 +322,7 @@ describe('Controller', () => {
       })
 
       it('should send response', done => {
-        const mod = model('testModel')
+        const mod = model('testModel', help.getModelSchema())
         const req = {
           params: {},
           url: '/foo/bar'

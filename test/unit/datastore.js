@@ -2,8 +2,6 @@ const app = require(__dirname + '/../../dadi/lib/')
 const config = require(__dirname + '/../../config')
 const DataStore = require(__dirname + '/../../dadi/lib/datastore')
 const mockRequire = require('mock-require')
-const path = require('path')
-const proxyquire = require('proxyquire')
 const should = require('should')
 const sinon = require('sinon')
 
@@ -21,9 +19,11 @@ describe('DataStore', function() {
   })
 
   it('should call the constructor function of the data connector', done => {
+    /*eslint-disable */
     const namespace = {
-      MockConnector() {}
+      MockConnector: function() {}
     }
+    /*eslint-enable */
 
     namespace.MockConnector.prototype.connect = () => Promise.resolve()
 

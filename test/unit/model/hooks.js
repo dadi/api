@@ -483,11 +483,10 @@ describe('Hook', function() {
       })
     })
 
-    it('should not insert documents that fail asynchronous beforeCreate processing', function(done) {
+    it('should not insert documents if at least one fails asynchronous beforeCreate processing', function(done) {
       const schema = help.getModelSchema()
 
       schema.title = {type: 'String', required: false}
-
       schema.slug = {type: 'String', required: false}
 
       const settings = {
@@ -511,13 +510,13 @@ describe('Hook', function() {
         return mod.create(docs, function(err, result) {
           hook.Hook.prototype.load.restore()
 
-          if (err) return done(err)
+          err.should.be.Array
+          err[0].code.should.eql('API-0002')
 
           // find the objs we just created
           mod.find({fieldName: 'foo'}, function(err, doc) {
             if (err) return done(err)
-            doc.results.length.should.eql(1)
-            doc.results[0].slug.should.eql('article-one')
+            doc.results.length.should.eql(0)
 
             done()
           })
@@ -525,11 +524,10 @@ describe('Hook', function() {
       })
     })
 
-    it('should not insert documents that fail synchronous beforeCreate processing', function() {
+    it('should not insert documents if at least one fails synchronous beforeCreate processing', function(done) {
       const schema = help.getModelSchema()
 
       schema.title = {type: 'String', required: false}
-
       schema.slug = {type: 'String', required: false}
 
       const settings = {
@@ -549,13 +547,18 @@ describe('Hook', function() {
 
       const mod = model('testModelName', schema, null, settings)
 
-      return help.whenModelsConnect([mod], () => {
+      help.whenModelsConnect([mod], () => {
         return mod.create(docs, function(err, result) {
           hook.Hook.prototype.load.restore()
+
+          err.should.be.Array
+          err[0].code.should.eql('API-0002')
 
           // find the objs we just created
           mod.find({fieldName: 'foo'}, function(err, doc) {
             doc.results.should.eql([])
+
+            done(err)
           })
         })
       })

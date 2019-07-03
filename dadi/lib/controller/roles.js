@@ -223,7 +223,7 @@ Roles.prototype.post = function(req, res, next) {
     .catch(this.handleError(res, next))
 }
 
-Roles.prototype.postResource = function(req, res, next) {
+Roles.prototype.postResource = async function(req, res, next) {
   if (
     typeof req.body.name !== 'string' ||
     typeof req.body.access !== 'object'
@@ -234,60 +234,64 @@ Roles.prototype.postResource = function(req, res, next) {
     })
   }
 
-  if (!acl.hasResource(req.body.name)) {
-    return help.sendBackJSON(400, res, next)(null, {
-      success: false,
-      errors: [`Invalid resource: ${req.body.name}`]
-    })
-  }
+  try {
+    const hasResource = await acl.hasResource(req.body.name)
 
-  // To add a resource to a role, the requesting client needs to have
-  // "update" access to the "roles" resource, access to the role being
-  // updated as well as access to the resource in question.
-  return acl.access
-    .get(req.dadiApiClient, 'roles')
-    .then(access => {
-      if (access.update !== true) {
-        return Promise.reject(acl.createError(req.dadiApiClient))
-      }
+    if (!hasResource) {
+      return help.sendBackJSON(400, res, next)(null, {
+        success: false,
+        errors: [`Invalid resource: ${req.body.name}`]
+      })
+    }
 
-      if (!acl.client.isAdmin(req.dadiApiClient)) {
-        return acl.access
-          .get(req.dadiApiClient, req.body.name, {
-            resolveOwnTypes: false
-          })
-          .then(access => {
-            const forbiddenType = Object.keys(req.body.access).find(type => {
-              return Boolean(req.body.access[type]) && access[type] !== true
-            })
+    // To add a resource to a role, the requesting client needs to have
+    // "update" access to the "roles" resource, access to the role being
+    // updated as well as access to the resource in question.
+    const rolesAccess = await acl.access.get(req.dadiApiClient, 'roles')
 
-            if (forbiddenType) {
-              return Promise.reject(acl.createError(req.dadiApiClient))
-            }
+    if (rolesAccess.update !== true) {
+      throw acl.createError(req.dadiApiClient)
+    }
 
-            return acl.client
-              .get(req.dadiApiClient.clientId)
-              .then(({results}) => {
-                const roles = results[0].roles || []
-
-                if (!roles.includes(req.params.role)) {
-                  return Promise.reject(acl.createError(req.dadiApiClient))
-                }
-              })
-          })
-      }
-    })
-    .then(() => {
-      return acl.role.resourceAdd(
-        req.params.role,
+    // If the client does not have admin access, we need to ensure that
+    // they have each of the access types they are trying to assign, as
+    // well as the role they are trying to assign.
+    if (!acl.client.isAdmin(req.dadiApiClient)) {
+      const typesAccess = await acl.access.get(
+        req.dadiApiClient,
         req.body.name,
-        req.body.access
+        {
+          resolveOwnTypes: false
+        }
       )
+      const forbiddenType = Object.keys(req.body.access).find(type => {
+        return Boolean(req.body.access[type]) && typesAccess[type] !== true
+      })
+
+      if (forbiddenType) {
+        throw acl.createError(req.dadiApiClient)
+      }
+
+      const {results} = await acl.client.get(req.dadiApiClient.clientId)
+      const roles = results[0].roles || []
+
+      if (!roles.includes(req.params.role)) {
+        throw acl.createError(req.dadiApiClient)
+      }
+    }
+
+    const {results: resources} = await acl.role.resourceAdd(
+      req.params.role,
+      req.body.name,
+      req.body.access
+    )
+
+    return help.sendBackJSON(201, res, next)(null, {
+      results: resources
     })
-    .then(({results}) => {
-      help.sendBackJSON(201, res, next)(null, {results})
-    })
-    .catch(this.handleError(res, next))
+  } catch (error) {
+    this.handleError(res, next)(error)
+  }
 }
 
 Roles.prototype.put = function(req, res, next) {

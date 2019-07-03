@@ -1,5 +1,4 @@
-const path = require('path')
-const mediaModel = require(path.join(__dirname, '/../model/media'))
+const mediaModel = require('../model/media')
 
 module.exports.type = 'reference'
 
@@ -12,13 +11,14 @@ module.exports.type = 'reference'
  * @return {Array<Model>}
  */
 function createModelChain(rootModel, fields) {
-  return fields.reduce((chain, field, index) => {
+  return fields.reduce(async (chain, field, index) => {
     if (chain.length === 0) {
       return chain.concat(rootModel)
     }
 
     const nodeModel = chain[chain.length - 1]
-    const referenceField = nodeModel.getField(fields[index - 1].split('@')[0])
+    const schema = await nodeModel.getSchema()
+    const referenceField = schema.fields[fields[index - 1].split('@')[0]]
 
     // Validating the node and flagging an error if invalid.
     if (
@@ -39,13 +39,16 @@ function createModelChain(rootModel, fields) {
       return chain.concat(nodeModel)
     }
 
-    const referenceModel = rootModel.getForeignModel(referenceCollection)
+    const referenceModel = this.getForeignModel({
+      name: referenceCollection,
+      property: rootModel.property
+    })
 
     return chain.concat(referenceModel)
   }, [])
 }
 
-module.exports.beforeOutput = function({
+module.exports.beforeOutput = async function({
   client,
   composeOverride,
   document,
@@ -76,7 +79,8 @@ module.exports.beforeOutput = function({
   }
 
   const newDotNotationPath = dotNotationPath.concat(field)
-  const schema = this.getField(field)
+  const {fields: collectionSchema} = await this.getSchema()
+  const schema = collectionSchema[field]
   const isStrictCompose =
     schema.settings && Boolean(schema.settings.strictCompose)
   const values = Array.isArray(input[field]) ? input[field] : [input[field]]
@@ -150,7 +154,9 @@ module.exports.beforeOutput = function({
   return Promise.all(
     Object.keys(referenceCollections).map(collection => {
       const model =
-        collection === this.name ? this : this.getForeignModel(collection)
+        collection === this.name
+          ? this
+          : this.getForeignModel({name: collection, property: this.property})
 
       if (!model) return undefined
 
@@ -241,7 +247,7 @@ module.exports.beforeOutput = function({
   })
 }
 
-module.exports.beforeQuery = function({config, field, input, options}) {
+module.exports.beforeQuery = async function({field, input}) {
   const isOperatorQuery = tree => {
     return Boolean(
       tree &&
@@ -297,10 +303,10 @@ module.exports.beforeQuery = function({config, field, input, options}) {
   //   }
   // }
   const inputTree = {}
-
-  Object.keys(input).forEach(path => {
+  const models = Object.keys(input).map(async path => {
     const nodes = path.split('.')
-    const modelChain = createModelChain(this, nodes)
+    const modelChain = await createModelChain(this, nodes)
+
     let pointer = inputTree
 
     const interrupted = nodes.slice(0, -1).some((node, index) => {
@@ -321,7 +327,11 @@ module.exports.beforeQuery = function({config, field, input, options}) {
     if (!interrupted) {
       pointer[nodes.slice(-1)] = input[path]
     }
+
+    return undefined
   })
+
+  await Promise.all(models)
 
   // This function takes a tree like the one in the example above and
   // processes it recursively, running the `find` method in the
@@ -351,10 +361,6 @@ module.exports.beforeQuery = function({config, field, input, options}) {
       })
     })
 
-    const firstKey = Object.keys(tree)[0]
-    const modelChain = createModelChain(this, path.concat(firstKey))
-    const model = modelChain && modelChain[modelChain.length - 1]
-
     return queue.then(query => {
       if (path.length === 0) {
         return query
@@ -374,9 +380,15 @@ module.exports.beforeQuery = function({config, field, input, options}) {
         }
       })
 
-      return model
-        .find({
-          query
+      const firstKey = Object.keys(tree)[0]
+
+      return createModelChain(this, path.concat(firstKey))
+        .then(modelChain => {
+          const model = modelChain && modelChain[modelChain.length - 1]
+
+          return model.find({
+            query
+          })
         })
         .then(({results}) => {
           return {
@@ -431,7 +443,10 @@ module.exports.beforeSave = function({
     }
 
     const model = referenceCollection
-      ? this.getForeignModel(referenceCollection)
+      ? this.getForeignModel({
+          name: referenceCollection,
+          property: this.property
+        })
       : this
 
     // Augment the value with the internal properties from the parent.

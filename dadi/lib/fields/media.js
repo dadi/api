@@ -1,5 +1,4 @@
-const path = require('path')
-const mediaModel = require(path.join(__dirname, '/../model/media'))
+const mediaModel = require('../model/media')
 
 module.exports.type = 'media'
 
@@ -7,7 +6,10 @@ module.exports.beforeOutput = function({client, config, field, input, schema}) {
   const bucket =
     (schema.settings && schema.settings.mediaBucket) ||
     config.get('media.defaultBucket')
-  const model = this.getForeignModel(bucket)
+  const model = this.getForeignModel({
+    isMediaCollection: true,
+    name: bucket
+  })
 
   if (!model) {
     return input
@@ -89,7 +91,7 @@ module.exports.beforeOutput = function({client, config, field, input, schema}) {
     })
 }
 
-module.exports.beforeSave = function({config, field, input, schema}) {
+module.exports.beforeSave = async function({config, field, input, schema}) {
   const isArraySyntax = Array.isArray(input[field])
   const normalisedValue = (isArraySyntax ? input[field] : [input[field]])
     .map(value => {
@@ -105,12 +107,10 @@ module.exports.beforeSave = function({config, field, input, schema}) {
 
   // Are we just setting the field to null?
   if (normalisedValue.length === 0) {
-    return Promise.resolve({
+    return {
       [field]: null
-    })
+    }
   }
-
-  let queue = Promise.resolve()
 
   // If there is a validation block with a `mimeTypes` property, it means we
   // need to ensure that the IDs supplied correspond to valid media objects
@@ -126,48 +126,46 @@ module.exports.beforeSave = function({config, field, input, schema}) {
     const bucketName =
       (schema.settings && schema.settings.mediaBucket) ||
       config.get('media.defaultBucket')
-    const model = this.getForeignModel(bucketName)
-
-    queue = queue.then(() => {
-      return model
-        .find({
-          query: {
-            _id: {
-              $in: normalisedValue.map(item => item._id)
-            }
-          }
-        })
-        .then(({results}) => {
-          if (results.length < normalisedValue.length) {
-            const error = new Error(
-              'has one or more values that do not match valid media objects'
-            )
-
-            error.code = 'ERROR_INVALID_ID'
-
-            return Promise.reject(error)
-          }
-
-          const invalidResults = results.find(result => {
-            const mimeType = result.mimeType || result.mimetype
-
-            return !mimeType || !allowedMimeTypes.includes(mimeType)
-          })
-
-          if (invalidResults) {
-            const error = new Error(
-              `has invalid MIME type. Expected: ${allowedMimeTypes.join(', ')}`
-            )
-
-            error.code = 'ERROR_INVALID_MIME_TYPE'
-
-            return Promise.reject(error)
-          }
-        })
+    const model = this.getForeignModel({
+      isMediaCollection: true,
+      name: bucketName
     })
+    const {results} = await model.find({
+      query: {
+        _id: {
+          $in: normalisedValue.map(item => item._id)
+        }
+      }
+    })
+
+    if (results.length < normalisedValue.length) {
+      const error = new Error(
+        'has one or more values that do not match valid media objects'
+      )
+
+      error.code = 'ERROR_INVALID_ID'
+
+      return Promise.reject(error)
+    }
+
+    const invalidResults = results.find(result => {
+      const mimeType = result.mimeType || result.mimetype
+
+      return !mimeType || !allowedMimeTypes.includes(mimeType)
+    })
+
+    if (invalidResults) {
+      const error = new Error(
+        `has invalid MIME type. Expected: ${allowedMimeTypes.join(', ')}`
+      )
+
+      error.code = 'ERROR_INVALID_MIME_TYPE'
+
+      return Promise.reject(error)
+    }
   }
 
-  return queue.then(() => ({
+  return {
     [field]: isArraySyntax ? normalisedValue : normalisedValue[0]
-  }))
+  }
 }

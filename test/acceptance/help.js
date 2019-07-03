@@ -7,6 +7,7 @@ const should = require('should')
 const connection = require(__dirname + '/../../dadi/lib/model/connection')
 const config = require(__dirname + '/../../config')
 const request = require('supertest')
+const sampleCollections = require('./sample-collections')
 
 function hashClientSecret(client) {
   if (client._hashVersion === undefined && config.get('auth.hashSecrets')) {
@@ -124,6 +125,62 @@ module.exports.createDocWithSpecificVersion = function(
       res.body.results.length.should.equal(1)
       done(null, res.body.results[0])
     })
+}
+
+module.exports.createSchemas = async function(
+  schemas,
+  {keepExisting = false} = {}
+) {
+  if (!keepExisting) {
+    await module.exports.dropSchemas()
+  }
+
+  const schemasArray = Array.isArray(schemas) ? schemas : [schemas]
+  const schemaData = schemasArray
+    .map(schema => {
+      if (typeof schema === 'string') {
+        if (!sampleCollections[schema]) return null
+
+        const [property, collection] = schema.split('/')
+        const {fields, settings} = sampleCollections[schema]
+
+        return {
+          aclKey: `collection:${property}_${collection}`,
+          collection,
+          fields,
+          property,
+          settings,
+          timestamp: Date.now()
+        }
+      }
+
+      return {
+        aclKey: `collection:${schema.property}_${schema.collection}`,
+        timestamp: Date.now(),
+        ...schema
+      }
+    })
+    .filter(Boolean)
+  const conn = connection(
+    {
+      collection: config.get('schemasCollection')
+    },
+    config.get('schemasCollection'),
+    config.get('datastore')
+  )
+  const database = await conn.whenConnected()
+
+  return database.insert({
+    collection: config.get('schemasCollection'),
+    data: schemaData,
+    schema: {}
+  })
+}
+
+module.exports.dropSchemas = function() {
+  return new Promise(resolve => {
+    module.exports.dropDatabase(null, config.get('schemasCollection'), resolve)
+  })
 }
 
 // helper function to cleanup the dbs

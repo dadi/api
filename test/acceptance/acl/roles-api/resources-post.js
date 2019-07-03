@@ -43,6 +43,7 @@ module.exports = () => {
         .set('content-type', 'application/json')
         .expect('content-type', 'application/json')
         .end((err, res) => {
+          console.log(res.body)
           res.statusCode.should.eql(401)
 
           done()
@@ -436,7 +437,12 @@ module.exports = () => {
       const testClient = {
         clientId: 'apiClient',
         secret: 'someSecret',
-        accessType: 'admin'
+        accessType: 'admin',
+        resources: {
+          'collection:non_existing': {
+            read: true
+          }
+        }
       }
       const resource = {
         name: 'collection:non_existing',

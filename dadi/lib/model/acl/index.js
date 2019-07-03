@@ -1,9 +1,9 @@
 const access = require('./access')
 const client = require('./client')
-const config = require('./../../../../config.js')
-const Connection = require('./../connection')
-const Model = require('./../index')
+const config = require('../../../../config.js')
+const Model = require('../index')
 const role = require('./role')
+const schemaStore = require('../schemaStore')
 
 const ERROR_FORBIDDEN = 'FORBIDDEN'
 const ERROR_UNAUTHORISED = 'UNAUTHORISED'
@@ -16,64 +16,32 @@ const ACL = function() {
 
 ACL.prototype.connect = function() {
   // Establishing connection for access model.
-  const accessConnection = Connection({
-    collection: config.get('auth.accessCollection'),
-    database: config.get('auth.database'),
-    override: true
+  const accessModel = Model({
+    name: config.get('auth.accessCollection'),
+    property: config.get('auth.database'),
+    schema: {},
+    usePropertyDatabase: true
   })
-  const accessModel = Model(
-    config.get('auth.accessCollection'),
-    {},
-    accessConnection,
-    {
-      compose: false,
-      database: config.get('auth.database'),
-      storeRevisions: false
-    }
-  )
 
   access.setModel(accessModel)
 
   // Establishing connection for client model.
-  const clientConnection = Connection(
-    {
-      collection: config.get('auth.clientCollection'),
-      database: config.get('auth.database'),
-      override: true
-    },
-    null,
-    config.get('auth.datastore')
-  )
-  const clientModel = Model(
-    config.get('auth.clientCollection'),
-    {},
-    clientConnection,
-    {
-      compose: false,
-      database: config.get('auth.database'),
-      storeRevisions: false
-    }
-  )
+  const clientModel = Model({
+    name: config.get('auth.clientCollection'),
+    property: config.get('auth.database'),
+    schema: {},
+    usePropertyDatabase: true
+  })
 
   client.setModel(clientModel)
 
   // Establishing connection for role model.
-  const roleConnection = Connection({
-    collection: config.get('auth.roleCollection'),
-    database: config.get('auth.database'),
-    override: true
+  const roleModel = Model({
+    name: config.get('auth.roleCollection'),
+    property: config.get('auth.database'),
+    schema: {},
+    usePropertyDatabase: true
   })
-
-  const roleModel = Model(
-    config.get('auth.roleCollection'),
-    {},
-    roleConnection,
-    {
-      compose: false,
-      database: config.get('auth.database'),
-      storeRevisions: false
-    }
-  )
 
   role.setModel(roleModel)
 }
@@ -95,8 +63,22 @@ ACL.prototype.getResources = function() {
   return this.resources
 }
 
-ACL.prototype.hasResource = function(resource) {
-  return this.resources[resource] !== undefined
+ACL.prototype.hasResource = async function(resource) {
+  if (this.resources[resource] !== undefined) {
+    return true
+  }
+
+  try {
+    const {results} = await schemaStore.find({
+      aclKey: resource
+    })
+
+    return results.length > 0
+  } catch (error) {
+    logger.error({module: 'acl'}, error)
+
+    return false
+  }
 }
 
 ACL.prototype.registerResource = function(name, description = null) {

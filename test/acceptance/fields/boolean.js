@@ -130,6 +130,7 @@ describe('Boolean Field', () => {
 
               return count
             }, 0)
+
             matches.should.eql(2)
 
             done()
@@ -163,6 +164,7 @@ describe('Boolean Field', () => {
 
               return count
             }, 0)
+
             matches.should.eql(2)
 
             done()

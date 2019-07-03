@@ -15,17 +15,15 @@
  * @param  {Object} client - client to check permissions for
  * @return {Promise<Stats>}
  */
-function getStats({client} = {}) {
-  if (!this.connection.db) {
-    return Promise.reject(new Error('DB_DISCONNECTED'))
-  }
+async function getStats({client} = {}) {
+  const database = await this.dataConnector
 
-  return this.validateAccess({
+  await this.validateAccess({
     client,
     type: 'read'
-  }).then(() => {
-    return this.connection.db.stats(this.name)
   })
+
+  return database.stats(this.name)
 }
 
 module.exports = getStats

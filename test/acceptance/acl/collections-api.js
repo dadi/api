@@ -20,7 +20,7 @@ const client = request(
 )
 let docs
 
-describe('Collections API', () => {
+describe.only('Collections API', () => {
   before(done => {
     config.set('search.enabled', true)
     config.set('search.minQueryLength', 3)
@@ -31,7 +31,48 @@ describe('Collections API', () => {
     app.start(err => {
       if (err) return done(err)
 
-      setTimeout(done, 300)
+      setTimeout(() => {
+        help
+          .createSchemas([
+            'library/book',
+            'library/person',
+            'testdb/test-schema',
+            'testdb/test-schema-authenticate-false',
+            'testdb/test-schema-authenticate-post-put-delete',
+            'testdb/test-schema-authenticate-get',
+            {
+              collection: 'test-reference-schema',
+              fields: {
+                refField1: {
+                  type: 'String',
+                  required: false
+                },
+                refField2: {
+                  type: 'Number',
+                  required: false
+                }
+              },
+              property: 'testdb',
+              settings: {}
+            },
+            {
+              collection: 'test-required-schema',
+              fields: {
+                field1: {
+                  type: 'String',
+                  required: true
+                },
+                field2: {
+                  type: 'String',
+                  required: false
+                }
+              },
+              property: 'testdb',
+              settings: {}
+            }
+          ])
+          .then(() => done())
+      }, 300)
     })
   })
 
@@ -100,7 +141,9 @@ describe('Collections API', () => {
       config.set('search.datastore', './../../../test/test-connector')
       config.set('search.database', 'testdb')
 
-      app.stop(done)
+      help.dropSchemas().then(() => {
+        app.stop(done)
+      })
     })
   })
 
@@ -362,7 +405,7 @@ describe('Collections API', () => {
       })
     })
 
-    it('should return 200 and compose a Reference field if the client read permissions on both the parent and referenced collections', function(done) {
+    it('should return 200 and compose a Reference field if the client has read permissions on both the parent and referenced collections', function(done) {
       const testClient = {
         clientId: 'apiClient',
         secret: 'someSecret',
@@ -639,76 +682,37 @@ describe('Collections API', () => {
     })
 
     it('should return 200 without bearer token if `settings.authenticate` is `false`', function(done) {
-      const modelSettings = Object.assign(
-        {},
-        app.components['/vtest/testdb/test-schema'].model.settings
-      )
-
-      app.components[
-        '/vtest/testdb/test-schema'
-      ].model.settings.authenticate = false
-
       client
-        .get(`/vtest/testdb/test-schema`)
+        .get(`/vtest/testdb/test-schema-authenticate-false`)
         .set('content-type', 'application/json')
         .end((err, res) => {
           if (err) return done(err)
           res.statusCode.should.eql(200)
-
-          app.components[
-            '/vtest/testdb/test-schema'
-          ].model.settings = modelSettings
 
           done()
         })
     })
 
     it('should return 200 without bearer token if `settings.authenticate` is set to an array that does not include `GET`', function(done) {
-      const modelSettings = Object.assign(
-        {},
-        app.components['/vtest/testdb/test-schema'].model.settings
-      )
-
-      app.components[
-        '/vtest/testdb/test-schema'
-      ].model.settings.authenticate = ['POST', 'PUT', 'DELETE']
-
       client
-        .get(`/vtest/testdb/test-schema`)
+        .get(`/vtest/testdb/testdb/test-schema-authenticate-post-put-delete`)
         .set('content-type', 'application/json')
         .end((err, res) => {
           if (err) return done(err)
           res.statusCode.should.eql(200)
-
-          app.components[
-            '/vtest/testdb/test-schema'
-          ].model.settings = modelSettings
 
           done()
         })
     })
 
     it('should return 401 without bearer token if `settings.authenticate` is set to an array that includes `GET`', function(done) {
-      const modelSettings = Object.assign(
-        {},
-        app.components['/vtest/testdb/test-schema'].model.settings
-      )
-
-      app.components[
-        '/vtest/testdb/test-schema'
-      ].model.settings.authenticate = ['GET', 'POST', 'PUT', 'DELETE']
-
       client
-        .get(`/vtest/testdb/test-schema`)
+        .get(`/vtest/testdb/testdb/test-schema-authenticate-get`)
         .set('content-type', 'application/json')
         .end((err, res) => {
           if (err) return done(err)
 
           res.statusCode.should.eql(401)
-
-          app.components[
-            '/vtest/testdb/test-schema'
-          ].model.settings = modelSettings
 
           done()
         })

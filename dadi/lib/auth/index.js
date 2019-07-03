@@ -24,7 +24,7 @@ const AuthMiddleware = function(server) {
  * @param  {http.ServerResponse}    res
  * @param  {Function}               next
  */
-AuthMiddleware.prototype.authenticateRequest = function(req, res, next) {
+AuthMiddleware.prototype.authenticateRequest = function(req, _, next) {
   if (req.url === this.tokenRoute) return next()
 
   const header = req.headers && req.headers.authorization
@@ -51,7 +51,7 @@ AuthMiddleware.prototype.authenticateRequest = function(req, res, next) {
  * @param  {http.ServerResponse}    res
  * @param  {Function}               next
  */
-AuthMiddleware.prototype.handleInvalidCredentials = function(req, res, next) {
+AuthMiddleware.prototype.handleInvalidCredentials = function(_, res, next) {
   const error = new Error('Invalid Credentials')
 
   error.statusCode = 401
@@ -71,11 +71,7 @@ AuthMiddleware.prototype.handleInvalidCredentials = function(req, res, next) {
  * @param  {http.ServerResponse}    res
  * @param  {Function}               next
  */
-AuthMiddleware.prototype.handleClientInNeedOfUpgrade = function(
-  req,
-  res,
-  next
-) {
+AuthMiddleware.prototype.handleClientInNeedOfUpgrade = function(_, res, next) {
   const error = new Error('Client must be upgraded')
 
   error.statusCode = 401

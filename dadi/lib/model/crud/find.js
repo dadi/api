@@ -32,14 +32,17 @@ const debug = require('debug')('api:model')
  * @param  {Number}  version - version of the document to retrieve
  * @return {Promise<ResultSet>}
  */
-function find({client, isRestIDQuery, query = {}, options = {}, version} = {}) {
-  if (!this.connection.db) {
-    return Promise.reject(new Error('DB_DISCONNECTED'))
-  }
-
+async function find({
+  client,
+  isRestIDQuery,
+  query = {},
+  options = {},
+  version
+} = {}) {
   debug('Model find: %o %o', query, options)
 
-  let queryFields = {}
+  const database = await this.dataConnector
+  const queryFields = {}
 
   // Transforming the fields projection, if one is present. It
   // involves transforming reference fields with dot-notation,
@@ -98,38 +101,39 @@ function find({client, isRestIDQuery, query = {}, options = {}, version} = {}) {
     return Promise.reject(err)
   }
 
-  return this.validateAccess({
+  const {fields, query: queryAfterACL} = await this.validateAccess({
     client,
     fields: queryFields,
     query,
     type: 'read'
-  }).then(({fields, query}) => {
-    // If merging the request query with ACL data resulted in
-    // an impossible query, we can simply return an empty result
-    // set without even going to the database.
-    if (query instanceof Error && query.message === 'EMPTY_RESULT_SET') {
-      return this._buildEmptyResponse(options)
-    }
+  })
 
-    queryFields = fields
+  // If merging the request query with ACL data resulted in
+  // an impossible query, we can simply return an empty result
+  // set without even going to the database.
+  if (
+    queryAfterACL instanceof Error &&
+    queryAfterACL.message === 'EMPTY_RESULT_SET'
+  ) {
+    return this._buildEmptyResponse(options)
+  }
 
-    const queryOptions = Object.assign({}, options, {
-      fields: queryFields
-    })
+  const queryOptions = Object.assign({}, options, {
+    fields
+  })
 
-    if (isRestIDQuery && version && this.history) {
-      return this.history.getVersion(version, queryOptions)
-    }
+  if (isRestIDQuery && version && this.history) {
+    return this.history.getVersion(version, queryOptions)
+  }
 
-    return this._transformQuery(query, options).then(query => {
-      return this.connection.db.find({
-        query,
-        collection: this.name,
-        options: queryOptions,
-        schema: this.schema,
-        settings: this.settings
-      })
-    })
+  const transformedQuery = await this._transformQuery(queryAfterACL, options)
+
+  return database.find({
+    query: transformedQuery,
+    collection: this.name,
+    options: queryOptions,
+    schema: this.schema,
+    settings: this.settings
   })
 }
 

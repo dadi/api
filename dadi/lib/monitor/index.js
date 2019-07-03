@@ -7,13 +7,17 @@ const Monitor = function(path) {
 
   this.path = path
 
-  const self = this
-
-  this.watcher = fs.watch(this.path, function(eventName, filename) {
-    setTimeout(function() {
-      self.emit('change', filename)
-    }, 50)
-  })
+  try {
+    this.watcher = fs.watch(this.path, (eventName, filename) => {
+      setTimeout(() => {
+        this.emit('change', filename)
+      }, 50)
+    })
+  } catch (err) {
+    if (err.code !== 'ENOENT') {
+      throw err
+    }
+  }
 }
 
 // inherits from EventEmitter

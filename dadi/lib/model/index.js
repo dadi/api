@@ -1,12 +1,13 @@
 'use strict'
 
+const {hooksByFieldType} = require('./../fields')
 const config = require('./../../../config')
 const Connection = require('./connection')
 const dadiMetadata = require('@dadi/metadata')
 const deepMerge = require('deepmerge')
-const fields = require('./../fields')
 const History = require('./history')
 const logger = require('@dadi/logger')
+const schemaStore = require('./schemaStore')
 const Validator = require('@dadi/api-validator')
 
 const DEFAULT_HISTORY_COLLECTION_SUFFIX = 'Versions'
@@ -40,107 +41,64 @@ const INTERNAL_PROPERTIES = [
  * @property {Array} results - list of documents
  */
 
-// Pool of initialised models.
-const _models = {}
-
 /**
  * Creates a new Model instance
  * @constructor
  * @classdesc
  */
-const Model = function(name, schema, connection, settings) {
+const Model = function({
+  isMediaCollection = false,
+  name,
+  property,
+  schema,
+  settings,
+  usePropertyDatabase
+}) {
   this.acl = require('./acl')
-
-  // Attach collection name.
+  this.isMediaCollection = isMediaCollection
   this.name = name
+  this.property = property
+  this.schema = schema
+  this.settings = settings || {}
+  this.usePropertyDatabase = usePropertyDatabase
 
-  // Attach original schema.
-  if (_models[name] && (!schema || !Object.keys(schema).length)) {
-    this.schema = _models[name].schema
-  } else {
-    this.schema = schema
-  }
+  // Initialise the connections needed and run some initialisation once the
+  // connections are ready.
+  this.dataConnector = this._connect(schema).then(database => {
+    // Unless `enableVersioning` (or `storeRevisions`, for backward-compatibility)
+    // is explicitly set to `false`, we enable history.
+    if (
+      this.settings.enableVersioning !== false &&
+      this.settings.storeRevisions !== false
+    ) {
+      const versioningCollection =
+        this.settings.versioningCollection ||
+        this.settings.revisionCollection ||
+        this.name + DEFAULT_HISTORY_COLLECTION_SUFFIX
 
-  // Attach default settings.
-  this.settings = Object.assign({}, settings, this.schema.settings)
+      this.history = new History({
+        database: this.property,
+        name: versioningCollection
+      })
+    }
 
-  // Set ACL key
-  this.aclKey =
-    this.settings.aclKey || `collection:${this.settings.database}_${name}`
+    // Add any configured indexes.
+    if (this.settings.index && !Array.isArray(this.settings.index)) {
+      this.settings.index = [
+        {
+          keys: this.settings.index.keys || {},
+          options: this.settings.index.options || {}
+        }
+      ]
+    }
 
-  // Attach display name if supplied.
-  if (this.settings.displayName) {
-    this.displayName = this.settings.displayName
-  }
+    // Create indexes.
+    if (this.settings.index) {
+      this.createIndex()
+    }
 
-  // Composable reference fields.
-  if (this.settings.compose) {
-    this.compose = this.settings.compose
-  }
-
-  // Add any configured indexes.
-  if (this.settings.index && !Array.isArray(this.settings.index)) {
-    this.settings.index = [
-      {
-        keys: this.settings.index.keys || {},
-        options: this.settings.index.options || {}
-      }
-    ]
-  }
-
-  // Unless `enableVersioning` (or `storeRevisions`, for backward-compatibility)
-  // is explicitly set to `false`, we enable history.
-  if (
-    this.settings.enableVersioning !== false &&
-    this.settings.storeRevisions !== false
-  ) {
-    const versioningCollection =
-      this.settings.versioningCollection ||
-      this.settings.revisionCollection ||
-      this.name + DEFAULT_HISTORY_COLLECTION_SUFFIX
-
-    this.history = new History({
-      database: this.settings.database,
-      name: versioningCollection
-    })
-  }
-
-  // Create connection for this model, if it doesn't exist.
-  this.connection =
-    connection ||
-    Connection(
-      {
-        collection: this.name,
-        database: this.settings.database
-      },
-      this.name,
-      config.get('datastore')
-    )
-
-  this.connection.setMaxListeners(35)
-
-  if (config.get('env') !== 'test') {
-    this.connection.once('disconnect', err => {
-      logger.error({module: 'model'}, err)
-    })
-  }
-
-  // Save reference to this model in the pool.
-  _models[name] = this
-
-  // Setup validatior.
-  this.validator = new Validator({
-    i18nFieldCharacter: config.get('i18n.fieldCharacter'),
-    internalFieldsPrefix: config.get('internalFieldsPrefix')
+    return database
   })
-
-  // Create indexes.
-  if (this.settings.index) {
-    this.createIndex()
-  }
-
-  // Compile a list of hooks by field type.
-  this.hooks = this._compileFieldHooks()
 }
 
 /**
@@ -157,35 +115,24 @@ Model.prototype._buildEmptyResponse = function(options = {}) {
   }
 }
 
-/**
- * Creates an object containing an array of field hooks grouped
- * by field type.
- *
- * @return {Object}
- */
-Model.prototype._compileFieldHooks = function() {
-  const hooks = {}
+Model.prototype._connect = async function(schema) {
+  const connection = Connection(
+    {
+      collection: this.name,
+      database: this.property
+    },
+    this.name,
+    config.get('datastore')
+  )
 
-  Object.keys(fields).forEach(key => {
-    let type = fields[key].type
+  if (schema === undefined) {
+    const {fields, settings} = await this.getSchema()
 
-    // Exit if the field doesn't export a `type` property.
-    if (!type) return
+    this.schema = fields
+    this.settings = settings
+  }
 
-    // Ensure `type` is an array.
-    if (!Array.isArray(type)) {
-      type = [type]
-    }
-
-    type.forEach(item => {
-      const sanitisedItem = item.toString().toLowerCase()
-
-      hooks[sanitisedItem] = hooks[sanitisedItem] || []
-      hooks[sanitisedItem].push(fields[key])
-    })
-  })
-
-  return hooks
+  return connection.whenConnected()
 }
 
 /**
@@ -260,7 +207,7 @@ Model.prototype._createValidationError = function(
  * @return {Promise<ResultSet>}
  * @api private
  */
-Model.prototype._formatResultSet = function(
+Model.prototype._formatResultSet = async function(
   results,
   formatForInput,
   data = {}
@@ -285,103 +232,102 @@ Model.prototype._formatResultSet = function(
     }
   }
 
-  return Promise.all(
-    documents.map(document => {
-      if (!document) {
-        return null
-      }
+  const database = await this.dataConnector
+  const dataConnectorInternals = database.settings.internalProperties || []
+  const documentQueue = documents.map(async document => {
+    if (!document) {
+      return null
+    }
 
-      if (typeof document === 'string') {
-        return document
-      }
+    if (typeof document === 'string') {
+      return document
+    }
 
-      // A field projection from the actual fields present in the document.
-      let documentFields = Object.keys(document).reduce((result, field) => {
-        result[field] = 1
+    // A field projection from the actual fields present in the document.
+    let documentFields = Object.keys(document).reduce((result, field) => {
+      result[field] = 1
 
-        return result
-      }, {})
+      return result
+    }, {})
 
-      // If `fields` is defined, we need to filter out any fields that are
-      // not supposed to be there due to ACL permissions.
-      if (fields) {
-        documentFields = this._mergeQueryAndAclFields(fields, documentFields)
-      }
+    // If `fields` is defined, we need to filter out any fields that are
+    // not supposed to be there due to ACL permissions.
+    if (fields) {
+      documentFields = this._mergeQueryAndAclFields(fields, documentFields)
+    }
 
-      return Object.keys(document)
-        .sort()
-        .reduce((result, field) => {
-          // If `fields` is defined, we filter out any fields that are not
-          // part of that projection (excluding _id).
-          if (field !== '_id' && documentFields[field] !== 1) {
-            return result
-          }
+    const documentAfterHooks = await Object.keys(document)
+      .sort()
+      .reduce((result, field) => {
+        // If `fields` is defined, we filter out any fields that are not
+        // part of that projection (excluding _id).
+        if (field !== '_id' && documentFields[field] !== 1) {
+          return result
+        }
 
-          return result.then(newDocument => {
-            const hookName = formatForInput ? 'beforeSave' : 'beforeOutput'
+        return result.then(newDocument => {
+          const hookName = formatForInput ? 'beforeSave' : 'beforeOutput'
 
-            // The hook will receive the portion of the document that
-            // corresponds to the field in question, including any language
-            // variations.
-            const subDocument = Object.keys(document).reduce(
-              (subDocument, rawField) => {
-                const canonicalField = rawField.split(
-                  config.get('i18n.fieldCharacter')
-                )[0]
+          // The hook will receive the portion of the document that
+          // corresponds to the field in question, including any language
+          // variations.
+          const subDocument = Object.keys(document).reduce(
+            (subDocument, rawField) => {
+              const canonicalField = rawField.split(
+                config.get('i18n.fieldCharacter')
+              )[0]
 
-                if (canonicalField === field) {
-                  subDocument[rawField] = document[rawField]
-                }
+              if (canonicalField === field) {
+                subDocument[rawField] = document[rawField]
+              }
 
-                return subDocument
-              },
-              {}
-            )
+              return subDocument
+            },
+            {}
+          )
 
-            return this.runFieldHooks({
-              config,
-              data: Object.assign({}, data, {document}),
-              input: subDocument,
-              field,
-              name: hookName
-            }).then(subDocument => {
-              // Doing a shallow merge (i.e. `Object.assign`) isn't enough here,
-              // because several fields might need to write to the same property
-              // in the document (e.g. `_composed`). We need a deep merge.
-              return deepMerge(newDocument, subDocument)
-            })
+          return this.runFieldHooks({
+            config,
+            data: Object.assign({}, data, {document}),
+            input: subDocument,
+            field,
+            name: hookName
+          }).then(subDocument => {
+            // Doing a shallow merge (i.e. `Object.assign`) isn't enough here,
+            // because several fields might need to write to the same property
+            // in the document (e.g. `_composed`). We need a deep merge.
+            return deepMerge(newDocument, subDocument)
           })
-        }, Promise.resolve({}))
-        .then(document => {
-          const internals = this.connection.db.settings.internalProperties || []
-
-          return Object.keys(document)
-            .sort()
-            .reduce((sanitisedDocument, field) => {
-              const property =
-                field.indexOf(prefixes.from) === 0
-                  ? prefixes.to + field.slice(1)
-                  : field
-
-              // Stripping null values from the response.
-              if (document[field] === null) {
-                return sanitisedDocument
-              }
-
-              // Stripping internal properties (other than `_id`)
-              if (field !== '_id' && internals.includes(field)) {
-                return sanitisedDocument
-              }
-
-              sanitisedDocument[property] = document[field]
-
-              return sanitisedDocument
-            }, {})
         })
-    })
-  ).then(newResultSet => {
-    return multiple ? newResultSet : newResultSet[0]
+      }, Promise.resolve({}))
+
+    return Object.keys(documentAfterHooks)
+      .sort()
+      .reduce((sanitisedDocument, field) => {
+        const property =
+          field.indexOf(prefixes.from) === 0
+            ? prefixes.to + field.slice(1)
+            : field
+
+        // Stripping null values from the response.
+        if (documentAfterHooks[field] === null) {
+          return sanitisedDocument
+        }
+
+        // Stripping internal properties (other than `_id`)
+        if (field !== '_id' && dataConnectorInternals.includes(field)) {
+          return sanitisedDocument
+        }
+
+        sanitisedDocument[property] = documentAfterHooks[field]
+
+        return sanitisedDocument
+      }, {})
   })
+
+  const formattedDocuments = await Promise.all(documentQueue)
+
+  return multiple ? formattedDocuments : formattedDocuments[0]
 }
 
 /**
@@ -606,7 +552,9 @@ Model.prototype.formatQuery = function(query) {
  * @returns {String}
  */
 Model.prototype.getAclKey = function() {
-  return this.aclKey
+  return this.isMediaCollection
+    ? `media:${this.name}`
+    : `collection:${this.property}_${this.name}`
 }
 
 /**
@@ -616,7 +564,7 @@ Model.prototype.getAclKey = function() {
  * @return {Object} the field schema
  */
 Model.prototype.getField = function(name) {
-  return this.schema[name]
+  return this.schema && this.schema[name]
 }
 
 /**
@@ -628,45 +576,47 @@ Model.prototype.getField = function(name) {
  * @return {String} the field type
  */
 Model.prototype.getFieldType = function(field) {
-  if (
-    !this.getField(field) ||
-    !this.getField(field).type ||
-    !this.getField(field).type.length
-  ) {
+  const fieldSchema = this.getField(field)
+
+  if (!fieldSchema || !fieldSchema.type || !fieldSchema.type.length) {
     return undefined
   }
 
-  return this.getField(field).type.toLowerCase()
+  return fieldSchema.type.toLowerCase()
 }
 
 /**
- * Returns a reference to the model of another collection.
+ * Returns a new instance of Model for a given property/collection pair. It may
+ * seem strange for this to exist as a method of Model, but sometimes models
+ * (and their required files) need to create other models, and requiring the
+ * Model class would generate circular dependencies. This is a way around that.
  *
- * @param  {String} name - name of the collection
- * @return {Model}
+ * @returns {String}
  */
-Model.prototype.getForeignModel = function(name) {
-  return _models[name]
+Model.prototype.getForeignModel = function({name, property = this.property}) {
+  return new Model({
+    name,
+    property
+  })
 }
 
 /**
- * Determines whether the given string is a valid key for
- * the model
+ * Returns the schema for the model.
  *
- * @param {String} key
- * @return A Boolean indicating whether the key is valid
- * @api public
+ * @return {Promise<Object>} sanitised document
  */
-Model.prototype.isKeyValid = function(key) {
-  if (key === '_id' || this.schema[key] !== undefined) {
-    return true
+Model.prototype.getSchema = async function() {
+  if (this.schema) {
+    return {
+      fields: this.schema,
+      settings: this.settings || {}
+    }
   }
 
-  // Check for dot-notation, verifying the existence of the
-  // root node.
-  const rootNode = key.split('.')[0]
-
-  return Boolean(this.schema[rootNode])
+  return await schemaStore.get({
+    collection: this.name,
+    property: this.property
+  })
 }
 
 /**
@@ -699,11 +649,11 @@ Model.prototype.runFieldHooks = function({data = {}, field, input, name}) {
   const fieldType = this.getFieldType(field)
   let queue = Promise.resolve(input)
 
-  if (!this.hooks[fieldType]) {
+  if (!hooksByFieldType[fieldType]) {
     return Promise.resolve(input)
   }
 
-  this.hooks[fieldType].forEach(hook => {
+  hooksByFieldType[fieldType].forEach(hook => {
     if (typeof hook[name] === 'function') {
       queue = queue.then(query => {
         return hook[name].call(
@@ -720,6 +670,7 @@ Model.prototype.runFieldHooks = function({data = {}, field, input, name}) {
   })
 
   return queue.catch(error => {
+    console.log(error)
     const errorObject = {
       field,
       message: error.message
@@ -980,34 +931,39 @@ Model.prototype.validateQuery = function(query) {
   return response
 }
 
-Model.prototype.count = require('./collections/count')
-Model.prototype.create = require('./collections/create')
-Model.prototype.createIndex = require('./collections/createIndex')
-Model.prototype.delete = require('./collections/delete')
-Model.prototype.find = require('./collections/find')
-Model.prototype.get = require('./collections/get')
-Model.prototype.getIndexes = require('./collections/getIndexes')
-Model.prototype.getRevisions = require('./collections/getRevisions')
-Model.prototype.getStats = require('./collections/getStats')
-Model.prototype.getVersions = require('./collections/getVersions')
-Model.prototype.update = require('./collections/update')
+Model.prototype.validator = new Validator({
+  i18nFieldCharacter: config.get('i18n.fieldCharacter'),
+  internalFieldsPrefix: config.get('internalFieldsPrefix')
+})
 
-module.exports = function(name, schema, connection, settings) {
-  if (schema) {
-    return new Model(name, schema, connection, settings)
+Model.prototype.count = require('./crud/count')
+Model.prototype.create = require('./crud/create')
+Model.prototype.createIndex = require('./crud/createIndex')
+Model.prototype.delete = require('./crud/delete')
+Model.prototype.find = require('./crud/find')
+Model.prototype.get = require('./crud/get')
+Model.prototype.getIndexes = require('./crud/getIndexes')
+Model.prototype.getStats = require('./crud/getStats')
+Model.prototype.getVersions = require('./crud/getVersions')
+Model.prototype.update = require('./crud/update')
+
+module.exports = function(options) {
+  if (typeof options === 'string') {
+    // throw new Error(
+    //   'Legacy model syntax detected. Please call Model with `{collection, property}`'
+    // )
+
+    return
   }
 
-  return _models[name]
-}
-
-module.exports.getByAclKey = aclKey => {
-  const modelName = Object.keys(_models).find(key => {
-    return _models[key].getAclKey() === aclKey
-  })
-
-  if (modelName) {
-    return _models[modelName]
-  }
+  return new Model(options)
 }
 
 module.exports.Model = Model
+module.exports.getAclKeyForCollection = ({collection, property}) => {
+  return Model.prototype.getAclKey.call({
+    isMediaCollection: false,
+    name: collection,
+    property
+  })
+}

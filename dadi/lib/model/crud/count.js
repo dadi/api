@@ -19,35 +19,34 @@
  * @param {Object} query - the search query
  * @returns {Promise<Metadata>}
  */
-function count({client, options = {}, query = {}} = {}) {
-  return this.validateAccess({
+async function count({client, options = {}, query: inputQuery = {}} = {}) {
+  const {query} = await this.validateAccess({
     client,
-    query,
+    query: inputQuery,
     type: 'read'
-  }).then(({query}) => {
-    const validation = this.validateQuery(query)
-
-    if (!validation.success) {
-      const err = this._createValidationError('Bad Query')
-
-      err.json = validation
-
-      return Promise.reject(err)
-    }
-
-    if (typeof query !== 'object') {
-      return Promise.reject(this._createValidationError('Bad Query'))
-    }
-
-    return this.find({
-      query,
-      options
-    }).then(response => {
-      return {
-        metadata: response.metadata
-      }
-    })
   })
+  const validation = this.validateQuery(query)
+
+  if (!validation.success) {
+    const err = this._createValidationError('Bad Query')
+
+    err.json = validation
+
+    return Promise.reject(err)
+  }
+
+  if (typeof query !== 'object') {
+    return Promise.reject(this._createValidationError('Bad Query'))
+  }
+
+  const response = await this.find({
+    query,
+    options
+  })
+
+  return {
+    metadata: response.metadata
+  }
 }
 
 module.exports = function() {

@@ -124,6 +124,10 @@ Connection.prototype.destroy = function() {
   return Promise.resolve()
 }
 
+Connection.prototype.isConnected = function() {
+  return this.readyState === STATE_CONNECTED
+}
+
 Connection.prototype.setUpEventListeners = function(db) {
   db.on('DB_ERROR', err => {
     log.error({module: 'connection'}, err)
@@ -146,6 +150,16 @@ Connection.prototype.setUpEventListeners = function(db) {
   })
 }
 
+Connection.prototype.whenConnected = function() {
+  if (this.db && this.readyState === STATE_CONNECTED) {
+    return Promise.resolve(this.db)
+  }
+
+  return new Promise(resolve => {
+    this.on('connect', resolve)
+  })
+}
+
 /**
  * Creates instances and connects them automatically
  *
@@ -160,7 +174,9 @@ module.exports = function(options, collection, storeName) {
     if (storeSettings && storeSettings.connectWithCollection === false) {
       delete options.collection
     }
-  } catch (err) {} // eslint-disable-line
+  } catch (_) {
+    // noop
+  }
 
   const connectionKey = Object.keys(options)
     .map(option => {
@@ -168,21 +184,29 @@ module.exports = function(options, collection, storeName) {
     })
     .join(':')
 
-  // if a connection exists for the specified database, return it
+  // If a connection exists for the specified connection key, return it.
   if (connectionPool[connectionKey]) {
     return connectionPool[connectionKey]
   }
 
-  const conn = new Connection(options, storeName)
+  const connection = new Connection(options, storeName)
 
   if (collection) {
     options.collection = collection
   }
 
-  connectionPool[connectionKey] = conn
-  conn.connect(options)
+  connectionPool[connectionKey] = connection
 
-  return conn
+  connection.setMaxListeners(35)
+  connection.connect(options)
+
+  if (config.get('env') !== 'test') {
+    connection.once('disconnect', err => {
+      log.error({module: 'connection'}, err)
+    })
+  }
+
+  return connection
 }
 
 module.exports.Connection = Connection

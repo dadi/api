@@ -1,76 +1,44 @@
-const nodeVersion = Number(process.version.match(/^v(\d+\.\d+)/)[1])
-const version = require('../../package.json').version
-
 const bodyParser = require('body-parser')
 const chokidar = require('chokidar')
 const cluster = require('cluster')
-var colors = require('colors') // eslint-disable-line
+const dadiBoot = require('@dadi/boot')
 const debug = require('debug')('api:server')
-const ParseComments = require('parse-comments')
 const fs = require('fs')
+const log = require('@dadi/logger')
 const mkdirp = require('mkdirp')
+const ParseComments = require('parse-comments')
 const path = require('path')
 
-const acl = require(path.join(__dirname, '/model/acl'))
-const api = require(path.join(__dirname, '/api'))
-const AuthMiddleware = require(path.join(__dirname, '/auth'))
-const cache = require(path.join(__dirname, '/cache'))
-const Connection = require(path.join(__dirname, '/model/connection'))
-const cors = require(path.join(__dirname, '/cors'))
-const ApiConfigController = require(path.join(
-  __dirname,
-  '/controller/apiConfig'
-))
-const CacheFlushController = require(path.join(
-  __dirname,
-  '/controller/cacheFlush'
-))
-const ClientsController = require(path.join(__dirname, '/controller/clients'))
-const CollectionsController = require(path.join(
-  __dirname,
-  '/controller/collections'
-))
-const DocumentController = require(path.join(
-  __dirname,
-  '/controller/documents'
-))
-const FeatureQueryHandler = require(path.join(
-  __dirname,
-  '/controller/featureQueryHandler'
-))
-const EndpointController = require(path.join(__dirname, '/controller/endpoint'))
-const EndpointsController = require(path.join(
-  __dirname,
-  '/controller/endpoints'
-))
-const HooksController = require(path.join(__dirname, '/controller/hooks'))
-const LanguagesController = require(path.join(
-  __dirname,
-  '/controller/languages'
-))
-const MediaController = require(path.join(__dirname, '/controller/media'))
-const ResourcesController = require(path.join(
-  __dirname,
-  '/controller/resources'
-))
-const RolesController = require(path.join(__dirname, '/controller/roles'))
-const SearchController = require(path.join(__dirname, '/controller/search'))
-const SearchIndexController = require(path.join(
-  __dirname,
-  '/controller/searchIndex'
-))
-const StatusEndpointController = require(path.join(
-  __dirname,
-  '/controller/status'
-))
-const dadiBoot = require('@dadi/boot')
-const Model = require(path.join(__dirname, '/model'))
-const mediaModel = require(path.join(__dirname, '/model/media'))
-const monitor = require(path.join(__dirname, '/monitor'))
+const acl = require('./model/acl')
+const api = require('./api')
+const AuthMiddleware = require('./auth')
+const cache = require('./cache')
+const config = require('../../config')
+const Connection = require('./model/connection')
+const cors = require('./cors')
+const ApiConfigController = require('./controller/apiConfig')
+const CacheFlushController = require('./controller/cacheFlush')
+const ClientsController = require('./controller/clients')
+const CollectionsController = require('./controller/collections')
+const DocumentController = require('./controller/documents')
+const FeatureQueryHandler = require('./controller/featureQueryHandler')
+const EndpointController = require('./controller/endpoint')
+const EndpointsController = require('./controller/endpoints')
+const HooksController = require('./controller/hooks')
+const LanguagesController = require('./controller/languages')
+const mediaModel = require('./model/media')
+const MediaController = require('./controller/media')
+const Model = require('./model')
+const monitor = require('./monitor')
+const ResourcesController = require('./controller/resources')
+const RolesController = require('./controller/roles')
+const schemaStore = require('./model/schemaStore')
+const SearchController = require('./controller/search')
+const SearchIndexController = require('./controller/searchIndex')
+const StatusEndpointController = require('./controller/status')
+const version = require('../../package.json').version
 
-const config = require(path.join(__dirname, '/../../config'))
-
-const log = require('@dadi/logger')
+const nodeVersion = Number(process.version.match(/^v(\d+\.\d+)/)[1])
 
 log.init(config.get('logging'), {}, process.env.NODE_ENV)
 
@@ -316,8 +284,6 @@ Server.prototype.start = function(done) {
   })
   server.on('error', onError)
 
-  this.loadApi(options)
-
   ClientsController(this)
   CollectionsController(this)
   EndpointsController(this)
@@ -327,6 +293,8 @@ Server.prototype.start = function(done) {
   RolesController(this)
   SearchController(this)
   SearchIndexController(this)
+
+  this.loadApi(options)
 
   this.readyState = 1
 
@@ -391,7 +359,6 @@ Server.prototype.loadPaths = function(paths, done) {
 }
 
 Server.prototype.loadApi = function(options) {
-  const self = this
   const collectionPath = (this.collectionPath =
     options.collectionPath ||
     path.join(__dirname, '/../../workspace/collections'))
@@ -400,25 +367,21 @@ Server.prototype.loadApi = function(options) {
   const hookPath = (this.hookPath =
     options.hookPath || path.join(__dirname, '/../../workspace/hooks'))
 
-  self.updateHooks(hookPath)
-  self.addMonitor(hookPath, function(hook) {
-    self.updateHooks(hookPath)
+  this.updateHooks(hookPath)
+  this.addMonitor(hookPath, () => {
+    this.updateHooks(hookPath)
   })
 
-  // Load initial api descriptions
-  this.updateVersions(collectionPath)
+  this.updateVersions(collectionPath, {isCollection: true})
 
-  this.addMonitor(collectionPath, function(versionName) {
-    if (path)
-      return self.updateDatabases(path.join(collectionPath, versionName))
-    self.updateVersions(collectionPath)
+  this.addMonitor(collectionPath, () => {
+    this.updateVersions(collectionPath, {isCollection: true})
   })
 
-  // this.updateEndpoints(endpointPath)
-  this.updateVersions(endpointPath)
+  this.updateVersions(endpointPath, {isEndpoint: true})
 
-  this.addMonitor(endpointPath, function(endpointFile) {
-    self.updateVersions(endpointPath)
+  this.addMonitor(endpointPath, () => {
+    this.updateVersions(endpointPath, {isEndpoint: true})
   })
 
   this.loadMediaCollections()
@@ -426,7 +389,11 @@ Server.prototype.loadApi = function(options) {
   CacheFlushController(this)
   StatusEndpointController(this)
 
-  this.app.use('/hello', function(req, res, next) {
+  // It's important that the collection routes (which are dynamic) are loaded
+  // last.
+  this.addCollectionResource()
+
+  this.app.use('/hello', (req, res, next) => {
     const method = req.method && req.method.toLowerCase()
 
     if (method !== 'get') {
@@ -437,77 +404,70 @@ Server.prototype.loadApi = function(options) {
 
     return res.end('Welcome to API')
   })
-
-  // need to ensure filepath exists since this could be a removal
-  //     if (endpointFile && fs.existsSync(filepath)) {
-  //         return self.addEndpointResource({
-  //             endpoint: endpointFile,
-  //             filepath: filepath
-  //         })
-  //     }
-  //     self.updateEndpoints(endpointPath)
-  // })
 }
 
 Server.prototype.loadConfigApi = function() {
   ApiConfigController(this)
 }
 
-Server.prototype.updateVersions = function(versionsPath) {
-  const self = this
-
+Server.prototype.updateVersions = function(
+  versionsPath,
+  {isCollection, isEndpoint}
+) {
   // Load initial api descriptions
   const versions = fs.readdirSync(versionsPath)
 
-  versions.forEach(function(version) {
+  versions.forEach(version => {
     if (version.indexOf('.') === 0) return
 
     const dirname = path.join(versionsPath, version)
 
-    if (dirname.indexOf('collections') > 0) {
-      self.updateDatabases(dirname)
+    if (isCollection) {
+      this.updateDatabases(dirname)
 
-      self.addMonitor(dirname, function(databaseName) {
-        if (databaseName)
-          return self.updateCollections(path.join(dirname, databaseName))
-        self.updateDatabases(dirname)
+      this.addMonitor(dirname, databaseName => {
+        if (databaseName) {
+          return this.updateCollections(path.join(dirname, databaseName))
+        }
+
+        this.updateDatabases(dirname)
       })
-    } else {
-      self.updateEndpoints(dirname)
+    } else if (isEndpoint) {
+      this.updateEndpoints(dirname)
 
-      self.addMonitor(dirname, function(endpoint) {
-        self.updateEndpoints(dirname)
+      this.addMonitor(dirname, () => {
+        this.updateEndpoints(dirname)
       })
     }
   })
 }
 
 Server.prototype.updateDatabases = function(databasesPath) {
-  const self = this
   let databases
 
   try {
     databases = fs.readdirSync(databasesPath)
-  } catch (e) {
+  } catch (_) {
     log.warn({module: 'server'}, databasesPath + ' does not exist')
 
     return
   }
 
-  databases.forEach(function(database) {
+  databases.forEach(database => {
     if (database.indexOf('.') === 0) return
 
     const dirname = path.join(databasesPath, database)
 
-    self.updateCollections(dirname)
+    this.updateCollections(dirname)
 
-    self.addMonitor(dirname, function(collectionFile) {
-      self.updateCollections(dirname)
+    this.addMonitor(dirname, () => {
+      this.updateCollections(dirname)
     })
   })
 }
 
 Server.prototype.updateCollections = function(collectionsPath) {
+  if (!config.get('loadCollectionSeeds')) return
   if (!fs.existsSync(collectionsPath)) return
   if (!fs.lstatSync(collectionsPath).isDirectory()) return
 
@@ -519,17 +479,10 @@ Server.prototype.updateCollections = function(collectionsPath) {
   collections.forEach(collection => {
     if (collection.indexOf('.') === 0) return
 
-    // parse the url out of the directory structure
-    const cpath = path.join(collectionsPath, collection)
-    const dirs = cpath.split(path.sep)
-    const version = dirs[dirs.length - 3]
-    const database = dirs[dirs.length - 2]
-
-    // collection should be json file containing schema
-
-    // get the schema
-    const schema = require(cpath)
-    let name = collection.slice(
+    const filePath = path.join(collectionsPath, collection)
+    const filePathNodes = filePath.split(path.sep)
+    const database = filePathNodes[filePathNodes.length - 2]
+    const name = collection.slice(
       collection.indexOf('.') + 1,
       collection.indexOf('.json')
     )
@@ -540,18 +493,36 @@ Server.prototype.updateCollections = function(collectionsPath) {
       )
     }
 
-    // override the default name using the supplied property
-    if (schema.model) {
-      name = schema.model
-    }
+    const {fields, model, settings, timestamp = 0} = require(filePath)
+    const modelName = model || name
 
-    this.addCollectionResource({
-      route: `/${version}/${database}/${name}`,
-      filepath: cpath,
-      name,
-      schema,
-      database
-    })
+    schemaStore
+      .add({
+        aclKey: Model.getAclKeyForCollection({
+          collection: modelName,
+          property: database
+        }),
+        collection: modelName,
+        fields,
+        property: database,
+        settings,
+        timestamp
+      })
+      .then(({created, existing}) => {
+        let message = `'${database}/${modelName}' collection seed found in workspace (timestamp: ${timestamp}). `
+
+        if (created) {
+          message += existing
+            ? `Previous remote schema (${existing.timestamp}) updated.`
+            : 'New remote schema created.'
+        } else {
+          message += existing
+            ? `Remote schema is more recent (${existing.timestamp}). Not updating.`
+            : 'Could not update remote schema.'
+        }
+
+        log.info({module: 'server'}, message)
+      })
   })
 }
 
@@ -588,74 +559,33 @@ Server.prototype.loadMediaCollections = function() {
   })
 }
 
-/**
- * With each schema we create a model.
- * With each model we create a controller, that acts as a component of the REST api.
- * We then add the component to the api by adding a route to the app and mapping
- * req.method` to component methods
- */
-Server.prototype.addCollectionResource = function(options) {
-  const fields = Object.assign({}, options.schema.fields)
-  const settings = Object.assign({}, options.schema.settings, {
-    database: options.database
-  })
-  const model = Model(options.name, fields, null, settings, settings.database)
-  const isMediaCollection = settings.type && settings.type === 'mediaCollection'
-  const controller = isMediaCollection
-    ? MediaController(model, this)
-    : DocumentController(model, this)
-  const componentType = isMediaCollection
-    ? this.COMPONENT_TYPE.MEDIA_COLLECTION
-    : this.COMPONENT_TYPE.COLLECTION
+Server.prototype.addCollectionResource = function() {
+  const controller = DocumentController(this)
 
   this.addComponent(
     {
-      route: options.route,
-      component: controller,
-      filepath: options.filepath
+      route: '/:version/:database/:collection',
+      component: controller
     },
-    componentType
+    this.COMPONENT_TYPE.COLLECTION
   )
 
-  acl.registerResource(
-    model.aclKey,
-    `${options.database}/${options.name} collection`
-  )
-
-  // Watch the schema's file and update it in place.
-  this.addMonitor(options.filepath, filename => {
-    // Invalidate schema file cache then reload.
-    delete require.cache[options.filepath]
-
-    try {
-      const schemaObj = require(options.filepath)
-      const parsedSchema = JSON.parse(schemaObj)
-
-      this.components[options.route].model.schema = parsedSchema.fields
-      this.components[options.route].model.settings = parsedSchema.settings
-    } catch (e) {
-      // If file was removed, "un-use" this component.
-      if (e && e.code === 'ENOENT') {
-        this.removeMonitor(options.filepath)
-        this.removeComponent(options.route, controller)
-      }
-    }
-  })
+  // acl.registerResource(
+  //   model.aclKey,
+  //   `${options.database}/${options.name} collection`
+  // )
 }
 
 Server.prototype.addMediaCollectionResource = function(options) {
-  const aclKey = `media:${options.name}`
-  const model = Model(
-    options.name,
-    options.schema.fields,
-    null,
-    Object.assign({}, options.schema.settings, {
-      aclKey
-    })
-  )
+  const model = Model({
+    isMediaCollection: true,
+    name: options.name,
+    schema: options.schema.fields,
+    settings: options.schema.settings
+  })
   const controller = MediaController(model, this)
 
-  acl.registerResource(aclKey, `${options.name} media bucket`)
+  acl.registerResource(model.getAclKey(), `${options.name} media bucket`)
 
   this.addComponent(
     {
@@ -750,11 +680,16 @@ Server.prototype.addEndpointResource = function(options) {
 }
 
 Server.prototype.updateHooks = function(hookPath) {
-  const self = this
-  const hooks = fs.readdirSync(hookPath)
+  let hooks = []
 
-  hooks.forEach(function(hook) {
-    self.addHook({
+  try {
+    hooks = fs.readdirSync(hookPath)
+  } catch (_) {
+    // Hooks directory not found. All good.
+  }
+
+  hooks.forEach(hook => {
+    this.addHook({
       hook,
       filepath: path.join(hookPath, hook)
     })

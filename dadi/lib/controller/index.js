@@ -12,14 +12,14 @@ Controller.prototype._getURLParameters = function(requestUrl) {
   return parsedUrl.query
 }
 
-Controller.prototype._prepareQuery = function(req) {
+Controller.prototype._prepareQuery = function(req, model) {
   const path = url.parse(req.url, true)
   const apiVersion = path.pathname.split('/')[1]
   const options = this._getURLParameters(req.url)
   let query = help.parseQuery(options.filter)
 
   // Formatting query
-  query = this.model.formatQuery(query)
+  query = model.formatQuery(query)
 
   // If id is present in the url, add to the query.
   if (req.params && req.params.id) {
@@ -36,17 +36,17 @@ Controller.prototype._prepareQuery = function(req) {
   }
 
   // add the model's default filters, if set
-  if (typeof this.model.settings.defaultFilters === 'object') {
-    Object.assign(query, this.model.settings.defaultFilters)
+  if (typeof model.settings.defaultFilters === 'object') {
+    Object.assign(query, model.settings.defaultFilters)
   }
 
   return query
 }
 
-Controller.prototype._prepareQueryOptions = function(options) {
+Controller.prototype._prepareQueryOptions = function(options, model) {
   const response = {errors: []}
   const queryOptions = {}
-  const settings = this.model.settings || {}
+  const settings = model.settings || {}
   let parsedSkip
 
   if (options.page) {
@@ -118,8 +118,8 @@ Controller.prototype._prepareQueryOptions = function(options) {
     Object.assign(queryOptions.fields, JSON.parse(options.fields))
   }
 
-  if (typeof this.model.settings.fieldLimiters === 'object') {
-    Object.assign(queryOptions.fields, this.model.settings.fieldLimiters)
+  if (typeof model.settings.fieldLimiters === 'object') {
+    Object.assign(queryOptions.fields, model.settings.fieldLimiters)
   }
 
   // Compose / reference fields.

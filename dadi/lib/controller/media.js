@@ -90,10 +90,7 @@ MediaController.prototype._signToken = function(obj) {
 MediaController.prototype.count = function(req, res, next) {
   const path = url.parse(req.url, true)
   const query = this._prepareQuery(req, this.model)
-  const parsedOptions = this._prepareQueryOptions(
-    path.query,
-    this.model.settings
-  )
+  const parsedOptions = this._prepareQueryOptions(path.query, this.model)
 
   if (parsedOptions.errors.length > 0) {
     return help.sendBackJSON(400, res, next)(null, parsedOptions)
@@ -191,10 +188,7 @@ MediaController.prototype.delete = function(req, res, next) {
 MediaController.prototype.get = function(req, res, next) {
   const path = url.parse(req.url, true)
   const query = this._prepareQuery(req, this.model)
-  const parsedOptions = this._prepareQueryOptions(
-    path.query,
-    this.model.settings
-  )
+  const parsedOptions = this._prepareQueryOptions(path.query, this.model)
 
   if (parsedOptions.errors.length > 0) {
     return help.sendBackJSON(400, res, next)(null, parsedOptions)
@@ -215,6 +209,7 @@ MediaController.prototype.get = function(req, res, next) {
       help.sendBackJSON(200, res, next)(null, response)
     })
     .catch(err => {
+      console.log(err)
       help.sendBackJSON(500, res, next)(err)
     })
 }

@@ -199,6 +199,7 @@ Client.prototype.get = function(clientId, secret) {
         results
       }
     })
+    .catch(console.log)
 }
 
 /**

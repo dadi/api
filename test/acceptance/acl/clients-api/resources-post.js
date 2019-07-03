@@ -1,10 +1,6 @@
-const app = require('./../../../../dadi/lib')
 const config = require('./../../../../config')
 const help = require('./../../help')
 const request = require('supertest')
-const should = require('should')
-
-const configBackup = config.get()
 const client = request(
   `http://${config.get('server.host')}:${config.get('server.port')}`
 )
@@ -357,7 +353,7 @@ module.exports = () => {
           clients: {
             update: true
           },
-          'collection:library_book': {
+          'collection:non_existing': {
             read: true
           }
         }

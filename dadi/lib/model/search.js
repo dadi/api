@@ -54,6 +54,9 @@ const SCHEMA_WORDS = {
       {
         keys: {word: 1},
         options: {unique: true}
+      },
+      {
+        keys: {collection: 1}
       }
     ]
   }
@@ -73,7 +76,7 @@ const Search = function() {}
  *
  * @param {Object} model
  */
-Search.prototype.batchIndexCollection = function(
+Search.prototype.batchIndexCollection = async function(
   model,
   {pageNumber = 1, pageSize = 1} = {}
 ) {
@@ -81,30 +84,27 @@ Search.prototype.batchIndexCollection = function(
     limit: pageSize,
     skip: (pageNumber - 1) * pageSize
   }
-
-  return model
-    .find({
-      options,
-      query: {}
+  const {metadata, results} = await model.find({
+    options,
+    query: {}
+  })
+  const indexableFields = await this.getIndexableFields(model)
+  const factoryFn = document => {
+    return this.indexDocument({
+      collection: model.name,
+      document,
+      indexableFields,
+      property: model.property
     })
-    .then(({metadata, results}) => {
-      const indexableFields = this.getIndexableFields(model.schema)
-      const factoryFn = document => {
-        return this.indexDocument({
-          collection: model.name,
-          document,
-          indexableFields
-        })
-      }
+  }
 
-      return promiseQueue(results, factoryFn, {interval: 20}).then(() => {
-        if (pageNumber * pageSize < metadata.totalCount) {
-          return this.batchIndexCollection(model, {
-            pageNumber: pageNumber + 1
-          })
-        }
-      })
+  await promiseQueue(results, factoryFn, {interval: 20})
+
+  if (pageNumber * pageSize < metadata.totalCount) {
+    return this.batchIndexCollection(model, {
+      pageNumber: pageNumber + 1
     })
+  }
 }
 
 /**
@@ -113,13 +113,17 @@ Search.prototype.batchIndexCollection = function(
  *
  * @param {Array} models
  */
-Search.prototype.batchIndexCollections = function(models) {
+Search.prototype.batchIndexCollections = async function(models) {
   // We're only interested in models with at least one indexable field.
-  const indexableModels = models.filter(model => {
-    const fields = this.getIndexableFields(model.schema)
+  const indexableModels = Promise.all(
+    models.map(async (model, index) => {
+      const fields = await this.getIndexableFields(model)
 
-    return Object.keys(fields).length > 0
-  })
+      return Object.keys(fields).length > 0 ? index : null
+    })
+  )
+    .filter(index => index !== null)
+    .map(index => models[index])
 
   return promiseQueue(indexableModels, this.batchIndexCollection.bind(this), {
     interval: 100
@@ -171,7 +175,7 @@ Search.prototype.delete = function(documents) {
  * @return {Promise} - a query containing IDs of documents that contain the
  *                     searchTerm
  */
-Search.prototype.find = function({
+Search.prototype.find = async function({
   client,
   collections,
   fields,
@@ -185,88 +189,87 @@ Search.prototype.find = function({
   const tokens = this.tokenise(query)
 
   // Find matches for the various tokens in the words collection.
-  return this.findWords(tokens, language)
-    .then(words => {
-      const wordIds = words.results.map(word => word._id.toString())
+  const words = await this.findWords(tokens, language)
+  const wordIds = words.results.map(word => word._id.toString())
 
-      // Find matches for the word IDs in the search index collection,
-      // limiting the results to the collections specified.
-      return this.getIndexResults({
-        collections,
-        options: {
-          limit: POOL_SIZE
-        },
-        schema: SCHEMA_WORDS.fields,
-        settings: SCHEMA_WORDS.settings,
-        words: wordIds
+  // Find matches for the word IDs in the search index collection,
+  // limiting the results to the collections specified.
+  const resultsMap = await this.getIndexResults({
+    collections,
+    options: {
+      limit: POOL_SIZE
+    },
+    schema: SCHEMA_WORDS.fields,
+    settings: SCHEMA_WORDS.settings,
+    words: wordIds
+  })
+
+  const documents = new Map()
+  const indexableFields = {}
+
+  // We must retrieve all the documents using their respective models.
+  const queue = Object.keys(resultsMap).map(async collection => {
+    const [propertyName, collectionName] = collection.split('/')
+    const model = modelFactory({
+      name: collectionName,
+      property: propertyName
+    })
+
+    if (!model) return undefined
+
+    if (!indexableFields[collection]) {
+      const collectionFields = await this.getIndexableFields(model)
+
+      indexableFields[collection] = collectionFields
+    }
+
+    const documentIds = Object.keys(resultsMap[collection])
+    const {results} = await model.get({
+      client,
+      language,
+      query: {
+        _id: {
+          $containsAny: documentIds
+        }
+      }
+    })
+
+    results.forEach(result => {
+      documents.set(result._id, {
+        collection,
+        document: result,
+        weight: resultsMap[collection][result._id]
       })
     })
-    .then(resultsMap => {
-      const documents = new Map()
 
-      const indexableFields = {}
+    return results
+  })
 
-      // We must retrieve all the documents using their respective models.
-      const queue = Object.keys(resultsMap).map(collection => {
-        const model = modelFactory(collection)
+  await Promise.all(queue)
 
-        if (!model) return undefined
+  const results = await this.runSecondPass({
+    documents,
+    indexableFields,
+    page,
+    query
+  })
+  const metadata = createMetadata({page}, documents.size)
 
-        indexableFields[collection] =
-          indexableFields[collection] || this.getIndexableFields(model.schema)
+  // To ensure the search algorithm works effectively, it's not a good idea
+  // to exclude from the results any fields up until this point. Now that
+  // all the results have been computed, we must remove from the results
+  // any fields that may have been excluded due to a fields projection sent
+  // in the request.
+  const filteredResults = results.map(document => {
+    return this.formatDocumentForOutput(document, {fields})
+  })
 
-        const documentIds = Object.keys(resultsMap[collection])
-
-        return model
-          .get({
-            client,
-            language,
-            query: {
-              _id: {
-                $containsAny: documentIds
-              }
-            }
-          })
-          .then(({results}) => {
-            results.forEach(result => {
-              documents.set(result._id, {
-                collection,
-                document: result,
-                weight: resultsMap[collection][result._id]
-              })
-            })
-          })
-      })
-
-      return Promise.all(queue)
-        .then(() => {
-          return this.runSecondPass({
-            documents,
-            indexableFields,
-            page,
-            query
-          })
-        })
-        .then(results => {
-          const metadata = createMetadata({page}, documents.size)
-
-          // To ensure the search algorithm works effectively, it's not a good idea
-          // to exclude from the results any fields up until this point. Now that
-          // all the results have been computed, we must remove from the results
-          // any fields that may have been excluded due to a fields projection sent
-          // in the request.
-          const filteredResults = results.map(document => {
-            return this.formatDocumentForOutput(document, {fields})
-          })
-
-          return {
-            results: filteredResults,
-            metadata: Object.assign({}, metadata, {
-              search: query
-            })
-          }
-        })
+  return {
+    results: filteredResults,
+    metadata: Object.assign({}, metadata, {
+      search: query
     })
+  }
 }
 
 /**
@@ -398,21 +401,21 @@ Search.prototype.getExistingWords = function(wordsByLanguage) {
  * { "title": { "weight": 2 } }
  * ```
  */
-Search.prototype.getIndexableFields = function(schema) {
-  const indexableFields = Object.keys(schema).filter(key => {
+Search.prototype.getIndexableFields = async function(model) {
+  const {fields} = await model.getSchema()
+  const indexableFields = Object.keys(fields).filter(key => {
     return (
-      typeof schema[key] === 'object' &&
-      schema[key].search &&
-      !isNaN(schema[key].search.weight)
+      typeof fields[key] === 'object' &&
+      fields[key].search &&
+      !isNaN(fields[key].search.weight)
     )
   })
-  const fields = indexableFields.reduce((result, key) => {
-    result[key] = schema[key].search
+
+  return indexableFields.reduce((result, key) => {
+    result[key] = fields[key].search
 
     return result
   }, {})
-
-  return fields
 }
 
 /**
@@ -573,7 +576,8 @@ Search.prototype.getWordsForDocument = function(document, indexableFields) {
 Search.prototype.indexDocument = function({
   collection,
   document,
-  indexableFields
+  indexableFields,
+  property
 }) {
   const wordsAndWeightsByLanguage = this.getWordsForDocument(
     document,
@@ -655,7 +659,7 @@ Search.prototype.indexDocument = function({
         const [word, language] = wordPair.split(':')
 
         return {
-          collection,
+          collection: `${property}/${collection}`,
           document: document._id,
           weight: wordsAndWeightsByLanguage.get(language).get(word),
           word: _id
@@ -720,7 +724,8 @@ Search.prototype.indexDocumentsInTheBackground = function({
       this.indexDocument({
         collection: model.name,
         document,
-        indexableFields
+        indexableFields,
+        property: model.property
       })
     })
   })

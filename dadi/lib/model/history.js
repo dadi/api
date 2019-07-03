@@ -10,7 +10,8 @@ const logger = require('@dadi/logger')
  */
 const History = function({database, name}) {
   this.name = name
-  this.connection = Connection(
+
+  const connection = Connection(
     {
       collection: name,
       database
@@ -18,15 +19,18 @@ const History = function({database, name}) {
     name,
     config.get('datastore')
   )
+
+  this.connection = connection.whenConnected()
 }
 
 /**
- * Stores a version of a document as a diff.
+ * Stores a version of a document.
  *
  * @param {Array<Object>} documents           Documents to add
  * @param {String}        options.description Optional message describing the operation
  */
-History.prototype.addVersion = function(documents, {description}) {
+History.prototype.addVersion = async function(documents, {description}) {
+  const database = await this.connection
   const versions = documents.map(document => {
     const version = Object.assign({}, document, {
       _document: document._id
@@ -41,7 +45,7 @@ History.prototype.addVersion = function(documents, {description}) {
     return version
   })
 
-  return this.connection.db.insert({
+  return database.insert({
     data: versions,
     collection: this.name
   })
@@ -53,35 +57,35 @@ History.prototype.addVersion = function(documents, {description}) {
  * @param  {String} version  ID of a previous version
  * @return {Object}
  */
-History.prototype.getVersion = function(version, options = {}) {
-  return this.connection.db
-    .find({
+History.prototype.getVersion = async function(version, options = {}) {
+  try {
+    const database = await this.connection
+    const {metadata, results} = await database.find({
       collection: this.name,
       options,
       query: {
         _id: version
       }
     })
-    .then(({metadata, results}) => {
-      return {
-        results: results.map(result => {
-          return Object.assign({}, result, {
-            _id: result._document,
-            _document: undefined
-          })
-        }),
-        metadata: Object.assign({}, metadata, {
-          version
-        })
-      }
-    })
-    .catch(error => {
-      logger.error({module: 'history'}, error)
 
-      return {
-        results: []
-      }
-    })
+    return {
+      results: results.map(result => {
+        return Object.assign({}, result, {
+          _id: result._document,
+          _document: undefined
+        })
+      }),
+      metadata: Object.assign({}, metadata, {
+        version
+      })
+    }
+  } catch (error) {
+    logger.error({module: 'history'}, error)
+
+    return {
+      results: []
+    }
+  }
 }
 
 /**
@@ -90,8 +94,10 @@ History.prototype.getVersion = function(version, options = {}) {
  * @param  {String}         documentId
  * @return {Array<Object>}
  */
-History.prototype.getVersions = function(documentId) {
-  return this.connection.db.find({
+History.prototype.getVersions = async function(documentId) {
+  const database = await this.connection
+
+  return database.find({
     collection: this.name,
     options: {
       fields: {

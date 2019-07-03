@@ -10,20 +10,10 @@ const logger = require('@dadi/logger')
  *
  * @return {Promise<Array.Index>}
  */
-function getIndexes() {
-  const getIndexesFromDatabase = database => {
-    return database.getIndexes(this.name)
-  }
+async function getIndexes() {
+  const database = await this.dataConnector
 
-  if (!this.connection.db) {
-    return new Promise((resolve, reject) => {
-      this.connection.once('connect', database => {
-        resolve(getIndexesFromDatabase(database))
-      })
-    })
-  }
-
-  return getIndexesFromDatabase(this.connection.db)
+  return database.getIndexes(this.name)
 }
 
 module.exports = function() {

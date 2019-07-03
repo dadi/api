@@ -33,7 +33,7 @@ const logger = require('@dadi/logger')
  * @param  {Number}  version - version of the document to retrieve
  * @return {Promise<ResultSet>}
  */
-function get({
+async function get({
   client,
   language,
   query = {},
@@ -42,14 +42,16 @@ function get({
   req,
   version
 }) {
+  const {hooks} = this.settings || {}
+
   // Is this a RESTful query by ID?
   const isRestIDQuery = req && req.params && req.params.id
 
-  return new Promise((resolve, reject) => {
+  const queryAfterHooks = await new Promise((resolve, reject) => {
     // Run any `beforeGet` hooks.
-    if (this.settings.hooks && this.settings.hooks.beforeGet) {
+    if (hooks && hooks.beforeGet) {
       async.reduce(
-        this.settings.hooks.beforeGet,
+        hooks.beforeGet,
         query,
         (current, hookConfig, callback) => {
           const hook = new Hook(hookConfig, 'beforeGet')
@@ -74,70 +76,67 @@ function get({
       resolve(query)
     }
   })
-    .then(query => {
-      return this.find({
+
+  const {metadata, results} = await this.find({
+    client,
+    isRestIDQuery,
+    language,
+    query: queryAfterHooks,
+    options,
+    version
+  })
+
+  if (isRestIDQuery && results.length === 0) {
+    const error = new Error('Document not found')
+
+    error.statusCode = 404
+
+    return Promise.reject(error)
+  }
+
+  const formatter = rawOutput
+    ? Promise.resolve(results)
+    : this.formatForOutput(results, {
         client,
-        isRestIDQuery,
+        composeOverride: options.compose,
         language,
-        query,
-        options,
-        version
+        urlFields: options.fields
       })
+  const formattedResults = await formatter
+
+  let formattedResponse = {
+    results: formattedResults,
+    metadata
+  }
+
+  if (hooks && hooks.afterGet) {
+    formattedResponse = await new Promise(resolve => {
+      async.reduce(
+        hooks.afterGet,
+        formattedResponse,
+        (current, hookConfig, callback) => {
+          const hook = new Hook(hookConfig, 'afterGet')
+
+          Promise.resolve(hook.apply(current, this.schema, this.name, req))
+            .then(newResults => {
+              callback(newResults === null ? {} : null, newResults)
+            })
+            .catch(error => {
+              callback(hook.formatError(error))
+            })
+        },
+        (error, resultsAfterHooks) => {
+          if (error) {
+            logger.error({module: 'model'}, error)
+          }
+
+          resolve(resultsAfterHooks)
+        }
+      )
     })
-    .then(({metadata, results}) => {
-      if (isRestIDQuery && results.length === 0) {
-        const error = new Error('Document not found')
+  }
 
-        error.statusCode = 404
-
-        return Promise.reject(error)
-      }
-
-      const formatter = rawOutput
-        ? Promise.resolve(results)
-        : this.formatForOutput(results, {
-            client,
-            composeOverride: options.compose,
-            language,
-            urlFields: options.fields
-          })
-
-      return formatter.then(results => {
-        return {results, metadata}
-      })
-    })
-    .then(response => {
-      const {hooks} = this.settings
-
-      if (hooks && hooks.afterGet) {
-        return new Promise((resolve, reject) => {
-          async.reduce(
-            hooks.afterGet,
-            response,
-            (current, hookConfig, callback) => {
-              const hook = new Hook(hookConfig, 'afterGet')
-
-              Promise.resolve(hook.apply(current, this.schema, this.name, req))
-                .then(newResults => {
-                  callback(newResults === null ? {} : null, newResults)
-                })
-                .catch(error => {
-                  callback(hook.formatError(error))
-                })
-            },
-            (error, resultsAfterHooks) => {
-              if (error) {
-                logger.error({module: 'model'}, error)
-              }
-
-              resolve(resultsAfterHooks)
-            }
-          )
-        })
-      }
-
-      return response
-    })
+  return formattedResponse
 }
 
 module.exports = function() {

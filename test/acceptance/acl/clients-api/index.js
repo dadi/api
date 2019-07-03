@@ -1,20 +1,14 @@
 const app = require('./../../../../dadi/lib')
-const config = require('./../../../../config')
 const help = require('./../../help')
-const request = require('supertest')
-const should = require('should')
 
 describe('Clients API', () => {
-  const configBackup = config.get()
-  const client = request(
-    `http://${config.get('server.host')}:${config.get('server.port')}`
-  )
-
   before(done => {
     app.start(err => {
       if (err) return done(err)
 
-      setTimeout(done, 300)
+      setTimeout(() => {
+        help.createSchemas(['library/book']).then(() => done())
+      }, 300)
     })
   })
 
@@ -24,7 +18,9 @@ describe('Clients API', () => {
 
   after(done => {
     help.removeACLData(() => {
-      app.stop(done)
+      help.dropSchemas().then(() => {
+        app.stop(done)
+      })
     })
   })
 

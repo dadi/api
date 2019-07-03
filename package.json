@@ -11,7 +11,8 @@
     "posttest": "./scripts/coverage.js",
     "start": "node start.js --node_env=development",
     "snyk-protect": "snyk protect",
-    "prepare": "npm run snyk-protect"
+    "prepare": "npm run snyk-protect",
+    "prepublish": "npm run snyk-protect"
   },
   "commitlint": {
     "extends": [
@@ -62,7 +63,8 @@
     "stack-trace": "latest",
     "stream-cache": "0.0.2",
     "streamifier": "^0.1.1",
-    "vary": "^1.1.2"
+    "vary": "^1.1.2",
+    "snyk": "^1.189.0"
   },
   "devDependencies": {
     "@commitlint/cli": "^7.5.2",
@@ -87,7 +89,6 @@
     "proxyquire": "^1.7.4",
     "should": "4.0.4",
     "sinon": "2.3.2",
-    "snyk": "^1.147.3",
     "supertest": "^3.1.0",
     "uuid": "^3.3.2"
   },

@@ -45,9 +45,6 @@ describe('DateTime Field', function() {
                 },
                 booksInSeries: {
                   type: 'Reference'
-                },
-                publishStatus: {
-                  type: 'Object'
                 }
               },
               settings: {

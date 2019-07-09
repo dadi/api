@@ -100,7 +100,7 @@ Collections.prototype.get = async function(req, res, next) {
       media
     })
   } catch (error) {
-    help.sendBackJSON(500, res, next)(err)
+    help.sendBackJSON(500, res, next)(error)
   }
 }
 

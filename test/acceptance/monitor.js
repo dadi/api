@@ -102,6 +102,7 @@ describe('File system watching', function() {
 
     it('should add to endpoints api when file is added', function(done) {
       const newSource = endpointSource.replace('version 1', 'version 2')
+
       fs.writeFileSync(newEndpointPath, newSource)
 
       setTimeout(function() {

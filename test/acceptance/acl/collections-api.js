@@ -377,8 +377,6 @@ describe('Collections API', () => {
             .set('content-type', 'application/json')
             .send(creatingClient)
             .end(async (err, res) => {
-              createToken = res.body.accessToken
-
               try {
                 await help.dropDatabase('library', 'person')
                 await help.dropDatabase('library', 'book')

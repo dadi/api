@@ -11,7 +11,7 @@ let bearerToken
 let adminBearerToken
 let c
 let cacheKeys = []
-let configBackup = config.get()
+const configBackup = config.get()
 
 describe('Cache', function(done) {
   this.timeout(5000)

@@ -921,15 +921,10 @@ describe('Model', function() {
     it('should accept query and update object', () => {
       const mod = model({name: 'testModelName', property: 'testdb'})
 
-      return mod
-        .update({
-          query: {field1: 'foo'},
-          update: {field1: 'bar'}
-        })
-        .catch(e => {
-          console.log(e)
-          return Promise.reject(e)
-        })
+      return mod.update({
+        query: {field1: 'foo'},
+        update: {field1: 'bar'}
+      })
     })
 
     it('should update an existing document', () => {

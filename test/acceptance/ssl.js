@@ -1,7 +1,6 @@
-const should = require('should')
+const api = require('../../dadi/lib/api')
+const config = require('../../config')
 const request = require('supertest')
-const api = require(__dirname + '/../../dadi/lib/api')
-const config = require(__dirname + '/../../config')
 
 const clientHost =
   'http://' + config.get('server.host') + ':' + config.get('server.port')

@@ -1,19 +1,15 @@
-const should = require('should')
+const app = require('../../../../dadi/lib/')
+const config = require('../../../../config')
+const help = require('../../help')
 const request = require('supertest')
-const config = require(__dirname + '/../../../../config')
-const help = require(__dirname + '/../../help')
-const app = require(__dirname + '/../../../../dadi/lib/')
+const should = require('should')
 
-// variables scoped for use throughout tests
 const connectionString =
   'http://' + config.get('server.host') + ':' + config.get('server.port')
 let bearerToken
-const lastModifiedAt = 0
 
 describe('Collections API – POST', function() {
   this.timeout(4000)
-
-  let cleanupFn
 
   before(function(done) {
     help.dropDatabase('testdb', function(err) {
@@ -47,26 +43,48 @@ describe('Collections API – POST', function() {
             settings: {}
           }
 
-          help.writeTempFile(
-            'temp-workspace/collections/vtest/testdb/collection.test-schema.json',
-            schema,
-            callback => {
-              cleanupFn = () => {
-                callback()
+          help
+            .createSchemas([
+              {
+                version: 'vtest',
+                property: 'testdb',
+                name: 'test-schema',
+                fields: {
+                  field1: {
+                    type: 'String',
+                    required: false
+                  },
+                  field2: {
+                    type: 'Number',
+                    required: false
+                  },
+                  field3: {
+                    type: 'ObjectID',
+                    required: false
+                  },
+                  _fieldWithUnderscore: {
+                    type: 'Object',
+                    required: false
+                  }
+                },
+                settings: {
+                  count: 40
+                }
               }
-
+            ])
+            .then(() => {
               done()
-            }
-          )
+            })
         })
       })
     })
   })
 
   after(function(done) {
-    app.stop(() => {
-      cleanupFn()
-      done()
+    help.dropSchemas().then(() => {
+      app.stop(() => {
+        done()
+      })
     })
   })
 

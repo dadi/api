@@ -1,49 +1,257 @@
 const should = require('should')
-const fs = require('fs')
 const moment = require('moment')
-const path = require('path')
 const request = require('supertest')
-const sinon = require('sinon')
 const config = require(__dirname + '/../../../config')
 const help = require(__dirname + '/../help')
 const app = require(__dirname + '/../../../dadi/lib/')
 
-// variables scoped for use throughout tests
-let bearerToken
-const configBackup = config.get()
 const connectionString =
   'http://' + config.get('server.host') + ':' + config.get('server.port')
 
-describe('DateTime Field', function() {
-  before(() => {
-    config.set(
-      'paths.collections',
-      'test/acceptance/temp-workspace/collections'
-    )
-  })
+let bearerToken
 
+describe('DateTime Field', function() {
   beforeEach(done => {
     app.start(() => {
       help.dropDatabase('library', null, err => {
         if (err) return done(err)
 
-        help.getBearerToken((err, token) => {
-          if (err) return done(err)
+        help
+          .createSchemas([
+            {
+              version: 'v1',
+              property: 'library',
+              name: 'book',
+              fields: {
+                title: {
+                  type: 'String',
+                  required: true
+                },
+                author: {
+                  type: 'Reference',
+                  settings: {
+                    collection: 'person'
+                  }
+                },
+                publishStatus: {
+                  type: 'Object'
+                },
+                authorStrict: {
+                  type: 'Reference',
+                  settings: {
+                    collection: 'person',
+                    strictCompose: true
+                  }
+                },
+                booksInSeries: {
+                  type: 'Reference'
+                },
+                publishStatus: {
+                  type: 'Object'
+                }
+              },
+              settings: {
+                cache: true,
+                authenticate: false,
+                count: 40,
+                sort: 'title',
+                sortOrder: 1,
+                storeRevisions: false
+              }
+            },
 
-          bearerToken = token
+            {
+              version: 'v1',
+              property: 'library',
+              name: 'event',
+              fields: {
+                type: {
+                  type: 'String',
+                  required: true
+                },
+                book: {
+                  type: 'Reference',
+                  settings: {
+                    collection: 'book'
+                  }
+                },
+                organiser: {
+                  type: 'Reference',
+                  settings: {
+                    collection: 'person'
+                  }
+                },
+                datetime: {
+                  type: 'DateTime'
+                }
+              },
+              settings: {
+                cache: true,
+                authenticate: false,
+                count: 40,
+                sort: 'datetime',
+                sortOrder: 1,
+                storeRevisions: false
+              }
+            },
 
-          done()
-        })
+            {
+              version: 'v1',
+              property: 'library',
+              name: 'person',
+              fields: {
+                name: {
+                  type: 'String',
+                  required: true
+                },
+                occupation: {
+                  type: 'String',
+                  required: false
+                },
+                nationality: {
+                  type: 'String',
+                  required: false
+                },
+                education: {
+                  type: 'String',
+                  required: false
+                },
+                spouse: {
+                  type: 'Reference'
+                },
+                friend: {
+                  type: 'Reference'
+                },
+                agent: {
+                  type: 'Reference'
+                },
+                allFriends: {
+                  type: 'Reference'
+                },
+                picture: {
+                  type: 'Reference',
+                  settings: {
+                    collection: 'mediaStore'
+                  }
+                }
+              },
+              settings: {
+                cache: false,
+                authenticate: true,
+                count: 40,
+                sort: 'name',
+                sortOrder: 1,
+                storeRevisions: false
+              }
+            },
+
+            {
+              version: 'v1',
+              property: 'library',
+              name: 'event_format_date',
+              fields: {
+                type: {
+                  type: 'String',
+                  required: true
+                },
+                book: {
+                  type: 'Reference',
+                  settings: {
+                    collection: 'book'
+                  }
+                },
+                datetime: {
+                  type: 'DateTime',
+                  format: 'YYYY-MM-DD'
+                }
+              },
+              settings: {
+                cache: true,
+                authenticate: false,
+                count: 40,
+                sort: 'datetime',
+                sortOrder: 1,
+                storeRevisions: false
+              }
+            },
+
+            {
+              version: 'v1',
+              property: 'library',
+              name: 'event_iso_date',
+              fields: {
+                type: {
+                  type: 'String',
+                  required: true
+                },
+                book: {
+                  type: 'Reference',
+                  settings: {
+                    collection: 'book'
+                  }
+                },
+                datetime: {
+                  type: 'DateTime',
+                  format: 'iso'
+                }
+              },
+              settings: {
+                cache: true,
+                authenticate: false,
+                count: 40,
+                sort: 'datetime',
+                sortOrder: 1,
+                storeRevisions: false
+              }
+            },
+
+            {
+              version: 'v1',
+              property: 'library',
+              name: 'event_unix_date',
+              fields: {
+                type: {
+                  type: 'String',
+                  required: true
+                },
+                book: {
+                  type: 'Reference',
+                  settings: {
+                    collection: 'book'
+                  }
+                },
+                datetime: {
+                  type: 'DateTime',
+                  format: 'unix'
+                }
+              },
+              settings: {
+                cache: true,
+                authenticate: false,
+                count: 40,
+                sort: 'datetime',
+                sortOrder: 1,
+                storeRevisions: false
+              }
+            }
+          ])
+          .then(() => {
+            help.getBearerToken((err, token) => {
+              if (err) return done(err)
+
+              bearerToken = token
+
+              done()
+            })
+          })
       })
     })
   })
 
   afterEach(done => {
-    app.stop(done)
-  })
-
-  after(() => {
-    config.set('paths.collections', configBackup.paths.collections)
+    help.dropSchemas().then(() => {
+      app.stop(done)
+    })
   })
 
   it('should not attempt to process a null/undefined value', done => {

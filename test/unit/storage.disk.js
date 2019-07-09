@@ -1,12 +1,9 @@
 const fs = require('fs')
-const mkdirp = require('mkdirp')
 const path = require('path')
 const should = require('should')
 const sinon = require('sinon')
 const stream = require('stream')
 const StorageFactory = require(__dirname + '/../../dadi/lib/storage/factory')
-const DiskStorage = require(__dirname + '/../../dadi/lib/storage/disk')
-const cache = require(__dirname + '/../../dadi/lib/cache')
 
 const config = require(__dirname + '/../../config')
 

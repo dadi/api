@@ -7,6 +7,7 @@ const should = require('should')
 const connection = require(__dirname + '/../../dadi/lib/model/connection')
 const config = require(__dirname + '/../../config')
 const request = require('supertest')
+const schemaStore = require('../../dadi/lib/model/schemaStore')
 
 function hashClientSecret(client) {
   if (client._hashVersion === undefined && config.get('auth.hashSecrets')) {
@@ -148,21 +149,33 @@ module.exports.dropDatabase = function(database, collectionName, done) {
   const conn = connection(options, null, config.get('datastore'))
 
   const dropDatabase = () => {
-    conn.datastore
+    return conn.datastore
       .dropDatabase(collectionName)
       .then(() => {
-        return done()
+        if (typeof done === 'function') {
+          return done()
+        }
       })
       .catch(err => {
-        return done(err)
+        if (typeof done === 'function') {
+          return done(err)
+        }
       })
   }
 
-  if (conn.datastore.readyState === 1) {
-    dropDatabase()
-  } else {
-    conn.once('connect', dropDatabase)
-  }
+  return new Promise((resolve, reject) => {
+    if (conn.datastore.readyState === 1) {
+      dropDatabase()
+        .then(resolve)
+        .catch(reject)
+    } else {
+      conn.once('connect', () =>
+        dropDatabase()
+          .then(resolve)
+          .catch(reject)
+      )
+    }
+  })
 }
 
 module.exports.createClient = function(client, done, {hashVersion = 1} = {}) {
@@ -292,6 +305,46 @@ module.exports.createACLRole = function(role, callback) {
 
       return Promise.reject(err)
     })
+}
+
+module.exports.createSchemas = async function(
+  schemas,
+  {keepExisting = false} = {}
+) {
+  if (!keepExisting) {
+    await module.exports.dropSchemas()
+  }
+
+  const conn = connection(
+    {
+      collection: config.get('schemas.collection')
+    },
+    config.get('schemas.collection'),
+    config.get('datastore')
+  )
+
+  await conn.whenConnected()
+
+  const schemasArray = Array.isArray(schemas) ? schemas : [schemas]
+  const queue = schemasArray.map(schema => {
+    return schemaStore.create(schema)
+  })
+
+  return Promise.all(queue)
+}
+
+module.exports.dropSchemas = async function() {
+  const conn = connection(
+    {
+      collection: config.get('schemas.collection')
+    },
+    config.get('schemas.collection'),
+    config.get('datastore')
+  )
+
+  const database = await schemaStore.connection
+
+  return database.dropDatabase(config.get('schemas.collection'))
 }
 
 module.exports.removeACLData = function(done) {

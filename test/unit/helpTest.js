@@ -1,6 +1,5 @@
 const ERROR_CODES = require('./../../error-codes')
 const formatError = require('@dadi/format-error')
-const should = require('should')
 const sinon = require('sinon')
 const help = require(__dirname + '/../../dadi/lib/help')
 

@@ -357,7 +357,7 @@ module.exports = () => {
           clients: {
             update: true
           },
-          'collection:library_book': {
+          'collection:non_existing': {
             read: true
           }
         }

@@ -1,23 +1,20 @@
-const should = require('should')
-const sinon = require('sinon')
+const app = require('../../../../dadi/lib/')
+const config = require('../../../../config')
+const EventEmitter = require('events').EventEmitter
+const help = require('../../help')
 const path = require('path')
 const request = require('supertest')
-const EventEmitter = require('events').EventEmitter
-const config = require(path.join(__dirname, '/../../../../config'))
-const help = require(path.join(__dirname, '/../../help'))
-const app = require(path.join(__dirname, '/../../../../dadi/lib/'))
+const sinon = require('sinon')
+const should = require('should')
 
-// variables scoped for use throughout tests
 const connectionString =
   'http://' + config.get('server.host') + ':' + config.get('server.port')
 const client = request(connectionString)
+
 let bearerToken
-// let lastModifiedAt = 0
 
 describe('Collections API – GET', function() {
   this.timeout(4000)
-
-  let cleanupFn
 
   beforeEach(done => {
     help.dropDatabase('testdb', null, function(err) {
@@ -36,57 +33,110 @@ describe('Collections API – GET', function() {
 
         bearerToken = token
 
-        const schema = {
-          fields: {
-            field1: {
-              type: 'String',
-              required: false
-            },
-            field2: {
-              type: 'Number',
-              required: false
-            },
-            field3: {
-              type: 'ObjectID',
-              required: false
-            },
-            _fieldWithUnderscore: {
-              type: 'Object',
-              required: false
-            }
-          },
-          settings: {
-            count: 40
-          }
-        }
-
-        help.writeTempFile(
-          'temp-workspace/collections/vtest/testdb/collection.test-schema.json',
-          schema,
-          callback1 => {
-            help.writeTempFile(
-              'temp-workspace/collections/v1/testdb/collection.test-schema.json',
-              schema,
-              callback2 => {
-                cleanupFn = () => {
-                  callback1()
-                  callback2()
+        help
+          .createSchemas([
+            {
+              version: 'vtest',
+              property: 'testdb',
+              name: 'test-schema',
+              fields: {
+                field1: {
+                  type: 'String',
+                  required: false
+                },
+                field2: {
+                  type: 'Number',
+                  required: false
+                },
+                field3: {
+                  type: 'ObjectID',
+                  required: false
+                },
+                _fieldWithUnderscore: {
+                  type: 'Object',
+                  required: false
                 }
-
-                done()
+              },
+              settings: {
+                count: 40
               }
-            )
-          }
-        )
+            },
+
+            {
+              fields: {
+                title: {
+                  type: 'String',
+                  required: true
+                },
+                author: {
+                  type: 'Reference',
+                  settings: {
+                    collection: 'person',
+                    fields: ['name', 'spouse']
+                  }
+                },
+                booksInSeries: {
+                  type: 'Reference',
+                  settings: {
+                    collection: 'book',
+                    multiple: true
+                  }
+                }
+              },
+              name: 'book',
+              property: 'library',
+              settings: {
+                cache: false,
+                authenticate: true,
+                count: 40
+              },
+              version: '1.0'
+            },
+
+            {
+              fields: {
+                name: {
+                  type: 'String',
+                  required: true
+                },
+                occupation: {
+                  type: 'String',
+                  required: false
+                },
+                nationality: {
+                  type: 'String',
+                  required: false
+                },
+                education: {
+                  type: 'String',
+                  required: false
+                },
+                spouse: {
+                  type: 'Reference'
+                }
+              },
+              name: 'person',
+              property: 'library',
+              settings: {
+                cache: false,
+                authenticate: true,
+                count: 40
+              },
+              version: '1.0'
+            }
+          ])
+          .then(() => {
+            done()
+          })
       })
     })
   })
 
   after(function(done) {
-    app.stop(() => {
-      cleanupFn()
-
-      done()
+    help.dropSchemas().then(() => {
+      app.stop(() => {
+        done()
+      })
     })
   })
 

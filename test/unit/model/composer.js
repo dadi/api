@@ -1,11 +1,7 @@
 const should = require('should')
-const sinon = require('sinon')
 const model = require(__dirname + '/../../../dadi/lib/model')
-const apiHelp = require(__dirname + '/../../../dadi/lib/help')
-const connection = require(__dirname + '/../../../dadi/lib/model/connection')
 const help = require(__dirname + '/../help')
 const acceptanceHelper = require(__dirname + '/../../acceptance/help')
-const config = require(__dirname + '/../../../config')
 
 describe('Model composer', function() {
   // some defaults
@@ -92,6 +88,8 @@ describe('Model composer', function() {
             })
             .then(response => {
               if (++insertedDocuments === 5) {
+                model.unloadAll()
+
                 return done()
               }
             })
@@ -633,7 +631,6 @@ describe('Model composer', function() {
     it('should allow querying nested Reference fields with a different property name', () => {
       const book = model('book', bookSchema, null, {database: 'testdb'})
 
-      console.log(book.schema)
       const person = model('person', personSchema, null, {database: 'testdb'})
 
       let neil

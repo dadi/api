@@ -15,7 +15,6 @@ describe('Search', function() {
   const configBackup = config.get()
 
   let bearerToken
-  let cleanupFn
 
   beforeEach(done => {
     help.dropDatabase('search', null, err => {
@@ -60,24 +59,29 @@ describe('Search', function() {
               }
             }
 
-            help.writeTempFile(
-              'temp-workspace/collections/vtest/testdb/collection.first-schema.json',
-              schema,
-              callback1 => {
-                help.writeTempFile(
-                  'temp-workspace/collections/vtest/testdb/collection.second-schema.json',
-                  schema,
-                  callback2 => {
-                    cleanupFn = () => {
-                      callback1()
-                      callback2()
-                    }
+            help
+              .createSchemas([
+                Object.assign(
+                  {
+                    version: 'vtest',
+                    property: 'testdb',
+                    name: 'first-schema'
+                  },
+                  schema
+                ),
 
-                    done()
-                  }
+                Object.assign(
+                  {
+                    version: 'vtest',
+                    property: 'testdb',
+                    name: 'second-schema'
+                  },
+                  schema
                 )
-              }
-            )
+              ])
+              .then(() => {
+                done()
+              })
           })
         })
       })
@@ -88,9 +92,10 @@ describe('Search', function() {
     config.set('search', configBackup.search)
     config.set('i18n.languages', configBackup.i18n.languages)
 
-    app.stop(() => {
-      cleanupFn()
-      done()
+    help.dropSchemas().then(() => {
+      app.stop(() => {
+        done()
+      })
     })
   })
 
@@ -981,10 +986,10 @@ describe('Search', function() {
                     results.length.should.eql(2)
 
                     results[0].title.should.eql(documents[0].title)
-                    results[0]._collection.should.eql('second-schema')
+                    results[0]._collection.should.eql('testdb/second-schema')
 
                     results[1].title.should.eql(documents[2].title)
-                    results[1]._collection.should.eql('first-schema')
+                    results[1]._collection.should.eql('testdb/first-schema')
 
                     results[0]._searchRelevance.should.be.above(
                       results[1]._searchRelevance
@@ -1051,10 +1056,10 @@ describe('Search', function() {
                     results.length.should.eql(2)
 
                     results[0].title.should.eql(documents[0].title)
-                    results[0]._collection.should.eql('first-schema')
+                    results[0]._collection.should.eql('testdb/first-schema')
 
                     results[1].title.should.eql(documents[2].title)
-                    results[1]._collection.should.eql('second-schema')
+                    results[1]._collection.should.eql('testdb/second-schema')
 
                     client
                       .get(
@@ -1071,7 +1076,7 @@ describe('Search', function() {
                         results.length.should.eql(1)
 
                         results[0].title.should.eql(documents[0].title)
-                        results[0]._collection.should.eql('first-schema')
+                        results[0]._collection.should.eql('testdb/first-schema')
 
                         client
                           .get(
@@ -1088,7 +1093,9 @@ describe('Search', function() {
                             results.length.should.eql(1)
 
                             results[0].title.should.eql(documents[2].title)
-                            results[0]._collection.should.eql('second-schema')
+                            results[0]._collection.should.eql(
+                              'testdb/second-schema'
+                            )
 
                             done()
                           })
@@ -1145,7 +1152,7 @@ describe('Search', function() {
 
                 results[0].title.should.eql(documents[0].title)
                 results[0]._id.should.eql(documentId)
-                results[0]._collection.should.eql('first-schema')
+                results[0]._collection.should.eql('testdb/first-schema')
 
                 client
                   .post('/vtest/testdb/second-schema')
@@ -1170,10 +1177,14 @@ describe('Search', function() {
                           results.length.should.eql(2)
 
                           results[0].title.should.eql(documents[0].title)
-                          results[0]._collection.should.eql('first-schema')
+                          results[0]._collection.should.eql(
+                            'testdb/first-schema'
+                          )
 
                           results[1].title.should.eql(documents[2].title)
-                          results[1]._collection.should.eql('second-schema')
+                          results[1]._collection.should.eql(
+                            'testdb/second-schema'
+                          )
 
                           done(err)
                         })
@@ -1230,10 +1241,10 @@ describe('Search', function() {
                 results.length.should.eql(2)
 
                 results[0].title.should.eql(documents[0].title)
-                results[0]._collection.should.eql('first-schema')
+                results[0]._collection.should.eql('testdb/first-schema')
 
                 results[1].title.should.eql(documents[2].title)
-                results[1]._collection.should.eql('first-schema')
+                results[1]._collection.should.eql('testdb/first-schema')
 
                 const update = {
                   title: 'The Little Mermaid Prince'
@@ -1262,13 +1273,19 @@ describe('Search', function() {
                           results.length.should.eql(3)
 
                           results[0].title.should.eql(documents[0].title)
-                          results[0]._collection.should.eql('first-schema')
+                          results[0]._collection.should.eql(
+                            'testdb/first-schema'
+                          )
 
                           results[1].title.should.eql(update.title)
-                          results[1]._collection.should.eql('first-schema')
+                          results[1]._collection.should.eql(
+                            'testdb/first-schema'
+                          )
 
                           results[2].title.should.eql(documents[2].title)
-                          results[2]._collection.should.eql('first-schema')
+                          results[2]._collection.should.eql(
+                            'testdb/first-schema'
+                          )
 
                           stub.callCount.should.eql(4)
 
@@ -1431,10 +1448,10 @@ describe('Search', function() {
                 results.length.should.eql(2)
 
                 results[0].title.should.eql(documents[0].title)
-                results[0]._collection.should.eql('first-schema')
+                results[0]._collection.should.eql('testdb/first-schema')
 
                 results[1].title.should.eql(documents[2].title)
-                results[1]._collection.should.eql('first-schema')
+                results[1]._collection.should.eql('testdb/first-schema')
 
                 client
                   .delete(
@@ -1460,7 +1477,9 @@ describe('Search', function() {
                           results.length.should.eql(1)
 
                           results[0].title.should.eql(documents[0].title)
-                          results[0]._collection.should.eql('first-schema')
+                          results[0]._collection.should.eql(
+                            'testdb/first-schema'
+                          )
 
                           done(err)
                         })
@@ -1816,23 +1835,25 @@ describe('Search', function() {
         .end((err, res) => {
           if (err) return done(err)
 
-          client
-            .get(`/vtest/testdb/first-schema/search?q=Prince`)
-            .set('Authorization', `Bearer ${bearerToken}`)
-            .expect(200)
-            .end((err, res) => {
-              res.body.results.length.should.eql(1)
+          setTimeout(() => {
+            client
+              .get(`/vtest/testdb/first-schema/search?q=Prince`)
+              .set('Authorization', `Bearer ${bearerToken}`)
+              .expect(200)
+              .end((err, res) => {
+                res.body.results.length.should.eql(1)
 
-              const result = res.body.results[0]
+                const result = res.body.results[0]
 
-              result.title.should.eql(document.title)
-              result['title:pt'].should.eql(document['title:pt'])
-              result['title:fr'].should.eql(document['title:fr'])
+                result.title.should.eql(document.title)
+                result['title:pt'].should.eql(document['title:pt'])
+                result['title:fr'].should.eql(document['title:fr'])
 
-              should.not.exist(result._i18n)
+                should.not.exist(result._i18n)
 
-              done()
-            })
+                done()
+              })
+          }, 800)
         })
     })
 

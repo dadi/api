@@ -1,10 +1,7 @@
-const should = require('should')
+const api = require('../../dadi/lib/api')
+const controller = require('../../dadi/lib/controller')
 const http = require('http')
-const api = require(__dirname + '/../../dadi/lib/api')
-const controller = require(__dirname + '/../../dadi/lib/controller')
-const model = require(__dirname + '/../../dadi/lib/model')
-const help = require(__dirname + '/help')
-const config = require(__dirname + '/../../config')
+const should = require('should')
 
 describe('API server', function() {
   it('should export function', function(done) {
@@ -28,40 +25,30 @@ describe('API server', function() {
   describe('paths', function() {
     const app = api()
 
-    it('should have instance of Controller attached as handler', function(done) {
-      app.use(
-        '/foo/bar',
-        controller(
-          model('apiTest', help.getModelSchema(), null, {database: 'testdb'})
-        )
-      )
-      app.paths['/foo/bar'].handler.should.be.an.instanceOf(
-        controller.Controller
-      )
-      done()
+    it('should have instance of Controller attached as handler', () => {
+      app.use('/foo/bar', controller())
+
+      app.paths
+        .find(({path}) => path === '/foo/bar')
+        .handler.should.be.an.instanceOf(controller.Controller)
     })
 
-    it('should have regexp attached to test path matches', function(done) {
-      app.use(
-        '/foo/bar/:baz',
-        controller(
-          model('apiTest', help.getModelSchema(), null, {database: 'testdb'})
-        )
-      )
-      app.paths['/foo/bar/:baz'].regex.should.be.an.instanceOf(RegExp)
-      done()
+    it('should have regexp attached to test path matches', () => {
+      app.use('/foo/bar/:baz', controller())
+      app.paths
+        .find(({path}) => path === '/foo/bar/:baz')
+        .regex.should.be.an.instanceOf(RegExp)
     })
 
-    it('should have keys for each path attached', function(done) {
-      app.use(
-        '/foo/bar/baz/:qux',
-        controller(
-          model('apiTest', help.getModelSchema(), null, {database: 'testdb'})
-        )
+    it('should have keys for each path attached', () => {
+      app.use('/foo/bar/baz/:qux', controller())
+
+      const matchingPath = app.paths.find(
+        ({path}) => path === '/foo/bar/baz/:qux'
       )
-      app.paths['/foo/bar/baz/:qux'].regex.keys.should.be.an.instanceOf(Array)
-      app.paths['/foo/bar/baz/:qux'].regex.keys[0].name.should.equal('qux')
-      done()
+
+      matchingPath.regex.keys.should.be.an.instanceOf(Array)
+      matchingPath.regex.keys[0].name.should.equal('qux')
     })
   })
 
@@ -92,13 +79,8 @@ describe('API server', function() {
     })
 
     it('should add url to paths', function(done) {
-      app.use(
-        '/foo/bar',
-        controller(
-          model('apiTest', help.getModelSchema(), null, {database: 'testdb'})
-        )
-      )
-      app.paths['/foo/bar'].should.be.Object
+      app.use('/foo/bar', controller())
+      app.paths.find(({path}) => path === '/foo/bar').should.be.Object
       done()
     })
 
@@ -131,16 +113,11 @@ describe('API server', function() {
     })
 
     it('should remove url from paths', function(done) {
-      app.use(
-        '/foo/bar',
-        controller(
-          model('apiTest', help.getModelSchema(), null, {database: 'testdb'})
-        )
-      )
-      app.paths['/foo/bar'].should.be.Object
+      app.use('/foo/bar', controller())
+      app.paths.find(({path}) => path === '/foo/bar').should.be.Object
 
       app.unuse('/foo/bar')
-      should.not.exist(app.paths['/foo/bar'])
+      should.not.exist(app.paths.find(({path}) => path === '/foo/bar'))
 
       done()
     })

@@ -1,28 +1,348 @@
 const app = require('./../../dadi/lib/')
 const config = require('./../../config')
-const fs = require('fs')
 const help = require('./help')
-const path = require('path')
 const request = require('supertest')
-const should = require('should')
-const sinon = require('sinon')
-
 const client = request(
   `http://${config.get('server.host')}:${config.get('server.port')}`
 )
 
-describe('Collections endpoint', function() {
-  let bearerToken
+const schemas = [
+  {
+    fields: {
+      title: {
+        type: 'String',
+        required: true
+      },
+      author: {
+        type: 'Reference',
+        settings: {
+          collection: 'person',
+          fields: ['name', 'spouse']
+        }
+      },
+      booksInSeries: {
+        type: 'Reference',
+        settings: {
+          collection: 'book',
+          multiple: true
+        }
+      }
+    },
+    name: 'book',
+    property: 'library',
+    settings: {
+      cache: false,
+      authenticate: true,
+      count: 40
+    },
+    version: '1.0'
+  },
 
+  {
+    fields: {
+      name: {
+        type: 'String',
+        required: true
+      },
+      occupation: {
+        type: 'String',
+        required: false
+      },
+      nationality: {
+        type: 'String',
+        required: false
+      },
+      education: {
+        type: 'String',
+        required: false
+      },
+      spouse: {
+        type: 'Reference'
+      }
+    },
+    name: 'person',
+    property: 'library',
+    settings: {
+      displayName: 'This is a human-friendly name',
+      cache: false,
+      authenticate: true,
+      count: 40
+    },
+    version: '1.0'
+  },
+
+  {
+    fields: {
+      field1: {
+        type: 'String',
+        label: 'Title',
+        comments: 'The title of the entry',
+        validation: {},
+        required: false
+      },
+      title: {
+        type: 'String',
+        label: 'Title',
+        comments: 'The title of the entry',
+        validation: {},
+        required: false,
+        search: {
+          weight: 2
+        }
+      },
+      leadImage: {
+        type: 'Media'
+      },
+      leadImageJPEG: {
+        type: 'Media',
+        validation: {
+          mimeTypes: ['image/jpeg']
+        }
+      },
+      legacyImage: {
+        type: 'Reference',
+        settings: {
+          collection: 'mediaStore'
+        }
+      },
+      fieldReference: {
+        type: 'Reference',
+        settings: {
+          collection: 'test-reference-schema'
+        }
+      }
+    },
+    name: 'test-schema',
+    property: 'testdb',
+    settings: {
+      cache: true,
+      cacheTTL: 300,
+      authenticate: true,
+      count: 40,
+      sortOrder: 1,
+      storeRevisions: true,
+      revisionCollection: 'testSchemaHistory'
+    },
+    version: 'vtest'
+  },
+
+  {
+    fields: {
+      refField1: {
+        type: 'String',
+        required: false
+      },
+      refField2: {
+        type: 'Number',
+        required: false
+      }
+    },
+    name: 'test-reference-schema',
+    property: 'testdb',
+    settings: {},
+    version: 'vtest'
+  },
+
+  {
+    fields: {
+      field1: {
+        type: 'String',
+        required: true
+      },
+      field2: {
+        type: 'String',
+        required: false
+      }
+    },
+    name: 'test-required-schema',
+    property: 'testdb',
+    settings: {},
+    version: 'vtest'
+  },
+
+  {
+    fields: {
+      field1: {
+        type: 'String',
+        label: 'Title',
+        comments: 'The title of the entry',
+        validation: {},
+        required: false
+      },
+      title: {
+        type: 'String',
+        label: 'Title',
+        comments: 'The title of the entry',
+        validation: {},
+        required: false,
+        search: {
+          weight: 2
+        }
+      }
+    },
+    name: 'test-authenticate-false',
+    property: 'testdb',
+    settings: {
+      authenticate: false
+    },
+    version: 'vtest'
+  },
+
+  {
+    fields: {
+      field1: {
+        type: 'String',
+        label: 'Title',
+        comments: 'The title of the entry',
+        validation: {},
+        required: false
+      },
+      title: {
+        type: 'String',
+        label: 'Title',
+        comments: 'The title of the entry',
+        validation: {},
+        required: false,
+        search: {
+          weight: 2
+        }
+      }
+    },
+    name: 'test-authenticate-post-put-delete',
+    property: 'testdb',
+    settings: {
+      authenticate: ['POST', 'PUT', 'DELETE']
+    },
+    version: 'vtest'
+  },
+
+  {
+    fields: {
+      field1: {
+        type: 'String',
+        label: 'Title',
+        comments: 'The title of the entry',
+        validation: {},
+        required: false
+      },
+      title: {
+        type: 'String',
+        label: 'Title',
+        comments: 'The title of the entry',
+        validation: {},
+        required: false,
+        search: {
+          weight: 2
+        }
+      }
+    },
+    name: 'test-authenticate-get-put-delete',
+    property: 'testdb',
+    settings: {
+      authenticate: ['GET', 'PUT', 'DELETE']
+    },
+    version: 'vtest'
+  },
+
+  {
+    fields: {
+      field1: {
+        type: 'String',
+        label: 'Title',
+        comments: 'The title of the entry',
+        validation: {},
+        required: false
+      },
+      title: {
+        type: 'String',
+        label: 'Title',
+        comments: 'The title of the entry',
+        validation: {},
+        required: false,
+        search: {
+          weight: 2
+        }
+      }
+    },
+    name: 'test-authenticate-get-post-delete',
+    property: 'testdb',
+    settings: {
+      authenticate: ['GET', 'POST', 'DELETE']
+    },
+    version: 'vtest'
+  },
+
+  {
+    fields: {
+      field1: {
+        type: 'String',
+        label: 'Title',
+        comments: 'The title of the entry',
+        validation: {},
+        required: false
+      },
+      title: {
+        type: 'String',
+        label: 'Title',
+        comments: 'The title of the entry',
+        validation: {},
+        required: false,
+        search: {
+          weight: 2
+        }
+      }
+    },
+    name: 'test-authenticate-get-post-put',
+    property: 'testdb',
+    settings: {
+      authenticate: ['GET', 'POST', 'PUT']
+    },
+    version: 'vtest'
+  },
+
+  {
+    fields: {
+      field1: {
+        type: 'String',
+        label: 'Title',
+        comments: 'The title of the entry',
+        validation: {},
+        required: false
+      },
+      title: {
+        type: 'String',
+        label: 'Title',
+        comments: 'The title of the entry',
+        validation: {},
+        required: false,
+        search: {
+          weight: 2
+        }
+      }
+    },
+    name: 'test-authenticate-get-post-put-delete',
+    property: 'testdb',
+    settings: {
+      authenticate: ['GET', 'POST', 'PUT', 'DELETE']
+    },
+    version: 'vtest'
+  }
+]
+
+describe('Collections endpoint', function() {
   before(done => {
-    help.removeACLData(() => {
-      app.start(done)
+    help.createSchemas(schemas).then(() => {
+      help.removeACLData(() => {
+        app.start(done)
+      })
     })
   })
 
   after(done => {
-    help.removeACLData(() => {
-      app.stop(done)
+    help.dropSchemas().then(() => {
+      help.removeACLData(() => {
+        app.stop(done)
+      })
     })
   })
 
@@ -48,57 +368,17 @@ describe('Collections endpoint', function() {
           .set('content-type', 'application/json')
           .set('Authorization', `Bearer ${token}`)
           .end((err, res) => {
-            const allCollections = help.getCollectionMap()
+            const {collections} = res.body
 
-            res.body.collections.length.should.eql(
-              Object.keys(allCollections).length
-            )
+            collections.length.should.eql(schemas.length)
+            collections.forEach(collection => {
+              const match = schemas.find(({name}) => name === collection.slug)
 
-            Object.keys(allCollections).forEach(key => {
-              const match = res.body.collections.some(collection => {
-                return collection.path === key
-              })
-
-              match.should.eql(true)
-            })
-
-            done()
-          })
-      })
-  })
-
-  it('should include the fields and settings for each collection', done => {
-    help
-      .getBearerTokenWithPermissions({
-        accessType: 'admin'
-      })
-      .then(token => {
-        client
-          .get(`/api/collections`)
-          .set('content-type', 'application/json')
-          .set('Authorization', `Bearer ${token}`)
-          .end((err, res) => {
-            const allCollections = help.getCollectionMap()
-
-            res.body.collections.length.should.eql(
-              Object.keys(allCollections).length
-            )
-
-            Object.keys(allCollections).forEach(key => {
-              const match = res.body.collections.some(collection => {
-                if (collection.path === key) {
-                  collection.fields.should.eql(allCollections[key].fields)
-                  Object.keys(collection.settings).should.eql(
-                    Object.keys(allCollections[key].settings)
-                  )
-
-                  return true
-                }
-
-                return false
-              })
-
-              match.should.eql(true)
+              match.fields.should.eql(collection.fields)
+              match.name.should.eql(collection.displayName || collection.slug)
+              match.property.should.eql(collection.property)
+              match.settings.should.eql(collection.settings)
+              match.version.should.eql(collection.version)
             })
 
             done()
@@ -110,21 +390,21 @@ describe('Collections endpoint', function() {
     help
       .getBearerTokenWithPermissions({
         resources: {
-          'collection:testdb_articles': {
+          'collection:library_book': {
             read: true
           },
-          'collection:testdb_publications': {
-            create: true
-          },
-          'collection:testdb_test-schema': {
-            read: false
-          },
-          'collection:radio_articles': {
+          'collection:library_person': {
             read: {
               fields: JSON.stringify({
                 fieldOne: 1
               })
             }
+          },
+          'collection:testdb_test-reference-schema': {
+            create: true
+          },
+          'collection:testdb_test-schema': {
+            read: false
           }
         }
       })
@@ -137,11 +417,11 @@ describe('Collections endpoint', function() {
             res.body.collections.length.should.eql(2)
 
             const collection1 = res.body.collections.some(collection => {
-              return collection.path === '/vtest/testdb/articles'
+              return collection.path === '/1.0/library/book'
             })
 
             const collection2 = res.body.collections.some(collection => {
-              return collection.path === '/vtest/testdb/publications'
+              return collection.path === '/1.0/library/person'
             })
 
             const collection3 = res.body.collections.some(collection => {
@@ -149,49 +429,13 @@ describe('Collections endpoint', function() {
             })
 
             const collection4 = res.body.collections.some(collection => {
-              return collection.path === '/3rdparty/radio/articles'
+              return collection.path === '/vtest/testdb/test-reference-schema'
             })
 
             collection1.should.eql(true)
-            collection2.should.eql(false)
+            collection2.should.eql(true)
             collection3.should.eql(false)
-            collection4.should.eql(true)
-
-            done()
-          })
-      })
-  })
-
-  it('should return all the collections if the requesting client has admin access', done => {
-    help
-      .getBearerTokenWithPermissions({
-        accessType: 'admin'
-      })
-      .then(token => {
-        client
-          .get(`/api/collections`)
-          .set('content-type', 'application/json')
-          .set('Authorization', `Bearer ${token}`)
-          .end((err, res) => {
-            const allCollections = help.getCollectionMap()
-
-            res.body.collections.length.should.eql(
-              Object.keys(allCollections).length
-            )
-
-            Object.keys(allCollections).forEach(key => {
-              const match = res.body.collections.some(collection => {
-                collection.version.should.be.String
-                collection.database.should.be.String
-                collection.name.should.be.String
-                collection.slug.should.be.String
-                collection.path.should.be.String
-
-                return collection.path === key
-              })
-
-              match.should.eql(true)
-            })
+            collection4.should.eql(false)
 
             done()
           })

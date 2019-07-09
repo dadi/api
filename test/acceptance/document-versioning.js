@@ -12,78 +12,67 @@ const client = request(
 )
 const FAKE_ID = '5c334a60139c7e48eb44a9bb'
 
+const schema1 = {
+  version: 'vtest',
+  property: 'testdb',
+  name: 'test-history-enabled',
+  fields: {
+    name: {
+      type: 'String'
+    },
+    surname: {
+      type: 'String'
+    },
+    occupation: {
+      type: 'String'
+    },
+    object: {
+      type: 'Object'
+    },
+    reference: {
+      type: 'Reference',
+      settings: {
+        collection: 'test-history-disabled'
+      }
+    }
+  },
+  settings: {}
+}
+const schema2 = Object.assign({}, schema1, {
+  version: 'vtest',
+  property: 'testdb',
+  name: 'test-history-disabled',
+  settings: {
+    enableVersioning: false
+  }
+})
+
 let bearerToken
 
 describe('Document versioning', function() {
   this.timeout(4000)
 
-  let cleanupFn
-
   beforeEach(done => {
     help.dropDatabase('testdb', err => {
-      if (err) return done(err)
+      app.start(() => {
+        help.createSchemas([schema1, schema2]).then(() => {
+          help.getBearerTokenWithAccessType('admin', (err, token) => {
+            if (err) return done(err)
 
-      const schema1 = {
-        fields: {
-          name: {
-            type: 'String'
-          },
-          surname: {
-            type: 'String'
-          },
-          occupation: {
-            type: 'String'
-          },
-          object: {
-            type: 'Object'
-          },
-          reference: {
-            type: 'Reference',
-            settings: {
-              collection: 'test-history-disabled'
-            }
-          }
-        }
-      }
-      const schema2 = Object.assign({}, schema1, {
-        settings: {
-          enableVersioning: true
-        }
+            bearerToken = token
+
+            done()
+          })
+        })
       })
-
-      help.writeTempFile(
-        'temp-workspace/collections/vtest/testdb/collection.test-history-enabled.json',
-        schema1,
-        callback1 => {
-          help.writeTempFile(
-            'temp-workspace/collections/vtest/testdb/collection.test-history-disabled.json',
-            schema2,
-            callback2 => {
-              cleanupFn = () => {
-                callback1()
-                callback2()
-              }
-
-              app.start(() => {
-                help.getBearerTokenWithAccessType('admin', (err, token) => {
-                  if (err) return done(err)
-
-                  bearerToken = token
-
-                  done()
-                })
-              })
-            }
-          )
-        }
-      )
     })
   })
 
   afterEach(done => {
-    app.stop(() => {
-      cleanupFn()
-      done()
+    help.dropSchemas().then(() => {
+      app.stop(() => {
+        done()
+      })
     })
   })
 

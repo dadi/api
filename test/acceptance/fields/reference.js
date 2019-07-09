@@ -1,51 +1,225 @@
-const should = require('should')
-const fs = require('fs')
-const path = require('path')
+const app = require('../../../dadi/lib/')
+const config = require('../../../config')
+const help = require('../help')
 const request = require('supertest')
-const config = require(__dirname + '/../../../config')
-const help = require(__dirname + '/../help')
-const app = require(__dirname + '/../../../dadi/lib/')
+const should = require('should')
 
-let bearerToken
-const configBackup = config.get()
 const connectionString =
   'http://' + config.get('server.host') + ':' + config.get('server.port')
 
+let bearerToken
+
 describe('Reference Field', () => {
   beforeEach(done => {
-    config.set(
-      'paths.collections',
-      'test/acceptance/temp-workspace/collections'
-    )
+    const ops = [
+      help.dropDatabase('library', 'book'),
+      help.dropDatabase('library', 'person'),
+      help.dropDatabase('library', 'event'),
+      help.dropDatabase('library', 'misc'),
+      help.dropDatabase('library', 'taxonomy')
+    ]
 
-    help.dropDatabase('library', 'book', err => {
-      if (err) return done(err)
-      help.dropDatabase('library', 'person', err => {
-        if (err) return done(err)
-        help.dropDatabase('library', 'event', err => {
-          if (err) return done(err)
-          help.dropDatabase('library', 'misc', err => {
-            if (err) return done(err)
-            help.dropDatabase('library', 'taxonomy', err => {
-              if (err) return done(err)
+    Promise.all(ops).then(() => {
+      app.start(async () => {
+        await help.createSchemas([
+          {
+            fields: {
+              title: {
+                type: 'String',
+                required: true
+              },
+              author: {
+                type: 'Reference',
+                settings: {
+                  collection: 'person'
+                }
+              },
+              authorStrict: {
+                type: 'Reference',
+                settings: {
+                  collection: 'person',
+                  strictCompose: true
+                }
+              },
+              booksInSeries: {
+                type: 'Reference',
+                settings: {
+                  collection: 'book',
+                  multiple: true
+                }
+              },
+              publishStatus: {
+                type: 'Object'
+              }
+            },
+            name: 'book',
+            property: 'library',
+            settings: {
+              cache: false,
+              authenticate: true,
+              count: 40,
+              storeRevisions: false
+            },
+            version: 'v1'
+          },
 
-              app.start(() => {
-                help.getBearerToken(function(err, token) {
-                  if (err) return done(err)
-                  bearerToken = token
-                  done()
-                })
-              })
-            })
-          })
+          {
+            fields: {
+              name: {
+                type: 'String',
+                required: true
+              },
+              occupation: {
+                type: 'String',
+                required: false
+              },
+              nationality: {
+                type: 'String',
+                required: false
+              },
+              education: {
+                type: 'String',
+                required: false
+              },
+              spouse: {
+                type: 'Reference'
+              },
+              friend: {
+                type: 'Reference'
+              },
+              agent: {
+                type: 'Reference'
+              },
+              allFriends: {
+                type: 'Reference'
+              }
+            },
+            name: 'person',
+            property: 'library',
+            settings: {
+              cache: false,
+              authenticate: true,
+              count: 40
+            },
+            version: 'v1'
+          },
+
+          {
+            version: 'v1',
+            property: 'library',
+            name: 'event',
+            fields: {
+              type: {
+                type: 'String',
+                required: true
+              },
+              book: {
+                type: 'Reference',
+                settings: {
+                  collection: 'book'
+                }
+              },
+              organiser: {
+                type: 'Reference',
+                settings: {
+                  collection: 'person'
+                }
+              },
+              datetime: {
+                type: 'DateTime'
+              }
+            },
+            settings: {
+              cache: true,
+              authenticate: false,
+              count: 40,
+              sort: 'datetime',
+              sortOrder: 1,
+              storeRevisions: false
+            }
+          },
+
+          {
+            version: 'v1',
+            property: 'library',
+            name: 'misc',
+            fields: {
+              boolean: {
+                type: 'Boolean'
+              },
+              string: {
+                type: 'String'
+              },
+              mixed: {
+                type: 'Mixed'
+              },
+              object: {
+                type: 'Object'
+              },
+              multiReference: {
+                type: 'Reference'
+              }
+            },
+            settings: {
+              cache: false,
+              authenticate: false,
+              count: 40,
+              sort: 'string',
+              sortOrder: 1,
+              storeRevisions: false
+            }
+          },
+
+          {
+            version: 'v1',
+            property: 'library',
+            name: 'taxonomy',
+            fields: {
+              word: {
+                type: 'String',
+                label: 'Word',
+                comments: 'Taxanomic word',
+                validation: {},
+                required: true,
+                message: "can't be empty"
+              },
+              children: {
+                type: 'Reference',
+                label: 'Children',
+                required: false,
+                settings: {
+                  collection: 'taxonomy',
+                  multiple: true
+                }
+              }
+            },
+            settings: {
+              compose: true,
+              cache: false,
+              authenticate: true,
+              count: 40,
+              sort: 'createdAt',
+              sortOrder: 1,
+              storeRevisions: true,
+              description: 'Taxonomy',
+              displayName: 'Taxonomy'
+            }
+          }
+        ])
+
+        help.getBearerToken(function(err, token) {
+          bearerToken = token
+
+          done(err)
         })
       })
     })
   })
 
   afterEach(done => {
-    config.set('paths.collections', configBackup.paths.collections)
-    app.stop(done)
+    help.dropSchemas().then(() => {
+      app.stop(done)
+    })
   })
 
   describe('insert', () => {
@@ -209,8 +383,6 @@ describe('Reference Field', () => {
         }
       }
 
-      config.set('query.useVersionFilter', true)
-
       const client = request(connectionString)
 
       client
@@ -224,7 +396,38 @@ describe('Reference Field', () => {
           const newDoc = res.body.results[0]
 
           should.exist(newDoc.author._id)
-          should.exist(newDoc.author._apiVersion)
+          newDoc.author.name.should.eql(book.author.name)
+          done()
+        })
+    })
+
+    it('should respond with 400 and an appropriate error message when the creation of a nested document fails (level 1)', done => {
+      const book = {
+        title: 'For Whom The Bell Tolls',
+        author: {
+          name: 'Ernest Hemingway',
+          invalidField: 123
+        }
+      }
+
+      const client = request(connectionString)
+
+      client
+        .post('/v1/library/book')
+        .set('Authorization', 'Bearer ' + bearerToken)
+        .send(book)
+        .expect(400)
+        .end((err, res) => {
+          if (err) return done(err)
+
+          const {errors, success} = res.body
+
+          success.should.eql(false)
+          errors.length.should.eql(1)
+          errors[0].code.should.eql('ERROR_NOT_IN_SCHEMA')
+          errors[0].message.should.be.String
+          errors[0].field.should.eql('author.invalidField')
+
           done()
         })
     })
@@ -239,8 +442,6 @@ describe('Reference Field', () => {
           }
         }
       }
-
-      config.set('query.useVersionFilter', true)
 
       const client = request(connectionString)
 
@@ -286,6 +487,40 @@ describe('Reference Field', () => {
 
               if (++doneIndex === 3) done()
             })
+        })
+    })
+
+    it('should respond with 400 and an appropriate error message when the creation of a nested document fails (level 2)', done => {
+      const event = {
+        type: 'Book release',
+        book: {
+          title: 'For Whom The Bell Tolls',
+          author: {
+            name: 'Ernest Hemingway',
+            invalidField: 123
+          }
+        }
+      }
+
+      const client = request(connectionString)
+
+      client
+        .post('/v1/library/event')
+        .set('Authorization', 'Bearer ' + bearerToken)
+        .send(event)
+        .expect(400)
+        .end((err, res) => {
+          if (err) return done(err)
+
+          const {errors, success} = res.body
+
+          success.should.eql(false)
+          errors.length.should.eql(1)
+          errors[0].code.should.eql('ERROR_NOT_IN_SCHEMA')
+          errors[0].message.should.be.String
+          errors[0].field.should.eql('book.author.invalidField')
+
+          done()
         })
     })
 
@@ -714,7 +949,7 @@ describe('Reference Field', () => {
               .expect(200)
               .end((err, res) => {
                 if (err) return done(err)
-                // console.log(res)
+
                 should.exist(res.body.results)
                 const newDoc = res.body.results[0]
 
@@ -791,15 +1026,6 @@ describe('Reference Field', () => {
 
     it('should compose updated document and return when history is off', done => {
       help.getBearerTokenWithAccessType('admin', function(err, token) {
-        const settingsBackup = Object.assign(
-          {},
-          app.components['/v1/library/book'].model.settings
-        )
-
-        app.components['/v1/library/book'].model.settings.storeRevisions = true
-
-        config.set('query.useVersionFilter', true)
-
         let book
 
         const client = request(connectionString)
@@ -844,12 +1070,6 @@ describe('Reference Field', () => {
                     results.length.should.equal(1)
                     should.exist(results[0].author.name)
 
-                    config.set('query.useVersionFilter', false)
-
-                    app.components[
-                      '/v1/library/book'
-                    ].model.settings.storeRevisions = settingsBackup
-
                     done()
                   })
               })
@@ -861,8 +1081,6 @@ describe('Reference Field', () => {
       const book = {
         title: 'Thérèse Raquin'
       }
-
-      config.set('query.useVersionFilter', true)
 
       const client = request(connectionString)
 
@@ -892,7 +1110,7 @@ describe('Reference Field', () => {
               const newDoc = res.body.results[0]
 
               should.exist(newDoc.author._id)
-              should.exist(newDoc.author._apiVersion)
+              newDoc.author.name.should.eql(update.author.name)
               done()
             })
         })
@@ -902,8 +1120,6 @@ describe('Reference Field', () => {
       const book = {
         title: 'The Sun Also Rises (2nd Edition)'
       }
-
-      config.set('query.useVersionFilter', true)
 
       const client = request(connectionString)
 
@@ -1177,7 +1393,6 @@ describe('Reference Field', () => {
                   should.exist(res.body.results)
                   const bookResult = res.body.results[0]
 
-                  // console.log(bookResult)
                   should.exist(bookResult.author)
                   should.exist(bookResult.author.name)
 
@@ -1204,7 +1419,6 @@ describe('Reference Field', () => {
           if (err) return done(err)
 
           const personId = res.body.results[0]._id
-
           const ernest = {
             name: 'Ernest Hemingway',
             spouse: null,
@@ -2227,9 +2441,6 @@ describe('Reference Field', () => {
       it('should return duplicate results for a reference field containing an Array of Strings', done => {
         const book = {title: 'For Whom The Bell Tolls', author: null}
         const author = {name: 'Ernest Hemingway'}
-
-        config.set('query.useVersionFilter', true)
-
         const client = request(connectionString)
 
         client

@@ -17,15 +17,365 @@ const startApp = function(done) {
   app.start(err => {
     if (err) return done(err)
 
-    help.dropDatabase('testdb', function(err) {
-      help.getBearerTokenWithAccessType('admin', (err, token) => {
-        if (err) return done(err)
+    help
+      .createSchemas([
+        Object.assign(
+          {
+            name: 'articles',
+            property: 'radio',
+            version: '3rdparty'
+          },
+          require('./workspace/collections/3rdparty/radio/collection.articles.json')
+        ),
 
-        bearerToken = token
+        {
+          name: 'schema-not-returning',
+          property: 'testdb',
+          version: 'vtest',
+          fields: {
+            name: {
+              type: 'String'
+            }
+          },
+          settings: {
+            hooks: {
+              beforeCreate: ['hook1', 'hook2']
+            }
+          }
+        },
 
-        done()
+        {
+          name: 'articles',
+          property: 'testdb',
+          version: 'vtest',
+          fields: {
+            published: {
+              type: 'Object',
+              label: 'Published State',
+              required: true,
+              publish: {
+                section: 'Syndication',
+                subSection: 'Placement',
+                subType: 'PublishedState'
+              },
+              search: {
+                indexed: false,
+                store: true
+              },
+              display: {
+                filter: false,
+                index: true,
+                edit: true
+              }
+            },
+            syndicates: {
+              type: 'Object',
+              label: 'Syndicates',
+              required: false,
+              publish: {
+                section: 'Syndication',
+                subSection: 'Placement',
+                subType: 'Syndicates'
+              },
+              search: {
+                indexed: false,
+                store: true
+              },
+              display: {
+                index: true,
+                edit: true
+              }
+            },
+            publications: {
+              type: 'Reference',
+              settings: {
+                collection: 'publications',
+                multiple: true,
+                fields: ['name', 'furl']
+              },
+              publish: {
+                section: 'Taxonomy',
+                subSection: 'Syndicates',
+                displayField: 'name',
+                limit: 0
+              },
+              search: {
+                indexed: false,
+                store: true
+              },
+              label: 'Publications',
+              required: false,
+              display: {
+                filter: true,
+                index: false,
+                edit: false
+              }
+            },
+            categories: {
+              type: 'Reference',
+              settings: {
+                collection: 'categories',
+                multiple: true,
+                fields: ['name', 'furl', 'parent']
+              },
+              search: {
+                indexed: false,
+                store: true
+              },
+              publish: {
+                section: 'Taxonomy',
+                subSection: 'Syndicates',
+                displayField: 'name',
+                limit: 0
+              },
+              label: 'Categories',
+              required: false,
+              display: {
+                filter: true,
+                index: false,
+                edit: false
+              }
+            },
+            primarySyndicatePosition: {
+              type: 'Number',
+              label: 'Primary Syndicate',
+              required: false,
+              publish: {
+                section: 'Taxonomy',
+                subSection: 'Syndicates'
+              },
+              search: {
+                indexed: false,
+                store: true
+              },
+              display: {
+                index: false,
+                edit: false
+              }
+            },
+            title: {
+              type: 'String',
+              label: 'Title',
+              validation: {
+                maxLength: 500
+              },
+              required: true,
+              publish: {
+                displaySize: 'kilo',
+                section: 'Editorial',
+                subSection: 'Text'
+              },
+              search: {
+                indexed: true,
+                store: true,
+                weight: 2
+              },
+              display: {
+                filter: true,
+                index: true,
+                edit: true
+              }
+            },
+            furl: {
+              type: 'String',
+              label: 'Friendly URL',
+              publish: {
+                section: 'Meta',
+                subSection: 'Url'
+              },
+              required: false,
+              display: {
+                index: false,
+                edit: true
+              }
+            },
+            urlOverride: {
+              type: 'String',
+              label: 'URL Override',
+              publish: {
+                section: 'Meta',
+                subSection: 'Url'
+              },
+              required: false,
+              display: {
+                index: false,
+                edit: true
+              }
+            }
+          },
+          settings: {
+            cache: true,
+            cacheTTL: 300,
+            authenticate: true,
+            compose: true,
+            displayName: 'Articles',
+            storeRevisions: true,
+            type: 'article',
+            publish: {
+              group: 'Content',
+              messageCollection: 'messages'
+            },
+            allowExtension: true,
+            standardEditPage: true,
+            allowDelete: true,
+            count: 20,
+            sortOrder: 1,
+            index: {
+              enabled: true,
+              keys: {
+                _id: 1,
+                urls: 1,
+                publicationDate: 1
+              }
+            },
+            hooks: {
+              afterGet: [],
+              beforeCreate: [
+                {
+                  hook: 'slugify',
+                  options: {
+                    from: 'title',
+                    override: 'urlOverride',
+                    to: 'furl'
+                  }
+                }
+              ],
+              afterCreate: [],
+              beforeUpdate: [
+                {
+                  hook: 'slugify',
+                  options: {
+                    from: 'title',
+                    override: 'urlOverride',
+                    to: 'furl'
+                  }
+                }
+              ],
+              afterUpdate: []
+            }
+          }
+        },
+
+        {
+          name: 'publications',
+          property: 'testdb',
+          version: 'vtest',
+          fields: {
+            name: {
+              type: 'String',
+              label: 'Name',
+              validation: {
+                maxLength: 250
+              },
+              publish: {
+                section: 'Editorial',
+                subSection: 'Content'
+              },
+              required: false,
+              display: {
+                index: true,
+                edit: true
+              }
+            },
+            furl: {
+              type: 'String',
+              label: 'URL Formatted Name',
+              validation: {
+                maxLength: 250
+              },
+              publish: {
+                section: 'Meta',
+                subSection: 'Url'
+              },
+              required: false,
+              display: {
+                index: true,
+                edit: true
+              }
+            },
+            url: {
+              type: 'String',
+              label: 'URL',
+              publish: {
+                section: 'Meta',
+                subSection: 'Url'
+              },
+              required: false,
+              display: {
+                index: true,
+                edit: false
+              }
+            },
+            urlOverride: {
+              type: 'String',
+              label: 'URL Override',
+              publish: {
+                section: 'Meta',
+                subSection: 'Url'
+              },
+              required: false,
+              display: {
+                index: true,
+                edit: false
+              }
+            }
+          },
+          settings: {
+            cache: true,
+            compose: true,
+            cacheTTL: 300,
+            authenticate: true,
+            publish: {
+              group: 'Taxonomy'
+            },
+            allowExtension: true,
+            displayName: 'Publications',
+            count: 100,
+            sortOrder: 1,
+            hooks: {
+              beforeCreate: [
+                {
+                  hook: 'slugify',
+                  options: {
+                    from: 'name',
+                    override: 'urlOverride',
+                    to: 'furl'
+                  }
+                },
+                {
+                  hook: 'urlHook'
+                }
+              ],
+              beforeGet: [
+                {
+                  hook: 'urlHook'
+                }
+              ],
+              beforeUpdate: [
+                {
+                  hook: 'slugify',
+                  options: {
+                    from: 'name',
+                    override: 'urlOverride',
+                    to: 'furl'
+                  }
+                }
+              ]
+            }
+          }
+        }
+      ])
+      .then(() => {
+        help.dropDatabase('testdb', function(err) {
+          help.getBearerTokenWithAccessType('admin', (err, token) => {
+            if (err) return done(err)
+
+            bearerToken = token
+
+            done()
+          })
+        })
       })
-    })
   })
 }
 
@@ -34,7 +384,9 @@ const stopApp = function(done) {
     fn()
   })
 
-  app.stop(done)
+  help.dropSchemas().then(() => {
+    app.stop(done)
+  })
 }
 
 const hookOne = `
@@ -49,19 +401,6 @@ const hookTwo = `
   }
 `
 
-const schemaNotReturning = {
-  fields: {
-    name: {
-      type: 'String'
-    }
-  },
-  settings: {
-    hooks: {
-      beforeCreate: ['hook1', 'hook2']
-    }
-  }
-}
-
 describe('Hooks', function() {
   beforeEach(done => {
     cleanupFn = []
@@ -72,15 +411,7 @@ describe('Hooks', function() {
       help.writeTempFile('temp-workspace/hooks/hook2.js', hookTwo, callback => {
         cleanupFn.push(callback)
 
-        help.writeTempFile(
-          'temp-workspace/collections/vtest/testdb/collection.schema-not-returning.json',
-          schemaNotReturning,
-          callback => {
-            cleanupFn.push(callback)
-
-            done()
-          }
-        )
+        done()
       })
     })
   })

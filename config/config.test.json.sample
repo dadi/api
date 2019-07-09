@@ -60,5 +60,6 @@
   "workQueue": {
     "debounceTime": 0,
     "pollingTime": 0
-  }
+  },
+  "loadCollectionSeeds": false
 }

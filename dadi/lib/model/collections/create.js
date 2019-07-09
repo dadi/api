@@ -69,7 +69,7 @@ function create({
     documents,
     type: 'create'
   })
-    .then(({access, documents: newDocuments, fields, schema}) => {
+    .then(({access, documents: newDocuments, schema}) => {
       if (!validate) return
 
       // Storing the access matrix in a variable that is global to the method.

@@ -3,21 +3,18 @@ const config = require('./../../../config')
 const Controller = require('./index')
 const debug = require('debug')('api:controller')
 const help = require('./../help')
-const model = require('../model')
+const modelStore = require('../model/')
 const searchModel = require('./../model/search')
 const url = require('url')
 const workQueue = require('../workQueue')
 
-const Collection = function(model, server) {
-  if (!model) throw new Error('Model instance required')
-
-  this.model = model
+const Collection = function(server) {
   this.server = server
 }
 
 Collection.prototype = new Controller()
 
-Collection.prototype.count = workQueue.wrapForegroundJob(function(
+Collection.prototype.count = workQueue.wrapForegroundJob(async function(
   req,
   res,
   next
@@ -28,149 +25,158 @@ Collection.prototype.count = workQueue.wrapForegroundJob(function(
     return next()
   }
 
-  const options = url.parse(req.url, true).query
+  const {collectionModel: model} = req
 
-  const query = this._prepareQuery(req)
-  let queryOptions = this._prepareQueryOptions(options)
+  if (!model) {
+    return next()
+  }
+
+  const options = url.parse(req.url, true).query
+  const query = this._prepareQuery(req, model)
+  const queryOptions = this._prepareQueryOptions(options, model)
 
   if (queryOptions.errors.length !== 0) {
     return help.sendBackJSON(400, res, next)(null, queryOptions)
   }
 
-  queryOptions = queryOptions.queryOptions
-
-  this.model
-    .count({
+  try {
+    const stats = await model.count({
       client: req.dadiApiClient,
-      options: queryOptions,
+      options: queryOptions.queryOptions,
       query
     })
-    .then(stats => {
-      return help.sendBackJSON(200, res, next)(null, stats)
-    })
-    .catch(error => {
-      return help.sendBackJSON(null, res, next)(error)
-    })
+
+    return help.sendBackJSON(200, res, next)(null, stats)
+  } catch (error) {
+    return help.sendBackJSON(null, res, next)(error)
+  }
 })
 
-Collection.prototype.delete = workQueue.wrapForegroundJob(function(
+Collection.prototype.delete = workQueue.wrapForegroundJob(async function(
   req,
   res,
   next
 ) {
-  const query = req.params.id ? {_id: req.params.id} : req.body.query
+  const {collectionModel: model} = req
+
+  if (!model) {
+    return next()
+  }
+
+  const {collection, id, property, version} = req.params
+  const query = id ? {_id: id} : req.body.query
 
   if (!query) return next()
 
-  let pathname = url.parse(req.url).pathname
+  // Flush cache for DELETE requests.
+  help.clearCache(`/${version}/${property}/${collection}`)
 
-  // Remove id param so we still get a valid handle
-  // on the model name for clearing the cache.
-  pathname = pathname.replace('/' + req.params.id, '')
-
-  // flush cache for DELETE requests
-  help.clearCache(pathname)
-
-  this.model
-    .delete({
+  try {
+    const {deletedCount, totalCount} = await model.delete({
       client: req.dadiApiClient,
       description: req.body && req.body.description,
       query,
       req
     })
-    .then(({deletedCount, totalCount}) => {
-      if (config.get('feedback')) {
-        // Send 200 with JSON payload.
-        return help.sendBackJSON(200, res, next)(null, {
-          status: 'success',
-          message: 'Documents deleted successfully',
-          deleted: deletedCount,
-          totalCount
-        })
-      }
 
-      // Send 200 with no content.
-      res.statusCode = 204
-      res.end()
-    })
-    .catch(error => {
-      return help.sendBackJSON(200, res, next)(error)
-    })
+    // Send 200 with JSON payload if `feedback` is enabled.
+    if (config.get('feedback')) {
+      return help.sendBackJSON(200, res, next)(null, {
+        status: 'success',
+        message: 'Documents deleted successfully',
+        deleted: deletedCount,
+        totalCount
+      })
+    }
+
+    // Send 204 with no content if not.
+    res.statusCode = 204
+    res.end()
+  } catch (error) {
+    return help.sendBackJSON(200, res, next)(error)
+  }
 })
 
-Collection.prototype.get = workQueue.wrapForegroundJob(function(
+Collection.prototype.get = workQueue.wrapForegroundJob(async function(
   req,
   res,
   next
 ) {
-  const options = this._getURLParameters(req.url)
-  const callback = options.callback || this.model.settings.callback
+  const {collectionModel: model} = req
 
-  // Determine if this is JSONP.
-  let done = callback
-    ? help.sendBackJSONP(callback, res, next)
-    : help.sendBackJSON(200, res, next)
-  const query = this._prepareQuery(req)
-  let queryOptions = this._prepareQueryOptions(options)
-
-  if (queryOptions.errors.length !== 0) {
-    done = help.sendBackJSON(400, res, next)
-
-    return done(null, queryOptions)
+  if (!model) {
+    return next()
   }
 
-  queryOptions = queryOptions.queryOptions
+  const {id} = req.params
+  const options = this._getURLParameters(req.url)
+  const callback = options.callback || model.settings.callback
 
-  return this.model
-    .get({
+  // Determine if the client supplied a JSONP callback.
+  const done = callback
+    ? help.sendBackJSONP(callback, res, next)
+    : help.sendBackJSON(200, res, next)
+  const query = this._prepareQuery(req, model)
+  const queryOptions = this._prepareQueryOptions(options, model)
+
+  if (queryOptions.errors.length !== 0) {
+    return help.sendBackJSON(400, res, next)(null, queryOptions)
+  }
+
+  try {
+    const results = await model.get({
       client: req.dadiApiClient,
       language: options.lang,
       query,
-      options: queryOptions,
+      options: queryOptions.queryOptions,
       req,
-      version: req.params.id && options.version
+      version: id && options.version
     })
-    .then(results => {
-      return done(null, results, req)
-    })
-    .catch(error => {
-      return done(error)
-    })
+
+    return done(null, results, req)
+  } catch (error) {
+    return done(error)
+  }
 })
 
-Collection.prototype.post = workQueue.wrapForegroundJob(function(
+Collection.prototype.hasCaching = function(req) {
+  return Boolean(this.settings && this.settings.cache)
+}
+
+Collection.prototype.post = workQueue.wrapForegroundJob(async function(
   req,
   res,
   next
 ) {
+  const {collectionModel: model} = req
+
+  if (!model) {
+    return next()
+  }
+
+  const {collection, id, property, version} = req.params
+
   // Add internal fields.
   const internals = {
     _apiVersion: req.url.split('/')[1]
   }
-  let pathname = url.parse(req.url).pathname
   const path = url.parse(req.url, true)
   const options = path.query
 
-  // Remove id param if it's an update, so we still
-  // get a valid handle on the model name for clearing
-  // the cache.
-  pathname = pathname.replace('/' + req.params.id, '')
+  // Flush cache for DELETE requests.
+  help.clearCache(`/${version}/${property}/${collection}`)
 
-  debug('POST %s %o', pathname, req.params)
-
-  // Flush cache for POST requests.
-  help.clearCache(pathname)
-
-  // If id is present in the url, then this is an update.
-  if (req.params.id || req.body.update) {
+  // We're looking at an update if there is a document ID present in the URL
+  // or there is an `update` property in the body.
+  if (id || req.body.update) {
     internals._lastModifiedBy = req.dadiApiClient && req.dadiApiClient.clientId
 
     let description
     let query = {}
     let update = {}
 
-    if (req.params.id) {
-      query._id = req.params.id
+    if (id) {
+      query._id = id
       update = req.body
     } else {
       description = req.body.description
@@ -183,8 +189,8 @@ Collection.prototype.post = workQueue.wrapForegroundJob(function(
       query._apiVersion = internals._apiVersion
     }
 
-    return this.model
-      .update({
+    try {
+      const result = await model.update({
         client: req.dadiApiClient,
         compose: options.compose,
         description,
@@ -193,31 +199,29 @@ Collection.prototype.post = workQueue.wrapForegroundJob(function(
         req,
         update
       })
-      .then(result => {
-        return help.sendBackJSON(200, res, next)(null, result)
-      })
-      .catch(error => {
-        return help.sendBackJSON(500, res, next)(error)
-      })
+
+      return help.sendBackJSON(200, res, next)(null, result)
+    } catch (error) {
+      return help.sendBackJSON(500, res, next)(error)
+    }
   }
 
   // if no id is present, then this is a create
   internals._createdBy = req.dadiApiClient && req.dadiApiClient.clientId
 
-  return this.model
-    .create({
+  try {
+    const result = await model.create({
       client: req.dadiApiClient,
       compose: options.compose,
       documents: req.body,
       internals,
       req
     })
-    .then(result => {
-      return help.sendBackJSON(200, res, next)(null, result)
-    })
-    .catch(error => {
-      return help.sendBackJSON(200, res, next)(error)
-    })
+
+    return help.sendBackJSON(200, res, next)(null, result)
+  } catch (error) {
+    return help.sendBackJSON(200, res, next)(error)
+  }
 })
 
 Collection.prototype.put = function(req, res, next) {
@@ -275,11 +279,17 @@ Collection.prototype.registerRoutes = function(route, filePath) {
   )
 }
 
-Collection.prototype.search = function(req, res, next) {
+Collection.prototype.search = async function(req, res, next) {
+  const {collectionModel: model} = req
+
+  if (!model) {
+    return next()
+  }
+
   const minimumQueryLength = config.get('search.minQueryLength')
   const path = url.parse(req.url, true)
   const {lang: language, q: query} = path.query
-  const {errors, queryOptions} = this._prepareQueryOptions(path.query)
+  const {errors, queryOptions} = this._prepareQueryOptions(path.query, model)
 
   if (!config.get('search.enabled')) {
     const error = new Error('Not Implemented')
@@ -315,50 +325,54 @@ Collection.prototype.search = function(req, res, next) {
     return help.sendBackJSON(null, res, next)(error)
   }
 
-  return this.model
-    .validateAccess({
+  try {
+    await model.validateAccess({
       client: req.dadiApiClient,
       type: 'read'
     })
-    .then(() => {
-      return searchModel.find({
-        client: req.dadiApiClient,
-        collections: [this.model.name],
-        fields: queryOptions.fields,
-        language,
-        modelFactory: model,
-        query
-      })
+
+    const response = await searchModel.find({
+      client: req.dadiApiClient,
+      collections: [`${model.property}/${model.name}`],
+      fields: queryOptions.fields,
+      language,
+      modelFactory: modelStore,
+      query
     })
-    .then(response => {
-      return help.sendBackJSON(200, res, next)(null, response)
-    })
-    .catch(error => {
-      return help.sendBackJSON(null, res, next)(error)
-    })
+
+    return help.sendBackJSON(200, res, next)(null, response)
+  } catch (error) {
+    console.log(error)
+    return help.sendBackJSON(null, res, next)(error)
+  }
 }
 
-Collection.prototype.stats = workQueue.wrapForegroundJob(function(
+Collection.prototype.stats = workQueue.wrapForegroundJob(async function(
   req,
   res,
   next
 ) {
+  const {collectionModel: model} = req
+
+  if (!model) {
+    return next()
+  }
+
   const method = req.method && req.method.toLowerCase()
 
   if (method !== 'get') {
     return next()
   }
 
-  this.model
-    .getStats({
+  try {
+    const stats = await model.getStats({
       client: req.dadiApiClient
     })
-    .then(stats => {
-      return help.sendBackJSON(200, res, next)(null, stats)
-    })
-    .catch(error => {
-      return help.sendBackJSON(null, res, next)(error)
-    })
+
+    return help.sendBackJSON(200, res, next)(null, stats)
+  } catch (error) {
+    return help.sendBackJSON(null, res, next)(error)
+  }
 })
 
 Collection.prototype.unregisterRoutes = function(route) {
@@ -368,28 +382,33 @@ Collection.prototype.unregisterRoutes = function(route) {
   )
 }
 
-Collection.prototype.versions = workQueue.wrapForegroundJob(function(
+Collection.prototype.versions = workQueue.wrapForegroundJob(async function(
   req,
   res,
   next
 ) {
+  const {collectionModel: model} = req
+
+  if (!model) {
+    return next()
+  }
+
   const method = req.method && req.method.toLowerCase()
 
   if (method !== 'get') {
     return next()
   }
 
-  this.model
-    .getVersions({
+  try {
+    const response = await model.getVersions({
       client: req.dadiApiClient,
       documentId: req.params.id
     })
-    .then(response => {
-      return help.sendBackJSON(200, res, next)(null, response)
-    })
-    .catch(error => {
-      return help.sendBackJSON(null, res, next)(error)
-    })
+
+    return help.sendBackJSON(200, res, next)(null, response)
+  } catch (error) {
+    return help.sendBackJSON(null, res, next)(error)
+  }
 })
 
 module.exports = function(model, server) {

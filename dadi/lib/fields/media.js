@@ -3,7 +3,13 @@ const mediaModel = require(path.join(__dirname, '/../model/media'))
 
 module.exports.type = 'media'
 
-module.exports.beforeOutput = function({client, config, field, input, schema}) {
+module.exports.beforeOutput = async function({
+  client,
+  config,
+  field,
+  input,
+  schema
+}) {
   const bucket =
     (schema.settings && schema.settings.mediaBucket) ||
     config.get('media.defaultBucket')
@@ -30,63 +36,54 @@ module.exports.beforeOutput = function({client, config, field, input, schema}) {
     return input
   }
 
-  return model
-    .get({
-      client,
-      query: {
-        _id: {
-          $in: mediaObjectIDs
-        }
+  const {results} = await model.get({
+    client,
+    query: {
+      _id: {
+        $in: mediaObjectIDs
       }
-    })
-    .then(({results}) => {
-      return results.reduce((mediaObjects, result) => {
-        mediaObjects[result._id] = result
+    }
+  })
+  const mediaObjects = results.reduce((mediaObjects, result) => {
+    mediaObjects[result._id] = result
 
-        return mediaObjects
-      }, {})
-    })
-    .then(mediaObjects => {
-      return mediaObjectIDs.map((id, index) => {
-        const value =
-          typeof normalisedValue[index] === 'object'
-            ? normalisedValue[index]
-            : {}
+    return mediaObjects
+  }, {})
+  const composedValue = mediaObjectIDs.map((id, index) => {
+    const value =
+      typeof normalisedValue[index] === 'object' ? normalisedValue[index] : {}
 
-        if (mediaObjects[id]) {
-          const mergedValue = Object.assign({}, mediaObjects[id], value, {
-            _id: id
-          })
-          const sortedValue = Object.keys(mergedValue)
-            .sort()
-            .reduce((sortedValue, field) => {
-              sortedValue[field] = mergedValue[field]
-
-              return sortedValue
-            }, {})
-
-          composedIDs.push(id)
+    if (mediaObjects[id]) {
+      const mergedValue = Object.assign({}, mediaObjects[id], value, {
+        _id: id
+      })
+      const sortedValue = Object.keys(mergedValue)
+        .sort()
+        .reduce((sortedValue, field) => {
+          sortedValue[field] = mergedValue[field]
 
           return sortedValue
-        }
+        }, {})
 
-        return id
-      })
-    })
-    .then(composedValue => {
-      const formattedValue = mediaModel.formatDocuments(composedValue)
-      const output = Object.assign(input, {
-        [field]: isArraySyntax ? formattedValue : formattedValue[0]
-      })
+      composedIDs.push(id)
 
-      if (composedIDs.length > 0) {
-        output._composed = {
-          [field]: isArraySyntax ? composedIDs : composedIDs[0]
-        }
-      }
+      return sortedValue
+    }
 
-      return output
-    })
+    return id
+  })
+  const formattedValue = mediaModel.formatDocuments(composedValue)
+  const output = Object.assign(input, {
+    [field]: isArraySyntax ? formattedValue : formattedValue[0]
+  })
+
+  if (composedIDs.length > 0) {
+    output._composed = {
+      [field]: isArraySyntax ? composedIDs : composedIDs[0]
+    }
+  }
+
+  return output
 }
 
 module.exports.beforeSave = function({config, field, input, schema}) {

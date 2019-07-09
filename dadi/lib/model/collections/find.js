@@ -117,6 +117,8 @@ function find({client, isRestIDQuery, query = {}, options = {}, version} = {}) {
       fields: queryFields
     })
 
+    // If we're looking for a specific version of a document, we retrieve it
+    // from the History module.
     if (isRestIDQuery && version && this.history) {
       return this.history.getVersion(version, queryOptions)
     }

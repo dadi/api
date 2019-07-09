@@ -43,30 +43,45 @@ const INTERNAL_PROPERTIES = [
 // Pool of initialised models.
 const _models = {}
 
+function getModelKey(name, property, version) {
+  const isMediaBucket = config
+    .get('media.buckets')
+    .concat(config.get('media.defaultBucket'))
+    .includes(name)
+
+  // If the name matches a media bucket, the key must not include version or
+  // property.
+  if (isMediaBucket) {
+    return name
+  }
+
+  return [property, name].filter(Boolean).join('/')
+}
+
 /**
  * Creates a new Model instance
  * @constructor
  * @classdesc
  */
-const Model = function(name, schema, connection, settings) {
+const Model = function({
+  connection,
+  isListable = false,
+  name,
+  property,
+  schema,
+  settings,
+  version
+}) {
   this.acl = require('./acl')
 
-  // Attach collection name.
+  this.isListable = isListable
   this.name = name
+  this.property = property
+  this.schema = schema || {}
+  this.settings = settings || {}
+  this.version = version
 
-  // Attach original schema.
-  if (_models[name] && (!schema || !Object.keys(schema).length)) {
-    this.schema = _models[name].schema
-  } else {
-    this.schema = schema
-  }
-
-  // Attach default settings.
-  this.settings = Object.assign({}, settings, this.schema.settings)
-
-  // Set ACL key
-  this.aclKey =
-    this.settings.aclKey || `collection:${this.settings.database}_${name}`
+  this.aclKey = this.settings.aclKey || `collection:${property}_${name}`
 
   // Attach display name if supplied.
   if (this.settings.displayName) {
@@ -100,7 +115,7 @@ const Model = function(name, schema, connection, settings) {
       this.name + DEFAULT_HISTORY_COLLECTION_SUFFIX
 
     this.history = new History({
-      database: this.settings.database,
+      database: property,
       name: versioningCollection
     })
   }
@@ -111,22 +126,11 @@ const Model = function(name, schema, connection, settings) {
     Connection(
       {
         collection: this.name,
-        database: this.settings.database
+        database: property
       },
       this.name,
       config.get('datastore')
     )
-
-  this.connection.setMaxListeners(35)
-
-  if (config.get('env') !== 'test') {
-    this.connection.once('disconnect', err => {
-      logger.error({module: 'model'}, err)
-    })
-  }
-
-  // Save reference to this model in the pool.
-  _models[name] = this
 
   // Setup validatior.
   this.validator = new Validator({
@@ -645,8 +649,24 @@ Model.prototype.getFieldType = function(field) {
  * @param  {String} name - name of the collection
  * @return {Model}
  */
-Model.prototype.getForeignModel = function(name) {
-  return _models[name]
+Model.prototype.getForeignModel = function(
+  name,
+  property = this.property,
+  version = this.version
+) {
+  const modelKey = getModelKey(name, property, version)
+
+  return _models[modelKey]
+}
+
+/**
+ * Returns whether the data for this model should be cached.
+ *
+ * @return {Boolean}
+ * @api public
+ */
+Model.prototype.isCacheable = function() {
+  return this.settings.cache === true
 }
 
 /**
@@ -720,6 +740,10 @@ Model.prototype.runFieldHooks = function({data = {}, field, input, name}) {
   })
 
   return queue.catch(error => {
+    if (Array.isArray(error.errors)) {
+      return Promise.reject(error)
+    }
+
     const errorObject = {
       field,
       message: error.message
@@ -992,12 +1016,52 @@ Model.prototype.getStats = require('./collections/getStats')
 Model.prototype.getVersions = require('./collections/getVersions')
 Model.prototype.update = require('./collections/update')
 
-module.exports = function(name, schema, connection, settings) {
-  if (schema) {
-    return new Model(name, schema, connection, settings)
+module.exports = function(options) {
+  const {connection, isListable, name, property, schema, settings, version} =
+    typeof options === 'string'
+      ? {
+          connection: arguments[2],
+          name: arguments[0],
+          property: (arguments[3] || {}).database,
+          schema: arguments[1],
+          settings: arguments[3]
+        }
+      : options
+  const modelKey = getModelKey(name, property, version)
+
+  if (_models[modelKey] && schema) {
+    const isDirty =
+      JSON.stringify(schema) !== JSON.stringify(_models[modelKey].schema) ||
+      JSON.stringify(settings) !== JSON.stringify(_models[modelKey].settings)
+
+    if (!isDirty) {
+      return _models[modelKey]
+    }
   }
 
-  return _models[name]
+  _models[modelKey] =
+    _models[modelKey] ||
+    new Model({
+      connection,
+      isListable,
+      name,
+      property,
+      schema,
+      settings,
+      version
+    })
+
+  return _models[modelKey]
+}
+
+module.exports.get = ({name, property, version}) => {
+  const modelKey = getModelKey(name, property, version)
+
+  return _models[modelKey]
+}
+
+module.exports.getAll = () => {
+  return _models
 }
 
 module.exports.getByAclKey = aclKey => {
@@ -1008,6 +1072,18 @@ module.exports.getByAclKey = aclKey => {
   if (modelName) {
     return _models[modelName]
   }
+}
+
+module.exports.unload = ({name, property, version}) => {
+  const modelKey = getModelKey(name, property, version)
+
+  delete _models[modelKey]
+}
+
+module.exports.unloadAll = () => {
+  Object.keys(_models).forEach(key => {
+    delete _models[key]
+  })
 }
 
 module.exports.Model = Model

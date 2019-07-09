@@ -1,5 +1,4 @@
 const convict = require('convict')
-const fs = require('fs')
 
 const conf = convict({
   app: {
@@ -474,6 +473,18 @@ const conf = convict({
       format: Number,
       default: 200
     }
+  },
+  schemas: {
+    collection: {
+      doc: 'The name of the internal collection to store collection schemas',
+      format: String,
+      default: 'schemas'
+    },
+    loadSeeds: {
+      doc: 'Whether to scan the workspace directory for collection seed files',
+      format: Boolean,
+      default: true
+    }
   }
 })
 
@@ -487,14 +498,9 @@ conf.updateConfigDataForDomain = function(domain) {
   const domainConfig = './config/' + domain + '.json'
 
   try {
-    const stats = fs.statSync(domainConfig)
-
-    // no error, file exists
     conf.loadFile(domainConfig)
   } catch (err) {
-    if (err.code === 'ENOENT') {
-      // console.log('No domain-specific configuration file: ' + domainConfig)
-    } else {
+    if (err.code !== 'ENOENT') {
       console.log(err)
     }
   }

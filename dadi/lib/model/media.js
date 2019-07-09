@@ -10,6 +10,8 @@ const MediaModel = function(document) {
 MediaModel.prototype.formatDocuments = function(documents) {
   const multiple = documents instanceof Array
   const output = (multiple ? documents : [documents]).map(document => {
+    if (!document || typeof document !== 'object') return document
+
     const formattedDocument = Object.assign({}, document)
 
     // Is this a relative path to a file in the disk? If so, we need to prepend

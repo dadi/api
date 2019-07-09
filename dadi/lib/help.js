@@ -227,7 +227,7 @@ module.exports.sendBackText = function(successCode, res, next) {
  * @returns Boolean
  */
 module.exports.shouldCompress = function(req) {
-  const acceptHeader = req.headers['accept-encoding'] || ''
+  const acceptHeader = (req.headers || {})['accept-encoding'] || ''
 
   return acceptHeader.split(',').includes('gzip')
 }

@@ -1,8 +1,8 @@
 const access = require('./access')
 const client = require('./client')
-const config = require('./../../../../config.js')
-const Connection = require('./../connection')
-const Model = require('./../index')
+const config = require('../../../../config.js')
+const Connection = require('../connection')
+const modelStore = require('../index')
 const role = require('./role')
 
 const ERROR_FORBIDDEN = 'FORBIDDEN'
@@ -21,16 +21,15 @@ ACL.prototype.connect = function() {
     database: config.get('auth.database'),
     override: true
   })
-  const accessModel = Model(
-    config.get('auth.accessCollection'),
-    {},
-    accessConnection,
-    {
+  const accessModel = modelStore({
+    connection: accessConnection,
+    name: config.get('auth.accessCollection'),
+    property: config.get('auth.database'),
+    settings: {
       compose: false,
-      database: config.get('auth.database'),
       storeRevisions: false
     }
-  )
+  })
 
   access.setModel(accessModel)
 
@@ -44,16 +43,15 @@ ACL.prototype.connect = function() {
     null,
     config.get('auth.datastore')
   )
-  const clientModel = Model(
-    config.get('auth.clientCollection'),
-    {},
-    clientConnection,
-    {
+  const clientModel = modelStore({
+    connection: clientConnection,
+    name: config.get('auth.clientCollection'),
+    property: config.get('auth.database'),
+    settings: {
       compose: false,
-      database: config.get('auth.database'),
       storeRevisions: false
     }
-  )
+  })
 
   client.setModel(clientModel)
 
@@ -63,17 +61,15 @@ ACL.prototype.connect = function() {
     database: config.get('auth.database'),
     override: true
   })
-
-  const roleModel = Model(
-    config.get('auth.roleCollection'),
-    {},
-    roleConnection,
-    {
+  const roleModel = modelStore({
+    collection: roleConnection,
+    name: config.get('auth.roleCollection'),
+    property: config.get('auth.database'),
+    settings: {
       compose: false,
-      database: config.get('auth.database'),
       storeRevisions: false
     }
-  )
+  })
 
   role.setModel(roleModel)
 }
@@ -92,11 +88,26 @@ ACL.prototype.createError = function(client) {
 }
 
 ACL.prototype.getResources = function() {
-  return this.resources
+  const models = modelStore.getAll()
+  const collectionResources = Object.keys(models).reduce((result, key) => {
+    if (models[key].isListable) {
+      result[models[key].aclKey] = {
+        description: `${key} collection`
+      }
+    }
+
+    return result
+  }, {})
+
+  return Object.assign({}, this.resources, collectionResources)
 }
 
 ACL.prototype.hasResource = function(resource) {
-  return this.resources[resource] !== undefined
+  if (this.resources[resource] !== undefined) {
+    return true
+  }
+
+  return Boolean(modelStore.getByAclKey(resource))
 }
 
 ACL.prototype.registerResource = function(name, description = null) {

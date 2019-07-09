@@ -15,31 +15,7 @@ let lastModifiedAt = 0
 describe('Application', function() {
   this.timeout(10000)
 
-  before(function(done) {
-    // read "lastModifiedAt": 1466832329170
-    // of workspace/collections/vtest/testdb
-    const dirs = config.get('paths')
-    const schemaPath = path.resolve(
-      dirs.collections + '/vtest/testdb/collection.test-schema.json'
-    )
-    const schema = JSON.parse(fs.readFileSync(schemaPath).toString())
-
-    lastModifiedAt = schema.settings.lastModifiedAt
-    done()
-  })
-
   after(function(done) {
-    // reset "lastModifiedAt": 1466832329170
-    // of workspace/collections/vtest/testdb
-    const dirs = config.get('paths')
-    const schemaPath = path.resolve(
-      dirs.collections + '/vtest/testdb/collection.test-schema.json'
-    )
-    const schema = JSON.parse(fs.readFileSync(schemaPath).toString())
-
-    schema.settings.lastModifiedAt = lastModifiedAt
-    fs.writeFileSync(schemaPath, JSON.stringify(schema, null, 2))
-
     help.removeTestClients(done)
   })
 

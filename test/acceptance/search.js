@@ -1397,7 +1397,7 @@ describe('Search', function() {
                   stub.restore()
 
                   done(err)
-                })
+                }, 500)
               })
           })
         })

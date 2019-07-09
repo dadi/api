@@ -6,11 +6,10 @@ const config = require(__dirname + '/../../config')
 const help = require(__dirname + '/help')
 const app = require(__dirname + '/../../dadi/lib/')
 
-// variables scoped for use throughout tests
-let bearerToken
 const connectionString =
   'http://' + config.get('server.host') + ':' + config.get('server.port')
-let lastModifiedAt = 0
+
+let bearerToken
 
 describe('Application', function() {
   this.timeout(10000)

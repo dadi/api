@@ -10,7 +10,57 @@ const Collections = function(server) {
     post: this.post.bind(this)
   })
 
+  server.app.routeMethods('/api/collections/:collection*', {
+    delete: this.delete.bind(this),
+    put: this.put.bind(this)
+  })
+
   this.server = server
+}
+
+Collections.prototype.delete = async function(req, res, next) {
+  if (!req.dadiApiClient.clientId) {
+    return help.sendBackJSON(null, res, next)(
+      acl.createError(req.dadiApiClient)
+    )
+  }
+
+  const [version, property, collection] = (req.params.collection || '').split(
+    '/'
+  )
+
+  if (!version || !property || !collection) {
+    return this.handleError(new Error('SCHEMA_NOT_FOUND'), res, next)
+  }
+
+  try {
+    const clientIsAdmin = acl.client.isAdmin(req.dadiApiClient)
+    const access = await (clientIsAdmin
+      ? {}
+      : acl.access.get(req.dadiApiClient, 'collections'))
+
+    // To delete a collection, the client needs to be an admin or have `delete`
+    // access to the `collections` resource.
+    if (!clientIsAdmin && !access.delete) {
+      return help.sendBackJSON(null, res, next)(
+        acl.createError(req.dadiApiClient)
+      )
+    }
+
+    const deletedCount = await schemaStore.delete({
+      name: collection,
+      property,
+      version
+    })
+
+    if (deletedCount === 0) {
+      return this.handleError(new Error('SCHEMA_NOT_FOUND'), res, next)
+    }
+
+    return help.sendBackJSON(204, res, next)(null, null)
+  } catch (error) {
+    return this.handleError(error, res, next)
+  }
 }
 
 Collections.prototype.get = async function(req, res, next) {
@@ -100,44 +150,55 @@ Collections.prototype.get = async function(req, res, next) {
       media
     })
   } catch (error) {
-    help.sendBackJSON(500, res, next)(error)
+    return this.handleError(error, res, next)
   }
 }
 
-Collections.prototype.post = async function(req, res, next) {
-  const {fields, name, property, settings, version} = req.body
-
-  if (
-    typeof fields !== 'object' ||
-    Object.keys(fields).length === 0 ||
-    typeof name !== 'string' ||
-    name.trim().length === 0 ||
-    typeof property !== 'string' ||
-    property.trim().length === 0 ||
-    (settings && typeof settings !== 'object') ||
-    typeof version !== 'string' ||
-    version.trim().length === 0
-  ) {
-    return help.sendBackJSON(400, res, next)(null, {
-      success: false,
-      errors: [
-        'Invalid input. Expected: {"fields": Object, "name": String, "property": String, "settings": Object (optional), version": String}'
-      ]
-    })
-  }
-
-  try {
-    const {results: existingSchemas} = await schemaStore.find({
-      name,
-      property,
-      version
-    })
-
-    if (existingSchemas.length > 0) {
+Collections.prototype.handleError = function(error, res, next) {
+  switch (error.message) {
+    case 'SCHEMA_EXISTS':
       return help.sendBackJSON(409, res, next)(null, {
         success: false,
         errors: ['The collection already exists']
       })
+
+    case 'SCHEMA_NOT_FOUND':
+      return help.sendBackJSON(404, res, next)(null, {
+        success: false
+      })
+
+    case 'VALIDATION_ERROR':
+      return help.sendBackJSON(400, res, next)(null, {
+        success: false,
+        errors: error.errors
+      })
+
+    default:
+      return help.sendBackJSON(500, res, next)(error)
+  }
+}
+
+Collections.prototype.post = async function(req, res, next) {
+  if (!req.dadiApiClient.clientId) {
+    return help.sendBackJSON(null, res, next)(
+      acl.createError(req.dadiApiClient)
+    )
+  }
+
+  const {fields, name, property, settings, version} = req.body
+
+  try {
+    const clientIsAdmin = acl.client.isAdmin(req.dadiApiClient)
+    const access = await (clientIsAdmin
+      ? {}
+      : acl.access.get(req.dadiApiClient, 'collections'))
+
+    // To create a collection, the client needs to be an admin or have `create`
+    // access to the `collections` resource.
+    if (!clientIsAdmin && !access.create) {
+      return help.sendBackJSON(null, res, next)(
+        acl.createError(req.dadiApiClient)
+      )
     }
 
     const results = await schemaStore.create({
@@ -149,10 +210,61 @@ Collections.prototype.post = async function(req, res, next) {
     })
 
     return help.sendBackJSON(200, res, next)(null, {
-      results
+      results: schemaStore.formatForOutput(results)
     })
   } catch (error) {
-    return help.sendBackJSON(500, res, next)(error)
+    return this.handleError(error, res, next)
+  }
+}
+
+Collections.prototype.put = async function(req, res, next) {
+  if (!req.dadiApiClient.clientId) {
+    return help.sendBackJSON(null, res, next)(
+      acl.createError(req.dadiApiClient)
+    )
+  }
+
+  const [version, property, collection] = (req.params.collection || '').split(
+    '/'
+  )
+
+  if (!version || !property || !collection) {
+    return this.handleError(new Error('SCHEMA_NOT_FOUND'), res, next)
+  }
+
+  const {fields, settings} = req.body
+
+  try {
+    const clientIsAdmin = acl.client.isAdmin(req.dadiApiClient)
+    const access = await (clientIsAdmin
+      ? {}
+      : acl.access.get(req.dadiApiClient, 'collections'))
+
+    // To update a collection, the client needs to be an admin or have `update`
+    // access to the `collections` resource.
+    if (!clientIsAdmin && !access.update) {
+      return help.sendBackJSON(null, res, next)(
+        acl.createError(req.dadiApiClient)
+      )
+    }
+
+    const newSchema = await schemaStore.update({
+      fields,
+      name: collection,
+      property,
+      settings,
+      version
+    })
+
+    if (newSchema === null) {
+      return this.handleError(new Error('SCHEMA_NOT_FOUND'), res, next)
+    }
+
+    return help.sendBackJSON(200, res, next)(null, {
+      results: [schemaStore.formatForOutput(newSchema)]
+    })
+  } catch (error) {
+    return this.handleError(error, res, next)
   }
 }
 

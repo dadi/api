@@ -498,7 +498,6 @@ Server.prototype.updateCollections = function(collectionsPath) {
 
     const filePath = path.join(collectionsPath, collection)
     const filePathNodes = filePath.split(path.sep)
-    const database = filePathNodes[filePathNodes.length - 2]
     const name = collection.slice(
       collection.indexOf('.') + 1,
       collection.indexOf('.json')

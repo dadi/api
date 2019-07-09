@@ -1029,27 +1029,32 @@ module.exports = function(options) {
       : options
   const modelKey = getModelKey(name, property, version)
 
-  if (_models[modelKey] && schema) {
-    const isDirty =
-      JSON.stringify(schema) !== JSON.stringify(_models[modelKey].schema) ||
-      JSON.stringify(settings) !== JSON.stringify(_models[modelKey].settings)
+  // If there is already a model for this key, we return it if there was no
+  // schema provided, or the schema provided is the same as the one already
+  // loaded.
+  if (_models[modelKey]) {
+    if (schema) {
+      const isDirty =
+        JSON.stringify(schema) !== JSON.stringify(_models[modelKey].schema) ||
+        JSON.stringify(settings) !== JSON.stringify(_models[modelKey].settings)
 
-    if (!isDirty) {
+      if (!isDirty) {
+        return _models[modelKey]
+      }
+    } else {
       return _models[modelKey]
     }
   }
 
-  _models[modelKey] =
-    _models[modelKey] ||
-    new Model({
-      connection,
-      isListable,
-      name,
-      property,
-      schema,
-      settings,
-      version
-    })
+  _models[modelKey] = new Model({
+    connection,
+    isListable,
+    name,
+    property,
+    schema,
+    settings,
+    version
+  })
 
   return _models[modelKey]
 }

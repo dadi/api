@@ -61,5 +61,7 @@
     "debounceTime": 0,
     "pollingTime": 0
   },
-  "loadCollectionSeeds": false
+  "schemas": {
+    "loadSeeds": false
+  }
 }

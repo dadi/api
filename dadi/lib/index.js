@@ -389,16 +389,14 @@ Server.prototype.loadApi = function(options) {
     this.updateHooks(hookPath)
   })
 
-  this.updateVersions(collectionPath, {isCollection: true})
-
-  this.addMonitor(collectionPath, () => {
-    this.updateVersions(collectionPath, {isCollection: true})
+  this.scanDirectoryForCollections(collectionPath, schemas => {
+    this.addSeedsToSchemaStore(schemas)
   })
 
-  this.updateVersions(endpointPath, {isEndpoint: true})
+  this.updateVersions(endpointPath)
 
   this.addMonitor(endpointPath, () => {
-    this.updateVersions(endpointPath, {isEndpoint: true})
+    this.updateVersions(endpointPath)
   })
 
   this.loadMediaCollections()
@@ -427,10 +425,119 @@ Server.prototype.loadConfigApi = function() {
   ApiConfigController(this)
 }
 
-Server.prototype.updateVersions = function(
-  versionsPath,
-  {isCollection, isEndpoint}
-) {
+Server.prototype.addSeedsToSchemaStore = function(schemas) {
+  const queue = schemas.map(async schema => {
+    const {name, property, mtime: modifiedTime, path: filePath} = schema
+
+    delete require.cache[filePath]
+
+    try {
+      const source = require(filePath)
+      const {fields, settings} = source
+      const timestamp = (settings || {}).timestamp || modifiedTime || Date.now()
+      const {created, existing} = await schemaStore.addFromSeed({
+        name,
+        fields,
+        property,
+        settings,
+        timestamp,
+        version: 'vtest'
+      })
+
+      let message = `'${property}/${name}' collection seed found in workspace (timestamp: ${timestamp}). `
+
+      if (created) {
+        message += existing
+          ? `Previous remote schema (${existing.timestamp}) updated.`
+          : 'New remote schema created.'
+      } else {
+        message += existing
+          ? `Remote schema is more recent (${existing.timestamp}). Not updating.`
+          : 'Could not update remote schema.'
+      }
+
+      log.info({module: 'server'}, message)
+    } catch (error) {
+      log.error({module: 'server'}, error)
+
+      return undefined
+    }
+  })
+
+  return Promise.all(queue)
+}
+
+Server.prototype.scanDirectoryForCollections = function(directory, callback) {
+  if (!config.get('schemas.loadSeeds')) return
+
+  const COLLECTION_PREFIX = 'collection.'
+  const schemas = []
+
+  const ensureWatcher = watchedDirectory => {
+    this.addMonitor(watchedDirectory, () => {
+      this.scanDirectoryForCollections(directory, callback)
+    })
+  }
+
+  const processSchemas = (basePath, files, property) => {
+    files.forEach(fileName => {
+      const filePath = path.join(basePath, fileName)
+      const stats = fs.lstatSync(filePath)
+      const extension = path.extname(fileName)
+
+      if (
+        !stats.isFile() ||
+        fileName.indexOf(COLLECTION_PREFIX) !== 0 ||
+        extension !== '.json'
+      ) {
+        return
+      }
+
+      schemas.push({
+        mtime: Math.floor(stats.mtimeMs),
+        name: path
+          .basename(fileName, extension)
+          .slice(COLLECTION_PREFIX.length),
+        path: filePath,
+        property
+      })
+    })
+  }
+
+  ensureWatcher(directory)
+
+  fs.readdirSync(directory).forEach(item => {
+    const itemPath = path.join(directory, item)
+    const subItems = fs.readdirSync(itemPath)
+
+    // We don't know whether `item` is a property or a version (legacy). We
+    // determine that by checking whether there is a sub-directory inside it,
+    // in which case it's the latter.
+    const isVersion = subItems.some(subItem => {
+      const subItemPath = path.join(itemPath, subItem)
+
+      ensureWatcher(itemPath)
+
+      return fs.lstatSync(subItemPath).isDirectory()
+    })
+
+    if (isVersion) {
+      subItems.forEach(subItem => {
+        const subItemPath = path.join(itemPath, subItem)
+
+        ensureWatcher(subItemPath)
+        processSchemas(subItemPath, fs.readdirSync(subItemPath), subItem)
+      })
+    } else {
+      ensureWatcher(itemPath)
+      processSchemas(itemPath, subItems, item)
+    }
+  })
+
+  callback(schemas)
+}
+
+Server.prototype.updateVersions = function(versionsPath) {
   // Load initial api descriptions
   const versions = fs.readdirSync(versionsPath)
 
@@ -439,108 +546,11 @@ Server.prototype.updateVersions = function(
 
     const dirname = path.join(versionsPath, version)
 
-    if (isCollection) {
-      this.updateDatabases(dirname)
-
-      this.addMonitor(dirname, databaseName => {
-        if (databaseName) {
-          return this.updateCollections(path.join(dirname, databaseName))
-        }
-
-        this.updateDatabases(dirname)
-      })
-    } else if (isEndpoint) {
-      this.updateEndpoints(dirname)
-
-      this.addMonitor(dirname, () => {
-        this.updateEndpoints(dirname)
-      })
-    }
-  })
-}
-
-Server.prototype.updateDatabases = function(databasesPath) {
-  let databases
-
-  try {
-    databases = fs.readdirSync(databasesPath)
-  } catch (_) {
-    log.warn({module: 'server'}, databasesPath + ' does not exist')
-
-    return
-  }
-
-  databases.forEach(database => {
-    if (database.indexOf('.') === 0) return
-
-    const dirname = path.join(databasesPath, database)
-
-    this.updateCollections(dirname)
+    this.updateEndpoints(dirname)
 
     this.addMonitor(dirname, () => {
-      this.updateCollections(dirname)
+      this.updateEndpoints(dirname)
     })
-  })
-}
-
-Server.prototype.updateCollections = function(collectionsPath) {
-  //if (!config.get('loadCollectionSeeds')) return
-  if (!fs.existsSync(collectionsPath)) return
-  if (!fs.lstatSync(collectionsPath).isDirectory()) return
-
-  const collections = fs.readdirSync(collectionsPath)
-  const mediaBuckets = config.get('media.buckets')
-  const defaultMediaBucket = config.get('media.defaultBucket')
-
-  // Loading collections
-  collections.forEach(collection => {
-    if (collection.indexOf('.') === 0) return
-
-    const filePath = path.join(collectionsPath, collection)
-    const filePathNodes = filePath.split(path.sep)
-    const name = collection.slice(
-      collection.indexOf('.') + 1,
-      collection.indexOf('.json')
-    )
-
-    if (name === defaultMediaBucket || mediaBuckets.indexOf(name) !== -1) {
-      throw new Error(
-        `Naming conflict: '${name}' is defined as both a collection and media bucket`
-      )
-    }
-
-    const {fields, model, settings, timestamp = 0} = require(filePath)
-    const modelName = model || name
-
-    //console.log('----> Seed:', database + '/' + modelName)
-
-    // schemaStore
-    //   .add({
-    //     aclKey: Model.getAclKeyForCollection({
-    //       collection: modelName,
-    //       property: database
-    //     }),
-    //     collection: modelName,
-    //     fields,
-    //     property: database,
-    //     settings,
-    //     timestamp
-    //   })
-    //   .then(({created, existing}) => {
-    //     let message = `'${database}/${modelName}' collection seed found in workspace (timestamp: ${timestamp}). `
-
-    //     if (created) {
-    //       message += existing
-    //         ? `Previous remote schema (${existing.timestamp}) updated.`
-    //         : 'New remote schema created.'
-    //     } else {
-    //       message += existing
-    //         ? `Remote schema is more recent (${existing.timestamp}). Not updating.`
-    //         : 'Could not update remote schema.'
-    //     }
-
-    //     log.info({module: 'server'}, message)
-    //   })
   })
 }
 

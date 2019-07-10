@@ -7,8 +7,10 @@ const Monitor = function(path) {
 
   this.path = path
 
-  this.watcher = fs.watch(this.path, (eventName, filename) => {
-    setTimeout(() => {
+  this.watcher = fs.watch(this.path, (_, filename) => {
+    clearTimeout(this.timer)
+
+    this.timer = setTimeout(() => {
       this.emit('change', filename)
     }, 50)
   })

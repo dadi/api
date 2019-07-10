@@ -24,51 +24,84 @@ class SchemaStore {
     this.connection = connection.whenConnected()
   }
 
-  // async add({aclKey, collection, fields, property, settings, timestamp}) {
-  //   const database = await this.connection
-  //   const {results} = await this.find({collection, property})
-  //   const newSchema = {
-  //     aclKey,
-  //     collection,
-  //     fields,
-  //     property,
-  //     settings,
-  //     timestamp: Date.now()
-  //   }
+  async addFromSeed({
+    fields,
+    name,
+    property,
+    settings,
+    timestamp = Date.now(),
+    version
+  }) {
+    const database = await this.connection
+    const {results: existingSchemas} = await this.find({
+      name,
+      property,
+      version
+    })
+    const newSchema = {
+      name,
+      fields,
+      property,
+      settings,
+      timestamp,
+      version
+    }
 
-  //   if (results.length > 0) {
-  //     const existing = results[0]
+    if (existingSchemas.length > 0) {
+      const existing = existingSchemas[0]
 
-  //     if (existing.timestamp >= timestamp) {
-  //       return {
-  //         existing
-  //       }
-  //     }
+      if (existing.timestamp >= timestamp) {
+        return {
+          existing
+        }
+      }
 
-  //     const {results} = await database.update({
-  //       collection: config.get('schemas.collection'),
-  //       query: {
-  //         _id: existing._id
-  //       },
-  //       update: newSchema
-  //     })
+      await database.update({
+        collection: config.get('schemas.collection'),
+        query: {
+          _id: existing._id
+        },
+        update: {
+          $set: newSchema
+        }
+      })
 
-  //     return {
-  //       created: results[0],
-  //       existing
-  //     }
-  //   }
+      // Reloading the model after update.
+      Model({
+        isListable: true,
+        name,
+        property,
+        schema: fields,
+        settings,
+        version
+      })
 
-  //   const insertedDocuments = await database.insert({
-  //     collection: config.get('schemas.collection'),
-  //     data: document
-  //   })
+      return {
+        created: true,
+        existing
+      }
+    }
 
-  //   return {
-  //     created: insertedDocuments[0],
-  //     existing: null
-  //   }
-  // }
+    const insertedDocuments = await database.insert({
+      collection: config.get('schemas.collection'),
+      data: newSchema
+    })
+
+    // Loading model after creation.
+    Model({
+      isListable: true,
+      name,
+      property,
+      schema: fields,
+      settings,
+      version
+    })
+
+    return {
+      created: insertedDocuments[0],
+      existing: null
+    }
+  }
 
   async bootstrap() {
     const {results: schemas} = await this.find()
@@ -86,7 +119,7 @@ class SchemaStore {
     })
   }
 
-  async create({fields, name, settings, property, version}) {
+  async create({fields, name, settings, property, timestamp, version}) {
     const {results: existingSchemas} = await this.find({
       name,
       property,
@@ -107,7 +140,7 @@ class SchemaStore {
         name,
         settings,
         property,
-        timestamp: Date.now(),
+        timestamp: timestamp || Date.now(),
         version
       }
     })

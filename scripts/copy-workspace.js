@@ -20,8 +20,8 @@ if (currentPath.indexOf('node_modules') !== -1) {
           {overwrite: false},
           err => {
             fs.move(
-              destinationDir + '/collections/1.0/testdb',
-              destinationDir + '/collections/1.0/library',
+              destinationDir + '/collections/testdb',
+              destinationDir + '/collections/library',
               {overwrite: false},
               err => {
                 fs.remove(destinationDir + '/collections/vtest', err => {

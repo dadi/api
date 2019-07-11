@@ -25,11 +25,9 @@ Collections.prototype.delete = async function(req, res, next) {
     )
   }
 
-  const [version, property, collection] = (req.params.collection || '').split(
-    '/'
-  )
+  const [property, collection] = (req.params.collection || '').split('/')
 
-  if (!version || !property || !collection) {
+  if (!property || !collection) {
     return this.handleError(new Error('SCHEMA_NOT_FOUND'), res, next)
   }
 
@@ -49,8 +47,7 @@ Collections.prototype.delete = async function(req, res, next) {
 
     const deletedCount = await schemaStore.delete({
       name: collection,
-      property,
-      version
+      property
     })
 
     if (deletedCount === 0) {
@@ -88,11 +85,10 @@ Collections.prototype.get = async function(req, res, next) {
       .map(key => {
         const model = models[key]
         const data = {
-          version: model.version,
           property: model.property,
           name: (model.settings && model.settings.displayName) || model.name,
           slug: model.name,
-          path: `/${model.version}/${model.property}/${model.name}`,
+          path: `/${model.property}/${model.name}`,
           fields: model.schema,
           settings: Object.assign({}, model.settings, {
             database: undefined
@@ -185,7 +181,7 @@ Collections.prototype.post = async function(req, res, next) {
     )
   }
 
-  const {fields, name, property, settings, version} = req.body
+  const {fields, name, property, settings} = req.body
 
   try {
     const clientIsAdmin = acl.client.isAdmin(req.dadiApiClient)
@@ -205,8 +201,7 @@ Collections.prototype.post = async function(req, res, next) {
       fields,
       name,
       settings,
-      property,
-      version
+      property
     })
 
     return help.sendBackJSON(200, res, next)(null, {
@@ -224,11 +219,9 @@ Collections.prototype.put = async function(req, res, next) {
     )
   }
 
-  const [version, property, collection] = (req.params.collection || '').split(
-    '/'
-  )
+  const [property, collection] = (req.params.collection || '').split('/')
 
-  if (!version || !property || !collection) {
+  if (!property || !collection) {
     return this.handleError(new Error('SCHEMA_NOT_FOUND'), res, next)
   }
 
@@ -252,8 +245,7 @@ Collections.prototype.put = async function(req, res, next) {
       fields,
       name: collection,
       property,
-      settings,
-      version
+      settings
     })
 
     if (newSchema === null) {

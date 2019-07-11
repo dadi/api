@@ -14,7 +14,6 @@ Controller.prototype._getURLParameters = function(requestUrl) {
 
 Controller.prototype._prepareQuery = function(req, model) {
   const path = url.parse(req.url, true)
-  const apiVersion = path.pathname.split('/')[1]
   const options = this._getURLParameters(req.url)
   let query = help.parseQuery(options.filter)
 
@@ -25,13 +24,6 @@ Controller.prototype._prepareQuery = function(req, model) {
   if (req.params && req.params.id) {
     Object.assign(query, {
       _id: req.params.id
-    })
-  }
-
-  // Add the apiVersion filter.
-  if (config.get('query.useVersionFilter')) {
-    Object.assign(query, {
-      _apiVersion: apiVersion
     })
   }
 

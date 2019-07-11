@@ -79,7 +79,7 @@ describe('Document versioning', function() {
   describe('Versions endpoint', () => {
     it('should return 404 when listing versions for a document that does not exist', done => {
       client
-        .get(`/vtest/testdb/test-history-enabled/${FAKE_ID}/versions`)
+        .get(`/testdb/test-history-enabled/${FAKE_ID}/versions`)
         .set('Authorization', `Bearer ${bearerToken}`)
         .expect(404, done)
     })
@@ -91,7 +91,7 @@ describe('Document versioning', function() {
       }
 
       client
-        .post('/vtest/testdb/test-history-enabled')
+        .post('/testdb/test-history-enabled')
         .set('Authorization', `Bearer ${bearerToken}`)
         .send(document)
         .end((err, res) => {
@@ -100,7 +100,7 @@ describe('Document versioning', function() {
           const id = res.body.results[0]._id
 
           client
-            .get(`/vtest/testdb/test-history-enabled/${id}/versions`)
+            .get(`/testdb/test-history-enabled/${id}/versions`)
             .set('Authorization', `Bearer ${bearerToken}`)
             .expect(200)
             .end((err, res) => {
@@ -123,7 +123,7 @@ describe('Document versioning', function() {
       const updates = [{name: 'Jane'}, {surname: 'Fonda'}]
 
       client
-        .post('/vtest/testdb/test-history-enabled')
+        .post('/testdb/test-history-enabled')
         .set('Authorization', `Bearer ${bearerToken}`)
         .send(document)
         .end((err, res) => {
@@ -132,21 +132,21 @@ describe('Document versioning', function() {
           const id = res.body.results[0]._id
 
           client
-            .put(`/vtest/testdb/test-history-enabled/${id}`)
+            .put(`/testdb/test-history-enabled/${id}`)
             .set('Authorization', `Bearer ${bearerToken}`)
             .send(updates[0])
             .end((err, res) => {
               if (err) return done(err)
 
               client
-                .put(`/vtest/testdb/test-history-enabled/${id}`)
+                .put(`/testdb/test-history-enabled/${id}`)
                 .set('Authorization', `Bearer ${bearerToken}`)
                 .send(updates[1])
                 .end((err, res) => {
                   if (err) return done(err)
 
                   client
-                    .get(`/vtest/testdb/test-history-enabled/${id}/versions`)
+                    .get(`/testdb/test-history-enabled/${id}/versions`)
                     .set('Authorization', `Bearer ${bearerToken}`)
                     .expect(200)
                     .end((err, res) => {
@@ -182,7 +182,7 @@ describe('Document versioning', function() {
       ]
 
       client
-        .post('/vtest/testdb/test-history-enabled')
+        .post('/testdb/test-history-enabled')
         .set('Authorization', `Bearer ${bearerToken}`)
         .send(document)
         .end((err, res) => {
@@ -191,7 +191,7 @@ describe('Document versioning', function() {
           const id = res.body.results[0]._id
 
           client
-            .put('/vtest/testdb/test-history-enabled')
+            .put('/testdb/test-history-enabled')
             .set('Authorization', `Bearer ${bearerToken}`)
             .send(
               Object.assign({}, updates[0], {
@@ -204,7 +204,7 @@ describe('Document versioning', function() {
               if (err) return done(err)
 
               client
-                .put('/vtest/testdb/test-history-enabled')
+                .put('/testdb/test-history-enabled')
                 .set('Authorization', `Bearer ${bearerToken}`)
                 .send(
                   Object.assign({}, updates[1], {
@@ -217,7 +217,7 @@ describe('Document versioning', function() {
                   if (err) return done(err)
 
                   client
-                    .get(`/vtest/testdb/test-history-enabled/${id}/versions`)
+                    .get(`/testdb/test-history-enabled/${id}/versions`)
                     .set('Authorization', `Bearer ${bearerToken}`)
                     .expect(200)
                     .end((err, res) => {
@@ -251,7 +251,7 @@ describe('Document versioning', function() {
       }
 
       client
-        .post('/vtest/testdb/test-history-enabled')
+        .post('/testdb/test-history-enabled')
         .set('Authorization', `Bearer ${bearerToken}`)
         .send(original)
         .end((err, res) => {
@@ -260,43 +260,43 @@ describe('Document versioning', function() {
           const id = res.body.results[0]._id
           const updates = [
             {
-              endpoint: `/vtest/testdb/test-history-enabled/${id}`,
+              endpoint: `/testdb/test-history-enabled/${id}`,
               body: {
                 surname: null
               }
             },
             {
-              endpoint: `/vtest/testdb/test-history-enabled/${id}`,
+              endpoint: `/testdb/test-history-enabled/${id}`,
               body: {
                 surname: 'One'
               }
             },
             {
-              endpoint: `/vtest/testdb/test-history-enabled/${id}`,
+              endpoint: `/testdb/test-history-enabled/${id}`,
               body: {
                 surname: null
               }
             },
             {
-              endpoint: `/vtest/testdb/test-history-enabled/${id}`,
+              endpoint: `/testdb/test-history-enabled/${id}`,
               body: {
                 surname: 'Two'
               }
             },
             {
-              endpoint: `/vtest/testdb/test-history-enabled/${id}`,
+              endpoint: `/testdb/test-history-enabled/${id}`,
               body: {
                 surname: 'Three'
               }
             },
             {
-              endpoint: `/vtest/testdb/test-history-enabled/${id}`,
+              endpoint: `/testdb/test-history-enabled/${id}`,
               body: {
                 surname: null
               }
             },
             {
-              endpoint: `/vtest/testdb/test-history-enabled/${id}`,
+              endpoint: `/testdb/test-history-enabled/${id}`,
               body: {
                 surname: 'Four'
               }
@@ -311,7 +311,7 @@ describe('Document versioning', function() {
             })
             .then(() => {
               client
-                .get(`/vtest/testdb/test-history-enabled/${id}/versions`)
+                .get(`/testdb/test-history-enabled/${id}/versions`)
                 .set('Authorization', `Bearer ${bearerToken}`)
                 .expect(200)
                 .end((err, res) => {
@@ -320,7 +320,7 @@ describe('Document versioning', function() {
                   const {results} = res.body
                   const getRequests = results.map(
                     result =>
-                      `/vtest/testdb/test-history-enabled/${id}?version=${result._id}`
+                      `/testdb/test-history-enabled/${id}?version=${result._id}`
                   )
 
                   help
@@ -361,7 +361,7 @@ describe('Document versioning', function() {
       }
 
       client
-        .post('/vtest/testdb/test-history-disabled')
+        .post('/testdb/test-history-disabled')
         .set('Authorization', `Bearer ${bearerToken}`)
         .send(originalReference)
         .expect(200)
@@ -371,7 +371,7 @@ describe('Document versioning', function() {
           const originalReferenceID = res.body.results[0]._id
 
           client
-            .post('/vtest/testdb/test-history-disabled')
+            .post('/testdb/test-history-disabled')
             .set('Authorization', `Bearer ${bearerToken}`)
             .send(modifiedReference)
             .expect(200)
@@ -384,7 +384,7 @@ describe('Document versioning', function() {
               })
 
               client
-                .post('/vtest/testdb/test-history-enabled')
+                .post('/testdb/test-history-enabled')
                 .set('Authorization', `Bearer ${bearerToken}`)
                 .send(payload)
                 .end((err, res) => {
@@ -394,7 +394,7 @@ describe('Document versioning', function() {
 
                   client
                     .get(
-                      `/vtest/testdb/test-history-enabled/${id}?compose=true`
+                      `/testdb/test-history-enabled/${id}?compose=true`
                     )
                     .set('Authorization', `Bearer ${bearerToken}`)
                     .end((err, res) => {
@@ -411,7 +411,7 @@ describe('Document versioning', function() {
                       )
 
                       client
-                        .put(`/vtest/testdb/test-history-enabled/${id}`)
+                        .put(`/testdb/test-history-enabled/${id}`)
                         .set('Authorization', `Bearer ${bearerToken}`)
                         .send({
                           reference: modifiedReferenceID,
@@ -422,7 +422,7 @@ describe('Document versioning', function() {
 
                           client
                             .get(
-                              `/vtest/testdb/test-history-enabled/${id}?compose=true`
+                              `/testdb/test-history-enabled/${id}?compose=true`
                             )
                             .set('Authorization', `Bearer ${bearerToken}`)
                             .end((err, res) => {
@@ -441,7 +441,7 @@ describe('Document versioning', function() {
 
                               client
                                 .get(
-                                  `/vtest/testdb/test-history-enabled/${id}/versions`
+                                  `/testdb/test-history-enabled/${id}/versions`
                                 )
                                 .set('Authorization', `Bearer ${bearerToken}`)
                                 .expect(200)
@@ -455,7 +455,7 @@ describe('Document versioning', function() {
 
                                   client
                                     .get(
-                                      `/vtest/testdb/test-history-enabled/${id}?compose=true&version=${versionId}`
+                                      `/testdb/test-history-enabled/${id}?compose=true&version=${versionId}`
                                     )
                                     .set(
                                       'Authorization',
@@ -524,7 +524,7 @@ describe('Document versioning', function() {
       }
 
       client
-        .post('/vtest/testdb/test-history-enabled')
+        .post('/testdb/test-history-enabled')
         .set('Authorization', `Bearer ${bearerToken}`)
         .send(original)
         .end((err, res) => {
@@ -533,7 +533,7 @@ describe('Document versioning', function() {
           const id = res.body.results[0]._id
 
           client
-            .get(`/vtest/testdb/test-history-enabled/${id}`)
+            .get(`/testdb/test-history-enabled/${id}`)
             .set('Authorization', `Bearer ${bearerToken}`)
             .end((err, res) => {
               if (err) return done(err)
@@ -545,14 +545,14 @@ describe('Document versioning', function() {
               results[0].object.should.eql(original.object)
 
               client
-                .put(`/vtest/testdb/test-history-enabled/${id}`)
+                .put(`/testdb/test-history-enabled/${id}`)
                 .set('Authorization', `Bearer ${bearerToken}`)
                 .send(modified)
                 .end((err, res) => {
                   if (err) return done(err)
 
                   client
-                    .get(`/vtest/testdb/test-history-enabled/${id}`)
+                    .get(`/testdb/test-history-enabled/${id}`)
                     .set('Authorization', `Bearer ${bearerToken}`)
                     .end((err, res) => {
                       if (err) return done(err)
@@ -565,7 +565,7 @@ describe('Document versioning', function() {
 
                       client
                         .get(
-                          `/vtest/testdb/test-history-enabled/${id}/versions`
+                          `/testdb/test-history-enabled/${id}/versions`
                         )
                         .set('Authorization', `Bearer ${bearerToken}`)
                         .expect(200)
@@ -579,7 +579,7 @@ describe('Document versioning', function() {
 
                           client
                             .get(
-                              `/vtest/testdb/test-history-enabled/${id}?version=${versionId}`
+                              `/testdb/test-history-enabled/${id}?version=${versionId}`
                             )
                             .set('Authorization', `Bearer ${bearerToken}`)
                             .end((err, res) => {

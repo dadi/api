@@ -223,7 +223,7 @@ describe('Multi-language', function() {
     }
 
     client
-      .post('/v1/library/book')
+      .post('/library/book')
       .set('Authorization', `Bearer ${bearerToken}`)
       .send(document)
       .expect(200)
@@ -254,7 +254,7 @@ describe('Multi-language', function() {
           bearerToken = token
 
           client
-            .post('/v1/library/book')
+            .post('/library/book')
             .set('Authorization', `Bearer ${bearerToken}`)
             .send(document)
             .expect(200)
@@ -286,7 +286,7 @@ describe('Multi-language', function() {
     }
 
     client
-      .post('/v1/library/book')
+      .post('/library/book')
       .set('Authorization', `Bearer ${bearerToken}`)
       .send(document)
       .expect(200)
@@ -312,7 +312,7 @@ describe('Multi-language', function() {
     }
 
     client
-      .post('/v1/library/book')
+      .post('/library/book')
       .set('Authorization', `Bearer ${bearerToken}`)
       .send(document)
       .expect(400)
@@ -337,7 +337,7 @@ describe('Multi-language', function() {
     }
 
     client
-      .post('/v1/library/book')
+      .post('/library/book')
       .set('Authorization', `Bearer ${bearerToken}`)
       .send(document)
       .expect(200)
@@ -345,7 +345,7 @@ describe('Multi-language', function() {
         if (err) return done(err)
 
         client
-          .get(`/v1/library/book/${res.body.results[0]._id}`)
+          .get(`/library/book/${res.body.results[0]._id}`)
           .set('Authorization', `Bearer ${bearerToken}`)
           .expect(200)
           .end((err, res) => {
@@ -379,7 +379,7 @@ describe('Multi-language', function() {
     ]
 
     client
-      .post('/v1/library/book')
+      .post('/library/book')
       .set('Authorization', `Bearer ${bearerToken}`)
       .send(documents)
       .expect(200)
@@ -387,7 +387,7 @@ describe('Multi-language', function() {
         if (err) return done(err)
 
         client
-          .get(`/v1/library/book?lang=pt`)
+          .get(`/library/book?lang=pt`)
           .set('Authorization', `Bearer ${bearerToken}`)
           .expect(200)
           .end((err, res) => {
@@ -429,7 +429,7 @@ describe('Multi-language', function() {
     ]
 
     client
-      .post('/v1/library/book')
+      .post('/library/book')
       .set('Authorization', `Bearer ${bearerToken}`)
       .send(documents)
       .expect(200)
@@ -437,7 +437,7 @@ describe('Multi-language', function() {
         if (err) return done(err)
 
         client
-          .get(`/v1/library/book?fields={"title":1}&lang=pt`)
+          .get(`/library/book?fields={"title":1}&lang=pt`)
           .set('Authorization', `Bearer ${bearerToken}`)
           .expect(200)
           .end((err, res) => {
@@ -479,7 +479,7 @@ describe('Multi-language', function() {
     ]
 
     client
-      .post('/v1/library/book')
+      .post('/library/book')
       .set('Authorization', `Bearer ${bearerToken}`)
       .send(documents)
       .expect(200)
@@ -487,7 +487,7 @@ describe('Multi-language', function() {
         if (err) return done(err)
 
         client
-          .get(`/v1/library/book?fields={"title":1}`)
+          .get(`/library/book?fields={"title":1}`)
           .set('Authorization', `Bearer ${bearerToken}`)
           .expect(200)
           .end((err, res) => {
@@ -522,7 +522,7 @@ describe('Multi-language', function() {
     }
 
     client
-      .post('/v1/library/book')
+      .post('/library/book')
       .set('Authorization', `Bearer ${bearerToken}`)
       .send(document)
       .expect(200)
@@ -530,7 +530,7 @@ describe('Multi-language', function() {
         if (err) return done(err)
 
         client
-          .get(`/v1/library/book?cache=false&fields={"title":1}&lang=pt`)
+          .get(`/library/book?cache=false&fields={"title":1}&lang=pt`)
           .set('Authorization', `Bearer ${bearerToken}`)
           .expect(200)
           .end((err, res) => {
@@ -563,7 +563,7 @@ describe('Multi-language', function() {
     }
 
     client
-      .post('/v1/library/person')
+      .post('/library/person')
       .set('Authorization', `Bearer ${bearerToken}`)
       .send(document)
       .expect(200)
@@ -571,7 +571,7 @@ describe('Multi-language', function() {
         if (err) return done(err)
 
         client
-          .get(`/v1/library/person/${res.body.results[0]._id}?lang=pt`)
+          .get(`/library/person/${res.body.results[0]._id}?lang=pt`)
           .set('Authorization', `Bearer ${bearerToken}`)
           .expect(200)
           .end((err, res) => {
@@ -621,7 +621,7 @@ describe('Multi-language', function() {
     }
 
     client
-      .post('/v1/library/person')
+      .post('/library/person')
       .set('Authorization', `Bearer ${bearerToken}`)
       .send(document)
       .expect(200)
@@ -630,7 +630,7 @@ describe('Multi-language', function() {
 
         client
           .get(
-            `/v1/library/person/${res.body.results[0]._id}?lang=pt&compose=true`
+            `/library/person/${res.body.results[0]._id}?lang=pt&compose=true`
           )
           .set('Authorization', `Bearer ${bearerToken}`)
           .expect(200)
@@ -699,7 +699,7 @@ describe('Multi-language', function() {
     }
 
     client
-      .post('/v1/library/person')
+      .post('/library/person')
       .set('Authorization', `Bearer ${bearerToken}`)
       .send(document)
       .expect(200)
@@ -708,7 +708,7 @@ describe('Multi-language', function() {
 
         client
           .get(
-            `/v1/library/person/${res.body.results[0]._id}?lang=pt&compose=true&fields={"occupation":1,"friend.occupation":1}`
+            `/library/person/${res.body.results[0]._id}?lang=pt&compose=true&fields={"occupation":1,"friend.occupation":1}`
           )
           .set('Authorization', `Bearer ${bearerToken}`)
           .expect(200)
@@ -811,7 +811,7 @@ describe('Multi-language', function() {
     config.set('i18n.languages', languages)
 
     client
-      .post('/v1/library/person')
+      .post('/library/person')
       .set('Authorization', `Bearer ${bearerToken}`)
       .send(Object.assign(original, translations))
       .expect(200)
@@ -822,7 +822,7 @@ describe('Multi-language', function() {
         let i = 0
 
         client
-          .get(`/v1/library/person/${id}`)
+          .get(`/library/person/${id}`)
           .set('Authorization', `Bearer ${bearerToken}`)
           .expect(200)
           .end((err, res) => {
@@ -835,7 +835,7 @@ describe('Multi-language', function() {
               should.exist(res.body.results[0][`name:${language}`])
 
               client
-                .get(`/v1/library/person/${id}?lang=${language}`)
+                .get(`/library/person/${id}?lang=${language}`)
                 .set('Authorization', `Bearer ${bearerToken}`)
                 .expect(200)
                 .end((err, res) => {

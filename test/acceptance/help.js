@@ -60,7 +60,7 @@ module.exports.createDoc = function(token, done) {
   request(
     'http://' + config.get('server.host') + ':' + config.get('server.port')
   )
-    .post('/vtest/testdb/test-schema')
+    .post('/testdb/test-schema')
     .set('Authorization', 'Bearer ' + token)
     .send({field1: ((Math.random() * 10) | 1).toString()})
     // .expect(200)
@@ -76,7 +76,7 @@ module.exports.createDocWithParams = function(token, doc, done) {
   request(
     'http://' + config.get('server.host') + ':' + config.get('server.port')
   )
-    .post('/vtest/testdb/test-schema')
+    .post('/testdb/test-schema')
     .set('Authorization', 'Bearer ' + token)
     .send(doc)
     .end((err, res) => {
@@ -87,7 +87,6 @@ module.exports.createDocWithParams = function(token, doc, done) {
 }
 
 module.exports.createDocument = function({
-  version,
   database,
   collection,
   document,
@@ -95,7 +94,7 @@ module.exports.createDocument = function({
 }) {
   return new Promise((resolve, reject) => {
     request(`http://${config.get('server.host')}:${config.get('server.port')}`)
-      .post(`/${version}/${database}/${collection}`)
+      .post(`/${database}/${collection}`)
       .set('Authorization', `Bearer ${token}`)
       .send(document)
       .end((err, res) => {
@@ -116,7 +115,7 @@ module.exports.createDocWithSpecificVersion = function(
   request(
     'http://' + config.get('server.host') + ':' + config.get('server.port')
   )
-    .post('/' + apiVersion + '/testdb/test-schema')
+    .post('/testdb/test-schema')
     .set('Authorization', 'Bearer ' + token)
     .send(doc)
     .expect(200)
@@ -178,7 +177,7 @@ module.exports.dropDatabase = function(database, collectionName, done) {
   })
 }
 
-module.exports.createClient = function(client, done, {hashVersion = 1} = {}) {
+module.exports.createClient = function(client, done) {
   if (!client) {
     client = {
       accessType: 'admin',
@@ -560,43 +559,6 @@ module.exports.getBearerTokenWithAccessType = function(accessType, done) {
         })
     })
   })
-}
-
-module.exports.getCollectionMap = function() {
-  const collectionsPath = path.resolve(config.get('paths.collections'))
-  const versions = fs.readdirSync(collectionsPath)
-  const map = {}
-
-  versions.forEach(version => {
-    const versionPath = path.join(collectionsPath, version)
-    const databases = fs.readdirSync(versionPath)
-
-    databases.forEach(database => {
-      const databasePath = path.join(versionPath, database)
-      const stats = fs.statSync(databasePath)
-
-      if (stats.isDirectory()) {
-        const collections = fs.readdirSync(databasePath)
-
-        collections.forEach(collection => {
-          const match = collection.match(/^collection.(.*).json$/)
-
-          if (!match) {
-            return
-          }
-
-          const collectionName = match[1]
-          const collectionPath = path.join(databasePath, collection)
-
-          map[
-            `/${version}/${database}/${collectionName}`
-          ] = require(collectionPath)
-        })
-      }
-    })
-  })
-
-  return map
 }
 
 module.exports.writeTempFile = function(filePath, data, callback) {

@@ -68,7 +68,7 @@ describe('String Field', () => {
       const value = 'Hello world'
 
       client
-        .post('/v1/library/misc')
+        .post('/library/misc')
         .set('Authorization', 'Bearer ' + bearerToken)
         .send({string: value})
         .expect(200)
@@ -76,7 +76,7 @@ describe('String Field', () => {
           if (err) return done(err)
 
           client
-            .get(`/v1/library/misc?filter={"string":"${value.toUpperCase()}"}`)
+            .get(`/library/misc?filter={"string":"${value.toUpperCase()}"}`)
             .set('Authorization', 'Bearer ' + bearerToken)
             .expect(200)
             .end((err, res) => {
@@ -93,7 +93,7 @@ describe('String Field', () => {
       const value = 'Hello world'
 
       client
-        .post('/v1/library/misc')
+        .post('/library/misc')
         .set('Authorization', 'Bearer ' + bearerToken)
         .send({string: value})
         .expect(200)
@@ -102,7 +102,7 @@ describe('String Field', () => {
 
           client
             .get(
-              `/v1/library/misc?filter={"string":{"$ne":"${value.toUpperCase()}"}}`
+              `/library/misc?filter={"string":{"$ne":"${value.toUpperCase()}"}}`
             )
             .set('Authorization', 'Bearer ' + bearerToken)
             .expect(200)

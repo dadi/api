@@ -456,7 +456,7 @@ describe('Collections API', () => {
             const bearerToken = res.body.accessToken
 
             client
-              .get(`/vtest/testdb/test-schema/search?q=xyz`)
+              .get(`/testdb/test-schema/search?q=xyz`)
               .set('content-type', 'application/json')
               .set('Authorization', `Bearer ${bearerToken}`)
               .end((err, res) => {
@@ -487,7 +487,7 @@ describe('Collections API', () => {
             const bearerToken = res.body.accessToken
 
             client
-              .get(`/vtest/testdb/test-schema/search?q=xyz`)
+              .get(`/testdb/test-schema/search?q=xyz`)
               .set('content-type', 'application/json')
               .set('Authorization', `Bearer ${bearerToken}`)
               .end((err, res) => {
@@ -518,7 +518,7 @@ describe('Collections API', () => {
             const bearerToken = res.body.accessToken
 
             client
-              .get(`/vtest/testdb/test-schema/search?q=fghj`)
+              .get(`/testdb/test-schema/search?q=fghj`)
               .set('content-type', 'application/json')
               .set('Authorization', `Bearer ${bearerToken}`)
               .end((err, res) => {
@@ -551,7 +551,7 @@ describe('Collections API', () => {
             const bearerToken = res.body.accessToken
 
             client
-              .get(`/vtest/testdb/test-schema`)
+              .get(`/testdb/test-schema`)
               .set('content-type', 'application/json')
               .set('Authorization', `Bearer ${bearerToken}`)
               .end((err, res) => {
@@ -582,7 +582,7 @@ describe('Collections API', () => {
             const bearerToken = res.body.accessToken
 
             client
-              .get(`/vtest/testdb/test-schema`)
+              .get(`/testdb/test-schema`)
               .set('content-type', 'application/json')
               .set('Authorization', `Bearer ${bearerToken}`)
               .end((err, res) => {
@@ -613,7 +613,7 @@ describe('Collections API', () => {
             const bearerToken = res.body.accessToken
 
             client
-              .get(`/vtest/testdb/test-schema`)
+              .get(`/testdb/test-schema`)
               .set('content-type', 'application/json')
               .set('Authorization', `Bearer ${bearerToken}`)
               .end((err, res) => {
@@ -644,7 +644,7 @@ describe('Collections API', () => {
             const bearerToken = res.body.accessToken
 
             client
-              .get(`/vtest/testdb/test-schema`)
+              .get(`/testdb/test-schema`)
               .set('content-type', 'application/json')
               .set('Authorization', `Bearer ${bearerToken}`)
               .end((err, res) => {
@@ -677,7 +677,7 @@ describe('Collections API', () => {
             const bearerToken = res.body.accessToken
 
             client
-              .get('/vtest/testdb/test-schema/?fields={"field1":1,"title":1}')
+              .get('/testdb/test-schema/?fields={"field1":1,"title":1}')
               .set('content-type', 'application/json')
               .set('Authorization', `Bearer ${bearerToken}`)
               .end((err, res) => {
@@ -750,7 +750,7 @@ describe('Collections API', () => {
 
                 client
                   .get(
-                    `/1.0/library/book/${response.results[0]._id}?compose=true`
+                    `/library/book/${response.results[0]._id}?compose=true`
                   )
                   .set('content-type', 'application/json')
                   .set('Authorization', `Bearer ${bearerToken}`)
@@ -824,7 +824,7 @@ describe('Collections API', () => {
 
                 client
                   .get(
-                    `/1.0/library/book/${response.results[0]._id}?compose=true`
+                    `/library/book/${response.results[0]._id}?compose=true`
                   )
                   .set('content-type', 'application/json')
                   .set('Authorization', `Bearer ${bearerToken}`)
@@ -867,7 +867,7 @@ describe('Collections API', () => {
             const query = require('querystring').stringify(params)
 
             client
-              .get(`/vtest/testdb/test-schema/?${query}`)
+              .get(`/testdb/test-schema/?${query}`)
               .set('content-type', 'application/json')
               .set('Authorization', `Bearer ${bearerToken}`)
               .end((err, res) => {
@@ -910,7 +910,7 @@ describe('Collections API', () => {
             const query = require('querystring').stringify(params)
 
             client
-              .get(`/vtest/testdb/test-schema/?${query}`)
+              .get(`/testdb/test-schema/?${query}`)
               .set('content-type', 'application/json')
               .set('Authorization', `Bearer ${bearerToken}`)
               .end((err, res) => {
@@ -955,7 +955,7 @@ describe('Collections API', () => {
             const query = require('querystring').stringify(params)
 
             client
-              .get(`/vtest/testdb/test-schema/?${query}`)
+              .get(`/testdb/test-schema/?${query}`)
               .set('content-type', 'application/json')
               .set('Authorization', `Bearer ${bearerToken}`)
               .end((err, res) => {
@@ -972,7 +972,7 @@ describe('Collections API', () => {
 
     it('should return 200 without bearer token if `settings.authenticate` is `false`', function(done) {
       client
-        .get(`/vtest/testdb/test-authenticate-false`)
+        .get(`/testdb/test-authenticate-false`)
         .set('content-type', 'application/json')
         .end((err, res) => {
           if (err) return done(err)
@@ -985,7 +985,7 @@ describe('Collections API', () => {
 
     it('should return 200 without bearer token if `settings.authenticate` is set to an array that does not include `GET`', function(done) {
       client
-        .get(`/vtest/testdb/test-authenticate-post-put-delete`)
+        .get(`/testdb/test-authenticate-post-put-delete`)
         .set('content-type', 'application/json')
         .end((err, res) => {
           if (err) return done(err)
@@ -997,7 +997,7 @@ describe('Collections API', () => {
 
     it('should return 401 without bearer token if `settings.authenticate` is set to an array that includes `GET`', function(done) {
       client
-        .get(`/vtest/testdb/test-authenticate-get-post-put-delete`)
+        .get(`/testdb/test-authenticate-get-post-put-delete`)
         .set('content-type', 'application/json')
         .end((err, res) => {
           if (err) return done(err)
@@ -1028,7 +1028,7 @@ describe('Collections API', () => {
 
             client
               .get(
-                `/vtest/testdb/test-schema/count?filter={"$where":{"title":"xxx"}}`
+                `/testdb/test-schema/count?filter={"$where":{"title":"xxx"}}`
               )
               .set('content-type', 'application/json')
               .set('Authorization', `Bearer ${bearerToken}`)
@@ -1060,7 +1060,7 @@ describe('Collections API', () => {
             const bearerToken = res.body.accessToken
 
             client
-              .get(`/vtest/testdb/test-schema/count`)
+              .get(`/testdb/test-schema/count`)
               .set('content-type', 'application/json')
               .set('Authorization', `Bearer ${bearerToken}`)
               .end((err, res) => {
@@ -1091,7 +1091,7 @@ describe('Collections API', () => {
             const bearerToken = res.body.accessToken
 
             client
-              .get(`/vtest/testdb/test-schema/count`)
+              .get(`/testdb/test-schema/count`)
               .set('content-type', 'application/json')
               .set('Authorization', `Bearer ${bearerToken}`)
               .end((err, res) => {
@@ -1122,7 +1122,7 @@ describe('Collections API', () => {
             const bearerToken = res.body.accessToken
 
             client
-              .get(`/vtest/testdb/test-schema/count`)
+              .get(`/testdb/test-schema/count`)
               .set('content-type', 'application/json')
               .set('Authorization', `Bearer ${bearerToken}`)
               .end((err, res) => {
@@ -1163,7 +1163,7 @@ describe('Collections API', () => {
         })
         .then(adminToken => {
           client
-            .post(`/vtest/testdb/test-schema`)
+            .post(`/testdb/test-schema`)
             .send(documents)
             .set('content-type', 'application/json')
             .set('Authorization', `Bearer ${adminToken}`)
@@ -1184,7 +1184,7 @@ describe('Collections API', () => {
                     const bearerToken = res.body.accessToken
 
                     client
-                      .get(`/vtest/testdb/test-schema/count`)
+                      .get(`/testdb/test-schema/count`)
                       .set('content-type', 'application/json')
                       .set('Authorization', `Bearer ${bearerToken}`)
                       .end((err, res) => {
@@ -1231,7 +1231,7 @@ describe('Collections API', () => {
         })
         .then(adminToken => {
           client
-            .post(`/vtest/testdb/test-schema`)
+            .post(`/testdb/test-schema`)
             .send(documents)
             .set('content-type', 'application/json')
             .set('Authorization', `Bearer ${adminToken}`)
@@ -1252,7 +1252,7 @@ describe('Collections API', () => {
                     const bearerToken = res.body.accessToken
 
                     client
-                      .get(`/vtest/testdb/test-schema/count`)
+                      .get(`/testdb/test-schema/count`)
                       .set('content-type', 'application/json')
                       .set('Authorization', `Bearer ${bearerToken}`)
                       .end((err, res) => {
@@ -1292,7 +1292,7 @@ describe('Collections API', () => {
             const bearerToken = res.body.accessToken
 
             client
-              .post(`/vtest/testdb/test-schema/`)
+              .post(`/testdb/test-schema/`)
               .send(payload)
               .set('content-type', 'application/json')
               .set('Authorization', `Bearer ${bearerToken}`)
@@ -1328,7 +1328,7 @@ describe('Collections API', () => {
             const bearerToken = res.body.accessToken
 
             client
-              .post(`/vtest/testdb/test-schema/`)
+              .post(`/testdb/test-schema/`)
               .send(payload)
               .set('content-type', 'application/json')
               .set('Authorization', `Bearer ${bearerToken}`)
@@ -1364,7 +1364,7 @@ describe('Collections API', () => {
             const bearerToken = res.body.accessToken
 
             client
-              .post(`/vtest/testdb/test-schema/`)
+              .post(`/testdb/test-schema/`)
               .send(payload)
               .set('content-type', 'application/json')
               .set('Authorization', `Bearer ${bearerToken}`)
@@ -1389,7 +1389,7 @@ describe('Collections API', () => {
       }
 
       client
-        .post(`/vtest/testdb/test-authenticate-false`)
+        .post(`/testdb/test-authenticate-false`)
         .send(payload)
         .set('content-type', 'application/json')
         .end((err, res) => {
@@ -1411,7 +1411,7 @@ describe('Collections API', () => {
       }
 
       client
-        .post(`/vtest/testdb/test-authenticate-get-put-delete`)
+        .post(`/testdb/test-authenticate-get-put-delete`)
         .send(payload)
         .end((err, res) => {
           if (err) return done(err)
@@ -1456,7 +1456,7 @@ describe('Collections API', () => {
                 const bearerToken = res.body.accessToken
 
                 client
-                  .post(`/vtest/testdb/test-schema/`)
+                  .post(`/testdb/test-schema/`)
                   .send(payload)
                   .set('content-type', 'application/json')
                   .set('Authorization', `Bearer ${bearerToken}`)
@@ -1470,7 +1470,7 @@ describe('Collections API', () => {
                     const id = res.body.results[0]._id
 
                     client
-                      .get(`/vtest/testdb/test-schema/${id}`)
+                      .get(`/testdb/test-schema/${id}`)
                       .set('content-type', 'application/json')
                       .set('Authorization', `Bearer ${adminToken}`)
                       .end((err, res) => {
@@ -1523,7 +1523,7 @@ describe('Collections API', () => {
                 const bearerToken = res.body.accessToken
 
                 client
-                  .post(`/vtest/testdb/test-schema/`)
+                  .post(`/testdb/test-schema/`)
                   .send(payload)
                   .set('content-type', 'application/json')
                   .set('Authorization', `Bearer ${bearerToken}`)
@@ -1540,7 +1540,7 @@ describe('Collections API', () => {
                     const id = res.body.results[0]._id
 
                     client
-                      .get(`/vtest/testdb/test-schema/${id}`)
+                      .get(`/testdb/test-schema/${id}`)
                       .set('content-type', 'application/json')
                       .set('Authorization', `Bearer ${adminToken}`)
                       .end((err, res) => {
@@ -1593,7 +1593,7 @@ describe('Collections API', () => {
                 const bearerToken = res.body.accessToken
 
                 client
-                  .post(`/vtest/testdb/test-schema/`)
+                  .post(`/testdb/test-schema/`)
                   .send(payload)
                   .set('content-type', 'application/json')
                   .set('Authorization', `Bearer ${bearerToken}`)
@@ -1611,7 +1611,7 @@ describe('Collections API', () => {
                     const id = res.body.results[0]._id
 
                     client
-                      .get(`/vtest/testdb/test-schema/${id}`)
+                      .get(`/testdb/test-schema/${id}`)
                       .set('content-type', 'application/json')
                       .set('Authorization', `Bearer ${adminToken}`)
                       .end((err, res) => {
@@ -1654,7 +1654,7 @@ describe('Collections API', () => {
         })
         .then(adminToken => {
           client
-            .post(`/vtest/testdb/test-reference-schema/`)
+            .post(`/testdb/test-reference-schema/`)
             .send(referencePayload)
             .set('content-type', 'application/json')
             .set('Authorization', `Bearer ${adminToken}`)
@@ -1681,7 +1681,7 @@ describe('Collections API', () => {
                     const bearerToken = res.body.accessToken
 
                     client
-                      .post(`/vtest/testdb/test-schema?compose=true`)
+                      .post(`/testdb/test-schema?compose=true`)
                       .send(payload)
                       .set('content-type', 'application/json')
                       .set('Authorization', `Bearer ${bearerToken}`)
@@ -1699,7 +1699,7 @@ describe('Collections API', () => {
                         const id = res.body.results[0]._id
 
                         client
-                          .get(`/vtest/testdb/test-schema/${id}?compose=true`)
+                          .get(`/testdb/test-schema/${id}?compose=true`)
                           .set('content-type', 'application/json')
                           .set('Authorization', `Bearer ${adminToken}`)
                           .end((err, res) => {
@@ -1749,7 +1749,7 @@ describe('Collections API', () => {
         })
         .then(adminToken => {
           client
-            .post(`/vtest/testdb/test-reference-schema/`)
+            .post(`/testdb/test-reference-schema/`)
             .send(referencePayload)
             .set('content-type', 'application/json')
             .set('Authorization', `Bearer ${adminToken}`)
@@ -1776,7 +1776,7 @@ describe('Collections API', () => {
                     const bearerToken = res.body.accessToken
 
                     client
-                      .post(`/vtest/testdb/test-schema?compose=true`)
+                      .post(`/testdb/test-schema?compose=true`)
                       .send(payload)
                       .set('content-type', 'application/json')
                       .set('Authorization', `Bearer ${bearerToken}`)
@@ -1800,7 +1800,7 @@ describe('Collections API', () => {
                         const id = res.body.results[0]._id
 
                         client
-                          .get(`/vtest/testdb/test-schema/${id}?compose=true`)
+                          .get(`/testdb/test-schema/${id}?compose=true`)
                           .set('content-type', 'application/json')
                           .set('Authorization', `Bearer ${adminToken}`)
                           .end((err, res) => {
@@ -1850,7 +1850,7 @@ describe('Collections API', () => {
         })
         .then(adminToken => {
           client
-            .post(`/vtest/testdb/test-reference-schema/`)
+            .post(`/testdb/test-reference-schema/`)
             .send(referencePayload)
             .set('content-type', 'application/json')
             .set('Authorization', `Bearer ${adminToken}`)
@@ -1877,7 +1877,7 @@ describe('Collections API', () => {
                     const bearerToken = res.body.accessToken
 
                     client
-                      .post(`/vtest/testdb/test-schema?compose=true`)
+                      .post(`/testdb/test-schema?compose=true`)
                       .send(payload)
                       .set('content-type', 'application/json')
                       .set('Authorization', `Bearer ${bearerToken}`)
@@ -1900,9 +1900,6 @@ describe('Collections API', () => {
                         should.exist(
                           res.body.results[0].fieldReference._createdBy
                         )
-                        should.exist(
-                          res.body.results[0].fieldReference._apiVersion
-                        )
                         should.not.exist(
                           res.body.results[0].fieldReference.refField2
                         )
@@ -1910,7 +1907,7 @@ describe('Collections API', () => {
                         const id = res.body.results[0]._id
 
                         client
-                          .get(`/vtest/testdb/test-schema/${id}?compose=true`)
+                          .get(`/testdb/test-schema/${id}?compose=true`)
                           .set('content-type', 'application/json')
                           .set('Authorization', `Bearer ${adminToken}`)
                           .end((err, res) => {
@@ -1968,7 +1965,7 @@ describe('Collections API', () => {
                 const bearerToken = res.body.accessToken
 
                 client
-                  .post(`/vtest/testdb/test-schema`)
+                  .post(`/testdb/test-schema`)
                   .send(payload)
                   .set('content-type', 'application/json')
                   .set('Authorization', `Bearer ${bearerToken}`)
@@ -1981,9 +1978,7 @@ describe('Collections API', () => {
                     should.not.exist(res.body.results[0].field1)
 
                     client
-                      .get(
-                        `/vtest/testdb/test-schema/${res.body.results[0]._id}`
-                      )
+                      .get(`/testdb/test-schema/${res.body.results[0]._id}`)
                       .set('content-type', 'application/json')
                       .set('Authorization', `Bearer ${adminToken}`)
                       .expect(200)
@@ -2044,7 +2039,7 @@ describe('Collections API', () => {
                 const bearerToken = res.body.accessToken
 
                 client
-                  .post(`/vtest/testdb/test-schema`)
+                  .post(`/testdb/test-schema`)
                   .send(payload)
                   .set('content-type', 'application/json')
                   .set('Authorization', `Bearer ${bearerToken}`)
@@ -2057,9 +2052,7 @@ describe('Collections API', () => {
                     should.not.exist(res.body.results[0].title)
 
                     client
-                      .get(
-                        `/vtest/testdb/test-schema/${res.body.results[0]._id}`
-                      )
+                      .get(`/testdb/test-schema/${res.body.results[0]._id}`)
                       .set('content-type', 'application/json')
                       .set('Authorization', `Bearer ${adminToken}`)
                       .expect(200)
@@ -2120,7 +2113,7 @@ describe('Collections API', () => {
                 const bearerToken = res.body.accessToken
 
                 client
-                  .post(`/vtest/testdb/test-required-schema`)
+                  .post(`/testdb/test-required-schema`)
                   .send(payload)
                   .set('content-type', 'application/json')
                   .set('Authorization', `Bearer ${bearerToken}`)
@@ -2180,7 +2173,7 @@ describe('Collections API', () => {
                 const bearerToken = res.body.accessToken
 
                 client
-                  .post(`/vtest/testdb/test-required-schema`)
+                  .post(`/testdb/test-required-schema`)
                   .send(payload)
                   .set('content-type', 'application/json')
                   .set('Authorization', `Bearer ${bearerToken}`)
@@ -2201,7 +2194,7 @@ describe('Collections API', () => {
 
     it('should return 401 without bearer token if `settings.authenticate` is set to an array that includes `POST`', function(done) {
       client
-        .post(`/vtest/testdb/test-authenticate-get-post-put-delete`)
+        .post(`/testdb/test-authenticate-get-post-put-delete`)
         .send({
           field1: 'fieldValue',
           title: 'title'
@@ -2239,7 +2232,7 @@ describe('Collections API', () => {
             const bearerToken = res.body.accessToken
 
             client
-              .put(`/vtest/testdb/test-schema/`)
+              .put(`/testdb/test-schema/`)
               .send(payload)
               .set('content-type', 'application/json')
               .set('Authorization', `Bearer ${bearerToken}`)
@@ -2273,7 +2266,7 @@ describe('Collections API', () => {
             const bearerToken = res.body.accessToken
 
             client
-              .put(`/vtest/testdb/test-schema/${docs[0]}`)
+              .put(`/testdb/test-schema/${docs[0]}`)
               .send(update)
               .set('content-type', 'application/json')
               .set('Authorization', `Bearer ${bearerToken}`)
@@ -2307,7 +2300,7 @@ describe('Collections API', () => {
             const bearerToken = res.body.accessToken
 
             client
-              .put(`/vtest/testdb/test-schema/`)
+              .put(`/testdb/test-schema/`)
               .send(payload)
               .set('content-type', 'application/json')
               .set('Authorization', `Bearer ${bearerToken}`)
@@ -2341,7 +2334,7 @@ describe('Collections API', () => {
             const bearerToken = res.body.accessToken
 
             client
-              .put(`/vtest/testdb/test-schema/${docs[0]}`)
+              .put(`/testdb/test-schema/${docs[0]}`)
               .send(update)
               .set('content-type', 'application/json')
               .set('Authorization', `Bearer ${bearerToken}`)
@@ -2379,7 +2372,7 @@ describe('Collections API', () => {
             const bearerToken = res.body.accessToken
 
             client
-              .put(`/vtest/testdb/test-schema/`)
+              .put(`/testdb/test-schema/`)
               .send(payload)
               .set('content-type', 'application/json')
               .set('Authorization', `Bearer ${bearerToken}`)
@@ -2413,7 +2406,7 @@ describe('Collections API', () => {
             const bearerToken = res.body.accessToken
 
             client
-              .put(`/vtest/testdb/test-schema/${docs[0]}`)
+              .put(`/testdb/test-schema/${docs[0]}`)
               .send(update)
               .set('content-type', 'application/json')
               .set('Authorization', `Bearer ${bearerToken}`)
@@ -2462,7 +2455,7 @@ describe('Collections API', () => {
                   const userToken = res.body.accessToken
 
                   client
-                    .put(`/vtest/testdb/test-schema/${document._id}`)
+                    .put(`/testdb/test-schema/${document._id}`)
                     .send({
                       field1: 'something new'
                     })
@@ -2488,7 +2481,7 @@ describe('Collections API', () => {
 
                           setTimeout(() => {
                             client
-                              .put(`/vtest/testdb/test-schema/${document._id}`)
+                              .put(`/testdb/test-schema/${document._id}`)
                               .send({
                                 field1: 'something new'
                               })
@@ -2542,7 +2535,7 @@ describe('Collections API', () => {
             const bearerToken = res.body.accessToken
 
             client
-              .put(`/vtest/testdb/test-schema`)
+              .put(`/testdb/test-schema`)
               .send({
                 query: {
                   title: 'test doc'
@@ -2560,7 +2553,7 @@ describe('Collections API', () => {
                 res.body.results.length.should.eql(0)
 
                 client
-                  .get(`/vtest/testdb/test-schema?filter={"title":"test doc"}`)
+                  .get(`/testdb/test-schema?filter={"title":"test doc"}`)
                   .set('content-type', 'application/json')
                   .set('Authorization', `Bearer ${bearerToken}`)
                   .end((err, res) => {
@@ -2580,7 +2573,7 @@ describe('Collections API', () => {
 
     it('should return 200 without bearer token if `settings.authenticate` is `false`', function(done) {
       client
-        .put(`/vtest/testdb/test-authenticate-false`)
+        .put(`/testdb/test-authenticate-false`)
         .send({
           query: {
             title: 'test doc'
@@ -2600,7 +2593,7 @@ describe('Collections API', () => {
 
     it('should return 200 without bearer token if `settings.authenticate` is set to an array that does not include `PUT`', function(done) {
       client
-        .put(`/vtest/testdb/test-authenticate-get-post-delete`)
+        .put(`/testdb/test-authenticate-get-post-delete`)
         .send({
           query: {
             title: 'test doc'
@@ -2640,7 +2633,7 @@ describe('Collections API', () => {
         })
         .then(adminToken => {
           client
-            .post(`/vtest/testdb/test-schema/`)
+            .post(`/testdb/test-schema/`)
             .send(original)
             .set('content-type', 'application/json')
             .set('Authorization', `Bearer ${adminToken}`)
@@ -2665,7 +2658,7 @@ describe('Collections API', () => {
                     }
 
                     client
-                      .put(`/vtest/testdb/test-schema/${id}`)
+                      .put(`/testdb/test-schema/${id}`)
                       .send(update)
                       .set('content-type', 'application/json')
                       .set('Authorization', `Bearer ${bearerToken}`)
@@ -2677,7 +2670,7 @@ describe('Collections API', () => {
                         })
 
                         client
-                          .get(`/vtest/testdb/test-schema/${id}`)
+                          .get(`/testdb/test-schema/${id}`)
                           .set('content-type', 'application/json')
                           .set('Authorization', `Bearer ${adminToken}`)
                           .expect(200)
@@ -2726,7 +2719,7 @@ describe('Collections API', () => {
         })
         .then(adminToken => {
           client
-            .post(`/vtest/testdb/test-schema/`)
+            .post(`/testdb/test-schema/`)
             .send(original)
             .set('content-type', 'application/json')
             .set('Authorization', `Bearer ${adminToken}`)
@@ -2751,7 +2744,7 @@ describe('Collections API', () => {
                     }
 
                     client
-                      .put(`/vtest/testdb/test-schema/${id}`)
+                      .put(`/testdb/test-schema/${id}`)
                       .send(update)
                       .set('content-type', 'application/json')
                       .set('Authorization', `Bearer ${bearerToken}`)
@@ -2766,7 +2759,7 @@ describe('Collections API', () => {
                         res.body.results[0].field1.should.eql(original.field1)
 
                         client
-                          .get(`/vtest/testdb/test-schema/${id}`)
+                          .get(`/testdb/test-schema/${id}`)
                           .set('content-type', 'application/json')
                           .set('Authorization', `Bearer ${adminToken}`)
                           .expect(200)
@@ -2815,7 +2808,7 @@ describe('Collections API', () => {
         })
         .then(adminToken => {
           client
-            .post(`/vtest/testdb/test-schema/`)
+            .post(`/testdb/test-schema/`)
             .send(original)
             .set('content-type', 'application/json')
             .set('Authorization', `Bearer ${adminToken}`)
@@ -2840,7 +2833,7 @@ describe('Collections API', () => {
                     }
 
                     client
-                      .put(`/vtest/testdb/test-schema/${id}`)
+                      .put(`/testdb/test-schema/${id}`)
                       .send(update)
                       .set('content-type', 'application/json')
                       .set('Authorization', `Bearer ${bearerToken}`)
@@ -2856,7 +2849,7 @@ describe('Collections API', () => {
                         should.not.exist(res.body.results[0].field1)
 
                         client
-                          .get(`/vtest/testdb/test-schema/${id}`)
+                          .get(`/testdb/test-schema/${id}`)
                           .set('content-type', 'application/json')
                           .set('Authorization', `Bearer ${adminToken}`)
                           .expect(200)
@@ -2903,7 +2896,7 @@ describe('Collections API', () => {
         })
         .then(adminToken => {
           client
-            .post(`/vtest/testdb/test-reference-schema/`)
+            .post(`/testdb/test-reference-schema/`)
             .send(referencePayload)
             .set('content-type', 'application/json')
             .set('Authorization', `Bearer ${adminToken}`)
@@ -2919,7 +2912,7 @@ describe('Collections API', () => {
               }
 
               client
-                .post(`/vtest/testdb/test-schema?compose=true`)
+                .post(`/testdb/test-schema?compose=true`)
                 .send(original)
                 .set('content-type', 'application/json')
                 .set('Authorization', `Bearer ${adminToken}`)
@@ -2943,7 +2936,7 @@ describe('Collections API', () => {
                         }
 
                         client
-                          .put(`/vtest/testdb/test-schema/${id}?compose=true`)
+                          .put(`/testdb/test-schema/${id}?compose=true`)
                           .send(update)
                           .set('content-type', 'application/json')
                           .set('Authorization', `Bearer ${bearerToken}`)
@@ -2959,9 +2952,7 @@ describe('Collections API', () => {
                             )
 
                             client
-                              .get(
-                                `/vtest/testdb/test-schema/${id}?compose=true`
-                              )
+                              .get(`/testdb/test-schema/${id}?compose=true`)
                               .set('content-type', 'application/json')
                               .set('Authorization', `Bearer ${adminToken}`)
                               .end((err, res) => {
@@ -3012,7 +3003,7 @@ describe('Collections API', () => {
         })
         .then(adminToken => {
           client
-            .post(`/vtest/testdb/test-reference-schema/`)
+            .post(`/testdb/test-reference-schema/`)
             .send(referencePayload)
             .set('content-type', 'application/json')
             .set('Authorization', `Bearer ${adminToken}`)
@@ -3028,7 +3019,7 @@ describe('Collections API', () => {
               }
 
               client
-                .post(`/vtest/testdb/test-schema?compose=true`)
+                .post(`/testdb/test-schema?compose=true`)
                 .send(original)
                 .set('content-type', 'application/json')
                 .set('Authorization', `Bearer ${adminToken}`)
@@ -3052,7 +3043,7 @@ describe('Collections API', () => {
                         }
 
                         client
-                          .put(`/vtest/testdb/test-schema/${id}?compose=true`)
+                          .put(`/testdb/test-schema/${id}?compose=true`)
                           .send(update)
                           .set('content-type', 'application/json')
                           .set('Authorization', `Bearer ${bearerToken}`)
@@ -3074,9 +3065,7 @@ describe('Collections API', () => {
                             )
 
                             client
-                              .get(
-                                `/vtest/testdb/test-schema/${id}?compose=true`
-                              )
+                              .get(`/testdb/test-schema/${id}?compose=true`)
                               .set('content-type', 'application/json')
                               .set('Authorization', `Bearer ${adminToken}`)
                               .end((err, res) => {
@@ -3127,7 +3116,7 @@ describe('Collections API', () => {
         })
         .then(adminToken => {
           client
-            .post(`/vtest/testdb/test-reference-schema/`)
+            .post(`/testdb/test-reference-schema/`)
             .send(referencePayload)
             .set('content-type', 'application/json')
             .set('Authorization', `Bearer ${adminToken}`)
@@ -3143,7 +3132,7 @@ describe('Collections API', () => {
               }
 
               client
-                .post(`/vtest/testdb/test-schema?compose=true`)
+                .post(`/testdb/test-schema?compose=true`)
                 .send(original)
                 .set('content-type', 'application/json')
                 .set('Authorization', `Bearer ${adminToken}`)
@@ -3167,7 +3156,7 @@ describe('Collections API', () => {
                         }
 
                         client
-                          .put(`/vtest/testdb/test-schema/${id}?compose=true`)
+                          .put(`/testdb/test-schema/${id}?compose=true`)
                           .send(update)
                           .set('content-type', 'application/json')
                           .set('Authorization', `Bearer ${bearerToken}`)
@@ -3190,17 +3179,12 @@ describe('Collections API', () => {
                             should.exist(
                               res.body.results[0].fieldReference._createdBy
                             )
-                            should.exist(
-                              res.body.results[0].fieldReference._apiVersion
-                            )
                             should.not.exist(
                               res.body.results[0].fieldReference.refField2
                             )
 
                             client
-                              .get(
-                                `/vtest/testdb/test-schema/${id}?compose=true`
-                              )
+                              .get(`/testdb/test-schema/${id}?compose=true`)
                               .set('content-type', 'application/json')
                               .set('Authorization', `Bearer ${adminToken}`)
                               .end((err, res) => {
@@ -3248,7 +3232,7 @@ describe('Collections API', () => {
         })
         .then(adminToken => {
           client
-            .post(`/vtest/testdb/test-schema/`)
+            .post(`/testdb/test-schema/`)
             .send(original)
             .set('content-type', 'application/json')
             .set('Authorization', `Bearer ${adminToken}`)
@@ -3274,7 +3258,7 @@ describe('Collections API', () => {
                     }
 
                     client
-                      .put(`/vtest/testdb/test-schema/${id}`)
+                      .put(`/testdb/test-schema/${id}`)
                       .send(update)
                       .set('content-type', 'application/json')
                       .set('Authorization', `Bearer ${bearerToken}`)
@@ -3323,7 +3307,7 @@ describe('Collections API', () => {
         })
         .then(adminToken => {
           client
-            .post(`/vtest/testdb/test-schema/`)
+            .post(`/testdb/test-schema/`)
             .send(original)
             .set('content-type', 'application/json')
             .set('Authorization', `Bearer ${adminToken}`)
@@ -3349,7 +3333,7 @@ describe('Collections API', () => {
                     }
 
                     client
-                      .put(`/vtest/testdb/test-schema/${id}`)
+                      .put(`/testdb/test-schema/${id}`)
                       .send(update)
                       .set('content-type', 'application/json')
                       .set('Authorization', `Bearer ${bearerToken}`)
@@ -3373,7 +3357,7 @@ describe('Collections API', () => {
 
     it('should return 401 without bearer token if `settings.authenticate` is set to an array that includes `PUT`', function(done) {
       client
-        .put(`/vtest/testdb/test-authenticate-get-post-put-delete`)
+        .put(`/testdb/test-authenticate-get-post-put-delete`)
         .send({
           query: {
             title: 'test doc'
@@ -3415,7 +3399,7 @@ describe('Collections API', () => {
             const bearerToken = res.body.accessToken
 
             client
-              .delete(`/vtest/testdb/test-schema/`)
+              .delete(`/testdb/test-schema/`)
               .send(payload)
               .set('content-type', 'application/json')
               .set('Authorization', `Bearer ${bearerToken}`)
@@ -3447,7 +3431,7 @@ describe('Collections API', () => {
             const bearerToken = res.body.accessToken
 
             client
-              .delete(`/vtest/testdb/test-schema/${docs[0]}`)
+              .delete(`/testdb/test-schema/${docs[0]}`)
               .set('content-type', 'application/json')
               .set('Authorization', `Bearer ${bearerToken}`)
               .end((err, res) => {
@@ -3485,7 +3469,7 @@ describe('Collections API', () => {
             const bearerToken = res.body.accessToken
 
             client
-              .delete(`/vtest/testdb/test-schema/`)
+              .delete(`/testdb/test-schema/`)
               .send(payload)
               .set('content-type', 'application/json')
               .set('Authorization', `Bearer ${bearerToken}`)
@@ -3494,9 +3478,7 @@ describe('Collections API', () => {
                 res.statusCode.should.eql(204)
 
                 client
-                  .get(
-                    `/vtest/testdb/test-schema?filter={"field1":"fieldValue"}`
-                  )
+                  .get(`/testdb/test-schema?filter={"field1":"fieldValue"}`)
                   .set('content-type', 'application/json')
                   .set('Authorization', `Bearer ${bearerToken}`)
                   .end((err, res) => {
@@ -3536,7 +3518,7 @@ describe('Collections API', () => {
             const bearerToken = res.body.accessToken
 
             client
-              .delete(`/vtest/testdb/test-schema/${docs[0]}`)
+              .delete(`/testdb/test-schema/${docs[0]}`)
               .set('content-type', 'application/json')
               .set('Authorization', `Bearer ${bearerToken}`)
               .end((err, res) => {
@@ -3544,7 +3526,7 @@ describe('Collections API', () => {
                 res.statusCode.should.eql(204)
 
                 client
-                  .get(`/vtest/testdb/test-schema/${docs[0]}`)
+                  .get(`/testdb/test-schema/${docs[0]}`)
                   .set('content-type', 'application/json')
                   .set('Authorization', `Bearer ${bearerToken}`)
                   .end((err, res) => {
@@ -3586,7 +3568,7 @@ describe('Collections API', () => {
             const bearerToken = res.body.accessToken
 
             client
-              .delete(`/vtest/testdb/test-schema`)
+              .delete(`/testdb/test-schema`)
               .send({
                 query: {
                   title: 'test doc'
@@ -3600,7 +3582,7 @@ describe('Collections API', () => {
                 res.statusCode.should.eql(204)
 
                 client
-                  .get(`/vtest/testdb/test-schema?filter={"title":"test doc"}`)
+                  .get(`/testdb/test-schema?filter={"title":"test doc"}`)
                   .set('content-type', 'application/json')
                   .set('Authorization', `Bearer ${bearerToken}`)
                   .end((err, res) => {
@@ -3634,7 +3616,7 @@ describe('Collections API', () => {
         })
         .then(({results}) => {
           client
-            .delete(`/vtest/testdb/test-authenticate-false/${results[0]._id}`)
+            .delete(`/testdb/test-authenticate-false/${results[0]._id}`)
             .set('content-type', 'application/json')
             .end((err, res) => {
               if (err) return done(err)
@@ -3661,9 +3643,7 @@ describe('Collections API', () => {
         })
         .then(({results}) => {
           client
-            .delete(
-              `/vtest/testdb/test-authenticate-get-post-put/${results[0]._id}`
-            )
+            .delete(`/testdb/test-authenticate-get-post-put/${results[0]._id}`)
             .set('content-type', 'application/json')
             .end((err, res) => {
               if (err) return done(err)
@@ -3691,7 +3671,7 @@ describe('Collections API', () => {
             .then(({results}) => {
               client
                 .delete(
-                  `/vtest/testdb/test-authenticate-get-post-put-delete/${results[0]._id}`
+                  `/testdb/test-authenticate-get-post-put-delete/${results[0]._id}`
                 )
                 .set('content-type', 'application/json')
                 .end((err, res) => {
@@ -3701,7 +3681,7 @@ describe('Collections API', () => {
 
                   client
                     .delete(
-                      `/vtest/testdb/test-authenticate-get-post-put-delete/${results[0]._id}`
+                      `/testdb/test-authenticate-get-post-put-delete/${results[0]._id}`
                     )
                     .set('content-type', 'application/json')
                     .set('Authorization', `Bearer ${adminToken}`)

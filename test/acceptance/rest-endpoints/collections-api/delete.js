@@ -68,7 +68,7 @@ describe('Collections API – DELETE', function() {
     const client = request(connectionString)
 
     client
-      .post('/1.0/library/book')
+      .post('/library/book')
       .set('Authorization', 'Bearer ' + bearerToken)
       .send({title: 'doc to remove'})
       .expect(200)
@@ -81,7 +81,7 @@ describe('Collections API – DELETE', function() {
         doc.title.should.equal('doc to remove')
 
         client
-          .delete('/1.0/library/book/' + doc._id)
+          .delete('/library/book/' + doc._id)
           .set('Authorization', 'Bearer ' + bearerToken)
           .expect(204, done)
       })
@@ -116,7 +116,7 @@ describe('Collections API – DELETE', function() {
             const client = request(connectionString)
 
             client
-              .delete('/1.0/library/book/' + doc1._id)
+              .delete('/library/book/' + doc1._id)
               .set('Authorization', 'Bearer ' + bearerToken)
               .expect(204)
               .end(function(err) {
@@ -129,7 +129,7 @@ describe('Collections API – DELETE', function() {
                 )
 
                 client
-                  .get('/1.0/library/book?filter=' + filter)
+                  .get('/library/book?filter=' + filter)
                   .set('Authorization', 'Bearer ' + bearerToken)
                   .expect(200)
                   .expect('content-type', 'application/json')
@@ -164,7 +164,7 @@ describe('Collections API – DELETE', function() {
         const client = request(connectionString)
 
         client
-          .delete('/1.0/library/book')
+          .delete('/library/book')
           .set('Authorization', 'Bearer ' + bearerToken)
           .send({
             query: {
@@ -176,7 +176,7 @@ describe('Collections API – DELETE', function() {
             if (err) return done(err)
 
             client
-              .get('/1.0/library/book/' + documentId)
+              .get('/library/book/' + documentId)
               .set('Authorization', 'Bearer ' + bearerToken)
               .expect('content-type', 'application/json')
               .expect(404)
@@ -203,7 +203,7 @@ describe('Collections API – DELETE', function() {
         const client = request(connectionString)
 
         client
-          .delete('/1.0/library/book')
+          .delete('/library/book')
           .set('Authorization', 'Bearer ' + bearerToken)
           .send({
             query: {
@@ -215,7 +215,7 @@ describe('Collections API – DELETE', function() {
             if (err) return done(err)
 
             client
-              .get('/1.0/library/book/' + documentId)
+              .get('/library/book/' + documentId)
               .set('Authorization', 'Bearer ' + bearerToken)
               .expect(404)
               .expect('content-type', 'application/json')
@@ -255,7 +255,7 @@ describe('Collections API – DELETE', function() {
         const client = request(connectionString)
 
         client
-          .delete('/1.0/library/book/')
+          .delete('/library/book/')
           .send(body)
           .set('Authorization', 'Bearer ' + bearerToken)
           .expect(204)
@@ -269,7 +269,7 @@ describe('Collections API – DELETE', function() {
             )
 
             client
-              .get('/1.0/library/book?filter=' + filter)
+              .get('/library/book?filter=' + filter)
               .set('Authorization', 'Bearer ' + bearerToken)
               .expect(200)
               .expect('content-type', 'application/json')
@@ -292,7 +292,7 @@ describe('Collections API – DELETE', function() {
     const client = request(connectionString)
 
     client
-      .post('/1.0/library/book')
+      .post('/library/book')
       .set('Authorization', 'Bearer ' + bearerToken)
       .send({title: 'doc to remove 2'})
       .expect(200)
@@ -302,7 +302,7 @@ describe('Collections API – DELETE', function() {
         const doc = res.body.results[0]
 
         client
-          .post('/1.0/library/book')
+          .post('/library/book')
           .set('Authorization', 'Bearer ' + bearerToken)
           .send({title: 'doc to remain'})
           .expect(200)
@@ -310,12 +310,12 @@ describe('Collections API – DELETE', function() {
             if (err) return done(err)
 
             client
-              .get('/1.0/library/book')
+              .get('/library/book')
               .set('Authorization', 'Bearer ' + bearerToken)
               .expect(200)
               .end(function(err, res) {
                 client
-                  .delete('/1.0/library/book/' + doc._id)
+                  .delete('/library/book/' + doc._id)
                   .set('Authorization', 'Bearer ' + bearerToken)
                   .expect(200)
                   .end(function(err, res) {
@@ -336,7 +336,7 @@ describe('Collections API – DELETE', function() {
     const client = request(connectionString)
 
     client
-      .delete('/1.0/library/book/59f1b3e038ad765e669ac47f')
+      .delete('/library/book/59f1b3e038ad765e669ac47f')
       .set('Authorization', 'Bearer ' + bearerToken)
       .expect(404)
       .end(function(err, res) {
@@ -352,7 +352,7 @@ describe('Collections API – DELETE', function() {
     const client = request(connectionString)
 
     client
-      .delete('/1.0/library/book')
+      .delete('/library/book')
       .set('Authorization', 'Bearer ' + bearerToken)
       .send({
         query: {

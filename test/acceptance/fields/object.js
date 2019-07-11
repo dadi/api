@@ -75,7 +75,7 @@ describe('Object Field', () => {
     }
 
     client
-      .post('/v1/library/misc')
+      .post('/library/misc')
       .set('Authorization', 'Bearer ' + bearerToken)
       .send({mixed: value})
       .expect(200)
@@ -85,7 +85,7 @@ describe('Object Field', () => {
         res.body.results[0].mixed.should.eql(value)
 
         client
-          .get(`/v1/library/misc/${res.body.results[0]._id}`)
+          .get(`/library/misc/${res.body.results[0]._id}`)
           .set('Authorization', 'Bearer ' + bearerToken)
           .expect(200)
           .end((err, res) => {
@@ -109,7 +109,7 @@ describe('Object Field', () => {
     }
 
     client
-      .post('/v1/library/misc')
+      .post('/library/misc')
       .set('Authorization', 'Bearer ' + bearerToken)
       .send({mixed: value})
       .expect(200)
@@ -120,7 +120,7 @@ describe('Object Field', () => {
 
         client
           .get(
-            `/v1/library/misc?filter={"mixed.child.name":"${value.child.name}"}`
+            `/library/misc?filter={"mixed.child.name":"${value.child.name}"}`
           )
           .set('Authorization', 'Bearer ' + bearerToken)
           .expect(200)
@@ -151,7 +151,7 @@ describe('Object Field', () => {
     }
 
     client
-      .post('/v1/library/misc')
+      .post('/library/misc')
       .set('Authorization', 'Bearer ' + bearerToken)
       .send({mixed: value})
       .expect(200)
@@ -163,13 +163,13 @@ describe('Object Field', () => {
         res.body.results[0].mixed.should.eql(value)
 
         client
-          .put(`/v1/library/misc/${id}`)
+          .put(`/library/misc/${id}`)
           .send({mixed: newValue})
           .set('Authorization', 'Bearer ' + bearerToken)
           .expect(200)
           .end((err, res) => {
             client
-              .get(`/v1/library/misc/${id}`)
+              .get(`/library/misc/${id}`)
               .set('Authorization', 'Bearer ' + bearerToken)
               .expect(200)
               .end((err, res) => {
@@ -200,7 +200,7 @@ describe('Object Field', () => {
     }
 
     client
-      .post('/v1/library/misc')
+      .post('/library/misc')
       .set('Authorization', 'Bearer ' + bearerToken)
       .send({mixed: value})
       .expect(200)
@@ -212,7 +212,7 @@ describe('Object Field', () => {
         res.body.results[0].mixed.should.eql(value)
 
         client
-          .put(`/v1/library/misc`)
+          .put(`/library/misc`)
           .send({
             query: {
               'mixed.child.name': value.child.name
@@ -225,7 +225,7 @@ describe('Object Field', () => {
           .expect(200)
           .end((err, res) => {
             client
-              .get(`/v1/library/misc/${id}`)
+              .get(`/library/misc/${id}`)
               .set('Authorization', 'Bearer ' + bearerToken)
               .expect(200)
               .end((err, res) => {
@@ -250,7 +250,7 @@ describe('Object Field', () => {
     }
 
     client
-      .post('/v1/library/misc')
+      .post('/library/misc')
       .set('Authorization', 'Bearer ' + bearerToken)
       .send({mixed: value})
       .expect(200)
@@ -262,12 +262,12 @@ describe('Object Field', () => {
         res.body.results[0].mixed.should.eql(value)
 
         client
-          .delete(`/v1/library/misc/${id}`)
+          .delete(`/library/misc/${id}`)
           .set('Authorization', 'Bearer ' + bearerToken)
           .expect(200)
           .end((err, res) => {
             client
-              .get(`/v1/library/misc/${id}`)
+              .get(`/library/misc/${id}`)
               .set('Authorization', 'Bearer ' + bearerToken)
               .expect(404)
               .end(done)

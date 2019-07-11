@@ -233,7 +233,7 @@ describe('Reference Field', () => {
       const client = request(connectionString)
 
       client
-        .post('/v1/library/person')
+        .post('/library/person')
         .set('Authorization', 'Bearer ' + bearerToken)
         .send(author)
         .expect(200)
@@ -246,7 +246,7 @@ describe('Reference Field', () => {
           }
 
           client
-            .post('/v1/library/book')
+            .post('/library/book')
             .set('Authorization', 'Bearer ' + bearerToken)
             .send(book)
             .expect(200)
@@ -270,7 +270,7 @@ describe('Reference Field', () => {
       const client = request(connectionString)
 
       client
-        .post('/v1/library/person')
+        .post('/library/person')
         .set('Authorization', 'Bearer ' + bearerToken)
         .send(authors)
         .expect(200)
@@ -283,7 +283,7 @@ describe('Reference Field', () => {
           }
 
           client
-            .post('/v1/library/book')
+            .post('/library/book')
             .set('Authorization', 'Bearer ' + bearerToken)
             .send(book)
             .expect(200)
@@ -307,7 +307,7 @@ describe('Reference Field', () => {
       const client = request(connectionString)
 
       client
-        .post('/v1/library/person')
+        .post('/library/person')
         .set('Authorization', 'Bearer ' + bearerToken)
         .send(authors)
         .expect(200)
@@ -317,7 +317,7 @@ describe('Reference Field', () => {
           const authorIds = res.body.results.map(result => result._id)
 
           client
-            .post('/v1/library/book')
+            .post('/library/book')
             .set('Authorization', 'Bearer ' + bearerToken)
             .send(books)
             .expect(200)
@@ -345,7 +345,7 @@ describe('Reference Field', () => {
               ]
 
               client
-                .post('/v1/library/misc')
+                .post('/library/misc')
                 .set('Authorization', 'Bearer ' + bearerToken)
                 .send({multiReference})
                 .expect(200)
@@ -386,7 +386,7 @@ describe('Reference Field', () => {
       const client = request(connectionString)
 
       client
-        .post('/v1/library/book')
+        .post('/library/book')
         .set('Authorization', 'Bearer ' + bearerToken)
         .send(book)
         .expect(200)
@@ -413,7 +413,7 @@ describe('Reference Field', () => {
       const client = request(connectionString)
 
       client
-        .post('/v1/library/book')
+        .post('/library/book')
         .set('Authorization', 'Bearer ' + bearerToken)
         .send(book)
         .expect(400)
@@ -446,7 +446,7 @@ describe('Reference Field', () => {
       const client = request(connectionString)
 
       client
-        .post('/v1/library/event')
+        .post('/library/event')
         .set('Authorization', 'Bearer ' + bearerToken)
         .send(event)
         .expect(200)
@@ -459,7 +459,7 @@ describe('Reference Field', () => {
           let doneIndex = 0
 
           client
-            .get('/v1/library/event/' + eventId)
+            .get('/library/event/' + eventId)
             .set('Authorization', 'Bearer ' + bearerToken)
             .expect(200)
             .end((err, res) => {
@@ -469,7 +469,7 @@ describe('Reference Field', () => {
             })
 
           client
-            .get('/v1/library/book/' + bookId)
+            .get('/library/book/' + bookId)
             .set('Authorization', 'Bearer ' + bearerToken)
             .expect(200)
             .end((err, res) => {
@@ -479,7 +479,7 @@ describe('Reference Field', () => {
             })
 
           client
-            .get('/v1/library/person/' + authorId)
+            .get('/library/person/' + authorId)
             .set('Authorization', 'Bearer ' + bearerToken)
             .expect(200)
             .end((err, res) => {
@@ -505,7 +505,7 @@ describe('Reference Field', () => {
       const client = request(connectionString)
 
       client
-        .post('/v1/library/event')
+        .post('/library/event')
         .set('Authorization', 'Bearer ' + bearerToken)
         .send(event)
         .expect(400)
@@ -540,7 +540,7 @@ describe('Reference Field', () => {
       const client = request(connectionString)
 
       client
-        .post('/v1/library/event')
+        .post('/library/event')
         .set('Authorization', 'Bearer ' + bearerToken)
         .send(event)
         .expect(200)
@@ -553,7 +553,7 @@ describe('Reference Field', () => {
           res.body.results[0].book.author.should.be.String
 
           client
-            .post('/v1/library/event?compose=false')
+            .post('/library/event?compose=false')
             .set('Authorization', 'Bearer ' + bearerToken)
             .send(event)
             .expect(200)
@@ -565,7 +565,7 @@ describe('Reference Field', () => {
               res.body.results[0].book.should.be.String
 
               client
-                .post('/v1/library/event?compose=all')
+                .post('/library/event?compose=all')
                 .set('Authorization', 'Bearer ' + bearerToken)
                 .send(event)
                 .expect(200)
@@ -612,7 +612,7 @@ describe('Reference Field', () => {
       const client = request(connectionString)
 
       client
-        .post('/v1/library/misc')
+        .post('/library/misc')
         .set('Authorization', 'Bearer ' + bearerToken)
         .send(item)
         .expect(200)
@@ -637,7 +637,7 @@ describe('Reference Field', () => {
           )
 
           client
-            .get('/v1/library/book/' + result.multiReference[0]._id)
+            .get('/library/book/' + result.multiReference[0]._id)
             .set('Authorization', 'Bearer ' + bearerToken)
             .expect(200)
             .end((err, res) => {
@@ -649,7 +649,7 @@ describe('Reference Field', () => {
               )
 
               client
-                .get('/v1/library/person/' + result.multiReference[1]._id)
+                .get('/library/person/' + result.multiReference[1]._id)
                 .set('Authorization', 'Bearer ' + bearerToken)
                 .expect(200)
                 .end((err, res) => {
@@ -662,7 +662,7 @@ describe('Reference Field', () => {
 
                   client
                     .get(
-                      '/v1/library/person/?filter={"name": "' +
+                      '/library/person/?filter={"name": "' +
                         item.multiReference[0]._data.author.name +
                         '"}'
                     )
@@ -694,7 +694,7 @@ describe('Reference Field', () => {
       const client = request(connectionString)
 
       client
-        .post('/v1/library/book')
+        .post('/library/book')
         .set('Authorization', 'Bearer ' + bearerToken)
         .send(book)
         .expect(200)
@@ -728,7 +728,7 @@ describe('Reference Field', () => {
       const client = request(connectionString)
 
       client
-        .post('/v1/library/book')
+        .post('/library/book')
         .set('Authorization', 'Bearer ' + bearerToken)
         .send(book)
         .expect(200)
@@ -779,7 +779,7 @@ describe('Reference Field', () => {
       const client = request(connectionString)
 
       client
-        .post('/v1/library/taxonomy')
+        .post('/library/taxonomy')
         .set('Authorization', 'Bearer ' + bearerToken)
         .send(data)
         .expect(200)
@@ -808,7 +808,7 @@ describe('Reference Field', () => {
       const client = request(connectionString)
 
       client
-        .post('/v1/library/person')
+        .post('/library/person')
         .set('Authorization', 'Bearer ' + bearerToken)
         .send(person)
         .expect(200)
@@ -830,7 +830,7 @@ describe('Reference Field', () => {
             const client = request(connectionString)
 
             client
-              .post('/v1/library/book')
+              .post('/library/book')
               .set('Authorization', 'Bearer ' + bearerToken)
               .send(book)
               .expect(200)
@@ -855,7 +855,7 @@ describe('Reference Field', () => {
       const client = request(connectionString)
 
       client
-        .post('/v1/library/person')
+        .post('/library/person')
         .set('Authorization', 'Bearer ' + bearerToken)
         .send(person)
         .expect(200)
@@ -880,7 +880,7 @@ describe('Reference Field', () => {
           const client = request(connectionString)
 
           client
-            .post('/v1/library/book')
+            .post('/library/book')
             .set('Authorization', 'Bearer ' + bearerToken)
             .send(book)
             .expect(200)
@@ -893,7 +893,7 @@ describe('Reference Field', () => {
               newDoc.author.name.should.eql('Ernest Hemingway')
 
               client
-                .get('/v1/library/person/' + authorId)
+                .get('/library/person/' + authorId)
                 .set('Authorization', 'Bearer ' + bearerToken)
                 .send(book)
                 .expect(200)
@@ -921,7 +921,7 @@ describe('Reference Field', () => {
       const client = request(connectionString)
 
       client
-        .post('/v1/library/person')
+        .post('/library/person')
         .set('Authorization', 'Bearer ' + bearerToken)
         .send(person)
         .expect(200)
@@ -943,7 +943,7 @@ describe('Reference Field', () => {
             const client = request(connectionString)
 
             client
-              .post('/v1/library/book')
+              .post('/library/book')
               .set('Authorization', 'Bearer ' + bearerToken)
               .send(book)
               .expect(200)
@@ -974,7 +974,7 @@ describe('Reference Field', () => {
 
         setTimeout(() => {
           request(connectionString)
-            .post('/v1/library/taxonomy')
+            .post('/library/taxonomy')
             .set('Authorization', 'Bearer ' + bearerToken)
             .send({word: 'parent'})
             .end((err, res) => {
@@ -983,7 +983,7 @@ describe('Reference Field', () => {
               parent = res.body.results[0]
 
               request(connectionString)
-                .post('/v1/library/taxonomy')
+                .post('/library/taxonomy')
                 .set('Authorization', 'Bearer ' + bearerToken)
                 .send({word: 'child'})
                 .expect(200)
@@ -1000,7 +1000,7 @@ describe('Reference Field', () => {
                   }
 
                   request(connectionString)
-                    .put('/v1/library/taxonomy/')
+                    .put('/library/taxonomy/')
                     .set('Authorization', 'Bearer ' + bearerToken)
                     .send(body)
                     .expect(200)
@@ -1031,7 +1031,7 @@ describe('Reference Field', () => {
         const client = request(connectionString)
 
         client
-          .post('/v1/library/book')
+          .post('/library/book')
           .set('Authorization', 'Bearer ' + bearerToken)
           .send({title: 'For Whom The Bell Tolls'})
           .end((err, res) => {
@@ -1040,7 +1040,7 @@ describe('Reference Field', () => {
             book = res.body.results[0]
 
             client
-              .post('/v1/library/person')
+              .post('/library/person')
               .set('Authorization', 'Bearer ' + bearerToken)
               .send({name: 'Ernest H.'})
               .expect(200)
@@ -1057,7 +1057,7 @@ describe('Reference Field', () => {
                 }
 
                 client
-                  .put('/v1/library/book/')
+                  .put('/library/book/')
                   .set('Authorization', 'Bearer ' + bearerToken)
                   .send(body)
                   .expect(200)
@@ -1085,7 +1085,7 @@ describe('Reference Field', () => {
       const client = request(connectionString)
 
       client
-        .post('/v1/library/book')
+        .post('/library/book')
         .set('Authorization', 'Bearer ' + bearerToken)
         .send(book)
         .expect(200)
@@ -1101,7 +1101,7 @@ describe('Reference Field', () => {
           }
 
           client
-            .put('/v1/library/book/' + newDoc._id)
+            .put('/library/book/' + newDoc._id)
             .set('Authorization', 'Bearer ' + bearerToken)
             .send(update)
             .expect(200)
@@ -1124,7 +1124,7 @@ describe('Reference Field', () => {
       const client = request(connectionString)
 
       client
-        .post('/v1/library/book')
+        .post('/library/book')
         .set('Authorization', 'Bearer ' + bearerToken)
         .send(book)
         .expect(200)
@@ -1138,7 +1138,7 @@ describe('Reference Field', () => {
           }
 
           client
-            .put('/v1/library/book/' + newDoc._id)
+            .put('/library/book/' + newDoc._id)
             .set('Authorization', 'Bearer ' + bearerToken)
             .send(update)
             .expect(200)
@@ -1162,7 +1162,7 @@ describe('Reference Field', () => {
       const client = request(connectionString)
 
       client
-        .post('/v1/library/person')
+        .post('/library/person')
         .set('Authorization', 'Bearer ' + bearerToken)
         .send(person)
         .expect(200)
@@ -1179,7 +1179,7 @@ describe('Reference Field', () => {
           config.set('query.useVersionFilter', true)
 
           client
-            .post('/v1/library/book')
+            .post('/library/book')
             .set('Authorization', 'Bearer ' + bearerToken)
             .send(book)
             .expect(200)
@@ -1203,7 +1203,7 @@ describe('Reference Field', () => {
               }
 
               client
-                .put('/v1/library/book/' + newDoc._id)
+                .put('/library/book/' + newDoc._id)
                 .set('Authorization', 'Bearer ' + bearerToken)
                 .send(update)
                 .expect(200)
@@ -1235,7 +1235,7 @@ describe('Reference Field', () => {
       const client = request(connectionString)
 
       client
-        .post('/v1/library/event')
+        .post('/library/event')
         .set('Authorization', 'Bearer ' + bearerToken)
         .send(event)
         .expect(200)
@@ -1245,7 +1245,7 @@ describe('Reference Field', () => {
           const eventId = res.body.results[0]._id
 
           client
-            .put(`/v1/library/event/${eventId}`)
+            .put(`/library/event/${eventId}`)
             .set('Authorization', 'Bearer ' + bearerToken)
             .send(event)
             .expect(200)
@@ -1258,7 +1258,7 @@ describe('Reference Field', () => {
               res.body.results[0].book.author.should.be.String
 
               client
-                .put(`/v1/library/event/${eventId}?compose=false`)
+                .put(`/library/event/${eventId}?compose=false`)
                 .set('Authorization', 'Bearer ' + bearerToken)
                 .send(event)
                 .expect(200)
@@ -1270,7 +1270,7 @@ describe('Reference Field', () => {
                   res.body.results[0].book.should.be.String
 
                   client
-                    .put(`/v1/library/event/${eventId}?compose=all`)
+                    .put(`/library/event/${eventId}?compose=all`)
                     .set('Authorization', 'Bearer ' + bearerToken)
                     .send(event)
                     .expect(200)
@@ -1308,7 +1308,7 @@ describe('Reference Field', () => {
       const client = request(connectionString)
 
       client
-        .post('/v1/library/book')
+        .post('/library/book')
         .set('Authorization', 'Bearer ' + bearerToken)
         .send(book)
         .expect(200)
@@ -1325,14 +1325,14 @@ describe('Reference Field', () => {
           }
 
           client
-            .delete('/v1/library/book')
+            .delete('/library/book')
             .set('Authorization', 'Bearer ' + bearerToken)
             .send(query)
             .end((err, res) => {
               if (err) return done(err)
 
               client
-                .get('/v1/library/book')
+                .get('/library/book')
                 .set('Authorization', 'Bearer ' + bearerToken)
                 .expect(200)
                 .end((err, res) => {
@@ -1360,7 +1360,7 @@ describe('Reference Field', () => {
       const client = request(connectionString)
 
       client
-        .post('/v1/library/person')
+        .post('/library/person')
         .set('Authorization', 'Bearer ' + bearerToken)
         .send(person)
         .expect(200)
@@ -1374,7 +1374,7 @@ describe('Reference Field', () => {
           book.author = personId.toString()
 
           client
-            .post('/v1/library/book')
+            .post('/library/book')
             .set('Authorization', 'Bearer ' + bearerToken)
             .send(book)
             .expect(200)
@@ -1383,7 +1383,7 @@ describe('Reference Field', () => {
 
               client
                 .get(
-                  '/v1/library/book?filter={"title":"For Whom The Bell Tolls"}&compose=true'
+                  '/library/book?filter={"title":"For Whom The Bell Tolls"}&compose=true'
                 )
                 .set('Authorization', 'Bearer ' + bearerToken)
                 .expect(200)
@@ -1411,7 +1411,7 @@ describe('Reference Field', () => {
       const client = request(connectionString)
 
       client
-        .post('/v1/library/person')
+        .post('/library/person')
         .set('Authorization', 'Bearer ' + bearerToken)
         .send(gertrude)
         .expect(200)
@@ -1426,7 +1426,7 @@ describe('Reference Field', () => {
           }
 
           client
-            .post('/v1/library/person')
+            .post('/library/person')
             .set('Authorization', 'Bearer ' + bearerToken)
             .send(ernest)
             .expect(200)
@@ -1435,7 +1435,7 @@ describe('Reference Field', () => {
 
               client
                 .get(
-                  '/v1/library/person?filter={"name":"Ernest Hemingway", "friend":{"$ne":null}}&compose=true'
+                  '/library/person?filter={"name":"Ernest Hemingway", "friend":{"$ne":null}}&compose=true'
                 )
                 .set('Authorization', 'Bearer ' + bearerToken)
                 .expect(200)
@@ -1463,7 +1463,7 @@ describe('Reference Field', () => {
       const client = request(connectionString)
 
       client
-        .post('/v1/library/person')
+        .post('/library/person')
         .set('Authorization', 'Bearer ' + bearerToken)
         .send(gertrude)
         .expect(200)
@@ -1479,7 +1479,7 @@ describe('Reference Field', () => {
           }
 
           client
-            .post('/v1/library/person')
+            .post('/library/person')
             .set('Authorization', 'Bearer ' + bearerToken)
             .send(ernest)
             .expect(200)
@@ -1491,7 +1491,7 @@ describe('Reference Field', () => {
               ernest.allFriends = []
 
               client
-                .post('/v1/library/person')
+                .post('/library/person')
                 .set('Authorization', 'Bearer ' + bearerToken)
                 .send(ernest)
                 .expect(200)
@@ -1500,7 +1500,7 @@ describe('Reference Field', () => {
 
                   client
                     .get(
-                      '/v1/library/person?compose=true&filter={"name":"Half Brother"}'
+                      '/library/person?compose=true&filter={"name":"Half Brother"}'
                     )
                     .set('Authorization', 'Bearer ' + bearerToken)
                     .expect(200)
@@ -1530,7 +1530,7 @@ describe('Reference Field', () => {
       const client = request(connectionString)
 
       client
-        .post('/v1/library/person')
+        .post('/library/person')
         .set('Authorization', 'Bearer ' + bearerToken)
         .send(person)
         .expect(200)
@@ -1544,7 +1544,7 @@ describe('Reference Field', () => {
           book.author = [personId.toString()]
 
           client
-            .post('/v1/library/book')
+            .post('/library/book')
             .set('Authorization', 'Bearer ' + bearerToken)
             .send(book)
             .expect(200)
@@ -1553,7 +1553,7 @@ describe('Reference Field', () => {
 
               client
                 .get(
-                  '/v1/library/book?filter={"book.author":{"$in":' +
+                  '/library/book?filter={"book.author":{"$in":' +
                     [personId.toString()] +
                     '}}&compose=true'
                 )
@@ -1590,7 +1590,7 @@ describe('Reference Field', () => {
       const client = request(connectionString)
 
       client
-        .post('/v1/library/event')
+        .post('/library/event')
         .set('Authorization', 'Bearer ' + bearerToken)
         .send(event)
         .expect(200)
@@ -1598,7 +1598,7 @@ describe('Reference Field', () => {
           if (err) return done(err)
 
           client
-            .get('/v1/library/event?filter={"book.author.name":"Some dude"}')
+            .get('/library/event?filter={"book.author.name":"Some dude"}')
             .set('Authorization', 'Bearer ' + bearerToken)
             .expect(200)
             .end((err, res) => {
@@ -1608,7 +1608,7 @@ describe('Reference Field', () => {
 
               client
                 .get(
-                  '/v1/library/event?filter={"book.author.name":"Ernest Hemingway"}'
+                  '/library/event?filter={"book.author.name":"Ernest Hemingway"}'
                 )
                 .set('Authorization', 'Bearer ' + bearerToken)
                 .expect(200)
@@ -1640,7 +1640,7 @@ describe('Reference Field', () => {
       const client = request(connectionString)
 
       client
-        .post('/v1/library/event')
+        .post('/library/event')
         .set('Authorization', 'Bearer ' + bearerToken)
         .send(event)
         .expect(200)
@@ -1648,7 +1648,7 @@ describe('Reference Field', () => {
           if (err) return done(err)
 
           client
-            .get('/v1/library/event?filter={"book.author.name":"Some dude"}')
+            .get('/library/event?filter={"book.author.name":"Some dude"}')
             .set('Authorization', 'Bearer ' + bearerToken)
             .expect(200)
             .end((err, res) => {
@@ -1658,7 +1658,7 @@ describe('Reference Field', () => {
 
               client
                 .get(
-                  '/v1/library/event?filter={"book.author.name":"email%2Baddress@gmail.com"}'
+                  '/library/event?filter={"book.author.name":"email%2Baddress@gmail.com"}'
                 )
                 .set('Authorization', 'Bearer ' + bearerToken)
                 .expect(200)
@@ -1694,7 +1694,7 @@ describe('Reference Field', () => {
       const client = request(connectionString)
 
       client
-        .post('/v1/library/event')
+        .post('/library/event')
         .set('Authorization', 'Bearer ' + bearerToken)
         .send(event)
         .expect(200)
@@ -1703,7 +1703,7 @@ describe('Reference Field', () => {
 
           client
             .get(
-              '/v1/library/event?filter={"book.publishStatus.status":"draft"}'
+              '/library/event?filter={"book.publishStatus.status":"draft"}'
             )
             .set('Authorization', 'Bearer ' + bearerToken)
             .expect(200)
@@ -1714,7 +1714,7 @@ describe('Reference Field', () => {
 
               client
                 .get(
-                  '/v1/library/event?filter={"book.publishStatus.status":"published"}&compose=true'
+                  '/library/event?filter={"book.publishStatus.status":"published"}&compose=true'
                 )
                 .set('Authorization', 'Bearer ' + bearerToken)
                 .expect(200)
@@ -1755,7 +1755,7 @@ describe('Reference Field', () => {
       const client = request(connectionString)
 
       client
-        .post('/v1/library/event')
+        .post('/library/event')
         .set('Authorization', 'Bearer ' + bearerToken)
         .send(event)
         .expect(200)
@@ -1764,7 +1764,7 @@ describe('Reference Field', () => {
 
           client
             .get(
-              '/v1/library/event?filter={"book.publishStatus.status":"draft"}'
+              '/library/event?filter={"book.publishStatus.status":"draft"}'
             )
             .set('Authorization', 'Bearer ' + bearerToken)
             .expect(200)
@@ -1775,7 +1775,7 @@ describe('Reference Field', () => {
 
               client
                 .get(
-                  '/v1/library/event?filter={"book.publishStatus.status":"published"}'
+                  '/library/event?filter={"book.publishStatus.status":"published"}'
                 )
                 .set('Authorization', 'Bearer ' + bearerToken)
                 .expect(200)
@@ -1818,14 +1818,14 @@ describe('Reference Field', () => {
       const client = request(connectionString)
 
       client
-        .post('/v1/library/misc')
+        .post('/library/misc')
         .set('Authorization', 'Bearer ' + bearerToken)
         .send(miscItem)
         .expect(200)
         .end((err, res) => {
           client
             .get(
-              '/v1/library/misc?filter={"multiReference.title@book":"Book one"}'
+              '/library/misc?filter={"multiReference.title@book":"Book one"}'
             )
             .set('Authorization', 'Bearer ' + bearerToken)
             .expect(200)
@@ -1835,7 +1835,7 @@ describe('Reference Field', () => {
 
               client
                 .get(
-                  '/v1/library/misc?filter={"multiReference.title@book":"Book seven"}'
+                  '/library/misc?filter={"multiReference.title@book":"Book seven"}'
                 )
                 .set('Authorization', 'Bearer ' + bearerToken)
                 .expect(200)
@@ -1844,7 +1844,7 @@ describe('Reference Field', () => {
 
                   client
                     .get(
-                      '/v1/library/misc?filter={"multiReference.name@person":"Author two"}'
+                      '/library/misc?filter={"multiReference.name@person":"Author two"}'
                     )
                     .set('Authorization', 'Bearer ' + bearerToken)
                     .expect(200)
@@ -1854,7 +1854,7 @@ describe('Reference Field', () => {
 
                       client
                         .get(
-                          '/v1/library/misc?filter={"multiReference.name@person":"Author seven"}'
+                          '/library/misc?filter={"multiReference.name@person":"Author seven"}'
                         )
                         .set('Authorization', 'Bearer ' + bearerToken)
                         .expect(200)
@@ -1863,7 +1863,7 @@ describe('Reference Field', () => {
 
                           client
                             .get(
-                              '/v1/library/misc?filter={"multiReference.author@book.name":"Author seven"}'
+                              '/library/misc?filter={"multiReference.author@book.name":"Author seven"}'
                             )
                             .set('Authorization', 'Bearer ' + bearerToken)
                             .expect(200)
@@ -1872,7 +1872,7 @@ describe('Reference Field', () => {
 
                               client
                                 .get(
-                                  '/v1/library/misc?filter={"multiReference.author@book.name":"Author one"}'
+                                  '/library/misc?filter={"multiReference.author@book.name":"Author one"}'
                                 )
                                 .set('Authorization', 'Bearer ' + bearerToken)
                                 .expect(200)
@@ -1911,7 +1911,7 @@ describe('Reference Field', () => {
       const client = request(connectionString)
 
       client
-        .post('/v1/library/misc')
+        .post('/library/misc')
         .set('Authorization', 'Bearer ' + bearerToken)
         .send({multiReference})
         .expect(200)
@@ -1921,7 +1921,7 @@ describe('Reference Field', () => {
           should.exist(res.body.results)
 
           client
-            .get(`/v1/library/misc/${res.body.results[0]._id}?compose=all`)
+            .get(`/library/misc/${res.body.results[0]._id}?compose=all`)
             .set('Authorization', 'Bearer ' + bearerToken)
             .expect(200)
             .end((err, res) => {
@@ -1959,7 +1959,7 @@ describe('Reference Field', () => {
       const client = request(connectionString)
 
       client
-        .post('/v1/library/event')
+        .post('/library/event')
         .set('Authorization', 'Bearer ' + bearerToken)
         .send(event)
         .expect(200)
@@ -1968,7 +1968,7 @@ describe('Reference Field', () => {
 
           client
             .get(
-              '/v1/library/event?filter={"book.author.name":"Ernest Hemingway"}&fields={"type":1,"book.author.spouse":1}&compose=all'
+              '/library/event?filter={"book.author.name":"Ernest Hemingway"}&fields={"type":1,"book.author.spouse":1}&compose=all'
             )
             .set('Authorization', 'Bearer ' + bearerToken)
             .expect(200)
@@ -2021,7 +2021,7 @@ describe('Reference Field', () => {
       const client = request(connectionString)
 
       client
-        .post('/v1/library/misc')
+        .post('/library/misc')
         .set('Authorization', 'Bearer ' + bearerToken)
         .send(item)
         .expect(200)
@@ -2030,7 +2030,7 @@ describe('Reference Field', () => {
 
           client
             .get(
-              '/v1/library/misc?filter={"string":"Some string"}&fields={"mixed":1,"multiReference.spouse@person":1,"multiReference.author@book":1}&compose=all'
+              '/library/misc?filter={"string":"Some string"}&fields={"mixed":1,"multiReference.spouse@person":1,"multiReference.author@book":1}&compose=all'
             )
             .set('Authorization', 'Bearer ' + bearerToken)
             .expect(200)
@@ -2080,7 +2080,7 @@ describe('Reference Field', () => {
       const client = request(connectionString)
 
       client
-        .post('/v1/library/book')
+        .post('/library/book')
         .set('Authorization', 'Bearer ' + bearerToken)
         .send(books)
         .expect(200)
@@ -2090,7 +2090,7 @@ describe('Reference Field', () => {
           should.exist(res.body.results)
 
           client
-            .get('/v1/library/book?compose=false')
+            .get('/library/book?compose=false')
             .set('Authorization', 'Bearer ' + bearerToken)
             .expect(200)
             .end((err, res) => {
@@ -2106,7 +2106,7 @@ describe('Reference Field', () => {
 
               client
                 .get(
-                  `/v1/library/book?filter={"title":"${books[0].title}"}&compose=true`
+                  `/library/book?filter={"title":"${books[0].title}"}&compose=true`
                 )
                 .set('Authorization', 'Bearer ' + bearerToken)
                 .expect(200)
@@ -2122,7 +2122,7 @@ describe('Reference Field', () => {
 
                   client
                     .get(
-                      `/v1/library/book?filter={"title":"${books[1].title}"}&compose=true`
+                      `/library/book?filter={"title":"${books[1].title}"}&compose=true`
                     )
                     .set('Authorization', 'Bearer ' + bearerToken)
                     .expect(200)
@@ -2138,7 +2138,7 @@ describe('Reference Field', () => {
 
                       client
                         .get(
-                          `/v1/library/book?filter={"title":"${books[2].title}"}&compose=true`
+                          `/library/book?filter={"title":"${books[2].title}"}&compose=true`
                         )
                         .set('Authorization', 'Bearer ' + bearerToken)
                         .expect(200)
@@ -2172,7 +2172,7 @@ describe('Reference Field', () => {
       const client = request(connectionString)
 
       client
-        .post('/v1/library/event')
+        .post('/library/event')
         .set('Authorization', 'Bearer ' + bearerToken)
         .send(event)
         .expect(200)
@@ -2182,7 +2182,7 @@ describe('Reference Field', () => {
           should.exist(res.body.results)
 
           client
-            .get(`/v1/library/event/${res.body.results[0]._id}?compose=true`)
+            .get(`/library/event/${res.body.results[0]._id}?compose=true`)
             .set('Authorization', 'Bearer ' + bearerToken)
             .expect(200)
             .end((err, res) => {
@@ -2210,7 +2210,7 @@ describe('Reference Field', () => {
         const client = request(connectionString)
 
         client
-          .post('/v1/library/person')
+          .post('/library/person')
           .set('Authorization', 'Bearer ' + bearerToken)
           .send(author)
           .expect(200)
@@ -2228,7 +2228,7 @@ describe('Reference Field', () => {
             book.author.push(personId.toString())
 
             client
-              .post('/v1/library/book')
+              .post('/library/book')
               .set('Authorization', 'Bearer ' + bearerToken)
               .send(book)
               .expect(200)
@@ -2237,7 +2237,7 @@ describe('Reference Field', () => {
 
                 client
                   .get(
-                    '/v1/library/book?filter={"book.author":{"$in":' +
+                    '/library/book?filter={"book.author":{"$in":' +
                       [personId.toString()] +
                       '}}&compose=true'
                   )
@@ -2266,7 +2266,7 @@ describe('Reference Field', () => {
         const client = request(connectionString)
 
         client
-          .post('/v1/library/person')
+          .post('/library/person')
           .set('Authorization', 'Bearer ' + bearerToken)
           .send({name: 'Ernest Hemingway'})
           .expect(200)
@@ -2284,7 +2284,7 @@ describe('Reference Field', () => {
             book.author.push(personId.toString())
 
             client
-              .post('/v1/library/book')
+              .post('/library/book')
               .set('Authorization', 'Bearer ' + bearerToken)
               .send(book)
               .expect(200)
@@ -2293,7 +2293,7 @@ describe('Reference Field', () => {
 
                 client
                   .get(
-                    '/v1/library/book?filter={"book.author":{"$in":' +
+                    '/library/book?filter={"book.author":{"$in":' +
                       [personId.toString()] +
                       '}}&compose=true'
                   )
@@ -2326,7 +2326,7 @@ describe('Reference Field', () => {
         const client = request(connectionString)
 
         client
-          .post('/v1/library/book')
+          .post('/library/book')
           .set('Authorization', 'Bearer ' + bearerToken)
           .send(book)
           .expect(200)
@@ -2338,7 +2338,7 @@ describe('Reference Field', () => {
             const bookId = res.body.results[0]._id
 
             client
-              .get(`/v1/library/book/${bookId}?compose=true`)
+              .get(`/library/book/${bookId}?compose=true`)
               .set('Authorization', 'Bearer ' + bearerToken)
               .expect(200)
               .end((err, res) => {
@@ -2366,7 +2366,7 @@ describe('Reference Field', () => {
         const client = request(connectionString)
 
         client
-          .post('/v1/library/book')
+          .post('/library/book')
           .set('Authorization', 'Bearer ' + bearerToken)
           .send(book)
           .expect(200)
@@ -2378,7 +2378,7 @@ describe('Reference Field', () => {
             const bookId = res.body.results[0]._id
 
             client
-              .get(`/v1/library/book/${bookId}?compose=true`)
+              .get(`/library/book/${bookId}?compose=true`)
               .set('Authorization', 'Bearer ' + bearerToken)
               .expect(200)
               .end((err, res) => {
@@ -2407,7 +2407,7 @@ describe('Reference Field', () => {
         const client = request(connectionString)
 
         client
-          .post('/v1/library/book')
+          .post('/library/book')
           .set('Authorization', 'Bearer ' + bearerToken)
           .send(book)
           .expect(200)
@@ -2419,7 +2419,7 @@ describe('Reference Field', () => {
             const bookId = res.body.results[0]._id
 
             client
-              .get(`/v1/library/book/${bookId}?compose=true`)
+              .get(`/library/book/${bookId}?compose=true`)
               .set('Authorization', 'Bearer ' + bearerToken)
               .expect(200)
               .end((err, res) => {
@@ -2444,7 +2444,7 @@ describe('Reference Field', () => {
         const client = request(connectionString)
 
         client
-          .post('/v1/library/person')
+          .post('/library/person')
           .set('Authorization', 'Bearer ' + bearerToken)
           .send(author)
           .expect(200)
@@ -2462,7 +2462,7 @@ describe('Reference Field', () => {
             book.authorStrict.push(personId.toString())
 
             client
-              .post('/v1/library/book')
+              .post('/library/book')
               .set('Authorization', 'Bearer ' + bearerToken)
               .send(book)
               .expect(200)
@@ -2471,7 +2471,7 @@ describe('Reference Field', () => {
 
                 client
                   .get(
-                    '/v1/library/book?filter={"book.authorStrict":{"$in":' +
+                    '/library/book?filter={"book.authorStrict":{"$in":' +
                       [personId.toString()] +
                       '}}&compose=true'
                   )
@@ -2504,7 +2504,7 @@ describe('Reference Field', () => {
         const client = request(connectionString)
 
         client
-          .post('/v1/library/person')
+          .post('/library/person')
           .set('Authorization', 'Bearer ' + bearerToken)
           .send(author)
           .expect(200)
@@ -2522,7 +2522,7 @@ describe('Reference Field', () => {
             book.authorStrict.push(personId.toString())
 
             client
-              .post('/v1/library/book')
+              .post('/library/book')
               .set('Authorization', 'Bearer ' + bearerToken)
               .send(book)
               .expect(200)
@@ -2531,7 +2531,7 @@ describe('Reference Field', () => {
 
                 client
                   .get(
-                    '/v1/library/book?filter={"book.authorStrict":{"$in":' +
+                    '/library/book?filter={"book.authorStrict":{"$in":' +
                       [personId.toString()] +
                       '}}&compose=true'
                   )
@@ -2566,7 +2566,7 @@ describe('Reference Field', () => {
         const client = request(connectionString)
 
         client
-          .post('/v1/library/book')
+          .post('/library/book')
           .set('Authorization', 'Bearer ' + bearerToken)
           .send(book)
           .expect(200)
@@ -2578,7 +2578,7 @@ describe('Reference Field', () => {
             const bookId = res.body.results[0]._id
 
             client
-              .get(`/v1/library/book/${bookId}?compose=true`)
+              .get(`/library/book/${bookId}?compose=true`)
               .set('Authorization', 'Bearer ' + bearerToken)
               .expect(200)
               .end((err, res) => {
@@ -2606,7 +2606,7 @@ describe('Reference Field', () => {
         const client = request(connectionString)
 
         client
-          .post('/v1/library/book')
+          .post('/library/book')
           .set('Authorization', 'Bearer ' + bearerToken)
           .send(book)
           .expect(200)
@@ -2618,7 +2618,7 @@ describe('Reference Field', () => {
             const bookId = res.body.results[0]._id
 
             client
-              .get(`/v1/library/book/${bookId}?compose=true`)
+              .get(`/library/book/${bookId}?compose=true`)
               .set('Authorization', 'Bearer ' + bearerToken)
               .expect(200)
               .end((err, res) => {
@@ -2650,7 +2650,7 @@ describe('Reference Field', () => {
         const client = request(connectionString)
 
         client
-          .post('/v1/library/book')
+          .post('/library/book')
           .set('Authorization', 'Bearer ' + bearerToken)
           .send(book)
           .expect(200)
@@ -2662,7 +2662,7 @@ describe('Reference Field', () => {
             const bookId = res.body.results[0]._id
 
             client
-              .get(`/v1/library/book/${bookId}?compose=true`)
+              .get(`/library/book/${bookId}?compose=true`)
               .set('Authorization', 'Bearer ' + bearerToken)
               .expect(200)
               .end((err, res) => {
@@ -2690,7 +2690,7 @@ describe('Reference Field', () => {
       const client = request(connectionString)
 
       client
-        .post('/v1/library/person')
+        .post('/library/person')
         .set('Authorization', 'Bearer ' + bearerToken)
         .send({name: 'Ernest Hemingway'})
         .expect(200)
@@ -2702,7 +2702,7 @@ describe('Reference Field', () => {
           const client = request(connectionString)
 
           client
-            .post('/v1/library/person')
+            .post('/library/person')
             .set('Authorization', 'Bearer ' + bearerToken)
             .send({name: 'A.N. Other'})
             .expect(200)
@@ -2713,7 +2713,7 @@ describe('Reference Field', () => {
               const client = request(connectionString)
 
               client
-                .post('/v1/library/person')
+                .post('/library/person')
                 .set('Authorization', 'Bearer ' + bearerToken)
                 .send({name: 'Michael Jackson'})
                 .expect(200)
@@ -2722,7 +2722,7 @@ describe('Reference Field', () => {
                   book.author.push(personId.toString())
 
                   client
-                    .post('/v1/library/book')
+                    .post('/library/book')
                     .set('Authorization', 'Bearer ' + bearerToken)
                     .send(book)
                     .expect(200)
@@ -2731,7 +2731,7 @@ describe('Reference Field', () => {
 
                       client
                         .get(
-                          '/v1/library/book?filter={"title":"Death in the Afternoon"}&compose=true'
+                          '/library/book?filter={"title":"Death in the Afternoon"}&compose=true'
                         )
                         .set('Authorization', 'Bearer ' + bearerToken)
                         .expect(200)
@@ -2778,7 +2778,7 @@ describe('Reference Field', () => {
       const client = request(connectionString)
 
       client
-        .post('/v1/library/event')
+        .post('/library/event')
         .set('Authorization', 'Bearer ' + bearerToken)
         .send(event)
         .expect(200)
@@ -2792,7 +2792,7 @@ describe('Reference Field', () => {
           }
 
           client
-            .get(`/v1/library/event/${eventId}?compose=true`)
+            .get(`/library/event/${eventId}?compose=true`)
             .set('Authorization', 'Bearer ' + bearerToken)
             .expect(200)
             .end((err, res) => {
@@ -2804,7 +2804,7 @@ describe('Reference Field', () => {
             })
 
           client
-            .get(`/v1/library/event/${eventId}?compose=2`)
+            .get(`/library/event/${eventId}?compose=2`)
             .set('Authorization', 'Bearer ' + bearerToken)
             .expect(200)
             .end((err, res) => {
@@ -2819,7 +2819,7 @@ describe('Reference Field', () => {
             })
 
           client
-            .get(`/v1/library/event/${eventId}?compose=3`)
+            .get(`/library/event/${eventId}?compose=3`)
             .set('Authorization', 'Bearer ' + bearerToken)
             .expect(200)
             .end((err, res) => {
@@ -2836,7 +2836,7 @@ describe('Reference Field', () => {
             })
 
           client
-            .get(`/v1/library/event/${eventId}?compose=all`)
+            .get(`/library/event/${eventId}?compose=all`)
             .set('Authorization', 'Bearer ' + bearerToken)
             .expect(200)
             .end((err, res) => {
@@ -2872,7 +2872,7 @@ describe('Reference Field', () => {
       const client = request(connectionString)
 
       client
-        .post('/v1/library/book')
+        .post('/library/book')
         .set('Authorization', 'Bearer ' + bearerToken)
         .send(book)
         .expect(200)
@@ -2884,7 +2884,6 @@ describe('Reference Field', () => {
           const newDoc = res.body.results[0]
 
           should.exist(newDoc.author.$id)
-          should.exist(newDoc.author.$apiVersion)
           done()
         })
     })
@@ -2902,7 +2901,7 @@ describe('Reference Field', () => {
       const client = request(connectionString)
 
       client
-        .post('/v1/library/person')
+        .post('/library/person')
         .set('Authorization', 'Bearer ' + bearerToken)
         .send(person)
         .expect(200)
@@ -2924,7 +2923,7 @@ describe('Reference Field', () => {
             const client = request(connectionString)
 
             client
-              .post('/v1/library/book')
+              .post('/library/book')
               .set('Authorization', 'Bearer ' + bearerToken)
               .send(book)
               .expect(200)

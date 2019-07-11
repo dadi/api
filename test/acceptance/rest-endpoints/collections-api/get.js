@@ -151,7 +151,7 @@ describe('Collections API – GET', function() {
       const client = request(connectionString)
 
       client
-        .get('/vtest/testdb/test-schema?cache=false')
+        .get('/testdb/test-schema?cache=false')
         .set('Authorization', 'Bearer ' + bearerToken)
         .expect(200)
         .expect('content-type', 'application/json')
@@ -177,7 +177,7 @@ describe('Collections API – GET', function() {
       const client = request(connectionString)
 
       client
-        .get('/vtest/testdb/test-schema/' + doc._id)
+        .get('/testdb/test-schema/' + doc._id)
         .set('Authorization', 'Bearer ' + bearerToken)
         .expect(200)
         .expect('content-type', 'application/json')
@@ -195,291 +195,6 @@ describe('Collections API – GET', function() {
     })
   })
 
-  it('should use apiVersion when getting reference documents if useVersionFilter is set to true', function(done) {
-    config.set('query.useVersionFilter', true)
-
-    client
-      .post('/1.0/library/person')
-      .send({name: 'Neil Murray'})
-      .set('content-type', 'application/json')
-      .set('Authorization', 'Bearer ' + bearerToken)
-      .expect(200)
-      .end((_err, res) => {
-        let id = res.body.results[0]._id
-
-        client
-          .post('/1.0/library/person')
-          .send({name: 'J K Rowling', spouse: id})
-          .set('content-type', 'application/json')
-          .set('Authorization', 'Bearer ' + bearerToken)
-          .expect(200)
-          .end((_err, res) => {
-            id = res.body.results[0]._id
-
-            client
-              .post('/1.0/library/book')
-              .send({title: 'Harry Potter 1', author: id})
-              .set('content-type', 'application/json')
-              .set('Authorization', 'Bearer ' + bearerToken)
-              .expect(200)
-              .end((_err, res) => {
-                const bookid = res.body.results[0]._id
-                const books = []
-
-                books.push(bookid)
-
-                client
-                  .post('/1.0/library/book')
-                  .send({
-                    title: 'Harry Potter 2',
-                    author: id,
-                    booksInSeries: books
-                  })
-                  .set('content-type', 'application/json')
-                  .set('Authorization', 'Bearer ' + bearerToken)
-                  .expect(200)
-                  .end((_err, res) => {
-                    // find a book
-
-                    const Model = require(path.join(
-                      __dirname,
-                      '/../../../../dadi/lib/model/index.js'
-                    ))
-                    const spy = sinon.spy(Model.Model.prototype, 'find')
-
-                    client
-                      .get(
-                        '/1.0/library/book?filter={ "title": "Harry Potter 2" }'
-                      )
-                      .send({
-                        title: 'Harry Potter 2',
-                        author: id,
-                        booksInSeries: books
-                      })
-                      .set('content-type', 'application/json')
-                      .set('Authorization', 'Bearer ' + bearerToken)
-                      .expect(200)
-                      .end((_err, res) => {
-                        const args = spy.args
-
-                        spy.restore()
-                        config.set('query.useVersionFilter', false)
-
-                        // apiVersion should be in the query passed to find
-                        args.forEach(arg => {
-                          should.exist(arg[0].query._apiVersion)
-                        })
-
-                        const results = res.body.results
-
-                        results.should.be.Array
-                        results.length.should.eql(1)
-
-                        done()
-                      })
-                  })
-              })
-          })
-      })
-  })
-
-  it('should not use apiVersion when getting reference documents if useVersionFilter is set to false', function(done) {
-    config.set('query.useVersionFilter', false)
-
-    // var bookSchema = {
-    //   fields: {
-    //     'title': { 'type': 'String', 'required': true },
-    //     'author': { 'type': 'Reference',
-    //       'settings': { 'collection': 'person', 'fields': ['name', 'spouse'] }
-    //     },
-    //     'booksInSeries': {
-    //       'type': 'Reference',
-    //       'settings': { 'collection': 'book', 'multiple': true }
-    //     }
-    //   },
-    //   settings: {
-    //     cache: false,
-    //     authenticate: true,
-    //     count: 40
-    //   }
-    // }
-
-    // var personSchema = {
-    //   fields: {
-    //     'name': { 'type': 'String', 'required': true },
-    //     'occupation': { 'type': 'String', 'required': false },
-    //     'nationality': { 'type': 'String', 'required': false },
-    //     'education': { 'type': 'String', 'required': false },
-    //     'spouse': { 'type': 'Reference' }
-    //   },
-    //   settings: {
-    //     cache: false,
-    //     authenticate: true,
-    //     count: 40
-    //   }
-    // }
-
-    // create some docs
-    client
-      .post('/1.0/library/person')
-      .send({name: 'Neil Murray'})
-      .set('content-type', 'application/json')
-      .set('Authorization', 'Bearer ' + bearerToken)
-      .expect(200)
-      .end((_err, res) => {
-        let id = res.body.results[0]._id
-
-        client
-          .post('/1.0/library/person')
-          .send({name: 'J K Rowling', spouse: id})
-          .set('content-type', 'application/json')
-          .set('Authorization', 'Bearer ' + bearerToken)
-          .expect(200)
-          .end((_err, res) => {
-            id = res.body.results[0]._id
-
-            client
-              .post('/1.0/library/book')
-              .send({title: 'Harry Potter 1', author: id})
-              .set('content-type', 'application/json')
-              .set('Authorization', 'Bearer ' + bearerToken)
-              .expect(200)
-              .end((_err, res) => {
-                const bookid = res.body.results[0]._id
-                const books = []
-
-                books.push(bookid)
-
-                client
-                  .post('/1.0/library/book')
-                  .send({
-                    title: 'Harry Potter 2',
-                    author: id,
-                    booksInSeries: books
-                  })
-                  .set('content-type', 'application/json')
-                  .set('Authorization', 'Bearer ' + bearerToken)
-                  .expect(200)
-                  .end((_err, res) => {
-                    // find a book
-
-                    const Model = require(path.join(
-                      __dirname,
-                      '/../../../../dadi/lib/model/index.js'
-                    ))
-                    const spy = sinon.spy(Model.Model.prototype, 'find')
-
-                    client
-                      .get(
-                        '/1.0/library/book?filter={ "title": "Harry Potter 2" }&compose=true'
-                      )
-                      .send({
-                        title: 'Harry Potter 2',
-                        author: id,
-                        booksInSeries: books
-                      })
-                      .set('content-type', 'application/json')
-                      .set('Authorization', 'Bearer ' + bearerToken)
-                      .expect(200)
-                      .end((_err, res) => {
-                        const args = spy.args
-
-                        spy.restore()
-
-                        config.set('query.useVersionFilter', true)
-
-                        // apiVersion should be in the query passed to find
-                        args.forEach(arg => {
-                          should.not.exist(arg[0].query._apiVersion)
-                        })
-
-                        const results = res.body.results
-
-                        results.should.be.Array
-                        results.length.should.be.above(0)
-
-                        done()
-                      })
-                  })
-              })
-          })
-      })
-  })
-
-  it('should ignore apiVersion when getting documents if useVersionFilter is not set', function(done) {
-    config.set('query.useVersionFilter', false)
-
-    help.createDoc(bearerToken, function(err, doc) {
-      if (err) return done(err)
-
-      doc._apiVersion.should.equal('vtest')
-
-      const testdoc = {field1: 'test string'}
-
-      help.createDocWithSpecificVersion(bearerToken, 'v1', testdoc, function(
-        err,
-        doc
-      ) {
-        if (err) return done(err)
-
-        setTimeout(function() {
-          client
-            .get('/v1/testdb/test-schema')
-            .set('Authorization', 'Bearer ' + bearerToken)
-            .expect(200)
-            .expect('content-type', 'application/json')
-            .end(function(err, res) {
-              if (err) return done(err)
-
-              res.body.results.should.exist
-              res.body.results.should.be.Array
-              res.body.results[0]._apiVersion.should.equal('vtest')
-              done()
-            })
-        }, 300)
-      })
-    })
-  })
-
-  it('should get documents from correct API version when useVersionFilter is set', function(done) {
-    config.set('query.useVersionFilter', true)
-
-    // var jsSchemaString = fs.readFileSync(__dirname + '/../../../new-schema.json', {encoding: 'utf8'})
-
-    help.createDoc(bearerToken, function(err, doc) {
-      if (err) return done(err)
-
-      doc._apiVersion.should.equal('vtest')
-
-      const testdoc = {field1: 'doc with v1'}
-
-      help.createDocWithSpecificVersion(bearerToken, 'v1', testdoc, function(
-        err,
-        doc
-      ) {
-        if (err) return done(err)
-
-        setTimeout(function() {
-          client
-            .get('/v1/testdb/test-schema?filter={"field1":"doc with v1"}')
-            .set('Authorization', 'Bearer ' + bearerToken)
-            .expect(200)
-            .expect('content-type', 'application/json')
-            .end(function(err, res) {
-              if (err) return done(err)
-
-              config.set('query.useVersionFilter', false)
-
-              res.body.results.should.exist
-              res.body.results.should.be.Array
-              res.body.results[0]._apiVersion.should.equal('v1')
-              done()
-            })
-        }, 300)
-      })
-    })
-  })
-
   it('should allow case insensitive query', function(done) {
     const doc = {field1: 'Test', field2: null}
 
@@ -494,7 +209,7 @@ describe('Collections API – GET', function() {
       query = encodeURIComponent(JSON.stringify(query))
 
       client
-        .get('/vtest/testdb/test-schema?cache=false&filter=' + query)
+        .get('/testdb/test-schema?cache=false&filter=' + query)
         .set('Authorization', 'Bearer ' + bearerToken)
         .expect(200)
         .expect('content-type', 'application/json')
@@ -524,7 +239,7 @@ describe('Collections API – GET', function() {
       query = encodeURIComponent(JSON.stringify(query))
 
       client
-        .get('/vtest/testdb/test-schema?cache=false&filter=' + query)
+        .get('/testdb/test-schema?cache=false&filter=' + query)
         .set('Authorization', 'Bearer ' + bearerToken)
         .expect(200)
         .expect('content-type', 'application/json')
@@ -561,7 +276,7 @@ describe('Collections API – GET', function() {
       query = encodeURIComponent(JSON.stringify(query))
 
       client
-        .get('/vtest/testdb/test-schema?cache=false&filter=' + query)
+        .get('/testdb/test-schema?cache=false&filter=' + query)
         .set('Authorization', 'Bearer ' + bearerToken)
         .expect(200)
         .expect('content-type', 'application/json')
@@ -593,7 +308,7 @@ describe('Collections API – GET', function() {
       const client = request(connectionString)
 
       client
-        .get('/vtest/testdb/test-schema/' + doc._id)
+        .get('/testdb/test-schema/' + doc._id)
         .set('Authorization', 'Bearer ' + bearerToken)
         .expect(200)
         .expect('content-type', 'application/json')
@@ -626,7 +341,7 @@ describe('Collections API – GET', function() {
       const query = encodeURIComponent(JSON.stringify(fields))
 
       client
-        .get('/vtest/testdb/test-schema?cache=false&fields=' + query)
+        .get('/testdb/test-schema?cache=false&fields=' + query)
         .set('Authorization', 'Bearer ' + bearerToken)
         .expect(200)
         .expect('content-type', 'application/json')
@@ -665,7 +380,7 @@ describe('Collections API – GET', function() {
       const query = encodeURIComponent(JSON.stringify(fields))
 
       client
-        .get('/vtest/testdb/test-schema?cache=false&fields=' + query)
+        .get('/testdb/test-schema?cache=false&fields=' + query)
         .set('Authorization', 'Bearer ' + bearerToken)
         .expect(200)
         .expect('content-type', 'application/json')
@@ -700,7 +415,7 @@ describe('Collections API – GET', function() {
         query = encodeURIComponent(JSON.stringify(query))
 
         client
-          .get('/vtest/testdb/test-schema?filter=' + query)
+          .get('/testdb/test-schema?filter=' + query)
           .set('Authorization', 'Bearer ' + bearerToken)
           .expect(200)
           .expect('content-type', 'application/json')
@@ -730,7 +445,7 @@ describe('Collections API – GET', function() {
 
         query = encodeURIComponent(JSON.stringify(query))
         client
-          .get('/vtest/testdb/test-schema?filter=' + query)
+          .get('/testdb/test-schema?filter=' + query)
           .set('Authorization', 'Bearer ' + bearerToken)
           .expect(200)
           .expect('content-type', 'application/json')
@@ -763,7 +478,7 @@ describe('Collections API – GET', function() {
       query = encodeURIComponent(JSON.stringify(query))
 
       client
-        .get('/vtest/testdb/test-schema?filter=' + query)
+        .get('/testdb/test-schema?filter=' + query)
         .set('Authorization', 'Bearer ' + bearerToken)
         .expect(200)
         .expect('content-type', 'application/json')
@@ -793,7 +508,7 @@ describe('Collections API – GET', function() {
         const docId = doc2._id
 
         client
-          .get('/vtest/testdb/test-schema/' + doc2._id)
+          .get('/testdb/test-schema/' + doc2._id)
           .set('Authorization', 'Bearer ' + bearerToken)
           .expect(200)
           .expect('content-type', 'application/json')
@@ -829,7 +544,7 @@ describe('Collections API – GET', function() {
 
             client
               .get(
-                '/vtest/testdb/test-schema/' +
+                '/testdb/test-schema/' +
                   doc2._id +
                   '?cache=false&filter=' +
                   query
@@ -867,7 +582,7 @@ describe('Collections API – GET', function() {
 
         query = encodeURIComponent(JSON.stringify(query))
         client
-          .get('/vtest/testdb/test-schema?filter=' + query)
+          .get('/testdb/test-schema?filter=' + query)
           .set('Authorization', 'Bearer ' + bearerToken)
           .expect(200)
           .expect('content-type', 'application/json')
@@ -895,7 +610,7 @@ describe('Collections API – GET', function() {
 
         query = encodeURIComponent(JSON.stringify(query))
         client
-          .get('/vtest/testdb/test-schema?filter=' + query)
+          .get('/testdb/test-schema?filter=' + query)
           .set('Authorization', 'Bearer ' + bearerToken)
           .expect(200)
           .expect('content-type', 'application/json')
@@ -920,7 +635,7 @@ describe('Collections API – GET', function() {
         const client = request(connectionString)
 
         client
-          .get('/vtest/testdb/test-schema?count=1&cache=false')
+          .get('/testdb/test-schema?count=1&cache=false')
           .set('Authorization', 'Bearer ' + bearerToken)
           .expect(200)
           .expect('content-type', 'application/json')
@@ -959,7 +674,7 @@ describe('Collections API – GET', function() {
       const client = request(connectionString)
 
       client
-        .get('/vtest/testdb/test-schema?count=1')
+        .get('/testdb/test-schema?count=1')
         .set('Authorization', 'Bearer ' + bearerToken)
         .expect(200)
         .expect('content-type', 'application/json')
@@ -1002,7 +717,7 @@ describe('Collections API – GET', function() {
       const docCount = 20
 
       client
-        .get('/vtest/testdb/test-schema?page=1&count=' + docCount)
+        .get('/testdb/test-schema?page=1&count=' + docCount)
         .set('Authorization', 'Bearer ' + bearerToken)
         .expect(200)
         .expect('content-type', 'application/json')
@@ -1022,7 +737,7 @@ describe('Collections API – GET', function() {
       const docCount = 20
 
       client
-        .get('/vtest/testdb/test-schema?page=1&count=' + docCount)
+        .get('/testdb/test-schema?page=1&count=' + docCount)
         .set('Authorization', 'Bearer ' + bearerToken)
         .expect(200)
         .expect('content-type', 'application/json')
@@ -1044,7 +759,7 @@ describe('Collections API – GET', function() {
       const docCount = 20
 
       client
-        .get('/vtest/testdb/test-schema?page=2&count=' + docCount)
+        .get('/testdb/test-schema?page=2&count=' + docCount)
         .set('Authorization', 'Bearer ' + bearerToken)
         .expect(200)
         .expect('content-type', 'application/json')
@@ -1064,7 +779,7 @@ describe('Collections API – GET', function() {
       const client = request(connectionString)
 
       client
-        .get('/vtest/testdb/test-schema?cache=false') // make sure not hitting cache
+        .get('/testdb/test-schema?cache=false') // make sure not hitting cache
         .set('Authorization', 'Bearer ' + bearerToken)
         .expect(200)
         .expect('content-type', 'application/json')
@@ -1082,7 +797,7 @@ describe('Collections API – GET', function() {
       const client = request(connectionString)
 
       client
-        .get('/vtest/testdb/test-schema?count=20&page=1')
+        .get('/testdb/test-schema?count=20&page=1')
         .set('Authorization', 'Bearer ' + bearerToken)
         .expect(200)
         .expect('content-type', 'application/json')
@@ -1096,7 +811,7 @@ describe('Collections API – GET', function() {
           const eleventhDoc = res.body.results[10]
 
           client
-            .get('/vtest/testdb/test-schema?count=10&page=2')
+            .get('/testdb/test-schema?count=10&page=2')
             .set('Authorization', 'Bearer ' + bearerToken)
             .expect(200)
             .expect('content-type', 'application/json')
@@ -1119,7 +834,7 @@ describe('Collections API – GET', function() {
       const client = request(connectionString)
 
       client
-        .get('/vtest/testdb/test-schema?sort=field1')
+        .get('/testdb/test-schema?sort=field1')
         .set('Authorization', 'Bearer ' + bearerToken)
         .expect(200)
         .expect('content-type', 'application/json')
@@ -1147,7 +862,7 @@ describe('Collections API – GET', function() {
       const client = request(connectionString)
 
       client
-        .get('/vtest/testdb/test-schema?sort=field1&sortOrder=desc')
+        .get('/testdb/test-schema?sort=field1&sortOrder=desc')
         .set('Authorization', 'Bearer ' + bearerToken)
         .expect(200)
         .expect('content-type', 'application/json')
@@ -1173,7 +888,7 @@ describe('Collections API – GET', function() {
       const client = request(connectionString)
 
       client
-        .get('/vtest/testdb/test-schema?sort=field1&sortOrder=asc')
+        .get('/testdb/test-schema?sort=field1&sortOrder=asc')
         .set('Authorization', 'Bearer ' + bearerToken)
         .expect(200)
         .expect('content-type', 'application/json')
@@ -1199,7 +914,7 @@ describe('Collections API – GET', function() {
       const client = request(connectionString)
 
       client
-        .get('/vtest/testdb/test-schema?skip=-1')
+        .get('/testdb/test-schema?skip=-1')
         .set('Authorization', 'Bearer ' + bearerToken)
         .expect(400)
         .expect('content-type', 'application/json')
@@ -1219,7 +934,7 @@ describe('Collections API – GET', function() {
       const client = request(connectionString)
 
       client
-        .get('/vtest/testdb/test-schema?skip=a')
+        .get('/testdb/test-schema?skip=a')
         .set('Authorization', 'Bearer ' + bearerToken)
         .expect(400)
         .expect('content-type', 'application/json')
@@ -1239,7 +954,7 @@ describe('Collections API – GET', function() {
       const client = request(connectionString)
 
       client
-        .get('/vtest/testdb/test-schema?page=-1')
+        .get('/testdb/test-schema?page=-1')
         .set('Authorization', 'Bearer ' + bearerToken)
         .expect(400)
         .expect('content-type', 'application/json')
@@ -1259,7 +974,7 @@ describe('Collections API – GET', function() {
       const client = request(connectionString)
 
       client
-        .get('/vtest/testdb/test-schema?page=-1&skip=-8')
+        .get('/testdb/test-schema?page=-1&skip=-8')
         .set('Authorization', 'Bearer ' + bearerToken)
         .expect(400)
         .expect('content-type', 'application/json')
@@ -1278,7 +993,7 @@ describe('Collections API – GET', function() {
       const callbackName = 'testCallback'
 
       client
-        .get('/vtest/testdb/test-schema?callback=' + callbackName)
+        .get('/testdb/test-schema?callback=' + callbackName)
         .set('Authorization', 'Bearer ' + bearerToken)
         .expect(200)
         .expect('content-type', 'text/javascript')
@@ -1300,7 +1015,7 @@ describe('Collections API – GET', function() {
           const client = request(connectionString)
 
           client
-            .get('/vtest/testdb/test-schema')
+            .get('/testdb/test-schema')
             .set('Accept-Encoding', 'gzip, deflate')
             .set('Authorization', 'Bearer ' + bearerToken)
             .expect(200)
@@ -1326,7 +1041,7 @@ describe('Collections API – GET', function() {
           const client = request(connectionString)
 
           client
-            .get('/vtest/testdb/test-schema')
+            .get('/testdb/test-schema')
             .set('Accept-Encoding', 'identity')
             .set('Authorization', 'Bearer ' + bearerToken)
             .expect(200)
@@ -1350,7 +1065,7 @@ describe('Collections API – GET', function() {
           const client = request(connectionString)
 
           client
-            .get('/vtest/testdb/test-schema')
+            .get('/testdb/test-schema')
             .set('Authorization', 'Bearer ' + bearerToken)
             .expect(200)
             .expect('content-type', 'application/json')
@@ -1360,7 +1075,7 @@ describe('Collections API – GET', function() {
               const etag = res.headers['etag']
 
               client
-                .get('/vtest/testdb/test-schema')
+                .get('/testdb/test-schema')
                 .set('Authorization', 'Bearer ' + bearerToken)
                 .set('If-None-Match', etag)
                 .expect(304, done)

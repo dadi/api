@@ -123,14 +123,14 @@ describe('Cache', function(done) {
 
           createSchemas().then(() => {
             client
-              .get('/vtest/testdb/test-schema')
+              .get('/testdb/test-schema')
               .set('Authorization', 'Bearer ' + bearerToken)
               .expect(200)
               .end(function(err, res1) {
                 if (err) return done(err)
 
                 client
-                  .post('/vtest/testdb/test-schema')
+                  .post('/testdb/test-schema')
                   .set('Authorization', 'Bearer ' + bearerToken)
                   .send({field1: 'foo!'})
                   .expect(200)
@@ -138,7 +138,7 @@ describe('Cache', function(done) {
                     if (err) return done(err)
 
                     client
-                      .get('/vtest/testdb/test-schema')
+                      .get('/testdb/test-schema')
                       .set('Authorization', 'Bearer ' + bearerToken)
                       .expect(200)
                       .end(function(err, res2) {
@@ -146,7 +146,7 @@ describe('Cache', function(done) {
 
                         setTimeout(() => {
                           client
-                            .get('/vtest/testdb/test-schema')
+                            .get('/testdb/test-schema')
                             .set('Authorization', 'Bearer ' + bearerToken)
                             .expect(200)
                             .end(function(err, res3) {
@@ -195,7 +195,7 @@ describe('Cache', function(done) {
 
           createSchemas().then(() => {
             client
-              .post('/vtest/testdb/test-schema')
+              .post('/testdb/test-schema')
               .set('Authorization', 'Bearer ' + bearerToken)
               .send({field1: 'foo!'})
               .expect(200)
@@ -203,7 +203,7 @@ describe('Cache', function(done) {
                 if (err) return done(err)
 
                 client
-                  .get('/vtest/testdb/test-schema')
+                  .get('/testdb/test-schema')
                   .set('Authorization', 'Bearer ' + bearerToken)
                   .expect(200)
                   .end(function(err, res1) {
@@ -212,7 +212,7 @@ describe('Cache', function(done) {
                     res1.body['results'].length.should.equal(1)
 
                     client
-                      .get('/vtest/testdb/test-schema?cache=false')
+                      .get('/testdb/test-schema?cache=false')
                       .set('Authorization', 'Bearer ' + bearerToken)
                       .expect(200)
                       .end(function(err, res2) {
@@ -260,7 +260,7 @@ describe('Cache', function(done) {
 
           createSchemas().then(() => {
             client
-              .get('/vtest/testdb/test-schema')
+              .get('/testdb/test-schema')
               .set('Authorization', 'Bearer ' + bearerToken)
               .expect(200)
               .end(function(err, res1) {
@@ -269,7 +269,7 @@ describe('Cache', function(done) {
                 res1.body['results'].length.should.equal(0)
 
                 client
-                  .post('/vtest/testdb/test-schema')
+                  .post('/testdb/test-schema')
                   .set('Authorization', 'Bearer ' + bearerToken)
                   .send({field1: 'foo!'})
                   .expect(200)
@@ -277,7 +277,7 @@ describe('Cache', function(done) {
                     if (err) return done(err)
 
                     client
-                      .get('/vtest/testdb/test-schema')
+                      .get('/testdb/test-schema')
                       .set('Authorization', 'Bearer ' + bearerToken)
                       .expect(200)
                       .end(function(err, res2) {
@@ -339,7 +339,7 @@ describe('Cache', function(done) {
       request(
         'http://' + config.get('server.host') + ':' + config.get('server.port')
       )
-        .get('/vtest/testdb/test-schema')
+        .get('/testdb/test-schema')
         .set('Authorization', 'Bearer ' + bearerToken)
         .expect(200)
         .end(function(err, res) {
@@ -378,13 +378,13 @@ describe('Cache', function(done) {
       )
 
       client
-        .get('/vtest/testdb/test-schema')
+        .get('/testdb/test-schema')
         .set('Authorization', 'Bearer ' + bearerToken)
         .expect(200)
         .end(function(err, res1) {
           if (err) return done(err)
           client
-            .post('/vtest/testdb/test-schema')
+            .post('/testdb/test-schema')
             .set('Authorization', 'Bearer ' + bearerToken)
             .send({field1: 'foo!'})
             .expect(200)
@@ -394,7 +394,7 @@ describe('Cache', function(done) {
               setTimeout(function() {
                 // ttl should have expired
                 client
-                  .get('/vtest/testdb/test-schema')
+                  .get('/testdb/test-schema')
                   .set('Authorization', 'Bearer ' + bearerToken)
                   .expect(200)
                   .end(function(err, res2) {
@@ -428,14 +428,14 @@ describe('Cache', function(done) {
 
           setTimeout(() => {
             client
-              .get('/vtest/testdb/test-schema')
+              .get('/testdb/test-schema')
               .set('Authorization', 'Bearer ' + bearerToken)
               .expect(200)
               .end(function(err, res1) {
                 if (err) return done(err)
 
                 client
-                  .post('/vtest/testdb/test-schema')
+                  .post('/testdb/test-schema')
                   .set('Authorization', 'Bearer ' + bearerToken)
                   .send({field1: 'foo!'})
                   .expect(200)
@@ -444,7 +444,7 @@ describe('Cache', function(done) {
 
                     setTimeout(function() {
                       client
-                        .get('/vtest/testdb/test-schema')
+                        .get('/testdb/test-schema')
                         .set('Authorization', 'Bearer ' + bearerToken)
                         .expect(200)
                         .end(function(err, res3) {
@@ -483,7 +483,7 @@ describe('Cache', function(done) {
           setTimeout(() => {
             // GET
             client
-              .get('/vtest/testdb/test-schema')
+              .get('/testdb/test-schema')
               .set('Authorization', 'Bearer ' + bearerToken)
               .expect(200)
               .end(function(err, getRes1) {
@@ -491,7 +491,7 @@ describe('Cache', function(done) {
 
                 // CREATE
                 client
-                  .post('/vtest/testdb/test-schema')
+                  .post('/testdb/test-schema')
                   .set('Authorization', 'Bearer ' + bearerToken)
                   .send({field1: 'foo!'})
                   .expect(200)
@@ -504,7 +504,7 @@ describe('Cache', function(done) {
                     setTimeout(() => {
                       // GET AGAIN - should cache new results
                       client
-                        .get('/vtest/testdb/test-schema')
+                        .get('/testdb/test-schema')
                         .set('Authorization', 'Bearer ' + bearerToken)
                         .expect(200)
                         .end(function(err, getRes2) {
@@ -513,7 +513,7 @@ describe('Cache', function(done) {
                           setTimeout(function() {
                             // UPDATE again
                             client
-                              .put('/vtest/testdb/test-schema/' + id)
+                              .put('/testdb/test-schema/' + id)
                               .set('Authorization', 'Bearer ' + bearerToken)
                               .send({field1: 'foo bar baz!'})
                               .expect(200)
@@ -523,7 +523,7 @@ describe('Cache', function(done) {
                                 // WAIT, then GET again
                                 setTimeout(function() {
                                   client
-                                    .get('/vtest/testdb/test-schema')
+                                    .get('/testdb/test-schema')
                                     .set(
                                       'Authorization',
                                       'Bearer ' + bearerToken
@@ -570,7 +570,7 @@ describe('Cache', function(done) {
           setTimeout(() => {
             // GET
             client
-              .get('/vtest/testdb/test-schema')
+              .get('/testdb/test-schema')
               .set('Authorization', 'Bearer ' + bearerToken)
               .expect(200)
               .end(function(err, getRes1) {
@@ -578,7 +578,7 @@ describe('Cache', function(done) {
 
                 // CREATE
                 client
-                  .post('/vtest/testdb/test-schema')
+                  .post('/testdb/test-schema')
                   .set('Authorization', 'Bearer ' + bearerToken)
                   .send({field1: 'foo!'})
                   .expect(200)
@@ -591,7 +591,7 @@ describe('Cache', function(done) {
                     setTimeout(() => {
                       // GET AGAIN - should cache new results
                       client
-                        .get('/vtest/testdb/test-schema')
+                        .get('/testdb/test-schema')
                         .set('Authorization', 'Bearer ' + bearerToken)
                         .expect(200)
                         .end(function(err, getRes2) {
@@ -600,7 +600,7 @@ describe('Cache', function(done) {
                           setTimeout(function() {
                             // DELETE
                             client
-                              .delete('/vtest/testdb/test-schema/' + id)
+                              .delete('/testdb/test-schema/' + id)
                               .set('Authorization', 'Bearer ' + bearerToken)
                               .expect(204)
                               .end(function(err, postRes2) {
@@ -609,7 +609,7 @@ describe('Cache', function(done) {
                                 // WAIT, then GET again
                                 setTimeout(function() {
                                   client
-                                    .get('/vtest/testdb/test-schema')
+                                    .get('/testdb/test-schema')
                                     .set(
                                       'Authorization',
                                       'Bearer ' + bearerToken
@@ -644,7 +644,7 @@ describe('Cache', function(done) {
       )
 
       client
-        .get('/vtest/testdb/test-schema?callback=myCallback')
+        .get('/testdb/test-schema?callback=myCallback')
         .set('Authorization', 'Bearer ' + bearerToken)
         .expect(200)
         .expect('content-type', 'text/javascript')
@@ -652,7 +652,7 @@ describe('Cache', function(done) {
           if (err) return done(err)
 
           client
-            .post('/vtest/testdb/test-schema')
+            .post('/testdb/test-schema')
             .set('Authorization', 'Bearer ' + bearerToken)
             .send({field1: 'foo!'})
             .expect(200)
@@ -661,7 +661,7 @@ describe('Cache', function(done) {
 
               setTimeout(() => {
                 client
-                  .get('/vtest/testdb/test-schema?callback=myCallback')
+                  .get('/testdb/test-schema?callback=myCallback')
                   .set('Authorization', 'Bearer ' + bearerToken)
                   .expect(200)
                   .expect('content-type', 'text/javascript')
@@ -701,7 +701,7 @@ describe('Cache', function(done) {
       const spy = sinon.spy(c.cache.cacheHandler.redisClient, 'exists')
 
       // generate expected cacheKey
-      const requestUrl = '/vtest/testdb/test-schema'
+      const requestUrl = '/testdb/test-schema'
       const query = url.parse(requestUrl, true).query
       const modelDir = crypto
         .createHash('sha1')
@@ -760,7 +760,7 @@ describe('Cache', function(done) {
       delete require.cache[__dirname + '/../../dadi/lib/']
 
       // generate expected cacheKey
-      const requestUrl = '/vtest/testdb/test-schema'
+      const requestUrl = '/testdb/test-schema'
       const query = url.parse(requestUrl, true).query
       const modelDir = crypto
         .createHash('sha1')
@@ -874,7 +874,7 @@ describe('Cache', function(done) {
                 )
 
                 client
-                  .post('/vtest/testdb/test-schema')
+                  .post('/testdb/test-schema')
                   .set('Authorization', 'Bearer ' + bearerToken)
                   .send({field1: 'foo!'})
                   .expect(200)
@@ -882,7 +882,7 @@ describe('Cache', function(done) {
                     if (err) return done(err)
 
                     client
-                      .get('/vtest/testdb/test-schema')
+                      .get('/testdb/test-schema')
                       .set('Authorization', 'Bearer ' + bearerToken)
                       .expect(200)
                       .end(function(err, res1) {
@@ -896,7 +896,7 @@ describe('Cache', function(done) {
                               setTimeout(function() {
                                 // ttl should have expired
                                 client
-                                  .get('/vtest/testdb/test-schema')
+                                  .get('/testdb/test-schema')
                                   .set('Authorization', 'Bearer ' + bearerToken)
                                   .expect(200)
                                   .end(function(err, res2) {
@@ -987,7 +987,7 @@ describe('Cache', function(done) {
                     )
 
                     client
-                      .get('/vtest/testdb/test-schema')
+                      .get('/testdb/test-schema')
                       .set('Authorization', 'Bearer ' + bearerToken)
                       .expect(200)
                       .end(function(err, res1) {
@@ -1001,7 +1001,7 @@ describe('Cache', function(done) {
                               cacheKeys = keys
 
                               client
-                                .post('/vtest/testdb/test-schema')
+                                .post('/testdb/test-schema')
                                 .set('Authorization', 'Bearer ' + bearerToken)
                                 .send({field1: 'foo!'})
                                 .expect(200)
@@ -1010,7 +1010,7 @@ describe('Cache', function(done) {
 
                                   setTimeout(function() {
                                     client
-                                      .get('/vtest/testdb/test-schema')
+                                      .get('/testdb/test-schema')
                                       .set(
                                         'Authorization',
                                         'Bearer ' + bearerToken
@@ -1107,7 +1107,7 @@ describe('Cache', function(done) {
 
                     // GET
                     client
-                      .get('/vtest/testdb/test-schema')
+                      .get('/testdb/test-schema')
                       .set('Authorization', 'Bearer ' + bearerToken)
                       .expect(200)
                       .end(function(err, getRes1) {
@@ -1115,7 +1115,7 @@ describe('Cache', function(done) {
 
                         // CREATE
                         client
-                          .post('/vtest/testdb/test-schema')
+                          .post('/testdb/test-schema')
                           .set('Authorization', 'Bearer ' + bearerToken)
                           .send({field1: 'foo!'})
                           .expect(200)
@@ -1127,7 +1127,7 @@ describe('Cache', function(done) {
 
                             // GET AGAIN - should cache new results
                             client
-                              .get('/vtest/testdb/test-schema')
+                              .get('/testdb/test-schema')
                               .set('Authorization', 'Bearer ' + bearerToken)
                               .expect(200)
                               .end(function(err, getRes2) {
@@ -1142,7 +1142,7 @@ describe('Cache', function(done) {
 
                                       // UPDATE again
                                       client
-                                        .put('/vtest/testdb/test-schema/' + id)
+                                        .put('/testdb/test-schema/' + id)
                                         .set(
                                           'Authorization',
                                           'Bearer ' + bearerToken
@@ -1153,7 +1153,7 @@ describe('Cache', function(done) {
                                           // WAIT, then GET again
                                           setTimeout(function() {
                                             client
-                                              .get('/vtest/testdb/test-schema')
+                                              .get('/testdb/test-schema')
                                               .set(
                                                 'Authorization',
                                                 'Bearer ' + bearerToken
@@ -1253,7 +1253,7 @@ describe('Cache', function(done) {
 
                     // GET
                     client
-                      .get('/vtest/testdb/test-schema')
+                      .get('/testdb/test-schema')
                       .set('Authorization', 'Bearer ' + bearerToken)
                       .expect(200)
                       .end(function(err, getRes1) {
@@ -1261,7 +1261,7 @@ describe('Cache', function(done) {
 
                         // CREATE
                         client
-                          .post('/vtest/testdb/test-schema')
+                          .post('/testdb/test-schema')
                           .set('Authorization', 'Bearer ' + bearerToken)
                           .send({field1: 'foo!'})
                           .expect(200)
@@ -1273,7 +1273,7 @@ describe('Cache', function(done) {
 
                             // GET AGAIN - should cache new results
                             client
-                              .get('/vtest/testdb/test-schema')
+                              .get('/testdb/test-schema')
                               .set('Authorization', 'Bearer ' + bearerToken)
                               .expect(200)
                               .end(function(err, getRes2) {
@@ -1288,7 +1288,7 @@ describe('Cache', function(done) {
                                         // DELETE
                                         client
                                           .delete(
-                                            '/vtest/testdb/test-schema/' + id
+                                            '/testdb/test-schema/' + id
                                           )
                                           .set(
                                             'Authorization',
@@ -1300,7 +1300,7 @@ describe('Cache', function(done) {
                                             setTimeout(function() {
                                               client
                                                 .get(
-                                                  '/vtest/testdb/test-schema'
+                                                  '/testdb/test-schema'
                                                 )
                                                 .set(
                                                   'Authorization',
@@ -1389,7 +1389,7 @@ describe('Cache', function(done) {
 
             createSchemas().then(() => {
               client
-                .get('/vtest/testdb/test-schema?callback=myCallback')
+                .get('/testdb/test-schema?callback=myCallback')
                 .set('Authorization', 'Bearer ' + bearerToken)
                 .expect(200)
                 .expect('content-type', 'text/javascript')
@@ -1403,7 +1403,7 @@ describe('Cache', function(done) {
 
                       setTimeout(function() {
                         client
-                          .post('/vtest/testdb/test-schema')
+                          .post('/testdb/test-schema')
                           .set('Authorization', 'Bearer ' + bearerToken)
                           .send({field1: 'foo!'})
                           .expect(200)
@@ -1412,7 +1412,7 @@ describe('Cache', function(done) {
 
                             client
                               .get(
-                                '/vtest/testdb/test-schema?callback=myCallback'
+                                '/testdb/test-schema?callback=myCallback'
                               )
                               .set('Authorization', 'Bearer ' + bearerToken)
                               .expect(200)

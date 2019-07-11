@@ -147,7 +147,7 @@ describe('Cache', function(done) {
       server.object.app = api()
 
       const req = {
-        url: '/1.0/library/authors'
+        url: '/library/authors'
       }
 
       cache(server.object)
@@ -167,7 +167,7 @@ describe('Cache', function(done) {
           isCacheable: () => true,
           name: 'books'
         },
-        url: '/1.0/library/books'
+        url: '/library/books'
       }
 
       cache.reset()
@@ -188,7 +188,7 @@ describe('Cache', function(done) {
           isCacheable: () => false,
           name: 'books'
         },
-        url: '/1.0/library/books'
+        url: '/library/books'
       }
 
       cache(server.object)
@@ -208,7 +208,7 @@ describe('Cache', function(done) {
           isCacheable: () => true,
           name: 'books'
         },
-        url: '/1.0/library/books?cache=true'
+        url: '/library/books?cache=true'
       }
 
       cache(server.object)

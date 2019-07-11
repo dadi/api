@@ -259,7 +259,7 @@ describe('DateTime Field', function() {
     const client = request(connectionString)
 
     client
-      .post('/v1/library/person')
+      .post('/library/person')
       .set('Authorization', 'Bearer ' + bearerToken)
       .send(person)
       .expect(200)
@@ -270,7 +270,7 @@ describe('DateTime Field', function() {
         const book = {title: 'For Whom The Bell Tolls', author: personId}
 
         client
-          .post('/v1/library/book')
+          .post('/library/book')
           .set('Authorization', 'Bearer ' + bearerToken)
           .send(book)
           .expect(200)
@@ -281,7 +281,7 @@ describe('DateTime Field', function() {
             const event = {type: 'borrow', book: bookId, datetime: null}
 
             client
-              .post('/v1/library/event')
+              .post('/library/event')
               .set('Authorization', 'Bearer ' + bearerToken)
               .send(event)
               .expect(200)
@@ -289,7 +289,7 @@ describe('DateTime Field', function() {
                 if (err) return done(err)
 
                 client
-                  .get('/v1/library/event?compose=true')
+                  .get('/library/event?compose=true')
                   .set('Authorization', 'Bearer ' + bearerToken)
                   .expect(200)
                   .end((err, res) => {
@@ -311,7 +311,7 @@ describe('DateTime Field', function() {
     const client = request(connectionString)
 
     client
-      .post('/v1/library/person')
+      .post('/library/person')
       .set('Authorization', 'Bearer ' + bearerToken)
       .send(person)
       .expect(200)
@@ -322,7 +322,7 @@ describe('DateTime Field', function() {
         const book = {title: 'For Whom The Bell Tolls', author: personId}
 
         client
-          .post('/v1/library/book')
+          .post('/library/book')
           .set('Authorization', 'Bearer ' + bearerToken)
           .send(book)
           .expect(200)
@@ -334,7 +334,7 @@ describe('DateTime Field', function() {
             const event = {type: 'borrow', book: bookId, datetime: date}
 
             client
-              .post('/v1/library/event')
+              .post('/library/event')
               .set('Authorization', 'Bearer ' + bearerToken)
               .send(event)
               .expect(200)
@@ -342,7 +342,7 @@ describe('DateTime Field', function() {
                 if (err) return done(err)
 
                 client
-                  .get('/v1/library/event?compose=true')
+                  .get('/library/event?compose=true')
                   .set('Authorization', 'Bearer ' + bearerToken)
                   .expect(200)
                   .end((err, res) => {
@@ -366,7 +366,7 @@ describe('DateTime Field', function() {
     const client = request(connectionString)
 
     client
-      .post('/v1/library/person')
+      .post('/library/person')
       .set('Authorization', 'Bearer ' + bearerToken)
       .send(person)
       .expect(200)
@@ -378,7 +378,7 @@ describe('DateTime Field', function() {
         const book = {title: 'For Whom The Bell Tolls', author: personId}
 
         client
-          .post('/v1/library/book')
+          .post('/library/book')
           .set('Authorization', 'Bearer ' + bearerToken)
           .send(book)
           .expect(200)
@@ -391,7 +391,7 @@ describe('DateTime Field', function() {
             const event = {type: 'borrow', book: bookId, datetime: date}
 
             client
-              .post('/v1/library/event_iso_date')
+              .post('/library/event_iso_date')
               .set('Authorization', 'Bearer ' + bearerToken)
               .send(event)
               .expect(200)
@@ -399,7 +399,7 @@ describe('DateTime Field', function() {
                 if (err) return done(err)
 
                 client
-                  .get('/v1/library/event_iso_date?compose=true')
+                  .get('/library/event_iso_date?compose=true')
                   .set('Authorization', 'Bearer ' + bearerToken)
                   .expect(200)
                   .end((err, res) => {
@@ -425,7 +425,7 @@ describe('DateTime Field', function() {
     const client = request(connectionString)
 
     client
-      .post('/v1/library/person')
+      .post('/library/person')
       .set('Authorization', 'Bearer ' + bearerToken)
       .send(person)
       .expect(200)
@@ -435,7 +435,7 @@ describe('DateTime Field', function() {
         const book = {title: 'For Whom The Bell Tolls', author: personId}
 
         client
-          .post('/v1/library/book')
+          .post('/library/book')
           .set('Authorization', 'Bearer ' + bearerToken)
           .send(book)
           .expect(200)
@@ -446,7 +446,7 @@ describe('DateTime Field', function() {
             const event = {type: 'borrow', book: bookId, datetime: date}
 
             client
-              .post('/v1/library/event_format_date')
+              .post('/library/event_format_date')
               .set('Authorization', 'Bearer ' + bearerToken)
               .send(event)
               .expect(200)
@@ -454,7 +454,7 @@ describe('DateTime Field', function() {
                 if (err) return done(err)
 
                 client
-                  .get('/v1/library/event_format_date?compose=true')
+                  .get('/library/event_format_date?compose=true')
                   .set('Authorization', 'Bearer ' + bearerToken)
                   .expect(200)
                   .end((err, res) => {
@@ -477,7 +477,7 @@ describe('DateTime Field', function() {
     const client = request(connectionString)
 
     client
-      .post('/v1/library/person')
+      .post('/library/person')
       .set('Authorization', 'Bearer ' + bearerToken)
       .send(person)
       .expect(200)
@@ -489,7 +489,7 @@ describe('DateTime Field', function() {
         const book = {title: 'For Whom The Bell Tolls', author: personId}
 
         client
-          .post('/v1/library/book')
+          .post('/library/book')
           .set('Authorization', 'Bearer ' + bearerToken)
           .send(book)
           .expect(200)
@@ -502,7 +502,7 @@ describe('DateTime Field', function() {
             const event = {type: 'borrow', book: bookId, datetime: date}
 
             client
-              .post('/v1/library/event_unix_date')
+              .post('/library/event_unix_date')
               .set('Authorization', 'Bearer ' + bearerToken)
               .send(event)
               .expect(200)
@@ -510,7 +510,7 @@ describe('DateTime Field', function() {
                 if (err) return done(err)
 
                 client
-                  .get('/v1/library/event_unix_date?compose=true')
+                  .get('/library/event_unix_date?compose=true')
                   .set('Authorization', 'Bearer ' + bearerToken)
                   .expect(200)
                   .end((err, res) => {
@@ -534,7 +534,7 @@ describe('DateTime Field', function() {
     const client = request(connectionString)
 
     client
-      .post('/v1/library/person')
+      .post('/library/person')
       .set('Authorization', 'Bearer ' + bearerToken)
       .send(person)
       .expect(200)
@@ -546,7 +546,7 @@ describe('DateTime Field', function() {
         const book = {title: 'For Whom The Bell Tolls', author: personId}
 
         client
-          .post('/v1/library/book')
+          .post('/library/book')
           .set('Authorization', 'Bearer ' + bearerToken)
           .send(book)
           .expect(200)
@@ -559,7 +559,7 @@ describe('DateTime Field', function() {
             const event = {type: 'borrow', book: bookId, datetime: date}
 
             client
-              .post('/v1/library/event_unix_date')
+              .post('/library/event_unix_date')
               .set('Authorization', 'Bearer ' + bearerToken)
               .send(event)
               .expect(200)
@@ -567,7 +567,7 @@ describe('DateTime Field', function() {
                 if (err) return done(err)
 
                 client
-                  .get('/v1/library/event_unix_date?compose=true')
+                  .get('/library/event_unix_date?compose=true')
                   .set('Authorization', 'Bearer ' + bearerToken)
                   .expect(200)
                   .end((err, res) => {
@@ -606,7 +606,7 @@ describe('DateTime Field', function() {
     const client = request(connectionString)
 
     client
-      .post('/v1/library/event_iso_date')
+      .post('/library/event_iso_date')
       .set('Authorization', 'Bearer ' + bearerToken)
       .send(documents)
       .expect(200)
@@ -614,7 +614,7 @@ describe('DateTime Field', function() {
         if (err) return done(err)
 
         client
-          .get('/v1/library/event_iso_date?filter={"datetime":{"$gte":"$now"}}')
+          .get('/library/event_iso_date?filter={"datetime":{"$gte":"$now"}}')
           .set('Authorization', 'Bearer ' + bearerToken)
           .expect(200)
           .end((err, res) => {
@@ -649,7 +649,7 @@ describe('DateTime Field', function() {
     const client = request(connectionString)
 
     client
-      .post('/v1/library/event')
+      .post('/library/event')
       .set('Authorization', 'Bearer ' + bearerToken)
       .send(documents)
       .expect(200)
@@ -657,7 +657,7 @@ describe('DateTime Field', function() {
         if (err) return done(err)
 
         client
-          .get(`/v1/library/event?filter={"datetime":{"$gte":${baseDate}}}`)
+          .get(`/library/event?filter={"datetime":{"$gte":${baseDate}}}`)
           .set('Authorization', 'Bearer ' + bearerToken)
           .expect(200)
           .end((err, res) => {
@@ -693,7 +693,7 @@ describe('DateTime Field', function() {
     const client = request(connectionString)
 
     client
-      .post('/v1/library/event')
+      .post('/library/event')
       .set('Authorization', 'Bearer ' + bearerToken)
       .send(documents)
       .expect(200)
@@ -702,7 +702,7 @@ describe('DateTime Field', function() {
 
         client
           .get(
-            `/v1/library/event?filter={"datetime":{"$lt":"1988-08-31T00:00:00.000Z"}}`
+            `/library/event?filter={"datetime":{"$lt":"1988-08-31T00:00:00.000Z"}}`
           )
           .set('Authorization', 'Bearer ' + bearerToken)
           .expect(200)
@@ -714,7 +714,7 @@ describe('DateTime Field', function() {
 
             client
               .get(
-                `/v1/library/event?filter={"datetime":{"$gt":"1988-07-30T23:00:00.000Z"}}`
+                `/library/event?filter={"datetime":{"$gt":"1988-07-30T23:00:00.000Z"}}`
               )
               .set('Authorization', 'Bearer ' + bearerToken)
               .expect(200)
@@ -728,7 +728,7 @@ describe('DateTime Field', function() {
 
                 client
                   .get(
-                    `/v1/library/event?filter={"datetime":{"$gt":"1988-08-30T23:30:00.000Z","$lt":"1988-08-31T00:30:00.000Z"}}`
+                    `/library/event?filter={"datetime":{"$gt":"1988-08-30T23:30:00.000Z","$lt":"1988-08-31T00:30:00.000Z"}}`
                   )
                   .set('Authorization', 'Bearer ' + bearerToken)
                   .expect(200)
@@ -753,7 +753,7 @@ describe('DateTime Field', function() {
     const event = {type: 'borrow', datetime: {}}
 
     client
-      .post('/v1/library/event')
+      .post('/library/event')
       .set('Authorization', 'Bearer ' + bearerToken)
       .send(event)
       .end((err, res) => {

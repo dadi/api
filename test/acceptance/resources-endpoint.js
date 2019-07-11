@@ -1,28 +1,110 @@
 const app = require('./../../dadi/lib/')
 const config = require('./../../config')
-const fs = require('fs')
 const help = require('./help')
-const path = require('path')
 const request = require('supertest')
-const should = require('should')
-const sinon = require('sinon')
 
 const client = request(
   `http://${config.get('server.host')}:${config.get('server.port')}`
 )
 
-describe('Resources endpoint', function() {
-  let bearerToken
+const schemas = [
+  {
+    fields: {
+      title: {
+        type: 'String',
+        required: true
+      },
+      author: {
+        type: 'Reference',
+        settings: {
+          collection: 'person',
+          fields: ['name', 'spouse']
+        }
+      },
+      booksInSeries: {
+        type: 'Reference',
+        settings: {
+          collection: 'book',
+          multiple: true
+        }
+      }
+    },
+    name: 'book',
+    property: 'library',
+    settings: {
+      cache: false,
+      authenticate: true,
+      count: 40
+    },
+    version: '1.0'
+  },
 
+  {
+    fields: {
+      name: {
+        type: 'String',
+        required: true
+      },
+      occupation: {
+        type: 'String',
+        required: false
+      },
+      nationality: {
+        type: 'String',
+        required: false
+      },
+      education: {
+        type: 'String',
+        required: false
+      },
+      spouse: {
+        type: 'Reference'
+      }
+    },
+    name: 'person',
+    property: 'library',
+    settings: {
+      displayName: 'This is a human-friendly name',
+      cache: false,
+      authenticate: true,
+      count: 40
+    },
+    version: '1.0'
+  },
+
+  {
+    fields: {
+      name: {
+        type: 'String',
+        required: true
+      }
+    },
+    name: 'event',
+    property: 'library',
+    settings: {
+      displayName: 'This is a human-friendly name',
+      cache: false,
+      authenticate: true,
+      count: 40
+    },
+    version: '1.0'
+  }
+]
+
+describe('Resources endpoint', function() {
   before(done => {
     help.removeACLData(() => {
-      app.start(done)
+      help.createSchemas(schemas).then(() => {
+        app.start(done)
+      })
     })
   })
 
   after(done => {
     help.removeACLData(() => {
-      app.stop(done)
+      help.dropSchemas().then(() => {
+        app.stop(done)
+      })
     })
   })
 
@@ -33,7 +115,7 @@ describe('Resources endpoint', function() {
       .end((err, res) => {
         res.statusCode.should.eql(401)
 
-        done()
+        done(err)
       })
   })
 
@@ -48,27 +130,37 @@ describe('Resources endpoint', function() {
           .set('content-type', 'application/json')
           .set('Authorization', `Bearer ${bearerToken}`)
           .end((err, res) => {
+            // Checking custom endpoints.
             Object.keys(app.components).forEach(key => {
               const component = app.components[key]
-              let aclKey
 
-              switch (component._type) {
-                case app.COMPONENT_TYPE.COLLECTION:
-                case app.COMPONENT_TYPE.MEDIA_COLLECTION:
-                  aclKey = component.model.getAclKey()
+              if (component._type === app.COMPONENT_TYPE.CUSTOM_ENDPOINT) {
+                const match = res.body.results.some(result => {
+                  return result.name === component.aclKey
+                })
 
-                  break
-
-                case app.COMPONENT_TYPE.CUSTOM_ENDPOINT:
-                  aclKey = component.aclKey
-
-                  break
+                match.should.eql(true)
               }
+            })
 
-              if (!aclKey) return
+            // Checking media buckets.
+            config
+              .get('media.buckets')
+              .concat(config.get('media.defaultBucket'))
+              .forEach(bucketName => {
+                const match = res.body.results.some(result => {
+                  return result.name === `media:${bucketName}`
+                })
 
+                match.should.eql(true)
+              })
+
+            // Checking collections.
+            schemas.forEach(schema => {
               const match = res.body.results.some(result => {
-                return result.name === aclKey
+                return (
+                  result.name === `collection:${schema.property}_${schema.name}`
+                )
               })
 
               match.should.eql(true)
@@ -79,17 +171,17 @@ describe('Resources endpoint', function() {
       })
   })
 
-  it('should only list collection, media and custom endpoint resources for which the client has any type of access to (no resources)', done => {
+  it('should only list resources for which the client has any type of access to (no resources)', done => {
     const testClient = {
       clientId: 'apiClient',
       secret: 'someSecret',
       resources: {
-        'collection:testdb_test-schema': {
+        'collection:library_book': {
           create: false,
           read: false,
           update: false
         },
-        'collection:testdb_test-required-schema': {
+        'collection:library_event': {
           delete: false,
           readOwn: false
         }
@@ -121,15 +213,15 @@ describe('Resources endpoint', function() {
     })
   })
 
-  it('should only list collection, media and custom endpoint resources for which the client has any type of access to (create access set to `true`)', done => {
+  it('should only list resources for which the client has any type of access to (create access set to `true`)', done => {
     const testClient = {
       clientId: 'apiClient',
       secret: 'someSecret',
       resources: {
-        'collection:testdb_test-schema': {
+        'collection:library_book': {
           create: true
         },
-        'collection:testdb_test-required-schema': {
+        'collection:library_person': {
           delete: false
         }
       }
@@ -153,9 +245,7 @@ describe('Resources endpoint', function() {
             .expect(200)
             .end((err, res) => {
               res.body.results.length.should.eql(1)
-              res.body.results[0].name.should.eql(
-                'collection:testdb_test-schema'
-              )
+              res.body.results[0].name.should.eql('collection:library_book')
 
               done(err)
             })
@@ -163,19 +253,19 @@ describe('Resources endpoint', function() {
     })
   })
 
-  it('should only list collection, media and custom endpoint resources for which the client has any type of access to (create access with `fields`)', done => {
+  it('should only list resources for which the client has any type of access to (create access with `fields`)', done => {
     const testClient = {
       clientId: 'apiClient',
       secret: 'someSecret',
       resources: {
-        'collection:testdb_test-schema': {
+        'collection:library_book': {
           create: {
             fields: {
               field1: 1
             }
           }
         },
-        'collection:testdb_test-required-schema': {
+        'collection:library_person': {
           delete: false
         }
       }
@@ -199,9 +289,7 @@ describe('Resources endpoint', function() {
             .expect(200)
             .end((err, res) => {
               res.body.results.length.should.eql(1)
-              res.body.results[0].name.should.eql(
-                'collection:testdb_test-schema'
-              )
+              res.body.results[0].name.should.eql('collection:library_book')
 
               done(err)
             })
@@ -209,19 +297,19 @@ describe('Resources endpoint', function() {
     })
   })
 
-  it('should only list collection, media and custom endpoint resources for which the client has any type of access to (create access with `filter`)', done => {
+  it('should only list resources for which the client has any type of access to (create access with `filter`)', done => {
     const testClient = {
       clientId: 'apiClient',
       secret: 'someSecret',
       resources: {
-        'collection:testdb_test-schema': {
+        'collection:library_book': {
           create: {
             filter: {
               field1: 'something'
             }
           }
         },
-        'collection:testdb_test-required-schema': {
+        'collection:library_person': {
           delete: false
         }
       }
@@ -245,9 +333,7 @@ describe('Resources endpoint', function() {
             .expect(200)
             .end((err, res) => {
               res.body.results.length.should.eql(1)
-              res.body.results[0].name.should.eql(
-                'collection:testdb_test-schema'
-              )
+              res.body.results[0].name.should.eql('collection:library_book')
 
               done(err)
             })
@@ -255,15 +341,15 @@ describe('Resources endpoint', function() {
     })
   })
 
-  it('should only list collection, media and custom endpoint resources for which the client has any type of access to (delete access set to `true`)', done => {
+  it('should only list resources for which the client has any type of access to (delete access set to `true`)', done => {
     const testClient = {
       clientId: 'apiClient',
       secret: 'someSecret',
       resources: {
-        'collection:testdb_test-schema': {
+        'collection:library_book': {
           delete: true
         },
-        'collection:testdb_test-required-schema': {
+        'collection:library_person': {
           delete: false
         }
       }
@@ -287,9 +373,7 @@ describe('Resources endpoint', function() {
             .expect(200)
             .end((err, res) => {
               res.body.results.length.should.eql(1)
-              res.body.results[0].name.should.eql(
-                'collection:testdb_test-schema'
-              )
+              res.body.results[0].name.should.eql('collection:library_book')
 
               done(err)
             })
@@ -297,19 +381,19 @@ describe('Resources endpoint', function() {
     })
   })
 
-  it('should only list collection, media and custom endpoint resources for which the client has any type of access to (delete access with `filter`)', done => {
+  it('should only list resources for which the client has any type of access to (delete access with `filter`)', done => {
     const testClient = {
       clientId: 'apiClient',
       secret: 'someSecret',
       resources: {
-        'collection:testdb_test-schema': {
+        'collection:library_book': {
           delete: {
             filter: {
               field1: 'something'
             }
           }
         },
-        'collection:testdb_test-required-schema': {
+        'collection:library_person': {
           delete: false
         }
       }
@@ -333,9 +417,7 @@ describe('Resources endpoint', function() {
             .expect(200)
             .end((err, res) => {
               res.body.results.length.should.eql(1)
-              res.body.results[0].name.should.eql(
-                'collection:testdb_test-schema'
-              )
+              res.body.results[0].name.should.eql('collection:library_book')
 
               done(err)
             })
@@ -343,15 +425,15 @@ describe('Resources endpoint', function() {
     })
   })
 
-  it('should only list collection, media and custom endpoint resources for which the client has any type of access to (read access set to `true`)', done => {
+  it('should only list resources for which the client has any type of access to (read access set to `true`)', done => {
     const testClient = {
       clientId: 'apiClient',
       secret: 'someSecret',
       resources: {
-        'collection:testdb_test-schema': {
+        'collection:library_book': {
           read: true
         },
-        'collection:testdb_test-required-schema': {
+        'collection:library_person': {
           delete: false
         }
       }
@@ -375,9 +457,7 @@ describe('Resources endpoint', function() {
             .expect(200)
             .end((err, res) => {
               res.body.results.length.should.eql(1)
-              res.body.results[0].name.should.eql(
-                'collection:testdb_test-schema'
-              )
+              res.body.results[0].name.should.eql('collection:library_book')
 
               done(err)
             })
@@ -385,19 +465,19 @@ describe('Resources endpoint', function() {
     })
   })
 
-  it('should only list collection, media and custom endpoint resources for which the client has any type of access to (read access with `fields`)', done => {
+  it('should only list resources for which the client has any type of access to (read access with `fields`)', done => {
     const testClient = {
       clientId: 'apiClient',
       secret: 'someSecret',
       resources: {
-        'collection:testdb_test-schema': {
+        'collection:library_book': {
           read: {
             fields: {
               field1: 1
             }
           }
         },
-        'collection:testdb_test-required-schema': {
+        'collection:library_person': {
           delete: false
         }
       }
@@ -421,9 +501,7 @@ describe('Resources endpoint', function() {
             .expect(200)
             .end((err, res) => {
               res.body.results.length.should.eql(1)
-              res.body.results[0].name.should.eql(
-                'collection:testdb_test-schema'
-              )
+              res.body.results[0].name.should.eql('collection:library_book')
 
               done(err)
             })
@@ -431,19 +509,19 @@ describe('Resources endpoint', function() {
     })
   })
 
-  it('should only list collection, media and custom endpoint resources for which the client has any type of access to (read access with `filter`)', done => {
+  it('should only list resources for which the client has any type of access to (read access with `filter`)', done => {
     const testClient = {
       clientId: 'apiClient',
       secret: 'someSecret',
       resources: {
-        'collection:testdb_test-schema': {
+        'collection:library_book': {
           read: {
             filter: {
               field1: 'something'
             }
           }
         },
-        'collection:testdb_test-required-schema': {
+        'collection:library_person': {
           delete: false
         }
       }
@@ -467,9 +545,7 @@ describe('Resources endpoint', function() {
             .expect(200)
             .end((err, res) => {
               res.body.results.length.should.eql(1)
-              res.body.results[0].name.should.eql(
-                'collection:testdb_test-schema'
-              )
+              res.body.results[0].name.should.eql('collection:library_book')
 
               done(err)
             })
@@ -477,15 +553,15 @@ describe('Resources endpoint', function() {
     })
   })
 
-  it('should only list collection, media and custom endpoint resources for which the client has any type of access to (update access set to `true`)', done => {
+  it('should only list resources for which the client has any type of access to (update access set to `true`)', done => {
     const testClient = {
       clientId: 'apiClient',
       secret: 'someSecret',
       resources: {
-        'collection:testdb_test-schema': {
+        'collection:library_book': {
           update: true
         },
-        'collection:testdb_test-required-schema': {
+        'collection:library_person': {
           delete: false
         }
       }
@@ -509,9 +585,7 @@ describe('Resources endpoint', function() {
             .expect(200)
             .end((err, res) => {
               res.body.results.length.should.eql(1)
-              res.body.results[0].name.should.eql(
-                'collection:testdb_test-schema'
-              )
+              res.body.results[0].name.should.eql('collection:library_book')
 
               done(err)
             })
@@ -519,19 +593,19 @@ describe('Resources endpoint', function() {
     })
   })
 
-  it('should only list collection, media and custom endpoint resources for which the client has any type of access to (update access with `fields`)', done => {
+  it('should only list resources for which the client has any type of access to (update access with `fields`)', done => {
     const testClient = {
       clientId: 'apiClient',
       secret: 'someSecret',
       resources: {
-        'collection:testdb_test-schema': {
+        'collection:library_book': {
           update: {
             fields: {
               field1: 1
             }
           }
         },
-        'collection:testdb_test-required-schema': {
+        'collection:library_person': {
           delete: false
         }
       }
@@ -555,9 +629,7 @@ describe('Resources endpoint', function() {
             .expect(200)
             .end((err, res) => {
               res.body.results.length.should.eql(1)
-              res.body.results[0].name.should.eql(
-                'collection:testdb_test-schema'
-              )
+              res.body.results[0].name.should.eql('collection:library_book')
 
               done(err)
             })
@@ -565,19 +637,19 @@ describe('Resources endpoint', function() {
     })
   })
 
-  it('should only list collection, media and custom endpoint resources for which the client has any type of access to (update access with `filter`)', done => {
+  it('should only list resources for which the client has any type of access to (update access with `filter`)', done => {
     const testClient = {
       clientId: 'apiClient',
       secret: 'someSecret',
       resources: {
-        'collection:testdb_test-schema': {
+        'collection:library_book': {
           update: {
             filter: {
               field1: 'something'
             }
           }
         },
-        'collection:testdb_test-required-schema': {
+        'collection:library_person': {
           delete: false
         }
       }
@@ -601,9 +673,7 @@ describe('Resources endpoint', function() {
             .expect(200)
             .end((err, res) => {
               res.body.results.length.should.eql(1)
-              res.body.results[0].name.should.eql(
-                'collection:testdb_test-schema'
-              )
+              res.body.results[0].name.should.eql('collection:library_book')
 
               done(err)
             })

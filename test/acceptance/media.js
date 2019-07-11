@@ -108,28 +108,106 @@ describe('Media', function() {
   describe('Default configuration', function() {
     beforeEach(done => {
       app.start(() => {
-        help.dropDatabase('testdb', null, err => {
-          if (err) return done(err)
-
-          help.getBearerTokenWithPermissions(
+        help
+          .createSchemas([
             {
-              accessType: 'admin'
+              fields: {
+                title: {
+                  type: 'String',
+                  required: true
+                },
+                author: {
+                  type: 'Reference',
+                  settings: {
+                    collection: 'person',
+                    fields: ['name', 'spouse']
+                  }
+                },
+                booksInSeries: {
+                  type: 'Reference',
+                  settings: {
+                    collection: 'book',
+                    multiple: true
+                  }
+                }
+              },
+              name: 'book',
+              property: 'library',
+              settings: {
+                cache: false,
+                authenticate: true,
+                count: 40
+              },
+              version: 'v1'
             },
-            (err, token) => {
+
+            {
+              fields: {
+                name: {
+                  type: 'String',
+                  required: true
+                },
+                occupation: {
+                  type: 'String',
+                  required: false
+                },
+                nationality: {
+                  type: 'String',
+                  required: false
+                },
+                education: {
+                  type: 'String',
+                  required: false
+                },
+                spouse: {
+                  type: 'Reference'
+                },
+                friend: {
+                  type: 'Reference'
+                },
+                picture: {
+                  type: 'Reference',
+                  settings: {
+                    collection: 'mediaStore'
+                  }
+                }
+              },
+              name: 'person',
+              property: 'library',
+              settings: {
+                cache: false,
+                authenticate: true,
+                count: 40
+              },
+              version: 'v1'
+            }
+          ])
+          .then(() => {
+            help.dropDatabase('testdb', null, err => {
               if (err) return done(err)
 
-              bearerToken = token
+              help.getBearerTokenWithPermissions(
+                {
+                  accessType: 'admin'
+                },
+                (err, token) => {
+                  if (err) return done(err)
 
-              done()
-            }
-          )
-        })
+                  bearerToken = token
+
+                  done()
+                }
+              )
+            })
+          })
       })
     })
 
     afterEach(done => {
-      app.stop(() => {
-        help.removeTestClients(done)
+      help.dropSchemas().then(() => {
+        app.stop(() => {
+          help.removeTestClients(done)
+        })
       })
     })
 

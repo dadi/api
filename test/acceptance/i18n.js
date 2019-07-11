@@ -1,19 +1,16 @@
 const app = require('./../../dadi/lib/')
 const config = require('./../../config')
-const fs = require('fs')
 const help = require('./help')
-const path = require('path')
 const request = require('supertest')
 const should = require('should')
-const sinon = require('sinon')
 
 const connectionString = `http://${config.get('server.host')}:${config.get(
   'server.port'
 )}`
 const client = request(connectionString)
 const configBackup = config.get()
+
 let bearerToken
-const lastModifiedAt = 0
 
 describe('Multi-language', function() {
   this.timeout(4000)
@@ -31,19 +28,91 @@ describe('Multi-language', function() {
       if (err) return done(err)
 
       app.start(() => {
-        help.getBearerTokenWithAccessType('admin', (err, token) => {
-          if (err) return done(err)
+        help
+          .createSchemas([
+            {
+              fields: {
+                title: {
+                  type: 'String',
+                  required: true
+                },
+                author: {
+                  type: 'Reference',
+                  settings: {
+                    collection: 'person',
+                    fields: ['name', 'spouse']
+                  }
+                },
+                booksInSeries: {
+                  type: 'Reference',
+                  settings: {
+                    collection: 'book',
+                    multiple: true
+                  }
+                }
+              },
+              name: 'book',
+              property: 'library',
+              settings: {
+                cache: false,
+                authenticate: true,
+                count: 40
+              },
+              version: 'v1'
+            },
 
-          bearerToken = token
+            {
+              fields: {
+                name: {
+                  type: 'String',
+                  required: true
+                },
+                occupation: {
+                  type: 'String',
+                  required: false
+                },
+                nationality: {
+                  type: 'String',
+                  required: false
+                },
+                education: {
+                  type: 'String',
+                  required: false
+                },
+                spouse: {
+                  type: 'Reference'
+                },
+                friend: {
+                  type: 'Reference'
+                }
+              },
+              name: 'person',
+              property: 'library',
+              settings: {
+                cache: false,
+                authenticate: true,
+                count: 40
+              },
+              version: 'v1'
+            }
+          ])
+          .then(() => {
+            help.getBearerTokenWithAccessType('admin', (err, token) => {
+              if (err) return done(err)
 
-          done()
-        })
+              bearerToken = token
+
+              done()
+            })
+          })
       })
     })
   })
 
   afterEach(done => {
-    app.stop(done)
+    help.dropSchemas().then(() => {
+      app.stop(done)
+    })
   })
 
   describe('Languages endpoint', () => {

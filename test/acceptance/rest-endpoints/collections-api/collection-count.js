@@ -1,17 +1,11 @@
-const should = require('should')
-const sinon = require('sinon')
-const fs = require('fs')
-const path = require('path')
+const app = require('../../../../dadi/lib/')
+const config = require('../../../../config')
+const help = require('../../help')
 const request = require('supertest')
-const config = require(__dirname + '/../../../../config')
-const help = require(__dirname + '/../../help')
-const app = require(__dirname + '/../../../../dadi/lib/')
 
-// variables scoped for use throughout tests
 const connectionString =
   'http://' + config.get('server.host') + ':' + config.get('server.port')
 let bearerToken
-const lastModifiedAt = 0
 
 describe('Collections API – Count endpoint', function() {
   this.timeout(6000)
@@ -21,53 +15,76 @@ describe('Collections API – Count endpoint', function() {
       help.dropDatabase('testdb', function(err) {
         if (err) return done(err)
 
-        help.getBearerToken(function(err, token) {
-          if (err) return done(err)
-          bearerToken = token
-
-          const client = request(connectionString)
-
-          client
-            .post('/vtest/testdb/test-schema')
-            .set('Authorization', 'Bearer ' + bearerToken)
-            .send({field1: 'doc1'})
-            .expect(200)
-            .end(function(err, res) {
+        help
+          .createSchemas([
+            {
+              name: 'book',
+              fields: {
+                title: {
+                  type: 'String',
+                  required: true
+                }
+              },
+              property: 'library',
+              settings: {
+                cache: false,
+                authenticate: true,
+                count: 40
+              },
+              version: '1.0'
+            }
+          ])
+          .then(() => {
+            help.getBearerToken(function(err, token) {
               if (err) return done(err)
+              bearerToken = token
+
+              const client = request(connectionString)
 
               client
-                .post('/vtest/testdb/test-schema')
+                .post('/1.0/library/book')
                 .set('Authorization', 'Bearer ' + bearerToken)
-                .send({field1: 'doc2'})
+                .send({title: 'A book 1'})
                 .expect(200)
                 .end(function(err, res) {
                   if (err) return done(err)
 
-                  done()
+                  client
+                    .post('/1.0/library/book')
+                    .set('Authorization', 'Bearer ' + bearerToken)
+                    .send({title: 'A book 2'})
+                    .expect(200)
+                    .end(function(err, res) {
+                      if (err) return done(err)
+
+                      done()
+                    })
                 })
             })
-        })
+          })
       })
     })
   })
 
   after(done => {
-    app.stop(done)
+    help.dropSchemas().then(() => {
+      app.stop(done)
+    })
   })
 
   it('should return metadata about the collection', function(done) {
     const client = request(connectionString)
 
     client
-      .get('/vtest/testdb/test-schema/count')
+      .get('/1.0/library/book/count')
       .set('Authorization', 'Bearer ' + bearerToken)
       .end(function(err, res) {
-        if (err) return done(err)
         const response = res.body
 
         response.metadata.should.exist
         response.metadata.totalCount.should.eql(2)
-        done()
+
+        done(err)
       })
   })
 
@@ -75,15 +92,15 @@ describe('Collections API – Count endpoint', function() {
     const client = request(connectionString)
 
     client
-      .get('/vtest/testdb/test-schema/count?filter={"field1":"doc2"}')
+      .get('/1.0/library/book/count?filter={"title":"A book 1"}')
       .set('Authorization', 'Bearer ' + bearerToken)
       .end(function(err, res) {
-        if (err) return done(err)
         const response = res.body
 
         response.metadata.should.exist
         response.metadata.totalCount.should.eql(1)
-        done()
+
+        done(err)
       })
   })
 })

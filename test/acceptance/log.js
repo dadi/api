@@ -1,10 +1,8 @@
+const app = require('../../dadi/lib/')
+const config = require('../../config')
+const help = require('./help')
 const fs = require('fs')
-const should = require('should')
 const request = require('supertest')
-
-const config = require(__dirname + '/../../config')
-const help = require(__dirname + '/help')
-const app = require(__dirname + '/../../dadi/lib/')
 
 let bearerToken
 const connectionString =
@@ -22,69 +20,86 @@ const resetLog = function(done) {
   done()
 }
 
-describe('logger', function() {
+describe('Logger', function() {
   describe('request', function() {
     beforeEach(resetLog)
-
-    const cleanup = function(done) {
-      // try to cleanup these tests directory tree
-      // don't catch errors here, since the paths may not exist
-
-      const dirs = config.get('paths')
-
-      try {
-        fs.unlinkSync(
-          dirs.collections + '/v1/testdb/collection.test-schema.json'
-        )
-      } catch (e) {
-        // noop
-      }
-
-      try {
-        fs.rmdirSync(dirs.collections + '/v1/testdb')
-      } catch (e) {
-        // noop
-      }
-
-      done()
-    }
-
-    let cleanupFn
 
     before(function(done) {
       help.dropDatabase('testdb', function(err) {
         if (err) return done(err)
 
-        app.start(function() {
-          help.getBearerTokenWithAccessType('admin', function(err, token) {
-            if (err) return done(err)
-
-            bearerToken = token
-
-            const schema = Object.assign({}, require('./../new-schema.json'))
-
-            schema.fields.field1 = Object.assign({}, schema.fields.newField)
-            delete schema.fields.newField
-
-            help.writeTempFile(
-              'temp-workspace/collections/vtest/testdb/collection.test-schema.json',
-              schema,
-              callback => {
-                cleanupFn = callback
-
-                done()
+        app.start(() => {
+          help
+            .createSchemas([
+              {
+                fields: {
+                  field1: {
+                    type: 'String',
+                    label: 'Title',
+                    comments: 'The title of the entry',
+                    validation: {},
+                    required: false
+                  },
+                  title: {
+                    type: 'String',
+                    label: 'Title',
+                    comments: 'The title of the entry',
+                    validation: {},
+                    required: false,
+                    search: {
+                      weight: 2
+                    }
+                  },
+                  leadImage: {
+                    type: 'Media'
+                  },
+                  leadImageJPEG: {
+                    type: 'Media',
+                    validation: {
+                      mimeTypes: ['image/jpeg']
+                    }
+                  },
+                  legacyImage: {
+                    type: 'Reference',
+                    settings: {
+                      collection: 'mediaStore'
+                    }
+                  },
+                  fieldReference: {
+                    type: 'Reference',
+                    settings: {
+                      collection: 'test-reference-schema'
+                    }
+                  }
+                },
+                name: 'test-schema',
+                property: 'testdb',
+                settings: {
+                  cache: true,
+                  cacheTTL: 300,
+                  authenticate: true,
+                  count: 40,
+                  sortOrder: 1,
+                  storeRevisions: true,
+                  revisionCollection: 'testSchemaHistory'
+                },
+                version: 'vtest'
               }
-            )
-          })
+            ])
+            .then(() => {
+              help.getBearerTokenWithAccessType('admin', function(err, token) {
+                bearerToken = token
+
+                done(err)
+              })
+            })
         })
       })
     })
 
-    after(function(done) {
-      cleanup(function() {
+    after(done => {
+      help.dropSchemas().then(() => {
         app.stop(() => {
-          cleanupFn()
-
           done()
         })
       })

@@ -86,7 +86,7 @@ Connection.prototype.connect = function(options) {
   debug('connect %o', options)
 
   return this.datastore
-    .connect(options)
+    .connect(options, this.__foo)
     .then(() => {
       this.readyState = STATE_CONNECTED
       this.db = this.datastore
@@ -146,6 +146,16 @@ Connection.prototype.setUpEventListeners = function(db) {
   })
 }
 
+Connection.prototype.whenConnected = function() {
+  if (this.db && this.readyState === STATE_CONNECTED) {
+    return Promise.resolve(this.db)
+  }
+
+  return new Promise(resolve => {
+    this.on('connect', resolve)
+  })
+}
+
 /**
  * Creates instances and connects them automatically
  *
@@ -163,26 +173,33 @@ module.exports = function(options, collection, storeName) {
   } catch (err) {} // eslint-disable-line
 
   const connectionKey = Object.keys(options)
+    .sort()
     .map(option => {
       return options[option]
     })
     .join(':')
 
-  // if a connection exists for the specified database, return it
   if (connectionPool[connectionKey]) {
     return connectionPool[connectionKey]
   }
 
-  const conn = new Connection(options, storeName)
+  const connection = new Connection(options, storeName)
 
   if (collection) {
     options.collection = collection
   }
 
-  connectionPool[connectionKey] = conn
-  conn.connect(options)
+  connectionPool[connectionKey] = connection
+  connection.setMaxListeners(35)
+  connection.connect(options)
 
-  return conn
+  if (config.get('env') !== 'test') {
+    connection.once('disconnect', err => {
+      log.error({module: 'connection'}, err)
+    })
+  }
+
+  return connection
 }
 
 module.exports.Connection = Connection

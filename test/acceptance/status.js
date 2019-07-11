@@ -2,7 +2,6 @@ const app = require('./../../dadi/lib/')
 const config = require('./../../config')
 const help = require('./help')
 const request = require('supertest')
-const should = require('should')
 
 describe('Status', function() {
   this.timeout(8000)
@@ -12,7 +11,42 @@ describe('Status', function() {
       app.start(function(err) {
         if (err) return done(err)
 
-        setTimeout(done, 500)
+        help
+          .createSchemas([
+            {
+              name: 'book',
+              fields: {
+                title: {
+                  type: 'String',
+                  required: true
+                },
+                author: {
+                  type: 'Reference',
+                  settings: {
+                    collection: 'person',
+                    fields: ['name', 'spouse']
+                  }
+                },
+                booksInSeries: {
+                  type: 'Reference',
+                  settings: {
+                    collection: 'book',
+                    multiple: true
+                  }
+                }
+              },
+              property: 'library',
+              settings: {
+                cache: false,
+                authenticate: true,
+                count: 40
+              },
+              version: '1.0'
+            }
+          ])
+          .then(() => {
+            setTimeout(done, 500)
+          })
       })
     })
   })
@@ -24,7 +58,9 @@ describe('Status', function() {
   after(function(done) {
     config.set('status.enabled', false)
     help.removeTestClients(function() {
-      app.stop(done)
+      help.dropSchemas().then(() => {
+        app.stop(done)
+      })
     })
   })
 
@@ -102,7 +138,7 @@ describe('Status', function() {
       help.getBearerToken(function(err, token) {
         // set some routes
         config.set('status.routes', [
-          {route: '/vtest/testdb/test-schema', expectedResponseTime: 1}
+          {route: '/1.0/library/book', expectedResponseTime: 1}
         ])
 
         const client = request(
@@ -121,7 +157,7 @@ describe('Status', function() {
 
             status.routes.should.exist
             status.routes[0].should.exist
-            status.routes[0].route.should.eql('/vtest/testdb/test-schema')
+            status.routes[0].route.should.eql('/1.0/library/book')
             done()
           })
       })
@@ -131,7 +167,7 @@ describe('Status', function() {
       help.getBearerToken(function(err, token) {
         // set some routes
         config.set('status.routes', [
-          {route: '/vtest/testdb/test-schema', expectedResponseTime: 1}
+          {route: '/1.0/library/book', expectedResponseTime: 1}
         ])
 
         const client = request(
@@ -160,7 +196,7 @@ describe('Status', function() {
       help.getBearerToken(function(err, token) {
         // set some routes
         config.set('status.routes', [
-          {route: '/vtest/testdb/test-schema', expectedResponseTime: -1}
+          {route: '/1.0/library/book', expectedResponseTime: -1}
         ])
 
         const client = request(

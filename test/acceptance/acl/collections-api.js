@@ -41,54 +41,384 @@ describe('Collections API', () => {
       const creatingClient = {
         clientId: 'apiClient',
         secret: 'someSecret',
-        resources: {'collection:testdb_test-schema': PERMISSIONS.CREATE}
+        resources: {
+          'collection:testdb_test-schema': PERMISSIONS.CREATE
+        }
       }
 
-      help.createACLClient(creatingClient).then(() => {
-        client
-          .post(config.get('auth.tokenUrl'))
-          .set('content-type', 'application/json')
-          .send(creatingClient)
-          .end((err, res) => {
-            help.dropDatabase('library', 'person', () => {
-              help.dropDatabase('library', 'book', () => {
-                help.dropDatabase('testdb', 'test-schema', () => {
-                  help.dropDatabase('testdb', 'test-reference-schema', () => {
-                    help.dropDatabase('testdb', 'test-required-schema', () => {
-                      help.dropDatabase(
-                        config.get('search.database'),
-                        config.get('search.wordCollection'),
-                        () => {
-                          help.dropDatabase(
-                            config.get('search.database'),
-                            config.get('search.indexCollection'),
-                            () => {
-                              help.createDocWithParams(
-                                res.body.accessToken,
-                                {field1: '7', title: 'test doc'},
-                                (err, doc1) => {
-                                  help.createDocWithParams(
-                                    res.body.accessToken,
-                                    {field1: '11', title: 'very long title'},
-                                    (err, doc2) => {
-                                      docs = [doc1._id, doc2._id]
+      help
+        .createACLClient(creatingClient)
+        .then(() => {
+          return help.createSchemas([
+            {
+              fields: {
+                title: {
+                  type: 'String',
+                  required: true
+                },
+                author: {
+                  type: 'Reference',
+                  settings: {
+                    collection: 'person',
+                    fields: ['name', 'spouse']
+                  }
+                },
+                booksInSeries: {
+                  type: 'Reference',
+                  settings: {
+                    collection: 'book',
+                    multiple: true
+                  }
+                }
+              },
+              name: 'book',
+              property: 'library',
+              settings: {
+                cache: false,
+                authenticate: true,
+                count: 40
+              },
+              version: '1.0'
+            },
 
-                                      help.removeACLData(done)
-                                    }
-                                  )
-                                }
-                              )
-                            }
-                          )
-                        }
-                      )
-                    })
-                  })
+            {
+              fields: {
+                name: {
+                  type: 'String',
+                  required: true
+                },
+                occupation: {
+                  type: 'String',
+                  required: false
+                },
+                nationality: {
+                  type: 'String',
+                  required: false
+                },
+                education: {
+                  type: 'String',
+                  required: false
+                },
+                spouse: {
+                  type: 'Reference'
+                }
+              },
+              name: 'person',
+              property: 'library',
+              settings: {
+                cache: false,
+                authenticate: true,
+                count: 40
+              },
+              version: '1.0'
+            },
+
+            {
+              fields: {
+                field1: {
+                  type: 'String',
+                  label: 'Title',
+                  comments: 'The title of the entry',
+                  validation: {},
+                  required: false
+                },
+                title: {
+                  type: 'String',
+                  label: 'Title',
+                  comments: 'The title of the entry',
+                  validation: {},
+                  required: false,
+                  search: {
+                    weight: 2
+                  }
+                },
+                leadImage: {
+                  type: 'Media'
+                },
+                leadImageJPEG: {
+                  type: 'Media',
+                  validation: {
+                    mimeTypes: ['image/jpeg']
+                  }
+                },
+                legacyImage: {
+                  type: 'Reference',
+                  settings: {
+                    collection: 'mediaStore'
+                  }
+                },
+                fieldReference: {
+                  type: 'Reference',
+                  settings: {
+                    collection: 'test-reference-schema'
+                  }
+                }
+              },
+              name: 'test-schema',
+              property: 'testdb',
+              settings: {
+                cache: true,
+                cacheTTL: 300,
+                authenticate: true,
+                count: 40,
+                sortOrder: 1,
+                storeRevisions: true,
+                revisionCollection: 'testSchemaHistory'
+              },
+              version: 'vtest'
+            },
+
+            {
+              fields: {
+                refField1: {
+                  type: 'String',
+                  required: false
+                },
+                refField2: {
+                  type: 'Number',
+                  required: false
+                }
+              },
+              name: 'test-reference-schema',
+              property: 'testdb',
+              settings: {},
+              version: 'vtest'
+            },
+
+            {
+              fields: {
+                field1: {
+                  type: 'String',
+                  required: true
+                },
+                field2: {
+                  type: 'String',
+                  required: false
+                }
+              },
+              name: 'test-required-schema',
+              property: 'testdb',
+              settings: {},
+              version: 'vtest'
+            },
+
+            {
+              fields: {
+                field1: {
+                  type: 'String',
+                  label: 'Title',
+                  comments: 'The title of the entry',
+                  validation: {},
+                  required: false
+                },
+                title: {
+                  type: 'String',
+                  label: 'Title',
+                  comments: 'The title of the entry',
+                  validation: {},
+                  required: false,
+                  search: {
+                    weight: 2
+                  }
+                }
+              },
+              name: 'test-authenticate-false',
+              property: 'testdb',
+              settings: {
+                authenticate: false
+              },
+              version: 'vtest'
+            },
+
+            {
+              fields: {
+                field1: {
+                  type: 'String',
+                  label: 'Title',
+                  comments: 'The title of the entry',
+                  validation: {},
+                  required: false
+                },
+                title: {
+                  type: 'String',
+                  label: 'Title',
+                  comments: 'The title of the entry',
+                  validation: {},
+                  required: false,
+                  search: {
+                    weight: 2
+                  }
+                }
+              },
+              name: 'test-authenticate-post-put-delete',
+              property: 'testdb',
+              settings: {
+                authenticate: ['POST', 'PUT', 'DELETE']
+              },
+              version: 'vtest'
+            },
+
+            {
+              fields: {
+                field1: {
+                  type: 'String',
+                  label: 'Title',
+                  comments: 'The title of the entry',
+                  validation: {},
+                  required: false
+                },
+                title: {
+                  type: 'String',
+                  label: 'Title',
+                  comments: 'The title of the entry',
+                  validation: {},
+                  required: false,
+                  search: {
+                    weight: 2
+                  }
+                }
+              },
+              name: 'test-authenticate-get-put-delete',
+              property: 'testdb',
+              settings: {
+                authenticate: ['GET', 'PUT', 'DELETE']
+              },
+              version: 'vtest'
+            },
+
+            {
+              fields: {
+                field1: {
+                  type: 'String',
+                  label: 'Title',
+                  comments: 'The title of the entry',
+                  validation: {},
+                  required: false
+                },
+                title: {
+                  type: 'String',
+                  label: 'Title',
+                  comments: 'The title of the entry',
+                  validation: {},
+                  required: false,
+                  search: {
+                    weight: 2
+                  }
+                }
+              },
+              name: 'test-authenticate-get-post-delete',
+              property: 'testdb',
+              settings: {
+                authenticate: ['GET', 'POST', 'DELETE']
+              },
+              version: 'vtest'
+            },
+
+            {
+              fields: {
+                field1: {
+                  type: 'String',
+                  label: 'Title',
+                  comments: 'The title of the entry',
+                  validation: {},
+                  required: false
+                },
+                title: {
+                  type: 'String',
+                  label: 'Title',
+                  comments: 'The title of the entry',
+                  validation: {},
+                  required: false,
+                  search: {
+                    weight: 2
+                  }
+                }
+              },
+              name: 'test-authenticate-get-post-put',
+              property: 'testdb',
+              settings: {
+                authenticate: ['GET', 'POST', 'PUT']
+              },
+              version: 'vtest'
+            },
+
+            {
+              fields: {
+                field1: {
+                  type: 'String',
+                  label: 'Title',
+                  comments: 'The title of the entry',
+                  validation: {},
+                  required: false
+                },
+                title: {
+                  type: 'String',
+                  label: 'Title',
+                  comments: 'The title of the entry',
+                  validation: {},
+                  required: false,
+                  search: {
+                    weight: 2
+                  }
+                }
+              },
+              name: 'test-authenticate-get-post-put-delete',
+              property: 'testdb',
+              settings: {
+                authenticate: ['GET', 'POST', 'PUT', 'DELETE']
+              },
+              version: 'vtest'
+            }
+          ])
+        })
+        .then(() => {
+          client
+            .post(config.get('auth.tokenUrl'))
+            .set('content-type', 'application/json')
+            .send(creatingClient)
+            .end(async (err, res) => {
+              try {
+                await help.dropDatabase('library', 'person')
+                await help.dropDatabase('library', 'book')
+                await help.dropDatabase('testdb', 'test-schema')
+                await help.dropDatabase('testdb', 'test-reference-schema')
+                await help.dropDatabase('testdb', 'test-required-schema')
+                await help.dropDatabase(
+                  config.get('search.database'),
+                  config.get('search.wordCollection')
+                )
+                await help.dropDatabase(
+                  config.get('search.database'),
+                  config.get('search.indexCollection')
+                )
+
+                const op1 = await help.createDocument({
+                  version: 'vtest',
+                  database: 'testdb',
+                  collection: 'test-schema',
+                  document: {field1: '7', title: 'test doc'},
+                  token: res.body.accessToken
                 })
-              })
+
+                const op2 = await help.createDocument({
+                  version: 'vtest',
+                  database: 'testdb',
+                  collection: 'test-schema',
+                  document: {
+                    field1: '11',
+                    title: 'very long title'
+                  },
+                  token: res.body.accessToken
+                })
+
+                docs = [op1.results[0]._id, op2.results[0]._id]
+
+                help.removeACLData(done)
+              } catch (error) {
+                done(err)
+              }
             })
-          })
-      })
+        })
     })
   })
 
@@ -100,7 +430,9 @@ describe('Collections API', () => {
       config.set('search.datastore', './../../../test/test-connector')
       config.set('search.database', 'testdb')
 
-      app.stop(done)
+      help.dropSchemas().then(() => {
+        app.stop(done)
+      })
     })
   })
 
@@ -381,7 +713,7 @@ describe('Collections API', () => {
         .then(adminToken => {
           return help
             .createDocument({
-              version: 'v1',
+              version: '1.0',
               database: 'library',
               collection: 'person',
               document: {
@@ -393,7 +725,7 @@ describe('Collections API', () => {
               authorId = response.results[0]._id
 
               return help.createDocument({
-                version: 'v1',
+                version: '1.0',
                 database: 'library',
                 collection: 'book',
                 document: {
@@ -418,7 +750,7 @@ describe('Collections API', () => {
 
                 client
                   .get(
-                    `/v1/library/book/${response.results[0]._id}?compose=true`
+                    `/1.0/library/book/${response.results[0]._id}?compose=true`
                   )
                   .set('content-type', 'application/json')
                   .set('Authorization', `Bearer ${bearerToken}`)
@@ -455,7 +787,7 @@ describe('Collections API', () => {
         .then(adminToken => {
           return help
             .createDocument({
-              version: 'v1',
+              version: '1.0',
               database: 'library',
               collection: 'person',
               document: {
@@ -467,7 +799,7 @@ describe('Collections API', () => {
               authorId = response.results[0]._id
 
               return help.createDocument({
-                version: 'v1',
+                version: '1.0',
                 database: 'library',
                 collection: 'book',
                 document: {
@@ -492,7 +824,7 @@ describe('Collections API', () => {
 
                 client
                   .get(
-                    `/v1/library/book/${response.results[0]._id}?compose=true`
+                    `/1.0/library/book/${response.results[0]._id}?compose=true`
                   )
                   .set('content-type', 'application/json')
                   .set('Authorization', `Bearer ${bearerToken}`)
@@ -639,76 +971,36 @@ describe('Collections API', () => {
     })
 
     it('should return 200 without bearer token if `settings.authenticate` is `false`', function(done) {
-      const modelSettings = Object.assign(
-        {},
-        app.components['/vtest/testdb/test-schema'].model.settings
-      )
-
-      app.components[
-        '/vtest/testdb/test-schema'
-      ].model.settings.authenticate = false
-
       client
-        .get(`/vtest/testdb/test-schema`)
+        .get(`/vtest/testdb/test-authenticate-false`)
         .set('content-type', 'application/json')
         .end((err, res) => {
           if (err) return done(err)
-          res.statusCode.should.eql(200)
 
-          app.components[
-            '/vtest/testdb/test-schema'
-          ].model.settings = modelSettings
+          res.statusCode.should.eql(200)
 
           done()
         })
     })
 
     it('should return 200 without bearer token if `settings.authenticate` is set to an array that does not include `GET`', function(done) {
-      const modelSettings = Object.assign(
-        {},
-        app.components['/vtest/testdb/test-schema'].model.settings
-      )
-
-      app.components[
-        '/vtest/testdb/test-schema'
-      ].model.settings.authenticate = ['POST', 'PUT', 'DELETE']
-
       client
-        .get(`/vtest/testdb/test-schema`)
+        .get(`/vtest/testdb/test-authenticate-post-put-delete`)
         .set('content-type', 'application/json')
         .end((err, res) => {
           if (err) return done(err)
           res.statusCode.should.eql(200)
-
-          app.components[
-            '/vtest/testdb/test-schema'
-          ].model.settings = modelSettings
 
           done()
         })
     })
 
     it('should return 401 without bearer token if `settings.authenticate` is set to an array that includes `GET`', function(done) {
-      const modelSettings = Object.assign(
-        {},
-        app.components['/vtest/testdb/test-schema'].model.settings
-      )
-
-      app.components[
-        '/vtest/testdb/test-schema'
-      ].model.settings.authenticate = ['GET', 'POST', 'PUT', 'DELETE']
-
       client
-        .get(`/vtest/testdb/test-schema`)
+        .get(`/vtest/testdb/test-authenticate-get-post-put-delete`)
         .set('content-type', 'application/json')
         .end((err, res) => {
           if (err) return done(err)
-
-          res.statusCode.should.eql(401)
-
-          app.components[
-            '/vtest/testdb/test-schema'
-          ].model.settings = modelSettings
 
           done()
         })
@@ -1091,22 +1383,13 @@ describe('Collections API', () => {
     })
 
     it('should return 200 without bearer token if `settings.authenticate` is `false`', function(done) {
-      const modelSettings = Object.assign(
-        {},
-        app.components['/vtest/testdb/test-schema'].model.settings
-      )
-
-      app.components[
-        '/vtest/testdb/test-schema'
-      ].model.settings.authenticate = false
-
       const payload = {
         field1: 'fieldValue',
         title: 'title'
       }
 
       client
-        .post(`/vtest/testdb/test-schema`)
+        .post(`/vtest/testdb/test-authenticate-false`)
         .send(payload)
         .set('content-type', 'application/json')
         .end((err, res) => {
@@ -1117,31 +1400,18 @@ describe('Collections API', () => {
           res.body.results[0].field1.should.eql(payload.field1)
           res.body.results[0].title.should.eql(payload.title)
 
-          app.components[
-            '/vtest/testdb/test-schema'
-          ].model.settings = modelSettings
-
           done()
         })
     })
 
     it('should return 200 without bearer token if `settings.authenticate` is set to an array that does not include `POST`', function(done) {
-      const modelSettings = Object.assign(
-        {},
-        app.components['/vtest/testdb/test-schema'].model.settings
-      )
-
-      app.components[
-        '/vtest/testdb/test-schema'
-      ].model.settings.authenticate = ['GET', 'PUT', 'DELETE']
-
       const payload = {
         field1: 'fieldValue',
         title: 'title'
       }
 
       client
-        .post(`/vtest/testdb/test-schema`)
+        .post(`/vtest/testdb/test-authenticate-get-put-delete`)
         .send(payload)
         .end((err, res) => {
           if (err) return done(err)
@@ -1150,10 +1420,6 @@ describe('Collections API', () => {
           res.body.results.length.should.eql(1)
           res.body.results[0].field1.should.eql(payload.field1)
           res.body.results[0].title.should.eql(payload.title)
-
-          app.components[
-            '/vtest/testdb/test-schema'
-          ].model.settings = modelSettings
 
           done()
         })
@@ -1934,17 +2200,8 @@ describe('Collections API', () => {
     })
 
     it('should return 401 without bearer token if `settings.authenticate` is set to an array that includes `POST`', function(done) {
-      const modelSettings = Object.assign(
-        {},
-        app.components['/vtest/testdb/test-schema'].model.settings
-      )
-
-      app.components[
-        '/vtest/testdb/test-schema'
-      ].model.settings.authenticate = ['GET', 'POST', 'PUT', 'DELETE']
-
       client
-        .post(`/vtest/testdb/test-schema`)
+        .post(`/vtest/testdb/test-authenticate-get-post-put-delete`)
         .send({
           field1: 'fieldValue',
           title: 'title'
@@ -1954,10 +2211,6 @@ describe('Collections API', () => {
           if (err) return done(err)
 
           res.statusCode.should.eql(401)
-
-          app.components[
-            '/vtest/testdb/test-schema'
-          ].model.settings = modelSettings
 
           done()
         })
@@ -2326,17 +2579,8 @@ describe('Collections API', () => {
     })
 
     it('should return 200 without bearer token if `settings.authenticate` is `false`', function(done) {
-      const modelSettings = Object.assign(
-        {},
-        app.components['/vtest/testdb/test-schema'].model.settings
-      )
-
-      app.components[
-        '/vtest/testdb/test-schema'
-      ].model.settings.authenticate = false
-
       client
-        .put(`/vtest/testdb/test-schema`)
+        .put(`/vtest/testdb/test-authenticate-false`)
         .send({
           query: {
             title: 'test doc'
@@ -2350,26 +2594,13 @@ describe('Collections API', () => {
           if (err) return done(err)
           res.statusCode.should.eql(200)
 
-          app.components[
-            '/vtest/testdb/test-schema'
-          ].model.settings = modelSettings
-
           done()
         })
     })
 
     it('should return 200 without bearer token if `settings.authenticate` is set to an array that does not include `PUT`', function(done) {
-      const modelSettings = Object.assign(
-        {},
-        app.components['/vtest/testdb/test-schema'].model.settings
-      )
-
-      app.components[
-        '/vtest/testdb/test-schema'
-      ].model.settings.authenticate = ['GET', 'POST', 'DELETE']
-
       client
-        .put(`/vtest/testdb/test-schema`)
+        .put(`/vtest/testdb/test-authenticate-get-post-delete`)
         .send({
           query: {
             title: 'test doc'
@@ -2381,10 +2612,6 @@ describe('Collections API', () => {
         .end((err, res) => {
           if (err) return done(err)
           res.statusCode.should.eql(200)
-
-          app.components[
-            '/vtest/testdb/test-schema'
-          ].model.settings = modelSettings
 
           done()
         })
@@ -3145,17 +3372,8 @@ describe('Collections API', () => {
     })
 
     it('should return 401 without bearer token if `settings.authenticate` is set to an array that includes `PUT`', function(done) {
-      const modelSettings = Object.assign(
-        {},
-        app.components['/vtest/testdb/test-schema'].model.settings
-      )
-
-      app.components[
-        '/vtest/testdb/test-schema'
-      ].model.settings.authenticate = ['GET', 'POST', 'PUT', 'DELETE']
-
       client
-        .put(`/vtest/testdb/test-schema`)
+        .put(`/vtest/testdb/test-authenticate-get-post-put-delete`)
         .send({
           query: {
             title: 'test doc'
@@ -3169,10 +3387,6 @@ describe('Collections API', () => {
           if (err) return done(err)
 
           res.statusCode.should.eql(401)
-
-          app.components[
-            '/vtest/testdb/test-schema'
-          ].model.settings = modelSettings
 
           done()
         })
@@ -3405,93 +3619,101 @@ describe('Collections API', () => {
     })
 
     it('should return 204 without bearer token if `settings.authenticate` is `false`', function(done) {
-      const modelSettings = Object.assign(
-        {},
-        app.components['/vtest/testdb/test-schema'].model.settings
-      )
+      help
+        .getBearerTokenWithPermissions({
+          accessType: 'admin'
+        })
+        .then(adminToken => {
+          return help.createDocument({
+            version: 'vtest',
+            database: 'testdb',
+            collection: 'test-authenticate-false',
+            document: {field1: '7', title: 'test doc'},
+            token: adminToken
+          })
+        })
+        .then(({results}) => {
+          client
+            .delete(`/vtest/testdb/test-authenticate-false/${results[0]._id}`)
+            .set('content-type', 'application/json')
+            .end((err, res) => {
+              if (err) return done(err)
+              res.statusCode.should.eql(204)
 
-      app.components[
-        '/vtest/testdb/test-schema'
-      ].model.settings.authenticate = false
-
-      client
-        .delete(`/vtest/testdb/test-schema/${docs[0]}`)
-        .set('content-type', 'application/json')
-        .end((err, res) => {
-          if (err) return done(err)
-          res.statusCode.should.eql(204)
-
-          app.components[
-            '/vtest/testdb/test-schema'
-          ].model.settings = modelSettings
-
-          done()
+              done()
+            })
         })
     })
 
     it('should return 204 without bearer token if `settings.authenticate` is set to an array that does not include `DELETE`', function(done) {
-      const modelSettings = Object.assign(
-        {},
-        app.components['/vtest/testdb/test-schema'].model.settings
-      )
-
-      app.components[
-        '/vtest/testdb/test-schema'
-      ].model.settings.authenticate = ['GET', 'POST', 'PUT']
-
-      client
-        .delete(`/vtest/testdb/test-schema/${docs[0]}`)
-        .send({
-          query: {
-            title: 'test doc'
-          },
-          update: {
-            field1: 'updated'
-          }
+      help
+        .getBearerTokenWithPermissions({
+          accessType: 'admin'
         })
-        .end((err, res) => {
-          if (err) return done(err)
-          res.statusCode.should.eql(204)
+        .then(adminToken => {
+          return help.createDocument({
+            version: 'vtest',
+            database: 'testdb',
+            collection: 'test-authenticate-get-post-put',
+            document: {field1: '7', title: 'test doc'},
+            token: adminToken
+          })
+        })
+        .then(({results}) => {
+          client
+            .delete(
+              `/vtest/testdb/test-authenticate-get-post-put/${results[0]._id}`
+            )
+            .set('content-type', 'application/json')
+            .end((err, res) => {
+              if (err) return done(err)
+              res.statusCode.should.eql(204)
 
-          app.components[
-            '/vtest/testdb/test-schema'
-          ].model.settings = modelSettings
-
-          done()
+              done()
+            })
         })
     })
 
     it('should return 401 without bearer token if `settings.authenticate` is set to an array that includes `DELETE`', function(done) {
-      const modelSettings = Object.assign(
-        {},
-        app.components['/vtest/testdb/test-schema'].model.settings
-      )
-
-      app.components[
-        '/vtest/testdb/test-schema'
-      ].model.settings.authenticate = ['GET', 'POST', 'PUT', 'DELETE']
-
-      client
-        .delete(`/vtest/testdb/test-schema/${docs[0]}`)
-        .send({
-          query: {
-            title: 'test doc'
-          },
-          update: {
-            field1: 'updated'
-          }
+      help
+        .getBearerTokenWithPermissions({
+          accessType: 'admin'
         })
-        .set('content-type', 'application/json')
-        .end((err, res) => {
-          if (err) return done(err)
+        .then(adminToken => {
+          return help
+            .createDocument({
+              version: 'vtest',
+              database: 'testdb',
+              collection: 'test-authenticate-get-post-put-delete',
+              document: {field1: '7', title: 'test doc'},
+              token: adminToken
+            })
+            .then(({results}) => {
+              client
+                .delete(
+                  `/vtest/testdb/test-authenticate-get-post-put-delete/${results[0]._id}`
+                )
+                .set('content-type', 'application/json')
+                .end((err, res) => {
+                  if (err) return done(err)
 
-          res.statusCode.should.eql(401)
+                  res.statusCode.should.eql(401)
 
-          app.components[
-            '/vtest/testdb/test-schema'
-          ].model.settings = modelSettings
+                  client
+                    .delete(
+                      `/vtest/testdb/test-authenticate-get-post-put-delete/${results[0]._id}`
+                    )
+                    .set('content-type', 'application/json')
+                    .set('Authorization', `Bearer ${adminToken}`)
+                    .end((err, res) => {
+                      if (err) return done(err)
 
-          done()
+                      res.statusCode.should.eql(204)
+
+                      done()
+                    })
+                })
+            })
         })
     })
   })

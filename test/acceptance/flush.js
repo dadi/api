@@ -3,101 +3,198 @@ const assert = require('assert')
 const cache = require('./../../dadi/lib/cache')
 const config = require('./../../config')
 const fakeredis = require('fakeredis')
-const fs = require('fs')
 const help = require('./help')
 const request = require('supertest')
 const Readable = require('stream').Readable
-const should = require('should')
 
 let bearerToken
 let adminBearerToken
 let c
 let cacheKeys = []
+const configBackup = config.get()
 
 describe('Cache', function(done) {
   this.timeout(5000)
 
   describe('Invalidation API - Filesystem', function() {
-    before(function(done) {
-      const testConfigString = fs.readFileSync(config.configPath())
+    before(() => {
+      config.set('caching.directory.enabled', true)
+      config.set('cachibg.redis.enabled', false)
 
-      const newTestConfig = JSON.parse(testConfigString)
-
-      newTestConfig.caching.directory.enabled = true
-      newTestConfig.caching.redis.enabled = false
-
-      fs.writeFileSync(
-        config.configPath(),
-        JSON.stringify(newTestConfig, null, 2)
-      )
-      delete require.cache[__dirname + '/../../config']
       cache.reset()
+    })
 
-      config.loadFile(config.configPath())
-
-      done()
+    after(() => {
+      config.set(
+        'caching.directory.enabled',
+        configBackup.caching.directory.enabled
+      )
+      config.set('cachibg.redis.enabled', configBackup.caching.redis.enabled)
     })
 
     beforeEach(function(done) {
       app.start(function() {
-        help.dropDatabase('testdb', null, function(err) {
-          if (err) return done(err)
+        help
+          .createSchemas([
+            {
+              fields: {
+                title: {
+                  type: 'String',
+                  required: true
+                },
+                author: {
+                  type: 'Reference',
+                  settings: {
+                    collection: 'person',
+                    fields: ['name', 'spouse']
+                  }
+                },
+                booksInSeries: {
+                  type: 'Reference',
+                  settings: {
+                    collection: 'book',
+                    multiple: true
+                  }
+                }
+              },
+              name: 'book',
+              property: 'library',
+              settings: {
+                cache: true,
+                authenticate: true,
+                count: 40
+              },
+              version: 'v1'
+            },
 
-          help.dropDatabase('library', null, function(err) {
-            if (err) return done(err)
-
-            help.getBearerToken(function(err, token) {
+            {
+              fields: {
+                field1: {
+                  type: 'String',
+                  label: 'Title',
+                  comments: 'The title of the entry',
+                  validation: {},
+                  required: false
+                },
+                title: {
+                  type: 'String',
+                  label: 'Title',
+                  comments: 'The title of the entry',
+                  validation: {},
+                  required: false,
+                  search: {
+                    weight: 2
+                  }
+                },
+                leadImage: {
+                  type: 'Media'
+                },
+                leadImageJPEG: {
+                  type: 'Media',
+                  validation: {
+                    mimeTypes: ['image/jpeg']
+                  }
+                },
+                legacyImage: {
+                  type: 'Reference',
+                  settings: {
+                    collection: 'mediaStore'
+                  }
+                },
+                fieldReference: {
+                  type: 'Reference',
+                  settings: {
+                    collection: 'test-reference-schema'
+                  }
+                }
+              },
+              name: 'test-schema',
+              property: 'testdb',
+              settings: {
+                cache: true,
+                cacheTTL: 300,
+                authenticate: true,
+                count: 40,
+                sortOrder: 1,
+                storeRevisions: true,
+                revisionCollection: 'testSchemaHistory'
+              },
+              version: 'vtest'
+            }
+          ])
+          .then(() => {
+            help.dropDatabase('testdb', null, function(err) {
               if (err) return done(err)
 
-              adminBearerToken = token
+              help.dropDatabase('library', null, function(err) {
+                if (err) return done(err)
 
-              help.getBearerTokenWithPermissions(
-                {roles: ['some-role']},
-                (err, token) => {
+                help.getBearerToken(function(err, token) {
                   if (err) return done(err)
 
-                  bearerToken = token
+                  adminBearerToken = token
 
-                  cacheKeys = [] // resets the array for the next test
+                  help.getBearerTokenWithPermissions(
+                    {roles: ['some-role']},
+                    (err, token) => {
+                      if (err) return done(err)
 
-                  help.createDoc(adminBearerToken, function(err, doc) {
-                    if (err) return done(err)
+                      bearerToken = token
 
-                    setTimeout(() => {
-                      help.createDoc(adminBearerToken, function(err, doc) {
-                        if (err) return done(err)
+                      cacheKeys = [] // resets the array for the next test
 
-                        const client = request(
-                          'http://' +
-                            config.get('server.host') +
-                            ':' +
-                            config.get('server.port')
-                        )
+                      setTimeout(() => {
+                        help.createDoc(adminBearerToken, function(err, doc) {
+                          if (err) return done(err)
 
-                        client
-                          .get('/vtest/testdb/test-schema')
-                          .set('Authorization', `Bearer ${adminBearerToken}`)
-                          .expect(200)
-                          .end(function(err, res1) {
-                            if (err) return done(err)
-                            res1.headers['x-cache'].should.exist
-                            res1.headers['x-cache'].should.eql('MISS')
-                            done()
-                          })
-                      })
-                    }, 300)
-                  })
-                }
-              )
+                          const client = request(
+                            'http://' +
+                              config.get('server.host') +
+                              ':' +
+                              config.get('server.port')
+                          )
+
+                          client
+                            .get('/vtest/testdb/test-schema')
+                            .set('Authorization', `Bearer ${adminBearerToken}`)
+                            .expect(200)
+                            .end(function(err, res1) {
+                              if (err) return done(err)
+                              res1.headers['x-cache'].should.exist
+                              res1.headers['x-cache'].should.eql('MISS')
+                            })
+
+                          setTimeout(() => {
+                            client
+                              .get('/vtest/testdb/test-schema')
+                              .set(
+                                'Authorization',
+                                `Bearer ${adminBearerToken}`
+                              )
+                              .expect(200)
+                              .end(function(err, res1) {
+                                if (err) return done(err)
+                                res1.headers['x-cache'].should.exist
+                                res1.headers['x-cache'].should.eql('HIT')
+                                done()
+                              })
+                          }, 300)
+                        })
+                      }, 300)
+                    }
+                  )
+                })
+              })
             })
           })
-        })
       })
     })
 
     afterEach(function(done) {
       help.removeTestClients(function() {
-        app.stop(done)
+        help.dropSchemas().then(() => {
+          app.stop(done)
+        })
       })
     })
 
@@ -428,23 +525,19 @@ describe('Cache', function(done) {
   })
 
   describe('Invalidation API - Redis', function() {
-    before(function(done) {
-      const testConfigString = fs.readFileSync(config.configPath())
+    before(() => {
+      config.set('caching.directory.enabled', false)
+      config.set('caching.redis.enabled', true)
 
-      const newTestConfig = JSON.parse(testConfigString)
+      cache.reset()
+    })
 
-      newTestConfig.caching.directory.enabled = false
-      newTestConfig.caching.redis.enabled = true
-
-      fs.writeFileSync(
-        config.configPath(),
-        JSON.stringify(newTestConfig, null, 2)
+    after(() => {
+      config.set(
+        'caching.directory.enabled',
+        configBackup.caching.directory.enabled
       )
-      delete require.cache[__dirname + '/../../config']
-
-      config.loadFile(config.configPath())
-
-      done()
+      config.set('cachibg.redis.enabled', configBackup.caching.redis.enabled)
     })
 
     beforeEach(function(done) {
@@ -477,55 +570,160 @@ describe('Cache', function(done) {
       }
 
       app.start(function() {
-        help.dropDatabase('testdb', null, function(err) {
-          if (err) return done(err)
+        help
+          .createSchemas([
+            {
+              fields: {
+                title: {
+                  type: 'String',
+                  required: true
+                },
+                author: {
+                  type: 'Reference',
+                  settings: {
+                    collection: 'person',
+                    fields: ['name', 'spouse']
+                  }
+                },
+                booksInSeries: {
+                  type: 'Reference',
+                  settings: {
+                    collection: 'book',
+                    multiple: true
+                  }
+                }
+              },
+              name: 'book',
+              property: 'library',
+              settings: {
+                cache: true,
+                authenticate: true,
+                count: 40
+              },
+              version: 'v1'
+            },
 
-          help.dropDatabase('library', null, function(err) {
-            if (err) return done(err)
-
-            help.getBearerToken(function(err, token) {
+            {
+              fields: {
+                field1: {
+                  type: 'String',
+                  label: 'Title',
+                  comments: 'The title of the entry',
+                  validation: {},
+                  required: false
+                },
+                title: {
+                  type: 'String',
+                  label: 'Title',
+                  comments: 'The title of the entry',
+                  validation: {},
+                  required: false,
+                  search: {
+                    weight: 2
+                  }
+                },
+                leadImage: {
+                  type: 'Media'
+                },
+                leadImageJPEG: {
+                  type: 'Media',
+                  validation: {
+                    mimeTypes: ['image/jpeg']
+                  }
+                },
+                legacyImage: {
+                  type: 'Reference',
+                  settings: {
+                    collection: 'mediaStore'
+                  }
+                },
+                fieldReference: {
+                  type: 'Reference',
+                  settings: {
+                    collection: 'test-reference-schema'
+                  }
+                }
+              },
+              name: 'test-schema',
+              property: 'testdb',
+              settings: {
+                cache: true,
+                cacheTTL: 300,
+                authenticate: true,
+                count: 40,
+                sortOrder: 1,
+                storeRevisions: true,
+                revisionCollection: 'testSchemaHistory'
+              },
+              version: 'vtest'
+            }
+          ])
+          .then(() => {
+            help.dropDatabase('testdb', null, function(err) {
               if (err) return done(err)
 
-              adminBearerToken = token
+              help.dropDatabase('library', null, function(err) {
+                if (err) return done(err)
 
-              help.getBearerTokenWithPermissions(
-                {roles: ['some-role']},
-                (err, token) => {
+                help.getBearerToken(function(err, token) {
                   if (err) return done(err)
 
-                  bearerToken = token
+                  adminBearerToken = token
 
-                  help.createDoc(adminBearerToken, function(err, doc) {
-                    if (err) return done(err)
-
-                    help.createDoc(adminBearerToken, function(err, doc) {
+                  help.getBearerTokenWithPermissions(
+                    {roles: ['some-role']},
+                    (err, token) => {
                       if (err) return done(err)
 
-                      const client = request(
-                        'http://' +
-                          config.get('server.host') +
-                          ':' +
-                          config.get('server.port')
-                      )
+                      bearerToken = token
 
-                      client
-                        .get('/vtest/testdb/test-schema')
-                        .set('Accept-Encoding', 'identity')
-                        .set('Authorization', `Bearer ${adminBearerToken}`)
-                        .expect(200)
-                        .end(function(err, res1) {
-                          if (err) return done(err)
-                          res1.headers['x-cache'].should.exist
-                          res1.headers['x-cache'].should.eql('MISS')
-                          done()
-                        })
-                    })
-                  })
-                }
-              )
+                      cacheKeys = [] // resets the array for the next test
+
+                      help.createDoc(adminBearerToken, function(err, doc) {
+                        if (err) return done(err)
+
+                        request(
+                          `http://${config.get('server.host')}:${config.get(
+                            'server.port'
+                          )}`
+                        )
+                          .get('/vtest/testdb/test-schema')
+                          .set('Accept-Encoding', 'deflate, gzip')
+                          .set('Authorization', `Bearer ${adminBearerToken}`)
+                          .expect(200)
+                          .end(function(err, res1) {
+                            if (err) return done(err)
+                            res1.body.results.length.should.eql(1)
+                            res1.headers['x-cache'].should.exist
+                            res1.headers['x-cache'].should.eql('MISS')
+                          })
+
+                        setTimeout(() => {
+                          request(
+                            `http://${config.get('server.host')}:${config.get(
+                              'server.port'
+                            )}`
+                          )
+                            .get('/vtest/testdb/test-schema')
+                            .set('Accept-Encoding', 'deflate, gzip')
+                            .set('Authorization', `Bearer ${adminBearerToken}`)
+                            .expect(200)
+                            .end(function(err, res1) {
+                              if (err) return done(err)
+                              res1.body.results.length.should.eql(1)
+                              res1.headers['x-cache'].should.exist
+                              res1.headers['x-cache'].should.eql('HIT')
+
+                              done()
+                            })
+                        }, 300)
+                      })
+                    }
+                  )
+                })
+              })
             })
           })
-        })
       })
     })
 

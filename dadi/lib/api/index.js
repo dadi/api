@@ -9,7 +9,7 @@ const log = require('@dadi/logger')
 const config = require(path.join(__dirname, '/../../../config'))
 
 const Api = function() {
-  this.paths = {}
+  this.paths = []
   this.all = []
   this.errors = []
 
@@ -95,12 +95,32 @@ Api.prototype.use = function(path, handler) {
   }
 
   const regex = pathToRegexp(path)
-
-  this.paths[path] = {
+  const order = routePriority(path, regex.keys)
+  const newPath = {
     handler,
-    order: routePriority(path, regex.keys),
+    order,
+    path,
     regex
   }
+  const existingIndex = this.paths.findIndex(item => item.path === path)
+
+  if (existingIndex !== -1) {
+    this.paths[existingIndex] = newPath
+  } else {
+    this.paths.push(newPath)
+  }
+
+  this.paths = this.paths.sort((a, b) => {
+    if (a.order < b.order) {
+      return 1
+    }
+
+    if (a.order > b.order) {
+      return -1
+    }
+
+    return 0
+  })
 }
 
 /**
@@ -145,7 +165,11 @@ Api.prototype.unuse = function(path) {
     return Boolean(~indx) && this.all.splice(indx, 1)
   }
 
-  delete this.paths[path]
+  const pathIndex = this.paths.findIndex(item => item.path === path)
+
+  if (pathIndex !== -1) {
+    this.paths.splice(pathIndex, 1)
+  }
 }
 
 /**
@@ -265,20 +289,19 @@ Api.prototype.redirectListener = function(req, res) {
  *  @api private
  */
 Api.prototype._match = function(path, req) {
-  const paths = this.paths
   const handlers = []
 
   // always add params object to avoid need for checking later
   req.params = {}
 
-  Object.keys(paths).forEach(key => {
-    const match = paths[key].regex.exec(path)
+  this.paths.forEach(registeredPath => {
+    const match = registeredPath.regex.exec(path)
 
     if (!match) return
 
-    const keys = paths[key].regex.keys
+    const keys = registeredPath.regex.keys
 
-    handlers.push(paths[key].handler)
+    handlers.push(registeredPath.handler)
 
     match.forEach((k, i) => {
       const keyOpts = keys[i] || {}
@@ -327,13 +350,10 @@ function notFound(req, res) {
 
 function routePriority(path, keys) {
   const tokens = pathToRegexp.parse(path)
-
-  let staticRouteLength = 0
-
-  if (typeof tokens[0] === 'string') {
-    staticRouteLength = tokens[0].split('/').filter(Boolean).length
-  }
-
+  const staticRouteLength =
+    typeof tokens[0] === 'string'
+      ? tokens[0].split('/').filter(Boolean).length
+      : 0
   const requiredParamLength = keys.filter(key => !key.optional).length
   const optionalParamLength = keys.filter(key => key.optional).length
 

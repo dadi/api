@@ -93,7 +93,8 @@ Search.prototype.batchIndexCollection = function(
         return this.indexDocument({
           collection: model.name,
           document,
-          indexableFields
+          indexableFields,
+          property: model.property
         })
       }
 
@@ -171,7 +172,7 @@ Search.prototype.delete = function(documents) {
  * @return {Promise} - a query containing IDs of documents that contain the
  *                     searchTerm
  */
-Search.prototype.find = function({
+Search.prototype.find = async function({
   client,
   collections,
   fields,
@@ -185,88 +186,82 @@ Search.prototype.find = function({
   const tokens = this.tokenise(query)
 
   // Find matches for the various tokens in the words collection.
-  return this.findWords(tokens, language)
-    .then(words => {
-      const wordIds = words.results.map(word => word._id.toString())
+  const words = await this.findWords(tokens, language)
+  const wordIds = words.results.map(word => word._id.toString())
 
-      // Find matches for the word IDs in the search index collection,
-      // limiting the results to the collections specified.
-      return this.getIndexResults({
-        collections,
-        options: {
-          limit: POOL_SIZE
-        },
-        schema: SCHEMA_WORDS.fields,
-        settings: SCHEMA_WORDS.settings,
-        words: wordIds
+  // Find matches for the word IDs in the search index collection,
+  // limiting the results to the collections specified.
+  const resultsMap = await this.getIndexResults({
+    collections,
+    options: {
+      limit: POOL_SIZE
+    },
+    schema: SCHEMA_WORDS.fields,
+    settings: SCHEMA_WORDS.settings,
+    words: wordIds
+  })
+  const documents = new Map()
+  const indexableFields = {}
+
+  // We must retrieve all the documents using their respective models.
+  const queue = Object.keys(resultsMap).map(async collection => {
+    const [collectionProperty, collectionName] = collection.split('/')
+    const model = modelFactory.get({
+      name: collectionName,
+      property: collectionProperty
+    })
+
+    if (!model) return undefined
+
+    indexableFields[collection] =
+      indexableFields[collection] || this.getIndexableFields(model.schema)
+
+    const documentIds = Object.keys(resultsMap[collection])
+    const {results} = await model.get({
+      client,
+      language,
+      query: {
+        _id: {
+          $containsAny: documentIds
+        }
+      }
+    })
+
+    results.forEach(result => {
+      documents.set(result._id, {
+        collection,
+        document: result,
+        weight: resultsMap[collection][result._id]
       })
     })
-    .then(resultsMap => {
-      const documents = new Map()
+  })
 
-      const indexableFields = {}
+  await Promise.all(queue)
 
-      // We must retrieve all the documents using their respective models.
-      const queue = Object.keys(resultsMap).map(collection => {
-        const model = modelFactory(collection)
+  const results = await this.runSecondPass({
+    documents,
+    indexableFields,
+    page,
+    query
+  })
 
-        if (!model) return undefined
+  const metadata = createMetadata({page}, documents.size)
 
-        indexableFields[collection] =
-          indexableFields[collection] || this.getIndexableFields(model.schema)
+  // To ensure the search algorithm works effectively, it's not a good idea
+  // to exclude from the results any fields up until this point. Now that
+  // all the results have been computed, we must remove from the results
+  // any fields that may have been excluded due to a fields projection sent
+  // in the request.
+  const filteredResults = results.map(document => {
+    return this.formatDocumentForOutput(document, {fields})
+  })
 
-        const documentIds = Object.keys(resultsMap[collection])
-
-        return model
-          .get({
-            client,
-            language,
-            query: {
-              _id: {
-                $containsAny: documentIds
-              }
-            }
-          })
-          .then(({results}) => {
-            results.forEach(result => {
-              documents.set(result._id, {
-                collection,
-                document: result,
-                weight: resultsMap[collection][result._id]
-              })
-            })
-          })
-      })
-
-      return Promise.all(queue)
-        .then(() => {
-          return this.runSecondPass({
-            documents,
-            indexableFields,
-            page,
-            query
-          })
-        })
-        .then(results => {
-          const metadata = createMetadata({page}, documents.size)
-
-          // To ensure the search algorithm works effectively, it's not a good idea
-          // to exclude from the results any fields up until this point. Now that
-          // all the results have been computed, we must remove from the results
-          // any fields that may have been excluded due to a fields projection sent
-          // in the request.
-          const filteredResults = results.map(document => {
-            return this.formatDocumentForOutput(document, {fields})
-          })
-
-          return {
-            results: filteredResults,
-            metadata: Object.assign({}, metadata, {
-              search: query
-            })
-          }
-        })
+  return {
+    results: filteredResults,
+    metadata: Object.assign({}, metadata, {
+      search: query
     })
+  }
 }
 
 /**
@@ -570,10 +565,11 @@ Search.prototype.getWordsForDocument = function(document, indexableFields) {
  * @param {Object} document - a document to be indexed
  * @return {[type]}     [description]
  */
-Search.prototype.indexDocument = function({
+Search.prototype.indexDocument = async function({
   collection,
   document,
-  indexableFields
+  indexableFields,
+  property
 }) {
   const wordsAndWeightsByLanguage = this.getWordsForDocument(
     document,
@@ -602,77 +598,63 @@ Search.prototype.indexDocument = function({
     })
   })
 
-  // Look into the words collection to determine which of the document's words,
-  // if any, already exist in the words collection. The ones that don't, must
-  // be inserted.
-  return this.getExistingWords(wordsByLanguage)
-    .then(existingWords => {
-      const newWords = wordPairs.filter(({language, word}) => {
-        return existingWords.every(
-          entry => entry.word !== `${word}:${language}`
-        )
-      })
-      const data = newWords.map(({language, word}) => {
-        return {word: `${word}:${language}`}
-      })
-
-      if (newWords.length > 0) {
-        return this.wordConnection.datastore
-          .insert({
+  try {
+    // Look into the words collection to determine which of the document's words,
+    // if any, already exist in the words collection. The ones that don't, must
+    // be inserted.
+    const existingWords = await this.getExistingWords(wordsByLanguage)
+    const newWords = wordPairs.filter(({language, word}) => {
+      return existingWords.every(entry => entry.word !== `${word}:${language}`)
+    })
+    const data = newWords.map(({language, word}) => {
+      return {word: `${word}:${language}`}
+    })
+    const newWordEntries =
+      newWords.length === 0
+        ? []
+        : this.wordConnection.datastore.insert({
             data,
             collection: this.wordCollection,
             options: {},
             schema: SCHEMA_WORDS.fields,
             settings: SCHEMA_WORDS.settings
           })
-          .then(newWordEntries => {
-            return existingWords.concat(newWordEntries)
-          })
+    const wordEntries = (await newWordEntries).concat(existingWords)
+
+    // We must now delete from the search collection any records that reference
+    // this document, which is effectively "de-indexing" it.
+    await this.indexConnection.datastore.delete({
+      collection: this.indexCollection,
+      query: {
+        document: document._id
+      },
+      schema: SCHEMA_SEARCH.fields
+    })
+
+    // We're now ready to insert the results from processing the document into
+    // the search collection. Entries will contain the ID of the document, the
+    // ID of the word and its weight relative to the document.
+    const indexData = wordEntries.map(({_id, word: wordPair}) => {
+      const [word, language] = wordPair.split(':')
+
+      return {
+        collection: `${property}/${collection}`,
+        document: document._id,
+        weight: wordsAndWeightsByLanguage.get(language).get(word),
+        word: _id
       }
+    })
 
-      return existingWords
+    return this.indexConnection.datastore.insert({
+      data: indexData,
+      collection: this.indexCollection,
+      options: {},
+      schema: SCHEMA_SEARCH.fields,
+      settings: SCHEMA_SEARCH.settings
     })
-    .then(wordEntries => {
-      // We must now delete from the search collection any records that reference
-      // this document, which is effectively "de-indexing" it.
-      return this.indexConnection.datastore
-        .delete({
-          collection: this.indexCollection,
-          query: {
-            document: document._id
-          },
-          schema: SCHEMA_SEARCH.fields
-        })
-        .then(() => {
-          return wordEntries
-        })
-    })
-    .then(wordEntries => {
-      // We're now ready to insert the results from processing the document into
-      // the search collection. Entries will contain the ID of the document, the
-      // ID of the word and its weight relative to the document.
-      const data = wordEntries.map(({_id, word: wordPair}) => {
-        const [word, language] = wordPair.split(':')
-
-        return {
-          collection,
-          document: document._id,
-          weight: wordsAndWeightsByLanguage.get(language).get(word),
-          word: _id
-        }
-      })
-
-      return this.indexConnection.datastore.insert({
-        data,
-        collection: this.indexCollection,
-        options: {},
-        schema: SCHEMA_SEARCH.fields,
-        settings: SCHEMA_SEARCH.settings
-      })
-    })
-    .catch(error => {
-      logger.error({module: 'search'}, error)
-    })
+  } catch (error) {
+    logger.error({module: 'search'}, error)
+  }
 }
 
 /**
@@ -720,7 +702,8 @@ Search.prototype.indexDocumentsInTheBackground = function({
       this.indexDocument({
         collection: model.name,
         document,
-        indexableFields
+        indexableFields,
+        property: model.property
       })
     })
   })

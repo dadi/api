@@ -1,118 +1,271 @@
-const acl = require('./../model/acl')
-const config = require('./../../../config')
-const help = require('./../help')
+const acl = require('../model/acl')
+const config = require('../../../config')
+const help = require('../help')
+const modelStore = require('../model/')
+const schemaStore = require('../model/schemaStore')
 
 const Collections = function(server) {
   server.app.routeMethods('/api/collections', {
-    get: this.get.bind(this)
+    get: this.get.bind(this),
+    post: this.post.bind(this)
+  })
+
+  server.app.routeMethods('/api/collections/:collection*', {
+    delete: this.delete.bind(this),
+    put: this.put.bind(this)
   })
 
   this.server = server
 }
 
-Collections.prototype.get = function(req, res, next) {
+Collections.prototype.delete = async function(req, res, next) {
   if (!req.dadiApiClient.clientId) {
     return help.sendBackJSON(null, res, next)(
       acl.createError(req.dadiApiClient)
     )
   }
 
-  const clientIsAdmin = acl.client.isAdmin(req.dadiApiClient)
-  let accessCheck
+  const [version, property, collection] = (req.params.collection || '').split(
+    '/'
+  )
 
-  if (!clientIsAdmin) {
-    accessCheck = acl.access.get(req.dadiApiClient)
+  if (!version || !property || !collection) {
+    return this.handleError(new Error('SCHEMA_NOT_FOUND'), res, next)
   }
 
-  return Promise.resolve(accessCheck)
-    .then((access = {}) => {
-      const collections = Object.keys(this.server.components)
-        .filter(key => {
-          if (
-            this.server.components[key]._type !==
-            this.server.COMPONENT_TYPE.COLLECTION
-          ) {
-            return false
-          }
+  try {
+    const clientIsAdmin = acl.client.isAdmin(req.dadiApiClient)
+    const access = await (clientIsAdmin
+      ? {}
+      : acl.access.get(req.dadiApiClient, 'collections'))
 
-          const aclKey = this.server.components[key].model.getAclKey()
+    // To delete a collection, the client needs to be an admin or have `delete`
+    // access to the `collections` resource.
+    if (!clientIsAdmin && !access.delete) {
+      return help.sendBackJSON(null, res, next)(
+        acl.createError(req.dadiApiClient)
+      )
+    }
 
-          if (!clientIsAdmin && (!access[aclKey] || !access[aclKey].read)) {
-            return false
-          }
+    const deletedCount = await schemaStore.delete({
+      name: collection,
+      property,
+      version
+    })
 
-          return true
-        })
-        .map(key => {
-          const model = this.server.components[key].model
-          const parts = key.split('/')
+    if (deletedCount === 0) {
+      return this.handleError(new Error('SCHEMA_NOT_FOUND'), res, next)
+    }
 
-          const data = {
-            version: parts[1],
-            database: parts[2],
-            name: (model.settings && model.settings.displayName) || model.name,
-            slug: model.name,
-            path: key,
-            fields: model.schema,
-            settings: Object.assign({}, model.settings, {
-              database: undefined
-            })
-          }
+    return help.sendBackJSON(204, res, next)(null, null)
+  } catch (error) {
+    return this.handleError(error, res, next)
+  }
+}
 
-          if (model.settings) {
-            if (model.settings.lastModifiedAt) {
-              data.lastModifiedAt = model.settings.lastModifiedAt
-            }
+Collections.prototype.get = async function(req, res, next) {
+  if (!req.dadiApiClient.clientId) {
+    return help.sendBackJSON(null, res, next)(
+      acl.createError(req.dadiApiClient)
+    )
+  }
 
-            if (model.settings.type) {
-              data.type = model.settings.type
-            }
-          }
+  try {
+    const clientIsAdmin = acl.client.isAdmin(req.dadiApiClient)
+    const access = await (clientIsAdmin
+      ? {}
+      : acl.access.get(req.dadiApiClient))
+    const models = modelStore.getAll()
+    const collections = Object.keys(models)
+      .filter(key => {
+        const model = models[key]
+        const {aclKey} = model
 
-          return data
-        })
-        .sort((a, b) => {
-          if (a.path < b.path) {
-            return -1
-          }
+        if (!model.isListable) return false
 
-          if (a.path > b.path) {
-            return 1
-          }
-
-          return 0
-        })
-
-      // Adding media buckets.
-      const mediaBuckets = config
-        .get('media.buckets')
-        .concat(config.get('media.defaultBucket'))
-      const allowedMediaBuckets = mediaBuckets.filter(bucket => {
-        if (clientIsAdmin) {
-          return true
+        return clientIsAdmin || (access[aclKey] && access[aclKey].read)
+      })
+      .map(key => {
+        const model = models[key]
+        const data = {
+          version: model.version,
+          property: model.property,
+          name: (model.settings && model.settings.displayName) || model.name,
+          slug: model.name,
+          path: `/${model.version}/${model.property}/${model.name}`,
+          fields: model.schema,
+          settings: Object.assign({}, model.settings, {
+            database: undefined
+          })
         }
 
-        const matrix = access[`media:${bucket}`] || {}
+        if (model.settings) {
+          if (model.settings.lastModifiedAt) {
+            data.lastModifiedAt = model.settings.lastModifiedAt
+          }
 
-        return matrix.read || matrix.create
+          if (model.settings.type) {
+            data.type = model.settings.type
+          }
+        }
+
+        return data
       })
-      const media = {
-        buckets: allowedMediaBuckets,
-        defaultBucket: allowedMediaBuckets.includes(
-          config.get('media.defaultBucket')
-        )
-          ? config.get('media.defaultBucket')
-          : null
+      .sort((a, b) => {
+        if (a.path < b.path) {
+          return -1
+        }
+
+        if (a.path > b.path) {
+          return 1
+        }
+
+        return 0
+      })
+
+    // Adding media buckets.
+    const mediaBuckets = config
+      .get('media.buckets')
+      .concat(config.get('media.defaultBucket'))
+    const allowedMediaBuckets = mediaBuckets.filter(bucket => {
+      if (clientIsAdmin) {
+        return true
       }
 
-      help.sendBackJSON(200, res, next)(null, {
-        collections,
-        media
+      const matrix = access[`media:${bucket}`] || {}
+
+      return matrix.read || matrix.create
+    })
+    const media = {
+      buckets: allowedMediaBuckets,
+      defaultBucket: allowedMediaBuckets.includes(
+        config.get('media.defaultBucket')
+      )
+        ? config.get('media.defaultBucket')
+        : null
+    }
+
+    return help.sendBackJSON(200, res, next)(null, {
+      collections,
+      media
+    })
+  } catch (error) {
+    return this.handleError(error, res, next)
+  }
+}
+
+Collections.prototype.handleError = function(error, res, next) {
+  switch (error.message) {
+    case 'SCHEMA_EXISTS':
+      return help.sendBackJSON(409, res, next)(null, {
+        success: false,
+        errors: ['The collection already exists']
       })
+
+    case 'SCHEMA_NOT_FOUND':
+      return help.sendBackJSON(404, res, next)(null, {
+        success: false
+      })
+
+    case 'VALIDATION_ERROR':
+      return help.sendBackJSON(400, res, next)(null, {
+        success: false,
+        errors: error.errors
+      })
+
+    default:
+      return help.sendBackJSON(500, res, next)(error)
+  }
+}
+
+Collections.prototype.post = async function(req, res, next) {
+  if (!req.dadiApiClient.clientId) {
+    return help.sendBackJSON(null, res, next)(
+      acl.createError(req.dadiApiClient)
+    )
+  }
+
+  const {fields, name, property, settings, version} = req.body
+
+  try {
+    const clientIsAdmin = acl.client.isAdmin(req.dadiApiClient)
+    const access = await (clientIsAdmin
+      ? {}
+      : acl.access.get(req.dadiApiClient, 'collections'))
+
+    // To create a collection, the client needs to be an admin or have `create`
+    // access to the `collections` resource.
+    if (!clientIsAdmin && !access.create) {
+      return help.sendBackJSON(null, res, next)(
+        acl.createError(req.dadiApiClient)
+      )
+    }
+
+    const results = await schemaStore.create({
+      fields,
+      name,
+      settings,
+      property,
+      version
     })
-    .catch(err => {
-      help.sendBackJSON(500, res, next)(err)
+
+    return help.sendBackJSON(200, res, next)(null, {
+      results: schemaStore.formatForOutput(results)
     })
+  } catch (error) {
+    return this.handleError(error, res, next)
+  }
+}
+
+Collections.prototype.put = async function(req, res, next) {
+  if (!req.dadiApiClient.clientId) {
+    return help.sendBackJSON(null, res, next)(
+      acl.createError(req.dadiApiClient)
+    )
+  }
+
+  const [version, property, collection] = (req.params.collection || '').split(
+    '/'
+  )
+
+  if (!version || !property || !collection) {
+    return this.handleError(new Error('SCHEMA_NOT_FOUND'), res, next)
+  }
+
+  const {fields, settings} = req.body
+
+  try {
+    const clientIsAdmin = acl.client.isAdmin(req.dadiApiClient)
+    const access = await (clientIsAdmin
+      ? {}
+      : acl.access.get(req.dadiApiClient, 'collections'))
+
+    // To update a collection, the client needs to be an admin or have `update`
+    // access to the `collections` resource.
+    if (!clientIsAdmin && !access.update) {
+      return help.sendBackJSON(null, res, next)(
+        acl.createError(req.dadiApiClient)
+      )
+    }
+
+    const newSchema = await schemaStore.update({
+      fields,
+      name: collection,
+      property,
+      settings,
+      version
+    })
+
+    if (newSchema === null) {
+      return this.handleError(new Error('SCHEMA_NOT_FOUND'), res, next)
+    }
+
+    return help.sendBackJSON(200, res, next)(null, {
+      results: [schemaStore.formatForOutput(newSchema)]
+    })
+  } catch (error) {
+    return this.handleError(error, res, next)
+  }
 }
 
 module.exports = server => new Collections(server)

@@ -2,7 +2,6 @@ const crypto = require('crypto')
 const fs = require('fs')
 const should = require('should')
 const request = require('supertest')
-// const redis = require('redis');
 const fakeredis = require('fakeredis')
 const sinon = require('sinon')
 const url = require('url')
@@ -15,6 +14,65 @@ const help = require(__dirname + '/help')
 let configBackup
 let cacheKeys = []
 let bearerToken
+
+const createSchemas = () => {
+  return help.createSchemas([
+    {
+      fields: {
+        field1: {
+          type: 'String',
+          label: 'Title',
+          comments: 'The title of the entry',
+          validation: {},
+          required: false
+        },
+        title: {
+          type: 'String',
+          label: 'Title',
+          comments: 'The title of the entry',
+          validation: {},
+          required: false,
+          search: {
+            weight: 2
+          }
+        },
+        leadImage: {
+          type: 'Media'
+        },
+        leadImageJPEG: {
+          type: 'Media',
+          validation: {
+            mimeTypes: ['image/jpeg']
+          }
+        },
+        legacyImage: {
+          type: 'Reference',
+          settings: {
+            collection: 'mediaStore'
+          }
+        },
+        fieldReference: {
+          type: 'Reference',
+          settings: {
+            collection: 'test-reference-schema'
+          }
+        }
+      },
+      name: 'test-schema',
+      property: 'testdb',
+      settings: {
+        cache: true,
+        cacheTTL: 300,
+        authenticate: true,
+        count: 40,
+        sortOrder: 1,
+        storeRevisions: true,
+        revisionCollection: 'testSchemaHistory'
+      },
+      version: 'vtest'
+    }
+  ])
+}
 
 describe('Cache', function(done) {
   this.timeout(4000)
@@ -63,49 +121,53 @@ describe('Cache', function(done) {
               config.get('server.port')
           )
 
-          client
-            .get('/vtest/testdb/test-schema')
-            .set('Authorization', 'Bearer ' + bearerToken)
-            .expect(200)
-            .end(function(err, res1) {
-              if (err) return done(err)
+          createSchemas().then(() => {
+            client
+              .get('/vtest/testdb/test-schema')
+              .set('Authorization', 'Bearer ' + bearerToken)
+              .expect(200)
+              .end(function(err, res1) {
+                if (err) return done(err)
 
-              client
-                .post('/vtest/testdb/test-schema')
-                .set('Authorization', 'Bearer ' + bearerToken)
-                .send({field1: 'foo!'})
-                .expect(200)
-                .end(function(err, res) {
-                  if (err) return done(err)
+                client
+                  .post('/vtest/testdb/test-schema')
+                  .set('Authorization', 'Bearer ' + bearerToken)
+                  .send({field1: 'foo!'})
+                  .expect(200)
+                  .end(function(err, res) {
+                    if (err) return done(err)
 
-                  client
-                    .get('/vtest/testdb/test-schema')
-                    .set('Authorization', 'Bearer ' + bearerToken)
-                    .expect(200)
-                    .end(function(err, res2) {
-                      if (err) return done(err)
+                    client
+                      .get('/vtest/testdb/test-schema')
+                      .set('Authorization', 'Bearer ' + bearerToken)
+                      .expect(200)
+                      .end(function(err, res2) {
+                        if (err) return done(err)
 
-                      setTimeout(() => {
-                        client
-                          .get('/vtest/testdb/test-schema')
-                          .set('Authorization', 'Bearer ' + bearerToken)
-                          .expect(200)
-                          .end(function(err, res3) {
-                            if (err) return done(err)
+                        setTimeout(() => {
+                          client
+                            .get('/vtest/testdb/test-schema')
+                            .set('Authorization', 'Bearer ' + bearerToken)
+                            .expect(200)
+                            .end(function(err, res3) {
+                              if (err) return done(err)
 
-                            res2.text.should.equal(res3.text)
+                              res2.text.should.equal(res3.text)
 
-                            should.exist(res3.headers['x-cache'])
-                            res3.headers['x-cache'].should.eql('HIT')
+                              should.exist(res3.headers['x-cache'])
+                              res3.headers['x-cache'].should.eql('HIT')
 
-                            help.removeTestClients(function() {
-                              app.stop(done)
+                              help.removeTestClients(function() {
+                                help.dropSchemas().then(() => {
+                                  app.stop(done)
+                                })
+                              })
                             })
-                          })
-                      }, 300)
-                    })
-                })
-            })
+                        }, 300)
+                      })
+                  })
+              })
+          })
         })
       })
     })
@@ -131,41 +193,45 @@ describe('Cache', function(done) {
               config.get('server.port')
           )
 
-          client
-            .post('/vtest/testdb/test-schema')
-            .set('Authorization', 'Bearer ' + bearerToken)
-            .send({field1: 'foo!'})
-            .expect(200)
-            .end(function(err, res) {
-              if (err) return done(err)
+          createSchemas().then(() => {
+            client
+              .post('/vtest/testdb/test-schema')
+              .set('Authorization', 'Bearer ' + bearerToken)
+              .send({field1: 'foo!'})
+              .expect(200)
+              .end(function(err, res) {
+                if (err) return done(err)
 
-              client
-                .get('/vtest/testdb/test-schema')
-                .set('Authorization', 'Bearer ' + bearerToken)
-                .expect(200)
-                .end(function(err, res1) {
-                  if (err) return done(err)
+                client
+                  .get('/vtest/testdb/test-schema')
+                  .set('Authorization', 'Bearer ' + bearerToken)
+                  .expect(200)
+                  .end(function(err, res1) {
+                    if (err) return done(err)
 
-                  res1.body['results'].length.should.equal(1)
+                    res1.body['results'].length.should.equal(1)
 
-                  client
-                    .get('/vtest/testdb/test-schema?cache=false')
-                    .set('Authorization', 'Bearer ' + bearerToken)
-                    .expect(200)
-                    .end(function(err, res2) {
-                      if (err) return done(err)
+                    client
+                      .get('/vtest/testdb/test-schema?cache=false')
+                      .set('Authorization', 'Bearer ' + bearerToken)
+                      .expect(200)
+                      .end(function(err, res2) {
+                        if (err) return done(err)
 
-                      should.exist(res2.headers['x-cache'])
-                      res2.headers['x-cache'].should.eql('MISS')
-                      should.exist(res2.headers['x-cache-lookup'])
-                      res2.headers['x-cache-lookup'].should.eql('HIT')
+                        should.exist(res2.headers['x-cache'])
+                        res2.headers['x-cache'].should.eql('MISS')
+                        should.exist(res2.headers['x-cache-lookup'])
+                        res2.headers['x-cache-lookup'].should.eql('HIT')
 
-                      help.removeTestClients(function() {
-                        app.stop(done)
+                        help.removeTestClients(function() {
+                          help.dropSchemas().then(() => {
+                            app.stop(done)
+                          })
+                        })
                       })
-                    })
-                })
-            })
+                  })
+              })
+          })
         })
       })
     })
@@ -192,41 +258,45 @@ describe('Cache', function(done) {
               config.get('server.port')
           )
 
-          client
-            .get('/vtest/testdb/test-schema')
-            .set('Authorization', 'Bearer ' + bearerToken)
-            .expect(200)
-            .end(function(err, res1) {
-              if (err) return done(err)
+          createSchemas().then(() => {
+            client
+              .get('/vtest/testdb/test-schema')
+              .set('Authorization', 'Bearer ' + bearerToken)
+              .expect(200)
+              .end(function(err, res1) {
+                if (err) return done(err)
 
-              res1.body['results'].length.should.equal(0)
+                res1.body['results'].length.should.equal(0)
 
-              client
-                .post('/vtest/testdb/test-schema')
-                .set('Authorization', 'Bearer ' + bearerToken)
-                .send({field1: 'foo!'})
-                .expect(200)
-                .end(function(err, res) {
-                  if (err) return done(err)
+                client
+                  .post('/vtest/testdb/test-schema')
+                  .set('Authorization', 'Bearer ' + bearerToken)
+                  .send({field1: 'foo!'})
+                  .expect(200)
+                  .end(function(err, res) {
+                    if (err) return done(err)
 
-                  client
-                    .get('/vtest/testdb/test-schema')
-                    .set('Authorization', 'Bearer ' + bearerToken)
-                    .expect(200)
-                    .end(function(err, res2) {
-                      if (err) return done(err)
+                    client
+                      .get('/vtest/testdb/test-schema')
+                      .set('Authorization', 'Bearer ' + bearerToken)
+                      .expect(200)
+                      .end(function(err, res2) {
+                        if (err) return done(err)
 
-                      res2.body['results'].length.should.equal(1)
+                        res2.body['results'].length.should.equal(1)
 
-                      const called = spy.called
+                        const called = spy.called
 
-                      spy.restore()
-                      called.should.be.false
+                        spy.restore()
+                        called.should.be.false
 
-                      app.stop(done)
-                    })
-                })
-            })
+                        help.dropSchemas().then(() => {
+                          app.stop(done)
+                        })
+                      })
+                  })
+              })
+          })
         })
       })
     })
@@ -239,14 +309,16 @@ describe('Cache', function(done) {
       help.clearCache()
 
       app.start(function() {
-        help.dropDatabase('testdb', function(err) {
-          if (err) return done(err)
-
-          help.getBearerToken(function(err, token) {
+        createSchemas().then(() => {
+          help.dropDatabase('testdb', function(err) {
             if (err) return done(err)
 
-            bearerToken = token
-            done()
+            help.getBearerToken(function(err, token) {
+              if (err) return done(err)
+
+              bearerToken = token
+              done()
+            })
           })
         })
       })
@@ -254,7 +326,9 @@ describe('Cache', function(done) {
 
     afterEach(function(done) {
       help.removeTestClients(function() {
-        app.stop(done)
+        help.dropSchemas().then(() => {
+          app.stop(done)
+        })
       })
     })
 
@@ -644,30 +718,35 @@ describe('Cache', function(done) {
           help.dropDatabase('testdb', function(err) {
             if (err) return done(err)
 
-            help.getBearerToken(function(err, token) {
-              if (err) return done(err)
-              bearerToken = token
+            createSchemas().then(() => {
+              help.getBearerToken(function(err, token) {
+                if (err) return done(err)
+                bearerToken = token
 
-              const client = request(
-                'http://' +
-                  config.get('server.host') +
-                  ':' +
-                  config.get('server.port')
-              )
+                const client = request(
+                  'http://' +
+                    config.get('server.host') +
+                    ':' +
+                    config.get('server.port')
+                )
 
-              client
-                .get(requestUrl)
-                .set('Authorization', 'Bearer ' + bearerToken)
-                .expect(200)
-                .end(function(err, res) {
-                  if (err) return done(err)
+                client
+                  .get(requestUrl)
+                  .set('Authorization', 'Bearer ' + bearerToken)
+                  .expect(200)
+                  .end(function(err, res) {
+                    if (err) return done(err)
 
-                  spy.called.should.eql(true)
-                  spy.args[0][0].should.eql(cacheKey)
+                    spy.called.should.eql(true)
+                    spy.args[0][0].should.eql(cacheKey)
 
-                  c.cache.cacheHandler.redisClient.exists.restore()
-                  app.stop(done)
-                })
+                    c.cache.cacheHandler.redisClient.exists.restore()
+
+                    help.dropSchemas().then(() => {
+                      app.stop(done)
+                    })
+                  })
+              })
             })
           })
         })
@@ -706,30 +785,34 @@ describe('Cache', function(done) {
       try {
         app.start(function() {
           help.dropDatabase('testdb', function(err) {
-            help.getBearerToken(function(err, token) {
-              if (err) return done(err)
-              bearerToken = token
+            createSchemas().then(() => {
+              help.getBearerToken(function(err, token) {
+                if (err) return done(err)
+                bearerToken = token
 
-              const client = request(
-                'http://' +
-                  config.get('server.host') +
-                  ':' +
-                  config.get('server.port')
-              )
+                const client = request(
+                  'http://' +
+                    config.get('server.host') +
+                    ':' +
+                    config.get('server.port')
+                )
 
-              client
-                .get(requestUrl)
-                .set('Accept-Encoding', 'identity')
-                .set('Authorization', 'Bearer ' + bearerToken)
-                .expect(200)
-                .end(function(err, res) {
-                  if (err) return done(err)
+                client
+                  .get(requestUrl)
+                  .set('Accept-Encoding', 'identity')
+                  .set('Authorization', 'Bearer ' + bearerToken)
+                  .expect(200)
+                  .end(function(err, res) {
+                    if (err) return done(err)
 
-                  res.body.should.eql({DATA: 'OK'})
-                  res.headers['x-cache'].should.eql('HIT')
+                    res.body.should.eql({DATA: 'OK'})
+                    res.headers['x-cache'].should.eql('HIT')
 
-                  app.stop(done)
-                })
+                    help.dropSchemas().then(() => {
+                      app.stop(done)
+                    })
+                  })
+              })
             })
           })
         })
@@ -778,59 +861,63 @@ describe('Cache', function(done) {
           help.dropDatabase('testdb', function(err) {
             if (err) return done(err)
 
-            help.getBearerToken(function(err, token) {
-              if (err) return done(err)
-              bearerToken = token
+            createSchemas().then(() => {
+              help.getBearerToken(function(err, token) {
+                if (err) return done(err)
+                bearerToken = token
 
-              const client = request(
-                'http://' +
-                  config.get('server.host') +
-                  ':' +
-                  config.get('server.port')
-              )
+                const client = request(
+                  'http://' +
+                    config.get('server.host') +
+                    ':' +
+                    config.get('server.port')
+                )
 
-              client
-                .post('/vtest/testdb/test-schema')
-                .set('Authorization', 'Bearer ' + bearerToken)
-                .send({field1: 'foo!'})
-                .expect(200)
-                .end(function(err, res) {
-                  if (err) return done(err)
+                client
+                  .post('/vtest/testdb/test-schema')
+                  .set('Authorization', 'Bearer ' + bearerToken)
+                  .send({field1: 'foo!'})
+                  .expect(200)
+                  .end(function(err, res) {
+                    if (err) return done(err)
 
-                  client
-                    .get('/vtest/testdb/test-schema')
-                    .set('Authorization', 'Bearer ' + bearerToken)
-                    .expect(200)
-                    .end(function(err, res1) {
-                      setTimeout(function() {
-                        // get the cache keys
-                        c.cache.cacheHandler.redisClient.KEYS(
-                          '*',
-                          (err, keys) => {
-                            cacheKeys = keys
+                    client
+                      .get('/vtest/testdb/test-schema')
+                      .set('Authorization', 'Bearer ' + bearerToken)
+                      .expect(200)
+                      .end(function(err, res1) {
+                        setTimeout(function() {
+                          // get the cache keys
+                          c.cache.cacheHandler.redisClient.KEYS(
+                            '*',
+                            (err, keys) => {
+                              cacheKeys = keys
 
-                            setTimeout(function() {
-                              // ttl should have expired
-                              client
-                                .get('/vtest/testdb/test-schema')
-                                .set('Authorization', 'Bearer ' + bearerToken)
-                                .expect(200)
-                                .end(function(err, res2) {
-                                  if (err) return done(err)
+                              setTimeout(function() {
+                                // ttl should have expired
+                                client
+                                  .get('/vtest/testdb/test-schema')
+                                  .set('Authorization', 'Bearer ' + bearerToken)
+                                  .expect(200)
+                                  .end(function(err, res2) {
+                                    if (err) return done(err)
 
-                                  res2.headers['x-cache'].should.eql('MISS')
-                                  res2.headers['x-cache-lookup'].should.eql(
-                                    'MISS'
-                                  )
+                                    res2.headers['x-cache'].should.eql('MISS')
+                                    res2.headers['x-cache-lookup'].should.eql(
+                                      'MISS'
+                                    )
 
-                                  app.stop(done)
-                                })
-                            }, 1500)
-                          }
-                        )
-                      }, 1500)
-                    })
-                })
+                                    help.dropSchemas().then(() => {
+                                      app.stop(done)
+                                    })
+                                  })
+                              }, 1500)
+                            }
+                          )
+                        }, 1500)
+                      })
+                  })
+              })
             })
           })
         })
@@ -881,69 +968,73 @@ describe('Cache', function(done) {
           help.dropDatabase('testdb', function(err) {
             if (err) return done(err)
 
-            help.getBearerToken(function(err, token) {
-              if (err) return done(err)
-              bearerToken = token
-
-              help.createDoc(bearerToken, function(err, doc) {
+            createSchemas().then(() => {
+              help.getBearerToken(function(err, token) {
                 if (err) return done(err)
+                bearerToken = token
 
                 help.createDoc(bearerToken, function(err, doc) {
                   if (err) return done(err)
 
-                  const client = request(
-                    'http://' +
-                      config.get('server.host') +
-                      ':' +
-                      config.get('server.port')
-                  )
+                  help.createDoc(bearerToken, function(err, doc) {
+                    if (err) return done(err)
 
-                  client
-                    .get('/vtest/testdb/test-schema')
-                    .set('Authorization', 'Bearer ' + bearerToken)
-                    .expect(200)
-                    .end(function(err, res1) {
-                      if (err) return done(err)
+                    const client = request(
+                      'http://' +
+                        config.get('server.host') +
+                        ':' +
+                        config.get('server.port')
+                    )
 
-                      setTimeout(function() {
-                        // get the cache keys
-                        c.cache.cacheHandler.redisClient.KEYS(
-                          '*',
-                          (err, keys) => {
-                            cacheKeys = keys
+                    client
+                      .get('/vtest/testdb/test-schema')
+                      .set('Authorization', 'Bearer ' + bearerToken)
+                      .expect(200)
+                      .end(function(err, res1) {
+                        if (err) return done(err)
 
-                            client
-                              .post('/vtest/testdb/test-schema')
-                              .set('Authorization', 'Bearer ' + bearerToken)
-                              .send({field1: 'foo!'})
-                              .expect(200)
-                              .end(function(err, res2) {
-                                if (err) return done(err)
+                        setTimeout(function() {
+                          // get the cache keys
+                          c.cache.cacheHandler.redisClient.KEYS(
+                            '*',
+                            (err, keys) => {
+                              cacheKeys = keys
 
-                                setTimeout(function() {
-                                  client
-                                    .get('/vtest/testdb/test-schema')
-                                    .set(
-                                      'Authorization',
-                                      'Bearer ' + bearerToken
-                                    )
-                                    .expect(200)
-                                    .end(function(err, res3) {
-                                      if (err) return done(err)
+                              client
+                                .post('/vtest/testdb/test-schema')
+                                .set('Authorization', 'Bearer ' + bearerToken)
+                                .send({field1: 'foo!'})
+                                .expect(200)
+                                .end(function(err, res2) {
+                                  if (err) return done(err)
 
-                                      cache.reset()
-                                      res1.body.results.length.should.eql(2)
-                                      res3.body.results.length.should.eql(3)
-                                      res3.text.should.not.equal(res1.text)
+                                  setTimeout(function() {
+                                    client
+                                      .get('/vtest/testdb/test-schema')
+                                      .set(
+                                        'Authorization',
+                                        'Bearer ' + bearerToken
+                                      )
+                                      .expect(200)
+                                      .end(function(err, res3) {
+                                        if (err) return done(err)
 
-                                      app.stop(done)
-                                    })
-                                }, 500)
-                              })
-                          }
-                        )
-                      }, 500)
-                    })
+                                        cache.reset()
+                                        res1.body.results.length.should.eql(2)
+                                        res3.body.results.length.should.eql(3)
+                                        res3.text.should.not.equal(res1.text)
+
+                                        help.dropSchemas().then(() => {
+                                          app.stop(done)
+                                        })
+                                      })
+                                  }, 500)
+                                })
+                            }
+                          )
+                        }, 500)
+                      })
+                  })
                 })
               })
             })
@@ -996,95 +1087,100 @@ describe('Cache', function(done) {
           help.dropDatabase('testdb', function(err) {
             if (err) return done(err)
 
-            help.getBearerToken(function(err, token) {
-              if (err) return done(err)
-              bearerToken = token
-
-              help.createDoc(bearerToken, function(err, doc) {
+            createSchemas().then(() => {
+              help.getBearerToken(function(err, token) {
                 if (err) return done(err)
+                bearerToken = token
 
                 help.createDoc(bearerToken, function(err, doc) {
                   if (err) return done(err)
 
-                  const client = request(
-                    'http://' +
-                      config.get('server.host') +
-                      ':' +
-                      config.get('server.port')
-                  )
+                  help.createDoc(bearerToken, function(err, doc) {
+                    if (err) return done(err)
 
-                  // GET
-                  client
-                    .get('/vtest/testdb/test-schema')
-                    .set('Authorization', 'Bearer ' + bearerToken)
-                    .expect(200)
-                    .end(function(err, getRes1) {
-                      if (err) return done(err)
+                    const client = request(
+                      'http://' +
+                        config.get('server.host') +
+                        ':' +
+                        config.get('server.port')
+                    )
 
-                      // CREATE
-                      client
-                        .post('/vtest/testdb/test-schema')
-                        .set('Authorization', 'Bearer ' + bearerToken)
-                        .send({field1: 'foo!'})
-                        .expect(200)
-                        .end(function(err, postRes1) {
-                          if (err) return done(err)
+                    // GET
+                    client
+                      .get('/vtest/testdb/test-schema')
+                      .set('Authorization', 'Bearer ' + bearerToken)
+                      .expect(200)
+                      .end(function(err, getRes1) {
+                        if (err) return done(err)
 
-                          // save id for updating
-                          const id = postRes1.body.results[0]._id
+                        // CREATE
+                        client
+                          .post('/vtest/testdb/test-schema')
+                          .set('Authorization', 'Bearer ' + bearerToken)
+                          .send({field1: 'foo!'})
+                          .expect(200)
+                          .end(function(err, postRes1) {
+                            if (err) return done(err)
 
-                          // GET AGAIN - should cache new results
-                          client
-                            .get('/vtest/testdb/test-schema')
-                            .set('Authorization', 'Bearer ' + bearerToken)
-                            .expect(200)
-                            .end(function(err, getRes2) {
-                              if (err) return done(err)
+                            // save id for updating
+                            const id = postRes1.body.results[0]._id
 
-                              setTimeout(function() {
-                                // get the cache keys
-                                c.cache.cacheHandler.redisClient.KEYS(
-                                  '*',
-                                  (err, keys) => {
-                                    cacheKeys = keys
+                            // GET AGAIN - should cache new results
+                            client
+                              .get('/vtest/testdb/test-schema')
+                              .set('Authorization', 'Bearer ' + bearerToken)
+                              .expect(200)
+                              .end(function(err, getRes2) {
+                                if (err) return done(err)
 
-                                    // UPDATE again
-                                    client
-                                      .put('/vtest/testdb/test-schema/' + id)
-                                      .set(
-                                        'Authorization',
-                                        'Bearer ' + bearerToken
-                                      )
-                                      .send({field1: 'foo bar baz!'})
-                                      .expect(200)
-                                      .end(function(err, postRes2) {
-                                        // WAIT, then GET again
-                                        setTimeout(function() {
-                                          client
-                                            .get('/vtest/testdb/test-schema')
-                                            .set(
-                                              'Authorization',
-                                              'Bearer ' + bearerToken
-                                            )
-                                            .expect(200)
-                                            .end(function(err, getRes3) {
-                                              const result = getRes3.body.results.find(
-                                                item => item._id === id
+                                setTimeout(function() {
+                                  // get the cache keys
+                                  c.cache.cacheHandler.redisClient.KEYS(
+                                    '*',
+                                    (err, keys) => {
+                                      cacheKeys = keys
+
+                                      // UPDATE again
+                                      client
+                                        .put('/vtest/testdb/test-schema/' + id)
+                                        .set(
+                                          'Authorization',
+                                          'Bearer ' + bearerToken
+                                        )
+                                        .send({field1: 'foo bar baz!'})
+                                        .expect(200)
+                                        .end(function(err, postRes2) {
+                                          // WAIT, then GET again
+                                          setTimeout(function() {
+                                            client
+                                              .get('/vtest/testdb/test-schema')
+                                              .set(
+                                                'Authorization',
+                                                'Bearer ' + bearerToken
                                               )
+                                              .expect(200)
+                                              .end(function(err, getRes3) {
+                                                const result = getRes3.body.results.find(
+                                                  item => item._id === id
+                                                )
 
-                                              result.field1.should.eql(
-                                                'foo bar baz!'
-                                              )
-                                              app.stop(done)
-                                            })
-                                        }, 500)
-                                      })
-                                  }
-                                )
-                              }, 500)
-                            })
-                        })
-                    })
+                                                result.field1.should.eql(
+                                                  'foo bar baz!'
+                                                )
+
+                                                help.dropSchemas().then(() => {
+                                                  app.stop(done)
+                                                })
+                                              })
+                                          }, 500)
+                                        })
+                                    }
+                                  )
+                                }, 500)
+                              })
+                          })
+                      })
+                  })
                 })
               })
             })
@@ -1137,94 +1233,103 @@ describe('Cache', function(done) {
           help.dropDatabase('testdb', function(err) {
             if (err) return done(err)
 
-            help.getBearerToken(function(err, token) {
-              if (err) return done(err)
-              bearerToken = token
-
-              help.createDoc(bearerToken, function(err, doc) {
+            createSchemas().then(() => {
+              help.getBearerToken(function(err, token) {
                 if (err) return done(err)
+                bearerToken = token
 
                 help.createDoc(bearerToken, function(err, doc) {
                   if (err) return done(err)
 
-                  const client = request(
-                    'http://' +
-                      config.get('server.host') +
-                      ':' +
-                      config.get('server.port')
-                  )
+                  help.createDoc(bearerToken, function(err, doc) {
+                    if (err) return done(err)
 
-                  // GET
-                  client
-                    .get('/vtest/testdb/test-schema')
-                    .set('Authorization', 'Bearer ' + bearerToken)
-                    .expect(200)
-                    .end(function(err, getRes1) {
-                      if (err) return done(err)
+                    const client = request(
+                      'http://' +
+                        config.get('server.host') +
+                        ':' +
+                        config.get('server.port')
+                    )
 
-                      // CREATE
-                      client
-                        .post('/vtest/testdb/test-schema')
-                        .set('Authorization', 'Bearer ' + bearerToken)
-                        .send({field1: 'foo!'})
-                        .expect(200)
-                        .end(function(err, postRes1) {
-                          if (err) return done(err)
+                    // GET
+                    client
+                      .get('/vtest/testdb/test-schema')
+                      .set('Authorization', 'Bearer ' + bearerToken)
+                      .expect(200)
+                      .end(function(err, getRes1) {
+                        if (err) return done(err)
 
-                          // save id for deleting
-                          const id = postRes1.body.results[0]._id
+                        // CREATE
+                        client
+                          .post('/vtest/testdb/test-schema')
+                          .set('Authorization', 'Bearer ' + bearerToken)
+                          .send({field1: 'foo!'})
+                          .expect(200)
+                          .end(function(err, postRes1) {
+                            if (err) return done(err)
 
-                          // GET AGAIN - should cache new results
-                          client
-                            .get('/vtest/testdb/test-schema')
-                            .set('Authorization', 'Bearer ' + bearerToken)
-                            .expect(200)
-                            .end(function(err, getRes2) {
-                              setTimeout(function() {
-                                // get the cache keys
-                                c.cache.cacheHandler.redisClient.KEYS(
-                                  '*',
-                                  (err, keys) => {
-                                    cacheKeys = keys
+                            // save id for deleting
+                            const id = postRes1.body.results[0]._id
 
-                                    setTimeout(function() {
-                                      // DELETE
-                                      client
-                                        .delete(
-                                          '/vtest/testdb/test-schema/' + id
-                                        )
-                                        .set(
-                                          'Authorization',
-                                          'Bearer ' + bearerToken
-                                        )
-                                        .expect(204)
-                                        .end(function(err, postRes2) {
-                                          // WAIT, then GET again
-                                          setTimeout(function() {
-                                            client
-                                              .get('/vtest/testdb/test-schema')
-                                              .set(
-                                                'Authorization',
-                                                'Bearer ' + bearerToken
-                                              )
-                                              .expect(200)
-                                              .end(function(err, getRes3) {
-                                                const result = getRes3.body.results.find(
-                                                  item => item._id === id
+                            // GET AGAIN - should cache new results
+                            client
+                              .get('/vtest/testdb/test-schema')
+                              .set('Authorization', 'Bearer ' + bearerToken)
+                              .expect(200)
+                              .end(function(err, getRes2) {
+                                setTimeout(function() {
+                                  // get the cache keys
+                                  c.cache.cacheHandler.redisClient.KEYS(
+                                    '*',
+                                    (err, keys) => {
+                                      cacheKeys = keys
+
+                                      setTimeout(function() {
+                                        // DELETE
+                                        client
+                                          .delete(
+                                            '/vtest/testdb/test-schema/' + id
+                                          )
+                                          .set(
+                                            'Authorization',
+                                            'Bearer ' + bearerToken
+                                          )
+                                          .expect(204)
+                                          .end(function(err, postRes2) {
+                                            // WAIT, then GET again
+                                            setTimeout(function() {
+                                              client
+                                                .get(
+                                                  '/vtest/testdb/test-schema'
                                                 )
+                                                .set(
+                                                  'Authorization',
+                                                  'Bearer ' + bearerToken
+                                                )
+                                                .expect(200)
+                                                .end(function(err, getRes3) {
+                                                  const result = getRes3.body.results.find(
+                                                    item => item._id === id
+                                                  )
 
-                                                should.not.exist(result)
-                                                app.stop(done)
-                                              })
-                                          }, 300)
-                                        })
-                                    }, 700)
-                                  }
-                                )
-                              }, 500)
-                            })
-                        })
-                    })
+                                                  should.not.exist(result)
+
+                                                  help
+                                                    .dropSchemas()
+                                                    .then(() => {
+                                                      app.stop(done)
+                                                    })
+                                                })
+                                            }, 300)
+                                          })
+                                      }, 700)
+                                    }
+                                  )
+                                }, 500)
+                              })
+                          })
+                      })
+                  })
                 })
               })
             })
@@ -1282,46 +1387,51 @@ describe('Cache', function(done) {
           help.dropDatabase('testdb', function(err) {
             if (err) return done(err)
 
-            client
-              .get('/vtest/testdb/test-schema?callback=myCallback')
-              .set('Authorization', 'Bearer ' + bearerToken)
-              .expect(200)
-              .expect('content-type', 'text/javascript')
-              .end(function(err, res1) {
-                if (err) return done(err)
+            createSchemas().then(() => {
+              client
+                .get('/vtest/testdb/test-schema?callback=myCallback')
+                .set('Authorization', 'Bearer ' + bearerToken)
+                .expect(200)
+                .expect('content-type', 'text/javascript')
+                .end(function(err, res1) {
+                  if (err) return done(err)
 
-                setTimeout(function() {
-                  // get the cache keys
-                  c.cache.cacheHandler.redisClient.KEYS('*', (err, keys) => {
-                    cacheKeys = keys
+                  setTimeout(function() {
+                    // get the cache keys
+                    c.cache.cacheHandler.redisClient.KEYS('*', (err, keys) => {
+                      cacheKeys = keys
 
-                    setTimeout(function() {
-                      client
-                        .post('/vtest/testdb/test-schema')
-                        .set('Authorization', 'Bearer ' + bearerToken)
-                        .send({field1: 'foo!'})
-                        .expect(200)
-                        .end(function(err, res) {
-                          if (err) return done(err)
+                      setTimeout(function() {
+                        client
+                          .post('/vtest/testdb/test-schema')
+                          .set('Authorization', 'Bearer ' + bearerToken)
+                          .send({field1: 'foo!'})
+                          .expect(200)
+                          .end(function(err, res) {
+                            if (err) return done(err)
 
-                          client
-                            .get(
-                              '/vtest/testdb/test-schema?callback=myCallback'
-                            )
-                            .set('Authorization', 'Bearer ' + bearerToken)
-                            .expect(200)
-                            .expect('content-type', 'text/javascript')
-                            .end(function(err, res2) {
-                              if (err) return done(err)
+                            client
+                              .get(
+                                '/vtest/testdb/test-schema?callback=myCallback'
+                              )
+                              .set('Authorization', 'Bearer ' + bearerToken)
+                              .expect(200)
+                              .expect('content-type', 'text/javascript')
+                              .end(function(err, res2) {
+                                if (err) return done(err)
 
-                              res2.text.should.not.equal(res1.text)
-                              app.stop(done)
-                            })
-                        })
-                    }, 500)
-                  })
-                }, 500)
-              })
+                                res2.text.should.not.equal(res1.text)
+
+                                help.dropSchemas().then(() => {
+                                  app.stop(done)
+                                })
+                              })
+                          })
+                      }, 500)
+                    })
+                  }, 500)
+                })
+            })
           })
         })
       } catch (err) {

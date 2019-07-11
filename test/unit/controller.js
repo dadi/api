@@ -7,9 +7,17 @@ const help = require(__dirname + '/help')
 const libHelp = require(__dirname + '/../../dadi/lib/help')
 const config = require(__dirname + '/../../config')
 
+const mockResponse = {
+  setHeader: () => {}
+}
+
 describe('Controller', () => {
   before(() => {
     cache.reset()
+  })
+
+  afterEach(() => {
+    model.unloadAll()
   })
 
   it('should export constructor', () => {
@@ -25,26 +33,10 @@ describe('Controller', () => {
     controller(mod).should.be.an.instanceOf(controller.Controller)
   })
 
-  it('should attach a model to the controller', () => {
-    const mod = model('testModel', help.getModelSchema(), null, {
-      database: 'testdb'
-    })
-
-    controller(mod).model.should.equal(mod)
-  })
-
-  it('should throw if no model is passed to constructor', () => {
-    controller.should.throw()
-  })
-
   describe('instance', function() {
     describe('`get` method', function() {
       it('should be accessible', () => {
-        const mod = model('testModel', help.getModelSchema(), null, {
-          database: 'testdb'
-        })
-
-        controller(mod).get.should.be.Function
+        controller().get.should.be.Function
       })
 
       it("should call the Model's get method", () => {
@@ -53,11 +45,12 @@ describe('Controller', () => {
         })
         const stub = sinon.stub(mod, 'get').resolves({})
         const req = {
+          collectionModel: mod,
           params: {},
           url: '/foo/bar'
         }
 
-        controller(mod).get(req)
+        controller().get(req, mockResponse)
         stub.callCount.should.equal(1)
         stub.restore()
       })
@@ -68,11 +61,12 @@ describe('Controller', () => {
         })
         const stub = sinon.stub(mod, 'get').resolves({})
         const req = {
+          collectionModel: mod,
           params: {},
           url: '/foo/bar?filter={"fieldName":"test", "busted":56488}'
         }
 
-        controller(mod).get(req)
+        controller().get(req, mockResponse)
         stub.callCount.should.equal(1)
 
         const queryParameters = stub.returnsArg(0).args[0][0].query
@@ -89,11 +83,12 @@ describe('Controller', () => {
         })
         const stub = sinon.stub(mod, 'get').resolves({})
         const req = {
+          collectionModel: mod,
           params: {},
           url: '/foo/bar?filter={"fieldName": null}'
         }
 
-        controller(mod).get(req)
+        controller().get(req, mockResponse)
         stub.callCount.should.equal(1)
 
         const queryParameters = stub.returnsArg(0).args[0][0].query
@@ -114,14 +109,14 @@ describe('Controller', () => {
         const mod = model('testModel', schema, null, {database: 'testdb'})
         const stub = sinon.stub(mod, 'get').resolves({})
         const req = {
+          collectionModel: mod,
           params: {},
           url: '/foo/bar?filter={"fieldName": null, "field2": "xx"}'
         }
 
-        controller(mod).get(req)
+        controller().get(req, mockResponse)
         stub.callCount.should.equal(1)
 
-        const findArgs = stub.returnsArg(0).args[0][0]
         const queryParameters = stub.returnsArg(0).args[0][0].query
 
         should.equal(queryParameters.fieldName, null)
@@ -142,11 +137,12 @@ describe('Controller', () => {
         const mod = model('schemaTest', schema, null, {database: 'testdb'})
         const stub = sinon.stub(mod, 'get').resolves({})
         const req = {
+          collectionModel: mod,
           params: {},
           url: '/foo/bar?filter={"fieldMixed.innerProperty":"foo"}'
         }
 
-        controller(mod).get(req)
+        controller().get(req, mockResponse)
         stub.callCount.should.equal(1)
 
         const queryParameters = stub.returnsArg(0).args[0][0].query
@@ -162,10 +158,12 @@ describe('Controller', () => {
         })
         const stub = sinon.stub(mod, 'get').resolves({})
         const req = {
+          collectionModel: mod,
           url: '/foo/bar?filter={"fieldName":"test"}&skip=-1',
           headers: {
             'accept-encoding': 'identity'
-          }
+          },
+          params: {}
         }
         const res = {
           setHeader: function setHeader(str1, str2) {},
@@ -177,7 +175,11 @@ describe('Controller', () => {
           }
         }
 
-        controller(mod).get(req, res, function() {})
+        try {
+          controller().get(req, res, function() {})
+        } catch (e) {
+          console.log(e)
+        }
       })
 
       it('should not call find() if invalid page option is provided', done => {
@@ -186,10 +188,12 @@ describe('Controller', () => {
         })
         const stub = sinon.stub(mod, 'get').resolves({})
         const req = {
+          collectionModel: mod,
           url: '/foo/bar?filter={"fieldName":"test"}&page=-1',
           headers: {
             'accept-encoding': 'identity'
-          }
+          },
+          params: {}
         }
         const res = {
           setHeader: function setHeader(str1, str2) {},
@@ -201,7 +205,7 @@ describe('Controller', () => {
           }
         }
 
-        controller(mod).get(req, res, function() {})
+        controller().get(req, res, function() {})
       })
 
       it('should not pass apiVersion in query if not configured', () => {
@@ -220,11 +224,12 @@ describe('Controller', () => {
         )
         const stub = sinon.stub(mod, 'get').resolves({})
         const req = {
+          collectionModel: mod,
           params: {},
           url: '/v1/bar'
         }
 
-        controller(mod).get(req)
+        controller().get(req, mockResponse)
         stub.restore()
         config.set('query.useVersionFilter', configCache)
 
@@ -251,11 +256,12 @@ describe('Controller', () => {
         )
         const stub = sinon.stub(mod, 'get').resolves({})
         const req = {
+          collectionModel: mod,
           params: {},
           url: '/v1/bar'
         }
 
-        controller(mod).get(req)
+        controller().get(req, mockResponse)
         stub.restore()
         config.set('query.useVersionFilter', configCache)
 
@@ -279,11 +285,12 @@ describe('Controller', () => {
         )
         const stub = sinon.stub(mod, 'get').resolves({})
         const req = {
+          collectionModel: mod,
           params: {},
           url: '/foo/bar'
         }
 
-        controller(mod).get(req)
+        controller().get(req, mockResponse)
         stub.callCount.should.equal(1)
 
         const queryParameters = stub.returnsArg(0).args[0][0].query
@@ -306,11 +313,12 @@ describe('Controller', () => {
         )
         const stub = sinon.stub(mod, 'get').resolves({})
         const req = {
+          collectionModel: mod,
           params: {},
           url: '/foo/bar'
         }
 
-        controller(mod).get(req)
+        controller().get(req)
 
         stub.callCount.should.equal(1)
 
@@ -323,7 +331,10 @@ describe('Controller', () => {
 
       it('should send response', done => {
         const mod = model('testModel', help.getModelSchema())
+        const stub = sinon.stub(mod, 'get').resolves([])
         const req = {
+          collectionModel: mod,
+          headers: {},
           params: {},
           url: '/foo/bar'
         }
@@ -334,17 +345,15 @@ describe('Controller', () => {
           setHeader() {}
         }
 
-        controller(mod).get(req, res, function() {})
+        controller().get(req, res, function() {})
+
+        stub.restore()
       })
     })
 
     describe('`post` method', function() {
       it('should be accessible', () => {
-        const mod = model('testModel', help.getModelSchema(), null, {
-          database: 'testdb'
-        })
-
-        controller(mod).post.should.be.Function
+        controller().post.should.be.Function
       })
 
       it("should call the Model's create method", () => {
@@ -357,7 +366,8 @@ describe('Controller', () => {
           pathname.should.be.String
         })
 
-        controller(mod).post({
+        controller().post({
+          collectionModel: mod,
           params: {},
           body: {field1: 'foo'},
           url: '/vtest/testdb/testcoll'
@@ -380,7 +390,8 @@ describe('Controller', () => {
           pathname.should.be.String
         })
 
-        controller(mod).post({
+        controller().post({
+          collectionModel: mod,
           params: {},
           dadiApiClient: {clientId: 'clientTestId'},
           body: {field1: 'foo'},
@@ -402,11 +413,7 @@ describe('Controller', () => {
 
     describe('`put` method', () => {
       it('should be accessible', () => {
-        const mod = model('testModel', help.getModelSchema(), null, {
-          database: 'testdb'
-        })
-
-        controller(mod).put.should.be.Function
+        controller().put.should.be.Function
       })
 
       it("should call the Model's update method", () => {
@@ -419,7 +426,8 @@ describe('Controller', () => {
           pathname.should.be.String
         })
 
-        controller(mod).put({
+        controller().put({
+          collectionModel: mod,
           params: {id: '1234567890'},
           body: {field1: 'foo'},
           url: '/vtest/testdb/testcoll'
@@ -443,7 +451,8 @@ describe('Controller', () => {
           pathname.should.be.String
         })
 
-        controller(mod).put({
+        controller().put({
+          collectionModel: mod,
           params: {id: '1234567890'},
           dadiApiClient: {clientId: 'clientTestId'},
           body: {field1: 'bar'},
@@ -466,11 +475,7 @@ describe('Controller', () => {
 
     describe('`delete` method', function() {
       it('should be accessible', () => {
-        const mod = model('testModel', help.getModelSchema(), null, {
-          database: 'testdb'
-        })
-
-        controller(mod).delete.should.be.Function
+        controller().delete.should.be.Function
       })
 
       it("should call the Model's delete method", () => {
@@ -480,15 +485,21 @@ describe('Controller', () => {
         const stub = sinon.stub(mod, 'delete').resolves({})
 
         const req = {
+          collectionModel: mod,
           url: '/vtest/testdb/testModel',
-          params: {id: 'test123'}
+          params: {
+            version: 'vtest',
+            property: 'testdb',
+            collection: 'testModel',
+            id: 'test123'
+          }
         }
 
         sinon.stub(libHelp, 'clearCache').callsFake(pathname => {
           pathname.should.eql(req.url)
         })
 
-        controller(mod).delete(req)
+        controller().delete(req, mockResponse)
 
         stub.callCount.should.equal(1)
 
@@ -499,11 +510,7 @@ describe('Controller', () => {
 
     describe('`stats` method', function() {
       it('should be accessible', () => {
-        const mod = model('testModel', help.getModelSchema(), null, {
-          database: 'testdb'
-        })
-
-        controller(mod).stats.should.be.Function
+        controller().stats.should.be.Function
       })
 
       it("should call the Model's stats method", () => {
@@ -512,11 +519,12 @@ describe('Controller', () => {
         })
         const stub = sinon.stub(mod, 'getStats').resolves({})
         const req = {
+          collectionModel: mod,
           method: 'get',
           url: '/foo/bar'
         }
 
-        controller(mod).stats(req)
+        controller().stats(req)
         stub.callCount.should.equal(1)
         stub.restore()
       })

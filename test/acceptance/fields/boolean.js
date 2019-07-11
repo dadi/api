@@ -1,35 +1,65 @@
-const should = require('should')
 const request = require('supertest')
 const config = require(__dirname + '/../../../config')
 const help = require(__dirname + '/../help')
 const app = require(__dirname + '/../../../dadi/lib/')
 
-let bearerToken
-const configBackup = config.get()
 const connectionString =
   'http://' + config.get('server.host') + ':' + config.get('server.port')
 
+let bearerToken
+
 describe('Boolean Field', () => {
   beforeEach(done => {
-    config.set(
-      'paths.collections',
-      'test/acceptance/temp-workspace/collections'
-    )
-
     help.dropDatabase('library', 'misc', err => {
       app.start(() => {
-        help.getBearerToken(function(err, token) {
-          if (err) return done(err)
-          bearerToken = token
-          done()
-        })
+        help
+          .createSchemas([
+            {
+              version: 'v1',
+              property: 'library',
+              name: 'misc',
+              fields: {
+                boolean: {
+                  type: 'Boolean'
+                },
+                string: {
+                  type: 'String'
+                },
+                mixed: {
+                  type: 'Mixed'
+                },
+                object: {
+                  type: 'Object'
+                },
+                multiReference: {
+                  type: 'Reference'
+                }
+              },
+              settings: {
+                cache: false,
+                authenticate: false,
+                count: 40,
+                sort: 'string',
+                sortOrder: 1,
+                storeRevisions: false
+              }
+            }
+          ])
+          .then(() => {
+            help.getBearerToken(function(err, token) {
+              bearerToken = token
+
+              done(err)
+            })
+          })
       })
     })
   })
 
   afterEach(done => {
-    config.set('paths.collections', configBackup.paths.collections)
-    app.stop(done)
+    help.dropSchemas().then(() => {
+      app.stop(done)
+    })
   })
 
   it('should create and retrieve', done => {

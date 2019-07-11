@@ -1,26 +1,25 @@
-const should = require('should')
+const app = require('../../../../dadi/lib/')
+const config = require('../../../../config')
+const help = require('../../help')
 const request = require('supertest')
-const config = require(__dirname + '/../../../../config')
-const help = require(__dirname + '/../../help')
-const app = require(__dirname + '/../../../../dadi/lib/')
+const should = require('should')
 
-// variables scoped for use throughout tests
 const connectionString =
   'http://' + config.get('server.host') + ':' + config.get('server.port')
 const client = request(connectionString)
+
 let bearerToken
-const lastModifiedAt = 0
 
 describe('Collections API – PUT', function() {
   this.timeout(4000)
-
-  let cleanupFn
 
   before(function(done) {
     help.dropDatabase('testdb', function(err) {
       if (err) return done(err)
 
-      const schema = {
+      const baseSchema = {
+        property: 'testdb',
+        name: 'put-test-schema',
         fields: {
           field1: {
             type: 'String',
@@ -42,69 +41,50 @@ describe('Collections API – PUT', function() {
         settings: {}
       }
 
-      const schemaNoHistory = Object.assign({}, schema, {
-        settings: {
-          storeRevisions: false
-        }
-      })
-
-      help.writeTempFile(
-        'temp-workspace/collections/vtest/testdb/collection.put-test-schema.json',
-        schema,
-        callback1 => {
-          help.writeTempFile(
-            'temp-workspace/collections/vjoin/testdb/collection.put-test-schema.json',
-            schema,
-            callback2 => {
-              help.writeTempFile(
-                'temp-workspace/collections/vtest/testdb/collection.put-test-schema-no-history.json',
-                schema,
-                callback3 => {
-                  help.writeTempFile(
-                    'temp-workspace/collections/vjoin/testdb/collection.put-test-schema-no-history.json',
-                    schema,
-                    callback4 => {
-                      cleanupFn = () => {
-                        callback1()
-                        callback2()
-                        callback3()
-                        callback4()
-                      }
-
-                      app.start(function() {
-                        help.getBearerTokenWithAccessType('admin', function(
-                          err,
-                          token
-                        ) {
-                          if (err) return done(err)
-
-                          bearerToken = token
-
-                          done()
-                        })
-                      })
-                    }
-                  )
-                }
-              )
+      help
+        .createSchemas([
+          Object.assign({}, baseSchema, {version: 'v1'}),
+          Object.assign({}, baseSchema, {version: 'v2'}),
+          Object.assign({}, baseSchema, {
+            version: 'v1',
+            name: 'put-test-schema-no-history',
+            settings: {
+              storeRevisions: false
             }
-          )
-        }
-      )
+          }),
+          Object.assign({}, baseSchema, {
+            version: 'v2',
+            name: 'put-test-schema-no-history',
+            settings: {
+              storeRevisions: false
+            }
+          })
+        ])
+        .then(() => {
+          app.start(function() {
+            help.getBearerTokenWithAccessType('admin', function(err, token) {
+              if (err) return done(err)
+
+              bearerToken = token
+
+              done()
+            })
+          })
+        })
     })
   })
 
   after(function(done) {
-    app.stop(() => {
-      cleanupFn()
-
-      done()
+    help.dropSchemas().then(() => {
+      app.stop(() => {
+        done()
+      })
     })
   })
 
   it('should update existing documents when passing ID', function(done) {
     client
-      .post('/vtest/testdb/put-test-schema')
+      .post('/v1/testdb/put-test-schema')
       .set('Authorization', 'Bearer ' + bearerToken)
       .send({field1: 'doc to update'})
       .expect(200)
@@ -116,7 +96,7 @@ describe('Collections API – PUT', function() {
         should.exist(doc)
         doc.field1.should.equal('doc to update')
 
-        const puturl = '/vtest/testdb/put-test-schema/' + doc._id
+        const puturl = '/v1/testdb/put-test-schema/' + doc._id
 
         client
           .put(puturl)
@@ -130,9 +110,7 @@ describe('Collections API – PUT', function() {
 
             client
               .get(
-                '/vtest/testdb/put-test-schema?filter={"_id": "' +
-                  doc._id +
-                  '"}'
+                '/v1/testdb/put-test-schema?filter={"_id": "' + doc._id + '"}'
               )
               .set('Authorization', 'Bearer ' + bearerToken)
               .expect(200)
@@ -153,7 +131,7 @@ describe('Collections API – PUT', function() {
 
   it('should return 404 when updating a non-existing document by ID (RESTful)', function(done) {
     client
-      .put('/vtest/testdb/put-test-schema/59f1b3e038ad765e669ac47f')
+      .put('/v1/testdb/put-test-schema/59f1b3e038ad765e669ac47f')
       .set('Authorization', 'Bearer ' + bearerToken)
       .send({field1: 'updated doc'})
       .expect(404)
@@ -168,7 +146,7 @@ describe('Collections API – PUT', function() {
 
   it('should return 200 when updating a non-existing document by ID, supplying the query in the request body', function(done) {
     client
-      .put('/vtest/testdb/put-test-schema')
+      .put('/v1/testdb/put-test-schema')
       .set('Authorization', 'Bearer ' + bearerToken)
       .send({
         query: {
@@ -195,7 +173,7 @@ describe('Collections API – PUT', function() {
     config.set('internalFieldsPrefix', '$')
 
     client
-      .post('/vtest/testdb/put-test-schema')
+      .post('/v1/testdb/put-test-schema')
       .set('Authorization', 'Bearer ' + bearerToken)
       .send({field1: 'doc to update'})
       .expect(200)
@@ -207,7 +185,7 @@ describe('Collections API – PUT', function() {
         should.exist(doc)
         doc.field1.should.equal('doc to update')
 
-        const puturl = '/vtest/testdb/put-test-schema/' + doc.$id
+        const puturl = '/v1/testdb/put-test-schema/' + doc.$id
 
         client
           .put(puturl)
@@ -228,7 +206,7 @@ describe('Collections API – PUT', function() {
 
   it('should update existing document by ID when passing a query', function(done) {
     client
-      .post('/vtest/testdb/put-test-schema')
+      .post('/v1/testdb/put-test-schema')
       .set('Authorization', 'Bearer ' + bearerToken)
       .send({field1: 'doc to update'})
       .expect(200)
@@ -246,7 +224,7 @@ describe('Collections API – PUT', function() {
         }
 
         client
-          .put('/vtest/testdb/put-test-schema/')
+          .put('/v1/testdb/put-test-schema/')
           .set('Authorization', 'Bearer ' + bearerToken)
           .send(body)
           .expect(200)
@@ -259,9 +237,7 @@ describe('Collections API – PUT', function() {
 
             client
               .get(
-                '/vtest/testdb/put-test-schema?filter={"_id": "' +
-                  doc._id +
-                  '"}'
+                '/v1/testdb/put-test-schema?filter={"_id": "' + doc._id + '"}'
               )
               .set('Authorization', 'Bearer ' + bearerToken)
               .expect(200)
@@ -287,7 +263,7 @@ describe('Collections API – PUT', function() {
     config.set('internalFieldsPrefix', '$')
 
     client
-      .post('/vtest/testdb/put-test-schema')
+      .post('/v1/testdb/put-test-schema')
       .set('Authorization', 'Bearer ' + bearerToken)
       .send({field1: 'doc to update'})
       .expect(200)
@@ -305,7 +281,7 @@ describe('Collections API – PUT', function() {
         }
 
         client
-          .put('/vtest/testdb/put-test-schema/')
+          .put('/v1/testdb/put-test-schema/')
           .set('Authorization', 'Bearer ' + bearerToken)
           .send(body)
           .expect(200)
@@ -317,9 +293,7 @@ describe('Collections API – PUT', function() {
 
             client
               .get(
-                '/vtest/testdb/put-test-schema?filter={"$id": "' +
-                  doc.$id +
-                  '"}'
+                '/v1/testdb/put-test-schema?filter={"$id": "' + doc.$id + '"}'
               )
               .set('Authorization', 'Bearer ' + bearerToken)
               .expect(200)
@@ -343,7 +317,7 @@ describe('Collections API – PUT', function() {
   it('should update all existing documents when passing a query with a filter', function(done) {
     // add three docs
     client
-      .post('/vtest/testdb/put-test-schema')
+      .post('/v1/testdb/put-test-schema')
       .set('Authorization', 'Bearer ' + bearerToken)
       .send({field1: 'draft'})
       .expect(200)
@@ -351,7 +325,7 @@ describe('Collections API – PUT', function() {
         if (err) return done(err)
 
         client
-          .post('/vtest/testdb/put-test-schema')
+          .post('/v1/testdb/put-test-schema')
           .set('Authorization', 'Bearer ' + bearerToken)
           .send({field1: 'draft'})
           .expect(200)
@@ -359,7 +333,7 @@ describe('Collections API – PUT', function() {
             if (err) return done(err)
 
             client
-              .post('/vtest/testdb/put-test-schema')
+              .post('/v1/testdb/put-test-schema')
               .set('Authorization', 'Bearer ' + bearerToken)
               .send({field1: 'draft'})
               .expect(200)
@@ -373,7 +347,7 @@ describe('Collections API – PUT', function() {
                 }
 
                 client
-                  .put('/vtest/testdb/put-test-schema/')
+                  .put('/v1/testdb/put-test-schema/')
                   .set('Authorization', 'Bearer ' + bearerToken)
                   .send(body)
                   .expect(200)
@@ -401,7 +375,7 @@ describe('Collections API – PUT', function() {
     config.set('internalFieldsPrefix', '$')
 
     client
-      .post('/vtest/testdb/put-test-schema')
+      .post('/v1/testdb/put-test-schema')
       .set('Authorization', 'Bearer ' + bearerToken)
       .send({field1: 'some value'})
       .expect(200)
@@ -419,7 +393,7 @@ describe('Collections API – PUT', function() {
         }
 
         client
-          .put('/vtest/testdb/put-test-schema')
+          .put('/v1/testdb/put-test-schema')
           .set('Authorization', 'Bearer ' + bearerToken)
           .send(body)
           .expect(200)
@@ -432,7 +406,7 @@ describe('Collections API – PUT', function() {
             res.body.results[0].field1.should.eql(body.update.field1)
 
             client
-              .get('/vtest/testdb/put-test-schema/' + doc.$id)
+              .get('/v1/testdb/put-test-schema/' + doc.$id)
               .set('Authorization', 'Bearer ' + bearerToken)
               .expect(200)
               .expect('content-type', 'application/json')
@@ -453,7 +427,7 @@ describe('Collections API – PUT', function() {
 
   it('should add internal fields to updated documents', function(done) {
     client
-      .post('/vtest/testdb/put-test-schema')
+      .post('/v1/testdb/put-test-schema')
       .set('Authorization', 'Bearer ' + bearerToken)
       .send({field1: 'doc to update'})
       .expect(200)
@@ -466,7 +440,7 @@ describe('Collections API – PUT', function() {
         doc.field1.should.equal('doc to update')
 
         client
-          .put('/vtest/testdb/put-test-schema/' + doc._id)
+          .put('/v1/testdb/put-test-schema/' + doc._id)
           .set('Authorization', 'Bearer ' + bearerToken)
           .send({field1: 'updated doc'})
           .expect(200)
@@ -478,9 +452,7 @@ describe('Collections API – PUT', function() {
 
             client
               .get(
-                '/vtest/testdb/put-test-schema?filter={"_id": "' +
-                  doc._id +
-                  '"}'
+                '/v1/testdb/put-test-schema?filter={"_id": "' + doc._id + '"}'
               )
               .set('Authorization', 'Bearer ' + bearerToken)
               .expect(200)
@@ -496,7 +468,7 @@ describe('Collections API – PUT', function() {
                 res.body['results'][0]._lastModifiedAt.should.not.be.above(
                   Date.now()
                 )
-                res.body['results'][0]._apiVersion.should.equal('vtest')
+                res.body['results'][0]._apiVersion.should.equal('v1')
 
                 done()
               })
@@ -517,7 +489,7 @@ describe('Collections API – PUT', function() {
     }
 
     client
-      .post('/vtest/testdb/put-test-schema')
+      .post('/v1/testdb/put-test-schema')
       .set('Authorization', 'Bearer ' + bearerToken)
       .send(initial)
       .expect(200)
@@ -530,7 +502,7 @@ describe('Collections API – PUT', function() {
         doc.field1.should.equal(initial.field1)
 
         client
-          .put('/vtest/testdb/put-test-schema/' + doc._id)
+          .put('/v1/testdb/put-test-schema/' + doc._id)
           .set('Authorization', 'Bearer ' + bearerToken)
           .send(update)
           .expect(200)
@@ -553,9 +525,7 @@ describe('Collections API – PUT', function() {
 
             client
               .get(
-                '/vtest/testdb/put-test-schema?filter={"_id": "' +
-                  doc._id +
-                  '"}'
+                '/v1/testdb/put-test-schema?filter={"_id": "' + doc._id + '"}'
               )
               .set('Authorization', 'Bearer ' + bearerToken)
               .expect(200)
@@ -571,7 +541,7 @@ describe('Collections API – PUT', function() {
                 res.body['results'][0]._lastModifiedAt.should.not.be.above(
                   Date.now()
                 )
-                res.body['results'][0]._apiVersion.should.equal('vtest')
+                res.body['results'][0]._apiVersion.should.equal('v1')
 
                 should.exist(res.body.results[0]._createdBy)
                 res.body.results[0]._createdBy.should.not.eql(update._createdBy)
@@ -595,7 +565,7 @@ describe('Collections API – PUT', function() {
     config.set('query.useVersionFilter', true)
 
     client
-      .post('/vtest/testdb/put-test-schema')
+      .post('/v1/testdb/put-test-schema')
       .set('Authorization', 'Bearer ' + bearerToken)
       .send({field1: 'doc'})
       .expect(200)
@@ -603,7 +573,7 @@ describe('Collections API – PUT', function() {
         if (err) return done(err)
 
         client
-          .post('/vjoin/testdb/put-test-schema')
+          .post('/v2/testdb/put-test-schema')
           .set('Authorization', 'Bearer ' + bearerToken)
           .send({field1: 'doc'})
           .expect(200)
@@ -622,7 +592,7 @@ describe('Collections API – PUT', function() {
             }
 
             client
-              .put('/vtest/testdb/put-test-schema/')
+              .put('/v1/testdb/put-test-schema/')
               .set('Authorization', 'Bearer ' + bearerToken)
               .send(body)
               .expect(200)
@@ -630,7 +600,7 @@ describe('Collections API – PUT', function() {
                 if (err) return done(err)
 
                 client
-                  .get('/vjoin/testdb/put-test-schema')
+                  .get('/v2/testdb/put-test-schema')
                   .set('Authorization', 'Bearer ' + bearerToken)
                   .expect(200)
                   .expect('content-type', 'application/json')
@@ -641,7 +611,7 @@ describe('Collections API – PUT', function() {
                     res.body['results'].should.be.Array
                     res.body['results'].length.should.equal(1)
                     res.body['results'][0].field1.should.equal('doc') // not "updated doc"
-                    res.body['results'][0]._apiVersion.should.equal('vjoin')
+                    res.body['results'][0]._apiVersion.should.equal('v2')
 
                     config.set('query.useVersionFilter', false)
 
@@ -659,7 +629,7 @@ describe('Collections API – PUT', function() {
       if (err) return done(err)
 
       client
-        .post('/vtest/testdb/put-test-schema-no-history')
+        .post('/v1/testdb/put-test-schema-no-history')
         .set('Authorization', 'Bearer ' + token)
         .send({field1: 'doc'})
         // .expect(200)
@@ -667,7 +637,7 @@ describe('Collections API – PUT', function() {
           if (err) return done(err)
 
           client
-            .post('/vjoin/testdb/put-test-schema-no-history')
+            .post('/v2/testdb/put-test-schema-no-history')
             .set('Authorization', 'Bearer ' + token)
             .send({field1: 'doc'})
             .expect(200)
@@ -684,7 +654,7 @@ describe('Collections API – PUT', function() {
               }
 
               client
-                .put('/vtest/testdb/put-test-schema-no-history/')
+                .put('/v1/testdb/put-test-schema-no-history/')
                 .set('Authorization', 'Bearer ' + token)
                 .send(body)
                 .expect(200)
@@ -695,11 +665,11 @@ describe('Collections API – PUT', function() {
                   res.body['results'].should.be.Array
                   res.body['results'].length.should.equal(1)
                   res.body['results'][0].field1.should.equal('updated doc') // not "updated doc"
-                  res.body['results'][0]._apiVersion.should.equal('vtest')
+                  res.body['results'][0]._apiVersion.should.equal('v1')
 
                   client
                     .get(
-                      '/vjoin/testdb/put-test-schema-no-history?filter={"field1": { "$ne" : "" } }'
+                      '/v2/testdb/put-test-schema-no-history?filter={"field1": { "$ne" : "" } }'
                     )
                     .set('Authorization', 'Bearer ' + token)
                     .expect(200)
@@ -711,7 +681,7 @@ describe('Collections API – PUT', function() {
                       res.body['results'].should.be.Array
                       res.body['results'].length.should.equal(1)
                       res.body['results'][0].field1.should.equal('doc') // not "updated doc"
-                      res.body['results'][0]._apiVersion.should.equal('vjoin')
+                      res.body['results'][0]._apiVersion.should.equal('v2')
 
                       config.set('query.useVersionFilter', false)
 

@@ -100,6 +100,10 @@ hijackNameHook += '}\n'
 const hijackFunction = eval(hijackNameHook)
 
 describe('Hook', function() {
+  afterEach(() => {
+    model.unloadAll()
+  })
+
   it('should export a constructor', function(done) {
     hook.should.be.Function
     done()
@@ -407,19 +411,11 @@ describe('Hook', function() {
         ) {
           if (err) return done(err)
 
-          console.log('***')
-          console.log('result:', result)
-          console.log('***')
-
           hook.Hook.prototype.load.restore()
 
           // find the obj we just created
           mod.find({}, function(err, doc) {
             if (err) return done(err)
-
-            console.log('***')
-            console.log('doc:', doc)
-            console.log('***')
 
             doc.results[0].slug.should.eql('article-one')
             done()

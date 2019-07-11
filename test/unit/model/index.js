@@ -1,14 +1,12 @@
 const should = require('should')
-const sinon = require('sinon')
 const model = require(__dirname + '/../../../dadi/lib/model')
-const apiHelp = require(__dirname + '/../../../dadi/lib/help')
-const connection = require(__dirname + '/../../../dadi/lib/model/connection')
 const help = require(__dirname + '/../help')
 const acceptanceHelper = require(__dirname + '/../../acceptance/help')
-const config = require(__dirname + '/../../../config')
 
 describe('Model', function() {
   beforeEach(done => {
+    model.unloadAll()
+
     help.clearCollection('testModelName', function() {
       help.clearCollection('testModelNameVersions', function() {
         done()
@@ -35,15 +33,22 @@ describe('Model', function() {
   })
 
   it('should export function that gets instance of Model when not passed schema', function(done) {
-    model('testModelName').should.be.an.instanceOf(model.Model)
+    model({name: 'testModelName', property: 'testdb'}).should.be.an.instanceOf(
+      model.Model
+    )
 
     done()
   })
 
-  it('should only create one instance of Model for a specific name', function(done) {
-    model('testModelName', help.getModelSchema(), null, {
+  it('should only create one instance of Model for a specific name/database pair', function(done) {
+    const model1 = model('testModelName', help.getModelSchema(), null, {
       database: 'testdb'
-    }).should.eql(model('testModelName'))
+    })
+    const model2 = model('testModelName', help.getModelSchema(), null, {
+      database: 'testdb'
+    })
+
+    model1.should.eql(model2)
 
     done()
   })
@@ -335,7 +340,7 @@ describe('Model', function() {
       })
 
       it('should pass error to callback when query uses `$where` operator', function(done) {
-        model('testModelName').find(
+        model({name: 'testModelName', property: 'testdb'}).find(
           {
             $where: 'this.fieldName === "foo"'
           },
@@ -359,7 +364,7 @@ describe('Model', function() {
     })
 
     it('should reject with error when query uses `$where` operator', done => {
-      model('testModelName')
+      model({name: 'testModelName', property: 'testdb'})
         .find({
           query: {
             $where: 'this.fieldName === "foo"'
@@ -396,7 +401,7 @@ describe('Model', function() {
       })
 
       it('should pass error to callback when query uses `$where` operator', function(done) {
-        model('testModelName').get(
+        model({name: 'testModelName', property: 'testdb'}).get(
           {
             $where: 'this.fieldName === "foo"'
           },
@@ -420,7 +425,7 @@ describe('Model', function() {
     })
 
     it('should reject with error when query uses `$where` operator', done => {
-      model('testModelName')
+      model({name: 'testModelName', property: 'testdb'})
         .get({
           query: {
             $where: 'this.fieldName === "foo"'
@@ -815,13 +820,13 @@ describe('Model', function() {
 
     describe('legacy syntax', () => {
       it('should accept query, update object, and callback', done => {
-        const mod = model('testModelName')
+        const mod = model({name: 'testModelName', property: 'testdb'})
 
         mod.update({field1: 'foo'}, {field1: 'bar'}, done)
       })
 
       it('should update an existing document', done => {
-        const mod = model('testModelName')
+        const mod = model({name: 'testModelName', property: 'testdb'})
         const updateDoc = {field1: 'bar'}
 
         mod.update({field1: 'foo'}, updateDoc, (err, result) => {
@@ -901,7 +906,7 @@ describe('Model', function() {
       })
 
       it('should pass error to callback when query uses `$where` operator', done => {
-        model('testModelName').update(
+        model({name: 'testModelName', property: 'testdb'}).update(
           {$where: 'this.fieldName === "foo"'},
           {fieldName: 'bar'},
           err => {
@@ -914,7 +919,7 @@ describe('Model', function() {
     })
 
     it('should accept query and update object', () => {
-      const mod = model('testModelName')
+      const mod = model({name: 'testModelName', property: 'testdb'})
 
       return mod.update({
         query: {field1: 'foo'},
@@ -923,7 +928,7 @@ describe('Model', function() {
     })
 
     it('should update an existing document', () => {
-      const mod = model('testModelName')
+      const mod = model({name: 'testModelName', property: 'testdb'})
       const updateDoc = {field1: 'bar'}
 
       return mod
@@ -1009,7 +1014,7 @@ describe('Model', function() {
     })
 
     it('should reject with error when query uses `$where` operator', done => {
-      model('testModelName')
+      model({name: 'testModelName', property: 'testdb'})
         .update({
           query: {$where: 'this.fieldName === "foo"'},
           update: {fieldName: 'bar'}
@@ -1096,7 +1101,7 @@ describe('Model', function() {
       })
 
       it('should pass error to callback when query uses `$where` operator', done => {
-        model('testModelName').delete(
+        model({name: 'testModelName', property: 'testdb'}).delete(
           {
             $where: 'this.fieldName === "foo"'
           },
@@ -1178,7 +1183,7 @@ describe('Model', function() {
     })
 
     it('should pass error to callback when query uses `$where` operator', () => {
-      return model('testModelName')
+      return model({name: 'testModelName', property: 'testdb'})
         .delete({
           query: {
             $where: 'this.fieldName === "foo"'

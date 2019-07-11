@@ -1,15 +1,11 @@
-const should = require('should')
-const sinon = require('sinon')
-const fs = require('fs')
-const path = require('path')
+const app = require('../../../dadi/lib/')
+const config = require('../../../config')
+const help = require('../help')
+const modelStore = require('../../../dadi/lib/model/')
 const request = require('supertest')
-const config = require(__dirname + '/../../../config')
-const help = require(__dirname + '/../help')
-const app = require(__dirname + '/../../../dadi/lib/')
-const Model = require('./../../../dadi/lib/model')
+const should = require('should')
 
 let bearerToken
-const configBackup = config.get()
 const client = request(
   `http://${config.get('server.host')}:${config.get('server.port')}`
 )
@@ -18,17 +14,78 @@ describe('Media field', () => {
   beforeEach(done => {
     help.dropDatabase('testdb', err => {
       app.start(() => {
-        help.getBearerToken((err, token) => {
-          bearerToken = token
+        help
+          .createSchemas([
+            {
+              fields: {
+                field1: {
+                  type: 'String',
+                  label: 'Title',
+                  comments: 'The title of the entry',
+                  validation: {},
+                  required: false
+                },
+                title: {
+                  type: 'String',
+                  label: 'Title',
+                  comments: 'The title of the entry',
+                  validation: {},
+                  required: false,
+                  search: {
+                    weight: 2
+                  }
+                },
+                leadImage: {
+                  type: 'Media'
+                },
+                leadImageJPEG: {
+                  type: 'Media',
+                  validation: {
+                    mimeTypes: ['image/jpeg']
+                  }
+                },
+                legacyImage: {
+                  type: 'Reference',
+                  settings: {
+                    collection: 'mediaStore'
+                  }
+                },
+                fieldReference: {
+                  type: 'Reference',
+                  settings: {
+                    collection: 'test-reference-schema'
+                  }
+                }
+              },
+              name: 'test-schema',
+              property: 'testdb',
+              settings: {
+                cache: true,
+                cacheTTL: 300,
+                authenticate: true,
+                count: 40,
+                sortOrder: 1,
+                storeRevisions: true,
+                revisionCollection: 'testSchemaHistory'
+              },
+              version: 'vtest'
+            }
+          ])
+          .then(() => {
+            help.getBearerToken((err, token) => {
+              bearerToken = token
 
-          done(err)
-        })
+              done(err)
+            })
+          })
       })
     })
   })
 
   afterEach(done => {
-    app.stop(done)
+    help.dropSchemas().then(() => {
+      app.stop(done)
+    })
   })
 
   describe('POST', () => {
@@ -764,53 +821,36 @@ describe('Media field', () => {
                   results[0].legacyImage.url.should.be.instanceOf(String)
                   results[0]._composed.legacyImage.should.eql(mediaObject._id)
 
-                  const collectionSchemaPath = path.join(
-                    __dirname,
-                    '/../temp-workspace/collections/vtest/testdb/collection.test-schema.json'
-                  )
-                  const collectionSchema = require(collectionSchemaPath)
+                  const model = modelStore.get({
+                    name: 'test-schema',
+                    property: 'testdb',
+                    version: 'vtest'
+                  })
 
-                  // Convert the field to use the Media type.
-                  collectionSchema.fields.legacyImage.type = 'Media'
-                  delete collectionSchema.fields.legacyImage.settings
+                  model.schema.legacyImage.type = 'Media'
+                  delete model.schema.legacyImage.settings
 
-                  help.writeTempFile(
-                    collectionSchemaPath,
-                    JSON.stringify(collectionSchema, null, 2),
-                    restoreCollection => {
-                      setTimeout(() => {
-                        client
-                          .get(
-                            `/vtest/testdb/test-schema/${results[0]._id}?cache=false`
-                          )
-                          .set('content-type', 'application/json')
-                          .set('Authorization', `Bearer ${bearerToken}`)
-                          .end((err, res) => {
-                            const {results} = res.body
+                  client
+                    .get(
+                      `/vtest/testdb/test-schema/${results[0]._id}?cache=false`
+                    )
+                    .set('content-type', 'application/json')
+                    .set('Authorization', `Bearer ${bearerToken}`)
+                    .end((err, res) => {
+                      const {results} = res.body
 
-                            results.should.be.instanceOf(Array)
-                            results.length.should.eql(1)
-                            results[0].title.should.eql(payload.title)
-                            results[0].legacyImage._id.should.eql(
-                              mediaObject._id
-                            )
-                            results[0].legacyImage.fileName.should.eql(
-                              '1f525.png'
-                            )
-                            results[0].legacyImage.url.should.be.instanceOf(
-                              String
-                            )
-                            results[0]._composed.legacyImage.should.eql(
-                              mediaObject._id
-                            )
+                      results.should.be.instanceOf(Array)
+                      results.length.should.eql(1)
+                      results[0].title.should.eql(payload.title)
+                      results[0].legacyImage._id.should.eql(mediaObject._id)
+                      results[0].legacyImage.fileName.should.eql('1f525.png')
+                      results[0].legacyImage.url.should.be.instanceOf(String)
+                      results[0]._composed.legacyImage.should.eql(
+                        mediaObject._id
+                      )
 
-                            restoreCollection()
-
-                            done(err)
-                          })
-                      }, 1000)
-                    }
-                  )
+                      done(err)
+                    })
                 })
             })
         })

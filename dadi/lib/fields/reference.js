@@ -454,7 +454,7 @@ module.exports.beforeSave = function({
               rawOutput: true,
               update: document
             })
-            .then(response => document._id)
+            .then(() => document._id)
         }
 
         return model
@@ -474,6 +474,22 @@ module.exports.beforeSave = function({
         }
 
         return id
+      })
+      .catch(error => {
+        // If there is a validation error resulting from creating or updating
+        // a document, we take its error object and prepend the name of the
+        // reference field to the name of each field – e.g. `name` becomes
+        // `author.name` if we're inserting into a collection referenced by a
+        // field called `author`.
+        if (Array.isArray(error.errors)) {
+          error.errors.forEach(error => {
+            if (!error.field) return
+
+            error.field = `${field}.${error.field}`
+          })
+        }
+
+        return Promise.reject(error)
       })
   })
 

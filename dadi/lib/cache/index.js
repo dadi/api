@@ -34,21 +34,9 @@ module.exports = function(server) {
 }
 
 Cache.prototype.cachingEnabled = function(req) {
-  let options = {}
-  const endpoints = this.server.components
-  const requestPath = url.parse(req.url, true).pathname
-
-  const endpointKey = Object.keys(endpoints).find(key =>
-    pathToRegexp(key).exec(requestPath)
+  return Boolean(
+    this.enabled && req.collectionModel && req.collectionModel.isCacheable()
   )
-
-  if (!endpointKey) return false
-
-  if (endpoints[endpointKey].model && endpoints[endpointKey].model.settings) {
-    options = endpoints[endpointKey].model.settings
-  }
-
-  return this.enabled && (options.cache || false)
 }
 
 Cache.prototype.getEndpointContentType = function(req) {

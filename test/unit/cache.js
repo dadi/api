@@ -1,32 +1,15 @@
-const should = require('should')
+const api = require('../../dadi/lib/api')
 const fs = require('fs')
 const path = require('path')
-const sinon = require('sinon')
 const proxyquire = require('proxyquire')
+const Server = require('../../dadi/lib')
+const sinon = require('sinon')
 
 let config
 let cache
-const app = require(path.join(__dirname, '/../../dadi/lib/'))
-const api = require(path.join(__dirname, '/../../dadi/lib/api'))
-const Server = require(path.join(__dirname, '/../../dadi/lib'))
-const acceptanceTestHelper = require(path.join(
-  __dirname,
-  '/../acceptance/help'
-))
-
-let bearerToken
 let testConfigString
 
 describe('Cache', function(done) {
-  // before(function (done) {
-  //   app.start(done)
-  // })
-  //
-  // after(function (done) {
-  //   //acceptanceTestHelper.clearCache()
-  //   app.stop(done)
-  // })
-
   beforeEach(function(done) {
     delete require.cache[path.join(__dirname, '/../../dadi/lib/cache')]
     cache = require(path.join(__dirname, '/../../dadi/lib/cache'))
@@ -65,9 +48,6 @@ describe('Cache', function(done) {
       config = require(path.join(__dirname, '/../../config'))
 
       config.loadFile(config.configPath())
-
-      // fs.readFile(config.configPath(),{},function(err, body) {
-      // })
 
       config.get('caching.directory.path').should.eql('./cache/api')
       config.get('caching.directory.extension').should.eql('json')
@@ -166,16 +146,6 @@ describe('Cache', function(done) {
 
       server.object.app = api()
 
-      server.object.components['/1.0/library/books'] = {
-        get() {},
-        model: {
-          name: 'books',
-          settings: {
-            cache: true
-          }
-        }
-      }
-
       const req = {
         url: '/1.0/library/authors'
       }
@@ -192,17 +162,11 @@ describe('Cache', function(done) {
 
       server.object.app = api()
 
-      server.object.components['/1.0/library/books'] = {
-        get() {},
-        model: {
-          name: 'books',
-          settings: {
-            cache: true
-          }
-        }
-      }
-
       const req = {
+        collectionModel: {
+          isCacheable: () => true,
+          name: 'books'
+        },
         url: '/1.0/library/books'
       }
 
@@ -214,19 +178,16 @@ describe('Cache', function(done) {
       done()
     })
 
-    it('should not cache if the url key can be found in the loaded keys but it does not specify options', function(done) {
+    it('should not cache if the url key can be found in the loaded keys but it is not cacheable', function(done) {
       const server = sinon.mock(Server)
 
       server.object.app = api()
 
-      server.object.components['/1.0/library/books'] = {
-        get() {},
-        model: {
-          name: 'books'
-        }
-      }
-
       const req = {
+        collectionModel: {
+          isCacheable: () => false,
+          name: 'books'
+        },
         url: '/1.0/library/books'
       }
 
@@ -237,47 +198,16 @@ describe('Cache', function(done) {
       done()
     })
 
-    // it('should not cache if the url key can be found in the loaded keys but ?cache=false exists in the query', function (done) {
-    //
-    //   var server = sinon.mock(Server)
-    //   server.object.app = api()
-    //
-    //   server.object.components['/1.0/library/books'] = {
-    //     get: function() {
-    //     },
-    //     model: {
-    //       name: 'books',
-    //       settings: {
-    //         cache: true
-    //       }
-    //     }
-    //   }
-    //
-    //   var req = {
-    //     url: '/1.0/library/books?cache=false'
-    //   }
-    //
-    //   cache(server.object).cachingEnabled(req).should.eql(false)
-    //
-    //   done()
-    // })
-
     it('should cache if the url key can be found in the loaded keys and ?cache=true exists in the query', function(done) {
       const server = sinon.mock(Server)
 
       server.object.app = api()
 
-      server.object.components['/1.0/library/books'] = {
-        get() {},
-        model: {
-          name: 'books',
-          settings: {
-            cache: true
-          }
-        }
-      }
-
       const req = {
+        collectionModel: {
+          isCacheable: () => true,
+          name: 'books'
+        },
         url: '/1.0/library/books?cache=true'
       }
 

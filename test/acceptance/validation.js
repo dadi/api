@@ -1,15 +1,9 @@
-const path = require('path')
-const should = require('should')
+const app = require('../../dadi/lib/')
+const config = require('../../config')
+const help = require('./help')
 const request = require('supertest')
-const config = require(__dirname + '/../../config')
-const help = require(__dirname + '/help')
-const app = require(__dirname + '/../../dadi/lib/')
 
-let bearerToken // scoped for all tests
-const dirs = config.get('paths')
-const newSchemaPath = path.resolve(
-  dirs.collections + '/vtest/testdb/collection.test-validation-schema.json'
-)
+let bearerToken
 
 const client = request(
   `http://${config.get('server.host')}:${config.get('server.port')}`
@@ -20,23 +14,292 @@ describe('Validation', function() {
     app.start(function(err) {
       if (err) return done(err)
 
-      help.dropDatabase('testdb', function(err) {
-        if (err) return done(err)
+      help
+        .createSchemas([
+          {
+            version: 'vtest',
+            property: 'testdb',
+            name: 'test-validation-schema',
+            fields: {
+              fieldDateTime: {
+                type: 'DateTime',
+                label: 'Article date',
+                comments: 'The date of the article',
+                validation: {},
+                required: false
+              },
+              fieldDateTimeBeforeDate: {
+                type: 'DateTime',
+                label: 'Article date',
+                comments: 'The date of the article',
+                format: 'YYYY-MM-DD',
+                validation: {
+                  before: '1988-08-31'
+                },
+                required: false
+              },
+              fieldDateTimeAfterNow: {
+                type: 'DateTime',
+                label: 'Article date',
+                comments: 'The date of the article',
+                format: 'YYYY-MM-DD',
+                validation: {
+                  after: '$now'
+                },
+                required: false
+              },
+              fieldString: {
+                type: 'String',
+                label: 'Title',
+                comments: 'The title of the entry',
+                validation: {},
+                required: false
+              },
+              fieldNumber: {
+                type: 'Number',
+                label: 'Title',
+                comments: 'The title of the entry',
+                validation: {},
+                required: false
+              },
+              fieldNumberEqualTo: {
+                type: 'Number',
+                label: 'Title',
+                comments: 'The title of the entry',
+                validation: {
+                  equalTo: 10
+                },
+                required: false
+              },
+              fieldNumberEven: {
+                type: 'Number',
+                label: 'Title',
+                comments: 'The title of the entry',
+                validation: {
+                  even: true
+                },
+                required: false
+              },
+              fieldNumberOdd: {
+                type: 'Number',
+                label: 'Title',
+                comments: 'The title of the entry',
+                validation: {
+                  even: false
+                },
+                required: false
+              },
+              fieldNumberGreaterThan: {
+                type: 'Number',
+                label: 'Title',
+                comments: 'The title of the entry',
+                validation: {
+                  greaterThan: 10
+                },
+                required: false
+              },
+              fieldNumberGreaterThanOrEqualTo: {
+                type: 'Number',
+                label: 'Title',
+                comments: 'The title of the entry',
+                validation: {
+                  greaterThanOrEqualTo: 10
+                },
+                required: false
+              },
+              fieldNumberInteger: {
+                type: 'Number',
+                label: 'Title',
+                comments: 'The title of the entry',
+                validation: {
+                  integer: true
+                },
+                required: false
+              },
+              fieldNumberNotInteger: {
+                type: 'Number',
+                label: 'Title',
+                comments: 'The title of the entry',
+                validation: {
+                  integer: false
+                },
+                required: false
+              },
+              fieldNumberLessThan: {
+                type: 'Number',
+                label: 'Title',
+                comments: 'The title of the entry',
+                validation: {
+                  lessThan: 10
+                },
+                required: false
+              },
+              fieldNumberLessThanOrEqualTo: {
+                type: 'Number',
+                label: 'Title',
+                comments: 'The title of the entry',
+                validation: {
+                  lessThanOrEqualTo: 10
+                },
+                required: false
+              },
+              fieldBool: {
+                type: 'Boolean',
+                label: 'Title',
+                comments: 'The title of the entry',
+                validation: {},
+                required: false
+              },
+              fieldObject: {
+                type: 'Object',
+                label: 'Title',
+                comments: 'The title of the entry',
+                validation: {},
+                required: false
+              },
+              fieldDefault: {
+                type: 'String',
+                label: 'Title',
+                comments: 'The title of the entry',
+                validation: {},
+                required: false,
+                default: 'FOO!'
+              },
+              fieldDefaultBoolean: {
+                type: 'Boolean',
+                label: 'Title',
+                comments: 'The title of the entry',
+                validation: {},
+                required: true,
+                default: true
+              },
+              fieldDefaultBooleanFalse: {
+                type: 'Boolean',
+                label: 'Title',
+                comments: 'The title of the entry',
+                validation: {},
+                required: false,
+                default: false
+              },
+              fieldMixed: {
+                type: 'Mixed',
+                label: 'Title',
+                comments: 'The title of the entry',
+                validation: {},
+                required: false
+              },
+              foo: {
+                type: 'Mixed',
+                label: 'Foo',
+                comments: 'A sub field',
+                validation: {},
+                required: false
+              },
+              fieldRegex: {
+                type: 'String',
+                label: 'Title',
+                comments: 'The title of the entry',
+                validation: {
+                  regex: {
+                    pattern: '^q+$'
+                  }
+                },
+                required: false
+              },
+              fieldMixedRegex: {
+                type: 'Mixed',
+                label: 'Title',
+                comments: 'The title of the entry',
+                validation: {
+                  regex: {
+                    pattern: '^q+$'
+                  }
+                },
+                required: false
+              },
+              fieldValidationRegex: {
+                type: 'Mixed',
+                label: 'Title',
+                comments: 'The title of the entry',
+                validation: {
+                  regex: {
+                    pattern: '^q+$'
+                  }
+                },
+                required: false
+              },
+              fieldMaxLength: {
+                type: 'Mixed',
+                label: 'Title',
+                comments: 'The title of the entry',
+                validation: {
+                  maxLength: 4
+                },
+                required: false,
+                message: ''
+              },
+              fieldMinLength: {
+                type: 'Mixed',
+                label: 'Title',
+                comments: 'The title of the entry',
+                validation: {
+                  minLength: 4
+                },
+                required: false
+              }
+            },
+            settings: {
+              cache: true,
+              cacheTTL: 300,
+              authenticate: true,
+              count: 40,
+              sortOrder: 1
+            }
+          },
 
-        help.getBearerToken(function(err, token) {
-          if (err) return done(err)
+          {
+            version: 'vtest',
+            property: 'testdb',
+            name: 'test-validation-schema-required-boolean',
+            fields: {
+              fieldBoolRequired: {
+                type: 'Boolean',
+                label: 'Title',
+                comments: 'The title of the entry',
+                validation: {},
+                required: false
+              }
+            },
+            settings: {
+              cache: true,
+              cacheTTL: 300,
+              authenticate: true,
+              count: 40,
+              sortOrder: 1
+            }
+          }
+        ])
+        .then(() => {
+          help.dropDatabase('testdb', function(err) {
+            if (err) return done(err)
 
-          bearerToken = token
+            help.getBearerToken(function(err, token) {
+              if (err) return done(err)
 
-          done()
+              bearerToken = token
+
+              done()
+            })
+          })
         })
-      })
     })
   })
 
   after(function(done) {
     help.removeTestClients(function() {
-      app.stop(done)
+      help.dropSchemas().then(() => {
+        app.stop(done)
+      })
     })
   })
 

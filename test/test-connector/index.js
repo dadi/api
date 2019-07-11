@@ -225,12 +225,6 @@ DataStore.prototype.destroy = function() {
 }
 
 DataStore.prototype.dropDatabase = function(collectionName) {
-  if (this._mockIsDisconnected(collectionName)) {
-    this.readyState = STATE_DISCONNECTED
-
-    return Promise.reject(new Error('DB_DISCONNECTED'))
-  }
-
   if (!this.database) return Promise.resolve()
 
   const collectionsCleared = []
@@ -468,12 +462,12 @@ DataStore.prototype.index = function(collectionName, indexes) {
  */
 DataStore.prototype.insert = function({
   data,
-  collection,
+  collection: collectionName,
   options = {},
   schema,
   settings = {}
 }) {
-  if (this._mockIsDisconnected(collection)) {
+  if (this._mockIsDisconnected(collectionName)) {
     this.readyState = STATE_DISCONNECTED
 
     return Promise.reject(new Error('DB_DISCONNECTED'))
@@ -489,7 +483,7 @@ DataStore.prototype.insert = function({
   data = JSON.parse(JSON.stringify(data))
 
   this._debug('insert', {
-    collection,
+    collectionName,
     data
   })
 
@@ -499,7 +493,7 @@ DataStore.prototype.insert = function({
   })
 
   return new Promise((resolve, reject) => {
-    this.getCollection(collection).then(collection => {
+    this.getCollection(collectionName).then(collection => {
       try {
         let results = collection.insert(data)
 

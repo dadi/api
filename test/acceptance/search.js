@@ -1454,9 +1454,7 @@ describe('Search', function() {
                 results[1]._collection.should.eql('testdb/first-schema')
 
                 client
-                  .delete(
-                    `/testdb/first-schema/${createdDocuments[2]._id}`
-                  )
+                  .delete(`/testdb/first-schema/${createdDocuments[2]._id}`)
                   .set('Authorization', 'Bearer ' + bearerToken)
                   .set('content-type', 'application/json')
                   .expect(204)
@@ -1940,9 +1938,7 @@ describe('Search', function() {
                 results[0]._i18n.title.should.eql('fr')
 
                 client
-                  .get(
-                    '/testdb/first-schema/search?q=principezinho&lang=pt'
-                  )
+                  .get('/testdb/first-schema/search?q=principezinho&lang=pt')
                   .set('Authorization', `Bearer ${bearerToken}`)
                   .expect(200)
                   .end((err, res) => {
@@ -1983,9 +1979,7 @@ describe('Search', function() {
 
         setTimeout(() => {
           client
-            .get(
-              '/testdb/first-schema/search?q=little&fields={"title":0}'
-            )
+            .get('/testdb/first-schema/search?q=little&fields={"title":0}')
             .set('Authorization', `Bearer ${bearerToken}`)
             .expect(200)
             .end((err, res) => {
@@ -2000,9 +1994,7 @@ describe('Search', function() {
               results[0].author.should.eql(documents[0].author)
 
               client
-                .get(
-                  '/testdb/first-schema/search?q=little&fields={"title":1}'
-                )
+                .get('/testdb/first-schema/search?q=little&fields={"title":1}')
                 .set('Authorization', `Bearer ${bearerToken}`)
                 .expect(200)
                 .end((err, res) => {
@@ -2060,9 +2052,7 @@ describe('Search', function() {
               should.not.exist(results[0].title)
 
               client
-                .get(
-                  '/testdb/first-schema/search?q=little&fields={"_id":1}'
-                )
+                .get('/testdb/first-schema/search?q=little&fields={"_id":1}')
                 .set('Authorization', `Bearer ${bearerToken}`)
                 .expect(200)
                 .end((err, res) => {

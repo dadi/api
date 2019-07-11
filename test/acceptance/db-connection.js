@@ -204,9 +204,7 @@ describe('Database connection', () => {
 
           setTimeout(() => {
             client
-              .put(
-                '/noauthdb/articles/' + savedDocument._id + '?cache=false'
-              )
+              .put('/noauthdb/articles/' + savedDocument._id + '?cache=false')
               .send({
                 title: 'Yet another title'
               })
@@ -242,9 +240,7 @@ describe('Database connection', () => {
           testConnector._mock.disconnect()
 
           client
-            .put(
-              '/noauthdb/articles/59d4b35cb2cf37d706b1d706?cache=false'
-            )
+            .put('/noauthdb/articles/59d4b35cb2cf37d706b1d706?cache=false')
             .send({
               title: 'Yet another title'
             })
@@ -364,9 +360,7 @@ describe('Database connection', () => {
           const savedDocument2 = res.body.results[0]
 
           client
-            .delete(
-              '/noauthdb/articles/' + savedDocument._id + '?cache=false'
-            )
+            .delete('/noauthdb/articles/' + savedDocument._id + '?cache=false')
             .set('content-type', 'application/json')
             .set('Authorization', 'Bearer ' + bearerToken)
             .end((err, res) => {
@@ -379,9 +373,7 @@ describe('Database connection', () => {
               setTimeout(() => {
                 client
                   .delete(
-                    '/noauthdb/articles/' +
-                      savedDocument2._id +
-                      '?cache=false'
+                    '/noauthdb/articles/' + savedDocument2._id + '?cache=false'
                   )
                   .set('content-type', 'application/json')
                   .set('Authorization', 'Bearer ' + bearerToken)
@@ -400,9 +392,7 @@ describe('Database connection', () => {
 
     it('should return 503 for DELETE requests when the database becomes unavailable', done => {
       client
-        .delete(
-          '/noauthdb/articles/' + savedDocument._id + '?cache=false'
-        )
+        .delete('/noauthdb/articles/' + savedDocument._id + '?cache=false')
         .set('content-type', 'application/json')
         .set('Authorization', 'Bearer ' + bearerToken)
         .end((err, res) => {
@@ -415,9 +405,7 @@ describe('Database connection', () => {
           testConnector._mock.disconnect()
 
           client
-            .delete(
-              '/noauthdb/articles/59d4b35cb2cf37d706b1d706?cache=false'
-            )
+            .delete('/noauthdb/articles/59d4b35cb2cf37d706b1d706?cache=false')
             .set('content-type', 'application/json')
             .set('Authorization', 'Bearer ' + bearerToken)
             .end((err, res) => {

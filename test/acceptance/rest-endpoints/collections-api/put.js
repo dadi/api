@@ -109,9 +109,7 @@ describe('Collections API – PUT', function() {
             res.body.results[0].field1.should.equal('updated doc')
 
             client
-              .get(
-                '/testdb/put-test-schema?filter={"_id": "' + doc._id + '"}'
-              )
+              .get('/testdb/put-test-schema?filter={"_id": "' + doc._id + '"}')
               .set('Authorization', 'Bearer ' + bearerToken)
               .expect(200)
               .expect('content-type', 'application/json')
@@ -236,9 +234,7 @@ describe('Collections API – PUT', function() {
             res.body.results[0].field1.should.equal('updated doc')
 
             client
-              .get(
-                '/testdb/put-test-schema?filter={"_id": "' + doc._id + '"}'
-              )
+              .get('/testdb/put-test-schema?filter={"_id": "' + doc._id + '"}')
               .set('Authorization', 'Bearer ' + bearerToken)
               .expect(200)
               .expect('content-type', 'application/json')
@@ -292,9 +288,7 @@ describe('Collections API – PUT', function() {
             res.body.results[0].field1.should.equal('updated doc')
 
             client
-              .get(
-                '/testdb/put-test-schema?filter={"$id": "' + doc.$id + '"}'
-              )
+              .get('/testdb/put-test-schema?filter={"$id": "' + doc.$id + '"}')
               .set('Authorization', 'Bearer ' + bearerToken)
               .expect(200)
               .expect('content-type', 'application/json')
@@ -451,9 +445,7 @@ describe('Collections API – PUT', function() {
             res.body.results[0].field1.should.equal('updated doc')
 
             client
-              .get(
-                '/testdb/put-test-schema?filter={"_id": "' + doc._id + '"}'
-              )
+              .get('/testdb/put-test-schema?filter={"_id": "' + doc._id + '"}')
               .set('Authorization', 'Bearer ' + bearerToken)
               .expect(200)
               .expect('content-type', 'application/json')
@@ -523,9 +515,7 @@ describe('Collections API – PUT', function() {
             should.not.exist(res.body.results[0]._version)
 
             client
-              .get(
-                '/testdb/put-test-schema?filter={"_id": "' + doc._id + '"}'
-              )
+              .get('/testdb/put-test-schema?filter={"_id": "' + doc._id + '"}')
               .set('Authorization', 'Bearer ' + bearerToken)
               .expect(200)
               .expect('content-type', 'application/json')

@@ -393,9 +393,7 @@ describe('Document versioning', function() {
                   const id = res.body.results[0]._id
 
                   client
-                    .get(
-                      `/testdb/test-history-enabled/${id}?compose=true`
-                    )
+                    .get(`/testdb/test-history-enabled/${id}?compose=true`)
                     .set('Authorization', `Bearer ${bearerToken}`)
                     .end((err, res) => {
                       if (err) return done(err)
@@ -564,9 +562,7 @@ describe('Document versioning', function() {
                       results[0].object.should.eql(modified.object)
 
                       client
-                        .get(
-                          `/testdb/test-history-enabled/${id}/versions`
-                        )
+                        .get(`/testdb/test-history-enabled/${id}/versions`)
                         .set('Authorization', `Bearer ${bearerToken}`)
                         .expect(200)
                         .end((err, res) => {

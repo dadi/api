@@ -1287,9 +1287,7 @@ describe('Cache', function(done) {
                                       setTimeout(function() {
                                         // DELETE
                                         client
-                                          .delete(
-                                            '/testdb/test-schema/' + id
-                                          )
+                                          .delete('/testdb/test-schema/' + id)
                                           .set(
                                             'Authorization',
                                             'Bearer ' + bearerToken
@@ -1299,9 +1297,7 @@ describe('Cache', function(done) {
                                             // WAIT, then GET again
                                             setTimeout(function() {
                                               client
-                                                .get(
-                                                  '/testdb/test-schema'
-                                                )
+                                                .get('/testdb/test-schema')
                                                 .set(
                                                   'Authorization',
                                                   'Bearer ' + bearerToken
@@ -1411,9 +1407,7 @@ describe('Cache', function(done) {
                             if (err) return done(err)
 
                             client
-                              .get(
-                                '/testdb/test-schema?callback=myCallback'
-                              )
+                              .get('/testdb/test-schema?callback=myCallback')
                               .set('Authorization', 'Bearer ' + bearerToken)
                               .expect(200)
                               .expect('content-type', 'text/javascript')

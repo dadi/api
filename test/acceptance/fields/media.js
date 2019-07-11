@@ -831,9 +831,7 @@ describe('Media field', () => {
                   delete model.schema.legacyImage.settings
 
                   client
-                    .get(
-                      `/testdb/test-schema/${results[0]._id}?cache=false`
-                    )
+                    .get(`/testdb/test-schema/${results[0]._id}?cache=false`)
                     .set('content-type', 'application/json')
                     .set('Authorization', `Bearer ${bearerToken}`)
                     .end((err, res) => {

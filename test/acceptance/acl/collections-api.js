@@ -749,9 +749,7 @@ describe('Collections API', () => {
                 const bearerToken = res.body.accessToken
 
                 client
-                  .get(
-                    `/library/book/${response.results[0]._id}?compose=true`
-                  )
+                  .get(`/library/book/${response.results[0]._id}?compose=true`)
                   .set('content-type', 'application/json')
                   .set('Authorization', `Bearer ${bearerToken}`)
                   .end((err, res) => {
@@ -823,9 +821,7 @@ describe('Collections API', () => {
                 const bearerToken = res.body.accessToken
 
                 client
-                  .get(
-                    `/library/book/${response.results[0]._id}?compose=true`
-                  )
+                  .get(`/library/book/${response.results[0]._id}?compose=true`)
                   .set('content-type', 'application/json')
                   .set('Authorization', `Bearer ${bearerToken}`)
                   .end((err, res) => {

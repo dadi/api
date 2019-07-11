@@ -1702,9 +1702,7 @@ describe('Reference Field', () => {
           if (err) return done(err)
 
           client
-            .get(
-              '/library/event?filter={"book.publishStatus.status":"draft"}'
-            )
+            .get('/library/event?filter={"book.publishStatus.status":"draft"}')
             .set('Authorization', 'Bearer ' + bearerToken)
             .expect(200)
             .end((err, res) => {
@@ -1763,9 +1761,7 @@ describe('Reference Field', () => {
           if (err) return done(err)
 
           client
-            .get(
-              '/library/event?filter={"book.publishStatus.status":"draft"}'
-            )
+            .get('/library/event?filter={"book.publishStatus.status":"draft"}')
             .set('Authorization', 'Bearer ' + bearerToken)
             .expect(200)
             .end((err, res) => {

@@ -104,7 +104,7 @@ describe('Search', function() {
       config.set('search.enabled', false)
 
       client
-        .get('/vtest/testdb/first-schema/search?q=something')
+        .get('/testdb/first-schema/search?q=something')
         .set('Authorization', 'Bearer ' + bearerToken)
         .expect(501)
         .end((err, res) => {
@@ -115,14 +115,14 @@ describe('Search', function() {
 
     it('should return 404 when searching a collection that does not exist', done => {
       client
-        .get('/vtest/testdb/invalid-collection/search?q=quick%20brown')
+        .get('/testdb/invalid-collection/search?q=quick%20brown')
         .set('Authorization', 'Bearer ' + bearerToken)
         .expect(404, done)
     })
 
     it('should return 400 when searching with no query', done => {
       client
-        .get('/vtest/testdb/first-schema/search')
+        .get('/testdb/first-schema/search')
         .set('Authorization', 'Bearer ' + bearerToken)
         .expect(400)
         .end(done)
@@ -130,7 +130,7 @@ describe('Search', function() {
 
     it('should return 400 when searching with a short query', done => {
       client
-        .get('/vtest/testdb/first-schema/search?q=xx')
+        .get('/testdb/first-schema/search?q=xx')
         .set('Authorization', 'Bearer ' + bearerToken)
         .expect(400)
         .end((err, res) => {
@@ -140,7 +140,7 @@ describe('Search', function() {
 
     it('should return empty results when no documents match a query', done => {
       client
-        .get('/vtest/testdb/first-schema/search?q=xxx')
+        .get('/testdb/first-schema/search?q=xxx')
         .set('Authorization', 'Bearer ' + bearerToken)
         .expect(200)
         .end((err, res) => {
@@ -160,7 +160,7 @@ describe('Search', function() {
       }
 
       client
-        .post('/vtest/testdb/first-schema')
+        .post('/testdb/first-schema')
         .set('Authorization', 'Bearer ' + bearerToken)
         .set('content-type', 'application/json')
         .send(doc)
@@ -168,7 +168,7 @@ describe('Search', function() {
         .end((err, res) => {
           setTimeout(() => {
             client
-              .get('/vtest/testdb/first-schema/search?q=quick%20brown')
+              .get('/testdb/first-schema/search?q=quick%20brown')
               .set('Authorization', 'Bearer ' + bearerToken)
               .expect(200)
               .end((err, res) => {
@@ -192,7 +192,7 @@ describe('Search', function() {
       }
 
       client
-        .post('/vtest/testdb/first-schema')
+        .post('/testdb/first-schema')
         .set('Authorization', 'Bearer ' + bearerToken)
         .set('content-type', 'application/json')
         .send(doc)
@@ -202,7 +202,7 @@ describe('Search', function() {
 
           setTimeout(() => {
             client
-              .get('/vtest/testdb/first-schema/search?q=peace')
+              .get('/testdb/first-schema/search?q=peace')
               .set('Authorization', 'Bearer ' + bearerToken)
               .expect(200)
               .end((err, res) => {
@@ -216,7 +216,7 @@ describe('Search', function() {
                 doc.title = 'Love in the Time of Cholera'
 
                 client
-                  .put('/vtest/testdb/first-schema/' + insertedDocument._id)
+                  .put('/testdb/first-schema/' + insertedDocument._id)
                   .set('Authorization', 'Bearer ' + bearerToken)
                   .set('content-type', 'application/json')
                   .send(doc)
@@ -224,7 +224,7 @@ describe('Search', function() {
                   .end((err, res) => {
                     setTimeout(() => {
                       client
-                        .get('/vtest/testdb/first-schema/search?q=peace')
+                        .get('/testdb/first-schema/search?q=peace')
                         .set('Authorization', 'Bearer ' + bearerToken)
                         .expect(200)
                         .end((err, res) => {
@@ -235,7 +235,7 @@ describe('Search', function() {
                           res.body.results.length.should.eql(0)
 
                           client
-                            .get('/vtest/testdb/first-schema/search?q=love')
+                            .get('/testdb/first-schema/search?q=love')
                             .set('Authorization', 'Bearer ' + bearerToken)
                             .expect(200)
                             .end((err, res) => {
@@ -266,7 +266,7 @@ describe('Search', function() {
       }
 
       client
-        .post('/vtest/testdb/first-schema')
+        .post('/testdb/first-schema')
         .set('Authorization', 'Bearer ' + bearerToken)
         .set('content-type', 'application/json')
         .send(doc)
@@ -276,7 +276,7 @@ describe('Search', function() {
 
           setTimeout(() => {
             client
-              .get('/vtest/testdb/first-schema/search?q=peace')
+              .get('/testdb/first-schema/search?q=peace')
               .set('Authorization', 'Bearer ' + bearerToken)
               .expect(200)
               .end((err, res) => {
@@ -290,7 +290,7 @@ describe('Search', function() {
                 doc.title = 'Love in the Time of Cholera'
 
                 client
-                  .put('/vtest/testdb/first-schema/' + insertedDocument._id)
+                  .put('/testdb/first-schema/' + insertedDocument._id)
                   .set('Authorization', 'Bearer ' + bearerToken)
                   .set('content-type', 'application/json')
                   .send({title: null})
@@ -298,7 +298,7 @@ describe('Search', function() {
                   .end((err, res) => {
                     setTimeout(() => {
                       client
-                        .get('/vtest/testdb/first-schema/search?q=peace')
+                        .get('/testdb/first-schema/search?q=peace')
                         .set('Authorization', 'Bearer ' + bearerToken)
                         .expect(200)
                         .end((err, res) => {
@@ -326,7 +326,7 @@ describe('Search', function() {
       const stub = sinon.spy(search, 'indexDocument')
 
       client
-        .post('/vtest/testdb/first-schema')
+        .post('/testdb/first-schema')
         .set('Authorization', 'Bearer ' + bearerToken)
         .set('content-type', 'application/json')
         .send(doc)
@@ -336,7 +336,7 @@ describe('Search', function() {
 
           setTimeout(() => {
             client
-              .put('/vtest/testdb/first-schema/' + insertedDocument._id)
+              .put('/testdb/first-schema/' + insertedDocument._id)
               .set('Authorization', 'Bearer ' + bearerToken)
               .set('content-type', 'application/json')
               .send({year: 2019})
@@ -344,7 +344,7 @@ describe('Search', function() {
               .end((err, res) => {
                 setTimeout(() => {
                   client
-                    .get('/vtest/testdb/first-schema/search?q=peace')
+                    .get('/testdb/first-schema/search?q=peace')
                     .set('Authorization', 'Bearer ' + bearerToken)
                     .expect(200)
                     .end((err, res) => {
@@ -382,7 +382,7 @@ describe('Search', function() {
       }
 
       client
-        .post('/vtest/testdb/first-schema')
+        .post('/testdb/first-schema')
         .set('Authorization', 'Bearer ' + bearerToken)
         .set('content-type', 'application/json')
         .send(doc)
@@ -392,7 +392,7 @@ describe('Search', function() {
 
           setTimeout(() => {
             client
-              .get('/vtest/testdb/first-schema/search?q=peace')
+              .get('/testdb/first-schema/search?q=peace')
               .set('Authorization', 'Bearer ' + bearerToken)
               .expect(200)
               .end((err, res) => {
@@ -407,7 +407,7 @@ describe('Search', function() {
                 doc.title = 'Love in the Time of Cholera'
 
                 client
-                  .delete('/vtest/testdb/first-schema/' + insertedDocument._id)
+                  .delete('/testdb/first-schema/' + insertedDocument._id)
                   .set('Authorization', 'Bearer ' + bearerToken)
                   .set('content-type', 'application/json')
                   .expect(204)
@@ -416,7 +416,7 @@ describe('Search', function() {
 
                     setTimeout(() => {
                       client
-                        .get('/vtest/testdb/first-schema/search?q=peace')
+                        .get('/testdb/first-schema/search?q=peace')
                         .set('Authorization', 'Bearer ' + bearerToken)
                         .expect(200)
                         .end((err, res) => {
@@ -441,14 +441,14 @@ describe('Search', function() {
       }
 
       client
-        .post('/vtest/testdb/first-schema')
+        .post('/testdb/first-schema')
         .set('Authorization', 'Bearer ' + bearerToken)
         .set('content-type', 'application/json')
         .send(doc)
         .expect(200)
         .end((err, res) => {
           client
-            .get('/vtest/testdb/first-schema/search?q=quick%20brown')
+            .get('/testdb/first-schema/search?q=quick%20brown')
             .set('Authorization', 'Bearer ' + bearerToken)
             .expect(200)
             .end((err, res) => {
@@ -474,7 +474,7 @@ describe('Search', function() {
         }
 
         client
-          .post('/vtest/testdb/first-schema')
+          .post('/testdb/first-schema')
           .set('Authorization', 'Bearer ' + bearerToken)
           .set('content-type', 'application/json')
           .send(doc)
@@ -497,7 +497,7 @@ describe('Search', function() {
                     const clientToken = res.body.accessToken
 
                     client
-                      .get('/vtest/testdb/first-schema/search?q=quick%20brown')
+                      .get('/testdb/first-schema/search?q=quick%20brown')
                       .set('Authorization', 'Bearer ' + clientToken)
                       .expect(403)
                       .end((err, res) => {
@@ -531,7 +531,7 @@ describe('Search', function() {
         }
 
         client
-          .post('/vtest/testdb/first-schema')
+          .post('/testdb/first-schema')
           .set('Authorization', 'Bearer ' + bearerToken)
           .set('content-type', 'application/json')
           .send(doc)
@@ -554,7 +554,7 @@ describe('Search', function() {
                     const clientToken = res.body.accessToken
 
                     client
-                      .get('/vtest/testdb/first-schema/search?q=love')
+                      .get('/testdb/first-schema/search?q=love')
                       .set('Authorization', 'Bearer ' + clientToken)
                       .expect(200)
                       .end((err, res) => {
@@ -610,7 +610,7 @@ describe('Search', function() {
         }
 
         client
-          .post('/vtest/testdb/first-schema')
+          .post('/testdb/first-schema')
           .set('Authorization', 'Bearer ' + bearerToken)
           .set('content-type', 'application/json')
           .send(documents)
@@ -633,7 +633,7 @@ describe('Search', function() {
                     const clientToken = res.body.accessToken
 
                     client
-                      .get('/vtest/testdb/first-schema/search?q=prince')
+                      .get('/testdb/first-schema/search?q=prince')
                       .set('Authorization', 'Bearer ' + clientToken)
                       .expect(200)
                       .end((err, res) => {
@@ -694,7 +694,7 @@ describe('Search', function() {
         }
 
         client
-          .post('/vtest/testdb/first-schema')
+          .post('/testdb/first-schema')
           .set('Authorization', 'Bearer ' + bearerToken)
           .set('content-type', 'application/json')
           .send(documents)
@@ -717,7 +717,7 @@ describe('Search', function() {
                     const clientToken = res.body.accessToken
 
                     client
-                      .get('/vtest/testdb/first-schema/search?q=prince')
+                      .get('/testdb/first-schema/search?q=prince')
                       .set('Authorization', 'Bearer ' + clientToken)
                       .expect(200)
                       .end((err, res) => {
@@ -780,7 +780,7 @@ describe('Search', function() {
         }
 
         client
-          .post('/vtest/testdb/first-schema')
+          .post('/testdb/first-schema')
           .set('Authorization', 'Bearer ' + bearerToken)
           .set('content-type', 'application/json')
           .send(documents)
@@ -803,7 +803,7 @@ describe('Search', function() {
                     const clientToken = res.body.accessToken
 
                     client
-                      .get('/vtest/testdb/first-schema/search?q=prince')
+                      .get('/testdb/first-schema/search?q=prince')
                       .set('Authorization', 'Bearer ' + clientToken)
                       .expect(200)
                       .end((err, res) => {
@@ -841,7 +841,7 @@ describe('Search', function() {
         }
 
         client
-          .post('/vtest/testdb/first-schema')
+          .post('/testdb/first-schema')
           .set('Authorization', 'Bearer ' + bearerToken)
           .set('content-type', 'application/json')
           .send(doc)
@@ -864,7 +864,7 @@ describe('Search', function() {
                     const clientToken = res.body.accessToken
 
                     client
-                      .get('/vtest/testdb/first-schema/search?q=quick%20brown')
+                      .get('/testdb/first-schema/search?q=quick%20brown')
                       .set('Authorization', 'Bearer ' + clientToken)
                       .expect(200)
                       .end((err, res) => {
@@ -955,7 +955,7 @@ describe('Search', function() {
       ]
 
       client
-        .post('/vtest/testdb/first-schema')
+        .post('/testdb/first-schema')
         .set('Authorization', 'Bearer ' + bearerToken)
         .set('content-type', 'application/json')
         .send(documents[2])
@@ -964,7 +964,7 @@ describe('Search', function() {
           if (err) return done(err)
 
           client
-            .post('/vtest/testdb/second-schema')
+            .post('/testdb/second-schema')
             .set('Authorization', 'Bearer ' + bearerToken)
             .set('content-type', 'application/json')
             .send([documents[0], documents[1]])
@@ -1023,7 +1023,7 @@ describe('Search', function() {
       ]
 
       client
-        .post('/vtest/testdb/first-schema')
+        .post('/testdb/first-schema')
         .set('Authorization', 'Bearer ' + bearerToken)
         .set('content-type', 'application/json')
         .send(documents[0])
@@ -1032,7 +1032,7 @@ describe('Search', function() {
           if (err) return done(err)
 
           client
-            .post('/vtest/testdb/second-schema')
+            .post('/testdb/second-schema')
             .set('Authorization', 'Bearer ' + bearerToken)
             .set('content-type', 'application/json')
             .send([documents[1], documents[2]])
@@ -1127,7 +1127,7 @@ describe('Search', function() {
       ]
 
       client
-        .post('/vtest/testdb/first-schema')
+        .post('/testdb/first-schema')
         .set('Authorization', 'Bearer ' + bearerToken)
         .set('content-type', 'application/json')
         .send(documents[0])
@@ -1155,7 +1155,7 @@ describe('Search', function() {
                 results[0]._collection.should.eql('testdb/first-schema')
 
                 client
-                  .post('/vtest/testdb/second-schema')
+                  .post('/testdb/second-schema')
                   .set('Authorization', 'Bearer ' + bearerToken)
                   .set('content-type', 'application/json')
                   .send(documents[2])
@@ -1217,7 +1217,7 @@ describe('Search', function() {
       const stub = sinon.spy(search, 'indexDocument')
 
       client
-        .post('/vtest/testdb/first-schema')
+        .post('/testdb/first-schema')
         .set('Authorization', 'Bearer ' + bearerToken)
         .set('content-type', 'application/json')
         .send(documents)
@@ -1251,7 +1251,7 @@ describe('Search', function() {
                 }
 
                 client
-                  .put(`/vtest/testdb/first-schema/${createdDocuments[1]._id}`)
+                  .put(`/testdb/first-schema/${createdDocuments[1]._id}`)
                   .set('Authorization', 'Bearer ' + bearerToken)
                   .set('content-type', 'application/json')
                   .send(update)
@@ -1356,7 +1356,7 @@ describe('Search', function() {
       const stub = sinon.spy(search, 'indexDocument')
 
       client
-        .post('/vtest/testdb/first-schema')
+        .post('/testdb/first-schema')
         .set('Authorization', 'Bearer ' + bearerToken)
         .set('content-type', 'application/json')
         .send(documents)
@@ -1368,7 +1368,7 @@ describe('Search', function() {
 
           setTimeout(() => {
             client
-              .put(`/vtest/testdb/first-schema/${createdDocuments[0]._id}`)
+              .put(`/testdb/first-schema/${createdDocuments[0]._id}`)
               .set('Authorization', 'Bearer ' + bearerToken)
               .set('content-type', 'application/json')
               .send({year: 2019})
@@ -1424,7 +1424,7 @@ describe('Search', function() {
       ]
 
       client
-        .post('/vtest/testdb/first-schema')
+        .post('/testdb/first-schema')
         .set('Authorization', 'Bearer ' + bearerToken)
         .set('content-type', 'application/json')
         .send(documents)
@@ -1454,9 +1454,7 @@ describe('Search', function() {
                 results[1]._collection.should.eql('testdb/first-schema')
 
                 client
-                  .delete(
-                    `/vtest/testdb/first-schema/${createdDocuments[2]._id}`
-                  )
+                  .delete(`/testdb/first-schema/${createdDocuments[2]._id}`)
                   .set('Authorization', 'Bearer ' + bearerToken)
                   .set('content-type', 'application/json')
                   .expect(204)
@@ -1496,7 +1494,7 @@ describe('Search', function() {
       }
 
       client
-        .post('/vtest/testdb/first-schema')
+        .post('/testdb/first-schema')
         .set('Authorization', 'Bearer ' + bearerToken)
         .set('content-type', 'application/json')
         .send(document)
@@ -1543,7 +1541,7 @@ describe('Search', function() {
         }
 
         client
-          .post('/vtest/testdb/first-schema')
+          .post('/testdb/first-schema')
           .set('Authorization', 'Bearer ' + bearerToken)
           .set('content-type', 'application/json')
           .send(documents[0])
@@ -1552,7 +1550,7 @@ describe('Search', function() {
             if (err) return done(err)
 
             client
-              .post('/vtest/testdb/second-schema')
+              .post('/testdb/second-schema')
               .set('Authorization', 'Bearer ' + bearerToken)
               .set('content-type', 'application/json')
               .send([documents[1], documents[2]])
@@ -1627,7 +1625,7 @@ describe('Search', function() {
         }
 
         client
-          .post('/vtest/testdb/first-schema')
+          .post('/testdb/first-schema')
           .set('Authorization', 'Bearer ' + bearerToken)
           .set('content-type', 'application/json')
           .send(documents[0])
@@ -1636,7 +1634,7 @@ describe('Search', function() {
             if (err) return done(err)
 
             client
-              .post('/vtest/testdb/second-schema')
+              .post('/testdb/second-schema')
               .set('Authorization', 'Bearer ' + bearerToken)
               .set('content-type', 'application/json')
               .send([documents[1], documents[2]])
@@ -1712,7 +1710,7 @@ describe('Search', function() {
         }
 
         client
-          .post('/vtest/testdb/first-schema')
+          .post('/testdb/first-schema')
           .set('Authorization', 'Bearer ' + bearerToken)
           .set('content-type', 'application/json')
           .send(documents[0])
@@ -1721,7 +1719,7 @@ describe('Search', function() {
             if (err) return done(err)
 
             client
-              .post('/vtest/testdb/second-schema')
+              .post('/testdb/second-schema')
               .set('Authorization', 'Bearer ' + bearerToken)
               .set('content-type', 'application/json')
               .send([documents[1], documents[2]])
@@ -1828,7 +1826,7 @@ describe('Search', function() {
       }
 
       client
-        .post('/vtest/testdb/first-schema')
+        .post('/testdb/first-schema')
         .set('Authorization', `Bearer ${bearerToken}`)
         .send(document)
         .expect(200)
@@ -1837,7 +1835,7 @@ describe('Search', function() {
 
           setTimeout(() => {
             client
-              .get(`/vtest/testdb/first-schema/search?q=Prince`)
+              .get(`/testdb/first-schema/search?q=Prince`)
               .set('Authorization', `Bearer ${bearerToken}`)
               .expect(200)
               .end((err, res) => {
@@ -1869,7 +1867,7 @@ describe('Search', function() {
       ]
 
       client
-        .post(`/vtest/testdb/first-schema`)
+        .post(`/testdb/first-schema`)
         .set('Authorization', `Bearer ${bearerToken}`)
         .send(documents)
         .expect(200)
@@ -1878,7 +1876,7 @@ describe('Search', function() {
 
           setTimeout(() => {
             client
-              .get('/vtest/testdb/first-schema/search?q=little')
+              .get('/testdb/first-schema/search?q=little')
               .set('Authorization', `Bearer ${bearerToken}`)
               .expect(200)
               .end((err, res) => {
@@ -1892,7 +1890,7 @@ describe('Search', function() {
                 should.not.exist(results[0]._i18n)
 
                 client
-                  .get('/vtest/testdb/first-schema/search?q=petit')
+                  .get('/testdb/first-schema/search?q=petit')
                   .set('Authorization', `Bearer ${bearerToken}`)
                   .expect(200)
                   .end((err, res) => {
@@ -1917,7 +1915,7 @@ describe('Search', function() {
       ]
 
       client
-        .post(`/vtest/testdb/first-schema`)
+        .post(`/testdb/first-schema`)
         .set('Authorization', `Bearer ${bearerToken}`)
         .send(documents)
         .expect(200)
@@ -1926,7 +1924,7 @@ describe('Search', function() {
 
           setTimeout(() => {
             client
-              .get('/vtest/testdb/first-schema/search?q=petit&lang=fr')
+              .get('/testdb/first-schema/search?q=petit&lang=fr')
               .set('Authorization', `Bearer ${bearerToken}`)
               .expect(200)
               .end((err, res) => {
@@ -1940,9 +1938,7 @@ describe('Search', function() {
                 results[0]._i18n.title.should.eql('fr')
 
                 client
-                  .get(
-                    '/vtest/testdb/first-schema/search?q=principezinho&lang=pt'
-                  )
+                  .get('/testdb/first-schema/search?q=principezinho&lang=pt')
                   .set('Authorization', `Bearer ${bearerToken}`)
                   .expect(200)
                   .end((err, res) => {
@@ -1972,7 +1968,7 @@ describe('Search', function() {
     ]
 
     client
-      .post(`/vtest/testdb/first-schema`)
+      .post(`/testdb/first-schema`)
       .set('Authorization', `Bearer ${bearerToken}`)
       .send(documents)
       .expect(200)
@@ -1983,9 +1979,7 @@ describe('Search', function() {
 
         setTimeout(() => {
           client
-            .get(
-              '/vtest/testdb/first-schema/search?q=little&fields={"title":0}'
-            )
+            .get('/testdb/first-schema/search?q=little&fields={"title":0}')
             .set('Authorization', `Bearer ${bearerToken}`)
             .expect(200)
             .end((err, res) => {
@@ -2000,9 +1994,7 @@ describe('Search', function() {
               results[0].author.should.eql(documents[0].author)
 
               client
-                .get(
-                  '/vtest/testdb/first-schema/search?q=little&fields={"title":1}'
-                )
+                .get('/testdb/first-schema/search?q=little&fields={"title":1}')
                 .set('Authorization', `Bearer ${bearerToken}`)
                 .expect(200)
                 .end((err, res) => {
@@ -2033,7 +2025,7 @@ describe('Search', function() {
     ]
 
     client
-      .post(`/vtest/testdb/first-schema`)
+      .post(`/testdb/first-schema`)
       .set('Authorization', `Bearer ${bearerToken}`)
       .send(documents)
       .expect(200)
@@ -2045,7 +2037,7 @@ describe('Search', function() {
         setTimeout(() => {
           client
             .get(
-              '/vtest/testdb/first-schema/search?q=petit&lang=fr&fields={"title":0}'
+              '/testdb/first-schema/search?q=petit&lang=fr&fields={"title":0}'
             )
             .set('Authorization', `Bearer ${bearerToken}`)
             .expect(200)
@@ -2060,9 +2052,7 @@ describe('Search', function() {
               should.not.exist(results[0].title)
 
               client
-                .get(
-                  '/vtest/testdb/first-schema/search?q=little&fields={"_id":1}'
-                )
+                .get('/testdb/first-schema/search?q=little&fields={"_id":1}')
                 .set('Authorization', `Bearer ${bearerToken}`)
                 .expect(200)
                 .end((err, res) => {

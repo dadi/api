@@ -208,70 +208,6 @@ describe('Controller', () => {
         controller().get(req, res, function() {})
       })
 
-      it('should not pass apiVersion in query if not configured', () => {
-        const configCache = config.get('query.useVersionFilter')
-
-        config.set('query.useVersionFilter', false)
-
-        const settings = Object.assign({}, help.getModelSettings(), {
-          database: 'testdb'
-        })
-        const mod = model(
-          'testModel',
-          help.getModelSchemaWithMultipleFields(),
-          null,
-          settings
-        )
-        const stub = sinon.stub(mod, 'get').resolves({})
-        const req = {
-          collectionModel: mod,
-          params: {},
-          url: '/v1/bar'
-        }
-
-        controller().get(req, mockResponse)
-        stub.restore()
-        config.set('query.useVersionFilter', configCache)
-
-        stub.callCount.should.equal(1)
-
-        const queryParameters = stub.returnsArg(0).args[0][0].query
-
-        should.not.exist(queryParameters._apiVersion)
-      })
-
-      it('should pass apiVersion in query if configured', () => {
-        const configCache = config.get('query.useVersionFilter')
-
-        config.set('query.useVersionFilter', true)
-
-        const settings = Object.assign({}, help.getModelSettings(), {
-          database: 'testdb'
-        })
-        const mod = model(
-          'testModel',
-          help.getModelSchemaWithMultipleFields(),
-          null,
-          settings
-        )
-        const stub = sinon.stub(mod, 'get').resolves({})
-        const req = {
-          collectionModel: mod,
-          params: {},
-          url: '/v1/bar'
-        }
-
-        controller().get(req, mockResponse)
-        stub.restore()
-        config.set('query.useVersionFilter', configCache)
-
-        stub.callCount.should.equal(1)
-
-        const queryParameters = stub.returnsArg(0).args[0][0].query
-
-        queryParameters._apiVersion.should.equal('v1')
-      })
-
       it("should pass model's default filters to the find query", () => {
         const settings = Object.assign({}, help.getModelSettings(), {
           database: 'testdb',
@@ -370,7 +306,7 @@ describe('Controller', () => {
           collectionModel: mod,
           params: {},
           body: {field1: 'foo'},
-          url: '/vtest/testdb/testcoll'
+          url: '/testdb/testcoll'
         })
 
         const count = stub.callCount
@@ -395,7 +331,7 @@ describe('Controller', () => {
           params: {},
           dadiApiClient: {clientId: 'clientTestId'},
           body: {field1: 'foo'},
-          url: '/vtest/testdb/testcoll'
+          url: '/testdb/testcoll'
         })
 
         const count = stub.callCount
@@ -406,7 +342,6 @@ describe('Controller', () => {
 
         count.should.equal(1)
         args.documents.field1.should.equal('foo')
-        args.internals._apiVersion.should.equal('vtest')
         args.internals._createdBy.should.equal('clientTestId')
       })
     })
@@ -430,7 +365,7 @@ describe('Controller', () => {
           collectionModel: mod,
           params: {id: '1234567890'},
           body: {field1: 'foo'},
-          url: '/vtest/testdb/testcoll'
+          url: '/testdb/testcoll'
         })
 
         const count = stub.callCount
@@ -456,7 +391,7 @@ describe('Controller', () => {
           params: {id: '1234567890'},
           dadiApiClient: {clientId: 'clientTestId'},
           body: {field1: 'bar'},
-          url: '/vtest/testdb/testcoll/1234567890'
+          url: '/testdb/testcoll/1234567890'
         })
 
         stub.callCount.should.equal(1)
@@ -465,7 +400,6 @@ describe('Controller', () => {
 
         args.query._id.should.equal('1234567890')
         args.update.field1.should.equal('bar')
-        args.internals._apiVersion.should.equal('vtest')
         args.internals._lastModifiedBy.should.equal('clientTestId')
 
         stub.restore()
@@ -486,7 +420,7 @@ describe('Controller', () => {
 
         const req = {
           collectionModel: mod,
-          url: '/vtest/testdb/testModel',
+          url: '/testdb/testModel',
           params: {
             version: 'vtest',
             property: 'testdb',

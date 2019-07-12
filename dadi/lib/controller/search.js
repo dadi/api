@@ -15,7 +15,7 @@ const Search = function(server, modelFactory) {
 
 /**
  * Handle collection search endpoints
- * Example: /1.0/library/books/search?q=title
+ * Example: /library/books/search?q=title
  */
 Search.prototype.get = function(req, res, next) {
   const {query: options} = url.parse(req.url, true)

@@ -957,7 +957,7 @@ describe('Media', function() {
             if (err) return done(err)
 
             client
-              .post('/v1/library/person')
+              .post('/library/person')
               .set('Authorization', `Bearer ${bearerToken}`)
               .send({
                 name: 'John Doe',
@@ -974,7 +974,7 @@ describe('Media', function() {
 
                 client
                   .get(
-                    `/v1/library/person/${res.body.results[0]._id}?compose=true`
+                    `/library/person/${res.body.results[0]._id}?compose=true`
                   )
                   .set('Authorization', `Bearer ${bearerToken}`)
                   .end((err, res) => {

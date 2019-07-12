@@ -29,22 +29,19 @@ class SchemaStore {
     name,
     property,
     settings,
-    timestamp = Date.now(),
-    version
+    timestamp = Date.now()
   }) {
     const database = await this.connection
     const {results: existingSchemas} = await this.find({
       name,
-      property,
-      version
+      property
     })
     const newSchema = {
       name,
       fields,
       property,
       settings,
-      timestamp,
-      version
+      timestamp
     }
 
     if (existingSchemas.length > 0) {
@@ -72,8 +69,7 @@ class SchemaStore {
         name,
         property,
         schema: fields,
-        settings,
-        version
+        settings
       })
 
       return {
@@ -93,8 +89,7 @@ class SchemaStore {
       name,
       property,
       schema: fields,
-      settings,
-      version
+      settings
     })
 
     return {
@@ -113,17 +108,15 @@ class SchemaStore {
         name: schema.name,
         property: schema.property,
         schema: schema.fields,
-        settings: schema.settings,
-        version: schema.version
+        settings: schema.settings
       })
     })
   }
 
-  async create({fields, name, settings, property, timestamp, version}) {
+  async create({fields, name, settings, property, timestamp}) {
     const {results: existingSchemas} = await this.find({
       name,
-      property,
-      version
+      property
     })
 
     if (existingSchemas.length > 0) {
@@ -140,8 +133,7 @@ class SchemaStore {
         name,
         settings,
         property,
-        timestamp: timestamp || Date.now(),
-        version
+        timestamp: timestamp || Date.now()
       }
     })
 
@@ -151,28 +143,25 @@ class SchemaStore {
       name,
       schema: fields,
       settings,
-      property,
-      version
+      property
     })
 
     return results
   }
 
-  async delete({name, property, version}) {
+  async delete({name, property}) {
     const database = await this.connection
     const {deletedCount} = await database.delete({
       collection: config.get('schemas.collection'),
       query: {
         name,
-        property,
-        version
+        property
       }
     })
 
     Model.unload({
       name,
-      property,
-      version
+      property
     })
 
     return deletedCount
@@ -207,7 +196,7 @@ class SchemaStore {
     return results[0]
   }
 
-  async update({fields, name, property, settings, version}) {
+  async update({fields, name, property, settings}) {
     this.validate({
       fields,
       settings
@@ -223,8 +212,7 @@ class SchemaStore {
       collection: config.get('schemas.collection'),
       query: {
         name,
-        property,
-        version
+        property
       },
       update: {
         $set: update
@@ -237,8 +225,7 @@ class SchemaStore {
 
     const updatedSchema = await this.get({
       name,
-      property,
-      version
+      property
     })
 
     // Reloading the model.
@@ -247,8 +234,7 @@ class SchemaStore {
       name,
       schema: updatedSchema.fields,
       settings: updatedSchema.settings,
-      property,
-      version
+      property
     })
 
     return updatedSchema

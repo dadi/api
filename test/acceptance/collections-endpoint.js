@@ -367,7 +367,7 @@ describe('Collections endpoint', function() {
 
     it('should return 401 if the request does not contain a valid bearer token', done => {
       client
-        .delete(`/api/collections/1.0/library/books`)
+        .delete(`/api/collections/library/books`)
         .set('content-type', 'application/json')
         .end((err, res) => {
           res.statusCode.should.eql(401)
@@ -395,7 +395,7 @@ describe('Collections endpoint', function() {
             const bearerToken = res.body.accessToken
 
             client
-              .delete(`/api/collections/1.0/library/books`)
+              .delete(`/api/collections/library/books`)
               .set('content-type', 'application/json')
               .set('Authorization', `Bearer ${bearerToken}`)
               .end((err, res) => {
@@ -427,7 +427,7 @@ describe('Collections endpoint', function() {
             const bearerToken = res.body.accessToken
 
             client
-              .delete(`/api/collections/1.0/library/books`)
+              .delete(`/api/collections/library/books`)
               .set('content-type', 'application/json')
               .set('Authorization', `Bearer ${bearerToken}`)
               .end((err, res) => {
@@ -463,7 +463,7 @@ describe('Collections endpoint', function() {
             const bearerToken = res.body.accessToken
 
             client
-              .delete(`/api/collections/1.0/library/books`)
+              .delete(`/api/collections/library/books`)
               .set('content-type', 'application/json')
               .set('Authorization', `Bearer ${bearerToken}`)
               .end((err, res) => {
@@ -495,21 +495,21 @@ describe('Collections endpoint', function() {
             const bearerToken = res.body.accessToken
 
             client
-              .get(`/1.0/library/books`)
+              .get(`/library/books`)
               .set('content-type', 'application/json')
               .set('Authorization', `Bearer ${bearerToken}`)
               .end((err, res) => {
                 res.statusCode.should.eql(200)
 
                 client
-                  .delete(`/api/collections/1.0/library/books`)
+                  .delete(`/api/collections/library/books`)
                   .set('content-type', 'application/json')
                   .set('Authorization', `Bearer ${bearerToken}`)
                   .end((err, res) => {
                     res.statusCode.should.eql(204)
 
                     client
-                      .get(`/1.0/library/books`)
+                      .get(`/library/books`)
                       .set('content-type', 'application/json')
                       .set('Authorization', `Bearer ${bearerToken}`)
                       .end((err, res) => {
@@ -547,7 +547,7 @@ describe('Collections endpoint', function() {
             const bearerToken = res.body.accessToken
 
             client
-              .delete(`/api/collections/1.0/library/uhoh`)
+              .delete(`/api/collections/library/uhoh`)
               .set('content-type', 'application/json')
               .set('Authorization', `Bearer ${bearerToken}`)
               .end((err, res) => {
@@ -609,7 +609,6 @@ describe('Collections endpoint', function() {
                 match.name.should.eql(collection.displayName || collection.slug)
                 match.property.should.eql(collection.property)
                 match.settings.should.eql(collection.settings)
-                match.version.should.eql(collection.version)
               })
 
               done()
@@ -648,19 +647,19 @@ describe('Collections endpoint', function() {
               res.body.collections.length.should.eql(2)
 
               const collection1 = res.body.collections.some(collection => {
-                return collection.path === '/1.0/library/book'
+                return collection.path === '/library/book'
               })
 
               const collection2 = res.body.collections.some(collection => {
-                return collection.path === '/1.0/library/person'
+                return collection.path === '/library/person'
               })
 
               const collection3 = res.body.collections.some(collection => {
-                return collection.path === '/vtest/testdb/test-schema'
+                return collection.path === '/testdb/test-schema'
               })
 
               const collection4 = res.body.collections.some(collection => {
-                return collection.path === '/vtest/testdb/test-reference-schema'
+                return collection.path === '/testdb/test-reference-schema'
               })
 
               collection1.should.eql(true)
@@ -797,7 +796,6 @@ describe('Collections endpoint', function() {
                 results.length.should.eql(1)
                 results[0].name.should.eql(schema.name)
                 results[0].property.should.eql(schema.property)
-                results[0].version.should.eql(schema.version)
                 results[0].fields.should.eql(schema.fields)
 
                 done(err)
@@ -852,7 +850,6 @@ describe('Collections endpoint', function() {
                 results.length.should.eql(1)
                 results[0].name.should.eql(schema.name)
                 results[0].property.should.eql(schema.property)
-                results[0].version.should.eql(schema.version)
                 results[0].fields.should.eql(schema.fields)
 
                 done(err)
@@ -902,7 +899,7 @@ describe('Collections endpoint', function() {
             const bearerToken = res.body.accessToken
 
             client
-              .get(`/1.0/library/books`)
+              .get(`/library/books`)
               .set('content-type', 'application/json')
               .set('Authorization', `Bearer ${bearerToken}`)
               .end((err, res) => {
@@ -917,7 +914,7 @@ describe('Collections endpoint', function() {
                     res.statusCode.should.eql(200)
 
                     client
-                      .post(`/1.0/library/books`)
+                      .post(`/library/books`)
                       .send(document)
                       .set('content-type', 'application/json')
                       .set('Authorization', `Bearer ${bearerToken}`)
@@ -930,7 +927,7 @@ describe('Collections endpoint', function() {
                         results[0].title.should.eql(document.title)
 
                         client
-                          .get(`/1.0/library/books`)
+                          .get(`/library/books`)
                           .set('content-type', 'application/json')
                           .set('Authorization', `Bearer ${bearerToken}`)
                           .end((err, res) => {
@@ -2655,7 +2652,7 @@ describe('Collections endpoint', function() {
 
     it('should return 401 if the request does not contain a valid bearer token', done => {
       client
-        .put(`/api/collections/1.0/library/books`)
+        .put(`/api/collections/library/books`)
         .send({
           fields: {
             title: {
@@ -2690,7 +2687,7 @@ describe('Collections endpoint', function() {
             const bearerToken = res.body.accessToken
 
             client
-              .put(`/api/collections/1.0/library/books`)
+              .put(`/api/collections/library/books`)
               .send({
                 fields: {
                   title: {
@@ -2739,7 +2736,7 @@ describe('Collections endpoint', function() {
             const bearerToken = res.body.accessToken
 
             client
-              .put(`/api/collections/1.0/library/books`)
+              .put(`/api/collections/library/books`)
               .send(update)
               .set('content-type', 'application/json')
               .set('Authorization', `Bearer ${bearerToken}`)
@@ -2791,7 +2788,7 @@ describe('Collections endpoint', function() {
             const bearerToken = res.body.accessToken
 
             client
-              .put(`/api/collections/1.0/library/books`)
+              .put(`/api/collections/library/books`)
               .send(update)
               .set('content-type', 'application/json')
               .set('Authorization', `Bearer ${bearerToken}`)
@@ -2843,7 +2840,7 @@ describe('Collections endpoint', function() {
             const bearerToken = res.body.accessToken
 
             client
-              .post(`/1.0/library/books`)
+              .post(`/library/books`)
               .send(document)
               .set('content-type', 'application/json')
               .set('Authorization', `Bearer ${bearerToken}`)
@@ -2851,7 +2848,7 @@ describe('Collections endpoint', function() {
                 res.statusCode.should.eql(400)
 
                 client
-                  .put(`/api/collections/1.0/library/books`)
+                  .put(`/api/collections/library/books`)
                   .send(update)
                   .set('content-type', 'application/json')
                   .set('Authorization', `Bearer ${bearerToken}`)
@@ -2859,7 +2856,7 @@ describe('Collections endpoint', function() {
                     res.statusCode.should.eql(200)
 
                     client
-                      .post(`/1.0/library/books`)
+                      .post(`/library/books`)
                       .send(document)
                       .set('content-type', 'application/json')
                       .set('Authorization', `Bearer ${bearerToken}`)
@@ -2873,7 +2870,7 @@ describe('Collections endpoint', function() {
                         results[0].subtitle.should.eql(document.subtitle)
 
                         client
-                          .get(`/1.0/library/books`)
+                          .get(`/library/books`)
                           .set('content-type', 'application/json')
                           .set('Authorization', `Bearer ${bearerToken}`)
                           .end((err, res) => {
@@ -2928,7 +2925,7 @@ describe('Collections endpoint', function() {
             const bearerToken = res.body.accessToken
 
             client
-              .put(`/api/collections/1.0/library/uhoh`)
+              .put(`/api/collections/library/uhoh`)
               .send(update)
               .set('content-type', 'application/json')
               .set('Authorization', `Bearer ${bearerToken}`)
@@ -2968,7 +2965,7 @@ describe('Collections endpoint', function() {
             const bearerToken = res.body.accessToken
 
             client
-              .put(`/api/collections/1.0/library/books`)
+              .put(`/api/collections/library/books`)
               .send(update)
               .set('content-type', 'application/json')
               .set('Authorization', `Bearer ${bearerToken}`)
@@ -3012,7 +3009,7 @@ describe('Collections endpoint', function() {
             const bearerToken = res.body.accessToken
 
             client
-              .put(`/api/collections/1.0/library/books`)
+              .put(`/api/collections/library/books`)
               .send(update)
               .set('content-type', 'application/json')
               .set('Authorization', `Bearer ${bearerToken}`)
@@ -3056,7 +3053,7 @@ describe('Collections endpoint', function() {
             const bearerToken = res.body.accessToken
 
             client
-              .put(`/api/collections/1.0/library/books`)
+              .put(`/api/collections/library/books`)
               .send(update)
               .set('content-type', 'application/json')
               .set('Authorization', `Bearer ${bearerToken}`)
@@ -3107,7 +3104,7 @@ describe('Collections endpoint', function() {
             const bearerToken = res.body.accessToken
 
             client
-              .put(`/api/collections/1.0/library/books`)
+              .put(`/api/collections/library/books`)
               .send(update)
               .set('content-type', 'application/json')
               .set('Authorization', `Bearer ${bearerToken}`)
@@ -3158,7 +3155,7 @@ describe('Collections endpoint', function() {
             const bearerToken = res.body.accessToken
 
             client
-              .put(`/api/collections/1.0/library/books`)
+              .put(`/api/collections/library/books`)
               .send(update)
               .set('content-type', 'application/json')
               .set('Authorization', `Bearer ${bearerToken}`)

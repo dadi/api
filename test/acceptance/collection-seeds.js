@@ -64,7 +64,7 @@ describe('Collections seeds', () => {
           app.start(() => {
             help.getBearerTokenWithAccessType('admin', (err, bearerToken) => {
               client
-                .get(`/vtest/test/books`)
+                .get(`/test/books`)
                 .set('content-type', 'application/json')
                 .set('Authorization', `Bearer ${bearerToken}`)
                 .end((err, res) => {
@@ -120,7 +120,7 @@ describe('Collections seeds', () => {
         help.getBearerTokenWithAccessType('admin', (err, bearerToken) => {
           setTimeout(() => {
             client
-              .get(`/vtest/test/books`)
+              .get(`/test/books`)
               .set('content-type', 'application/json')
               .set('Authorization', `Bearer ${bearerToken}`)
               .end((err, res) => {

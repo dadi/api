@@ -43,14 +43,13 @@ const INTERNAL_PROPERTIES = [
 // Pool of initialised models.
 const _models = {}
 
-function getModelKey(name, property, version) {
+function getModelKey(name, property) {
   const isMediaBucket = config
     .get('media.buckets')
     .concat(config.get('media.defaultBucket'))
     .includes(name)
 
-  // If the name matches a media bucket, the key must not include version or
-  // property.
+  // If the name matches a media bucket, the key must not include a property.
   if (isMediaBucket) {
     return name
   }
@@ -69,8 +68,7 @@ const Model = function({
   name,
   property,
   schema,
-  settings,
-  version
+  settings
 }) {
   this.acl = require('./acl')
 
@@ -79,7 +77,6 @@ const Model = function({
   this.property = property
   this.schema = schema || {}
   this.settings = settings || {}
-  this.version = version
 
   this.aclKey = this.settings.aclKey || `collection:${property}_${name}`
 
@@ -649,12 +646,8 @@ Model.prototype.getFieldType = function(field) {
  * @param  {String} name - name of the collection
  * @return {Model}
  */
-Model.prototype.getForeignModel = function(
-  name,
-  property = this.property,
-  version = this.version
-) {
-  const modelKey = getModelKey(name, property, version)
+Model.prototype.getForeignModel = function(name, property = this.property) {
+  const modelKey = getModelKey(name, property)
 
   return _models[modelKey]
 }
@@ -1017,7 +1010,7 @@ Model.prototype.getVersions = require('./collections/getVersions')
 Model.prototype.update = require('./collections/update')
 
 module.exports = function(options) {
-  const {connection, isListable, name, property, schema, settings, version} =
+  const {connection, isListable, name, property, schema, settings} =
     typeof options === 'string'
       ? {
           connection: arguments[2],
@@ -1027,7 +1020,7 @@ module.exports = function(options) {
           settings: arguments[3]
         }
       : options
-  const modelKey = getModelKey(name, property, version)
+  const modelKey = getModelKey(name, property)
 
   // If there is already a model for this key, we return it if there was no
   // schema provided, or the schema provided is the same as the one already
@@ -1052,15 +1045,14 @@ module.exports = function(options) {
     name,
     property,
     schema,
-    settings,
-    version
+    settings
   })
 
   return _models[modelKey]
 }
 
-module.exports.get = ({name, property, version}) => {
-  const modelKey = getModelKey(name, property, version)
+module.exports.get = ({name, property}) => {
+  const modelKey = getModelKey(name, property)
 
   return _models[modelKey]
 }
@@ -1079,8 +1071,8 @@ module.exports.getByAclKey = aclKey => {
   }
 }
 
-module.exports.unload = ({name, property, version}) => {
-  const modelKey = getModelKey(name, property, version)
+module.exports.unload = ({name, property}) => {
+  const modelKey = getModelKey(name, property)
 
   delete _models[modelKey]
 }

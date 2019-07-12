@@ -97,7 +97,7 @@ describe('Database connection', () => {
             datastore = model.connection.datastore
 
             client
-              .post('/vtest/noauthdb/articles')
+              .post('/noauthdb/articles')
               .send(mockDocument)
               .set('content-type', 'application/json')
               .set('Authorization', 'Bearer ' + bearerToken)
@@ -125,7 +125,7 @@ describe('Database connection', () => {
 
     it('should return 200 for GET requests whilst the connection is available', done => {
       client
-        .get('/vtest/noauthdb/articles?cache=false')
+        .get('/noauthdb/articles?cache=false')
         .set('content-type', 'application/json')
         .set('Authorization', 'Bearer ' + bearerToken)
         .end((err, res) => {
@@ -140,7 +140,7 @@ describe('Database connection', () => {
 
           setTimeout(() => {
             client
-              .get('/vtest/noauthdb/articles?cache=false')
+              .get('/noauthdb/articles?cache=false')
               .set('content-type', 'application/json')
               .set('Authorization', 'Bearer ' + bearerToken)
               .end((err, res) => {
@@ -158,7 +158,7 @@ describe('Database connection', () => {
 
     it('should return 503 for GET requests when the database becomes unavailable', done => {
       client
-        .get('/vtest/noauthdb/articles?cache=false')
+        .get('/noauthdb/articles?cache=false')
         .set('content-type', 'application/json')
         .set('Authorization', 'Bearer ' + bearerToken)
         .end((err, res) => {
@@ -172,7 +172,7 @@ describe('Database connection', () => {
           testConnector._mock.disconnect()
 
           client
-            .get('/vtest/noauthdb/articles?cache=false')
+            .get('/noauthdb/articles?cache=false')
             .set('content-type', 'application/json')
             .set('Authorization', 'Bearer ' + bearerToken)
             .end((err, res) => {
@@ -189,7 +189,7 @@ describe('Database connection', () => {
 
     it('should return 200 for PUT requests whilst the connection is available', done => {
       client
-        .put('/vtest/noauthdb/articles/' + savedDocument._id + '?cache=false')
+        .put('/noauthdb/articles/' + savedDocument._id + '?cache=false')
         .send({
           title: 'Some other title'
         })
@@ -204,9 +204,7 @@ describe('Database connection', () => {
 
           setTimeout(() => {
             client
-              .put(
-                '/vtest/noauthdb/articles/' + savedDocument._id + '?cache=false'
-              )
+              .put('/noauthdb/articles/' + savedDocument._id + '?cache=false')
               .send({
                 title: 'Yet another title'
               })
@@ -226,7 +224,7 @@ describe('Database connection', () => {
 
     it('should return 503 for PUT requests when the database becomes unavailable', done => {
       client
-        .put('/vtest/noauthdb/articles/' + savedDocument._id + '?cache=false')
+        .put('/noauthdb/articles/' + savedDocument._id + '?cache=false')
         .send({
           title: 'Some other title'
         })
@@ -242,9 +240,7 @@ describe('Database connection', () => {
           testConnector._mock.disconnect()
 
           client
-            .put(
-              '/vtest/noauthdb/articles/59d4b35cb2cf37d706b1d706?cache=false'
-            )
+            .put('/noauthdb/articles/59d4b35cb2cf37d706b1d706?cache=false')
             .send({
               title: 'Yet another title'
             })
@@ -264,7 +260,7 @@ describe('Database connection', () => {
 
     it('should return 200 for POST requests whilst the connection is available', done => {
       client
-        .post('/vtest/noauthdb/articles?cache=false')
+        .post('/noauthdb/articles?cache=false')
         .send({
           published: {
             state: 1
@@ -283,7 +279,7 @@ describe('Database connection', () => {
 
           setTimeout(() => {
             client
-              .post('/vtest/noauthdb/articles?cache=false')
+              .post('/noauthdb/articles?cache=false')
               .send({
                 published: {
                   state: 1
@@ -307,7 +303,7 @@ describe('Database connection', () => {
 
     it('should return 503 for POST requests when the database becomes unavailable', done => {
       client
-        .post('/vtest/noauthdb/articles?cache=false')
+        .post('/noauthdb/articles?cache=false')
         .send({
           published: {
             state: 1
@@ -328,7 +324,7 @@ describe('Database connection', () => {
 
           setTimeout(() => {
             client
-              .post('/vtest/noauthdb/articles?cache=false')
+              .post('/noauthdb/articles?cache=false')
               .send({
                 published: {
                   state: 1
@@ -352,7 +348,7 @@ describe('Database connection', () => {
 
     it('should return 204 for DELETE requests whilst the connection is available', done => {
       client
-        .post('/vtest/noauthdb/articles')
+        .post('/noauthdb/articles')
         .send(mockDocument)
         .set('content-type', 'application/json')
         .set('Authorization', 'Bearer ' + bearerToken)
@@ -364,9 +360,7 @@ describe('Database connection', () => {
           const savedDocument2 = res.body.results[0]
 
           client
-            .delete(
-              '/vtest/noauthdb/articles/' + savedDocument._id + '?cache=false'
-            )
+            .delete('/noauthdb/articles/' + savedDocument._id + '?cache=false')
             .set('content-type', 'application/json')
             .set('Authorization', 'Bearer ' + bearerToken)
             .end((err, res) => {
@@ -379,9 +373,7 @@ describe('Database connection', () => {
               setTimeout(() => {
                 client
                   .delete(
-                    '/vtest/noauthdb/articles/' +
-                      savedDocument2._id +
-                      '?cache=false'
+                    '/noauthdb/articles/' + savedDocument2._id + '?cache=false'
                   )
                   .set('content-type', 'application/json')
                   .set('Authorization', 'Bearer ' + bearerToken)
@@ -400,9 +392,7 @@ describe('Database connection', () => {
 
     it('should return 503 for DELETE requests when the database becomes unavailable', done => {
       client
-        .delete(
-          '/vtest/noauthdb/articles/' + savedDocument._id + '?cache=false'
-        )
+        .delete('/noauthdb/articles/' + savedDocument._id + '?cache=false')
         .set('content-type', 'application/json')
         .set('Authorization', 'Bearer ' + bearerToken)
         .end((err, res) => {
@@ -415,9 +405,7 @@ describe('Database connection', () => {
           testConnector._mock.disconnect()
 
           client
-            .delete(
-              '/vtest/noauthdb/articles/59d4b35cb2cf37d706b1d706?cache=false'
-            )
+            .delete('/noauthdb/articles/59d4b35cb2cf37d706b1d706?cache=false')
             .set('content-type', 'application/json')
             .set('Authorization', 'Bearer ' + bearerToken)
             .end((err, res) => {

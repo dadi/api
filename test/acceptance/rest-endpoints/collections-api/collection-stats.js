@@ -42,7 +42,7 @@ describe('Collections API – Stats endpoint', function() {
               const client = request(connectionString)
 
               client
-                .post('/1.0/library/book')
+                .post('/library/book')
                 .set('Authorization', 'Bearer ' + bearerToken)
                 .send({title: 'A book 1'})
                 .expect(200)
@@ -50,7 +50,7 @@ describe('Collections API – Stats endpoint', function() {
                   if (err) return done(err)
 
                   client
-                    .post('/1.0/library/book')
+                    .post('/library/book')
                     .set('Authorization', 'Bearer ' + bearerToken)
                     .send({title: 'A book 2'})
                     .expect(200)
@@ -76,7 +76,7 @@ describe('Collections API – Stats endpoint', function() {
     const client = request(connectionString)
 
     client
-      .get('/1.0/library/book/stats')
+      .get('/library/book/stats')
       .set('Authorization', 'Bearer ' + bearerToken)
       .expect(200)
       .end(function(err, res) {
@@ -89,7 +89,7 @@ describe('Collections API – Stats endpoint', function() {
     const client = request(connectionString)
 
     client
-      .get('/1.0/library/book/stats')
+      .get('/library/book/stats')
       .set('Authorization', 'Bearer ' + bearerToken)
       .expect(200)
       .expect('content-type', 'application/json')
@@ -107,7 +107,7 @@ describe('Collections API – Stats endpoint', function() {
     const client = request(connectionString)
 
     client
-      .post('/1.0/library/book/stats')
+      .post('/library/book/stats')
       .set('Authorization', 'Bearer ' + bearerToken)
       .send({})
       .expect(404)

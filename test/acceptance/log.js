@@ -112,7 +112,7 @@ describe('Logger', function() {
         const client = request(connectionString)
 
         client
-          .get('/vtest/testdb/test-schema')
+          .get('/testdb/test-schema')
           .set('Authorization', 'Bearer ' + bearerToken)
           .expect(200)
           .expect('content-type', 'application/json')
@@ -125,7 +125,7 @@ describe('Logger', function() {
 
             const logEntry = fs.readFileSync(logpath, {encoding: 'utf8'})
 
-            logEntry.indexOf('/vtest/testdb/test-schema').should.be.above(0)
+            logEntry.indexOf('/testdb/test-schema').should.be.above(0)
 
             done()
           })
@@ -139,7 +139,7 @@ describe('Logger', function() {
         const client = request(connectionString)
 
         client
-          .get('/vtest/testdb/test-schema')
+          .get('/testdb/test-schema')
           .set('Authorization', 'Bearer ' + bearerToken)
           .set('x-forwarded-for', '52.101.34.175')
           .expect(200)

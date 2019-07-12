@@ -544,7 +544,7 @@ describe('Hooks', function() {
 
       // create article
       client
-        .post('/3rdparty/radio/articles')
+        .post('/radio/articles')
         .send(article)
         .set('content-type', 'application/json')
         .set('Authorization', 'Bearer ' + bearerToken)
@@ -555,7 +555,7 @@ describe('Hooks', function() {
 
           // GET the article
           client
-            .get('/3rdparty/radio/articles/' + newArticle._id)
+            .get('/radio/articles/' + newArticle._id)
             .set('content-type', 'application/json')
             .set('Authorization', 'Bearer ' + bearerToken)
             .end(function(err, res) {
@@ -571,9 +571,7 @@ describe('Hooks', function() {
               // GET the article with qs params
               client
                 .get(
-                  '/3rdparty/radio/articles/' +
-                    newArticle._id +
-                    '?fields={"_layout":1}'
+                  '/radio/articles/' + newArticle._id + '?fields={"_layout":1}'
                 )
                 .set('content-type', 'application/json')
                 .set('Authorization', 'Bearer ' + bearerToken)
@@ -603,7 +601,7 @@ describe('Hooks', function() {
 
     startApp(() => {
       client
-        .post('/vtest/testdb/publications/config')
+        .post('/testdb/publications/config')
         .send(JSON.stringify(publicationSchema, null, 2))
         .set('content-type', 'text/plain')
         .set('Authorization', 'Bearer ' + bearerToken)
@@ -618,7 +616,7 @@ describe('Hooks', function() {
           }
 
           client
-            .post('/vtest/testdb/publications')
+            .post('/testdb/publications')
             .send(publication)
             .set('content-type', 'application/json')
             .set('Authorization', 'Bearer ' + bearerToken)
@@ -636,7 +634,7 @@ describe('Hooks', function() {
               }
 
               client
-                .post('/vtest/testdb/articles')
+                .post('/testdb/articles')
                 .send(article)
                 .set('content-type', 'application/json')
                 .set('Authorization', 'Bearer ' + bearerToken)
@@ -650,7 +648,7 @@ describe('Hooks', function() {
                   article.title = 'Updated Article Title'
 
                   client
-                    .put('/vtest/testdb/articles/' + articleId.toString())
+                    .put('/testdb/articles/' + articleId.toString())
                     .send(article)
                     .set('content-type', 'application/json')
                     .set('Authorization', 'Bearer ' + bearerToken)
@@ -658,7 +656,7 @@ describe('Hooks', function() {
                       if (err) return done(err)
 
                       client
-                        .get('/vtest/testdb/publications')
+                        .get('/testdb/publications')
                         .set('Authorization', 'Bearer ' + bearerToken)
                         .end(function(err, res) {
                           if (err) return done(err)
@@ -666,7 +664,7 @@ describe('Hooks', function() {
                           const publicationResults = res.body.results
 
                           client
-                            .get('/vtest/testdb/articles')
+                            .get('/testdb/articles')
                             .set('Authorization', 'Bearer ' + bearerToken)
                             .end(function(err, res) {
                               if (err) return done(err)
@@ -690,7 +688,7 @@ describe('Hooks', function() {
       const client = request(connectionString)
 
       client
-        .post('/vtest/testdb/schema-not-returning')
+        .post('/testdb/schema-not-returning')
         .send({name: 'John Doe'})
         .expect(500)
         .set('Authorization', 'Bearer ' + bearerToken)
@@ -715,7 +713,7 @@ describe('Hooks', function() {
 
     startApp(() => {
       client
-        .post('/vtest/testdb/publications/config')
+        .post('/testdb/publications/config')
         .send(JSON.stringify(publicationSchema, null, 2))
         .set('content-type', 'text/plain')
         .set('Authorization', 'Bearer ' + bearerToken)
@@ -730,7 +728,7 @@ describe('Hooks', function() {
           }
 
           client
-            .post('/vtest/testdb/publications')
+            .post('/testdb/publications')
             .send(publication)
             .set('content-type', 'application/json')
             .set('Authorization', 'Bearer ' + bearerToken)
@@ -741,9 +739,7 @@ describe('Hooks', function() {
 
               publicationResults.length.should.eql(1)
 
-              publicationResults[0]['url'].should.eql(
-                '/vtest/testdb/publications'
-              )
+              publicationResults[0]['url'].should.eql('/testdb/publications')
 
               hook.Hook.prototype.load.restore()
               stopApp(done)

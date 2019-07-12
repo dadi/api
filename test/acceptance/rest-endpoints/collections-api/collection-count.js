@@ -42,7 +42,7 @@ describe('Collections API – Count endpoint', function() {
               const client = request(connectionString)
 
               client
-                .post('/1.0/library/book')
+                .post('/library/book')
                 .set('Authorization', 'Bearer ' + bearerToken)
                 .send({title: 'A book 1'})
                 .expect(200)
@@ -50,7 +50,7 @@ describe('Collections API – Count endpoint', function() {
                   if (err) return done(err)
 
                   client
-                    .post('/1.0/library/book')
+                    .post('/library/book')
                     .set('Authorization', 'Bearer ' + bearerToken)
                     .send({title: 'A book 2'})
                     .expect(200)
@@ -76,7 +76,7 @@ describe('Collections API – Count endpoint', function() {
     const client = request(connectionString)
 
     client
-      .get('/1.0/library/book/count')
+      .get('/library/book/count')
       .set('Authorization', 'Bearer ' + bearerToken)
       .end(function(err, res) {
         const response = res.body
@@ -92,7 +92,7 @@ describe('Collections API – Count endpoint', function() {
     const client = request(connectionString)
 
     client
-      .get('/1.0/library/book/count?filter={"title":"A book 1"}')
+      .get('/library/book/count?filter={"title":"A book 1"}')
       .set('Authorization', 'Bearer ' + bearerToken)
       .end(function(err, res) {
         const response = res.body

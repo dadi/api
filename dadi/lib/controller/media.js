@@ -456,7 +456,6 @@ MediaController.prototype.post = function(req, res, next) {
               this.model.create({
                 documents: documentsWithUserData,
                 internals: {
-                  _apiVersion: req.url.split('/')[1],
                   _createdAt: Date.now(),
                   _createdBy: req.dadiApiClient && req.dadiApiClient.clientId
                 },

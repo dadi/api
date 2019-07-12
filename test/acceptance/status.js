@@ -138,7 +138,7 @@ describe('Status', function() {
       help.getBearerToken(function(err, token) {
         // set some routes
         config.set('status.routes', [
-          {route: '/1.0/library/book', expectedResponseTime: 1}
+          {route: '/library/book', expectedResponseTime: 1}
         ])
 
         const client = request(
@@ -157,7 +157,7 @@ describe('Status', function() {
 
             status.routes.should.exist
             status.routes[0].should.exist
-            status.routes[0].route.should.eql('/1.0/library/book')
+            status.routes[0].route.should.eql('/library/book')
             done()
           })
       })
@@ -167,7 +167,7 @@ describe('Status', function() {
       help.getBearerToken(function(err, token) {
         // set some routes
         config.set('status.routes', [
-          {route: '/1.0/library/book', expectedResponseTime: 1}
+          {route: '/library/book', expectedResponseTime: 1}
         ])
 
         const client = request(
@@ -196,7 +196,7 @@ describe('Status', function() {
       help.getBearerToken(function(err, token) {
         // set some routes
         config.set('status.routes', [
-          {route: '/1.0/library/book', expectedResponseTime: -1}
+          {route: '/library/book', expectedResponseTime: -1}
         ])
 
         const client = request(

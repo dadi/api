@@ -341,7 +341,7 @@ function defaultError(api) {
 }
 
 // return a 404
-function notFound(req, res) {
+function notFound(_, res) {
   return function() {
     res.statusCode = 404
     res.end()
@@ -354,14 +354,6 @@ function routePriority(path, keys) {
     typeof tokens[0] === 'string'
       ? tokens[0].split('/').filter(Boolean).length
       : 0
-  const requiredParamLength = keys.filter(key => !key.optional).length
-  const optionalParamLength = keys.filter(key => key.optional).length
 
-  let order =
-    staticRouteLength * 5 + requiredParamLength * 2 + optionalParamLength
-
-  // make internal routes less important...
-  if (path.indexOf('/api/') > 0) order = -100
-
-  return order
+  return 1000 * staticRouteLength + keys.length
 }

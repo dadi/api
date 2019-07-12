@@ -14,6 +14,35 @@ const Collection = function(server) {
 
 Collection.prototype = new Controller()
 
+Collection.prototype.config = async function(req, res, next) {
+  const method = req.method && req.method.toLowerCase()
+
+  if (method !== 'get') {
+    return next()
+  }
+
+  const {collectionModel: model} = req
+
+  if (!model) {
+    return next()
+  }
+
+  const access = await acl.access.get(req.dadiApiClient, model.aclKey)
+
+  // The client can read the schema if they have any type of access (i.e. create,
+  // delete, read or update) to the collection resource.
+  if (!access.create || !access.delete || !access.read || !access.update) {
+    return help.sendBackJSON(401, res, next)(new Error('UNAUTHORISED'))
+  }
+
+  const response = {
+    fields: model.schema,
+    settings: model.settings
+  }
+
+  return help.sendBackJSON(200, res, next)(null, response)
+}
+
 Collection.prototype.count = workQueue.wrapForegroundJob(async function(
   req,
   res,
@@ -63,13 +92,13 @@ Collection.prototype.delete = workQueue.wrapForegroundJob(async function(
     return next()
   }
 
-  const {collection, id, property, version} = req.params
+  const {collection, id, property} = req.params
   const query = id ? {_id: id} : req.body.query
 
   if (!query) return next()
 
   // Flush cache for DELETE requests.
-  help.clearCache(`/${version}/${property}/${collection}`)
+  help.clearCache(`/${property}/${collection}`)
 
   try {
     const {deletedCount, totalCount} = await model.delete({
@@ -96,6 +125,25 @@ Collection.prototype.delete = workQueue.wrapForegroundJob(async function(
     return help.sendBackJSON(200, res, next)(error)
   }
 })
+
+Collection.prototype.genericRoute = function(req, res, next) {
+  try {
+    // Map request method to controller method.
+    const method = req.params.action || (req.method && req.method.toLowerCase())
+
+    if (method && this[method]) {
+      return this[method](req, res, next)
+    }
+
+    if (method === 'options') {
+      return help.sendBackJSON(200, res, next)(null, null)
+    }
+  } catch (err) {
+    help.sendBackErrorTrace(res, next)(err)
+  }
+
+  next()
+}
 
 Collection.prototype.get = workQueue.wrapForegroundJob(async function(
   req,
@@ -154,17 +202,13 @@ Collection.prototype.post = workQueue.wrapForegroundJob(async function(
     return next()
   }
 
-  const {collection, id, property, version} = req.params
-
-  // Add internal fields.
-  const internals = {
-    _apiVersion: req.url.split('/')[1]
-  }
+  const {collection, id, property} = req.params
+  const internals = {}
   const path = url.parse(req.url, true)
   const options = path.query
 
   // Flush cache for DELETE requests.
-  help.clearCache(`/${version}/${property}/${collection}`)
+  help.clearCache(`/${property}/${collection}`)
 
   // We're looking at an update if there is a document ID present in the URL
   // or there is an `update` property in the body.
@@ -182,11 +226,6 @@ Collection.prototype.post = workQueue.wrapForegroundJob(async function(
       description = req.body.description
       query = req.body.query
       update = req.body.update
-    }
-
-    // Add the apiVersion filter.
-    if (config.get('query.useVersionFilter')) {
-      query._apiVersion = internals._apiVersion
     }
 
     try {
@@ -228,54 +267,14 @@ Collection.prototype.put = function(req, res, next) {
   return this.post(req, res, next)
 }
 
-Collection.prototype.registerRoutes = function(route, filePath) {
+Collection.prototype.registerRoutes = function(route) {
   // Creating config route.
-  this.server.app.use(`${route}/config`, (req, res, next) => {
-    if (!filePath) {
-      return next()
-    }
-
-    const method = req.method && req.method.toLowerCase()
-
-    if (method !== 'get') {
-      return next()
-    }
-
-    // The client can read the schema if they have any type of access (i.e. create,
-    // delete, read or update) to the collection resource.
-    const aclKey = this.model.aclKey
-
-    return acl.access.get(req.dadiApiClient, aclKey).then(access => {
-      if (!access.create || !access.delete || !access.read || !access.update) {
-        return help.sendBackJSON(401, res, next)(new Error('UNAUTHORISED'))
-      }
-
-      return help.sendBackJSON(200, res, next)(null, require(filePath))
-    })
-  })
+  this.server.app.use(`${route}/config`, this.config)
 
   // Creating generic route.
   this.server.app.use(
     `${route}/:id(${this.ID_PATTERN})?/:action(count|search|stats|versions)?`,
-    (req, res, next) => {
-      try {
-        // Map request method to controller method.
-        const method =
-          req.params.action || (req.method && req.method.toLowerCase())
-
-        if (method && this[method]) {
-          return this[method](req, res, next)
-        }
-
-        if (method === 'options') {
-          return help.sendBackJSON(200, res, next)(null, null)
-        }
-      } catch (err) {
-        help.sendBackErrorTrace(res, next)(err)
-      }
-
-      next()
-    }
+    this.genericRoute.bind(this)
   )
 }
 

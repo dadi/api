@@ -66,7 +66,7 @@ describe('Boolean Field', () => {
     const client = request(connectionString)
 
     client
-      .post('/v1/library/misc')
+      .post('/library/misc')
       .set('Authorization', 'Bearer ' + bearerToken)
       .send({boolean: true})
       .expect(200)
@@ -76,7 +76,7 @@ describe('Boolean Field', () => {
         res.body.results[0].boolean.should.eql(true)
 
         client
-          .get(`/v1/library/misc/${res.body.results[0]._id}`)
+          .get(`/library/misc/${res.body.results[0]._id}`)
           .set('Authorization', 'Bearer ' + bearerToken)
           .expect(200)
           .end((err, res) => {
@@ -105,7 +105,7 @@ describe('Boolean Field', () => {
     ]
 
     client
-      .post('/v1/library/misc')
+      .post('/library/misc')
       .set('Authorization', 'Bearer ' + bearerToken)
       .send(docs)
       .expect(200)
@@ -113,7 +113,7 @@ describe('Boolean Field', () => {
         if (err) return done(err)
 
         client
-          .get(`/v1/library/misc?filter={"boolean":true}`)
+          .get(`/library/misc?filter={"boolean":true}`)
           .set('Authorization', 'Bearer ' + bearerToken)
           .expect(200)
           .end((err, res) => {
@@ -142,7 +142,7 @@ describe('Boolean Field', () => {
     ]
 
     client
-      .post('/v1/library/misc')
+      .post('/library/misc')
       .set('Authorization', 'Bearer ' + bearerToken)
       .send(docs)
       .expect(200)
@@ -150,7 +150,7 @@ describe('Boolean Field', () => {
         if (err) return done(err)
 
         client
-          .get(`/v1/library/misc?filter={"boolean":false}`)
+          .get(`/library/misc?filter={"boolean":false}`)
           .set('Authorization', 'Bearer ' + bearerToken)
           .expect(200)
           .end((err, res) => {

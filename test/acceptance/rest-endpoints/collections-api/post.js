@@ -21,32 +21,9 @@ describe('Collections API – POST', function() {
 
           bearerToken = token
 
-          const schema = {
-            fields: {
-              field1: {
-                type: 'String',
-                required: false
-              },
-              field2: {
-                type: 'Number',
-                required: false
-              },
-              field3: {
-                type: 'Reference',
-                required: false
-              },
-              _fieldWithUnderscore: {
-                type: 'Object',
-                required: false
-              }
-            },
-            settings: {}
-          }
-
           help
             .createSchemas([
               {
-                version: 'vtest',
                 property: 'testdb',
                 name: 'test-schema',
                 fields: {
@@ -92,7 +69,7 @@ describe('Collections API – POST', function() {
     const client = request(connectionString)
 
     client
-      .post('/vtest/testdb/test-schema')
+      .post('/testdb/test-schema')
       .set('Authorization', 'Bearer ' + bearerToken)
       .send({field1: 'foo!'})
       .expect(200)
@@ -116,7 +93,7 @@ describe('Collections API – POST', function() {
     const client = request(connectionString)
 
     client
-      .post('/vtest/testdb/test-schema')
+      .post('/testdb/test-schema')
       .set('Authorization', 'Bearer ' + bearerToken)
       .send({field1: 'foo!'})
       .expect(200)
@@ -142,7 +119,7 @@ describe('Collections API – POST', function() {
     const client = request(connectionString)
 
     client
-      .post('/vtest/testdb/test-schema')
+      .post('/testdb/test-schema')
       .set('Authorization', 'Bearer ' + bearerToken)
       .send(body)
       .expect(200)
@@ -168,7 +145,7 @@ describe('Collections API – POST', function() {
     const client = request(connectionString)
 
     client
-      .post('/vtest/testdb/test-schema')
+      .post('/testdb/test-schema')
       .set('Authorization', 'Bearer ' + bearerToken)
       .set('content-type', 'text/plain')
       .send(body)
@@ -195,7 +172,7 @@ describe('Collections API – POST', function() {
     const client = request(connectionString)
 
     client
-      .post('/vtest/testdb/test-schema')
+      .post('/testdb/test-schema')
       .set('Authorization', 'Bearer ' + bearerToken)
       .set('content-type', 'application/json; charset=UTF-8')
       .send(body)
@@ -223,7 +200,7 @@ describe('Collections API – POST', function() {
     const client = request(connectionString)
 
     client
-      .post('/vtest/testdb/test-schema')
+      .post('/testdb/test-schema')
       .set('Authorization', 'Bearer ' + bearerToken)
       .send(body)
       .expect(200)
@@ -250,7 +227,7 @@ describe('Collections API – POST', function() {
     const client = request(connectionString)
 
     client
-      .post('/vtest/testdb/test-schema')
+      .post('/testdb/test-schema')
       .set('Authorization', 'Bearer ' + bearerToken)
       .send(body)
       .expect(200)
@@ -272,7 +249,7 @@ describe('Collections API – POST', function() {
     const client = request(connectionString)
 
     client
-      .post('/vtest/testdb/test-schema')
+      .post('/testdb/test-schema')
       .set('Authorization', 'Bearer ' + bearerToken)
       .send({field1: 'foo!'})
       .expect(200)
@@ -286,7 +263,6 @@ describe('Collections API – POST', function() {
         res.body.results[0]._createdBy.should.equal('test123')
         res.body.results[0]._createdAt.should.be.Number
         res.body.results[0]._createdAt.should.not.be.above(Date.now())
-        res.body.results[0]._apiVersion.should.equal('vtest')
         done()
       })
   })
@@ -303,7 +279,7 @@ describe('Collections API – POST', function() {
     }
 
     client
-      .post('/vtest/testdb/test-schema')
+      .post('/testdb/test-schema')
       .set('Authorization', 'Bearer ' + bearerToken)
       .send(input)
       .expect(200)
@@ -335,7 +311,7 @@ describe('Collections API – POST', function() {
     const client = request(connectionString)
 
     client
-      .post('/vtest/testdb/test-schema/59f1b3e038ad765e669ac47f')
+      .post('/testdb/test-schema/59f1b3e038ad765e669ac47f')
       .set('Authorization', 'Bearer ' + bearerToken)
       .send({field1: 'updated doc'})
       .expect(404)
@@ -352,7 +328,7 @@ describe('Collections API – POST', function() {
     const client = request(connectionString)
 
     client
-      .post('/vtest/testdb/test-schema')
+      .post('/testdb/test-schema')
       .set('Authorization', 'Bearer ' + bearerToken)
       .send({
         query: {

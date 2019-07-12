@@ -277,10 +277,10 @@ Server.prototype.start = function(done) {
   // we attach it to `req.collectionModel`. This is then used by other handlers
   // downstream, such as the cache layer and the document controllers.
   app.use((req, _, next) => {
-    const {collection, property, version} = req.params
+    const {collection, property} = req.params
 
-    if (collection && property && version) {
-      req.collectionModel = Model.get({name: collection, property, version})
+    if (collection && property) {
+      req.collectionModel = Model.get({name: collection, property})
     }
 
     return next()
@@ -592,7 +592,7 @@ Server.prototype.addCollectionResource = async function() {
 
   this.addComponent(
     {
-      route: '/:version/:property/:collection',
+      route: '/:property/:collection',
       component: controller
     },
     this.COMPONENT_TYPE.COLLECTION

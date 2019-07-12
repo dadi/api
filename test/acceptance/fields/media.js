@@ -97,7 +97,7 @@ describe('Media field', () => {
         }
 
         client
-          .post('/vtest/testdb/test-schema')
+          .post('/testdb/test-schema')
           .set('content-type', 'application/json')
           .set('Authorization', `Bearer ${bearerToken}`)
           .expect(400)
@@ -127,7 +127,7 @@ describe('Media field', () => {
             }
 
             client
-              .post('/vtest/testdb/test-schema')
+              .post('/testdb/test-schema')
               .set('content-type', 'application/json')
               .set('Authorization', `Bearer ${bearerToken}`)
               .expect(400)
@@ -158,7 +158,7 @@ describe('Media field', () => {
             }
 
             client
-              .post('/vtest/testdb/test-schema')
+              .post('/testdb/test-schema')
               .set('content-type', 'application/json')
               .set('Authorization', `Bearer ${bearerToken}`)
               .expect(200)
@@ -196,7 +196,7 @@ describe('Media field', () => {
             }
 
             client
-              .post('/vtest/testdb/test-schema')
+              .post('/testdb/test-schema')
               .set('content-type', 'application/json')
               .set('Authorization', `Bearer ${bearerToken}`)
               .expect(400)
@@ -238,7 +238,7 @@ describe('Media field', () => {
                 }
 
                 client
-                  .post('/vtest/testdb/test-schema')
+                  .post('/testdb/test-schema')
                   .set('content-type', 'application/json')
                   .set('Authorization', `Bearer ${bearerToken}`)
                   .expect(400)
@@ -261,7 +261,7 @@ describe('Media field', () => {
 
     it('should reject a string value that is not an hexadecimal ID', done => {
       client
-        .post('/vtest/testdb/test-schema')
+        .post('/testdb/test-schema')
         .set('content-type', 'application/json')
         .set('Authorization', `Bearer ${bearerToken}`)
         .send({
@@ -284,7 +284,7 @@ describe('Media field', () => {
       }
 
       client
-        .post('/vtest/testdb/test-schema')
+        .post('/testdb/test-schema')
         .set('content-type', 'application/json')
         .set('Authorization', `Bearer ${bearerToken}`)
         .expect(200)
@@ -306,7 +306,7 @@ describe('Media field', () => {
       }
 
       client
-        .post('/vtest/testdb/test-schema')
+        .post('/testdb/test-schema')
         .set('content-type', 'application/json')
         .set('Authorization', `Bearer ${bearerToken}`)
         .expect(200)
@@ -336,7 +336,7 @@ describe('Media field', () => {
           }
 
           client
-            .post('/vtest/testdb/test-schema')
+            .post('/testdb/test-schema')
             .set('content-type', 'application/json')
             .set('Authorization', `Bearer ${bearerToken}`)
             .send(payload)
@@ -352,7 +352,7 @@ describe('Media field', () => {
               results[0]._composed.leadImage.should.eql(mediaObject._id)
 
               client
-                .get(`/vtest/testdb/test-schema/${results[0]._id}`)
+                .get(`/testdb/test-schema/${results[0]._id}`)
                 .set('content-type', 'application/json')
                 .set('Authorization', `Bearer ${bearerToken}`)
                 .end((err, res) => {
@@ -397,7 +397,7 @@ describe('Media field', () => {
               }
 
               client
-                .post('/vtest/testdb/test-schema')
+                .post('/testdb/test-schema')
                 .set('content-type', 'application/json')
                 .set('Authorization', `Bearer ${bearerToken}`)
                 .send(payload)
@@ -421,7 +421,7 @@ describe('Media field', () => {
                   ])
 
                   client
-                    .get(`/vtest/testdb/test-schema/${results[0]._id}`)
+                    .get(`/testdb/test-schema/${results[0]._id}`)
                     .set('content-type', 'application/json')
                     .set('Authorization', `Bearer ${bearerToken}`)
                     .end((err, res) => {
@@ -452,7 +452,7 @@ describe('Media field', () => {
 
     it('should reject an object value that does not contain an hexadecimal ID', done => {
       client
-        .post('/vtest/testdb/test-schema')
+        .post('/testdb/test-schema')
         .set('content-type', 'application/json')
         .set('Authorization', `Bearer ${bearerToken}`)
         .send({
@@ -467,7 +467,7 @@ describe('Media field', () => {
           res.body.errors[0].code.should.eql('ERROR_VALUE_INVALID')
 
           client
-            .post('/vtest/testdb/test-schema')
+            .post('/testdb/test-schema')
             .set('content-type', 'application/json')
             .set('Authorization', `Bearer ${bearerToken}`)
             .send({
@@ -503,7 +503,7 @@ describe('Media field', () => {
           }
 
           client
-            .post('/vtest/testdb/test-schema')
+            .post('/testdb/test-schema')
             .set('content-type', 'application/json')
             .set('Authorization', `Bearer ${bearerToken}`)
             .send(payload)
@@ -519,7 +519,7 @@ describe('Media field', () => {
               results[0]._composed.leadImage.should.eql(mediaObject._id)
 
               client
-                .get(`/vtest/testdb/test-schema/${results[0]._id}`)
+                .get(`/testdb/test-schema/${results[0]._id}`)
                 .set('content-type', 'application/json')
                 .set('Authorization', `Bearer ${bearerToken}`)
                 .end((err, res) => {
@@ -564,7 +564,7 @@ describe('Media field', () => {
               }
 
               client
-                .post('/vtest/testdb/test-schema')
+                .post('/testdb/test-schema')
                 .set('content-type', 'application/json')
                 .set('Authorization', `Bearer ${bearerToken}`)
                 .send(payload)
@@ -588,7 +588,7 @@ describe('Media field', () => {
                   ])
 
                   client
-                    .get(`/vtest/testdb/test-schema/${results[0]._id}`)
+                    .get(`/testdb/test-schema/${results[0]._id}`)
                     .set('content-type', 'application/json')
                     .set('Authorization', `Bearer ${bearerToken}`)
                     .end((err, res) => {
@@ -635,7 +635,7 @@ describe('Media field', () => {
           }
 
           client
-            .post('/vtest/testdb/test-schema')
+            .post('/testdb/test-schema')
             .set('content-type', 'application/json')
             .set('Authorization', `Bearer ${bearerToken}`)
             .send(payload)
@@ -653,7 +653,7 @@ describe('Media field', () => {
               results[0]._composed.leadImage.should.eql(mediaObject._id)
 
               client
-                .post(`/vtest/testdb/test-schema/${results[0]._id}`)
+                .post(`/testdb/test-schema/${results[0]._id}`)
                 .set('content-type', 'application/json')
                 .set('Authorization', `Bearer ${bearerToken}`)
                 .send(payload)
@@ -712,7 +712,7 @@ describe('Media field', () => {
               }
 
               client
-                .post('/vtest/testdb/test-schema')
+                .post('/testdb/test-schema')
                 .set('content-type', 'application/json')
                 .set('Authorization', `Bearer ${bearerToken}`)
                 .send(payload)
@@ -742,7 +742,7 @@ describe('Media field', () => {
                   ])
 
                   client
-                    .get(`/vtest/testdb/test-schema/${results[0]._id}`)
+                    .get(`/testdb/test-schema/${results[0]._id}`)
                     .set('content-type', 'application/json')
                     .set('Authorization', `Bearer ${bearerToken}`)
                     .end((err, res) => {
@@ -791,7 +791,7 @@ describe('Media field', () => {
           }
 
           client
-            .post('/vtest/testdb/test-schema')
+            .post('/testdb/test-schema')
             .set('content-type', 'application/json')
             .set('Authorization', `Bearer ${bearerToken}`)
             .send(payload)
@@ -807,7 +807,7 @@ describe('Media field', () => {
               results[0]._composed.legacyImage.should.eql(mediaObject._id)
 
               client
-                .get(`/vtest/testdb/test-schema/${results[0]._id}?compose=true`)
+                .get(`/testdb/test-schema/${results[0]._id}?compose=true`)
                 .set('content-type', 'application/json')
                 .set('Authorization', `Bearer ${bearerToken}`)
                 .end((err, res) => {
@@ -831,9 +831,7 @@ describe('Media field', () => {
                   delete model.schema.legacyImage.settings
 
                   client
-                    .get(
-                      `/vtest/testdb/test-schema/${results[0]._id}?cache=false`
-                    )
+                    .get(`/testdb/test-schema/${results[0]._id}?cache=false`)
                     .set('content-type', 'application/json')
                     .set('Authorization', `Bearer ${bearerToken}`)
                     .end((err, res) => {
@@ -873,7 +871,7 @@ describe('Media field', () => {
             }
 
             client
-              .post('/vtest/testdb/test-schema')
+              .post('/testdb/test-schema')
               .set('content-type', 'application/json')
               .set('Authorization', `Bearer ${bearerToken}`)
               .send(payload)
@@ -885,7 +883,7 @@ describe('Media field', () => {
                 }
 
                 client
-                  .put(`/vtest/testdb/test-schema/${id}`)
+                  .put(`/testdb/test-schema/${id}`)
                   .set('content-type', 'application/json')
                   .set('Authorization', `Bearer ${bearerToken}`)
                   .expect(400)
@@ -917,7 +915,7 @@ describe('Media field', () => {
             }
 
             client
-              .post('/vtest/testdb/test-schema')
+              .post('/testdb/test-schema')
               .set('content-type', 'application/json')
               .set('Authorization', `Bearer ${bearerToken}`)
               .send(payload)
@@ -940,7 +938,7 @@ describe('Media field', () => {
                     }
 
                     client
-                      .put(`/vtest/testdb/test-schema/${id}`)
+                      .put(`/testdb/test-schema/${id}`)
                       .set('content-type', 'application/json')
                       .set('Authorization', `Bearer ${bearerToken}`)
                       .expect(400)
@@ -975,7 +973,7 @@ describe('Media field', () => {
             }
 
             client
-              .post('/vtest/testdb/test-schema')
+              .post('/testdb/test-schema')
               .set('content-type', 'application/json')
               .set('Authorization', `Bearer ${bearerToken}`)
               .send(payload1)
@@ -998,7 +996,7 @@ describe('Media field', () => {
                     }
 
                     client
-                      .put(`/vtest/testdb/test-schema/${id}`)
+                      .put(`/testdb/test-schema/${id}`)
                       .set('content-type', 'application/json')
                       .set('Authorization', `Bearer ${bearerToken}`)
                       .expect(200)
@@ -1041,7 +1039,7 @@ describe('Media field', () => {
             }
 
             client
-              .post('/vtest/testdb/test-schema')
+              .post('/testdb/test-schema')
               .set('content-type', 'application/json')
               .set('Authorization', `Bearer ${bearerToken}`)
               .expect(400)
@@ -1072,7 +1070,7 @@ describe('Media field', () => {
             }
 
             client
-              .post('/vtest/testdb/test-schema')
+              .post('/testdb/test-schema')
               .set('content-type', 'application/json')
               .set('Authorization', `Bearer ${bearerToken}`)
               .send(payload)
@@ -1107,7 +1105,7 @@ describe('Media field', () => {
                         }
 
                         client
-                          .put(`/vtest/testdb/test-schema/${id}`)
+                          .put(`/testdb/test-schema/${id}`)
                           .set('content-type', 'application/json')
                           .set('Authorization', `Bearer ${bearerToken}`)
                           .expect(400)
@@ -1146,7 +1144,7 @@ describe('Media field', () => {
           }
 
           client
-            .post('/vtest/testdb/test-schema')
+            .post('/testdb/test-schema')
             .set('content-type', 'application/json')
             .set('Authorization', `Bearer ${bearerToken}`)
             .send(payload)
@@ -1165,7 +1163,7 @@ describe('Media field', () => {
               }
 
               client
-                .put(`/vtest/testdb/test-schema/${results[0]._id}`)
+                .put(`/testdb/test-schema/${results[0]._id}`)
                 .set('content-type', 'application/json')
                 .set('Authorization', `Bearer ${bearerToken}`)
                 .send(updatePayload)
@@ -1206,7 +1204,7 @@ describe('Media field', () => {
               }
 
               client
-                .post('/vtest/testdb/test-schema')
+                .post('/testdb/test-schema')
                 .set('content-type', 'application/json')
                 .set('Authorization', `Bearer ${bearerToken}`)
                 .send(payload)
@@ -1226,13 +1224,13 @@ describe('Media field', () => {
                   }
 
                   client
-                    .put(`/vtest/testdb/test-schema/${results[0]._id}`)
+                    .put(`/testdb/test-schema/${results[0]._id}`)
                     .set('content-type', 'application/json')
                     .set('Authorization', `Bearer ${bearerToken}`)
                     .send(updatePayload)
                     .end((err, res) => {
                       client
-                        .get(`/vtest/testdb/test-schema/${results[0]._id}`)
+                        .get(`/testdb/test-schema/${results[0]._id}`)
                         .set('content-type', 'application/json')
                         .set('Authorization', `Bearer ${bearerToken}`)
                         .end((err, res) => {
@@ -1272,7 +1270,7 @@ describe('Media field', () => {
           }
 
           client
-            .post('/vtest/testdb/test-schema')
+            .post('/testdb/test-schema')
             .set('content-type', 'application/json')
             .set('Authorization', `Bearer ${bearerToken}`)
             .send(payload)
@@ -1293,7 +1291,7 @@ describe('Media field', () => {
               }
 
               client
-                .put(`/vtest/testdb/test-schema/${results[0]._id}`)
+                .put(`/testdb/test-schema/${results[0]._id}`)
                 .set('content-type', 'application/json')
                 .set('Authorization', `Bearer ${bearerToken}`)
                 .send(updatePayload)
@@ -1334,7 +1332,7 @@ describe('Media field', () => {
               }
 
               client
-                .post('/vtest/testdb/test-schema')
+                .post('/testdb/test-schema')
                 .set('content-type', 'application/json')
                 .set('Authorization', `Bearer ${bearerToken}`)
                 .send(payload)
@@ -1356,13 +1354,13 @@ describe('Media field', () => {
                   }
 
                   client
-                    .put(`/vtest/testdb/test-schema/${results[0]._id}`)
+                    .put(`/testdb/test-schema/${results[0]._id}`)
                     .set('content-type', 'application/json')
                     .set('Authorization', `Bearer ${bearerToken}`)
                     .send(updatePayload)
                     .end((err, res) => {
                       client
-                        .get(`/vtest/testdb/test-schema/${results[0]._id}`)
+                        .get(`/testdb/test-schema/${results[0]._id}`)
                         .set('content-type', 'application/json')
                         .set('Authorization', `Bearer ${bearerToken}`)
                         .end((err, res) => {
@@ -1417,7 +1415,7 @@ describe('Media field', () => {
               }
 
               client
-                .post('/vtest/testdb/test-schema')
+                .post('/testdb/test-schema')
                 .set('content-type', 'application/json')
                 .set('Authorization', `Bearer ${bearerToken}`)
                 .send(payload)
@@ -1447,13 +1445,13 @@ describe('Media field', () => {
                   }
 
                   client
-                    .put(`/vtest/testdb/test-schema/${results[0]._id}`)
+                    .put(`/testdb/test-schema/${results[0]._id}`)
                     .set('content-type', 'application/json')
                     .set('Authorization', `Bearer ${bearerToken}`)
                     .send(updatePayload)
                     .end((err, res) => {
                       client
-                        .get(`/vtest/testdb/test-schema/${results[0]._id}`)
+                        .get(`/testdb/test-schema/${results[0]._id}`)
                         .set('content-type', 'application/json')
                         .set('Authorization', `Bearer ${bearerToken}`)
                         .end((err, res) => {

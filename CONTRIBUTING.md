@@ -15,10 +15,9 @@ Here are the guidelines we'd like you to follow:
 
 ## <a name="question"></a> Got a Question or Problem?
 
-Documentation can be found at the [docs.dadi.tech](https://docs.dadi.tech/api) site.
+Documentation can be found at the [docs.dadi.cloud](https://docs.dadi.cloud/api) site.
 
-If the documentation doesn't answer your problem please feel free to email the
-DADI team directly on: team@dadi.tech, or join us on [Slack](http://dadi-chat.herokuapp.com).
+If the documentation doesn't answer your problem please feel free to email the DADI team directly on team@dadi.cloud.
 
 ## <a name="issue"></a> Found an Issue?
 

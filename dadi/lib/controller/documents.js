@@ -280,14 +280,11 @@ Collection.prototype.registerRoutes = function(route) {
 }
 
 Collection.prototype.search = async function(req, res, next) {
-  console.log('(Model) 1')
   const {collectionModel: model} = req
 
   if (!model) {
     return next()
   }
-
-  console.log('(Model) 2')
 
   const minimumQueryLength = config.get('search.minQueryLength')
   const path = url.parse(req.url, true)
@@ -317,8 +314,6 @@ Collection.prototype.search = async function(req, res, next) {
     return help.sendBackJSON(400, res, next)(null, queryOptions)
   }
 
-  console.log('(Model) 3')
-
   const requestErrors = []
 
   if (typeof query !== 'string' || query.length < minimumQueryLength) {
@@ -344,15 +339,11 @@ Collection.prototype.search = async function(req, res, next) {
     return help.sendBackJSON(null, res, next)(error)
   }
 
-  console.log('(Model) 4')
-
   try {
     await model.validateAccess({
       client: req.dadiApiClient,
       type: 'read'
     })
-
-    console.log('(Model) 5')
 
     const response = await searchModel.find({
       client: req.dadiApiClient,
@@ -365,12 +356,8 @@ Collection.prototype.search = async function(req, res, next) {
       query
     })
 
-    console.log('(Model) 6', response)
-
     return help.sendBackJSON(200, res, next)(null, response)
   } catch (error) {
-    console.log('(Model) 7')
-
     return help.sendBackJSON(null, res, next)(error)
   }
 }

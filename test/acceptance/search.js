@@ -310,7 +310,7 @@ describe('Search', function() {
         })
     })
 
-    it.only('should use the page size specified by the `count` URL parameter', done => {
+    it('should use the page size specified by the `count` URL parameter', done => {
       console.log('----> 1')
       const docs = []
 

@@ -311,6 +311,7 @@ describe('Search', function() {
     })
 
     it('should use the page size specified by the `count` URL parameter', done => {
+      console.log('----> 1')
       const docs = []
 
       for (let i = 0; i < 500; i++) {
@@ -322,6 +323,8 @@ describe('Search', function() {
         docs.push({title})
       }
 
+      console.log('----> 2', docs.length)
+
       client
         .post('/testdb/first-schema')
         .set('Authorization', 'Bearer ' + bearerToken)
@@ -329,6 +332,7 @@ describe('Search', function() {
         .send(docs)
         .expect(200)
         .end((err, res) => {
+          console.log('----> 3', res.statusCode, res.body)
           if (err) return done(err)
 
           setTimeout(() => {
@@ -337,6 +341,7 @@ describe('Search', function() {
               .set('Authorization', 'Bearer ' + bearerToken)
               .expect(200)
               .end((err, res) => {
+                console.log('----> 4', res.body.results)
                 if (err) return done(err)
 
                 res.body.results.length.should.eql(50)
@@ -350,6 +355,7 @@ describe('Search', function() {
                   .set('Authorization', 'Bearer ' + bearerToken)
                   .expect(200)
                   .end((err, res) => {
+                    console.log('----> 5', res.body.results)
                     if (err) return done(err)
 
                     should.exist(res.body.results)
@@ -365,6 +371,7 @@ describe('Search', function() {
                       .set('Authorization', 'Bearer ' + bearerToken)
                       .expect(200)
                       .end((err, res) => {
+                        console.log('----> 6', res.body.results)
                         if (err) return done(err)
 
                         should.exist(res.body.results)

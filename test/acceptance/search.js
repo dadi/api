@@ -155,15 +155,35 @@ describe('Search', function() {
     })
 
     it('should return results when documents match a query', done => {
-      const doc = {
-        title: 'The quick brown fox jumps over the lazy dog'
-      }
+      const docs = [
+        {
+          title: 'The quick brown fox jumps over the lazy dog'
+        },
+        {
+          title: 'The quick brown dog jumps over the lazy cat'
+        },
+        {
+          title: 'The quick brown cat jumps over the lazy mouse'
+        },
+        {
+          title: 'The quick brown mouse jumps over the lazy cheese'
+        },
+        {
+          title: 'The quick brown cheese jumps over the lazy bread'
+        },
+        {
+          title: 'The quick brown bread jumps over the lazy wine'
+        },
+        {
+          title: 'The quick brown wine jumps over the lazy man'
+        }
+      ]
 
       client
         .post('/testdb/first-schema')
         .set('Authorization', 'Bearer ' + bearerToken)
         .set('content-type', 'application/json')
-        .send(doc)
+        .send(docs)
         .expect(200)
         .end((err, res) => {
           setTimeout(() => {
@@ -176,12 +196,199 @@ describe('Search', function() {
 
                 should.exist(res.body.results)
 
+                res.body.metadata.totalCount.should.eql(docs.length)
+                res.body.metadata.totalPages.should.eql(1)
                 res.body.results.should.be.Array
-                res.body.results.length.should.eql(1)
+                res.body.results.length.should.eql(docs.length)
 
                 done()
               })
           }, 1000)
+        })
+    })
+
+    it('should default to a page size of 10', done => {
+      const docs = []
+
+      for (let i = 0; i < 80; i++) {
+        const title = `The ${i % 2 === 0 ? 'quick brown' : 'slow red'} ${i +
+          1} jumps over the lazy ${i}`
+
+        docs.push({title})
+      }
+
+      client
+        .post('/testdb/first-schema')
+        .set('Authorization', 'Bearer ' + bearerToken)
+        .set('content-type', 'application/json')
+        .send(docs)
+        .expect(200)
+        .end((err, res) => {
+          setTimeout(() => {
+            client
+              .get('/testdb/first-schema/search?q=quick%20brown')
+              .set('Authorization', 'Bearer ' + bearerToken)
+              .expect(200)
+              .end((err, res) => {
+                if (err) return done(err)
+
+                should.exist(res.body.results)
+
+                res.body.metadata.totalCount.should.eql(docs.length / 2)
+                res.body.metadata.totalPages.should.eql(docs.length / 10 / 2)
+                res.body.results.should.be.Array
+                res.body.results.length.should.eql(10)
+
+                done()
+              })
+          }, 1000)
+        })
+    })
+
+    it('should allow pagination using the `page` URL parameter', done => {
+      const docs = []
+
+      for (let i = 0; i < 80; i++) {
+        const tail = new Array(i + 2).join(' lazy')
+        const title = `The ${
+          i % 2 === 0 ? 'quick brown' : 'slow red'
+        } fox jumps over the${tail} dog`
+
+        docs.push({title})
+      }
+
+      client
+        .post('/testdb/first-schema')
+        .set('Authorization', 'Bearer ' + bearerToken)
+        .set('content-type', 'application/json')
+        .send(docs)
+        .expect(200)
+        .end((err, res) => {
+          setTimeout(() => {
+            client
+              .get('/testdb/first-schema/search?q=quick%20brown')
+              .set('Authorization', 'Bearer ' + bearerToken)
+              .expect(200)
+              .end((err, res) => {
+                if (err) return done(err)
+
+                res.body.results.length.should.eql(10)
+                res.body.results[0].title.should.eql(docs[0].title)
+                res.body.metadata.page.should.eql(1)
+
+                client
+                  .get('/testdb/first-schema/search?q=quick%20brown&page=2')
+                  .set('Authorization', 'Bearer ' + bearerToken)
+                  .expect(200)
+                  .end((err, res) => {
+                    if (err) return done(err)
+
+                    should.exist(res.body.results)
+
+                    res.body.results.length.should.eql(10)
+                    res.body.results[0].title.should.eql(docs[20].title)
+                    res.body.metadata.page.should.eql(2)
+
+                    client
+                      .get('/testdb/first-schema/search?q=quick%20brown&page=3')
+                      .set('Authorization', 'Bearer ' + bearerToken)
+                      .expect(200)
+                      .end((err, res) => {
+                        if (err) return done(err)
+
+                        should.exist(res.body.results)
+
+                        res.body.results.length.should.eql(10)
+                        res.body.results[0].title.should.eql(docs[40].title)
+                        res.body.metadata.page.should.eql(3)
+
+                        done()
+                      })
+                  })
+              })
+          }, 1000)
+        })
+    })
+
+    it('should use the page size specified by the `count` URL parameter', done => {
+      const docs = []
+
+      for (let i = 0; i < 500; i++) {
+        const tail = new Array(i + 2).join(' lazy')
+        const title = `The ${
+          i % 2 === 0 ? 'quick brown' : 'slow red'
+        } fox jumps over the${tail} dog`
+
+        docs.push({title})
+      }
+
+      client
+        .post('/testdb/first-schema')
+        .set('Authorization', 'Bearer ' + bearerToken)
+        .set('content-type', 'application/json')
+        .send(docs)
+        .expect(200)
+        .end((err, res) => {
+          setTimeout(() => {
+            client
+              .get('/testdb/first-schema/search?q=quick%20brown&count=50')
+              .set('Authorization', 'Bearer ' + bearerToken)
+              .expect(200)
+              .end((err, res) => {
+                if (err) return done(err)
+
+                res.body.results.length.should.eql(50)
+                res.body.results[0].title.should.eql(docs[0].title)
+                res.body.metadata.page.should.eql(1)
+
+                client
+                  .get(
+                    '/testdb/first-schema/search?q=quick%20brown&page=2&count=50'
+                  )
+                  .set('Authorization', 'Bearer ' + bearerToken)
+                  .expect(200)
+                  .end((err, res) => {
+                    if (err) return done(err)
+
+                    should.exist(res.body.results)
+
+                    res.body.results.length.should.eql(50)
+                    res.body.results[0].title.should.eql(docs[100].title)
+                    res.body.metadata.page.should.eql(2)
+
+                    client
+                      .get(
+                        '/testdb/first-schema/search?q=quick%20brown&page=3&count=50'
+                      )
+                      .set('Authorization', 'Bearer ' + bearerToken)
+                      .expect(200)
+                      .end((err, res) => {
+                        if (err) return done(err)
+
+                        should.exist(res.body.results)
+
+                        res.body.results.length.should.eql(50)
+                        res.body.results[0].title.should.eql(docs[200].title)
+                        res.body.metadata.page.should.eql(3)
+
+                        done()
+                      })
+                  })
+              })
+          }, 3000)
+        })
+    }).timeout(5000)
+
+    it('should return 400 when searching with a short query', done => {
+      client
+        .get('/testdb/first-schema/search?q=quick%20brown&count=500')
+        .set('Authorization', 'Bearer ' + bearerToken)
+        .expect(400)
+        .end((err, res) => {
+          res.body.errors[0].message.should.eql(
+            'Page size for search queries must not be larger than 50 results.'
+          )
+          done(err)
         })
     })
 
@@ -997,7 +1204,7 @@ describe('Search', function() {
 
                     done()
                   })
-              }, 1000)
+              }, 2000)
             })
         })
     })

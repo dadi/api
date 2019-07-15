@@ -260,8 +260,7 @@ DataStore.prototype.find = function({
   query,
   collection: collectionName,
   options = {},
-  schema,
-  settings
+  schema
 }) {
   if (this._mockIsDisconnected(collectionName)) {
     this.readyState = STATE_DISCONNECTED
@@ -279,7 +278,6 @@ DataStore.prototype.find = function({
         let results
 
         const sort = this.getSortParameters(options)
-
         const baseResultset = collection.chain().find(query)
         const branchedResultset = baseResultset.branch()
 

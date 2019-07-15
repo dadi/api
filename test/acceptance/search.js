@@ -329,6 +329,8 @@ describe('Search', function() {
         .send(docs)
         .expect(200)
         .end((err, res) => {
+          if (err) return done(err)
+
           setTimeout(() => {
             client
               .get('/testdb/first-schema/search?q=quick%20brown&count=50')
@@ -375,9 +377,9 @@ describe('Search', function() {
                       })
                   })
               })
-          }, 3000)
+          }, 4000)
         })
-    }).timeout(5000)
+    }).timeout(7000)
 
     it('should return 400 when searching with a short query', done => {
       client

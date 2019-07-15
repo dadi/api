@@ -1,12 +1,13 @@
 const acl = require('./../model/acl')
 const config = require('./../../../config')
 const Controller = require('./index')
-const debug = require('debug')('api:controller')
 const help = require('./../help')
 const modelStore = require('../model/')
 const searchModel = require('./../model/search')
 const url = require('url')
 const workQueue = require('../workQueue')
+
+const MAX_SEARCH_PAGE_SIZE = 50
 
 const Collection = function(server) {
   this.server = server
@@ -288,7 +289,11 @@ Collection.prototype.search = async function(req, res, next) {
   const minimumQueryLength = config.get('search.minQueryLength')
   const path = url.parse(req.url, true)
   const {lang: language, q: query} = path.query
-  const {errors, queryOptions} = this._prepareQueryOptions(path.query, model)
+  const {errors, queryOptions} = this._prepareQueryOptions(path.query, {
+    settings: {
+      count: 10
+    }
+  })
 
   if (!config.get('search.enabled')) {
     const error = new Error('Not Implemented')
@@ -309,16 +314,26 @@ Collection.prototype.search = async function(req, res, next) {
     return help.sendBackJSON(400, res, next)(null, queryOptions)
   }
 
+  const requestErrors = []
+
   if (typeof query !== 'string' || query.length < minimumQueryLength) {
+    requestErrors.push({
+      message: `Search query must be at least ${minimumQueryLength} characters.`
+    })
+  }
+
+  if (queryOptions.limit > MAX_SEARCH_PAGE_SIZE) {
+    requestErrors.push({
+      message: `Page size for search queries must not be larger than ${MAX_SEARCH_PAGE_SIZE} results.`
+    })
+  }
+
+  if (requestErrors.length > 0) {
     const error = new Error('Bad Request')
 
     error.statusCode = 400
     error.json = {
-      errors: [
-        {
-          message: `Search query must be at least ${minimumQueryLength} characters.`
-        }
-      ]
+      errors: requestErrors
     }
 
     return help.sendBackJSON(null, res, next)(error)
@@ -336,6 +351,8 @@ Collection.prototype.search = async function(req, res, next) {
       fields: queryOptions.fields,
       language,
       modelFactory: modelStore,
+      page: queryOptions.page,
+      pageSize: queryOptions.limit,
       query
     })
 

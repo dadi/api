@@ -117,6 +117,7 @@ Search.prototype.get = function(req, res, next) {
         language,
         modelFactory: CollectionModel,
         page,
+        pageSize: 10,
         query
       })
     })

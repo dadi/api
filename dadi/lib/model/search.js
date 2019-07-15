@@ -9,8 +9,11 @@ const natural = require('natural')
 const promiseQueue = require('js-promise-queue')
 const workQueue = require('./../workQueue')
 
-const PAGE_SIZE = 10
-const POOL_SIZE = 100
+// The factor by which to multiply the page size in order to compute the
+// number of results to fetch for the first pass.
+const POOL_SIZE_FACTOR = 10
+
+// The schema of the index collection.
 const SCHEMA_SEARCH = {
   fields: {
     word: {
@@ -41,6 +44,8 @@ const SCHEMA_SEARCH = {
     ]
   }
 }
+
+// The schema of the words collection.
 const SCHEMA_WORDS = {
   fields: {
     word: {
@@ -179,6 +184,7 @@ Search.prototype.find = async function({
   language,
   modelFactory,
   page,
+  pageSize,
   query
 }) {
   debug('Search find in %s: %s', this.indexCollection, query)
@@ -194,7 +200,7 @@ Search.prototype.find = async function({
   const resultsMap = await this.getIndexResults({
     collections,
     options: {
-      limit: POOL_SIZE
+      limit: POOL_SIZE_FACTOR * pageSize
     },
     schema: SCHEMA_WORDS.fields,
     settings: SCHEMA_WORDS.settings,
@@ -220,6 +226,9 @@ Search.prototype.find = async function({
     const {results} = await model.get({
       client,
       language,
+      options: {
+        limit: documentIds.length
+      },
       query: {
         _id: {
           $containsAny: documentIds
@@ -242,10 +251,17 @@ Search.prototype.find = async function({
     documents,
     indexableFields,
     page,
+    pageSize,
     query
   })
 
-  const metadata = createMetadata({page}, documents.size)
+  const metadata = createMetadata(
+    {
+      limit: pageSize,
+      page
+    },
+    documents.size
+  )
 
   // To ensure the search algorithm works effectively, it's not a good idea
   // to exclude from the results any fields up until this point. Now that
@@ -769,9 +785,9 @@ Search.prototype.isEnabled = function() {
 /**
  * Takes a set of documents that match the search criteria and runs a second
  * pass in order to find the most relevant subset. It takes a pool of results
- * of up to POOL_SIZE documents and reduces it down to at most PAGE_SIZE. It
- * also takes care of paginating the results as per the `page` and `pageSize`
- * arguments.
+ * of up to `pageSize * POOL_SIZE_FACTOR` documents and reduces it down to at
+ * most `pageSize`. It also takes care of paginating the results as per the
+ * `page` and `pageSize` arguments.
  *
  * @param  {Array}  documents
  * @param  {Object} indexableFields
@@ -783,7 +799,7 @@ Search.prototype.runSecondPass = function({
   documents,
   indexableFields,
   page = 1,
-  pageSize = PAGE_SIZE,
+  pageSize,
   query
 }) {
   const weights = new Map()

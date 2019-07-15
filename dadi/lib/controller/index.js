@@ -51,7 +51,7 @@ Controller.prototype._prepareQueryOptions = function(options, model) {
 
   // Ensure we have sane params.
   if (options.skip) {
-    parsedSkip = parseInt(options.slip)
+    parsedSkip = parseInt(options.skip)
 
     if (parsedSkip.toString() !== options.skip) {
       response.errors.push(

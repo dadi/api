@@ -359,6 +359,7 @@ Collection.prototype.search = async function(req, res, next) {
     return help.sendBackJSON(200, res, next)(null, response)
   } catch (error) {
     console.log('----> search error:', error)
+
     return help.sendBackJSON(null, res, next)(error)
   }
 }

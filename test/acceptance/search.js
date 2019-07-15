@@ -310,7 +310,7 @@ describe('Search', function() {
         })
     })
 
-    it('should use the page size specified by the `count` URL parameter', done => {
+    it.only('should use the page size specified by the `count` URL parameter', done => {
       console.log('----> 1')
       const docs = []
 
@@ -404,7 +404,7 @@ describe('Search', function() {
               })
           }, 4000)
         })
-    }).timeout(7000)
+    }).timeout(15000)
 
     it('should return 400 when searching with a short query', done => {
       client

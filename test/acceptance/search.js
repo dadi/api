@@ -310,97 +310,104 @@ describe('Search', function() {
         })
     })
 
-    it('should use the page size specified by the `count` URL parameter', done => {
-      console.log('----> 1')
-      const docs = []
+    it(
+      'should use the page size specified by the `count` URL parameter',
+      done => {
+        console.log('----> 1')
+        const docs = []
 
-      for (let i = 0; i < 500; i++) {
-        const tail = new Array(i + 2).join(' lazy')
-        const title = `The ${
-          i % 2 === 0 ? 'quick brown' : 'slow red'
-        } fox jumps over the${tail} dog`
+        for (let i = 0; i < 500; i++) {
+          const tail = new Array(i + 2).join(' lazy')
+          const title = `The ${
+            i % 2 === 0 ? 'quick brown' : 'slow red'
+          } fox jumps over the${tail} dog`
 
-        docs.push({title})
-      }
+          docs.push({title})
+        }
 
-      console.log('----> 2', docs.length)
+        console.log('----> 2', docs.length)
 
-      client
-        .post('/testdb/first-schema')
-        .set('Authorization', 'Bearer ' + bearerToken)
-        .set('content-type', 'application/json')
-        .send(docs)
-        .expect(200)
-        .end((err, res) => {
-          console.log('----> 3', res.statusCode, res.body)
-          if (err) return done(err)
+        client
+          .post('/testdb/first-schema')
+          .set('Authorization', 'Bearer ' + bearerToken)
+          .set('content-type', 'application/json')
+          .send(docs)
+          .expect(200)
+          .end((err, res) => {
+            console.log(
+              '----> 3',
+              res.statusCode,
+              res.body && res.body.results && res.body.results.length
+            )
+            if (err) return done(err)
 
-          setTimeout(() => {
-            client
-              .get('/testdb/first-schema/search?q=quick%20brown&count=50')
-              .set('Authorization', 'Bearer ' + bearerToken)
-              .expect(200)
-              .end((err, res) => {
-                console.log(
-                  '----> 4',
-                  res.statusCode,
-                  res.body && res.body.results && res.body.results.length
-                )
-                if (err) return done(err)
-
-                res.body.results.length.should.eql(50)
-                res.body.results[0].title.should.eql(docs[0].title)
-                res.body.metadata.page.should.eql(1)
-
-                client
-                  .get(
-                    '/testdb/first-schema/search?q=quick%20brown&page=2&count=50'
+            setTimeout(() => {
+              client
+                .get('/testdb/first-schema/search?q=quick%20brown&count=50')
+                .set('Authorization', 'Bearer ' + bearerToken)
+                .expect(200)
+                .end((err, res) => {
+                  console.log(
+                    '----> 4',
+                    res.statusCode,
+                    res.body && res.body.results && res.body.results.length
                   )
-                  .set('Authorization', 'Bearer ' + bearerToken)
-                  .expect(200)
-                  .end((err, res) => {
-                    console.log(
-                      '----> 5',
-                      res.statusCode,
-                      res.body && res.body.results && res.body.results.length
+                  if (err) return done(err)
+
+                  res.body.results.length.should.eql(50)
+                  res.body.results[0].title.should.eql(docs[0].title)
+                  res.body.metadata.page.should.eql(1)
+
+                  client
+                    .get(
+                      '/testdb/first-schema/search?q=quick%20brown&page=2&count=50'
                     )
-                    if (err) return done(err)
-
-                    should.exist(res.body.results)
-
-                    res.body.results.length.should.eql(50)
-                    res.body.results[0].title.should.eql(docs[100].title)
-                    res.body.metadata.page.should.eql(2)
-
-                    client
-                      .get(
-                        '/testdb/first-schema/search?q=quick%20brown&page=3&count=50'
+                    .set('Authorization', 'Bearer ' + bearerToken)
+                    .expect(200)
+                    .end((err, res) => {
+                      console.log(
+                        '----> 5',
+                        res.statusCode,
+                        res.body && res.body.results && res.body.results.length
                       )
-                      .set('Authorization', 'Bearer ' + bearerToken)
-                      .expect(200)
-                      .end((err, res) => {
-                        console.log(
-                          '----> 6',
-                          res.statusCode,
-                          res.body &&
-                            res.body.results &&
-                            res.body.results.length
+                      if (err) return done(err)
+
+                      should.exist(res.body.results)
+
+                      res.body.results.length.should.eql(50)
+                      res.body.results[0].title.should.eql(docs[100].title)
+                      res.body.metadata.page.should.eql(2)
+
+                      client
+                        .get(
+                          '/testdb/first-schema/search?q=quick%20brown&page=3&count=50'
                         )
-                        if (err) return done(err)
+                        .set('Authorization', 'Bearer ' + bearerToken)
+                        .expect(200)
+                        .end((err, res) => {
+                          console.log(
+                            '----> 6',
+                            res.statusCode,
+                            res.body &&
+                              res.body.results &&
+                              res.body.results.length
+                          )
+                          if (err) return done(err)
 
-                        should.exist(res.body.results)
+                          should.exist(res.body.results)
 
-                        res.body.results.length.should.eql(50)
-                        res.body.results[0].title.should.eql(docs[200].title)
-                        res.body.metadata.page.should.eql(3)
+                          res.body.results.length.should.eql(50)
+                          res.body.results[0].title.should.eql(docs[200].title)
+                          res.body.metadata.page.should.eql(3)
 
-                        done()
-                      })
-                  })
-              })
-          }, 4000)
-        })
-    }).timeout(7000)
+                          done()
+                        })
+                    })
+                })
+            }, 4000)
+          })
+      }
+    ).timeout(7000)
 
     it('should return 400 when searching with a short query', done => {
       client

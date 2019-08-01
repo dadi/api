@@ -1,14 +1,12 @@
 const config = require('../../../config')
 const Connection = require('./connection')
-const fieldComponents = require('../fields/')
 const Model = require('./index')
-
-const fieldTypes = Object.keys(fieldComponents).map(name => {
-  return fieldComponents[name].type
-})
+const Validator = require('@dadi/api-validator')
 
 class SchemaStore {
   constructor() {
+    this.validator = new Validator()
+
     this._connect()
   }
 
@@ -22,6 +20,73 @@ class SchemaStore {
     )
 
     this.connection = connection.whenConnected()
+  }
+
+  async addFields({fields, name, property}) {
+    const database = await this.connection
+    const {results} = await this.find({
+      name,
+      property
+    })
+
+    if (results.length === 0) {
+      throw new Error('SCHEMA_NOT_FOUND')
+    }
+
+    const {fields: currentFields} = results[0]
+    const newFields = Object.keys(fields).reduce((result, fieldName) => {
+      if (currentFields[fieldName]) {
+        const error = new Error('FIELD_ALREADY_EXISTS')
+
+        error.field = fieldName
+
+        throw error
+      }
+
+      result[fieldName] = fields[fieldName]
+
+      return result
+    }, {})
+    const updatedFields = Object.assign({}, currentFields, newFields)
+
+    await this.validate({
+      fields: updatedFields
+    })
+
+    const update = {
+      fields: updatedFields,
+      timestamp: Date.now()
+    }
+    const {matchedCount} = await database.update({
+      collection: config.get('schemas.collection'),
+      query: {
+        name,
+        property
+      },
+      update: {
+        $set: update
+      }
+    })
+
+    if (matchedCount === 0) {
+      throw new Error('SCHEMA_NOT_FOUND')
+    }
+
+    const updatedSchema = await this.get({
+      name,
+      property
+    })
+
+    // Reloading the model.
+    Model({
+      isListable: true,
+      name,
+      schema: updatedSchema.fields,
+      settings: updatedSchema.settings,
+      property
+    })
+
+    return updatedSchema
   }
 
   async addFromSeed({
@@ -123,7 +188,7 @@ class SchemaStore {
       throw new Error('SCHEMA_EXISTS')
     }
 
-    this.validate({fields, settings})
+    await this.validate({fields, settings})
 
     const database = await this.connection
     const results = await database.insert({
@@ -167,45 +232,41 @@ class SchemaStore {
     return deletedCount
   }
 
-  async find(query = {}) {
+  async deleteFields({fields, name, property}) {
     const database = await this.connection
-
-    return database.find({
-      collection: config.get('schemas.collection'),
-      query
+    const {results} = await this.find({
+      name,
+      property
     })
-  }
-
-  formatForOutput(schemas) {
-    const isArray = Array.isArray(schemas)
-    const schemasArray = isArray ? schemas : [schemas]
-    const formattedSchemas = schemasArray.map(schema => {
-      return Object.assign({}, schema, {_id: undefined})
-    })
-
-    return isArray ? formattedSchemas : formattedSchemas[0]
-  }
-
-  async get({collection, property}) {
-    const {results} = await this.find({collection, property})
 
     if (results.length === 0) {
-      return Promise.reject(new Error('SCHEMA_NOT_FOUND'))
+      throw new Error('SCHEMA_NOT_FOUND')
     }
 
-    return results[0]
-  }
+    const {fields: currentFields} = results[0]
+    const hasValidFields = fields.some(fieldName => currentFields[fieldName])
 
-  async update({fields, name, property, settings}) {
-    this.validate({
-      fields,
-      settings
+    if (!hasValidFields) {
+      throw new Error('FIELD_NOT_FOUND')
+    }
+
+    const updatedFields = Object.keys(currentFields).reduce(
+      (result, fieldName) => {
+        if (!fields.includes(fieldName)) {
+          result[fieldName] = currentFields[fieldName]
+        }
+
+        return result
+      },
+      {}
+    )
+
+    await this.validate({
+      fields: updatedFields
     })
 
-    const database = await this.connection
     const update = {
-      fields,
-      settings,
+      fields: updatedFields,
       timestamp: Date.now()
     }
     const {matchedCount} = await database.update({
@@ -220,7 +281,7 @@ class SchemaStore {
     })
 
     if (matchedCount === 0) {
-      return null
+      throw new Error('SCHEMA_NOT_FOUND')
     }
 
     const updatedSchema = await this.get({
@@ -240,159 +301,199 @@ class SchemaStore {
     return updatedSchema
   }
 
-  validate({fields, settings}) {
-    const errors = []
+  async find(query = {}) {
+    const database = await this.connection
 
-    if (typeof fields === 'object' && fields.toString() === '[object Object]') {
-      if (Object.keys(fields).length > 0) {
-        Object.keys(fields).forEach(fieldName => {
-          if (typeof fields[fieldName].type === 'string') {
-            fields[fieldName].type = fields[fieldName].type.toLowerCase()
+    return database.find({
+      collection: config.get('schemas.collection'),
+      query
+    })
+  }
 
-            if (!fieldTypes.includes(fields[fieldName].type)) {
-              const availableTypes = fieldTypes.join(', ')
+  formatForOutput(schemas) {
+    const isArray = Array.isArray(schemas)
+    const schemasArray = isArray ? schemas : [schemas]
+    const formattedSchemas = schemasArray.map(schema => {
+      return Object.assign({}, schema, {_id: undefined})
+    })
 
-              errors.push(
-                `Type of field \`${fieldName}\` (${fields[fieldName].type}) is not valid. Available types: ${availableTypes}`
-              )
-            }
-          } else {
-            errors.push(
-              `Field \`${fieldName}\` must contain a \`type\` property`
-            )
-          }
-        })
-      } else {
-        errors.push('`fields` must contain at least one field')
-      }
-    } else {
-      errors.push('`fields` must be an object')
+    return isArray ? formattedSchemas : formattedSchemas[0]
+  }
+
+  async get({name, property}) {
+    const {results} = await this.find({name, property})
+
+    if (results.length === 0) {
+      return Promise.reject(new Error('SCHEMA_NOT_FOUND'))
     }
 
-    if (settings) {
-      if (
-        typeof settings === 'object' &&
-        settings.toString() === '[object Object]'
-      ) {
-        const {
-          authenticate,
-          cache,
-          callback,
-          count,
-          defaultFilters,
-          displayName,
-          enableVersioning,
-          fieldLimiters,
-          index,
-          versioningCollection
-        } = settings
+    return results[0]
+  }
 
-        if (authenticate !== undefined && typeof authenticate !== 'boolean') {
-          const isVerbArray =
-            Array.isArray(authenticate) &&
-            authenticate.every(item => {
-              return ['delete', 'get', 'post', 'put'].includes(
-                item.toString().toLowerCase()
-              )
-            })
+  async updateFields({fields, name, property}) {
+    const database = await this.connection
+    const {results} = await this.find({
+      name,
+      property
+    })
 
-          if (!isVerbArray) {
-            errors.push(
-              '`settings.authenticate` must be a Boolean or an array including one or more HTTP verbs (DELETE, GET, POST, PUT)'
-            )
-          }
+    if (results.length === 0) {
+      throw new Error('SCHEMA_NOT_FOUND')
+    }
+
+    const {fields: currentFields} = results[0]
+    const hasValidFields = Object.keys(fields).some(
+      fieldName => currentFields[fieldName]
+    )
+
+    if (!hasValidFields) {
+      throw new Error('FIELD_NOT_FOUND')
+    }
+
+    const updatedFields = Object.keys(currentFields).reduce(
+      (result, fieldName) => {
+        // If the field is not part of the update, it remains unchanged.
+        if (!fields[fieldName]) {
+          result[fieldName] = currentFields[fieldName]
+
+          return result
         }
 
-        if (cache !== undefined && typeof cache !== 'boolean') {
-          errors.push('`settings.cache` must be a Boolean')
-        }
+        const newFieldName = fields[fieldName].name || fieldName
+        const newFieldSchema = Object.assign(
+          {},
+          currentFields[fieldName],
+          fields[fieldName]
+        )
 
-        if (
-          count !== undefined &&
-          (typeof count !== 'number' || !Number.isInteger(count) || count <= 0)
-        ) {
-          errors.push('`settings.count` must be a positive, integer number')
-        }
+        // The update may contain a `name` property, which we need to remove
+        // before inserting.
+        delete newFieldSchema.name
 
-        if (
-          callback &&
-          (typeof callback !== 'string' || callback.trim().length === 0)
-        ) {
-          errors.push('`settings.callback` must be a non-empty string')
-        }
+        result[newFieldName] = newFieldSchema
 
-        if (
-          defaultFilters !== undefined &&
-          defaultFilters.toString() !== '[object Object]'
-        ) {
-          errors.push('`settings.defaultFilters` must be an object')
-        }
+        return result
+      },
+      {}
+    )
 
-        if (
-          displayName &&
-          (typeof displayName !== 'string' || displayName.trim().length === 0)
-        ) {
-          errors.push('`settings.displayName` must be a non-empty string')
-        }
+    await this.validate({
+      fields: updatedFields
+    })
 
-        if (
-          enableVersioning !== undefined &&
-          typeof enableVersioning !== 'boolean'
-        ) {
-          errors.push('`settings.enableVersioning` must be a Boolean')
-        }
+    const update = {
+      fields: updatedFields,
+      timestamp: Date.now()
+    }
+    const {matchedCount} = await database.update({
+      collection: config.get('schemas.collection'),
+      query: {
+        name,
+        property
+      },
+      update: {
+        $set: update
+      }
+    })
 
-        if (fieldLimiters !== undefined) {
-          if (fieldLimiters.toString() === '[object Object]') {
-            let expectedValue
+    if (matchedCount === 0) {
+      throw new Error('SCHEMA_NOT_FOUND')
+    }
 
-            const isFieldProjection = Object.keys(fieldLimiters).every(
-              (fieldName, index) => {
-                if (index === 0) {
-                  expectedValue = fieldLimiters[fieldName]
-                } else if (fieldLimiters[fieldName] !== expectedValue) {
-                  return false
-                }
+    const updatedSchema = await this.get({
+      name,
+      property
+    })
 
-                return (
-                  fieldLimiters[fieldName] === 1 ||
-                  fieldLimiters[fieldName] === 0
-                )
-              }
-            )
+    // Reloading the model.
+    Model({
+      isListable: true,
+      name,
+      schema: updatedSchema.fields,
+      settings: updatedSchema.settings,
+      property
+    })
 
-            if (!isFieldProjection) {
-              errors.push(
-                '`settings.fieldLimiters` must be an object with a field projection (i.e. field names as keys and either all 1 or all 0 as values)'
-              )
-            }
-          } else {
-            errors.push('`settings.fieldLimiters` must be an object')
-          }
-        }
+    return updatedSchema
+  }
 
-        if (index !== undefined && index.toString() !== '[object Object]') {
-          errors.push('`settings.index` must be an object')
-        }
+  async updateSettings({name, property, settings}) {
+    const database = await this.connection
+    const {results} = await this.find({
+      name,
+      property
+    })
 
-        if (
-          versioningCollection &&
-          (typeof versioningCollection !== 'string' ||
-            versioningCollection.trim().length === 0)
-        ) {
-          errors.push(
-            '`settings.versioningCollection` must be a non-empty string'
-          )
-        }
-      } else {
-        errors.push('`settings` must be an object')
+    if (results.length === 0) {
+      throw new Error('SCHEMA_NOT_FOUND')
+    }
+
+    const {settings: currentSettings} = results[0]
+    const updatedSettings = Object.assign({}, currentSettings, settings)
+
+    await this.validate({
+      settings: updatedSettings
+    })
+
+    const update = {
+      settings: updatedSettings,
+      timestamp: Date.now()
+    }
+    const {matchedCount} = await database.update({
+      collection: config.get('schemas.collection'),
+      query: {
+        name,
+        property
+      },
+      update: {
+        $set: update
+      }
+    })
+
+    if (matchedCount === 0) {
+      throw new Error('SCHEMA_NOT_FOUND')
+    }
+
+    const updatedSchema = await this.get({
+      name,
+      property
+    })
+
+    // Reloading the model.
+    Model({
+      isListable: true,
+      name,
+      schema: updatedSchema.fields,
+      settings: updatedSchema.settings,
+      property
+    })
+
+    return updatedSchema
+  }
+
+  async validate({fields, settings}) {
+    let combinedErrors = []
+
+    if (settings !== undefined) {
+      try {
+        await this.validator.validateSchemaSettings(settings)
+      } catch (errors) {
+        combinedErrors = combinedErrors.concat(errors)
       }
     }
 
-    if (errors.length > 0) {
+    if (fields !== undefined) {
+      try {
+        await this.validator.validateSchemaFields(fields)
+      } catch (errors) {
+        combinedErrors = combinedErrors.concat(errors)
+      }
+    }
+
+    if (combinedErrors.length > 0) {
       const error = new Error('VALIDATION_ERROR')
 
-      error.errors = errors
+      error.errors = combinedErrors
 
       throw error
     }

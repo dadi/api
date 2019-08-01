@@ -6,6 +6,7 @@ const request = require('supertest')
 const client = request(
   `http://${config.get('server.host')}:${config.get('server.port')}`
 )
+const should = require('should')
 
 const schemas = [
   {
@@ -331,7 +332,7 @@ const schemas = [
 ]
 
 describe('Collections endpoint', function() {
-  describe('DELETE', () => {
+  describe('Deleting', () => {
     before(done => {
       help.removeACLData(() => {
         app.start(done)
@@ -560,7 +561,7 @@ describe('Collections endpoint', function() {
     })
   })
 
-  describe('GET', () => {
+  describe('Listing', () => {
     before(done => {
       help.createSchemas(schemas).then(() => {
         help.removeACLData(() => {
@@ -673,7 +674,7 @@ describe('Collections endpoint', function() {
     })
   })
 
-  describe('POST', () => {
+  describe('Creating', () => {
     before(done => {
       help.removeACLData(() => {
         app.start(done)
@@ -1001,9 +1002,12 @@ describe('Collections endpoint', function() {
                     res.statusCode.should.eql(409)
 
                     res.body.success.should.eql(false)
-                    res.body.errors
-                      .includes('The collection already exists')
-                      .should.eql(true)
+                    res.body.errors[0].code.should.eql(
+                      'ERROR_COLLECTION_EXISTS'
+                    )
+                    res.body.errors[0].message.should.eql(
+                      'The collection already exists'
+                    )
 
                     done(err)
                   })
@@ -1048,9 +1052,9 @@ describe('Collections endpoint', function() {
               .end((err, res) => {
                 res.statusCode.should.eql(400)
                 res.body.success.should.eql(false)
-                res.body.errors
-                  .includes('`fields` must be an object')
-                  .should.eql(true)
+                res.body.errors[0].code.should.eql('ERROR_INVALID_FIELDS')
+                res.body.errors[0].field.should.eql('fields')
+                res.body.errors[0].message.should.eql('must be an object')
 
                 done(err)
               })
@@ -1058,54 +1062,7 @@ describe('Collections endpoint', function() {
       })
     })
 
-    it('should return 400 if the request does not contain a valid `fields` object', done => {
-      const testClient = {
-        clientId: 'apiClient2',
-        secret: 'someSecret',
-        resources: {
-          collections: {
-            create: true
-          }
-        }
-      }
-      const schema = {
-        name: 'books',
-        property: 'library',
-        version: '1.0',
-        fields: true
-      }
-
-      help.createACLClient(testClient).then(() => {
-        client
-          .post(config.get('auth.tokenUrl'))
-          .set('content-type', 'application/json')
-          .send(testClient)
-          .expect(200)
-          .expect('content-type', 'application/json')
-          .end((err, res) => {
-            if (err) return done(err)
-
-            const bearerToken = res.body.accessToken
-
-            client
-              .post(`/api/collections`)
-              .send(schema)
-              .set('content-type', 'application/json')
-              .set('Authorization', `Bearer ${bearerToken}`)
-              .end((err, res) => {
-                res.statusCode.should.eql(400)
-                res.body.success.should.eql(false)
-                res.body.errors
-                  .includes('`fields` must be an object')
-                  .should.eql(true)
-
-                done(err)
-              })
-          })
-      })
-    })
-
-    it('should return 400 if the request does not any fields', done => {
+    it('should return 400 if the request does not contain any fields', done => {
       const testClient = {
         clientId: 'apiClient2',
         secret: 'someSecret',
@@ -1142,9 +1099,11 @@ describe('Collections endpoint', function() {
               .end((err, res) => {
                 res.statusCode.should.eql(400)
                 res.body.success.should.eql(false)
-                res.body.errors
-                  .includes('`fields` must contain at least one field')
-                  .should.eql(true)
+                res.body.errors[0].code.should.eql('ERROR_EMPTY_FIELDS')
+                res.body.errors[0].field.should.eql('fields')
+                res.body.errors[0].message.should.eql(
+                  'must contain at least one field'
+                )
 
                 done(err)
               })
@@ -1196,11 +1155,9 @@ describe('Collections endpoint', function() {
               .end((err, res) => {
                 res.statusCode.should.eql(400)
                 res.body.success.should.eql(false)
-                res.body.errors[0]
-                  .indexOf(
-                    'Type of field `ufo` (unknown) is not valid. Available types:'
-                  )
-                  .should.not.eql(-1)
+                res.body.errors[0].code.should.eql('ERROR_INVALID_FIELD_TYPE')
+                res.body.errors[0].field.should.eql('fields.ufo')
+                res.body.errors[0].message.should.be.String
 
                 done(err)
               })
@@ -1250,9 +1207,9 @@ describe('Collections endpoint', function() {
               .end((err, res) => {
                 res.statusCode.should.eql(400)
                 res.body.success.should.eql(false)
-                res.body.errors
-                  .includes('`settings` must be an object')
-                  .should.eql(true)
+                res.body.errors[0].code.should.eql('ERROR_INVALID_SETTINGS')
+                res.body.errors[0].field.should.eql('settings')
+                res.body.errors[0].message.should.be.String
 
                 done(err)
               })
@@ -1317,11 +1274,9 @@ describe('Collections endpoint', function() {
               .end((err, res) => {
                 res.statusCode.should.eql(400)
                 res.body.success.should.eql(false)
-                res.body.errors
-                  .includes(
-                    '`settings.authenticate` must be a Boolean or an array including one or more HTTP verbs (DELETE, GET, POST, PUT)'
-                  )
-                  .should.eql(true)
+                res.body.errors[0].code.should.eql('ERROR_INVALID_SETTING')
+                res.body.errors[0].field.should.eql('settings.authenticate')
+                res.body.errors[0].message.should.be.String
 
                 client
                   .post(`/api/collections`)
@@ -1331,11 +1286,9 @@ describe('Collections endpoint', function() {
                   .end((err, res) => {
                     res.statusCode.should.eql(400)
                     res.body.success.should.eql(false)
-                    res.body.errors
-                      .includes(
-                        '`settings.authenticate` must be a Boolean or an array including one or more HTTP verbs (DELETE, GET, POST, PUT)'
-                      )
-                      .should.eql(true)
+                    res.body.errors[0].code.should.eql('ERROR_INVALID_SETTING')
+                    res.body.errors[0].field.should.eql('settings.authenticate')
+                    res.body.errors[0].message.should.be.String
 
                     done(err)
                   })
@@ -1466,9 +1419,9 @@ describe('Collections endpoint', function() {
               .end((err, res) => {
                 res.statusCode.should.eql(400)
                 res.body.success.should.eql(false)
-                res.body.errors
-                  .includes('`settings.cache` must be a Boolean')
-                  .should.eql(true)
+                res.body.errors[0].code.should.eql('ERROR_INVALID_SETTING')
+                res.body.errors[0].field.should.eql('settings.cache')
+                res.body.errors[0].message.should.be.String
 
                 done(err)
               })
@@ -1611,11 +1564,9 @@ describe('Collections endpoint', function() {
               .end((err, res) => {
                 res.statusCode.should.eql(400)
                 res.body.success.should.eql(false)
-                res.body.errors
-                  .includes(
-                    '`settings.count` must be a positive, integer number'
-                  )
-                  .should.eql(true)
+                res.body.errors[0].code.should.eql('ERROR_INVALID_SETTING')
+                res.body.errors[0].field.should.eql('settings.count')
+                res.body.errors[0].message.should.be.String
 
                 client
                   .post(`/api/collections`)
@@ -1625,11 +1576,9 @@ describe('Collections endpoint', function() {
                   .end((err, res) => {
                     res.statusCode.should.eql(400)
                     res.body.success.should.eql(false)
-                    res.body.errors
-                      .includes(
-                        '`settings.count` must be a positive, integer number'
-                      )
-                      .should.eql(true)
+                    res.body.errors[0].code.should.eql('ERROR_INVALID_SETTING')
+                    res.body.errors[0].field.should.eql('settings.count')
+                    res.body.errors[0].message.should.be.String
 
                     done(err)
                   })
@@ -1773,9 +1722,9 @@ describe('Collections endpoint', function() {
               .end((err, res) => {
                 res.statusCode.should.eql(400)
                 res.body.success.should.eql(false)
-                res.body.errors
-                  .includes('`settings.callback` must be a non-empty string')
-                  .should.eql(true)
+                res.body.errors[0].code.should.eql('ERROR_INVALID_SETTING')
+                res.body.errors[0].field.should.eql('settings.callback')
+                res.body.errors[0].message.should.be.String
 
                 client
                   .post(`/api/collections`)
@@ -1785,11 +1734,9 @@ describe('Collections endpoint', function() {
                   .end((err, res) => {
                     res.statusCode.should.eql(400)
                     res.body.success.should.eql(false)
-                    res.body.errors
-                      .includes(
-                        '`settings.callback` must be a non-empty string'
-                      )
-                      .should.eql(true)
+                    res.body.errors[0].code.should.eql('ERROR_INVALID_SETTING')
+                    res.body.errors[0].field.should.eql('settings.callback')
+                    res.body.errors[0].message.should.be.String
 
                     done(err)
                   })
@@ -1908,9 +1855,9 @@ describe('Collections endpoint', function() {
               .end((err, res) => {
                 res.statusCode.should.eql(400)
                 res.body.success.should.eql(false)
-                res.body.errors
-                  .includes('`settings.displayName` must be a non-empty string')
-                  .should.eql(true)
+                res.body.errors[0].code.should.eql('ERROR_INVALID_SETTING')
+                res.body.errors[0].field.should.eql('settings.displayName')
+                res.body.errors[0].message.should.be.String
 
                 client
                   .post(`/api/collections`)
@@ -1920,11 +1867,9 @@ describe('Collections endpoint', function() {
                   .end((err, res) => {
                     res.statusCode.should.eql(400)
                     res.body.success.should.eql(false)
-                    res.body.errors
-                      .includes(
-                        '`settings.displayName` must be a non-empty string'
-                      )
-                      .should.eql(true)
+                    res.body.errors[0].code.should.eql('ERROR_INVALID_SETTING')
+                    res.body.errors[0].field.should.eql('settings.displayName')
+                    res.body.errors[0].message.should.be.String
 
                     done(err)
                   })
@@ -2043,9 +1988,9 @@ describe('Collections endpoint', function() {
               .end((err, res) => {
                 res.statusCode.should.eql(400)
                 res.body.success.should.eql(false)
-                res.body.errors
-                  .includes('`settings.defaultFilters` must be an object')
-                  .should.eql(true)
+                res.body.errors[0].code.should.eql('ERROR_INVALID_SETTING')
+                res.body.errors[0].field.should.eql('settings.defaultFilters')
+                res.body.errors[0].message.should.be.String
 
                 client
                   .post(`/api/collections`)
@@ -2055,9 +2000,11 @@ describe('Collections endpoint', function() {
                   .end((err, res) => {
                     res.statusCode.should.eql(400)
                     res.body.success.should.eql(false)
-                    res.body.errors
-                      .includes('`settings.defaultFilters` must be an object')
-                      .should.eql(true)
+                    res.body.errors[0].code.should.eql('ERROR_INVALID_SETTING')
+                    res.body.errors[0].field.should.eql(
+                      'settings.defaultFilters'
+                    )
+                    res.body.errors[0].message.should.be.String
 
                     done(err)
                   })
@@ -2194,9 +2141,9 @@ describe('Collections endpoint', function() {
               .end((err, res) => {
                 res.statusCode.should.eql(400)
                 res.body.success.should.eql(false)
-                res.body.errors
-                  .includes('`settings.enableVersioning` must be a Boolean')
-                  .should.eql(true)
+                res.body.errors[0].code.should.eql('ERROR_INVALID_SETTING')
+                res.body.errors[0].field.should.eql('settings.enableVersioning')
+                res.body.errors[0].message.should.be.String
 
                 done(err)
               })
@@ -2343,9 +2290,9 @@ describe('Collections endpoint', function() {
               .end((err, res) => {
                 res.statusCode.should.eql(400)
                 res.body.success.should.eql(false)
-                res.body.errors
-                  .includes('`settings.fieldLimiters` must be an object')
-                  .should.eql(true)
+                res.body.errors[0].code.should.eql('ERROR_INVALID_SETTING')
+                res.body.errors[0].field.should.eql('settings.fieldLimiters')
+                res.body.errors[0].message.should.be.String
 
                 client
                   .post(`/api/collections`)
@@ -2355,11 +2302,11 @@ describe('Collections endpoint', function() {
                   .end((err, res) => {
                     res.statusCode.should.eql(400)
                     res.body.success.should.eql(false)
-                    res.body.errors
-                      .includes(
-                        '`settings.fieldLimiters` must be an object with a field projection (i.e. field names as keys and either all 1 or all 0 as values)'
-                      )
-                      .should.eql(true)
+                    res.body.errors[0].code.should.eql('ERROR_INVALID_SETTING')
+                    res.body.errors[0].field.should.eql(
+                      'settings.fieldLimiters'
+                    )
+                    res.body.errors[0].message.should.be.String
 
                     done(err)
                   })
@@ -2509,9 +2456,9 @@ describe('Collections endpoint', function() {
               .end((err, res) => {
                 res.statusCode.should.eql(400)
                 res.body.success.should.eql(false)
-                res.body.errors
-                  .includes('`settings.index` must be an object')
-                  .should.eql(true)
+                res.body.errors[0].code.should.eql('ERROR_INVALID_SETTING')
+                res.body.errors[0].field.should.eql('settings.index')
+                res.body.errors[0].message.should.be.String
 
                 client
                   .post(`/api/collections`)
@@ -2521,9 +2468,9 @@ describe('Collections endpoint', function() {
                   .end((err, res) => {
                     res.statusCode.should.eql(400)
                     res.body.success.should.eql(false)
-                    res.body.errors
-                      .includes('`settings.index` must be an object')
-                      .should.eql(true)
+                    res.body.errors[0].code.should.eql('ERROR_INVALID_SETTING')
+                    res.body.errors[0].field.should.eql('settings.index')
+                    res.body.errors[0].message.should.be.String
 
                     done(err)
                   })
@@ -2616,7 +2563,7 @@ describe('Collections endpoint', function() {
     })
   })
 
-  describe('PUT', () => {
+  describe('Updating', () => {
     before(done => {
       help.removeACLData(() => {
         app.start(done)
@@ -2628,10 +2575,12 @@ describe('Collections endpoint', function() {
         {
           name: 'books',
           property: 'library',
-          version: '1.0',
           fields: {
             title: {
               type: 'string'
+            },
+            isbn: {
+              type: 'number'
             }
           }
         }
@@ -2650,525 +2599,985 @@ describe('Collections endpoint', function() {
       })
     })
 
-    it('should return 401 if the request does not contain a valid bearer token', done => {
-      client
-        .put(`/api/collections/library/books`)
-        .send({
-          fields: {
-            title: {
-              type: 'string'
+    describe('Adding fields', () => {
+      it('should return 401 if the request does not contain a valid bearer token', done => {
+        client
+          .post(`/api/collections/library/books/fields`)
+          .send({
+            name: 'myNewField',
+            type: 'number'
+          })
+          .set('content-type', 'application/json')
+          .end((err, res) => {
+            res.statusCode.should.eql(401)
+
+            done(err)
+          })
+      })
+
+      it('should return 403 if the request contains a bearer token that does not have `update` access to the `collections` resource', done => {
+        const testClient = {
+          clientId: 'apiClient',
+          secret: 'someSecret'
+        }
+
+        help.createACLClient(testClient).then(() => {
+          client
+            .post(config.get('auth.tokenUrl'))
+            .set('content-type', 'application/json')
+            .send(testClient)
+            .expect(200)
+            .expect('content-type', 'application/json')
+            .end((err, res) => {
+              if (err) return done(err)
+
+              const bearerToken = res.body.accessToken
+
+              client
+                .post(`/api/collections/library/books/fields`)
+                .send({
+                  name: 'myNewField',
+                  type: 'number'
+                })
+                .set('content-type', 'application/json')
+                .set('Authorization', `Bearer ${bearerToken}`)
+                .end((err, res) => {
+                  res.statusCode.should.eql(403)
+
+                  done(err)
+                })
+            })
+        })
+      })
+
+      it('should create a field if the request contains an admin bearer token', done => {
+        const testClient = {
+          clientId: 'adminClient',
+          secret: 'someSecret',
+          accessType: 'admin'
+        }
+        const field = {
+          name: 'myNewField',
+          type: 'number'
+        }
+
+        help.createACLClient(testClient).then(() => {
+          client
+            .post(config.get('auth.tokenUrl'))
+            .set('content-type', 'application/json')
+            .send(testClient)
+            .expect(200)
+            .expect('content-type', 'application/json')
+            .end((err, res) => {
+              if (err) return done(err)
+
+              const bearerToken = res.body.accessToken
+
+              client
+                .post(`/api/collections/library/books/fields`)
+                .send(field)
+                .set('content-type', 'application/json')
+                .set('Authorization', `Bearer ${bearerToken}`)
+                .end((err, res) => {
+                  res.statusCode.should.eql(200)
+                  res.body.fields.title.type.should.eql('string')
+                  res.body.fields.myNewField.type.should.eql(field.type)
+
+                  done(err)
+                })
+            })
+        })
+      })
+
+      it('should create a field if the request contains a bearer token that has `update` access to the `collections` resource', done => {
+        const testClient = {
+          clientId: 'apiClient2',
+          secret: 'someSecret',
+          resources: {
+            collections: {
+              update: true
             }
           }
+        }
+        const field = {
+          name: 'myNewField',
+          type: 'number'
+        }
+
+        help.createACLClient(testClient).then(() => {
+          client
+            .post(config.get('auth.tokenUrl'))
+            .set('content-type', 'application/json')
+            .send(testClient)
+            .expect(200)
+            .expect('content-type', 'application/json')
+            .end((err, res) => {
+              if (err) return done(err)
+
+              const bearerToken = res.body.accessToken
+
+              client
+                .post(`/api/collections/library/books/fields`)
+                .send(field)
+                .set('content-type', 'application/json')
+                .set('Authorization', `Bearer ${bearerToken}`)
+                .end((err, res) => {
+                  res.statusCode.should.eql(200)
+                  res.body.fields.title.type.should.eql('string')
+                  res.body.fields.myNewField.type.should.eql(field.type)
+
+                  done(err)
+                })
+            })
         })
-        .set('content-type', 'application/json')
-        .end((err, res) => {
-          res.statusCode.should.eql(401)
+      })
 
-          done(err)
+      it('should make the schemas changes available after updating a field', done => {
+        const testClient = {
+          clientId: 'apiClient2',
+          secret: 'someSecret',
+          accessType: 'admin'
+        }
+        const field = {
+          name: 'myNewField',
+          type: 'number'
+        }
+        const document = {
+          title: 'A new document',
+          myNewField: 1337
+        }
+
+        help.createACLClient(testClient).then(() => {
+          client
+            .post(config.get('auth.tokenUrl'))
+            .set('content-type', 'application/json')
+            .send(testClient)
+            .expect(200)
+            .expect('content-type', 'application/json')
+            .end((err, res) => {
+              if (err) return done(err)
+
+              const bearerToken = res.body.accessToken
+
+              client
+                .post(`/library/books`)
+                .send(document)
+                .set('content-type', 'application/json')
+                .set('Authorization', `Bearer ${bearerToken}`)
+                .end((err, res) => {
+                  res.statusCode.should.eql(400)
+
+                  client
+                    .post(`/api/collections/library/books/fields`)
+                    .send(field)
+                    .set('content-type', 'application/json')
+                    .set('Authorization', `Bearer ${bearerToken}`)
+                    .end((err, res) => {
+                      res.statusCode.should.eql(200)
+
+                      client
+                        .post(`/library/books`)
+                        .send(document)
+                        .set('content-type', 'application/json')
+                        .set('Authorization', `Bearer ${bearerToken}`)
+                        .end((err, res) => {
+                          res.statusCode.should.eql(200)
+
+                          const {results} = res.body
+
+                          results.length.should.eql(1)
+                          results[0].title.should.eql(document.title)
+                          results[0].myNewField.should.eql(document.myNewField)
+
+                          client
+                            .get(`/library/books/${results[0]._id}`)
+                            .set('content-type', 'application/json')
+                            .set('Authorization', `Bearer ${bearerToken}`)
+                            .end((err, res) => {
+                              res.statusCode.should.eql(200)
+
+                              const {results} = res.body
+
+                              results.length.should.eql(1)
+                              results[0].title.should.eql(document.title)
+                              results[0].myNewField.should.eql(
+                                document.myNewField
+                              )
+
+                              done(err)
+                            })
+                        })
+                    })
+                })
+            })
         })
-    })
+      })
 
-    it('should return 403 if the request contains a bearer token that does not have `update` access to the `collections` resource', done => {
-      const testClient = {
-        clientId: 'apiClient',
-        secret: 'someSecret'
-      }
+      it('should return 404 if the collection does not exist', done => {
+        const testClient = {
+          clientId: 'apiClient2',
+          secret: 'someSecret',
+          resources: {
+            collections: {
+              update: true
+            }
+          }
+        }
+        const field = {
+          name: 'myNewField',
+          type: 'number'
+        }
 
-      help.createACLClient(testClient).then(() => {
-        client
-          .post(config.get('auth.tokenUrl'))
-          .set('content-type', 'application/json')
-          .send(testClient)
-          .expect(200)
-          .expect('content-type', 'application/json')
-          .end((err, res) => {
-            if (err) return done(err)
+        help.createACLClient(testClient).then(() => {
+          client
+            .post(config.get('auth.tokenUrl'))
+            .set('content-type', 'application/json')
+            .send(testClient)
+            .expect(200)
+            .expect('content-type', 'application/json')
+            .end((err, res) => {
+              if (err) return done(err)
 
-            const bearerToken = res.body.accessToken
+              const bearerToken = res.body.accessToken
 
-            client
-              .put(`/api/collections/library/books`)
-              .send({
-                fields: {
-                  title: {
-                    type: 'string'
-                  }
-                }
-              })
-              .set('content-type', 'application/json')
-              .set('Authorization', `Bearer ${bearerToken}`)
-              .end((err, res) => {
-                res.statusCode.should.eql(403)
+              client
+                .post(`/api/collections/library/uhoh/fields`)
+                .send(field)
+                .set('content-type', 'application/json')
+                .set('Authorization', `Bearer ${bearerToken}`)
+                .end((err, res) => {
+                  res.statusCode.should.eql(404)
 
-                done()
-              })
-          })
+                  done(err)
+                })
+            })
+        })
       })
     })
 
-    it('should return 200 if the request contains an admin bearer token', done => {
-      const testClient = {
-        clientId: 'adminClient',
-        secret: 'someSecret',
-        accessType: 'admin'
-      }
-      const update = {
-        fields: {
-          title: {
-            type: 'string'
-          },
-          subtitle: {
-            type: 'string'
+    describe('Updating fields', () => {
+      it('should return 401 if the request does not contain a valid bearer token', done => {
+        client
+          .put(`/api/collections/library/books/fields/title`)
+          .send({
+            type: 'number'
+          })
+          .set('content-type', 'application/json')
+          .end((err, res) => {
+            res.statusCode.should.eql(401)
+
+            done(err)
+          })
+      })
+
+      it('should return 403 if the request contains a bearer token that does not have `update` access to the `collections` resource', done => {
+        const testClient = {
+          clientId: 'apiClient',
+          secret: 'someSecret'
+        }
+
+        help.createACLClient(testClient).then(() => {
+          client
+            .post(config.get('auth.tokenUrl'))
+            .set('content-type', 'application/json')
+            .send(testClient)
+            .expect(200)
+            .expect('content-type', 'application/json')
+            .end((err, res) => {
+              if (err) return done(err)
+
+              const bearerToken = res.body.accessToken
+
+              client
+                .put(`/api/collections/library/books/fields/title`)
+                .send({
+                  type: 'number'
+                })
+                .set('content-type', 'application/json')
+                .set('Authorization', `Bearer ${bearerToken}`)
+                .end((err, res) => {
+                  res.statusCode.should.eql(403)
+
+                  done(err)
+                })
+            })
+        })
+      })
+
+      it('should update a field if the request contains an admin bearer token', done => {
+        const testClient = {
+          clientId: 'adminClient',
+          secret: 'someSecret',
+          accessType: 'admin'
+        }
+
+        help.createACLClient(testClient).then(() => {
+          client
+            .post(config.get('auth.tokenUrl'))
+            .set('content-type', 'application/json')
+            .send(testClient)
+            .expect(200)
+            .expect('content-type', 'application/json')
+            .end((err, res) => {
+              if (err) return done(err)
+
+              const bearerToken = res.body.accessToken
+
+              client
+                .put(`/api/collections/library/books/fields/title`)
+                .send({type: 'number'})
+                .set('content-type', 'application/json')
+                .set('Authorization', `Bearer ${bearerToken}`)
+                .end((err, res) => {
+                  res.statusCode.should.eql(200)
+                  res.body.fields.title.type.should.eql('number')
+
+                  done(err)
+                })
+            })
+        })
+      })
+
+      it('should update a field if the request contains a bearer token that has `update` access to the `collections` resource', done => {
+        const testClient = {
+          clientId: 'apiClient2',
+          secret: 'someSecret',
+          resources: {
+            collections: {
+              update: true
+            }
           }
         }
-      }
 
-      help.createACLClient(testClient).then(() => {
-        client
-          .post(config.get('auth.tokenUrl'))
-          .set('content-type', 'application/json')
-          .send(testClient)
-          .expect(200)
-          .expect('content-type', 'application/json')
-          .end((err, res) => {
-            if (err) return done(err)
+        help.createACLClient(testClient).then(() => {
+          client
+            .post(config.get('auth.tokenUrl'))
+            .set('content-type', 'application/json')
+            .send(testClient)
+            .expect(200)
+            .expect('content-type', 'application/json')
+            .end((err, res) => {
+              if (err) return done(err)
 
-            const bearerToken = res.body.accessToken
+              const bearerToken = res.body.accessToken
 
-            client
-              .put(`/api/collections/library/books`)
-              .send(update)
-              .set('content-type', 'application/json')
-              .set('Authorization', `Bearer ${bearerToken}`)
-              .end((err, res) => {
-                res.statusCode.should.eql(200)
+              client
+                .put(`/api/collections/library/books/fields/title`)
+                .send({type: 'number'})
+                .set('content-type', 'application/json')
+                .set('Authorization', `Bearer ${bearerToken}`)
+                .end((err, res) => {
+                  res.statusCode.should.eql(200)
+                  res.body.fields.title.type.should.eql('number')
 
-                const {results} = res.body
+                  done(err)
+                })
+            })
+        })
+      })
 
-                results.length.should.eql(1)
-                results[0].fields.should.eql(update.fields)
+      it('should make the schemas changes available after updating a field', done => {
+        const testClient = {
+          clientId: 'apiClient2',
+          secret: 'someSecret',
+          accessType: 'admin'
+        }
+        const document = {
+          title: 1337
+        }
 
-                done(err)
-              })
-          })
+        help.createACLClient(testClient).then(() => {
+          client
+            .post(config.get('auth.tokenUrl'))
+            .set('content-type', 'application/json')
+            .send(testClient)
+            .expect(200)
+            .expect('content-type', 'application/json')
+            .end((err, res) => {
+              if (err) return done(err)
+
+              const bearerToken = res.body.accessToken
+
+              client
+                .post(`/library/books`)
+                .send(document)
+                .set('content-type', 'application/json')
+                .set('Authorization', `Bearer ${bearerToken}`)
+                .end((err, res) => {
+                  res.statusCode.should.eql(400)
+
+                  client
+                    .put(`/api/collections/library/books/fields/title`)
+                    .send({type: 'number'})
+                    .set('content-type', 'application/json')
+                    .set('Authorization', `Bearer ${bearerToken}`)
+                    .end((err, res) => {
+                      res.statusCode.should.eql(200)
+
+                      client
+                        .post(`/library/books`)
+                        .send(document)
+                        .set('content-type', 'application/json')
+                        .set('Authorization', `Bearer ${bearerToken}`)
+                        .end((err, res) => {
+                          res.statusCode.should.eql(200)
+
+                          const {results} = res.body
+
+                          results.length.should.eql(1)
+                          results[0].title.should.eql(document.title)
+
+                          client
+                            .get(`/library/books/${results[0]._id}`)
+                            .set('content-type', 'application/json')
+                            .set('Authorization', `Bearer ${bearerToken}`)
+                            .end((err, res) => {
+                              res.statusCode.should.eql(200)
+
+                              const {results} = res.body
+
+                              results.length.should.eql(1)
+                              results[0].title.should.eql(document.title)
+
+                              done(err)
+                            })
+                        })
+                    })
+                })
+            })
+        })
+      })
+
+      it('should make the schemas changes available after renaming a field', done => {
+        const testClient = {
+          clientId: 'apiClient2',
+          secret: 'someSecret',
+          accessType: 'admin'
+        }
+        const document = {
+          subtitle: 'A subtitle'
+        }
+
+        help.createACLClient(testClient).then(() => {
+          client
+            .post(config.get('auth.tokenUrl'))
+            .set('content-type', 'application/json')
+            .send(testClient)
+            .expect(200)
+            .expect('content-type', 'application/json')
+            .end((err, res) => {
+              if (err) return done(err)
+
+              const bearerToken = res.body.accessToken
+
+              client
+                .post(`/library/books`)
+                .send(document)
+                .set('content-type', 'application/json')
+                .set('Authorization', `Bearer ${bearerToken}`)
+                .end((err, res) => {
+                  res.statusCode.should.eql(400)
+
+                  client
+                    .put(`/api/collections/library/books/fields/title`)
+                    .send({name: 'subtitle'})
+                    .set('content-type', 'application/json')
+                    .set('Authorization', `Bearer ${bearerToken}`)
+                    .end((err, res) => {
+                      res.statusCode.should.eql(200)
+
+                      client
+                        .post(`/library/books`)
+                        .send(document)
+                        .set('content-type', 'application/json')
+                        .set('Authorization', `Bearer ${bearerToken}`)
+                        .end((err, res) => {
+                          res.statusCode.should.eql(200)
+
+                          const {results} = res.body
+
+                          results.length.should.eql(1)
+                          results[0].subtitle.should.eql(document.subtitle)
+
+                          client
+                            .get(`/library/books/${results[0]._id}`)
+                            .set('content-type', 'application/json')
+                            .set('Authorization', `Bearer ${bearerToken}`)
+                            .end((err, res) => {
+                              res.statusCode.should.eql(200)
+
+                              const {results} = res.body
+
+                              results.length.should.eql(1)
+                              results[0].subtitle.should.eql(document.subtitle)
+
+                              done(err)
+                            })
+                        })
+                    })
+                })
+            })
+        })
+      })
+
+      it('should return 404 if the collection does not exist', done => {
+        const testClient = {
+          clientId: 'apiClient2',
+          secret: 'someSecret',
+          resources: {
+            collections: {
+              update: true
+            }
+          }
+        }
+
+        help.createACLClient(testClient).then(() => {
+          client
+            .post(config.get('auth.tokenUrl'))
+            .set('content-type', 'application/json')
+            .send(testClient)
+            .expect(200)
+            .expect('content-type', 'application/json')
+            .end((err, res) => {
+              if (err) return done(err)
+
+              const bearerToken = res.body.accessToken
+
+              client
+                .put(`/api/collections/library/uhoh/fields/title`)
+                .send({type: 'number'})
+                .set('content-type', 'application/json')
+                .set('Authorization', `Bearer ${bearerToken}`)
+                .end((err, res) => {
+                  res.statusCode.should.eql(404)
+
+                  done(err)
+                })
+            })
+        })
+      })
+
+      it('should return 404 if the field does not exist', done => {
+        const testClient = {
+          clientId: 'apiClient2',
+          secret: 'someSecret',
+          resources: {
+            collections: {
+              update: true
+            }
+          }
+        }
+
+        help.createACLClient(testClient).then(() => {
+          client
+            .post(config.get('auth.tokenUrl'))
+            .set('content-type', 'application/json')
+            .send(testClient)
+            .expect(200)
+            .expect('content-type', 'application/json')
+            .end((err, res) => {
+              if (err) return done(err)
+
+              const bearerToken = res.body.accessToken
+
+              client
+                .put(`/api/collections/library/books/fields/uhoh`)
+                .send({type: 'number'})
+                .set('content-type', 'application/json')
+                .set('Authorization', `Bearer ${bearerToken}`)
+                .end((err, res) => {
+                  res.statusCode.should.eql(404)
+
+                  done(err)
+                })
+            })
+        })
       })
     })
 
-    it('should return 200 if the request contains a bearer token that has `update` access to the `collections` resource', done => {
-      const testClient = {
-        clientId: 'apiClient2',
-        secret: 'someSecret',
-        resources: {
-          collections: {
-            update: true
-          }
-        }
-      }
-      const update = {
-        fields: {
-          title: {
-            type: 'string'
-          },
-          subtitle: {
-            type: 'string'
-          }
-        }
-      }
-
-      help.createACLClient(testClient).then(() => {
+    describe('Deleting fields', () => {
+      it('should return 401 if the request does not contain a valid bearer token', done => {
         client
-          .post(config.get('auth.tokenUrl'))
+          .delete(`/api/collections/library/books/fields/isbn`)
           .set('content-type', 'application/json')
-          .send(testClient)
-          .expect(200)
-          .expect('content-type', 'application/json')
           .end((err, res) => {
-            if (err) return done(err)
+            res.statusCode.should.eql(401)
 
-            const bearerToken = res.body.accessToken
-
-            client
-              .put(`/api/collections/library/books`)
-              .send(update)
-              .set('content-type', 'application/json')
-              .set('Authorization', `Bearer ${bearerToken}`)
-              .end((err, res) => {
-                res.statusCode.should.eql(200)
-
-                const {results} = res.body
-
-                results.length.should.eql(1)
-                results[0].fields.should.eql(update.fields)
-
-                done(err)
-              })
+            done(err)
           })
+      })
+
+      it('should return 403 if the request contains a bearer token that does not have `update` access to the `collections` resource', done => {
+        const testClient = {
+          clientId: 'apiClient',
+          secret: 'someSecret'
+        }
+
+        help.createACLClient(testClient).then(() => {
+          client
+            .post(config.get('auth.tokenUrl'))
+            .set('content-type', 'application/json')
+            .send(testClient)
+            .expect(200)
+            .expect('content-type', 'application/json')
+            .end((err, res) => {
+              if (err) return done(err)
+
+              const bearerToken = res.body.accessToken
+
+              client
+                .delete(`/api/collections/library/books/fields/isbn`)
+                .set('content-type', 'application/json')
+                .set('Authorization', `Bearer ${bearerToken}`)
+                .end((err, res) => {
+                  res.statusCode.should.eql(403)
+
+                  done(err)
+                })
+            })
+        })
+      })
+
+      it('should delete a field if the request contains an admin bearer token', done => {
+        const testClient = {
+          clientId: 'adminClient',
+          secret: 'someSecret',
+          accessType: 'admin'
+        }
+
+        help.createACLClient(testClient).then(() => {
+          client
+            .post(config.get('auth.tokenUrl'))
+            .set('content-type', 'application/json')
+            .send(testClient)
+            .expect(200)
+            .expect('content-type', 'application/json')
+            .end((err, res) => {
+              if (err) return done(err)
+
+              const bearerToken = res.body.accessToken
+
+              client
+                .delete(`/api/collections/library/books/fields/isbn`)
+                .set('content-type', 'application/json')
+                .set('Authorization', `Bearer ${bearerToken}`)
+                .end((err, res) => {
+                  res.statusCode.should.eql(200)
+                  res.body.fields.title.type.should.eql('string')
+                  should.not.exist(res.body.fields.isbn)
+
+                  done(err)
+                })
+            })
+        })
+      })
+
+      it('should delete a field if the request contains a bearer token that has `update` access to the `collections` resource', done => {
+        const testClient = {
+          clientId: 'apiClient2',
+          secret: 'someSecret',
+          resources: {
+            collections: {
+              update: true
+            }
+          }
+        }
+
+        help.createACLClient(testClient).then(() => {
+          client
+            .post(config.get('auth.tokenUrl'))
+            .set('content-type', 'application/json')
+            .send(testClient)
+            .expect(200)
+            .expect('content-type', 'application/json')
+            .end((err, res) => {
+              if (err) return done(err)
+
+              const bearerToken = res.body.accessToken
+
+              client
+                .delete(`/api/collections/library/books/fields/isbn`)
+                .set('content-type', 'application/json')
+                .set('Authorization', `Bearer ${bearerToken}`)
+                .end((err, res) => {
+                  res.statusCode.should.eql(200)
+                  res.body.fields.title.type.should.eql('string')
+                  should.not.exist(res.body.fields.isbn)
+
+                  done(err)
+                })
+            })
+        })
+      })
+
+      it('should make the schemas changes available after updating a field', done => {
+        const testClient = {
+          clientId: 'apiClient2',
+          secret: 'someSecret',
+          accessType: 'admin'
+        }
+        const field = {
+          name: 'myNewField',
+          type: 'number'
+        }
+        const document = {
+          title: 'A new document',
+          isbn: 1337
+        }
+
+        help.createACLClient(testClient).then(() => {
+          client
+            .post(config.get('auth.tokenUrl'))
+            .set('content-type', 'application/json')
+            .send(testClient)
+            .expect(200)
+            .expect('content-type', 'application/json')
+            .end((err, res) => {
+              if (err) return done(err)
+
+              const bearerToken = res.body.accessToken
+
+              client
+                .post(`/library/books`)
+                .send(document)
+                .set('content-type', 'application/json')
+                .set('Authorization', `Bearer ${bearerToken}`)
+                .end((err, res) => {
+                  res.statusCode.should.eql(200)
+
+                  const {results} = res.body
+
+                  results.length.should.eql(1)
+                  results[0].title.should.eql(document.title)
+                  results[0].isbn.should.eql(document.isbn)
+
+                  client
+                    .delete(`/api/collections/library/books/fields/isbn`)
+                    .set('content-type', 'application/json')
+                    .set('Authorization', `Bearer ${bearerToken}`)
+                    .end((err, res) => {
+                      res.statusCode.should.eql(200)
+
+                      client
+                        .post(`/library/books`)
+                        .send(document)
+                        .set('content-type', 'application/json')
+                        .set('Authorization', `Bearer ${bearerToken}`)
+                        .end((err, res) => {
+                          res.statusCode.should.eql(400)
+
+                          done(err)
+                        })
+                    })
+                })
+            })
+        })
+      })
+
+      it('should return 404 if the collection does not exist', done => {
+        const testClient = {
+          clientId: 'apiClient2',
+          secret: 'someSecret',
+          resources: {
+            collections: {
+              update: true
+            }
+          }
+        }
+
+        help.createACLClient(testClient).then(() => {
+          client
+            .post(config.get('auth.tokenUrl'))
+            .set('content-type', 'application/json')
+            .send(testClient)
+            .expect(200)
+            .expect('content-type', 'application/json')
+            .end((err, res) => {
+              if (err) return done(err)
+
+              const bearerToken = res.body.accessToken
+
+              client
+                .delete(`/api/collections/library/uhoh/fields/title`)
+                .set('content-type', 'application/json')
+                .set('Authorization', `Bearer ${bearerToken}`)
+                .end((err, res) => {
+                  res.statusCode.should.eql(404)
+
+                  done(err)
+                })
+            })
+        })
+      })
+
+      it('should return 404 if the field does not exist', done => {
+        const testClient = {
+          clientId: 'apiClient2',
+          secret: 'someSecret',
+          resources: {
+            collections: {
+              update: true
+            }
+          }
+        }
+
+        help.createACLClient(testClient).then(() => {
+          client
+            .post(config.get('auth.tokenUrl'))
+            .set('content-type', 'application/json')
+            .send(testClient)
+            .expect(200)
+            .expect('content-type', 'application/json')
+            .end((err, res) => {
+              if (err) return done(err)
+
+              const bearerToken = res.body.accessToken
+
+              client
+                .delete(`/api/collections/library/books/fields/uhoh`)
+                .set('content-type', 'application/json')
+                .set('Authorization', `Bearer ${bearerToken}`)
+                .end((err, res) => {
+                  res.statusCode.should.eql(404)
+
+                  done(err)
+                })
+            })
+        })
       })
     })
 
-    it('should make the schemas changes available after update', done => {
-      const testClient = {
-        clientId: 'apiClient2',
-        secret: 'someSecret',
-        accessType: 'admin'
-      }
-      const update = {
-        fields: {
-          title: {
-            type: 'string'
-          },
-          subtitle: {
-            type: 'string'
-          }
-        }
-      }
-      const document = {
-        title: 'A book about APIs',
-        subtitle: 'A story for the RESTless'
-      }
-
-      help.createACLClient(testClient).then(() => {
+    describe('Settings', () => {
+      it('should return 401 if the request does not contain a valid bearer token', done => {
         client
-          .post(config.get('auth.tokenUrl'))
+          .put(`/api/collections/library/books/settings`)
+          .send({
+            cache: false
+          })
           .set('content-type', 'application/json')
-          .send(testClient)
-          .expect(200)
-          .expect('content-type', 'application/json')
           .end((err, res) => {
-            if (err) return done(err)
+            res.statusCode.should.eql(401)
 
-            const bearerToken = res.body.accessToken
-
-            client
-              .post(`/library/books`)
-              .send(document)
-              .set('content-type', 'application/json')
-              .set('Authorization', `Bearer ${bearerToken}`)
-              .end((err, res) => {
-                res.statusCode.should.eql(400)
-
-                client
-                  .put(`/api/collections/library/books`)
-                  .send(update)
-                  .set('content-type', 'application/json')
-                  .set('Authorization', `Bearer ${bearerToken}`)
-                  .end((err, res) => {
-                    res.statusCode.should.eql(200)
-
-                    client
-                      .post(`/library/books`)
-                      .send(document)
-                      .set('content-type', 'application/json')
-                      .set('Authorization', `Bearer ${bearerToken}`)
-                      .end((err, res) => {
-                        res.statusCode.should.eql(200)
-
-                        const {results} = res.body
-
-                        results.length.should.eql(1)
-                        results[0].title.should.eql(document.title)
-                        results[0].subtitle.should.eql(document.subtitle)
-
-                        client
-                          .get(`/library/books`)
-                          .set('content-type', 'application/json')
-                          .set('Authorization', `Bearer ${bearerToken}`)
-                          .end((err, res) => {
-                            res.statusCode.should.eql(200)
-
-                            const {results} = res.body
-
-                            results.length.should.eql(1)
-                            results[0].title.should.eql(document.title)
-                            results[0].subtitle.should.eql(document.subtitle)
-
-                            done(err)
-                          })
-                      })
-                  })
-              })
+            done(err)
           })
       })
-    })
 
-    it('should return 404 if the collection does not exist', done => {
-      const testClient = {
-        clientId: 'apiClient2',
-        secret: 'someSecret',
-        resources: {
-          collections: {
-            update: true
-          }
+      it('should return 403 if the request contains a bearer token that does not have `update` access to the `collections` resource', done => {
+        const testClient = {
+          clientId: 'apiClient',
+          secret: 'someSecret'
         }
-      }
-      const update = {
-        fields: {
-          title: {
-            type: 'string'
-          },
-          subtitle: {
-            type: 'string'
-          }
-        }
-      }
 
-      help.createACLClient(testClient).then(() => {
-        client
-          .post(config.get('auth.tokenUrl'))
-          .set('content-type', 'application/json')
-          .send(testClient)
-          .expect(200)
-          .expect('content-type', 'application/json')
-          .end((err, res) => {
-            if (err) return done(err)
+        help.createACLClient(testClient).then(() => {
+          client
+            .post(config.get('auth.tokenUrl'))
+            .set('content-type', 'application/json')
+            .send(testClient)
+            .expect(200)
+            .expect('content-type', 'application/json')
+            .end((err, res) => {
+              if (err) return done(err)
 
-            const bearerToken = res.body.accessToken
+              const bearerToken = res.body.accessToken
 
-            client
-              .put(`/api/collections/library/uhoh`)
-              .send(update)
-              .set('content-type', 'application/json')
-              .set('Authorization', `Bearer ${bearerToken}`)
-              .end((err, res) => {
-                res.statusCode.should.eql(404)
+              client
+                .put(`/api/collections/library/books/settings`)
+                .send({
+                  cache: false
+                })
+                .set('content-type', 'application/json')
+                .set('Authorization', `Bearer ${bearerToken}`)
+                .end((err, res) => {
+                  res.statusCode.should.eql(403)
 
-                done(err)
-              })
-          })
+                  done()
+                })
+            })
+        })
       })
-    })
 
-    it('should return 400 if the request does not contain a `fields` property', done => {
-      const testClient = {
-        clientId: 'apiClient2',
-        secret: 'someSecret',
-        resources: {
-          collections: {
-            update: true
-          }
+      it('should update settings if the request contains an admin bearer token', done => {
+        const testClient = {
+          clientId: 'adminClient',
+          secret: 'someSecret',
+          accessType: 'admin'
         }
-      }
-      const update = {
-        settings: {}
-      }
+        const update = {
+          displayName: 'My awesome collection'
+        }
 
-      help.createACLClient(testClient).then(() => {
-        client
-          .post(config.get('auth.tokenUrl'))
-          .set('content-type', 'application/json')
-          .send(testClient)
-          .expect(200)
-          .expect('content-type', 'application/json')
-          .end((err, res) => {
-            if (err) return done(err)
+        help.createACLClient(testClient).then(() => {
+          client
+            .post(config.get('auth.tokenUrl'))
+            .set('content-type', 'application/json')
+            .send(testClient)
+            .expect(200)
+            .expect('content-type', 'application/json')
+            .end((err, res) => {
+              if (err) return done(err)
 
-            const bearerToken = res.body.accessToken
+              const bearerToken = res.body.accessToken
 
-            client
-              .put(`/api/collections/library/books`)
-              .send(update)
-              .set('content-type', 'application/json')
-              .set('Authorization', `Bearer ${bearerToken}`)
-              .end((err, res) => {
-                res.statusCode.should.eql(400)
-                res.body.success.should.eql(false)
-                res.body.errors
-                  .includes('`fields` must be an object')
-                  .should.eql(true)
+              client
+                .put(`/api/collections/library/books/settings`)
+                .send(update)
+                .set('content-type', 'application/json')
+                .set('Authorization', `Bearer ${bearerToken}`)
+                .end((err, res) => {
+                  res.statusCode.should.eql(200)
 
-                done(err)
-              })
-          })
+                  const {settings} = res.body
+
+                  settings.displayName.should.eql(update.displayName)
+
+                  done(err)
+                })
+            })
+        })
       })
-    })
 
-    it('should return 400 if the request does not contain a valid `fields` object', done => {
-      const testClient = {
-        clientId: 'apiClient2',
-        secret: 'someSecret',
-        resources: {
-          collections: {
-            update: true
+      it('should update settings if the request contains a bearer token that has `update` access to the `collections` resource', done => {
+        const testClient = {
+          clientId: 'apiClient2',
+          secret: 'someSecret',
+          resources: {
+            collections: {
+              update: true
+            }
           }
         }
-      }
-      const update = {
-        fields: true
-      }
-
-      help.createACLClient(testClient).then(() => {
-        client
-          .post(config.get('auth.tokenUrl'))
-          .set('content-type', 'application/json')
-          .send(testClient)
-          .expect(200)
-          .expect('content-type', 'application/json')
-          .end((err, res) => {
-            if (err) return done(err)
-
-            const bearerToken = res.body.accessToken
-
-            client
-              .put(`/api/collections/library/books`)
-              .send(update)
-              .set('content-type', 'application/json')
-              .set('Authorization', `Bearer ${bearerToken}`)
-              .end((err, res) => {
-                res.statusCode.should.eql(400)
-                res.body.success.should.eql(false)
-                res.body.errors
-                  .includes('`fields` must be an object')
-                  .should.eql(true)
-
-                done(err)
-              })
-          })
-      })
-    })
-
-    it('should return 400 if the request does not any fields', done => {
-      const testClient = {
-        clientId: 'apiClient2',
-        secret: 'someSecret',
-        resources: {
-          collections: {
-            update: true
-          }
+        const update = {
+          displayName: 'My awesome collection'
         }
-      }
-      const update = {
-        fields: {}
-      }
 
-      help.createACLClient(testClient).then(() => {
-        client
-          .post(config.get('auth.tokenUrl'))
-          .set('content-type', 'application/json')
-          .send(testClient)
-          .expect(200)
-          .expect('content-type', 'application/json')
-          .end((err, res) => {
-            if (err) return done(err)
+        help.createACLClient(testClient).then(() => {
+          client
+            .post(config.get('auth.tokenUrl'))
+            .set('content-type', 'application/json')
+            .send(testClient)
+            .expect(200)
+            .expect('content-type', 'application/json')
+            .end((err, res) => {
+              if (err) return done(err)
 
-            const bearerToken = res.body.accessToken
+              const bearerToken = res.body.accessToken
 
-            client
-              .put(`/api/collections/library/books`)
-              .send(update)
-              .set('content-type', 'application/json')
-              .set('Authorization', `Bearer ${bearerToken}`)
-              .end((err, res) => {
-                res.statusCode.should.eql(400)
-                res.body.success.should.eql(false)
-                res.body.errors
-                  .includes('`fields` must contain at least one field')
-                  .should.eql(true)
+              client
+                .put(`/api/collections/library/books/settings`)
+                .send(update)
+                .set('content-type', 'application/json')
+                .set('Authorization', `Bearer ${bearerToken}`)
+                .end((err, res) => {
+                  res.statusCode.should.eql(200)
 
-                done(err)
-              })
-          })
-      })
-    })
+                  const {settings} = res.body
 
-    it('should return 400 if the request contains a field with an invalid type', done => {
-      const testClient = {
-        clientId: 'apiClient2',
-        secret: 'someSecret',
-        resources: {
-          collections: {
-            update: true
-          }
-        }
-      }
-      const update = {
-        fields: {
-          title: {
-            type: 'string'
-          },
-          ufo: {
-            type: 'unknown'
-          }
-        }
-      }
+                  settings.displayName.should.eql(update.displayName)
 
-      help.createACLClient(testClient).then(() => {
-        client
-          .post(config.get('auth.tokenUrl'))
-          .set('content-type', 'application/json')
-          .send(testClient)
-          .expect(200)
-          .expect('content-type', 'application/json')
-          .end((err, res) => {
-            if (err) return done(err)
-
-            const bearerToken = res.body.accessToken
-
-            client
-              .put(`/api/collections/library/books`)
-              .send(update)
-              .set('content-type', 'application/json')
-              .set('Authorization', `Bearer ${bearerToken}`)
-              .end((err, res) => {
-                res.statusCode.should.eql(400)
-                res.body.success.should.eql(false)
-                res.body.errors[0]
-                  .indexOf(
-                    'Type of field `ufo` (unknown) is not valid. Available types:'
-                  )
-                  .should.not.eql(-1)
-
-                done(err)
-              })
-          })
-      })
-    })
-
-    it('should return 400 if the request contains a `settings` property that is not an object', done => {
-      const testClient = {
-        clientId: 'apiClient2',
-        secret: 'someSecret',
-        resources: {
-          collections: {
-            update: true
-          }
-        }
-      }
-      const update = {
-        fields: {
-          title: {
-            type: 'string'
-          }
-        },
-        settings: 13
-      }
-
-      help.createACLClient(testClient).then(() => {
-        client
-          .post(config.get('auth.tokenUrl'))
-          .set('content-type', 'application/json')
-          .send(testClient)
-          .expect(200)
-          .expect('content-type', 'application/json')
-          .end((err, res) => {
-            if (err) return done(err)
-
-            const bearerToken = res.body.accessToken
-
-            client
-              .put(`/api/collections/library/books`)
-              .send(update)
-              .set('content-type', 'application/json')
-              .set('Authorization', `Bearer ${bearerToken}`)
-              .end((err, res) => {
-                res.statusCode.should.eql(400)
-                res.body.success.should.eql(false)
-                res.body.errors
-                  .includes('`settings` must be an object')
-                  .should.eql(true)
-
-                done(err)
-              })
-          })
+                  done(err)
+                })
+            })
+        })
       })
     })
   })

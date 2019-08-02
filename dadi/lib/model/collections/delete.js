@@ -91,7 +91,7 @@ function deleteFn({client, description, query, req, validate = true}) {
         },
         query
       })
-        .then(({metadata, results}) => {
+        .then(({results}) => {
           deletedDocuments = results
 
           if (isRestIDQuery && deletedDocuments.length === 0) {
@@ -105,6 +105,8 @@ function deleteFn({client, description, query, req, validate = true}) {
           // Create a revision for each of the updated documents.
           if (this.history) {
             return this.history.addVersion(deletedDocuments, {
+              author: client && client.clientId,
+              date: Date.now(),
               description
             })
           }

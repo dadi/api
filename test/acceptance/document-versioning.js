@@ -182,11 +182,9 @@ describe('Document versioning', function() {
 
                       results[0]._author.should.eql(MOCK_CLIENT.clientId)
                       results[0]._date.should.eql(MOCK_TIME)
-                      results[0]._document.should.eql(id)
 
                       results[1]._author.should.eql(MOCK_CLIENT.clientId)
                       results[1]._date.should.eql(MOCK_TIME)
-                      results[1]._document.should.eql(id)
 
                       done()
                     })
@@ -258,17 +256,11 @@ describe('Document versioning', function() {
                       results.length.should.eql(2)
                       results[0]._author.should.eql(MOCK_CLIENT.clientId)
                       results[0]._date.should.eql(MOCK_TIME)
-                      results[0]._document.should.eql(id)
-                      results[0]._changeDescription.should.eql(
-                        updates[0].description
-                      )
+                      results[0].description.should.eql(updates[0].description)
 
                       results[1]._author.should.eql(MOCK_CLIENT.clientId)
                       results[1]._date.should.eql(MOCK_TIME)
-                      results[1]._document.should.eql(id)
-                      results[1]._changeDescription.should.eql(
-                        updates[1].description
-                      )
+                      results[1].description.should.eql(updates[1].description)
 
                       done()
                     })

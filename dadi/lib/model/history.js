@@ -42,7 +42,7 @@ History.prototype.addVersion = function(
     delete version._id
 
     if (typeof description === 'string' && description.length > 0) {
-      version._changeDescription = description
+      version.description = description
     }
 
     return version
@@ -74,6 +74,8 @@ History.prototype.getVersion = function(version, options = {}) {
         results: results.map(result => {
           return Object.assign({}, result, {
             _id: result._document,
+            _author: undefined,
+            _date: undefined,
             _document: undefined
           })
         }),
@@ -104,8 +106,7 @@ History.prototype.getVersions = function(documentId) {
       fields: {
         _author: 1,
         _date: 1,
-        _document: 1,
-        _changeDescription: 1
+        description: 1
       }
     },
     query: {

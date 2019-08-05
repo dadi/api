@@ -2,6 +2,7 @@ const request = require('supertest')
 const config = require(__dirname + '/../../../config')
 const help = require(__dirname + '/../help')
 const app = require(__dirname + '/../../../dadi/lib/')
+const should = require('should')
 
 const connectionString =
   'http://' + config.get('server.host') + ':' + config.get('server.port')
@@ -157,6 +158,60 @@ describe('Boolean Field', () => {
             res.body.results.length.should.eql(2)
 
             done()
+          })
+      })
+  })
+
+  it('should accept queries with the $ne operator', done => {
+    const client = request(connectionString)
+    const docs = [
+      {
+        boolean: true
+      },
+      {
+        boolean: false
+      },
+      {
+        boolean: true
+      },
+      {
+        string: 'hello'
+      }
+    ]
+
+    client
+      .post('/library/misc')
+      .set('Authorization', 'Bearer ' + bearerToken)
+      .send(docs)
+      .expect(200)
+      .end((err, res) => {
+        if (err) return done(err)
+
+        client
+          .get(`/library/misc?filter={"boolean":{"$ne":true}}`)
+          .set('Authorization', 'Bearer ' + bearerToken)
+          .expect(200)
+          .end((err, res) => {
+            const {results} = res.body
+
+            results.length.should.eql(2)
+            results[0].boolean.should.eql(false)
+            should.not.exist(results[1].boolean)
+
+            client
+              .get(`/library/misc?filter={"boolean":{"$ne":false}}`)
+              .set('Authorization', 'Bearer ' + bearerToken)
+              .expect(200)
+              .end((err, res) => {
+                const {results} = res.body
+
+                results.length.should.eql(3)
+                results[0].boolean.should.eql(true)
+                results[1].boolean.should.eql(true)
+                should.not.exist(results[2].boolean)
+
+                done()
+              })
           })
       })
   })

@@ -60,6 +60,44 @@ module.exports.isJSON = function(jsonString) {
   return false
 }
 
+/**
+ * Takes a field projection object and, if valid, returns an object containing
+ * a `fields` and a `type` properties. The former being an array of the names
+ * of the projected fields, and the latter being a `0` or a `1`, depending on
+ * whether the projection is an exclusion or inclusion, respectively.
+ * If the input value is not a valid field projection, `null` is returned.
+ */
+module.exports.parseFieldProjection = function(fields) {
+  const isFieldProjection =
+    fields &&
+    typeof fields === 'object' &&
+    Object.keys(fields).every((fieldName, index) => {
+      if (fields[fieldName] !== 0 && fields[fieldName] !== 1) {
+        return false
+      }
+
+      const nextFieldName = Object.keys(fields)[index + 1]
+
+      if (
+        nextFieldName !== undefined &&
+        fields[fieldName] !== fields[nextFieldName]
+      ) {
+        return false
+      }
+
+      return true
+    })
+
+  if (isFieldProjection) {
+    return {
+      fields: Object.keys(fields),
+      type: fields[Object.keys(fields)[0]]
+    }
+  }
+
+  return null
+}
+
 module.exports.sendBackErrorTrace = function(res, next) {
   return err => {
     const body = {

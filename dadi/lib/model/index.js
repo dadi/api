@@ -1,10 +1,11 @@
 'use strict'
 
-const config = require('./../../../config')
+const config = require('../../../config')
 const Connection = require('./connection')
 const dadiMetadata = require('@dadi/metadata')
 const deepMerge = require('deepmerge')
-const fields = require('./../fields')
+const fields = require('../fields')
+const help = require('../help')
 const History = require('./history')
 const logger = require('@dadi/logger')
 const Validator = require('@dadi/api-validator')
@@ -199,47 +200,53 @@ Model.prototype._compileFieldHooks = function() {
 Model.prototype._createValidationError = function(
   message,
   data,
-  {originalDocuments} = {}
+  {access, originalDocuments} = {}
 ) {
   const error = new Error(message || 'Model Validation Failed')
 
   error.statusCode = 400
   error.success = false
 
-  // We're checking for the specific case where the only reason for which the
-  // validation failed was because there are one or more required fields that
-  // were present in the request but the client does not have permissions to
-  // write it (i.e. `create.fields` in ACL). When that happens, we flag the
-  // corresponding error entries as `ERROR_UNAUTHORISED` and change the status
-  // code from 400 (Bad request) to 403 (Forbidden).
-  if (originalDocuments && Array.isArray(data)) {
-    let is403 = true
+  // There's a possibility that some `ERROR_REQUIRED` errors are caused not
+  // because the client hasn't supplied a value for a given required field,
+  // but because they're blocked access to said field due to their access
+  // permissions. We detect that case here and adjust the error code and
+  // message accordingly for clarity.
+  if (
+    access &&
+    access.create &&
+    access.create.fields &&
+    originalDocuments &&
+    Array.isArray(data)
+  ) {
+    const fieldProjection = help.parseFieldProjection(access.create.fields)
 
-    data.some(error => {
-      const {code, field} = error
+    let accessErrors = 0
 
-      if (code === 'ERROR_REQUIRED') {
-        const fieldIsInAllDocuments = originalDocuments.every(document => {
-          return document[field] !== undefined && document[field] !== null
-        })
+    if (fieldProjection) {
+      const {fields: projectionFields, type: projectionType} = fieldProjection
 
-        is403 = is403 && fieldIsInAllDocuments
+      data.forEach(error => {
+        const {code, field} = error
+        const doesNotHaveAccessToField =
+          (projectionType === 0 && projectionFields.includes(field)) ||
+          (projectionType === 1 && !projectionFields.includes(field))
 
-        if (fieldIsInAllDocuments) {
+        if (code === 'ERROR_REQUIRED' && doesNotHaveAccessToField) {
+          accessErrors++
+
           error.code = 'ERROR_UNAUTHORISED'
           error.message =
             'is a required field which the client has no permission to write to'
         }
-      } else {
-        is403 = false
+      })
+    }
 
-        return true
-      }
-
-      return false
-    })
-
-    if (is403) {
+    // If the entirety of the errors are `ERROR_UNAUTHORISED`, then there's
+    // nothing wrong with the request per se, only with the access level of
+    // the requesting client. In those circumstances, we respond with a 403
+    // instead of a 400.
+    if (accessErrors === data.length) {
       error.statusCode = 403
     }
   }

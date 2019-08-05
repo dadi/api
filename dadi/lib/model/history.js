@@ -24,18 +24,25 @@ const History = function({database, name}) {
  * Stores a version of a document as a diff.
  *
  * @param {Array<Object>} documents           Documents to add
+ * @param {String}        options.author      The client ID that generated the version
+ * @param {String}        options.date The timestamp of the change
  * @param {String}        options.description Optional message describing the operation
  */
-History.prototype.addVersion = function(documents, {description}) {
+History.prototype.addVersion = function(
+  documents,
+  {author, date, description}
+) {
   const versions = documents.map(document => {
     const version = Object.assign({}, document, {
+      _author: author,
+      _date: date,
       _document: document._id
     })
 
     delete version._id
 
     if (typeof description === 'string' && description.length > 0) {
-      version._changeDescription = description
+      version.description = description
     }
 
     return version
@@ -67,6 +74,8 @@ History.prototype.getVersion = function(version, options = {}) {
         results: results.map(result => {
           return Object.assign({}, result, {
             _id: result._document,
+            _author: undefined,
+            _date: undefined,
             _document: undefined
           })
         }),
@@ -95,8 +104,9 @@ History.prototype.getVersions = function(documentId) {
     collection: this.name,
     options: {
       fields: {
-        _document: 1,
-        _changeDescription: 1
+        _author: 1,
+        _date: 1,
+        description: 1
       }
     },
     query: {

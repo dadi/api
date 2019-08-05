@@ -47,31 +47,55 @@ const schema2 = Object.assign({}, schema1, {
   }
 })
 
+const MOCK_CLIENT = {
+  clientId: 'apiClient',
+  secret: 'someSecret',
+  accessType: 'admin'
+}
+const MOCK_TIME = 123456789
+const dateNow = Date.now
+
 let bearerToken
 
 describe('Document versioning', function() {
   this.timeout(4000)
 
+  before(() => {
+    Date.now = () => MOCK_TIME
+  })
+
   beforeEach(done => {
     help.dropDatabase('testdb', err => {
       app.start(() => {
         help.createSchemas([schema1, schema2]).then(() => {
-          help.getBearerTokenWithAccessType('admin', (err, token) => {
-            if (err) return done(err)
+          help.createACLClient(MOCK_CLIENT).then(() => {
+            client
+              .post(config.get('auth.tokenUrl'))
+              .set('content-type', 'application/json')
+              .send(MOCK_CLIENT)
+              .end((err, res) => {
+                if (err) return done(err)
 
-            bearerToken = token
+                bearerToken = res.body.accessToken
 
-            done()
+                done()
+              })
           })
         })
       })
     })
   })
 
+  after(() => {
+    Date.now = dateNow
+  })
+
   afterEach(done => {
     help.dropSchemas().then(() => {
-      app.stop(() => {
-        done()
+      help.removeACLData(() => {
+        app.stop(() => {
+          done()
+        })
       })
     })
   })
@@ -155,8 +179,12 @@ describe('Document versioning', function() {
                       const {results} = res.body
 
                       results.length.should.eql(2)
-                      results[0]._document.should.eql(id)
-                      results[1]._document.should.eql(id)
+
+                      results[0]._author.should.eql(MOCK_CLIENT.clientId)
+                      results[0]._date.should.eql(MOCK_TIME)
+
+                      results[1]._author.should.eql(MOCK_CLIENT.clientId)
+                      results[1]._date.should.eql(MOCK_TIME)
 
                       done()
                     })
@@ -226,14 +254,13 @@ describe('Document versioning', function() {
                       const {results} = res.body
 
                       results.length.should.eql(2)
-                      results[0]._document.should.eql(id)
-                      results[0]._changeDescription.should.eql(
-                        updates[0].description
-                      )
-                      results[1]._document.should.eql(id)
-                      results[1]._changeDescription.should.eql(
-                        updates[1].description
-                      )
+                      results[0]._author.should.eql(MOCK_CLIENT.clientId)
+                      results[0]._date.should.eql(MOCK_TIME)
+                      results[0].description.should.eql(updates[0].description)
+
+                      results[1]._author.should.eql(MOCK_CLIENT.clientId)
+                      results[1]._date.should.eql(MOCK_TIME)
+                      results[1].description.should.eql(updates[1].description)
 
                       done()
                     })

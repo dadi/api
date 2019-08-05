@@ -294,6 +294,8 @@ function update({
       if (this.history && updatedDocuments.length > 0) {
         return this.history
           .addVersion(updatedDocuments, {
+            author: internals._lastModifiedBy,
+            date: internals._lastModifiedAt,
             description
           })
           .then(() => response)

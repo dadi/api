@@ -200,7 +200,7 @@ Model.prototype._compileFieldHooks = function() {
 Model.prototype._createValidationError = function(
   message,
   data,
-  {access, originalDocuments} = {}
+  {access} = {}
 ) {
   const error = new Error(message || 'Model Validation Failed')
 
@@ -212,13 +212,7 @@ Model.prototype._createValidationError = function(
   // but because they're blocked access to said field due to their access
   // permissions. We detect that case here and adjust the error code and
   // message accordingly for clarity.
-  if (
-    access &&
-    access.create &&
-    access.create.fields &&
-    originalDocuments &&
-    Array.isArray(data)
-  ) {
+  if (access && access.create && access.create.fields && Array.isArray(data)) {
     const fieldProjection = help.parseFieldProjection(access.create.fields)
 
     let accessErrors = 0

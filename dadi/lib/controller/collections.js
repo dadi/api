@@ -39,31 +39,8 @@ Collections.prototype._getFieldsProjection = function(req) {
   try {
     const {query} = url.parse(req.url, true)
     const fields = query.fields && JSON.parse(query.fields)
-    const hasFieldProjection =
-      typeof fields === 'object' &&
-      Object.keys(fields).every((fieldName, index) => {
-        if (fields[fieldName] !== 0 && fields[fieldName] !== 1) {
-          return false
-        }
 
-        const nextFieldName = Object.keys(fields)[index + 1]
-
-        if (
-          nextFieldName !== undefined &&
-          fields[fieldName] !== fields[nextFieldName]
-        ) {
-          return false
-        }
-
-        return true
-      })
-
-    if (hasFieldProjection) {
-      return {
-        fields: Object.keys(fields),
-        type: fields[Object.keys(fields)[0]]
-      }
-    }
+    return help.parseFieldProjection(fields)
   } catch (_) {
     // no-op
   }

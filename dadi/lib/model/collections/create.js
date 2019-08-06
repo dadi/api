@@ -88,9 +88,7 @@ function create({
           const error = this._createValidationError(
             'Validation Failed',
             errors,
-            {
-              originalDocuments
-            }
+            {access}
           )
 
           return Promise.reject(error)

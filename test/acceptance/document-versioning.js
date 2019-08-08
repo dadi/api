@@ -169,25 +169,27 @@ describe('Document versioning', function() {
                 .end((err, res) => {
                   if (err) return done(err)
 
-                  client
-                    .get(`/testdb/test-history-enabled/${id}/versions`)
-                    .set('Authorization', `Bearer ${bearerToken}`)
-                    .expect(200)
-                    .end((err, res) => {
-                      if (err) return done(err)
+                  setTimeout(() => {
+                    client
+                      .get(`/testdb/test-history-enabled/${id}/versions`)
+                      .set('Authorization', `Bearer ${bearerToken}`)
+                      .expect(200)
+                      .end((err, res) => {
+                        if (err) return done(err)
 
-                      const {results} = res.body
+                        const {results} = res.body
 
-                      results.length.should.eql(2)
+                        results.length.should.eql(2)
 
-                      results[0]._author.should.eql(MOCK_CLIENT.clientId)
-                      results[0]._date.should.eql(MOCK_TIME)
+                        results[0]._author.should.eql(MOCK_CLIENT.clientId)
+                        results[0]._date.should.eql(MOCK_TIME)
 
-                      results[1]._author.should.eql(MOCK_CLIENT.clientId)
-                      results[1]._date.should.eql(MOCK_TIME)
+                        results[1]._author.should.eql(MOCK_CLIENT.clientId)
+                        results[1]._date.should.eql(MOCK_TIME)
 
-                      done()
-                    })
+                        done()
+                      })
+                  }, 50)
                 })
             })
         })
@@ -244,26 +246,32 @@ describe('Document versioning', function() {
                 .end((err, res) => {
                   if (err) return done(err)
 
-                  client
-                    .get(`/testdb/test-history-enabled/${id}/versions`)
-                    .set('Authorization', `Bearer ${bearerToken}`)
-                    .expect(200)
-                    .end((err, res) => {
-                      if (err) return done(err)
+                  setTimeout(() => {
+                    client
+                      .get(`/testdb/test-history-enabled/${id}/versions`)
+                      .set('Authorization', `Bearer ${bearerToken}`)
+                      .expect(200)
+                      .end((err, res) => {
+                        if (err) return done(err)
 
-                      const {results} = res.body
+                        const {results} = res.body
 
-                      results.length.should.eql(2)
-                      results[0]._author.should.eql(MOCK_CLIENT.clientId)
-                      results[0]._date.should.eql(MOCK_TIME)
-                      results[0].description.should.eql(updates[0].description)
+                        results.length.should.eql(2)
+                        results[0]._author.should.eql(MOCK_CLIENT.clientId)
+                        results[0]._date.should.eql(MOCK_TIME)
+                        results[0].description.should.eql(
+                          updates[0].description
+                        )
 
-                      results[1]._author.should.eql(MOCK_CLIENT.clientId)
-                      results[1]._date.should.eql(MOCK_TIME)
-                      results[1].description.should.eql(updates[1].description)
+                        results[1]._author.should.eql(MOCK_CLIENT.clientId)
+                        results[1]._date.should.eql(MOCK_TIME)
+                        results[1].description.should.eql(
+                          updates[1].description
+                        )
 
-                      done()
-                    })
+                        done()
+                      })
+                  }, 200)
                 })
             })
         })
@@ -337,38 +345,40 @@ describe('Document versioning', function() {
               token: bearerToken
             })
             .then(() => {
-              client
-                .get(`/testdb/test-history-enabled/${id}/versions`)
-                .set('Authorization', `Bearer ${bearerToken}`)
-                .expect(200)
-                .end((err, res) => {
-                  if (err) return done(err)
+              setTimeout(() => {
+                client
+                  .get(`/testdb/test-history-enabled/${id}/versions`)
+                  .set('Authorization', `Bearer ${bearerToken}`)
+                  .expect(200)
+                  .end((err, res) => {
+                    if (err) return done(err)
 
-                  const {results} = res.body
-                  const getRequests = results.map(
-                    result =>
-                      `/testdb/test-history-enabled/${id}?version=${result._id}`
-                  )
+                    const {results} = res.body
+                    const getRequests = results.map(
+                      result =>
+                        `/testdb/test-history-enabled/${id}?version=${result._id}`
+                    )
 
-                  help
-                    .bulkRequest({
-                      method: 'get',
-                      requests: getRequests,
-                      token: bearerToken
-                    })
-                    .then(responses => {
-                      responses.length.should.eql(updates.length)
-                      responses[0].results[0].surname.should.eql('Doe')
-                      should.not.exist(responses[1].results[0].surname)
-                      responses[2].results[0].surname.should.eql('One')
-                      should.not.exist(responses[3].results[0].surname)
-                      responses[4].results[0].surname.should.eql('Two')
-                      responses[5].results[0].surname.should.eql('Three')
-                      should.not.exist(responses[6].results[0].surname)
+                    help
+                      .bulkRequest({
+                        method: 'get',
+                        requests: getRequests,
+                        token: bearerToken
+                      })
+                      .then(responses => {
+                        responses.length.should.eql(updates.length)
+                        responses[0].results[0].surname.should.eql('Doe')
+                        should.not.exist(responses[1].results[0].surname)
+                        responses[2].results[0].surname.should.eql('One')
+                        should.not.exist(responses[3].results[0].surname)
+                        responses[4].results[0].surname.should.eql('Two')
+                        responses[5].results[0].surname.should.eql('Three')
+                        should.not.exist(responses[6].results[0].surname)
 
-                      done()
-                    })
-                })
+                        done()
+                      })
+                  })
+              }, 500)
             })
         })
     })
@@ -464,47 +474,49 @@ describe('Document versioning', function() {
                                 modifiedReference.surname
                               )
 
-                              client
-                                .get(
-                                  `/testdb/test-history-enabled/${id}/versions`
-                                )
-                                .set('Authorization', `Bearer ${bearerToken}`)
-                                .expect(200)
-                                .end((err, res) => {
-                                  if (err) return done(err)
+                              setTimeout(() => {
+                                client
+                                  .get(
+                                    `/testdb/test-history-enabled/${id}/versions`
+                                  )
+                                  .set('Authorization', `Bearer ${bearerToken}`)
+                                  .expect(200)
+                                  .end((err, res) => {
+                                    if (err) return done(err)
 
-                                  const {results} = res.body
-                                  const versionId = results[0]._id
+                                    const {results} = res.body
+                                    const versionId = results[0]._id
 
-                                  results.length.should.eql(1)
+                                    results.length.should.eql(1)
 
-                                  client
-                                    .get(
-                                      `/testdb/test-history-enabled/${id}?compose=true&version=${versionId}`
-                                    )
-                                    .set(
-                                      'Authorization',
-                                      `Bearer ${bearerToken}`
-                                    )
-                                    .end((err, res) => {
-                                      if (err) return done(err)
-
-                                      const {metadata, results} = res.body
-
-                                      metadata.version.should.eql(versionId)
-                                      results[0].surname.should.eql(
-                                        original.surname
+                                    client
+                                      .get(
+                                        `/testdb/test-history-enabled/${id}?compose=true&version=${versionId}`
                                       )
-                                      results[0].reference.name.should.eql(
-                                        originalReference.name
+                                      .set(
+                                        'Authorization',
+                                        `Bearer ${bearerToken}`
                                       )
-                                      results[0].reference.surname.should.eql(
-                                        originalReference.surname
-                                      )
+                                      .end((err, res) => {
+                                        if (err) return done(err)
 
-                                      done()
-                                    })
-                                })
+                                        const {metadata, results} = res.body
+
+                                        metadata.version.should.eql(versionId)
+                                        results[0].surname.should.eql(
+                                          original.surname
+                                        )
+                                        results[0].reference.name.should.eql(
+                                          originalReference.name
+                                        )
+                                        results[0].reference.surname.should.eql(
+                                          originalReference.surname
+                                        )
+
+                                        done()
+                                      })
+                                  })
+                              }, 50)
                             })
                         })
                     })
@@ -588,35 +600,37 @@ describe('Document versioning', function() {
                       results[0].name.should.eql(modified.name)
                       results[0].object.should.eql(modified.object)
 
-                      client
-                        .get(`/testdb/test-history-enabled/${id}/versions`)
-                        .set('Authorization', `Bearer ${bearerToken}`)
-                        .expect(200)
-                        .end((err, res) => {
-                          if (err) return done(err)
+                      setTimeout(() => {
+                        client
+                          .get(`/testdb/test-history-enabled/${id}/versions`)
+                          .set('Authorization', `Bearer ${bearerToken}`)
+                          .expect(200)
+                          .end((err, res) => {
+                            if (err) return done(err)
 
-                          const {results} = res.body
-                          const versionId = results[0]._id
+                            const {results} = res.body
+                            const versionId = results[0]._id
 
-                          results.length.should.eql(1)
+                            results.length.should.eql(1)
 
-                          client
-                            .get(
-                              `/testdb/test-history-enabled/${id}?version=${versionId}`
-                            )
-                            .set('Authorization', `Bearer ${bearerToken}`)
-                            .end((err, res) => {
-                              if (err) return done(err)
+                            client
+                              .get(
+                                `/testdb/test-history-enabled/${id}?version=${versionId}`
+                              )
+                              .set('Authorization', `Bearer ${bearerToken}`)
+                              .end((err, res) => {
+                                if (err) return done(err)
 
-                              const {metadata, results} = res.body
+                                const {metadata, results} = res.body
 
-                              metadata.version.should.eql(versionId)
-                              results[0].name.should.eql(original.name)
-                              results[0].object.should.eql(original.object)
+                                metadata.version.should.eql(versionId)
+                                results[0].name.should.eql(original.name)
+                                results[0].object.should.eql(original.object)
 
-                              done()
-                            })
-                        })
+                                done()
+                              })
+                          })
+                      }, 59)
                     })
                 })
             })

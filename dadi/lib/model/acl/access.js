@@ -126,7 +126,7 @@ Access.prototype.get = function(
     return Promise.resolve({})
   }
 
-  if (accessType === 'admin') {
+  if (clientModel.isAdmin({clientId, accessType})) {
     const matrix = {}
 
     ACCESS_TYPES.forEach(accessType => {

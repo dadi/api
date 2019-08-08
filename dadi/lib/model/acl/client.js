@@ -14,7 +14,6 @@ const Client = function() {
       type: 'string'
     },
     accessType: {
-      allowedInInput: false,
       default: 'user',
       type: 'string'
     },
@@ -61,15 +60,10 @@ Client.prototype.broadcastWrite = function(input) {
  * Creates a client.
  *
  * @param  {Object}  client
- * @param  {Boolean} options.allowAccessType
  * @return {Promise<Object>}
  */
-Client.prototype.create = function(client, {allowAccessType = false} = {}) {
-  const allowedFields = allowAccessType ? ['accessType'] : []
-
-  return this.validate(client, {
-    allowedFields
-  })
+Client.prototype.create = function(client) {
+  return this.validate(client)
     .then(() => {
       return this.model.find({
         options: {
@@ -230,7 +224,17 @@ Client.prototype.hashSecret = function(secret, target) {
  * @return {Boolean}
  */
 Client.prototype.isAdmin = function(client) {
-  return client && client.accessType === 'admin'
+  return (client && client.accessType === 'admin') || this.isSuperUser(client)
+}
+
+/**
+ * Determines whether a client has super user access.
+ *
+ * @param  {Object}  client
+ * @return {Boolean}
+ */
+Client.prototype.isSuperUser = function(client) {
+  return client && client.accessType === 'superUser'
 }
 
 /**
@@ -565,9 +569,15 @@ Client.prototype.setWriteCallback = function(callback) {
  * @return {Promise<Object>}
  */
 Client.prototype.update = function(clientId, update) {
-  const {currentSecret, secret} = update
+  const {accessType, currentSecret, secret} = update
   const findQuery = {
     clientId
+  }
+
+  // It's not possible to use this endpoint to set a client's access type
+  // to `admin`.
+  if (accessType === 'admin') {
+    return Promise.reject(new Error('UNAUTHORISED'))
   }
 
   delete update.currentSecret
@@ -575,7 +585,7 @@ Client.prototype.update = function(clientId, update) {
 
   return this.validate(update, {
     blockedFields: ['clientId'],
-    partial: true
+    isPartialValue: true
   })
     .then(() => {
       return this.model.find({
@@ -657,20 +667,24 @@ Client.prototype.update = function(clientId, update) {
  * resolved with `undefined` otherwise.
  *
  * @param  {String}   client
- * @param  {Boolean}  options.allowedFields A whitelist of fields
- * @param  {Boolean}  options.blockedFields A blacklist of fields
- * @param  {Boolean}  options.partial Whether this is a partial value
+ * @param  {Boolean}  options.allowedAccessTypes
+ * @param  {Boolean}  options.blockedFields
+ * @param  {Boolean}  options.isPartialValue
  * @return {Promise}
  */
 Client.prototype.validate = function(
   client,
-  {allowedFields = [], blockedFields = [], partial = false} = {}
+  {
+    allowedAccessTypes = ['admin', 'user'],
+    blockedFields = [],
+    isPartialValue = false
+  } = {}
 ) {
   const missingFields = Object.keys(this.schema).filter(field => {
     return this.schema[field].required && client[field] === undefined
   })
 
-  if (!partial && missingFields.length > 0) {
+  if (!isPartialValue && missingFields.length > 0) {
     const error = new Error('MISSING_FIELDS')
 
     error.data = missingFields
@@ -681,8 +695,7 @@ Client.prototype.validate = function(
   const invalidFields = Object.keys(this.schema).filter(field => {
     if (
       client[field] !== undefined &&
-      this.schema[field].allowedInInput === false &&
-      !allowedFields.includes(field)
+      this.schema[field].allowedInInput === false
     ) {
       return true
     }
@@ -704,6 +717,15 @@ Client.prototype.validate = function(
     const error = new Error('INVALID_FIELDS')
 
     error.data = invalidFields
+
+    return Promise.reject(error)
+  }
+
+  if (client.accessType && !allowedAccessTypes.includes(client.accessType)) {
+    const error = new Error('INVALID_VALUE')
+
+    error.field = 'accessType'
+    error.allowedValues = allowedAccessTypes.join(', ')
 
     return Promise.reject(error)
   }

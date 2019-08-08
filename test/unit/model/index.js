@@ -872,15 +872,17 @@ describe('Model', function() {
             should.exist(result['results'] && result['results'][0])
             result['results'][0].field1.should.equal('bar')
 
-            mod
-              .getVersions({
-                documentId: result.results[0]._id
-              })
-              .then(({results}) => {
-                results.length.should.equal(1)
+            setTimeout(() => {
+              mod
+                .getVersions({
+                  documentId: result.results[0]._id
+                })
+                .then(({results}) => {
+                  results.length.should.equal(1)
 
-                done()
-              })
+                  done()
+                })
+            }, 50)
           })
         })
       })
@@ -950,7 +952,7 @@ describe('Model', function() {
         })
     })
 
-    it('should create new history revision when updating an existing document and `storeRevisions` is true', () => {
+    it('should create new history revision when updating an existing document and `storeRevisions` is true', done => {
       const mod = model(
         'testModelName',
         help.getModelSchemaWithMultipleFields(),
@@ -962,7 +964,7 @@ describe('Model', function() {
       )
       const updateDoc = {field1: 'bar'}
 
-      return mod
+      mod
         .update({
           query: {field1: 'foo'},
           update: updateDoc
@@ -979,12 +981,17 @@ describe('Model', function() {
           should.exist(results && results[0])
           results[0].field1.should.equal('bar')
 
-          return mod.getVersions({
-            documentId: results[0]._id
-          })
-        })
-        .then(({results}) => {
-          results.length.should.equal(1)
+          setTimeout(() => {
+            mod
+              .getVersions({
+                documentId: results[0]._id
+              })
+              .then(({results}) => {
+                results.length.should.equal(1)
+
+                done()
+              })
+          }, 50)
         })
     })
 

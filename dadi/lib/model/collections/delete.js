@@ -103,11 +103,15 @@ function deleteFn({client, description, query, req, validate = true}) {
           }
 
           // Create a revision for each of the updated documents.
-          if (this.history) {
-            return this.history.addVersion(deletedDocuments, {
-              author: client && client.clientId,
-              date: Date.now(),
-              description
+          if (this.history && deletedDocuments.length > 0) {
+            workQueue.queueBackgroundJob(() => {
+              this.formatForInput(deletedDocuments).then(versions => {
+                return this.history.addVersion(versions, {
+                  author: client && client.clientId,
+                  date: Date.now(),
+                  description
+                })
+              })
             })
           }
         })

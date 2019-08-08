@@ -1,8 +1,9 @@
 const async = require('async')
 const debug = require('debug')('api:model')
-const Hook = require('./../hook')
+const Hook = require('../hook')
 const logger = require('@dadi/logger')
-const search = require('./../search')
+const search = require('../search')
+const workQueue = require('../../workQueue')
 
 /**
  * Block with metadata pertaining to an API collection.
@@ -145,7 +146,12 @@ function update({
       // Create a copy of the documents that matched the find
       // query, as these will be updated and we need to send back
       // to the client a full result set of modified documents.
-      updatedDocuments = results
+      // We do a shallow copy of each document because, depending on
+      // the data connector being used, we might have in-memory references
+      // to the documents that get mutated by the update operation. This
+      // ensures that `updatedDocuments` reflects the state of the
+      // documents before the update operation.
+      updatedDocuments = results.map(result => Object.assign({}, result))
 
       // Add any internal fields to the update.
       Object.assign(update, internals)
@@ -292,13 +298,15 @@ function update({
     .then(response => {
       // Create a revision for each of the updated documents.
       if (this.history && updatedDocuments.length > 0) {
-        return this.history
-          .addVersion(updatedDocuments, {
-            author: internals._lastModifiedBy,
-            date: internals._lastModifiedAt,
-            description
+        workQueue.queueBackgroundJob(() => {
+          this.formatForInput(updatedDocuments).then(versions => {
+            return this.history.addVersion(versions, {
+              author: internals._lastModifiedBy,
+              date: internals._lastModifiedAt,
+              description
+            })
           })
-          .then(() => response)
+        })
       }
 
       return response

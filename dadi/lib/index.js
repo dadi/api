@@ -66,6 +66,18 @@ const Server = function() {
 Server.prototype.run = function(done) {
   require('console-stamp')(console, 'yyyy-mm-dd HH:MM:ss.l')
 
+  if (!config.get('auth.tokenKey')) {
+    const error = new Error(
+      'A private key for generating bearer tokens must be set via the `auth.tokenSecret` configuration property or the `TOKEN_SECRET` environment variable.'
+    )
+
+    log.error({module: 'server'}, error)
+
+    console.error(error.message)
+
+    process.exit(0)
+  }
+
   if (config.get('cluster')) {
     if (cluster.isMaster) {
       const numWorkers = require('os').cpus().length
@@ -384,20 +396,13 @@ Server.prototype.loadApi = function(options) {
   const hookPath = (this.hookPath =
     options.hookPath || path.join(__dirname, '/../../workspace/hooks'))
 
-  this.updateHooks(hookPath)
-  this.addMonitor(hookPath, () => {
-    this.updateHooks(hookPath)
-  })
+  this.loadHooks(hookPath)
 
   this.scanDirectoryForCollections(collectionPath, schemas => {
     this.addSeedsToSchemaStore(schemas)
   })
 
-  this.updateVersions(endpointPath)
-
-  this.addMonitor(endpointPath, () => {
-    this.updateVersions(endpointPath)
-  })
+  this.loadEndpoints(endpointPath)
 
   this.loadMediaCollections()
 
@@ -473,6 +478,14 @@ Server.prototype.scanDirectoryForCollections = function(directory, callback) {
   const COLLECTION_PREFIX = 'collection.'
   const schemas = []
 
+  let directoryFiles
+
+  try {
+    directoryFiles = fs.readdirSync(directory)
+  } catch (error) {
+    return schemas
+  }
+
   const ensureWatcher = watchedDirectory => {
     this.addMonitor(watchedDirectory, () => {
       this.scanDirectoryForCollections(directory, callback)
@@ -506,7 +519,7 @@ Server.prototype.scanDirectoryForCollections = function(directory, callback) {
 
   ensureWatcher(directory)
 
-  fs.readdirSync(directory).forEach(item => {
+  directoryFiles.forEach(item => {
     const itemPath = path.join(directory, item)
     const subItems = fs.readdirSync(itemPath)
 
@@ -537,21 +550,28 @@ Server.prototype.scanDirectoryForCollections = function(directory, callback) {
   callback(schemas)
 }
 
-Server.prototype.updateVersions = function(versionsPath) {
-  // Load initial api descriptions
-  const versions = fs.readdirSync(versionsPath)
+Server.prototype.loadEndpoints = function(versionsPath) {
+  try {
+    const versions = fs.readdirSync(versionsPath)
 
-  versions.forEach(version => {
-    if (version.indexOf('.') === 0) return
+    versions.forEach(version => {
+      if (version.indexOf('.') === 0) return
 
-    const dirname = path.join(versionsPath, version)
+      const dirname = path.join(versionsPath, version)
 
-    this.updateEndpoints(dirname)
-
-    this.addMonitor(dirname, () => {
       this.updateEndpoints(dirname)
+
+      this.addMonitor(dirname, () => {
+        this.updateEndpoints(dirname)
+      })
     })
-  })
+
+    this.addMonitor(versionsPath, () => {
+      this.loadEndpoints(versionsPath)
+    })
+  } catch (error) {
+    // Endpoints directory not found. Nothing else to do.
+  }
 }
 
 Server.prototype.loadMediaCollections = function() {
@@ -706,21 +726,25 @@ Server.prototype.addEndpointResource = function(options) {
   }
 }
 
-Server.prototype.updateHooks = function(hookPath) {
-  let hooks = []
-
+Server.prototype.loadHooks = function(hookPath) {
   try {
-    hooks = fs.readdirSync(hookPath)
+    const hooks = fs.readdirSync(hookPath)
+
+    hooks.forEach(hook => {
+      this.addHook({
+        hook,
+        filepath: path.join(hookPath, hook)
+      })
+    })
+
+    this.addMonitor(hookPath, () => {
+      this.loadHooks(hookPath)
+    })
+
+    return hooks
   } catch (_) {
     // Hooks directory not found. All good.
   }
-
-  hooks.forEach(hook => {
-    this.addHook({
-      hook,
-      filepath: path.join(hookPath, hook)
-    })
-  })
 }
 
 Server.prototype.addHook = function(options) {
@@ -812,13 +836,18 @@ Server.prototype.removeComponent = function(route, component) {
 Server.prototype.addMonitor = function(filepath, callback) {
   filepath = path.normalize(filepath)
 
-  // only add one watcher per path
+  // Only add one watcher per path.
   if (this.monitors[filepath]) return
 
-  const m = monitor(filepath)
+  try {
+    const m = monitor(filepath)
 
-  m.on('change', callback)
-  this.monitors[filepath] = m
+    m.on('change', callback)
+    this.monitors[filepath] = m
+  } catch (error) {
+    // Couldn't add the monitor, probably because the directory doesn't exist.
+    // Nothing else to do.
+  }
 }
 
 Server.prototype.removeMonitor = function(filepath) {

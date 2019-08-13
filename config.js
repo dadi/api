@@ -110,7 +110,8 @@ const conf = convict({
     tokenKey: {
       doc: 'The private key used to sign JWT tokens',
       format: String,
-      default: 'YOU-MUST-CHANGE-ME!'
+      default: '',
+      env: 'TOKEN_KEY'
     },
     accessCollection: {
       doc:

@@ -17,7 +17,8 @@
     "clientCollection": "client-store",
     "tokenCollection": "token-store",
     "datastore": "./../../../test/test-connector",
-    "database": "testdb"
+    "database": "testdb",
+    "tokenKey": "automated-testing-is-pretty-suite"
   },
   "caching": {
     "ttl": 300,

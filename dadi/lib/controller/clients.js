@@ -227,6 +227,16 @@ Clients.prototype.handleError = function(res, next) {
       case 'INVALID_SECRET':
         return help.sendBackErrorWithCode('0008', 400, res, next)
 
+      case 'INVALID_VALUE':
+        return help.sendBackJSON(400, res, next)(null, {
+          success: false,
+          errors: [
+            `Invalid value for field ${err.field}.${
+              err.allowedValues ? ` Expected: ${err.allowedValues}` : ''
+            }`
+          ]
+        })
+
       case 'MISSING_FIELDS':
         return help.sendBackJSON(400, res, next)(null, {
           success: false,
@@ -269,6 +279,13 @@ Clients.prototype.post = function(req, res, next) {
       return this.validateDataObject(req.body.data, req.dadiApiClient).then(
         () => {
           if (access.create !== true) {
+            return Promise.reject(acl.createError(req.dadiApiClient))
+          }
+
+          if (
+            req.body.accessType === 'admin' &&
+            !model.isSuperUser(req.dadiApiClient)
+          ) {
             return Promise.reject(acl.createError(req.dadiApiClient))
           }
 

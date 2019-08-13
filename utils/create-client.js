@@ -52,9 +52,7 @@ prompt.multi(
     delete options.confirm
 
     api.ACL.client
-      .create(options, {
-        allowAccessType: true
-      })
+      .create(options)
       .then(response => {
         console.log()
         console.log('(*) Client created successfully:')

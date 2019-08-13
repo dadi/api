@@ -200,7 +200,7 @@ module.exports = () => {
       })
     })
 
-    it('should return 400 if the request body includes an `accessType` property', done => {
+    it('should return 403 if the request body includes an `accessType` of `admin`', done => {
       const testClient = {
         clientId: 'apiClient',
         secret: 'someSecret',
@@ -240,13 +240,10 @@ module.exports = () => {
               .set('Authorization', `Bearer ${bearerToken}`)
               .expect('content-type', 'application/json')
               .end((err, res) => {
-                res.statusCode.should.eql(400)
+                res.statusCode.should.eql(403)
+                res.body.code.should.eql('API-0006')
 
-                res.body.success.should.eql(false)
-                res.body.errors.should.be.Array
-                res.body.errors[0].should.eql('Invalid field: accessType')
-
-                done()
+                done(err)
               })
           })
       })

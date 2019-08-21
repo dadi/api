@@ -58,7 +58,6 @@ function create({
   })
 
   const {hooks} = this.settings
-  const originalDocuments = documents
 
   // If an ACL check is performed, this variable will contain the resulting
   // access matrix.

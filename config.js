@@ -124,6 +124,17 @@ const conf = convict({
       format: String,
       default: 'clientStore'
     },
+    keyAccessCollection: {
+      doc:
+        'The name of the internal collection used to store aggregate permissions data for keys',
+      format: String,
+      default: 'keyAccessStore'
+    },
+    keyCollection: {
+      doc: 'The name of the internal collection used to store access keys',
+      format: String,
+      default: 'keyStore'
+    },
     roleCollection: {
       doc: 'The name of the internal collection used to store roles',
       format: String,

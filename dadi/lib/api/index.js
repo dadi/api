@@ -127,20 +127,23 @@ Api.prototype.use = function(path, handler) {
  *  Connects a set of handlers, one per HTTP verb, to
  *  a given path.
  *
- *  @param {String} path
- *  @param {Object} handlers
- *  @return undefined
+ *  @param {String/Array<String>} paths
+ *  @param {Object}               handlers
  *  @api public
  */
-Api.prototype.routeMethods = function(path, handlers) {
-  return this.use(path, function(req, res, next) {
-    const method = req.method && req.method.toLowerCase()
+Api.prototype.routeMethods = function(paths, handlers) {
+  const normalisedPaths = Array.isArray(paths) ? paths : [paths]
 
-    if (typeof handlers[method] === 'function') {
-      return handlers[method](req, res, next)
-    }
+  normalisedPaths.forEach(path => {
+    this.use(path, function(req, res, next) {
+      const method = req.method && req.method.toLowerCase()
 
-    next()
+      if (typeof handlers[method] === 'function') {
+        return handlers[method](req, res, next)
+      }
+
+      next()
+    })
   })
 }
 

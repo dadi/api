@@ -1,4 +1,10 @@
 const ACLMatrix = require('./matrix')
+const config = require('../../../../config')
+const Connection = require('../connection')
+const modelStore = require('../')
+const Validator = require('@dadi/api-validator')
+
+const validator = new Validator()
 
 const Role = function() {
   this.schema = {
@@ -11,7 +17,6 @@ const Role = function() {
       type: 'string'
     },
     resources: {
-      allowedInInput: false,
       default: {},
       type: 'object'
     }
@@ -27,12 +32,38 @@ const Role = function() {
  * @param  {Object} input
  * @return {Promise}
  */
-Role.prototype.broadcastWrite = function(input) {
+Role.prototype.broadcastWrite = async function(input) {
   if (typeof this.saveCallback === 'function') {
-    return this.saveCallback().then(() => input)
+    await this.saveCallback()
   }
 
-  return Promise.resolve(input)
+  return input
+}
+
+/**
+ * Initialises the role module with a connection to the database and a
+ * reference to the ACL module.
+ *
+ * @param  {Object} acl
+ */
+Role.prototype.connect = function(acl) {
+  const connection = Connection({
+    collection: config.get('auth.roleCollection'),
+    database: config.get('auth.database'),
+    override: true
+  })
+  const model = modelStore({
+    connection,
+    name: config.get('auth.roleCollection'),
+    property: config.get('auth.database'),
+    settings: {
+      compose: false,
+      storeRevisions: false
+    }
+  })
+
+  this.acl = acl
+  this.model = model
 }
 
 /**
@@ -41,29 +72,38 @@ Role.prototype.broadcastWrite = function(input) {
  * @param  {Object} role
  * @return {Promise<Object>}
  */
-Role.prototype.create = function(role) {
-  return this.validate(role)
-    .then(() => {
-      return this.model.find({
-        query: {
-          name: role.name
-        }
-      })
-    })
-    .then(({results}) => {
-      if (results.length > 0) {
-        return Promise.reject(new Error('ROLE_EXISTS'))
-      }
+Role.prototype.create = async function(role) {
+  await this.validate(role)
 
-      return this.model.create({
-        documents: [role],
-        rawOutput: true,
-        validate: false
-      })
-    })
-    .then(result => {
-      return this.broadcastWrite(result)
-    })
+  const {results: existingRoles} = await this.model.find({
+    query: {
+      name: role.name
+    }
+  })
+
+  if (existingRoles.length > 0) {
+    const error = new Error('ROLE_EXISTS')
+
+    error.data = role.name
+
+    return Promise.reject(error)
+  }
+
+  if (role.resources) {
+    const resources = new ACLMatrix(role.resources)
+
+    role.resources = resources.getAll({getArrayNotation: true})
+  }
+
+  const result = await this.model.create({
+    documents: [role],
+    rawOutput: true,
+    validate: false
+  })
+
+  await this.broadcastWrite()
+
+  return result
 }
 
 /**
@@ -72,30 +112,29 @@ Role.prototype.create = function(role) {
  * @param  {String} name
  * @return {Promise<Object>}
  */
-Role.prototype.delete = function(name) {
+Role.prototype.delete = async function(name) {
   // Before deleting a role, we need to check for any
   // roles that extend it and set their `extends` property
   // to `null`.
-  return this.model
-    .update({
-      query: {
-        extends: name
-      },
-      update: {
-        extends: null
-      },
-      validate: false
-    })
-    .then(res => {
-      return this.model.delete({
-        query: {
-          name
-        }
-      })
-    })
-    .then(result => {
-      return this.broadcastWrite(result)
-    })
+  await this.model.update({
+    query: {
+      extends: name
+    },
+    update: {
+      extends: null
+    },
+    validate: false
+  })
+
+  const result = await this.model.delete({
+    query: {
+      name
+    }
+  })
+
+  await this.broadcastWrite()
+
+  return result
 }
 
 /**
@@ -131,7 +170,7 @@ Role.prototype.formatForOutput = function(role) {
  * @param  {String|Array<String>} names
  * @return {Promise<Object>}
  */
-Role.prototype.get = function(names) {
+Role.prototype.get = async function(names) {
   const query = {}
 
   if (Array.isArray(names)) {
@@ -142,196 +181,217 @@ Role.prototype.get = function(names) {
     query.name = names
   }
 
-  return this.model
-    .find({
-      query
-    })
-    .then(response => {
-      const formattedResults = response.results.map(result => {
-        const resources = new ACLMatrix(result.resources)
+  const response = await this.model.find({
+    query
+  })
 
-        return Object.assign({}, result, {
-          resources: resources.getAll()
-        })
-      })
+  const formattedResults = response.results.map(result => {
+    const resources = new ACLMatrix(result.resources)
 
-      return {
-        results: formattedResults
-      }
+    return Object.assign({}, result, {
+      resources: resources.getAll()
     })
+  })
+
+  return {
+    results: formattedResults
+  }
 }
 
 /**
  * Adds a resource to a role.
  *
- * @param  {String} role     The role name
- * @param  {String} resource The name of the resource
- * @param  {Object} access   Access matrix
+ * @param  {String}  roleName
+ * @param  {String}  resourceName
+ * @param  {Object}  access
  * @return {Promise<Object>}
  */
-Role.prototype.resourceAdd = function(role, resource, access) {
-  return this.model
-    .find({
-      options: {
-        fields: {
-          resources: 1
-        }
+Role.prototype.resourceAdd = async function(roleName, resourceName, access) {
+  try {
+    await validator.validateDocument({
+      document: {
+        access,
+        name: resourceName
       },
-      query: {
-        name: role
+      schema: {
+        access: {
+          required: true,
+          type: 'object'
+        },
+        name: {
+          required: true,
+          type: 'string'
+        }
       }
     })
-    .then(({results}) => {
-      if (results.length === 0) {
-        return Promise.reject(new Error('ROLE_NOT_FOUND'))
+
+    validator.validateAccessMatrix(access, 'access')
+  } catch (errors) {
+    const error = new Error('VALIDATION_ERROR')
+
+    error.data = errors
+
+    return Promise.reject(error)
+  }
+
+  const {results: roles} = await this.model.find({
+    options: {
+      fields: {
+        resources: 1
       }
+    },
+    query: {
+      name: roleName
+    }
+  })
 
-      const resources = new ACLMatrix(results[0].resources)
+  if (roles.length === 0) {
+    return Promise.reject(new Error('ROLE_NOT_FOUND'))
+  }
 
-      if (resources.get(resource)) {
-        return Promise.reject(new Error('ROLE_HAS_RESOURCE'))
-      }
+  const resources = new ACLMatrix(roles[0].resources)
 
-      resources.validate(access)
-      resources.set(resource, access)
+  if (resources.get(resourceName)) {
+    const error = new Error('ROLE_HAS_RESOURCE')
 
-      return this.model.update({
-        query: {
-          name: role
-        },
-        rawOutput: true,
-        update: {
-          resources: resources.getAll({
-            getArrayNotation: true,
-            stringifyObjects: true
-          })
-        },
-        validate: false
+    error.data = resourceName
+
+    return Promise.reject(error)
+  }
+
+  resources.set(resourceName, access)
+
+  const {results} = await this.model.update({
+    query: {
+      name: roleName
+    },
+    rawOutput: true,
+    update: {
+      resources: resources.getAll({
+        getArrayNotation: true,
+        stringifyObjects: true
       })
-    })
-    .then(result => {
-      return this.broadcastWrite(result)
-    })
-    .then(({results}) => {
-      return {
-        results: results.map(client => this.formatForOutput(client))
-      }
-    })
+    },
+    validate: false
+  })
+
+  await this.broadcastWrite()
+
+  return {
+    results: results.map(role => this.formatForOutput(role))
+  }
 }
 
 /**
  * Removes a resource from a role.
  *
- * @param  {String} role     The name of the role
- * @param  {String} resource The name of the resource
+ * @param  {String}  roleName
+ * @param  {String}  resourceName
  * @return {Promise<Object>}
  */
-Role.prototype.resourceRemove = function(role, resource) {
-  return this.model
-    .find({
-      options: {
-        fields: {
-          resources: 1
-        }
-      },
-      query: {
-        name: role
+Role.prototype.resourceRemove = async function(roleName, resourceName) {
+  const {results: roles} = await this.model.find({
+    options: {
+      fields: {
+        resources: 1
       }
-    })
-    .then(({results}) => {
-      if (results.length === 0) {
-        return Promise.reject(new Error('ROLE_NOT_FOUND'))
-      }
+    },
+    query: {
+      name: roleName
+    }
+  })
 
-      const resources = new ACLMatrix(results[0].resources)
+  if (roles.length === 0) {
+    return Promise.reject(new Error('ROLE_NOT_FOUND'))
+  }
 
-      if (!resources.get(resource)) {
-        return Promise.reject(new Error('ROLE_DOES_NOT_HAVE_RESOURCE'))
-      }
+  const resources = new ACLMatrix(roles[0].resources)
 
-      resources.remove(resource)
+  if (!resources.get(resourceName)) {
+    return Promise.reject(new Error('ROLE_DOES_NOT_HAVE_RESOURCE'))
+  }
 
-      return this.model.update({
-        query: {
-          name: role
-        },
-        rawOutput: true,
-        update: {
-          resources: resources.getAll()
-        },
-        validate: false
-      })
-    })
-    .then(result => {
-      return this.broadcastWrite(result)
-    })
-    .then(({results}) => {
-      return {
-        results: results.map(client => this.formatForOutput(client))
-      }
-    })
+  resources.remove(resourceName)
+
+  const {results} = await this.model.update({
+    query: {
+      name: roleName
+    },
+    rawOutput: true,
+    update: {
+      resources: resources.getAll()
+    },
+    validate: false
+  })
+
+  await this.broadcastWrite()
+
+  return {
+    results: results.map(client => this.formatForOutput(client))
+  }
 }
 
 /**
  * Updates the access matrix of a resource on a role.
  *
- * @param  {String} roles.   The name of the role
- * @param  {String} resource The name of the resource
- * @param  {Object} access   Update to access matrix
+ * @param  {String}  roleName
+ * @param  {String}  resourceName
+ * @param  {Object}  access
  * @return {Promise<Object>}
  */
-Role.prototype.resourceUpdate = function(role, resource, access) {
-  return this.model
-    .find({
-      options: {
-        fields: {
-          resources: 1
-        }
-      },
-      query: {
-        name: role
+Role.prototype.resourceUpdate = async function(roleName, resourceName, access) {
+  try {
+    validator.validateAccessMatrix(access)
+  } catch (errors) {
+    const error = new Error('VALIDATION_ERROR')
+
+    error.data = errors
+
+    return Promise.reject(error)
+  }
+
+  const {results: roles} = await this.model.find({
+    options: {
+      fields: {
+        resources: 1
       }
-    })
-    .then(({results}) => {
-      if (results.length === 0) {
-        return Promise.reject(new Error('ROLE_NOT_FOUND'))
-      }
+    },
+    query: {
+      name: roleName
+    }
+  })
 
-      const resources = new ACLMatrix(results[0].resources)
+  if (roles.length === 0) {
+    return Promise.reject(new Error('ROLE_NOT_FOUND'))
+  }
 
-      if (!resources.get(resource)) {
-        return Promise.reject(new Error('ROLE_DOES_NOT_HAVE_RESOURCE'))
-      }
+  const resources = new ACLMatrix(roles[0].resources)
 
-      resources.validate(access)
-      resources.set(resource, access)
+  if (!resources.get(resourceName)) {
+    return Promise.reject(new Error('ROLE_DOES_NOT_HAVE_RESOURCE'))
+  }
 
-      return this.model.update({
-        query: {
-          name: role
-        },
-        rawOutput: true,
-        update: {
-          resources: resources.getAll({
-            getArrayNotation: true,
-            stringifyObjects: true
-          })
-        },
-        validate: false
+  resources.set(resourceName, access)
+
+  const {results} = await this.model.update({
+    query: {
+      name: roleName
+    },
+    rawOutput: true,
+    update: {
+      resources: resources.getAll({
+        getArrayNotation: true,
+        stringifyObjects: true
       })
-    })
-    .then(result => {
-      return this.broadcastWrite(result)
-    })
-    .then(({results}) => {
-      return {
-        results: results.map(client => this.formatForOutput(client))
-      }
-    })
-}
+    },
+    validate: false
+  })
 
-Role.prototype.setModel = function(model) {
-  this.model = model
+  await this.broadcastWrite()
+
+  return {
+    results: results.map(client => this.formatForOutput(client))
+  }
 }
 
 /**
@@ -347,44 +407,42 @@ Role.prototype.setWriteCallback = function(callback) {
 /**
  * Updates a role.
  *
- * @param  {Object} roleName
- * @param  {Object} update
+ * @param  {Object}  roleName
+ * @param  {Object}  update
  * @return {Promise<Object>}
  */
-Role.prototype.update = function(roleName, update) {
-  return this.model
-    .find({
-      options: {
-        fields: {
-          _id: 1
-        }
-      },
-      query: {
-        name: roleName
+Role.prototype.update = async function(roleName, update) {
+  const {results: roles} = await this.model.find({
+    options: {
+      fields: {
+        _id: 1
       }
-    })
-    .then(({results}) => {
-      if (results.length === 0) {
-        return Promise.reject(new Error('ROLE_NOT_FOUND'))
-      }
+    },
+    query: {
+      name: roleName
+    }
+  })
 
-      return this.validate(update, {
-        partial: true
-      })
-        .then(() => {
-          return this.model.update({
-            query: {
-              _id: results[0]._id
-            },
-            rawOutput: true,
-            update,
-            validate: false
-          })
-        })
-        .then(result => {
-          return this.broadcastWrite(result)
-        })
-    })
+  if (roles.length === 0) {
+    return Promise.reject(new Error('ROLE_NOT_FOUND'))
+  }
+
+  await this.validate(update, {
+    isUpdate: true
+  })
+
+  const result = await this.model.update({
+    query: {
+      _id: roles[0]._id
+    },
+    rawOutput: true,
+    update,
+    validate: false
+  })
+
+  await this.broadcastWrite()
+
+  return result
 }
 
 /**
@@ -393,54 +451,25 @@ Role.prototype.update = function(roleName, update) {
  * resolved with `undefined` otherwise.
  *
  * @param  {String}   role
- * @param  {Boolean}  options.partial Whether this is a partial value
+ * @param  {Boolean}  options.isUpdate
  * @return {Promise}
  */
-Role.prototype.validate = function(role, {partial = false} = {}) {
-  const missingFields = Object.keys(this.schema).filter(field => {
-    return this.schema[field].required && role[field] === undefined
-  })
+Role.prototype.validate = async function(role, {isUpdate = false} = {}) {
+  try {
+    // If we're validating an update, we don't allow a `resources` property
+    // to be set directly, so we exclude it from the schema.
+    const schema = Object.assign({}, this.schema, {
+      resources: isUpdate ? null : this.schema.resources
+    })
 
-  if (!partial && missingFields.length > 0) {
-    const error = new Error('MISSING_FIELDS')
+    await validator.validateDocument({
+      document: role,
+      isUpdate,
+      schema
+    })
 
-    error.data = missingFields
-
-    return Promise.reject(error)
-  }
-
-  const invalidFields = Object.keys(this.schema).filter(field => {
-    if (
-      role[field] !== undefined &&
-      this.schema[field].allowedInInput === false
-    ) {
-      return true
-    }
-
-    return (
-      role[field] !== undefined &&
-      role[field] !== null &&
-      typeof role[field] !== this.schema[field].type
-    )
-  })
-
-  Object.keys(role).forEach(field => {
-    if (!this.schema[field]) {
-      invalidFields.push(field)
-    }
-  })
-
-  if (invalidFields.length > 0) {
-    const error = new Error('INVALID_FIELDS')
-
-    error.data = invalidFields
-
-    return Promise.reject(error)
-  }
-
-  if (role.extends) {
-    return this.model
-      .find({
+    if (role.extends) {
+      const {results: roles} = await this.model.find({
         options: {
           fields: {
             _id: 1
@@ -450,14 +479,33 @@ Role.prototype.validate = function(role, {partial = false} = {}) {
           name: role.extends
         }
       })
-      .then(({results}) => {
-        if (results.length === 0) {
-          return Promise.reject(new Error('INVALID_PARENT_ROLE'))
-        }
-      })
-  }
 
-  return Promise.resolve()
+      if (roles.length === 0) {
+        throw [
+          {
+            code: 'ERROR_INVALID_PARENT_ROLE',
+            field: 'extends',
+            message: 'is not a valid role to extend'
+          }
+        ]
+      }
+    }
+
+    if (role.resources) {
+      Object.keys(role.resources).forEach(resourceKey => {
+        validator.validateAccessMatrix(
+          role.resources[resourceKey],
+          `resources.${resourceKey}`
+        )
+      })
+    }
+  } catch (error) {
+    const errorObject = new Error('VALIDATION_ERROR')
+
+    errorObject.data = error
+
+    throw errorObject
+  }
 }
 
 module.exports = new Role()

@@ -682,7 +682,7 @@ Access.prototype.writeAccessForClientsWithIds = async function(clients) {
  * @param  {Object}         deleteQuery
  * @return {Promise}
  */
-Access.prototype.writeClientAccess = async function(clients, deleteQuery) {
+Access.prototype.writeClientAccess = async function(clients, deleteQuery = {}) {
   // Keeping a local cache of roles for the course of
   // this operation. This way, if X roles inherit from role
   // R1, we just fetch R1 from the database once, instead of
@@ -696,10 +696,16 @@ Access.prototype.writeClientAccess = async function(clients, deleteQuery) {
   // a client or a resource.
   const entries = []
 
+  // If `clients` wasn't supplied, we operate on all the existing clients.
+  const clientResults =
+    clients || (await clientModel.find({}).then(({results}) => results))
+
+  // We'll use this object to store the final access matrix for each client and
+  // each resource key.
   const combinedResourcesByClient = {}
 
   // For each client, we find out all the resources they have access to.
-  const queue = clients.reduce(async (queue, client) => {
+  const queue = clientResults.reduce(async (queue, client) => {
     if (clientModel.isAdmin(client)) {
       return queue
     }
@@ -768,64 +774,69 @@ Access.prototype.writeKeyAccess = async function({
   const entries = []
   const roleCache = {}
 
-  for (let i = 0; i < updatedKeys.length; i++) {
-    const key = updatedKeys[i]
-    const keyResources = new ACLMatrix(key.resources || []).getAll()
-    const {client: clientId} = key
-    const combinedResourcesForKey = {}
+  let queue = Promise.resolve()
 
-    if (clientId) {
-      let clientResources = combinedResourcesCache[clientId]
+  updatedKeys.forEach(key => {
+    queue = queue.then(async () => {
+      const keyResources = new ACLMatrix(key.resources || []).getAll()
+      const {client: clientId} = key
+      const combinedResourcesForKey = {}
 
-      // If the resources for this client are not cached, we retrieve them and
-      // then cache them for subsequent iterations.
-      if (!clientResources) {
-        const client =
-          clientsCache[clientId] || (await clientModel.get(clientId))
+      if (clientId) {
+        let clientResources = combinedResourcesCache[clientId]
 
-        // Ensure the client is cached.
-        clientsCache[clientId] = clientsCache[clientId] || client
+        // If the resources for this client are not cached, we retrieve them and
+        // then cache them for subsequent iterations.
+        if (!clientResources) {
+          const client =
+            clientsCache[clientId] || (await clientModel.get(clientId))
 
-        clientResources = await this.getCombinedResourcesForClient(
-          client,
-          roleCache
-        )
+          // Ensure the client is cached.
+          clientsCache[clientId] = clientsCache[clientId] || client
 
-        combinedResourcesCache[clientId] = clientResources
+          clientResources = await this.getCombinedResourcesForClient(
+            client,
+            roleCache
+          )
+
+          combinedResourcesCache[clientId] = clientResources
+        }
+
+        Object.keys(clientResources).forEach(resourceKey => {
+          // If the key has permissions defined for this resource, we merge them
+          // with the client's. If not, we'll use just the permissions from the
+          // client.
+          combinedResourcesForKey[resourceKey] = keyResources[resourceKey]
+            ? this.intersectAccessMatrices(
+                clientResources[resourceKey],
+                keyResources[resourceKey]
+              )
+            : clientResources[resourceKey]
+        })
       }
 
-      Object.keys(clientResources).forEach(resourceKey => {
-        // If the key has permissions defined for this resource, we merge them
-        // with the client's. If not, we'll use just the permissions from the
-        // client.
-        combinedResourcesForKey[resourceKey] = keyResources[resourceKey]
-          ? this.intersectAccessMatrices(
-              clientResources[resourceKey],
-              keyResources[resourceKey]
-            )
-          : clientResources[resourceKey]
+      // We must now add any resources that have been defined for the key which
+      // haven't been added to the aggregate resources map yet.
+      Object.keys(keyResources).forEach(resourceKey => {
+        if (!combinedResourcesForKey[resourceKey]) {
+          combinedResourcesForKey[resourceKey] = keyResources[resourceKey]
+        }
       })
-    }
 
-    // We must now add any resources that have been defined for the key which
-    // haven't been added to the aggregate resources map yet.
-    Object.keys(keyResources).forEach(resourceKey => {
-      if (!combinedResourcesForKey[resourceKey]) {
-        combinedResourcesForKey[resourceKey] = keyResources[resourceKey]
-      }
-    })
-
-    // Finally, we create an access entry for each resource.
-    Object.keys(combinedResourcesForKey).forEach(resourceKey => {
-      entries.push({
-        key: key.token,
-        keyId: key._id,
-        client: clientId || null,
-        resource: resourceKey,
-        access: combinedResourcesForKey[resourceKey]
+      // Finally, we create an access entry for each resource.
+      Object.keys(combinedResourcesForKey).forEach(resourceKey => {
+        entries.push({
+          key: key.token,
+          keyId: key._id,
+          client: clientId || null,
+          resource: resourceKey,
+          access: combinedResourcesForKey[resourceKey]
+        })
       })
     })
-  }
+  })
+
+  await queue
 
   // If we are updating any keys, we must delete their previous records first.
   if (updatedKeys.length > 0) {

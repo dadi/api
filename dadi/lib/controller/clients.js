@@ -218,7 +218,7 @@ Clients.prototype.handleError = function(res, next) {
         return help.sendBackJSON(400, res, next)(null, {
           success: false,
           errors: err.data.map(role => ({
-            error: 'ERROR_INVALID_ROLE',
+            code: 'ERROR_INVALID_ROLE',
             field: role,
             message: 'is not a valid role'
           }))

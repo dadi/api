@@ -94,7 +94,7 @@ ACL.prototype.validateResourcesObject = async function(
   const resourceErrors = Object.keys(resources)
     .filter(key => !this.hasResource(key))
     .map(key => ({
-      code: 'INVALID_RESOURCE',
+      code: 'ERROR_INVALID_RESOURCE',
       field: `resources.${key}`,
       message: 'is not a valid resource'
     }))

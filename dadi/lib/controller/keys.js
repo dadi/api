@@ -124,17 +124,17 @@ Keys.prototype.getKeyClient = async function(req) {
   const {clientId} = req.params
 
   if (clientId && clientId !== req.dadiApiClient.clientId) {
-    if (acl.client.isAdmin(req.dadiApiClient)) {
-      const {results} = await acl.client.get(clientId)
-
-      if (results.length === 0) {
-        throw new Error('CLIENT_NOT_FOUND')
-      }
-
-      return results[0]
-    } else {
+    if (!acl.client.isAdmin(req.dadiApiClient)) {
       throw new Error('CLIENT_NOT_FOUND')
     }
+
+    const {results} = await acl.client.get(clientId)
+
+    if (results.length === 0) {
+      throw new Error('CLIENT_NOT_FOUND')
+    }
+
+    return results[0]
   }
 }
 
@@ -243,7 +243,7 @@ Keys.prototype.postResource = async function(req, res, next) {
         success: false,
         errors: [
           {
-            code: 'INVALID_RESOURCE',
+            code: 'ERROR_INVALID_RESOURCE',
             field: resourceName,
             message: 'is not a valid resource'
           }
@@ -264,7 +264,8 @@ Keys.prototype.postResource = async function(req, res, next) {
 }
 
 Keys.prototype.putResource = async function(req, res, next) {
-  const query = {_id: req.params.keyId}
+  const {keyId, resourceName} = req.params
+  const query = {_id: keyId}
 
   try {
     const linkedClient = await this.getKeyClient(req)
@@ -294,11 +295,7 @@ Keys.prototype.putResource = async function(req, res, next) {
       }
     }
 
-    const {results} = await model.resourceUpdate(
-      query,
-      req.params.resourceName,
-      req.body
-    )
+    const {results} = await model.resourceUpdate(query, resourceName, req.body)
 
     return help.sendBackJSON(200, res, next)(null, {results})
   } catch (error) {

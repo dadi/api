@@ -28,7 +28,18 @@ const Client = function() {
     },
     roles: {
       default: [],
-      type: 'object'
+      type: 'object',
+      validationCallback: value => {
+        if (Array.isArray(value)) {
+          const hasStringsOnly = value.every(value => typeof value === 'string')
+
+          if (hasStringsOnly) {
+            return Promise.resolve()
+          }
+        }
+
+        return Promise.reject()
+      }
     },
     secret: {
       hidden: true,
@@ -741,9 +752,10 @@ Client.prototype.validate = async function(
   {allowedAccessTypes = ['admin', 'user'], isUpdate = false} = {}
 ) {
   try {
-    // If we're validating an update, we don't allow a `resources` or a `roles`
-    // properties to be set directly, so we exclude them from the schema.
+    // If we're validating an update, we don't allow certain properties to be
+    // set directly, so we exclude them from the schema.
     const schema = Object.assign({}, this.schema, {
+      clientId: isUpdate ? null : this.schema.clientId,
       resources: isUpdate ? null : this.schema.resources,
       roles: isUpdate ? null : this.schema.roles
     })
@@ -771,6 +783,21 @@ Client.prototype.validate = async function(
           `resources.${resourceKey}`
         )
       })
+    }
+
+    if (client.roles) {
+      const {results: existingRoles} = await roleModel.get(client.roles)
+      const invalidRoles = client.roles.filter(role => {
+        return !existingRoles.find(({name}) => name === role)
+      })
+
+      if (invalidRoles.length > 0) {
+        const error = new Error('INVALID_ROLE')
+
+        error.data = invalidRoles
+
+        return Promise.reject(error)
+      }
     }
 
     return Promise.resolve()

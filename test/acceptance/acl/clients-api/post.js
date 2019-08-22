@@ -831,6 +831,96 @@ module.exports = () => {
       })
     })
 
+    it('should create a client with a roles array', done => {
+      const testClient = {
+        clientId: 'apiClient',
+        secret: 'someSecret',
+        accessType: 'admin'
+      }
+      const newClient = {
+        clientId: 'newClient',
+        secret: 'aNewSecret',
+        roles: ['role1']
+      }
+
+      help
+        .createACLRole({
+          name: 'role1',
+          resources: {
+            clients: {
+              create: true
+            }
+          }
+        })
+        .then(() => {
+          help.createACLClient(testClient).then(() => {
+            client
+              .post(config.get('auth.tokenUrl'))
+              .set('content-type', 'application/json')
+              .send({
+                clientId: testClient.clientId,
+                secret: testClient.secret
+              })
+              .expect(200)
+              .expect('content-type', 'application/json')
+              .end((err, res) => {
+                if (err) return done(err)
+
+                res.body.accessToken.should.be.String
+
+                const bearerToken = res.body.accessToken
+
+                client
+                  .post('/api/clients')
+                  .send(newClient)
+                  .set('content-type', 'application/json')
+                  .set('Authorization', `Bearer ${bearerToken}`)
+                  .expect('content-type', 'application/json')
+                  .end((err, res) => {
+                    res.statusCode.should.eql(201)
+
+                    res.body.results.should.be.Array
+                    res.body.results.length.should.eql(1)
+                    res.body.results[0].clientId.should.eql(newClient.clientId)
+                    res.body.results[0].accessType.should.eql('user')
+                    res.body.results[0].resources.should.eql({})
+                    res.body.results[0].roles.should.eql(newClient.roles)
+
+                    client
+                      .post(config.get('auth.tokenUrl'))
+                      .set('content-type', 'application/json')
+                      .send({
+                        clientId: newClient.clientId,
+                        secret: newClient.secret
+                      })
+                      .expect(200)
+                      .expect('content-type', 'application/json')
+                      .end((err, res) => {
+                        if (err) return done(err)
+
+                        const {accessToken: userToken} = res.body
+
+                        client
+                          .post('/api/clients')
+                          .send({
+                            clientId: 'aThirdClient',
+                            secret: 'what-a-time-to-be-alive'
+                          })
+                          .set('content-type', 'application/json')
+                          .set('Authorization', `Bearer ${userToken}`)
+                          .expect('content-type', 'application/json')
+                          .end((err, res) => {
+                            res.statusCode.should.eql(201)
+
+                            done()
+                          })
+                      })
+                  })
+              })
+          })
+        })
+    })
+
     it('should create a client with a data object containing protected properties if the requesting client is an admin', done => {
       const testClient = {
         clientId: 'apiClient',

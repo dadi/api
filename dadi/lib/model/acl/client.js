@@ -513,8 +513,7 @@ Client.prototype.roleAdd = async function(clientId, roles) {
     return Promise.reject(new Error('CLIENT_NOT_FOUND'))
   }
 
-  const existingRoles = clients[0].roles || []
-
+  const clientRoles = clients[0].roles || []
   const {results: existingRoles} = await roleModel.get(roles)
   const invalidRoles = roles.filter(role => {
     return !existingRoles.find(({name}) => name === role)
@@ -528,7 +527,7 @@ Client.prototype.roleAdd = async function(clientId, roles) {
     return Promise.reject(error)
   }
 
-  const newRoles = [...new Set(existingRoles.concat(roles).sort())]
+  const newRoles = [...new Set(clientRoles.concat(roles).sort())]
   const {results} = await this.model.update({
     query: {
       clientId

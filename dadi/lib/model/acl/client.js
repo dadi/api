@@ -54,19 +54,16 @@ const Client = function() {
 }
 
 /**
- * Fires and waits for the `this.saveCallback` callback, if defined,
- * with `callbckData` as a parameter. It then returns `passthroughData`.
+ * Fires and waits for the `this.saveCallback` callback, if defined. It sends
+ * an array with `clientId` as a parameter.
  *
- * @param  {Object} passthroughData
  * @param  {String} clientId
  * @return {Promise}
  */
-Client.prototype.broadcastWrite = async function(passthroughData, clientId) {
+Client.prototype.broadcastWrite = async function(clientId) {
   if (typeof this.saveCallback === 'function') {
     await this.saveCallback([clientId])
   }
-
-  return passthroughData
 }
 
 /**
@@ -137,7 +134,7 @@ Client.prototype.create = async function(client) {
     validate: false
   })
 
-  await this.broadcastWrite()
+  await this.broadcastWrite(client.clientId)
 
   return createdClient
 }
@@ -148,16 +145,16 @@ Client.prototype.create = async function(client) {
  * @param  {String} clientId
  * @return {Promise<Object>}
  */
-Client.prototype.delete = function(clientId) {
-  return this.model
-    .delete({
-      query: {
-        clientId
-      }
-    })
-    .then(result => {
-      return this.broadcastWrite(result, clientId)
-    })
+Client.prototype.delete = async function(clientId) {
+  const result = await this.model.delete({
+    query: {
+      clientId
+    }
+  })
+
+  await this.broadcastWrite(clientId)
+
+  return
 }
 
 /**
@@ -369,7 +366,7 @@ Client.prototype.resourceAdd = async function(clientId, resourceName, access) {
     validate: false
   })
 
-  await this.broadcastWrite(update, clientId)
+  await this.broadcastWrite(clientId)
 
   return {
     results: update.results.map(client => this.formatForOutput(client))
@@ -418,7 +415,7 @@ Client.prototype.resourceRemove = async function(clientId, resource) {
     validate: false
   })
 
-  await this.broadcastWrite(update, clientId)
+  await this.broadcastWrite(clientId)
 
   return {
     results: update.results.map(client => this.formatForOutput(client))
@@ -485,7 +482,7 @@ Client.prototype.resourceUpdate = async function(
     validate: false
   })
 
-  await this.broadcastWrite(update, clientId)
+  await this.broadcastWrite(clientId)
 
   return {
     results: update.results.map(client => this.formatForOutput(client))
@@ -499,64 +496,55 @@ Client.prototype.resourceUpdate = async function(
  * @param  {Array<String>}  roles
  * @return {Promise<Object>}
  */
-Client.prototype.roleAdd = function(clientId, roles) {
-  return this.model
-    .find({
-      options: {
-        fields: {
-          _id: 1,
-          roles: 1
-        }
-      },
-      query: {
-        clientId
+Client.prototype.roleAdd = async function(clientId, roles) {
+  const {results: clients} = await this.model.find({
+    options: {
+      fields: {
+        _id: 1,
+        roles: 1
       }
-    })
-    .then(({results}) => {
-      if (results.length === 0) {
-        return Promise.reject(new Error('CLIENT_NOT_FOUND'))
-      }
+    },
+    query: {
+      clientId
+    }
+  })
 
-      const existingRoles = results[0].roles || []
+  if (clients.length === 0) {
+    return Promise.reject(new Error('CLIENT_NOT_FOUND'))
+  }
 
-      return roleModel.get(roles).then(({results}) => {
-        const invalidRoles = roles.filter(role => {
-          return !results.find(dbRole => dbRole.name === role)
-        })
+  const existingRoles = clients[0].roles || []
 
-        if (invalidRoles.length > 0) {
-          const error = new Error('INVALID_ROLE')
+  const {results: existingRoles} = await roleModel.get(roles)
+  const invalidRoles = roles.filter(role => {
+    return !existingRoles.find(({name}) => name === role)
+  })
 
-          error.data = invalidRoles
+  if (invalidRoles.length > 0) {
+    const error = new Error('INVALID_ROLE')
 
-          return Promise.reject(error)
-        }
+    error.data = invalidRoles
 
-        return existingRoles
-      })
-    })
-    .then(existingRoles => {
-      const newRoles = [...new Set(existingRoles.concat(roles).sort())]
+    return Promise.reject(error)
+  }
 
-      return this.model.update({
-        query: {
-          clientId
-        },
-        rawOutput: true,
-        update: {
-          roles: newRoles
-        },
-        validate: false
-      })
-    })
-    .then(result => {
-      return this.broadcastWrite(result, clientId)
-    })
-    .then(({results}) => {
-      return {
-        results: results.map(client => this.formatForOutput(client))
-      }
-    })
+  const newRoles = [...new Set(existingRoles.concat(roles).sort())]
+  const {results} = await this.model.update({
+    query: {
+      clientId
+    },
+    rawOutput: true,
+    update: {
+      roles: newRoles
+    },
+    validate: false
+  })
+
+  await this.broadcastWrite(clientId)
+
+  return {
+    results: results.map(client => this.formatForOutput(client))
+  }
 }
 
 /**
@@ -566,63 +554,58 @@ Client.prototype.roleAdd = function(clientId, roles) {
  * @param  {Array<String>}  roles
  * @return {Promise<Object>}
  */
-Client.prototype.roleRemove = function(clientId, roles) {
+Client.prototype.roleRemove = async function(clientId, roles) {
   const rolesRemoved = []
-
-  return this.model
-    .find({
-      options: {
-        fields: {
-          _id: 1,
-          roles: 1
-        }
-      },
-      query: {
-        clientId
+  const {results: clients} = await this.model.find({
+    options: {
+      fields: {
+        _id: 1,
+        roles: 1
       }
-    })
-    .then(({results}) => {
-      if (results.length === 0) {
-        return Promise.reject(new Error('CLIENT_NOT_FOUND'))
-      }
+    },
+    query: {
+      clientId
+    }
+  })
 
-      const existingRoles = results[0].roles || []
-      const newRoles = [
-        ...new Set(
-          existingRoles
-            .filter(role => {
-              if (roles.includes(role)) {
-                rolesRemoved.push(role)
+  if (clients.length === 0) {
+    return Promise.reject(new Error('CLIENT_NOT_FOUND'))
+  }
 
-                return false
-              }
+  const existingRoles = clients[0].roles || []
+  const newRoles = [
+    ...new Set(
+      existingRoles
+        .filter(role => {
+          if (roles.includes(role)) {
+            rolesRemoved.push(role)
 
-              return true
-            })
-            .sort()
-        )
-      ]
+            return false
+          }
 
-      return this.model.update({
-        query: {
-          clientId
-        },
-        rawOutput: true,
-        update: {
-          roles: newRoles
-        },
-        validate: false
-      })
-    })
-    .then(result => {
-      return this.broadcastWrite(result, clientId)
-    })
-    .then(({results}) => {
-      return {
-        removed: rolesRemoved,
-        results: results.map(client => this.formatForOutput(client))
-      }
-    })
+          return true
+        })
+        .sort()
+    )
+  ]
+
+  const {results} = await this.model.update({
+    query: {
+      clientId
+    },
+    rawOutput: true,
+    update: {
+      roles: newRoles
+    },
+    validate: false
+  })
+
+  await this.broadcastWrite(clientId)
+
+  return {
+    removed: rolesRemoved,
+    results: results.map(client => this.formatForOutput(client))
+  }
 }
 
 /**

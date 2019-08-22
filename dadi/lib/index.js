@@ -191,6 +191,15 @@ Server.prototype.run = function(done) {
 Server.prototype.start = function(done) {
   this.readyState = 2
 
+  // (!) TODO: The ACL models automatically connect by themselves, but for some
+  // reason this line is needed in the context of the test suite, where API is
+  // started and stopped multiple times consecutively, otherwise some parts of
+  // the application will use different database connections. We should figure
+  // out exactly why this happens and remove this line.
+  if (config.get('env') === 'test') {
+    acl.connect()
+  }
+
   if (config.get('env') !== 'test') {
     dadiBoot.start(require('../../package.json'))
   }

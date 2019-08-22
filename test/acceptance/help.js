@@ -254,7 +254,7 @@ module.exports.createACLClient = function(client, callback) {
       schema: {}
     })
     .then(result => {
-      return acl.access.write().then(w => {
+      return acl.access.writeClientAccess().then(w => {
         if (typeof callback === 'function') {
           callback(null, result)
         }
@@ -289,7 +289,7 @@ module.exports.createACLRole = function(role, callback) {
       schema: {}
     })
     .then(result => {
-      return acl.access.write().then(() => {
+      return acl.access.writeClientAccess().then(() => {
         if (typeof callback === 'function') {
           callback(null, result)
         }
@@ -518,7 +518,7 @@ module.exports.getBearerTokenWithPermissions = function(
 
             should.exist(bearerToken)
 
-            return acl.access.write().then(() => {
+            return acl.access.writeClientAccess().then(() => {
               done(null, bearerToken)
 
               resolve(bearerToken)

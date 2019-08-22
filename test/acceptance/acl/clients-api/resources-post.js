@@ -195,14 +195,7 @@ module.exports = () => {
       const testClient = {
         clientId: 'apiClient',
         secret: 'someSecret',
-        resources: {
-          clients: {
-            update: true
-          },
-          'collection:library_book': {
-            read: true
-          }
-        }
+        accessType: 'admin'
       }
       const resource = {
         access: {
@@ -235,9 +228,9 @@ module.exports = () => {
 
                 res.body.success.should.eql(false)
                 res.body.errors.should.be.Array
-                res.body.errors[0].should.eql(
-                  'Invalid input. Expected: {"name": String, "access": Object}'
-                )
+                res.body.errors[0].code.should.eql('ERROR_REQUIRED')
+                res.body.errors[0].field.should.eql('name')
+                res.body.errors[0].message.should.be.String
 
                 done()
               })
@@ -287,9 +280,9 @@ module.exports = () => {
 
                 res.body.success.should.eql(false)
                 res.body.errors.should.be.Array
-                res.body.errors[0].should.eql(
-                  'Invalid input. Expected: {"name": String, "access": Object}'
-                )
+                res.body.errors[0].code.should.eql('ERROR_REQUIRED')
+                res.body.errors[0].field.should.eql('access')
+                res.body.errors[0].message.should.be.String
 
                 done()
               })
@@ -338,10 +331,12 @@ module.exports = () => {
 
                 res.body.success.should.eql(false)
                 res.body.errors.should.be.Array
-                res.body.errors.includes('Invalid access type: invalidType')
-                res.body.errors.includes(
-                  'Invalid key in access matrix: invalidField'
-                )
+                res.body.errors[0].code.should.eql('ERROR_INVALID_ACCESS_TYPE')
+                res.body.errors[0].field.should.eql('access.invalidType')
+                res.body.errors[0].message.should.be.String
+                res.body.errors[1].code.should.eql('ERROR_INVALID_ACCESS_VALUE')
+                res.body.errors[1].field.should.eql('access.read.invalidField')
+                res.body.errors[1].message.should.be.String
 
                 done()
               })
@@ -394,9 +389,9 @@ module.exports = () => {
 
                 res.body.success.should.eql(false)
                 res.body.errors.should.be.Array
-                res.body.errors[0].should.eql(
-                  `Invalid resource: ${resource.name}`
-                )
+                res.body.errors[0].code.should.eql('ERROR_INVALID_RESOURCE')
+                res.body.errors[0].field.should.eql('name')
+                res.body.errors[0].message.should.be.String
 
                 done()
               })

@@ -228,11 +228,12 @@ module.exports = () => {
                 res.statusCode.should.eql(400)
 
                 res.body.success.should.eql(false)
-                res.body.errors.should.be.Array
-                res.body.errors.includes('Invalid access type: invalidType')
-                res.body.errors.includes(
-                  'Invalid key in access matrix: invalidField'
-                )
+                res.body.errors[0].code.should.eql('ERROR_INVALID_ACCESS_TYPE')
+                res.body.errors[0].field.should.eql('invalidType')
+                res.body.errors[0].message.should.be.String
+                res.body.errors[1].code.should.eql('ERROR_INVALID_ACCESS_VALUE')
+                res.body.errors[1].field.should.eql('read.invalidField')
+                res.body.errors[1].message.should.be.String
 
                 done()
               })

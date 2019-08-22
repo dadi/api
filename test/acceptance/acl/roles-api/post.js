@@ -225,9 +225,12 @@ module.exports = () => {
                 res.statusCode.should.eql(400)
                 res.body.success.should.eql(false)
                 res.body.errors.should.be.Array
-                res.body.errors[0].should.eql(
-                  'Invalid input. Expected: {"name": String}'
-                )
+                res.body.errors[0].code.should.eql('ERROR_NOT_IN_SCHEMA')
+                res.body.errors[0].field.should.eql('someField')
+                res.body.errors[0].message.should.be.String
+                res.body.errors[1].code.should.eql('ERROR_REQUIRED')
+                res.body.errors[1].field.should.eql('name')
+                res.body.errors[1].message.should.be.String
                 done()
               })
           })
@@ -276,7 +279,9 @@ module.exports = () => {
                 res.statusCode.should.eql(400)
                 res.body.success.should.eql(false)
                 res.body.errors.should.be.Array
-                res.body.errors[0].should.eql('Invalid field: something')
+                res.body.errors[0].code.should.eql('ERROR_NOT_IN_SCHEMA')
+                res.body.errors[0].field.should.eql('something')
+                res.body.errors[0].message.should.be.String
                 done()
               })
           })
@@ -320,9 +325,9 @@ module.exports = () => {
                 res.statusCode.should.eql(400)
                 res.body.success.should.eql(false)
                 res.body.errors.should.be.Array
-                res.body.errors[0].should.eql(
-                  'The specified parent role does not exist'
-                )
+                res.body.errors[0].code.should.eql('ERROR_INVALID_PARENT_ROLE')
+                res.body.errors[0].field.should.eql('extends')
+                res.body.errors[0].message.should.be.String
                 done()
               })
           })
@@ -379,7 +384,9 @@ module.exports = () => {
                     res.statusCode.should.eql(409)
                     res.body.success.should.eql(false)
                     res.body.errors.should.be.Array
-                    res.body.errors[0].should.eql('The role already exists')
+                    res.body.errors[0].code.should.eql('ERROR_ROLE_EXISTS')
+                    res.body.errors[0].field.should.eql('dadi-engineer')
+                    res.body.errors[0].message.should.be.String
 
                     done()
                   })

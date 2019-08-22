@@ -206,9 +206,8 @@ module.exports = () => {
                 res.body.success.should.eql(false)
                 res.body.errors.should.be.Array
                 res.body.errors.length.should.eql(1)
-                res.body.errors[0].should.eql(
-                  'Invalid input. Expecting array of roles.'
-                )
+                res.body.errors[0].code.should.eql('ERROR_INVALID_VALUE')
+                res.body.errors[0].message.should.be.String
 
                 done()
               })
@@ -252,7 +251,9 @@ module.exports = () => {
                 res.body.success.should.eql(false)
                 res.body.errors.should.be.Array
                 res.body.errors.length.should.eql(1)
-                res.body.errors[0].should.eql('Invalid role: sibling')
+                res.body.errors[0].code.should.eql('ERROR_INVALID_ROLE')
+                res.body.errors[0].field.should.eql('sibling')
+                res.body.errors[0].message.should.be.String
 
                 done()
               })

@@ -156,9 +156,9 @@ module.exports = () => {
                 res.statusCode.should.eql(400)
                 res.body.success.should.eql(false)
                 res.body.errors.should.be.Array
-                res.body.errors[0].should.eql(
-                  'Invalid input. Expected: {"clientId": String, "secret": String, "data": Object (optional)}'
-                )
+                res.body.errors[0].code.should.eql('ERROR_REQUIRED')
+                res.body.errors[0].field.should.eql('secret')
+                res.body.errors[0].message.should.be.String
 
                 client
                   .post(config.get('auth.tokenUrl'))
@@ -186,11 +186,9 @@ module.exports = () => {
                       .expect('content-type', 'application/json')
                       .end((err, res) => {
                         res.statusCode.should.eql(400)
-                        res.body.success.should.eql(false)
-                        res.body.errors.should.be.Array
-                        res.body.errors[0].should.eql(
-                          'Invalid input. Expected: {"clientId": String, "secret": String, "data": Object (optional)}'
-                        )
+                        res.body.errors[0].code.should.eql('ERROR_REQUIRED')
+                        res.body.errors[0].field.should.eql('clientId')
+                        res.body.errors[0].message.should.be.String
 
                         done()
                       })
@@ -249,7 +247,7 @@ module.exports = () => {
       })
     })
 
-    it('should return 400 if the request body includes a `roles` property', done => {
+    it('should return 400 if the request body includes a `roles` property with a role that does not exist', done => {
       const testClient = {
         clientId: 'apiClient',
         secret: 'someSecret',
@@ -262,7 +260,7 @@ module.exports = () => {
       const newClient = {
         clientId: 'newClient',
         secret: 'aNewSecret',
-        roles: ['admin']
+        roles: ['i-do-not-exist', 'me-neither']
       }
 
       help.createACLClient(testClient).then(() => {
@@ -293,7 +291,12 @@ module.exports = () => {
 
                 res.body.success.should.eql(false)
                 res.body.errors.should.be.Array
-                res.body.errors[0].should.eql('Invalid field: roles')
+                res.body.errors[0].code.should.eql('ERROR_INVALID_ROLE')
+                res.body.errors[0].field.should.eql(newClient.roles[0])
+                res.body.errors[0].message.should.be.String
+                res.body.errors[1].code.should.eql('ERROR_INVALID_ROLE')
+                res.body.errors[1].field.should.eql(newClient.roles[1])
+                res.body.errors[1].message.should.be.String
 
                 done()
               })
@@ -301,21 +304,17 @@ module.exports = () => {
       })
     })
 
-    it('should return 400 if the request body includes a `resources` property', done => {
+    it('should return 400 if the request body includes an invalid `resources` property', done => {
       const testClient = {
         clientId: 'apiClient',
         secret: 'someSecret',
-        resources: {
-          clients: {
-            create: true
-          }
-        }
+        accessType: 'admin'
       }
       const newClient = {
         clientId: 'newClient',
         secret: 'aNewSecret',
         resources: {
-          clients: {
+          'i-do-not-exist': {
             create: true
           }
         }
@@ -349,7 +348,9 @@ module.exports = () => {
 
                 res.body.success.should.eql(false)
                 res.body.errors.should.be.Array
-                res.body.errors[0].should.eql('Invalid field: resources')
+                res.body.errors[0].code.should.eql('ERROR_INVALID_RESOURCE')
+                res.body.errors[0].field.should.eql('resources.i-do-not-exist')
+                res.body.errors[0].message.should.be.String
 
                 done()
               })
@@ -401,7 +402,9 @@ module.exports = () => {
 
                 res.body.success.should.eql(false)
                 res.body.errors.should.be.Array
-                res.body.errors[0].should.eql('Invalid field: something')
+                res.body.errors[0].code.should.eql('ERROR_NOT_IN_SCHEMA')
+                res.body.errors[0].field.should.eql('something')
+                res.body.errors[0].message.should.be.String
 
                 done()
               })
@@ -454,9 +457,9 @@ module.exports = () => {
                 res.statusCode.should.eql(400)
 
                 res.body.success.should.eql(false)
-                res.body.errors[0].should.eql(
-                  'Cannot set internal data property: data._id'
-                )
+                res.body.errors[0].code.should.eql('ERROR_PROTECTED_DATA_FIELD')
+                res.body.errors[0].field.should.eql('data._id')
+                res.body.errors[0].message.should.be.String
 
                 done()
               })
@@ -505,7 +508,9 @@ module.exports = () => {
                 res.statusCode.should.eql(409)
                 res.body.success.should.eql(false)
                 res.body.errors.should.be.Array
-                res.body.errors[0].should.eql('The client already exists')
+                res.body.errors[0].code.should.eql('ERROR_CLIENT_EXISTS')
+                res.body.errors[0].field.should.eql('clientId')
+                res.body.errors[0].message.should.be.String
 
                 done()
               })

@@ -37,7 +37,9 @@ AuthMiddleware.prototype.authenticateRequest = function(req, res, next) {
   }
 
   jwt.verify(match[1], config.get('auth.tokenKey'), (err, decoded) => {
-    req.dadiApiClient = err ? {error: err} : decoded
+    const payload = Object.assign({}, decoded, {token: match[1]})
+
+    req.dadiApiClient = err ? {error: err} : payload
 
     next()
   })

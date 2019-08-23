@@ -178,7 +178,11 @@ Keys.prototype.post = async function(req, res, next) {
     const result = await model.create(key, linkedClient)
 
     help.sendBackJSON(200, res, next)(null, {
-      results: [model.formatForOutput(result)]
+      results: [
+        model.formatForOutput(result, {
+          obfuscateKey: false
+        })
+      ]
     })
   } catch (error) {
     return this.handleError(res, next)(error)

@@ -17,10 +17,9 @@ const workQueue = require('./../../workQueue')
  * @param  {String} description - optional update description
  * @param  {Object} query - query to find documents to delete
  * @param  {Object} req - request to be passed to hooks
- * @param  {Boolean} validate - whether to run validation
  * @return {Promise<DeleteResult>}
  */
-function deleteFn({client, description, query, req, validate = true}) {
+function deleteFn({client, description, query, req}) {
   if (!this.connection.db) {
     return Promise.reject(new Error('DB_DISCONNECTED'))
   }

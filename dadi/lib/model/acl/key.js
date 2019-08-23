@@ -1,11 +1,10 @@
 const ACLMatrix = require('./matrix')
 const config = require('../../../../config')
 const Connection = require('../connection')
+const jwt = require('jsonwebtoken')
 const modelStore = require('../')
 const Validator = require('@dadi/api-validator')
-const {generate: generatePassword} = require('generate-password')
 
-const KEY_PREFIX = '$'
 const validator = new Validator()
 
 const Key = function() {
@@ -56,7 +55,8 @@ Key.prototype.connect = function(acl) {
 Key.prototype.create = async function(data, client) {
   await this.validate(data)
 
-  const document = Object.assign({}, data, {token: this.generateToken()})
+  const token = await this.generateToken()
+  const document = Object.assign({}, data, {token})
 
   if (document.resources) {
     const resources = new ACLMatrix(document.resources)
@@ -110,7 +110,7 @@ Key.prototype.delete = async function(keyId, filter = {}) {
  * @param  {Object} query
  * @return {Object}
  */
-Key.prototype.formatForOutput = function(key) {
+Key.prototype.formatForOutput = function(key, {obfuscateKey = true} = {}) {
   if (key.resources) {
     const resources = new ACLMatrix(key.resources)
 
@@ -121,24 +121,30 @@ Key.prototype.formatForOutput = function(key) {
 
   return {
     ...key,
-    token: key.token.slice(-5)
+    token: obfuscateKey ? key.token.slice(-5) : key.token
   }
 }
 
 /**
- * Generates a new random key.
+ * Generates a new JWT with a given data payload.
  *
- * @return {String}
+ * @param  {Object} data
+ * @return {Promise<String>}
  */
-Key.prototype.generateToken = function() {
-  return (
-    KEY_PREFIX +
-    generatePassword({
-      length: 64,
-      numbers: true,
-      uppercase: true
+Key.prototype.generateToken = function(data = {}) {
+  const payload = Object.assign({}, data, {
+    accessType: 'key'
+  })
+
+  return new Promise((resolve, reject) => {
+    jwt.sign(payload, config.get('auth.tokenKey'), (err, token) => {
+      if (err) {
+        return reject(err)
+      }
+
+      return resolve(token)
     })
-  )
+  })
 }
 
 /**
@@ -394,4 +400,3 @@ Key.prototype.validate = async function(key, {isUpdate = false} = {}) {
 }
 
 module.exports = new Key()
-module.exports.KEY_PREFIX = KEY_PREFIX

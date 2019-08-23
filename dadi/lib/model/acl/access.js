@@ -103,18 +103,29 @@ Access.prototype.filterFields = function(access, input) {
  * access matrix (i.e. containing `true` on all access levels) for each of
  * the resources.
  *
- * @param  {String}       clientId
+ * If `ownerReference` is supplied, information about the requesting client
+ * is added to this object. If the request contains a bearer token, or an
+ * access key associated with a client record, the ID of the client will be
+ * added to the `clientId` property. If the request contains an access key
+ * that is not associated with a client, the ID of the key will be set to
+ * the `keyId` property.
+ *
  * @param  {String}       accessType
+ * @param  {String}       clientId
+ * @param  {String}       token
  * @param  {String}       resource
+ * @param  {Object}       ownerReference
  * @param  {Boolean}      resolveOwnTypes
  * @return {Array/Object}
  */
-Access.prototype.get = function(
-  {clientId = null, accessType = null} = {},
+Access.prototype.get = async function(
+  {accessType = null, clientId = null, token} = {},
   resource,
-  {resolveOwnTypes = true} = {}
+  {ownerReference, resolveOwnTypes = true} = {}
 ) {
-  if (typeof clientId !== 'string') {
+  const isAccessKey = accessType === 'key' && typeof token === 'string'
+
+  if (!isAccessKey && typeof clientId !== 'string') {
     return Promise.resolve({})
   }
 
@@ -125,41 +136,54 @@ Access.prototype.get = function(
       matrix[accessType] = true
     })
 
+    if (ownerReference) {
+      ownerReference.clientId = clientId
+    }
+
     return Promise.resolve(matrix)
   }
 
-  const query = {
-    client: clientId
-  }
+  const query = isAccessKey ? {key: token} : {client: clientId}
 
   if (resource) {
     query.resource = resource
   }
 
-  return this.accessModel
-    .get({
-      query,
-      rawOutput: true
-    })
-    .then(({results}) => {
-      if (results.length === 0) {
-        return {}
+  const model = accessType === 'key' ? this.keyAccessModel : this.accessModel
+  const {results} = await model.get({
+    query,
+    rawOutput: true
+  })
+
+  if (results.length === 0) {
+    return {}
+  }
+
+  if (ownerReference) {
+    if (isAccessKey) {
+      if (results[0].client) {
+        ownerReference.clientId = results[0].client
+      } else {
+        ownerReference.keyId = results[0]._id
       }
+    } else {
+      ownerReference.clientId = clientId
+    }
+  }
 
-      const accessMap = new ACLMatrix()
+  const accessMap = new ACLMatrix()
 
-      results.forEach(result => {
-        accessMap.set(result.resource, result.access)
-      })
+  results.forEach(result => {
+    accessMap.set(result.resource, result.access)
+  })
 
-      if (resource) {
-        const matrix = accessMap.get(resource)
+  if (resource) {
+    const matrix = accessMap.get(resource)
 
-        return resolveOwnTypes ? this.resolveOwnTypes(matrix, clientId) : matrix
-      }
+    return resolveOwnTypes ? this.resolveOwnTypes(matrix, clientId) : matrix
+  }
 
-      return accessMap.getAll()
-    })
+  return accessMap.getAll()
 }
 
 /**

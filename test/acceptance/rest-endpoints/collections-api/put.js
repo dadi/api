@@ -43,6 +43,7 @@ describe('Collections API – PUT', function() {
 
       help
         .createSchemas([
+          Object.assign({}, baseSchema, {name: 'put-test-schema-two'}),
           Object.assign({}, baseSchema, {version: 'v1'}),
           Object.assign({}, baseSchema, {version: 'v2'}),
           Object.assign({}, baseSchema, {
@@ -79,6 +80,181 @@ describe('Collections API – PUT', function() {
       app.stop(() => {
         done()
       })
+    })
+  })
+
+  describe('Access keys', () => {
+    const testClient = {
+      clientId: 'testClient123',
+      secret: 'someSecret',
+      resources: {
+        'collection:testdb_put-test-schema': {
+          read: true,
+          create: true,
+          update: true,
+          delete: true
+        },
+        'collection:testdb_put-test-schema-two': {
+          read: true,
+          create: true,
+          update: false,
+          delete: true
+        }
+      }
+    }
+
+    before(() => {
+      return help.createACLClient(testClient)
+    })
+
+    after(() => {
+      return help.removeACLData()
+    })
+
+    it('should return 403 when updating documents with an access key associated with a client record without sufficient privileges', function(done) {
+      const client = request(connectionString)
+
+      help
+        .createACLKey({
+          client: testClient.clientId
+        })
+        .then(key => {
+          client
+            .post('/testdb/put-test-schema-two')
+            .set('Authorization', 'Bearer ' + bearerToken)
+            .send({field1: 'doc to update'})
+            .expect(200)
+            .end(function(err, res) {
+              if (err) return done(err)
+
+              const doc = res.body.results[0]
+
+              client
+                .put(`/testdb/put-test-schema-two/${doc._id}`)
+                .set('Authorization', 'Bearer ' + key.token)
+                .send({field1: 'foo!'})
+                .expect(403)
+                .end(function(err, res) {
+                  setTimeout(() => {
+                    done(err)
+                  }, 1000)
+                })
+            })
+        })
+    })
+
+    it('should return 403 when updating documents with a top-level access key associated without sufficient privileges', function(done) {
+      const client = request(connectionString)
+
+      help
+        .createACLKey({
+          _createdBy: testClient.clientId,
+          resources: testClient.resources
+        })
+        .then(key => {
+          client
+            .post('/testdb/put-test-schema-two')
+            .set('Authorization', 'Bearer ' + bearerToken)
+            .send({field1: 'doc to update'})
+            .expect(200)
+            .end(function(err, res) {
+              if (err) return done(err)
+
+              const doc = res.body.results[0]
+
+              client
+                .put(`/testdb/put-test-schema-two/${doc._id}`)
+                .set('Authorization', 'Bearer ' + key.token)
+                .send({field1: 'foo!'})
+                .expect(403)
+                .end(function(err, res) {
+                  setTimeout(() => {
+                    done(err)
+                  }, 1000)
+                })
+            })
+        })
+    })
+
+    it('should update documents with an access key associated with a client record', function(done) {
+      const client = request(connectionString)
+      const update = {field1: 'foo!'}
+
+      help
+        .createACLKey({
+          client: testClient.clientId
+        })
+        .then(key => {
+          client
+            .post('/testdb/put-test-schema')
+            .set('Authorization', 'Bearer ' + bearerToken)
+            .send({field1: 'doc to update'})
+            .expect(200)
+            .end(function(err, res) {
+              if (err) return done(err)
+
+              const doc = res.body.results[0]
+
+              client
+                .put(`/testdb/put-test-schema/${doc._id}`)
+                .set('Authorization', 'Bearer ' + key.token)
+                .send(update)
+                .expect(200)
+                .end(function(err, res) {
+                  const {results} = res.body
+
+                  results.length.should.eql(1)
+                  results[0]._id.should.eql(doc._id)
+                  results[0].field1.should.eql(update.field1)
+                  results[0]._lastModifiedBy.should.eql(testClient.clientId)
+
+                  setTimeout(() => {
+                    done(err)
+                  }, 1000)
+                })
+            })
+        })
+    })
+
+    it('should update documents with a top-level access key', function(done) {
+      const client = request(connectionString)
+      const update = {field1: 'bar!'}
+
+      help
+        .createACLKey({
+          _createdBy: testClient.clientId,
+          resources: testClient.resources
+        })
+        .then(key => {
+          client
+            .post('/testdb/put-test-schema')
+            .set('Authorization', 'Bearer ' + bearerToken)
+            .send({field1: 'doc to update'})
+            .expect(200)
+            .end(function(err, res) {
+              if (err) return done(err)
+
+              const doc = res.body.results[0]
+
+              client
+                .put(`/testdb/put-test-schema/${doc._id}`)
+                .set('Authorization', 'Bearer ' + key.token)
+                .send(update)
+                .expect(200)
+                .end(function(err, res) {
+                  const {results} = res.body
+
+                  results.length.should.eql(1)
+                  results[0]._id.should.eql(doc._id)
+                  results[0].field1.should.eql(update.field1)
+                  results[0]._lastModifiedByKey.should.eql(key._id)
+
+                  setTimeout(() => {
+                    done(err)
+                  }, 1000)
+                })
+            })
+        })
     })
   })
 

@@ -1,7 +1,6 @@
 const access = require('./access')
 const client = require('./client')
-const config = require('../../../../config.js')
-const Connection = require('../connection')
+const key = require('./key')
 const modelStore = require('../index')
 const role = require('./role')
 
@@ -15,63 +14,11 @@ const ACL = function() {
 }
 
 ACL.prototype.connect = function() {
-  // Establishing connection for access model.
-  const accessConnection = Connection({
-    collection: config.get('auth.accessCollection'),
-    database: config.get('auth.database'),
-    override: true
-  })
-  const accessModel = modelStore({
-    connection: accessConnection,
-    name: config.get('auth.accessCollection'),
-    property: config.get('auth.database'),
-    settings: {
-      compose: false,
-      storeRevisions: false
-    }
-  })
-
-  access.setModel(accessModel)
-
-  // Establishing connection for client model.
-  const clientConnection = Connection(
-    {
-      collection: config.get('auth.clientCollection'),
-      database: config.get('auth.database'),
-      override: true
-    },
-    null,
-    config.get('auth.datastore')
-  )
-  const clientModel = modelStore({
-    connection: clientConnection,
-    name: config.get('auth.clientCollection'),
-    property: config.get('auth.database'),
-    settings: {
-      compose: false,
-      storeRevisions: false
-    }
-  })
-
-  client.setModel(clientModel)
-
-  // Establishing connection for role model.
-  const roleConnection = Connection({
-    collection: config.get('auth.roleCollection'),
-    database: config.get('auth.database'),
-    override: true
-  })
-  const roleModel = modelStore({
-    collection: roleConnection,
-    name: config.get('auth.roleCollection'),
-    property: config.get('auth.database'),
-    settings: {
-      compose: false,
-      storeRevisions: false
-    }
-  })
-
-  role.setModel(roleModel)
+  // Initialising the various sub-models with a reference to the ACL instance.
+  access.connect(this)
+  client.connect(this)
+  key.connect(this)
+  role.connect(this)
 }
 
 ACL.prototype.createError = function(client) {
@@ -80,7 +27,7 @@ ACL.prototype.createError = function(client) {
   // right permissions to perform the operation - i.e. the request is
   // authenticated, just not authorised. That is a 403. In any other case,
   // the request is unauthorised, so a 401 is returned.
-  if (client && client.clientId && !client.error) {
+  if (client && (client.clientId || client.isAccessKey) && !client.error) {
     return new Error(ERROR_FORBIDDEN)
   }
 
@@ -116,10 +63,56 @@ ACL.prototype.registerResource = function(name, description = null) {
   }
 }
 
+ACL.prototype.validateResourcesObject = async function(
+  resources,
+  creatingClient
+) {
+  if (!creatingClient) {
+    return Promise.reject(this.createError(creatingClient))
+  }
+
+  if (!client.isAdmin(creatingClient)) {
+    const clientResources = await access.get(creatingClient)
+    const hasInsufficientAccess = Object.keys(resources).some(resourceKey => {
+      // We're looking for any cases where the client is attempting to grant an
+      // access type that they do not possess themselves.
+      const hasForbiddenAccessTypes = Object.keys(resources[resourceKey]).some(
+        accessType =>
+          Boolean(resources[resourceKey][accessType]) &&
+          (clientResources[resourceKey] &&
+            clientResources[resourceKey][accessType]) !== true
+      )
+
+      return hasForbiddenAccessTypes
+    })
+
+    if (hasInsufficientAccess) {
+      return Promise.reject(this.createError(client))
+    }
+  }
+
+  const resourceErrors = Object.keys(resources)
+    .filter(key => !this.hasResource(key))
+    .map(key => ({
+      code: 'ERROR_INVALID_RESOURCE',
+      field: `resources.${key}`,
+      message: 'is not a valid resource'
+    }))
+
+  if (resourceErrors.length > 0) {
+    const error = new Error('VALIDATION_ERROR')
+
+    error.data = resourceErrors
+
+    return Promise.reject(error)
+  }
+}
+
 module.exports = new ACL()
 module.exports.ACL = ACL
 module.exports.ERROR_FORBIDDEN = ERROR_FORBIDDEN
 module.exports.ERROR_UNAUTHORISED = ERROR_UNAUTHORISED
 module.exports.access = access
 module.exports.client = client
+module.exports.key = key
 module.exports.role = role

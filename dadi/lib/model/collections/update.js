@@ -96,44 +96,58 @@ function update({
     query,
     type: 'update'
   })
-    .then(({access, documents: newUpdate, query: aclQuery, schema}) => {
-      aclAccess = access
-      query = aclQuery
-      update = newUpdate
+    .then(
+      ({access, documents: newUpdate, owner = {}, query: aclQuery, schema}) => {
+        aclAccess = access
+        query = aclQuery
+        update = newUpdate
 
-      // If merging the request query with ACL data resulted in
-      // an impossible query, we can simply return an empty result
-      // set without even going to the database. We'll reject the
-      // Promise now and catch this case at the end of the chain.
-      if (query instanceof Error) {
-        return Promise.reject(query)
-      }
+        // Adding metadata about who is creating the document.
+        if (owner.clientId) {
+          internals._lastModifiedBy = owner.clientId
+          internals._lastModifiedByKey = null
+        } else if (owner.keyId) {
+          internals._lastModifiedBy = null
+          internals._lastModifiedByKey = owner.keyId
+        }
 
-      if (!validate) return
+        // If merging the request query with ACL data resulted in
+        // an impossible query, we can simply return an empty result
+        // set without even going to the database. We'll reject the
+        // Promise now and catch this case at the end of the chain.
+        if (query instanceof Error) {
+          return Promise.reject(query)
+        }
 
-      // Validating the query.
-      const queryValidation = this.validateQuery(query)
+        if (!validate) return
 
-      if (!queryValidation.success) {
-        const error = this._createValidationError('Bad Query')
+        // Validating the query.
+        const queryValidation = this.validateQuery(query)
 
-        error.json = queryValidation
+        if (!queryValidation.success) {
+          const error = this._createValidationError('Bad Query')
 
-        return Promise.reject(error)
-      }
-
-      return this.validator
-        .validateDocument({
-          document: update,
-          isUpdate: true,
-          schema
-        })
-        .catch(errors => {
-          const error = this._createValidationError('Validation Failed', errors)
+          error.json = queryValidation
 
           return Promise.reject(error)
-        })
-    })
+        }
+
+        return this.validator
+          .validateDocument({
+            document: update,
+            isUpdate: true,
+            schema
+          })
+          .catch(errors => {
+            const error = this._createValidationError(
+              'Validation Failed',
+              errors
+            )
+
+            return Promise.reject(error)
+          })
+      }
+    )
     .then(() => {
       // Format the query.
       query = this.formatQuery(query)

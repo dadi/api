@@ -47,6 +47,31 @@ describe('Collections API – POST', function() {
                 settings: {
                   count: 40
                 }
+              },
+              {
+                property: 'testdb',
+                name: 'test-schema-two',
+                fields: {
+                  field1: {
+                    type: 'String',
+                    required: false
+                  },
+                  field2: {
+                    type: 'Number',
+                    required: false
+                  },
+                  field3: {
+                    type: 'ObjectID',
+                    required: false
+                  },
+                  _fieldWithUnderscore: {
+                    type: 'Object',
+                    required: false
+                  }
+                },
+                settings: {
+                  count: 40
+                }
               }
             ])
             .then(() => {
@@ -62,6 +87,146 @@ describe('Collections API – POST', function() {
       app.stop(() => {
         done()
       })
+    })
+  })
+
+  describe('Access keys', () => {
+    const testClient = {
+      clientId: 'testClient123',
+      secret: 'someSecret',
+      resources: {
+        'collection:testdb_test-schema': {
+          read: true,
+          create: true,
+          update: true,
+          delete: true
+        },
+        'collection:testdb_test-schema-two': {
+          read: true,
+          create: false,
+          update: true,
+          delete: true
+        }
+      }
+    }
+
+    before(() => {
+      return help.createACLClient(testClient)
+    })
+
+    after(() => {
+      return help.removeACLData()
+    })
+
+    it('should return 403 when creating new documents with an access key associated with a client record without sufficient privileges', function(done) {
+      const client = request(connectionString)
+
+      help
+        .createACLKey({
+          client: testClient.clientId
+        })
+        .then(key => {
+          client
+            .post('/testdb/test-schema-two')
+            .set('Authorization', 'Bearer ' + key.token)
+            .send({field1: 'foo!'})
+            .expect(403)
+            .end(function(err, res) {
+              setTimeout(() => {
+                done(err)
+              }, 1000)
+            })
+        })
+    })
+
+    it('should return 403 when creating new documents with a top-level access key associated without sufficient privileges', function(done) {
+      const client = request(connectionString)
+
+      help
+        .createACLKey({
+          _createdBy: testClient.clientId,
+          resources: testClient.resources
+        })
+        .then(key => {
+          client
+            .post('/testdb/test-schema-two')
+            .set('Authorization', 'Bearer ' + key.token)
+            .send({field1: 'foo!'})
+            .expect(403)
+            .end(function(err, res) {
+              setTimeout(() => {
+                done(err)
+              }, 1000)
+            })
+        })
+    })
+
+    it('should create new documents with an access key associated with a client record', function(done) {
+      const client = request(connectionString)
+
+      help
+        .createACLKey({
+          client: testClient.clientId
+        })
+        .then(key => {
+          client
+            .post('/testdb/test-schema')
+            .set('Authorization', 'Bearer ' + key.token)
+            .send({field1: 'foo!'})
+            .expect(200)
+            .end(function(err, res) {
+              if (err) return done(err)
+
+              should.exist(res.body.results)
+              res.body.results.should.be.Array
+              res.body.results.length.should.equal(1)
+              should.exist(res.body.results[0]._id)
+              res.body.results[0].field1.should.equal('foo!')
+              res.body.results[0]._createdBy.should.eql(testClient.clientId)
+
+              setTimeout(() => {
+                done(err)
+              }, 1000)
+            })
+        })
+    })
+
+    it('should create new documents with a top-level access key', function(done) {
+      const client = request(connectionString)
+
+      help
+        .createACLKey({
+          _createdBy: testClient.clientId,
+          resources: {
+            'collection:testdb_test-schema': {
+              read: true,
+              create: true,
+              update: true,
+              delete: true
+            }
+          }
+        })
+        .then(key => {
+          client
+            .post('/testdb/test-schema')
+            .set('Authorization', 'Bearer ' + key.token)
+            .send({field1: 'foo!'})
+            .expect(200)
+            .end(function(err, res) {
+              if (err) return done(err)
+
+              should.exist(res.body.results)
+              res.body.results.should.be.Array
+              res.body.results.length.should.equal(1)
+              should.exist(res.body.results[0]._id)
+              res.body.results[0].field1.should.equal('foo!')
+              res.body.results[0]._createdByKey.should.eql(key._id)
+
+              setTimeout(() => {
+                done(err)
+              }, 1000)
+            })
+        })
     })
   })
 

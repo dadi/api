@@ -1,4 +1,5 @@
 const log = require('@dadi/logger')
+const Validator = require('@dadi/api-validator')
 
 const ACCESS_TYPES = [
   'delete',
@@ -9,6 +10,8 @@ const ACCESS_TYPES = [
   'update',
   'updateOwn'
 ]
+
+const validator = new Validator()
 
 const Matrix = function(map) {
   map = this._convertArrayNotationToObjectNotation(map)
@@ -241,85 +244,6 @@ Matrix.prototype.set = function(name, matrix) {
   })
 
   this.map[name] = Object.assign({}, this.map[name], sanitisedMatrix)
-}
-
-/**
- * Validates an access matrix. Returns an error if validation fails.
- * Otherwise, `undefined` is returned.
- *
- * @param  {Object} matrix
- */
-Matrix.prototype.validate = function(matrix) {
-  const errors = []
-
-  if (typeof matrix === 'object') {
-    Object.keys(matrix).forEach(type => {
-      if (!ACCESS_TYPES.includes(type)) {
-        errors.push(`Invalid access type: ${type}`)
-      }
-
-      switch (typeof matrix[type]) {
-        case 'boolean':
-          return
-
-        case 'object':
-          Object.keys(matrix[type]).forEach(key => {
-            if (['fields', 'filter'].includes(key)) {
-              if (typeof matrix[type][key] !== 'object') {
-                errors.push(
-                  `Invalid value in access matrix for key ${type}.${key} (expected object)`
-                )
-              } else if (key === 'fields') {
-                const fieldsObj = matrix[type][key]
-                const fields = Object.keys(fieldsObj)
-
-                // A valid fields projection is an object where all fields are
-                // 0 or 1, never combining the two.
-                const invalidProjection = fields.some((field, index) => {
-                  if (fieldsObj[field] !== 0 && fieldsObj[field] !== 1) {
-                    return true
-                  }
-
-                  const nextField = fields[index + 1]
-
-                  if (
-                    nextField !== undefined &&
-                    fieldsObj[field] !== fieldsObj[nextField]
-                  ) {
-                    return true
-                  }
-
-                  return false
-                })
-
-                if (invalidProjection) {
-                  errors.push(
-                    `Invalid field projection in access matrix for ${type} access type. Accepted values for keys are either 0 or 1 and they cannot be combined in the same projection`
-                  )
-                }
-              }
-            } else {
-              errors.push(`Invalid key in access matrix: ${type}.${key}`)
-            }
-          })
-
-          break
-
-        default:
-          errors.push(`Invalid value for ${type}. Expected Boolean or Object`)
-      }
-    })
-  } else {
-    errors.push('Missing access matrix')
-  }
-
-  if (errors.length > 0) {
-    const error = new Error('ACCESS_MATRIX_VALIDATION_FAILED')
-
-    error.data = errors
-
-    throw error
-  }
 }
 
 module.exports = Matrix

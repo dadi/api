@@ -802,13 +802,6 @@ Model.prototype.shouldCompose = function({level = 1, composeOverride = false}) {
  * the Promise is resolved with a {document, fields, query} object, with
  * the augmented document, fields and query objects.
  *
- * Optionally, it can also receive an `access` object, which prevents the
- * function from getting the access matrix from the database. This can be
- * useful when calling the method consecutively for different access types,
- * where the result of the first call can be used as a cached value for the
- * others.
- *
- * @param  {Object}   options.access
  * @param  {Object}   options.client
  * @param  {Object}   options.documents
  * @param  {Object}   options.fields
@@ -818,8 +811,7 @@ Model.prototype.shouldCompose = function({level = 1, composeOverride = false}) {
  * @param  {String}   options.value
  * @return {Promise}
  */
-Model.prototype.validateAccess = function({
-  access,
+Model.prototype.validateAccess = async function({
   client,
   documents,
   fields = {},
@@ -877,90 +869,89 @@ Model.prototype.validateAccess = function({
     }
   }
 
-  const accessQueue = access
-    ? Promise.resolve(access)
-    : this.acl.access.get(client, this.getAclKey())
-
-  return accessQueue.then(access => {
-    const value = access[type]
-
-    if (!value) {
-      return Promise.reject(this.acl.createError(client))
-    }
-
-    if (value.filter) {
-      const conflict = Object.keys(value.filter).some(field => {
-        return (
-          query[field] !== undefined &&
-          JSON.stringify(query[field]) !== JSON.stringify(value.filter[field])
-        )
-      })
-
-      query = conflict
-        ? new Error('EMPTY_RESULT_SET')
-        : Object.assign({}, query, value.filter)
-    }
-
-    if (value.fields) {
-      let candidateFields = fields
-
-      // If we're dealing with a create or update request, then the candidate
-      // fields are not the ones sent via the `fields` URL parameter (assigned
-      // to `fields`), but the fields present in the actual create/upload
-      // payload.
-      if (normalisedDocuments) {
-        candidateFields = normalisedDocuments.reduce((fields, document) => {
-          if (document && typeof document === 'object') {
-            Object.keys(document).forEach(field => {
-              fields[field] = 1
-            })
-          }
-
-          return fields
-        }, {})
-      }
-
-      try {
-        fields = this._mergeQueryAndAclFields(candidateFields, value.fields)
-      } catch (err) {
-        return Promise.reject(err)
-      }
-
-      // If we're dealing with a create or update request, we must filter the
-      // payload to ensure that the document(s) only contain the fields which
-      // the client has access to.
-      if (normalisedDocuments) {
-        normalisedDocuments = normalisedDocuments.map(document => {
-          if (!document || typeof document !== 'object') {
-            return document
-          }
-
-          const newDocument = {}
-
-          Object.keys(document).forEach(field => {
-            if (field === '_id' || fields[field]) {
-              newDocument[field] = document[field]
-            }
-          })
-
-          return newDocument
-        })
-      }
-    }
-
-    const newDocuments = Array.isArray(documents)
-      ? normalisedDocuments
-      : documents && normalisedDocuments[0]
-    const newSchema = this.acl.access.filterFields(access, schema)
-
-    return {
-      access,
-      documents: newDocuments,
-      fields,
-      query,
-      schema: newSchema
-    }
+  const owner = {}
+  const access = await this.acl.access.get(client, this.getAclKey(), {
+    ownerReference: owner
   })
+  const value = access[type]
+
+  if (!value) {
+    return Promise.reject(this.acl.createError(client))
+  }
+
+  if (value.filter) {
+    const conflict = Object.keys(value.filter).some(field => {
+      return (
+        query[field] !== undefined &&
+        JSON.stringify(query[field]) !== JSON.stringify(value.filter[field])
+      )
+    })
+
+    query = conflict
+      ? new Error('EMPTY_RESULT_SET')
+      : Object.assign({}, query, value.filter)
+  }
+
+  if (value.fields) {
+    let candidateFields = fields
+
+    // If we're dealing with a create or update request, then the candidate
+    // fields are not the ones sent via the `fields` URL parameter (assigned
+    // to `fields`), but the fields present in the actual create/upload
+    // payload.
+    if (normalisedDocuments) {
+      candidateFields = normalisedDocuments.reduce((fields, document) => {
+        if (document && typeof document === 'object') {
+          Object.keys(document).forEach(field => {
+            fields[field] = 1
+          })
+        }
+
+        return fields
+      }, {})
+    }
+
+    try {
+      fields = this._mergeQueryAndAclFields(candidateFields, value.fields)
+    } catch (err) {
+      return Promise.reject(err)
+    }
+
+    // If we're dealing with a create or update request, we must filter the
+    // payload to ensure that the document(s) only contain the fields which
+    // the client has access to.
+    if (normalisedDocuments) {
+      normalisedDocuments = normalisedDocuments.map(document => {
+        if (!document || typeof document !== 'object') {
+          return document
+        }
+
+        const newDocument = {}
+
+        Object.keys(document).forEach(field => {
+          if (field === '_id' || fields[field]) {
+            newDocument[field] = document[field]
+          }
+        })
+
+        return newDocument
+      })
+    }
+  }
+
+  const newDocuments = Array.isArray(documents)
+    ? normalisedDocuments
+    : documents && normalisedDocuments[0]
+  const newSchema = this.acl.access.filterFields(access, schema)
+
+  return {
+    access,
+    documents: newDocuments,
+    fields,
+    owner,
+    query,
+    schema: newSchema
+  }
 }
 
 /**

@@ -1,7 +1,12 @@
 const ACLMatrix = require('./matrix')
 const bcrypt = require('bcrypt')
-const config = require('./../../../../config.js')
+const config = require('../../../../config')
+const Connection = require('../connection')
+const modelStore = require('../')
 const roleModel = require('./role')
+const Validator = require('@dadi/api-validator')
+
+const validator = new Validator()
 
 // This value should be incremented if we ever replace bcrypt with another
 // hashing algorithm.
@@ -10,22 +15,31 @@ const HASH_VERSION = 1
 const Client = function() {
   this.schema = {
     clientId: {
-      required: true,
-      type: 'string'
+      type: 'string',
+      required: true
     },
     accessType: {
       default: 'user',
       type: 'string'
     },
     resources: {
-      allowedInInput: false,
       default: {},
       type: 'object'
     },
     roles: {
-      allowedInInput: false,
       default: [],
-      type: 'object'
+      type: 'object',
+      validationCallback: value => {
+        if (Array.isArray(value)) {
+          const hasStringsOnly = value.every(value => typeof value === 'string')
+
+          if (hasStringsOnly) {
+            return Promise.resolve()
+          }
+        }
+
+        return Promise.reject()
+      }
     },
     secret: {
       hidden: true,
@@ -40,20 +54,46 @@ const Client = function() {
 }
 
 /**
- * Fires the callback defined in `this.saveCallback`, if any,
- * returning the value of the input argument after it finishes
- * executing. If the callback is not defined, a Promise resolved
- * with the input argument is returned instead.
+ * Fires and waits for the `this.saveCallback` callback, if defined. It sends
+ * an array with `clientId` as a parameter.
  *
- * @param  {Object} input
+ * @param  {String} clientId
  * @return {Promise}
  */
-Client.prototype.broadcastWrite = function(input) {
+Client.prototype.broadcastWrite = async function(clientId) {
   if (typeof this.saveCallback === 'function') {
-    return this.saveCallback().then(() => input)
+    await this.saveCallback([clientId])
   }
+}
 
-  return Promise.resolve(input)
+/**
+ * Initialises the client module with a connection to the database and a
+ * reference to the ACL module.
+ *
+ * @param  {Object} acl
+ */
+Client.prototype.connect = function(acl) {
+  const connection = Connection(
+    {
+      collection: config.get('auth.clientCollection'),
+      database: config.get('auth.database'),
+      override: true
+    },
+    null,
+    config.get('auth.datastore')
+  )
+  const model = modelStore({
+    connection,
+    name: config.get('auth.clientCollection'),
+    property: config.get('auth.database'),
+    settings: {
+      compose: false,
+      storeRevisions: false
+    }
+  })
+
+  this.acl = acl
+  this.model = model
 }
 
 /**
@@ -62,39 +102,41 @@ Client.prototype.broadcastWrite = function(input) {
  * @param  {Object}  client
  * @return {Promise<Object>}
  */
-Client.prototype.create = function(client) {
-  return this.validate(client)
-    .then(() => {
-      return this.model.find({
-        options: {
-          fields: {
-            _id: 1
-          }
-        },
-        query: {
-          clientId: client.clientId
-        }
-      })
-    })
-    .then(({results}) => {
-      if (results.length > 0) {
-        return Promise.reject(new Error('CLIENT_EXISTS'))
+Client.prototype.create = async function(client) {
+  await this.validate(client)
+
+  const {results} = await this.model.find({
+    options: {
+      fields: {
+        _id: 1
       }
+    },
+    query: {
+      clientId: client.clientId
+    }
+  })
 
-      return this.hashSecret(client.secret, client)
-    })
-    .then(hashedsecret => {
-      client.secret = hashedsecret
+  if (results.length > 0) {
+    return Promise.reject(new Error('CLIENT_EXISTS'))
+  }
 
-      return this.model.create({
-        documents: [client],
-        rawOutput: true,
-        validate: false
-      })
-    })
-    .then(result => {
-      return this.broadcastWrite(result)
-    })
+  client.secret = await this.hashSecret(client.secret, client)
+
+  if (client.resources) {
+    const resources = new ACLMatrix(client.resources)
+
+    client.resources = resources.getAll({getArrayNotation: true})
+  }
+
+  const createdClient = await this.model.create({
+    documents: [client],
+    rawOutput: true,
+    validate: false
+  })
+
+  await this.broadcastWrite(client.clientId)
+
+  return createdClient
 }
 
 /**
@@ -103,16 +145,26 @@ Client.prototype.create = function(client) {
  * @param  {String} clientId
  * @return {Promise<Object>}
  */
-Client.prototype.delete = function(clientId) {
-  return this.model
-    .delete({
-      query: {
-        clientId
-      }
-    })
-    .then(result => {
-      return this.broadcastWrite(result)
-    })
+Client.prototype.delete = async function(clientId) {
+  const result = await this.model.delete({
+    query: {
+      clientId
+    }
+  })
+
+  await this.broadcastWrite(clientId)
+
+  return
+}
+
+/**
+ * Finds clients that match a given query.
+ *
+ * @param  {Object} query
+ * @return {Promise<Object>}
+ */
+Client.prototype.find = function(query) {
+  return this.model.find({query})
 }
 
 /**
@@ -228,6 +280,16 @@ Client.prototype.isAdmin = function(client) {
 }
 
 /**
+ * Determines whether a token is an access key.
+ *
+ * @param  {Object}  client
+ * @return {Boolean}
+ */
+Client.prototype.isKey = function(client) {
+  return client && client.isAccessKey === true
+}
+
+/**
  * Determines whether a client has super user access.
  *
  * @param  {Object}  client
@@ -240,60 +302,85 @@ Client.prototype.isSuperUser = function(client) {
 /**
  * Adds a resource to a client.
  *
- * @param  {String} clientId The client ID
- * @param  {String} resource The name of the resource
- * @param  {Object} access   Access matrix
+ * @param  {String} clientId      The client ID
+ * @param  {String} resourceName  The name of the resource
+ * @param  {Object} access        Access matrix
  * @return {Promise<Object>}
  */
-Client.prototype.resourceAdd = function(clientId, resource, access) {
-  return this.model
-    .find({
-      options: {
-        fields: {
-          resources: 1
-        }
+Client.prototype.resourceAdd = async function(clientId, resourceName, access) {
+  try {
+    await validator.validateDocument({
+      document: {
+        access,
+        name: resourceName
       },
-      query: {
-        clientId
+      schema: {
+        access: {
+          required: true,
+          type: 'object'
+        },
+        name: {
+          required: true,
+          type: 'string'
+        }
       }
     })
-    .then(({results}) => {
-      if (results.length === 0) {
-        return Promise.reject(new Error('CLIENT_NOT_FOUND'))
+
+    validator.validateAccessMatrix(access, 'access')
+  } catch (errors) {
+    const error = new Error('VALIDATION_ERROR')
+
+    error.data = errors
+
+    return Promise.reject(error)
+  }
+
+  const {results: clients} = await this.model.find({
+    options: {
+      fields: {
+        resources: 1
       }
+    },
+    query: {
+      clientId
+    }
+  })
 
-      const resources = new ACLMatrix(results[0].resources)
+  if (clients.length === 0) {
+    return Promise.reject(new Error('CLIENT_NOT_FOUND'))
+  }
 
-      resources.validate(access)
+  const resources = new ACLMatrix(clients[0].resources)
 
-      if (resources.get(resource)) {
-        return Promise.reject(new Error('CLIENT_HAS_RESOURCE'))
-      }
+  if (resources.get(resourceName)) {
+    const error = new Error('CLIENT_HAS_RESOURCE')
 
-      resources.set(resource, access)
+    error.data = resourceName
 
-      return this.model.update({
-        query: {
-          clientId
-        },
-        rawOutput: true,
-        update: {
-          resources: resources.getAll({
-            getArrayNotation: true,
-            stringifyObjects: true
-          })
-        },
-        validate: false
+    return Promise.reject(error)
+  }
+
+  resources.set(resourceName, access)
+
+  const update = await this.model.update({
+    query: {
+      clientId
+    },
+    rawOutput: true,
+    update: {
+      resources: resources.getAll({
+        getArrayNotation: true,
+        stringifyObjects: true
       })
-    })
-    .then(result => {
-      return this.broadcastWrite(result)
-    })
-    .then(({results}) => {
-      return {
-        results: results.map(client => this.formatForOutput(client))
-      }
-    })
+    },
+    validate: false
+  })
+
+  await this.broadcastWrite(clientId)
+
+  return {
+    results: update.results.map(client => this.formatForOutput(client))
+  }
 }
 
 /**
@@ -303,108 +390,113 @@ Client.prototype.resourceAdd = function(clientId, resource, access) {
  * @param  {String} resource The name of the resource
  * @return {Promise<Object>}
  */
-Client.prototype.resourceRemove = function(clientId, resource) {
-  return this.model
-    .find({
-      options: {
-        fields: {
-          resources: 1
-        }
-      },
-      query: {
-        clientId
+Client.prototype.resourceRemove = async function(clientId, resource) {
+  const {results: clients} = await this.model.find({
+    options: {
+      fields: {
+        resources: 1
       }
-    })
-    .then(({results}) => {
-      if (results.length === 0) {
-        return Promise.reject(new Error('CLIENT_NOT_FOUND'))
-      }
+    },
+    query: {
+      clientId
+    }
+  })
 
-      const resources = new ACLMatrix(results[0].resources)
+  if (clients.length === 0) {
+    return Promise.reject(new Error('CLIENT_NOT_FOUND'))
+  }
 
-      if (!resources.get(resource)) {
-        return Promise.reject(new Error('CLIENT_DOES_NOT_HAVE_RESOURCE'))
-      }
+  const resources = new ACLMatrix(clients[0].resources)
 
-      resources.remove(resource)
+  if (!resources.get(resource)) {
+    return Promise.reject(new Error('CLIENT_DOES_NOT_HAVE_RESOURCE'))
+  }
 
-      return this.model.update({
-        query: {
-          clientId
-        },
-        rawOutput: true,
-        update: {
-          resources: resources.getAll()
-        },
-        validate: false
-      })
-    })
-    .then(result => {
-      return this.broadcastWrite(result)
-    })
-    .then(({results}) => {
-      return {
-        results: results.map(client => this.formatForOutput(client))
-      }
-    })
+  resources.remove(resource)
+
+  const update = await this.model.update({
+    query: {
+      clientId
+    },
+    rawOutput: true,
+    update: {
+      resources: resources.getAll()
+    },
+    validate: false
+  })
+
+  await this.broadcastWrite(clientId)
+
+  return {
+    results: update.results.map(client => this.formatForOutput(client))
+  }
 }
 
 /**
  * Updates the access matrix of a resource on a client.
  *
- * @param  {String} clientId The client ID
- * @param  {String} resource The name of the resource
- * @param  {Object} access   Update to access matrix
+ * @param  {String} clientId      The client ID
+ * @param  {String} resourceName  The name of the resource
+ * @param  {Object} access        Update to access matrix
  * @return {Promise<Object>}
  */
-Client.prototype.resourceUpdate = function(clientId, resource, access) {
-  return this.model
-    .find({
-      options: {
-        fields: {
-          resources: 1
-        }
-      },
-      query: {
-        clientId
+Client.prototype.resourceUpdate = async function(
+  clientId,
+  resourceName,
+  access
+) {
+  try {
+    validator.validateAccessMatrix(access)
+  } catch (errors) {
+    const error = new Error('VALIDATION_ERROR')
+
+    error.data = errors
+
+    return Promise.reject(error)
+  }
+
+  const {results: clients} = await this.model.find({
+    options: {
+      fields: {
+        resources: 1
       }
-    })
-    .then(({results}) => {
-      if (results.length === 0) {
-        return Promise.reject(new Error('CLIENT_NOT_FOUND'))
-      }
+    },
+    query: {
+      clientId
+    }
+  })
 
-      const resources = new ACLMatrix(results[0].resources)
+  if (clients.length === 0) {
+    return Promise.reject(new Error('CLIENT_NOT_FOUND'))
+  }
 
-      if (!resources.get(resource)) {
-        return Promise.reject(new Error('CLIENT_DOES_NOT_HAVE_RESOURCE'))
-      }
+  const resources = new ACLMatrix(clients[0].resources)
 
-      resources.validate(access)
-      resources.set(resource, access)
+  if (!resources.get(resourceName)) {
+    return Promise.reject(new Error('CLIENT_DOES_NOT_HAVE_RESOURCE'))
+  }
 
-      return this.model.update({
-        query: {
-          clientId
-        },
-        rawOutput: true,
-        update: {
-          resources: resources.getAll({
-            getArrayNotation: true,
-            stringifyObjects: true
-          })
-        },
-        validate: false
+  resources.set(resourceName, access)
+
+  const update = await this.model.update({
+    query: {
+      clientId
+    },
+    rawOutput: true,
+    update: {
+      resources: resources.getAll({
+        getArrayNotation: true,
+        stringifyObjects: true
       })
-    })
-    .then(result => {
-      return this.broadcastWrite(result)
-    })
-    .then(({results}) => {
-      return {
-        results: results.map(client => this.formatForOutput(client))
-      }
-    })
+    },
+    validate: false
+  })
+
+  await this.broadcastWrite(clientId)
+
+  return {
+    results: update.results.map(client => this.formatForOutput(client))
+  }
 }
 
 /**
@@ -414,64 +506,54 @@ Client.prototype.resourceUpdate = function(clientId, resource, access) {
  * @param  {Array<String>}  roles
  * @return {Promise<Object>}
  */
-Client.prototype.roleAdd = function(clientId, roles) {
-  return this.model
-    .find({
-      options: {
-        fields: {
-          _id: 1,
-          roles: 1
-        }
-      },
-      query: {
-        clientId
+Client.prototype.roleAdd = async function(clientId, roles) {
+  const {results: clients} = await this.model.find({
+    options: {
+      fields: {
+        _id: 1,
+        roles: 1
       }
-    })
-    .then(({results}) => {
-      if (results.length === 0) {
-        return Promise.reject(new Error('CLIENT_NOT_FOUND'))
-      }
+    },
+    query: {
+      clientId
+    }
+  })
 
-      const existingRoles = results[0].roles || []
+  if (clients.length === 0) {
+    return Promise.reject(new Error('CLIENT_NOT_FOUND'))
+  }
 
-      return roleModel.get(roles).then(({results}) => {
-        const invalidRoles = roles.filter(role => {
-          return !results.find(dbRole => dbRole.name === role)
-        })
+  const clientRoles = clients[0].roles || []
+  const {results: existingRoles} = await roleModel.get(roles)
+  const invalidRoles = roles.filter(role => {
+    return !existingRoles.find(({name}) => name === role)
+  })
 
-        if (invalidRoles.length > 0) {
-          const error = new Error('INVALID_ROLE')
+  if (invalidRoles.length > 0) {
+    const error = new Error('INVALID_ROLE')
 
-          error.data = invalidRoles
+    error.data = invalidRoles
 
-          return Promise.reject(error)
-        }
+    return Promise.reject(error)
+  }
 
-        return existingRoles
-      })
-    })
-    .then(existingRoles => {
-      const newRoles = [...new Set(existingRoles.concat(roles).sort())]
+  const newRoles = [...new Set(clientRoles.concat(roles).sort())]
+  const {results} = await this.model.update({
+    query: {
+      clientId
+    },
+    rawOutput: true,
+    update: {
+      roles: newRoles
+    },
+    validate: false
+  })
 
-      return this.model.update({
-        query: {
-          clientId
-        },
-        rawOutput: true,
-        update: {
-          roles: newRoles
-        },
-        validate: false
-      })
-    })
-    .then(result => {
-      return this.broadcastWrite(result)
-    })
-    .then(({results}) => {
-      return {
-        results: results.map(client => this.formatForOutput(client))
-      }
-    })
+  await this.broadcastWrite(clientId)
+
+  return {
+    results: results.map(client => this.formatForOutput(client))
+  }
 }
 
 /**
@@ -481,72 +563,58 @@ Client.prototype.roleAdd = function(clientId, roles) {
  * @param  {Array<String>}  roles
  * @return {Promise<Object>}
  */
-Client.prototype.roleRemove = function(clientId, roles) {
+Client.prototype.roleRemove = async function(clientId, roles) {
   const rolesRemoved = []
-
-  return this.model
-    .find({
-      options: {
-        fields: {
-          _id: 1,
-          roles: 1
-        }
-      },
-      query: {
-        clientId
+  const {results: clients} = await this.model.find({
+    options: {
+      fields: {
+        _id: 1,
+        roles: 1
       }
-    })
-    .then(({results}) => {
-      if (results.length === 0) {
-        return Promise.reject(new Error('CLIENT_NOT_FOUND'))
-      }
+    },
+    query: {
+      clientId
+    }
+  })
 
-      const existingRoles = results[0].roles || []
-      const newRoles = [
-        ...new Set(
-          existingRoles
-            .filter(role => {
-              if (roles.includes(role)) {
-                rolesRemoved.push(role)
+  if (clients.length === 0) {
+    return Promise.reject(new Error('CLIENT_NOT_FOUND'))
+  }
 
-                return false
-              }
+  const existingRoles = clients[0].roles || []
+  const newRoles = [
+    ...new Set(
+      existingRoles
+        .filter(role => {
+          if (roles.includes(role)) {
+            rolesRemoved.push(role)
 
-              return true
-            })
-            .sort()
-        )
-      ]
+            return false
+          }
 
-      return this.model.update({
-        query: {
-          clientId
-        },
-        rawOutput: true,
-        update: {
-          roles: newRoles
-        },
-        validate: false
-      })
-    })
-    .then(result => {
-      return this.broadcastWrite(result)
-    })
-    .then(({results}) => {
-      return {
-        removed: rolesRemoved,
-        results: results.map(client => this.formatForOutput(client))
-      }
-    })
-}
+          return true
+        })
+        .sort()
+    )
+  ]
 
-/**
- * Sets an internal reference to the instance of Model.
- *
- * @param {Object} model
- */
-Client.prototype.setModel = function(model) {
-  this.model = model
+  const {results} = await this.model.update({
+    query: {
+      clientId
+    },
+    rawOutput: true,
+    update: {
+      roles: newRoles
+    },
+    validate: false
+  })
+
+  await this.broadcastWrite(clientId)
+
+  return {
+    removed: rolesRemoved,
+    results: results.map(client => this.formatForOutput(client))
+  }
 }
 
 /**
@@ -585,7 +653,7 @@ Client.prototype.update = function(clientId, update) {
 
   return this.validate(update, {
     blockedFields: ['clientId'],
-    isPartialValue: true
+    isUpdate: true
   })
     .then(() => {
       return this.model.find({
@@ -668,69 +736,70 @@ Client.prototype.update = function(clientId, update) {
  *
  * @param  {String}   client
  * @param  {Boolean}  options.allowedAccessTypes
- * @param  {Boolean}  options.blockedFields
- * @param  {Boolean}  options.isPartialValue
+ * @param  {Boolean}  options.isUpdate
  * @return {Promise}
  */
-Client.prototype.validate = function(
+Client.prototype.validate = async function(
   client,
-  {
-    allowedAccessTypes = ['admin', 'user'],
-    blockedFields = [],
-    isPartialValue = false
-  } = {}
+  {allowedAccessTypes = ['admin', 'user'], isUpdate = false} = {}
 ) {
-  const missingFields = Object.keys(this.schema).filter(field => {
-    return this.schema[field].required && client[field] === undefined
-  })
+  try {
+    // If we're validating an update, we don't allow certain properties to be
+    // set directly, so we exclude them from the schema.
+    const schema = Object.assign({}, this.schema, {
+      clientId: isUpdate ? null : this.schema.clientId,
+      resources: isUpdate ? null : this.schema.resources,
+      roles: isUpdate ? null : this.schema.roles
+    })
 
-  if (!isPartialValue && missingFields.length > 0) {
-    const error = new Error('MISSING_FIELDS')
+    await validator.validateDocument({
+      document: client,
+      isUpdate,
+      schema
+    })
 
-    error.data = missingFields
-
-    return Promise.reject(error)
-  }
-
-  const invalidFields = Object.keys(this.schema).filter(field => {
-    if (
-      client[field] !== undefined &&
-      this.schema[field].allowedInInput === false
-    ) {
-      return true
+    if (client.accessType && !allowedAccessTypes.includes(client.accessType)) {
+      throw [
+        {
+          code: 'ERROR_INVALID_VALUE',
+          field: 'accessType',
+          message: `must be one of ${allowedAccessTypes.join(', ')}`
+        }
+      ]
     }
 
-    return (
-      client[field] !== undefined &&
-      client[field] !== null &&
-      typeof client[field] !== this.schema[field].type
-    )
-  })
-
-  Object.keys(client).forEach(field => {
-    if (!this.schema[field] || blockedFields.includes(field)) {
-      invalidFields.push(field)
+    if (client.resources) {
+      Object.keys(client.resources).forEach(resourceKey => {
+        validator.validateAccessMatrix(
+          client.resources[resourceKey],
+          `resources.${resourceKey}`
+        )
+      })
     }
-  })
 
-  if (invalidFields.length > 0) {
-    const error = new Error('INVALID_FIELDS')
+    if (client.roles) {
+      const {results: existingRoles} = await roleModel.get(client.roles)
+      const invalidRoles = client.roles.filter(role => {
+        return !existingRoles.find(({name}) => name === role)
+      })
 
-    error.data = invalidFields
+      if (invalidRoles.length > 0) {
+        const error = new Error('INVALID_ROLE')
+
+        error.data = invalidRoles
+
+        return Promise.reject(error)
+      }
+    }
+
+    return Promise.resolve()
+  } catch (errors) {
+    const error = new Error('VALIDATION_ERROR')
+
+    error.data = errors
 
     return Promise.reject(error)
   }
-
-  if (client.accessType && !allowedAccessTypes.includes(client.accessType)) {
-    const error = new Error('INVALID_VALUE')
-
-    error.field = 'accessType'
-    error.allowedValues = allowedAccessTypes.join(', ')
-
-    return Promise.reject(error)
-  }
-
-  return Promise.resolve()
 }
 
 /**

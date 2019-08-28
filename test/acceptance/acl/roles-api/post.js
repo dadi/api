@@ -225,9 +225,12 @@ module.exports = () => {
                 res.statusCode.should.eql(400)
                 res.body.success.should.eql(false)
                 res.body.errors.should.be.Array
-                res.body.errors[0].should.eql(
-                  'Invalid input. Expected: {"name": String}'
-                )
+                res.body.errors[0].code.should.eql('ERROR_NOT_IN_SCHEMA')
+                res.body.errors[0].field.should.eql('someField')
+                res.body.errors[0].message.should.be.String
+                res.body.errors[1].code.should.eql('ERROR_REQUIRED')
+                res.body.errors[1].field.should.eql('name')
+                res.body.errors[1].message.should.be.String
                 done()
               })
           })
@@ -276,7 +279,9 @@ module.exports = () => {
                 res.statusCode.should.eql(400)
                 res.body.success.should.eql(false)
                 res.body.errors.should.be.Array
-                res.body.errors[0].should.eql('Invalid field: something')
+                res.body.errors[0].code.should.eql('ERROR_NOT_IN_SCHEMA')
+                res.body.errors[0].field.should.eql('something')
+                res.body.errors[0].message.should.be.String
                 done()
               })
           })
@@ -320,9 +325,9 @@ module.exports = () => {
                 res.statusCode.should.eql(400)
                 res.body.success.should.eql(false)
                 res.body.errors.should.be.Array
-                res.body.errors[0].should.eql(
-                  'The specified parent role does not exist'
-                )
+                res.body.errors[0].code.should.eql('ERROR_INVALID_PARENT_ROLE')
+                res.body.errors[0].field.should.eql('extends')
+                res.body.errors[0].message.should.be.String
                 done()
               })
           })
@@ -379,7 +384,9 @@ module.exports = () => {
                     res.statusCode.should.eql(409)
                     res.body.success.should.eql(false)
                     res.body.errors.should.be.Array
-                    res.body.errors[0].should.eql('The role already exists')
+                    res.body.errors[0].code.should.eql('ERROR_ROLE_EXISTS')
+                    res.body.errors[0].field.should.eql('dadi-engineer')
+                    res.body.errors[0].message.should.be.String
 
                     done()
                   })
@@ -542,9 +549,116 @@ module.exports = () => {
                 res.body.results.length.should.eql(1)
                 res.body.results[0].name.should.eql(newRole.name)
                 res.body.results[0].extends.should.eql(newRole.extends)
-                Object.keys(res.body.results[0].resources).should.eql(0)
+                Object.keys(res.body.results[0].resources).length.should.eql(0)
 
                 done()
+              })
+          })
+      })
+    })
+
+    it('should create a role with a resources object', done => {
+      const testClient = {
+        clientId: 'apiClient',
+        secret: 'someSecret',
+        accessType: 'admin'
+      }
+      const newRole = {
+        name: 'dadi-engineer',
+        resources: {
+          roles: {
+            create: true
+          }
+        }
+      }
+      const newClient = {
+        clientId: 'aNewClient',
+        secret: 'aNewSecret',
+        roles: ['dadi-engineer']
+      }
+
+      help.createACLClient(testClient).then(() => {
+        client
+          .post(config.get('auth.tokenUrl'))
+          .set('content-type', 'application/json')
+          .send({
+            clientId: testClient.clientId,
+            secret: testClient.secret
+          })
+          .expect(200)
+          .expect('content-type', 'application/json')
+          .end((err, res) => {
+            if (err) return done(err)
+
+            res.body.accessToken.should.be.String
+
+            const bearerToken = res.body.accessToken
+
+            client
+              .post('/api/roles')
+              .send(newRole)
+              .set('content-type', 'application/json')
+              .set('Authorization', `Bearer ${bearerToken}`)
+              .expect('content-type', 'application/json')
+              .end((err, res) => {
+                res.statusCode.should.eql(201)
+
+                res.body.results.should.be.Array
+                res.body.results.length.should.eql(1)
+                res.body.results[0].name.should.eql(newRole.name)
+                res.body.results[0].resources.should.eql({
+                  roles: {
+                    delete: false,
+                    deleteOwn: false,
+                    create: true,
+                    read: false,
+                    readOwn: false,
+                    update: false,
+                    updateOwn: false
+                  }
+                })
+
+                client
+                  .post('/api/clients')
+                  .send(newClient)
+                  .set('content-type', 'application/json')
+                  .set('Authorization', `Bearer ${bearerToken}`)
+                  .expect('content-type', 'application/json')
+                  .end((err, res) => {
+                    res.statusCode.should.eql(201)
+
+                    client
+                      .post(config.get('auth.tokenUrl'))
+                      .set('content-type', 'application/json')
+                      .send({
+                        clientId: testClient.clientId,
+                        secret: testClient.secret
+                      })
+                      .expect(200)
+                      .expect('content-type', 'application/json')
+                      .end((err, res) => {
+                        if (err) return done(err)
+
+                        res.body.accessToken.should.be.String
+
+                        const userToken = res.body.accessToken
+
+                        client
+                          .post('/api/clients')
+                          .send({
+                            clientId: 'aThirdClient',
+                            secret: 'aThirdSecret'
+                          })
+                          .set('content-type', 'application/json')
+                          .set('Authorization', `Bearer ${userToken}`)
+                          .expect('content-type', 'application/json')
+                          .end((err, res) => {
+                            res.statusCode.should.eql(201)
+
+                            done()
+                          })
+                      })
+                  })
               })
           })
       })

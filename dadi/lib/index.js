@@ -25,6 +25,7 @@ const FeatureQueryHandler = require('./controller/featureQueryHandler')
 const EndpointController = require('./controller/endpoint')
 const EndpointsController = require('./controller/endpoints')
 const HooksController = require('./controller/hooks')
+const KeysController = require('./controller/keys')
 const LanguagesController = require('./controller/languages')
 const mediaModel = require('./model/media')
 const MediaController = require('./controller/media')
@@ -190,8 +191,14 @@ Server.prototype.run = function(done) {
 Server.prototype.start = function(done) {
   this.readyState = 2
 
-  // Initialise the ACL.
-  acl.connect()
+  // (!) TODO: The ACL models automatically connect by themselves, but for some
+  // reason this line is needed in the context of the test suite, where API is
+  // started and stopped multiple times consecutively, otherwise some parts of
+  // the application will use different database connections. We should figure
+  // out exactly why this happens and remove this line.
+  if (config.get('env') === 'test') {
+    acl.connect()
+  }
 
   if (config.get('env') !== 'test') {
     dadiBoot.start(require('../../package.json'))
@@ -315,6 +322,7 @@ Server.prototype.start = function(done) {
   CollectionsController(this)
   EndpointsController(this)
   HooksController(this, options.hookPath)
+  KeysController(this)
   LanguagesController(this)
   ResourcesController(this)
   RolesController(this)

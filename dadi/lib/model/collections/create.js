@@ -15,7 +15,7 @@ const search = require('./../search')
  * @param {Object} req - request
  * @returns {Promise<Array>} array of created documents
  */
-function create({
+async function create({
   client,
   compose = true,
   documents,
@@ -58,7 +58,6 @@ function create({
   })
 
   const {hooks} = this.settings
-  const originalDocuments = documents
 
   // If an ACL check is performed, this variable will contain the resulting
   // access matrix.
@@ -69,8 +68,15 @@ function create({
     documents,
     type: 'create'
   })
-    .then(({access, documents: newDocuments, schema}) => {
+    .then(({access, documents: newDocuments, owner = {}, schema}) => {
       if (!validate) return
+
+      // Adding metadata about who is creating the document.
+      if (owner.clientId) {
+        internals._createdBy = owner.clientId
+      } else if (owner.keyId) {
+        internals._createdByKey = owner.keyId
+      }
 
       // Storing the access matrix in a variable that is global to the method.
       aclAccess = access

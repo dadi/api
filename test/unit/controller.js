@@ -315,35 +315,6 @@ describe('Controller', () => {
         stub.restore()
         count.should.equal(1)
       })
-
-      it('should add internally calculated fields during create', () => {
-        const mod = model('testModel', help.getModelSchema(), null, {
-          database: 'testdb'
-        })
-        const stub = sinon.stub(mod, 'create').resolves({})
-
-        sinon.stub(libHelp, 'clearCache').callsFake(pathname => {
-          pathname.should.be.String
-        })
-
-        controller().post({
-          collectionModel: mod,
-          params: {},
-          dadiApiClient: {clientId: 'clientTestId'},
-          body: {field1: 'foo'},
-          url: '/testdb/testcoll'
-        })
-
-        const count = stub.callCount
-        const args = stub.getCall(0).args[0]
-
-        stub.restore()
-        libHelp.clearCache.restore()
-
-        count.should.equal(1)
-        args.documents.field1.should.equal('foo')
-        args.internals._createdBy.should.equal('clientTestId')
-      })
     })
 
     describe('`put` method', () => {
@@ -374,36 +345,6 @@ describe('Controller', () => {
         libHelp.clearCache.restore()
 
         count.should.equal(1)
-      })
-
-      it('should add internally calculated fields during update', () => {
-        const mod = model('testModel', help.getModelSchema(), null, {
-          database: 'testdb'
-        })
-        const stub = sinon.stub(mod, 'update').resolves({})
-
-        sinon.stub(libHelp, 'clearCache').callsFake(pathname => {
-          pathname.should.be.String
-        })
-
-        controller().put({
-          collectionModel: mod,
-          params: {id: '1234567890'},
-          dadiApiClient: {clientId: 'clientTestId'},
-          body: {field1: 'bar'},
-          url: '/testdb/testcoll/1234567890'
-        })
-
-        stub.callCount.should.equal(1)
-
-        const args = stub.getCall(0).args[0]
-
-        args.query._id.should.equal('1234567890')
-        args.update.field1.should.equal('bar')
-        args.internals._lastModifiedBy.should.equal('clientTestId')
-
-        stub.restore()
-        libHelp.clearCache.restore()
       })
     })
 

@@ -204,7 +204,6 @@ Collection.prototype.post = workQueue.wrapForegroundJob(async function(
   }
 
   const {collection, id, property} = req.params
-  const internals = {}
   const path = url.parse(req.url, true)
   const options = path.query
 
@@ -214,8 +213,6 @@ Collection.prototype.post = workQueue.wrapForegroundJob(async function(
   // We're looking at an update if there is a document ID present in the URL
   // or there is an `update` property in the body.
   if (id || req.body.update) {
-    internals._lastModifiedBy = req.dadiApiClient && req.dadiApiClient.clientId
-
     let description
     let query = {}
     let update = {}
@@ -234,7 +231,6 @@ Collection.prototype.post = workQueue.wrapForegroundJob(async function(
         client: req.dadiApiClient,
         compose: options.compose,
         description,
-        internals,
         query,
         req,
         update
@@ -246,15 +242,11 @@ Collection.prototype.post = workQueue.wrapForegroundJob(async function(
     }
   }
 
-  // if no id is present, then this is a create
-  internals._createdBy = req.dadiApiClient && req.dadiApiClient.clientId
-
   try {
     const result = await model.create({
       client: req.dadiApiClient,
       compose: options.compose,
       documents: req.body,
-      internals,
       req
     })
 

@@ -224,7 +224,9 @@ module.exports = () => {
                 res.statusCode.should.eql(400)
                 res.body.success.should.eql(false)
                 res.body.errors.should.be.Array
-                res.body.errors[0].should.eql('Role names cannot be changed')
+                res.body.errors[0].code.should.eql('ERROR_INVALID_FIELD')
+                res.body.errors[0].field.should.eql('name')
+                res.body.errors[0].message.should.be.String
                 done()
               })
           })
@@ -267,9 +269,9 @@ module.exports = () => {
                 res.statusCode.should.eql(400)
                 res.body.success.should.eql(false)
                 res.body.errors.should.be.Array
-                res.body.errors[0].should.eql(
-                  'The specified parent role does not exist'
-                )
+                res.body.errors[0].code.should.eql('ERROR_INVALID_PARENT_ROLE')
+                res.body.errors[0].field.should.eql('extends')
+                res.body.errors[0].message.should.be.String
                 done()
               })
           })

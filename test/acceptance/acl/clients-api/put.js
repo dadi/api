@@ -260,7 +260,9 @@ module.exports = () => {
                 res.statusCode.should.eql(400)
 
                 res.body.success.should.eql(false)
-                res.body.errors[0].should.eql('Invalid field: clientId')
+                res.body.errors[0].code.should.eql('ERROR_NOT_IN_SCHEMA')
+                res.body.errors[0].field.should.eql('clientId')
+                res.body.errors[0].message.should.be.String
 
                 client
                   .post(config.get('auth.tokenUrl'))
@@ -328,7 +330,9 @@ module.exports = () => {
                   res.statusCode.should.eql(400)
 
                   res.body.success.should.eql(false)
-                  res.body.errors[0].should.eql('Invalid field: clientId')
+                  res.body.errors[0].code.should.eql('ERROR_NOT_IN_SCHEMA')
+                  res.body.errors[0].field.should.eql('clientId')
+                  res.body.errors[0].message.should.be.String
 
                   done()
                 })
@@ -372,7 +376,9 @@ module.exports = () => {
                 res.statusCode.should.eql(400)
 
                 res.body.success.should.eql(false)
-                res.body.errors[0].should.eql('Invalid field: clientId')
+                res.body.errors[0].code.should.eql('ERROR_NOT_IN_SCHEMA')
+                res.body.errors[0].field.should.eql('clientId')
+                res.body.errors[0].message.should.be.String
 
                 done()
               })
@@ -418,9 +424,9 @@ module.exports = () => {
                 res.statusCode.should.eql(400)
 
                 res.body.success.should.eql(false)
-                res.body.errors[0].should.eql(
-                  'Cannot set internal data property: data._keyOne'
-                )
+                res.body.errors[0].code.should.eql('ERROR_PROTECTED_DATA_FIELD')
+                res.body.errors[0].field.should.eql('data._keyOne')
+                res.body.errors[0].message.should.be.String
 
                 client
                   .get(`/api/clients/${testClient.clientId}`)

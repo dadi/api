@@ -8,17 +8,28 @@ const validator = new Validator()
 const Keys = function(server) {
   acl.registerResource('keys', 'API access keys')
 
+  server.app.use(this.addKeyClientToRequest.bind(this))
+
   server.app.routeMethods(['/api/keys', '/api/clients/:clientId/keys'], {
-    get: this.get.bind(this),
-    post: this.post.bind(this)
+    get: this.get.bind(this, {}),
+    post: this.post.bind(this, {})
+  })
+
+  server.app.routeMethods('/api/client/keys', {
+    get: this.get.bind(this, {isClientEndpoint: true}),
+    post: this.post.bind(this, {isClientEndpoint: true})
   })
 
   server.app.routeMethods(
     ['/api/keys/:keyId', '/api/clients/:clientId/keys/:keyId'],
     {
-      delete: this.delete.bind(this)
+      delete: this.delete.bind(this, {})
     }
   )
+
+  server.app.routeMethods('/api/client/keys/:keyId', {
+    delete: this.delete.bind(this, {isClientEndpoint: true})
+  })
 
   server.app.routeMethods(
     [
@@ -26,9 +37,13 @@ const Keys = function(server) {
       '/api/clients/:clientId/keys/:keyId/resources'
     ],
     {
-      post: this.postResource.bind(this)
+      post: this.postResource.bind(this, {})
     }
   )
+
+  server.app.routeMethods('/api/client/keys/:keyId/resources', {
+    post: this.postResource.bind(this, {isClientEndpoint: true})
+  })
 
   server.app.routeMethods(
     [
@@ -36,28 +51,61 @@ const Keys = function(server) {
       '/api/clients/:clientId/keys/:keyId/resources/:resourceName'
     ],
     {
-      delete: this.deleteResource.bind(this),
-      put: this.putResource.bind(this)
+      delete: this.deleteResource.bind(this, {}),
+      put: this.putResource.bind(this, {})
     }
   )
+
+  server.app.routeMethods('/api/client/keys/:keyId/resources/:resourceName', {
+    delete: this.deleteResource.bind(this, {isClientEndpoint: true}),
+    put: this.putResource.bind(this, {isClientEndpoint: true})
+  })
 }
 
-Keys.prototype.delete = async function(req, res, next) {
-  try {
-    const {clientId, keyId} = req.params
-    const isAdmin = acl.client.isAdmin(req.dadiApiClient)
+Keys.prototype.addKeyClientToRequest = async function(req, _, next) {
+  const {accessType, token} = req.dadiApiClient || {}
 
-    // We throw an ACL error if a non-admin client is trying to access a client
-    // token that doesn't belong to them.
-    if (clientId && !isAdmin && clientId !== req.dadiApiClient.clientId) {
-      return Promise.reject(acl.createError(req.dadiApiClient))
+  if (accessType === 'key' && typeof token === 'string') {
+    try {
+      const {results} = await acl.access.keyAccessModel.find({
+        options: {
+          fields: {
+            client: 1,
+            clientAccessType: 1
+          },
+          limit: 1
+        },
+        query: {
+          key: token
+        }
+      })
+      const [key] = results
+
+      if (key) {
+        req.dadiApiClient.isAccessKey = true
+
+        if (key.client) {
+          req.dadiApiClient.clientId = key.client
+          req.dadiApiClient.accessType = key.clientAccessType
+        }
+      }
+    } catch (_) {
+      // no-op
     }
+  }
 
+  next()
+}
+
+Keys.prototype.delete = async function({isClientEndpoint}, req, res, next) {
+  try {
+    const {keyId} = req.params
+    const {clientId, isAdmin} = this.validateKeyAccess(req, isClientEndpoint)
     const filter = clientId ? {client: clientId} : {}
 
     // If the client is not an admin, they can only delete keys that have been
     // created by them.
-    if (!isAdmin && !clientId) {
+    if (!isAdmin && !req.params.clientId) {
       filter._createdBy = req.dadiApiClient.clientId
     }
 
@@ -73,19 +121,26 @@ Keys.prototype.delete = async function(req, res, next) {
   }
 }
 
-Keys.prototype.deleteResource = async function(req, res, next) {
+Keys.prototype.deleteResource = async function(
+  {isClientEndpoint},
+  req,
+  res,
+  next
+) {
   try {
     const query = {_id: req.params.keyId}
-    const linkedClient = await this.getKeyClient(req)
+    const {clientId, isAdmin} = this.validateKeyAccess(req, isClientEndpoint)
 
     // If the client is not an admin, they can only operate on keys that
     // were created by or for themselves.
-    if (!acl.client.isAdmin(req.dadiApiClient)) {
-      if (linkedClient) {
-        query.client = linkedClient.clientId
+    if (!isAdmin) {
+      if (clientId) {
+        query.client = clientId
       } else {
         query._createdBy = req.dadiApiClient.clientId
       }
+    } else if (isClientEndpoint) {
+      query.client = req.dadiApiClient.clientId
     }
 
     await model.resourceRemove(query, req.params.resourceName)
@@ -96,17 +151,17 @@ Keys.prototype.deleteResource = async function(req, res, next) {
   }
 }
 
-Keys.prototype.get = async function(req, res, next) {
+Keys.prototype.get = async function({isClientEndpoint}, req, res, next) {
   try {
-    await this.getKeyClient(req)
-
-    const {clientId} = req.params
-    const isAdmin = acl.client.isAdmin(req.dadiApiClient)
+    const {clientId, isAdmin} = this.validateKeyAccess(req, isClientEndpoint)
     const query = clientId ? {client: clientId} : {}
 
-    // If the client is not an admin, they can only see the keys that have
-    // been created by them.
-    if (!isAdmin && !clientId) {
+    // If the client is accessing the /api/client endpoint, the query must
+    // only show keys associated with the client. Also, if the client is not
+    // an admin, they can only see the keys that have been created by them.
+    if (isClientEndpoint) {
+      query.client = req.dadiApiClient.clientId
+    } else if (!isAdmin && !clientId) {
       query._createdBy = req.dadiApiClient.clientId
     }
 
@@ -120,27 +175,8 @@ Keys.prototype.get = async function(req, res, next) {
   }
 }
 
-Keys.prototype.getKeyClient = async function(req) {
-  const {clientId} = req.params
-
-  if (clientId && clientId !== req.dadiApiClient.clientId) {
-    if (!acl.client.isAdmin(req.dadiApiClient)) {
-      throw new Error('CLIENT_NOT_FOUND')
-    }
-
-    const {results} = await acl.client.get(clientId)
-
-    if (results.length === 0) {
-      throw new Error('CLIENT_NOT_FOUND')
-    }
-
-    return results[0]
-  }
-}
-
 Keys.prototype.handleError = function(res, next) {
   return err => {
-    console.log(err)
     switch (err.message) {
       case 'CLIENT_NOT_FOUND':
       case 'KEY_NOT_FOUND':
@@ -164,10 +200,10 @@ Keys.prototype.handleError = function(res, next) {
   }
 }
 
-Keys.prototype.post = async function(req, res, next) {
+Keys.prototype.post = async function({isClientEndpoint}, req, res, next) {
   try {
+    const {clientId} = this.validateKeyAccess(req, isClientEndpoint)
     const key = req.body
-    const linkedClient = await this.getKeyClient(req)
 
     if (key.resources) {
       await acl.validateResourcesObject(key.resources, req.dadiApiClient)
@@ -175,7 +211,7 @@ Keys.prototype.post = async function(req, res, next) {
 
     key._createdBy = req.dadiApiClient.clientId
 
-    const result = await model.create(key, linkedClient)
+    const result = await model.create(key, clientId)
 
     help.sendBackJSON(200, res, next)(null, {
       results: [
@@ -189,7 +225,12 @@ Keys.prototype.post = async function(req, res, next) {
   }
 }
 
-Keys.prototype.postResource = async function(req, res, next) {
+Keys.prototype.postResource = async function(
+  {isClientEndpoint},
+  req,
+  res,
+  next
+) {
   const {access: resourceAccess, name: resourceName} = req.body
 
   try {
@@ -218,12 +259,12 @@ Keys.prototype.postResource = async function(req, res, next) {
   const query = {_id: req.params.keyId}
 
   try {
-    const linkedClient = await this.getKeyClient(req)
+    const {clientId, isAdmin} = this.validateKeyAccess(req, isClientEndpoint)
 
     // If the client does not have admin access, we need to ensure that
     // they have access to the resource they are trying to assign, with
     // each of the access types they are trying to set.
-    if (!acl.client.isAdmin(req.dadiApiClient)) {
+    if (!isAdmin) {
       const access = await acl.access.get(req.dadiApiClient, resourceName)
       const forbiddenType = Object.keys(resourceAccess).find(type => {
         return access[type] !== true
@@ -235,11 +276,13 @@ Keys.prototype.postResource = async function(req, res, next) {
 
       // If the client is not an admin, they can only operate on keys that
       // were created by or for themselves.
-      if (linkedClient) {
-        query.client = linkedClient.clientId
+      if (clientId) {
+        query.client = clientId
       } else {
         query._createdBy = req.dadiApiClient.clientId
       }
+    } else if (isClientEndpoint) {
+      query.client = req.dadiApiClient.clientId
     }
 
     if (resourceName && !acl.hasResource(resourceName)) {
@@ -267,17 +310,22 @@ Keys.prototype.postResource = async function(req, res, next) {
   }
 }
 
-Keys.prototype.putResource = async function(req, res, next) {
+Keys.prototype.putResource = async function(
+  {isClientEndpoint},
+  req,
+  res,
+  next
+) {
   const {keyId, resourceName} = req.params
   const query = {_id: keyId}
 
   try {
-    const linkedClient = await this.getKeyClient(req)
+    const {clientId, isAdmin} = this.validateKeyAccess(req, isClientEndpoint)
 
     // If the client does not have admin access, we need to ensure that
     // they have access to the resource they are trying to modify, with
     // each of the access types they are trying to set.
-    if (!acl.client.isAdmin(req.dadiApiClient)) {
+    if (!isAdmin) {
       const resourceAccess = await acl.access.get(
         req.dadiApiClient,
         resourceName
@@ -292,11 +340,13 @@ Keys.prototype.putResource = async function(req, res, next) {
 
       // If the client is not an admin, they can only operate on keys that
       // were created by or for themselves.
-      if (linkedClient) {
-        query.client = linkedClient.clientId
+      if (clientId) {
+        query.client = clientId
       } else {
         query._createdBy = req.dadiApiClient.clientId
       }
+    } else if (isClientEndpoint) {
+      query.client = req.dadiApiClient.clientId
     }
 
     const {results} = await model.resourceUpdate(query, resourceName, req.body)
@@ -305,6 +355,22 @@ Keys.prototype.putResource = async function(req, res, next) {
   } catch (error) {
     return this.handleError(res, next)(error)
   }
+}
+
+Keys.prototype.validateKeyAccess = function(req, isClientEndpoint) {
+  const {clientId} = isClientEndpoint ? req.dadiApiClient : req.params
+  const isAdmin = acl.client.isAdmin(req.dadiApiClient)
+  const isKey = acl.client.isKey(req.dadiApiClient)
+
+  if (
+    !req.dadiApiClient.clientId ||
+    isKey ||
+    (clientId && !isAdmin && clientId !== req.dadiApiClient.clientId)
+  ) {
+    throw acl.createError(req.dadiApiClient)
+  }
+
+  return {clientId, isAdmin, isKey}
 }
 
 module.exports = server => new Keys(server)

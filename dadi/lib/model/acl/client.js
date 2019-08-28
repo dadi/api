@@ -280,6 +280,16 @@ Client.prototype.isAdmin = function(client) {
 }
 
 /**
+ * Determines whether a token is an access key.
+ *
+ * @param  {Object}  client
+ * @return {Boolean}
+ */
+Client.prototype.isKey = function(client) {
+  return client && client.isAccessKey === true
+}
+
+/**
  * Determines whether a client has super user access.
  *
  * @param  {Object}  client

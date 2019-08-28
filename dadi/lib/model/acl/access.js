@@ -164,7 +164,7 @@ Access.prototype.get = async function(
       if (results[0].client) {
         ownerReference.clientId = results[0].client
       } else {
-        ownerReference.keyId = results[0]._id
+        ownerReference.keyId = results[0].keyId
       }
     } else {
       ownerReference.clientId = clientId
@@ -813,7 +813,12 @@ Access.prototype.writeKeyAccess = async function({
         // then cache them for subsequent iterations.
         if (!clientResources) {
           const client =
-            clientsCache[clientId] || (await clientModel.get(clientId))
+            clientsCache[clientId] ||
+            (await clientModel
+              .get(clientId)
+              .then(({results}) => results && results[0]))
+
+          if (!client) return
 
           // Ensure the client is cached.
           clientsCache[clientId] = clientsCache[clientId] || client
@@ -853,6 +858,7 @@ Access.prototype.writeKeyAccess = async function({
           key: key.token,
           keyId: key._id,
           client: clientId || null,
+          clientAccessType: clientId ? clientsCache[clientId].accessType : null,
           resource: resourceKey,
           access: combinedResourcesForKey[resourceKey]
         })

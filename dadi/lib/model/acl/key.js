@@ -46,13 +46,14 @@ Key.prototype.connect = function(acl) {
 }
 
 /**
- * Creates a key.
+ * Creates a key. If `clientId` is supplied, the key is associated with the
+ * given client record.
  *
  * @param  {Object} data
- * @param  {Object} client
+ * @param  {String} clientId
  * @return {Promise<Object>}
  */
-Key.prototype.create = async function(data, client) {
+Key.prototype.create = async function(data, clientId) {
   await this.validate(data)
 
   const token = await this.generateToken()
@@ -64,8 +65,8 @@ Key.prototype.create = async function(data, client) {
     document.resources = resources.getAll({getArrayNotation: true})
   }
 
-  if (client) {
-    document.client = client.clientId
+  if (clientId) {
+    document.client = clientId
   }
 
   const {results: keys} = await this.model.create({
@@ -76,7 +77,6 @@ Key.prototype.create = async function(data, client) {
   })
 
   await this.saveCallback({
-    clientsCache: client ? {[client.clientId]: client} : {},
     updatedKeys: keys
   })
 
@@ -126,15 +126,14 @@ Key.prototype.formatForOutput = function(key, {obfuscateKey = true} = {}) {
 }
 
 /**
- * Generates a new JWT with a given data payload.
+ * Generates a new JWT.
  *
- * @param  {Object} data
  * @return {Promise<String>}
  */
-Key.prototype.generateToken = function(data = {}) {
-  const payload = Object.assign({}, data, {
+Key.prototype.generateToken = function() {
+  const payload = {
     accessType: 'key'
-  })
+  }
 
   return new Promise((resolve, reject) => {
     jwt.sign(payload, config.get('auth.tokenKey'), (err, token) => {
@@ -200,7 +199,8 @@ Key.prototype.resourceAdd = async function(query, resourceName, access) {
   const {results: keys} = await this.model.find({
     options: {
       fields: {
-        resources: 1
+        resources: 1,
+        token: 1
       }
     },
     query
@@ -287,6 +287,10 @@ Key.prototype.resourceRemove = async function(query, resourceName) {
     validate: false
   })
 
+  await this.saveCallback({
+    updatedKeys: [Object.assign({}, keys[0], {resources: resources.getAll()})]
+  })
+
   return {
     results: update.results.map(client => this.formatForOutput(client))
   }
@@ -314,7 +318,8 @@ Key.prototype.resourceUpdate = async function(query, resourceName, access) {
   const {results: keys} = await this.model.find({
     options: {
       fields: {
-        resources: 1
+        resources: 1,
+        token: 1
       }
     },
     query
@@ -342,6 +347,10 @@ Key.prototype.resourceUpdate = async function(query, resourceName, access) {
       })
     },
     validate: false
+  })
+
+  await this.saveCallback({
+    updatedKeys: [Object.assign({}, keys[0], {resources: resources.getAll()})]
   })
 
   return {

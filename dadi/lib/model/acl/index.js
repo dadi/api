@@ -27,7 +27,7 @@ ACL.prototype.createError = function(client) {
   // right permissions to perform the operation - i.e. the request is
   // authenticated, just not authorised. That is a 403. In any other case,
   // the request is unauthorised, so a 401 is returned.
-  if (client && client.clientId && !client.error) {
+  if (client && (client.clientId || client.isAccessKey) && !client.error) {
     return new Error(ERROR_FORBIDDEN)
   }
 

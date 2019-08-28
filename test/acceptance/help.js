@@ -2,6 +2,7 @@ const acl = require('./../../dadi/lib/model/acl')
 const bcrypt = require('bcrypt')
 const exec = require('child_process').exec
 const fs = require('fs-extra')
+const Key = require('../../dadi/lib/model/acl/key')
 const path = require('path')
 const should = require('should')
 const connection = require(__dirname + '/../../dadi/lib/model/connection')
@@ -245,11 +246,18 @@ module.exports.createACLClient = function(client, callback) {
     config.get('datastore')
   )
 
-  client = hashClientSecret(client)
+  const data = Object.assign({}, hashClientSecret(client))
+
+  if (client.resources) {
+    data.resources = Object.keys(client.resources).map(key => ({
+      r: key,
+      a: client.resources[key]
+    }))
+  }
 
   return clientsConnection.datastore
     .insert({
-      data: client,
+      data,
       collection: config.get('auth.clientCollection'),
       schema: {}
     })
@@ -271,6 +279,56 @@ module.exports.createACLClient = function(client, callback) {
     })
 }
 
+module.exports.createACLKey = function(key = {}, callback) {
+  const keysConnection = connection(
+    {
+      override: true,
+      database: config.get('auth.database'),
+      collection: config.get('auth.keyCollection')
+    },
+    null,
+    config.get('datastore')
+  )
+
+  const data = Object.assign({}, key)
+
+  if (key.resources) {
+    data.resources = Object.keys(key.resources).map(resourceKey => ({
+      r: resourceKey,
+      a: key.resources[resourceKey]
+    }))
+  }
+
+  return Key.generateToken()
+    .then(token => {
+      return keysConnection.datastore.insert({
+        data: Object.assign({}, data, {token}),
+        collection: config.get('auth.keyCollection'),
+        schema: {}
+      })
+    })
+    .then(result => {
+      return acl.access
+        .writeKeyAccess({
+          updatedKeys: result
+        })
+        .then(() => {
+          if (typeof callback === 'function') {
+            callback(null, result[0])
+          }
+
+          return result[0]
+        })
+    })
+    .catch(err => {
+      if (typeof callback === 'function') {
+        callback(err)
+      }
+
+      return Promise.reject(err)
+    })
+}
+
 module.exports.createACLRole = function(role, callback) {
   const rolesConnection = connection(
     {
@@ -282,9 +340,18 @@ module.exports.createACLRole = function(role, callback) {
     config.get('datastore')
   )
 
+  const data = Object.assign({}, role)
+
+  if (role.resources) {
+    data.resources = Object.keys(role.resources).map(key => ({
+      r: key,
+      a: role.resources[key]
+    }))
+  }
+
   return rolesConnection.datastore
     .insert({
-      data: role,
+      data,
       collection: config.get('auth.roleCollection'),
       schema: {}
     })
@@ -367,6 +434,26 @@ module.exports.removeACLData = function(done) {
     config.get('datastore')
   )
 
+  const keysConnection = connection(
+    {
+      override: true,
+      database: config.get('auth.database'),
+      collection: config.get('auth.keyCollection')
+    },
+    null,
+    config.get('datastore')
+  )
+
+  const keyAccessConnection = connection(
+    {
+      override: true,
+      database: config.get('auth.database'),
+      collection: config.get('auth.keyAccessCollection')
+    },
+    null,
+    config.get('datastore')
+  )
+
   const rolesConnection = connection(
     {
       override: true,
@@ -382,6 +469,16 @@ module.exports.removeACLData = function(done) {
     .then(() => {
       return clientsConnection.datastore.dropDatabase(
         config.get('auth.clientCollection')
+      )
+    })
+    .then(() => {
+      return keysConnection.datastore.dropDatabase(
+        config.get('auth.keyCollection')
+      )
+    })
+    .then(() => {
+      return keyAccessConnection.datastore.dropDatabase(
+        config.get('auth.keyAccessCollection')
       )
     })
     .then(() => {

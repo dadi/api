@@ -1339,6 +1339,180 @@ describe('Collections API', () => {
       })
     })
 
+    it('should return 403 when the document contains fields that are prohibited by a `create.fields` object (projection of type "includes")', function(done) {
+      const testClient = {
+        clientId: 'apiClient',
+        secret: 'someSecret',
+        resources: {
+          'collection:testdb_test-schema': {
+            create: {
+              fields: {
+                title: 1
+              }
+            },
+            read: true
+          }
+        }
+      }
+
+      const payload = {
+        field1: 'fieldValue',
+        title: 'title'
+      }
+
+      help
+        .getBearerTokenWithPermissions({
+          accessType: 'admin'
+        })
+        .then(adminToken => {
+          help.createACLClient(testClient).then(() => {
+            client
+              .post(config.get('auth.tokenUrl'))
+              .set('content-type', 'application/json')
+              .send(testClient)
+              .expect(200)
+              .end((err, res) => {
+                if (err) return done(err)
+
+                const bearerToken = res.body.accessToken
+
+                client
+                  .post(`/testdb/test-schema`)
+                  .send(payload)
+                  .set('content-type', 'application/json')
+                  .set('Authorization', `Bearer ${bearerToken}`)
+                  .expect(403)
+                  .end((err, res) => {
+                    if (err) return done(err)
+
+                    client
+                      .post(`/testdb/test-schema`)
+                      .send(Object.assign({}, payload, {field1: undefined}))
+                      .set('content-type', 'application/json')
+                      .set('Authorization', `Bearer ${bearerToken}`)
+                      .expect(200)
+                      .end((err, res) => {
+                        res.body.results.length.should.eql(1)
+                        res.body.results[0]._createdBy.should.be.instanceOf(
+                          String
+                        )
+                        res.body.results[0]._id.should.be.instanceOf(String)
+                        res.body.results[0].title.should.eql(payload.title)
+                        should.not.exist(res.body.results[0].field1)
+
+                        client
+                          .get(`/testdb/test-schema/${res.body.results[0]._id}`)
+                          .set('content-type', 'application/json')
+                          .set('Authorization', `Bearer ${adminToken}`)
+                          .expect(200)
+                          .end((err, res) => {
+                            if (err) return done(err)
+
+                            res.body.results.length.should.eql(1)
+                            res.body.results[0]._createdBy.should.be.instanceOf(
+                              String
+                            )
+                            res.body.results[0]._id.should.be.instanceOf(String)
+                            res.body.results[0].title.should.eql(payload.title)
+                            should.not.exist(res.body.results[0].field1)
+
+                            done(err)
+                          })
+                      })
+                  })
+              })
+          })
+        })
+    })
+
+    it('should return 403 when the document contains fields that are prohibited by a `create.fields` object (projection of type "excludes")', function(done) {
+      const testClient = {
+        clientId: 'apiClient',
+        secret: 'someSecret',
+        resources: {
+          'collection:testdb_test-schema': {
+            create: {
+              fields: {
+                title: 0
+              }
+            },
+            read: true
+          }
+        }
+      }
+
+      const payload = {
+        field1: 'fieldValue',
+        title: 'title'
+      }
+
+      help
+        .getBearerTokenWithPermissions({
+          accessType: 'admin'
+        })
+        .then(adminToken => {
+          help.createACLClient(testClient).then(() => {
+            client
+              .post(config.get('auth.tokenUrl'))
+              .set('content-type', 'application/json')
+              .send(testClient)
+              .expect(200)
+              .end((err, res) => {
+                if (err) return done(err)
+
+                const bearerToken = res.body.accessToken
+
+                client
+                  .post(`/testdb/test-schema`)
+                  .send(payload)
+                  .set('content-type', 'application/json')
+                  .set('Authorization', `Bearer ${bearerToken}`)
+                  .expect(403)
+                  .end((err, res) => {
+                    if (err) return done(err)
+
+                    client
+                      .post(`/testdb/test-schema`)
+                      .send(Object.assign({}, payload, {title: undefined}))
+                      .set('content-type', 'application/json')
+                      .set('Authorization', `Bearer ${bearerToken}`)
+                      .expect(200)
+                      .end((err, res) => {
+                        res.body.results.length.should.eql(1)
+                        res.body.results[0]._createdBy.should.be.instanceOf(
+                          String
+                        )
+                        res.body.results[0]._id.should.be.instanceOf(String)
+                        res.body.results[0].field1.should.eql(payload.field1)
+                        should.not.exist(res.body.results[0].title)
+
+                        client
+                          .get(`/testdb/test-schema/${res.body.results[0]._id}`)
+                          .set('content-type', 'application/json')
+                          .set('Authorization', `Bearer ${adminToken}`)
+                          .expect(200)
+                          .end((err, res) => {
+                            if (err) return done(err)
+
+                            res.body.results.length.should.eql(1)
+                            res.body.results[0]._createdBy.should.be.instanceOf(
+                              String
+                            )
+                            res.body.results[0]._id.should.be.instanceOf(String)
+                            res.body.results[0].field1.should.eql(
+                              payload.field1
+                            )
+                            should.not.exist(res.body.results[0].title)
+
+                            done(err)
+                          })
+                      })
+                  })
+              })
+          })
+        })
+    })
+
     it('should return 200 with create permission', function(done) {
       const testClient = {
         clientId: 'apiClient',
@@ -1923,155 +2097,7 @@ describe('Collections API', () => {
         })
     })
 
-    it('should create only the fields defined in the `create.fields` object, if defined (projection of type "includes")', function(done) {
-      const testClient = {
-        clientId: 'apiClient',
-        secret: 'someSecret',
-        resources: {
-          'collection:testdb_test-schema': {
-            create: {
-              fields: {
-                title: 1
-              }
-            },
-            read: true
-          }
-        }
-      }
-
-      const payload = {
-        field1: 'fieldValue',
-        title: 'title'
-      }
-
-      help
-        .getBearerTokenWithPermissions({
-          accessType: 'admin'
-        })
-        .then(adminToken => {
-          help.createACLClient(testClient).then(() => {
-            client
-              .post(config.get('auth.tokenUrl'))
-              .set('content-type', 'application/json')
-              .send(testClient)
-              .expect(200)
-              .end((err, res) => {
-                if (err) return done(err)
-
-                const bearerToken = res.body.accessToken
-
-                client
-                  .post(`/testdb/test-schema`)
-                  .send(payload)
-                  .set('content-type', 'application/json')
-                  .set('Authorization', `Bearer ${bearerToken}`)
-                  .expect(200)
-                  .end((err, res) => {
-                    res.body.results.length.should.eql(1)
-                    res.body.results[0]._createdBy.should.be.instanceOf(String)
-                    res.body.results[0]._id.should.be.instanceOf(String)
-                    res.body.results[0].title.should.eql(payload.title)
-                    should.not.exist(res.body.results[0].field1)
-
-                    client
-                      .get(`/testdb/test-schema/${res.body.results[0]._id}`)
-                      .set('content-type', 'application/json')
-                      .set('Authorization', `Bearer ${adminToken}`)
-                      .expect(200)
-                      .end((err, res) => {
-                        if (err) return done(err)
-
-                        res.body.results.length.should.eql(1)
-                        res.body.results[0]._createdBy.should.be.instanceOf(
-                          String
-                        )
-                        res.body.results[0]._id.should.be.instanceOf(String)
-                        res.body.results[0].title.should.eql(payload.title)
-                        should.not.exist(res.body.results[0].field1)
-
-                        done(err)
-                      })
-                  })
-              })
-          })
-        })
-    })
-
-    it('should create only the fields defined in the `create.fields` object, if defined (projection of type "excludes")', function(done) {
-      const testClient = {
-        clientId: 'apiClient',
-        secret: 'someSecret',
-        resources: {
-          'collection:testdb_test-schema': {
-            create: {
-              fields: {
-                title: 0
-              }
-            },
-            read: true
-          }
-        }
-      }
-
-      const payload = {
-        field1: 'fieldValue',
-        title: 'title'
-      }
-
-      help
-        .getBearerTokenWithPermissions({
-          accessType: 'admin'
-        })
-        .then(adminToken => {
-          help.createACLClient(testClient).then(() => {
-            client
-              .post(config.get('auth.tokenUrl'))
-              .set('content-type', 'application/json')
-              .send(testClient)
-              .expect(200)
-              .end((err, res) => {
-                if (err) return done(err)
-
-                const bearerToken = res.body.accessToken
-
-                client
-                  .post(`/testdb/test-schema`)
-                  .send(payload)
-                  .set('content-type', 'application/json')
-                  .set('Authorization', `Bearer ${bearerToken}`)
-                  .expect(200)
-                  .end((err, res) => {
-                    res.body.results.length.should.eql(1)
-                    res.body.results[0]._createdBy.should.be.instanceOf(String)
-                    res.body.results[0]._id.should.be.instanceOf(String)
-                    res.body.results[0].field1.should.eql(payload.field1)
-                    should.not.exist(res.body.results[0].title)
-
-                    client
-                      .get(`/testdb/test-schema/${res.body.results[0]._id}`)
-                      .set('content-type', 'application/json')
-                      .set('Authorization', `Bearer ${adminToken}`)
-                      .expect(200)
-                      .end((err, res) => {
-                        if (err) return done(err)
-
-                        res.body.results.length.should.eql(1)
-                        res.body.results[0]._createdBy.should.be.instanceOf(
-                          String
-                        )
-                        res.body.results[0]._id.should.be.instanceOf(String)
-                        res.body.results[0].field1.should.eql(payload.field1)
-                        should.not.exist(res.body.results[0].title)
-
-                        done(err)
-                      })
-                  })
-              })
-          })
-        })
-    })
-
-    it('should return a 400 when one of the validation errors results from the `create.fields` ACL permissions blocking the client from writing to a required field', function(done) {
+    it('should return a 403 when one of the validation errors results from the `create.fields` ACL permissions blocking the client from writing to a required field', function(done) {
       const testClient = {
         clientId: 'apiClient',
         secret: 'someSecret',
@@ -2092,43 +2118,30 @@ describe('Collections API', () => {
         field2: 1337
       }
 
-      help
-        .getBearerTokenWithPermissions({
-          accessType: 'admin'
-        })
-        .then(adminToken => {
-          help.createACLClient(testClient).then(() => {
+      help.createACLClient(testClient).then(() => {
+        client
+          .post(config.get('auth.tokenUrl'))
+          .set('content-type', 'application/json')
+          .send(testClient)
+          .expect(200)
+          .end((err, res) => {
+            if (err) return done(err)
+
+            const bearerToken = res.body.accessToken
+
             client
-              .post(config.get('auth.tokenUrl'))
+              .post(`/testdb/test-required-schema`)
+              .send(payload)
               .set('content-type', 'application/json')
-              .send(testClient)
-              .expect(200)
+              .set('Authorization', `Bearer ${bearerToken}`)
+              .expect(403)
               .end((err, res) => {
-                if (err) return done(err)
+                res.body.code.should.eql('API-0009')
 
-                const bearerToken = res.body.accessToken
-
-                client
-                  .post(`/testdb/test-required-schema`)
-                  .send(payload)
-                  .set('content-type', 'application/json')
-                  .set('Authorization', `Bearer ${bearerToken}`)
-                  .expect(400)
-                  .end((err, res) => {
-                    res.body.success.should.eql(false)
-                    res.body.errors.length.should.eql(2)
-                    res.body.errors[0].code.should.eql('ERROR_UNAUTHORISED')
-                    res.body.errors[0].field.should.eql('field1')
-                    res.body.errors[0].message.should.be.instanceOf(String)
-                    res.body.errors[1].code.should.eql('ERROR_VALUE_INVALID')
-                    res.body.errors[1].field.should.eql('field2')
-                    res.body.errors[1].message.should.be.instanceOf(String)
-
-                    done(err)
-                  })
+                done(err)
               })
           })
-        })
+      })
     })
 
     it('should return a 403 when all the validation errors result from the `create.fields` ACL permissions blocking the client from writing to a required field', function(done) {
@@ -2152,40 +2165,30 @@ describe('Collections API', () => {
         field2: 'two'
       }
 
-      help
-        .getBearerTokenWithPermissions({
-          accessType: 'admin'
-        })
-        .then(adminToken => {
-          help.createACLClient(testClient).then(() => {
+      help.createACLClient(testClient).then(() => {
+        client
+          .post(config.get('auth.tokenUrl'))
+          .set('content-type', 'application/json')
+          .send(testClient)
+          .expect(200)
+          .end((err, res) => {
+            if (err) return done(err)
+
+            const bearerToken = res.body.accessToken
+
             client
-              .post(config.get('auth.tokenUrl'))
+              .post(`/testdb/test-required-schema`)
+              .send(payload)
               .set('content-type', 'application/json')
-              .send(testClient)
-              .expect(200)
+              .set('Authorization', `Bearer ${bearerToken}`)
+              .expect(403)
               .end((err, res) => {
-                if (err) return done(err)
+                res.body.code.should.eql('API-0009')
 
-                const bearerToken = res.body.accessToken
-
-                client
-                  .post(`/testdb/test-required-schema`)
-                  .send(payload)
-                  .set('content-type', 'application/json')
-                  .set('Authorization', `Bearer ${bearerToken}`)
-                  .expect(403)
-                  .end((err, res) => {
-                    res.body.success.should.eql(false)
-                    res.body.errors.length.should.eql(1)
-                    res.body.errors[0].code.should.eql('ERROR_UNAUTHORISED')
-                    res.body.errors[0].field.should.eql('field1')
-                    res.body.errors[0].message.should.be.instanceOf(String)
-
-                    done(err)
-                  })
+                done(err)
               })
           })
-        })
+      })
     })
 
     it('should return 401 without bearer token if `settings.authenticate` is set to an array that includes `POST`', function(done) {
@@ -3201,7 +3204,7 @@ describe('Collections API', () => {
         })
     })
 
-    it('should limit the update to the fields defined in the `update.fields` object, if defined (projection of type "includes")', function(done) {
+    it('should return 403 when the update object contains fields which have been excluded in the `update.fields` object (projection of type "includes")', function(done) {
       const testClient = {
         clientId: 'apiClient',
         secret: 'someSecret',
@@ -3258,17 +3261,31 @@ describe('Collections API', () => {
                       .send(update)
                       .set('content-type', 'application/json')
                       .set('Authorization', `Bearer ${bearerToken}`)
-                      .expect(200)
+                      .expect(403)
                       .end((err, res) => {
-                        res.body.results.length.should.eql(1)
-                        res.body.results[0]._createdBy.should.be.instanceOf(
-                          String
-                        )
-                        res.body.results[0]._id.should.be.instanceOf(String)
-                        res.body.results[0].field1.should.eql(original.field1)
-                        res.body.results[0].title.should.eql(update.title)
+                        if (err) return done(err)
 
-                        done(err)
+                        res.body.code.should.eql('API-0009')
+
+                        client
+                          .put(`/testdb/test-schema/${id}`)
+                          .send(Object.assign({}, update, {field1: undefined}))
+                          .set('content-type', 'application/json')
+                          .set('Authorization', `Bearer ${bearerToken}`)
+                          .expect(200)
+                          .end((err, res) => {
+                            res.body.results.length.should.eql(1)
+                            res.body.results[0]._createdBy.should.be.instanceOf(
+                              String
+                            )
+                            res.body.results[0]._id.should.be.instanceOf(String)
+                            res.body.results[0].field1.should.eql(
+                              original.field1
+                            )
+                            res.body.results[0].title.should.eql(update.title)
+
+                            done(err)
+                          })
                       })
                   })
               })
@@ -3276,7 +3293,7 @@ describe('Collections API', () => {
         })
     })
 
-    it('should limit the update to the fields defined in the `update.fields` object, if defined (projection of type "excludes")', function(done) {
+    it('should return 403 when the update object contains fields which have been excluded in the `update.fields` object (projection of type "excludes")', function(done) {
       const testClient = {
         clientId: 'apiClient',
         secret: 'someSecret',
@@ -3333,17 +3350,29 @@ describe('Collections API', () => {
                       .send(update)
                       .set('content-type', 'application/json')
                       .set('Authorization', `Bearer ${bearerToken}`)
-                      .expect(200)
+                      .expect(403)
                       .end((err, res) => {
-                        res.body.results.length.should.eql(1)
-                        res.body.results[0]._createdBy.should.be.instanceOf(
-                          String
-                        )
-                        res.body.results[0]._id.should.be.instanceOf(String)
-                        res.body.results[0].field1.should.eql(update.field1)
-                        res.body.results[0].title.should.eql(original.title)
+                        if (err) return done(err)
 
-                        done(err)
+                        res.body.code.should.eql('API-0009')
+
+                        client
+                          .put(`/testdb/test-schema/${id}`)
+                          .send(Object.assign({}, update, {title: undefined}))
+                          .set('content-type', 'application/json')
+                          .set('Authorization', `Bearer ${bearerToken}`)
+                          .expect(200)
+                          .end((err, res) => {
+                            res.body.results.length.should.eql(1)
+                            res.body.results[0]._createdBy.should.be.instanceOf(
+                              String
+                            )
+                            res.body.results[0]._id.should.be.instanceOf(String)
+                            res.body.results[0].field1.should.eql(update.field1)
+                            res.body.results[0].title.should.eql(original.title)
+
+                            done(err)
+                          })
                       })
                   })
               })

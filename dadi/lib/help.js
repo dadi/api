@@ -170,6 +170,12 @@ module.exports.sendBackJSON = function(successCode, res, next) {
 
           break
 
+        case 'FORBIDDEN_PARTIAL':
+          body = formatError.createError('api', '0009', null, ERROR_CODES)
+          statusCode = 403
+
+          break
+
         case 'UNAUTHORISED':
           body = formatError.createError('api', '0005', null, ERROR_CODES)
           statusCode = 401

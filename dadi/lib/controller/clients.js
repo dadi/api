@@ -144,37 +144,39 @@ Clients.prototype.deleteRole = async function(req, res, next) {
   }
 }
 
-Clients.prototype.get = function(req, res, next) {
-  let aclCheck = Promise.resolve()
-  const clientId = req.params.clientId
+Clients.prototype.get = async function(req, res, next) {
+  try {
+    if (!req.dadiApiClient || !req.dadiApiClient.clientId) {
+      throw acl.createError(req.dadiApiClient)
+    }
 
-  // Clients will always have read access to their own endpoint.
-  if (!clientId || req.dadiApiClient.clientId !== clientId) {
-    aclCheck = acl.access.get(req.dadiApiClient, 'clients').then(access => {
+    const clientId = req.params.clientId
+
+    // Clients will always have read access to their own endpoint.
+    if (!clientId || req.dadiApiClient.clientId !== clientId) {
+      const access = await acl.access.get(req.dadiApiClient, 'clients')
+
       if (access.read !== true) {
-        return Promise.reject(acl.createError(req.dadiApiClient))
+        throw acl.createError(req.dadiApiClient)
       }
+    }
+
+    const clients = await model.get(clientId)
+
+    if (clientId && clients.results.length === 0) {
+      return help.sendBackJSON(404, res, next)(null, null)
+    }
+
+    const sanitisedClients = clients.results.map(client => {
+      return model.formatForOutput(client)
     })
+
+    help.sendBackJSON(200, res, next)(null, {
+      results: sanitisedClients
+    })
+  } catch (error) {
+    return this.handleError(res, next)(error)
   }
-
-  return aclCheck
-    .then(() => {
-      return model.get(clientId)
-    })
-    .then(clients => {
-      if (clientId && clients.results.length === 0) {
-        return help.sendBackJSON(404, res, next)(null, null)
-      }
-
-      const sanitisedClients = clients.results.map(client => {
-        return model.formatForOutput(client)
-      })
-
-      help.sendBackJSON(200, res, next)(null, {
-        results: sanitisedClients
-      })
-    })
-    .catch(this.handleError(res, next))
 }
 
 Clients.prototype.handleError = function(res, next) {

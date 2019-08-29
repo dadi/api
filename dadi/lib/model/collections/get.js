@@ -30,6 +30,7 @@ const logger = require('@dadi/logger')
  * @param  {Object}  options
  * @param  {Boolean} rawOutput - whether to bypass formatting routine
  * @param  {Object}  req - request object to pass to hooks
+ * @param  {Boolean} runHooks - whether to run before/after hooks
  * @param  {Number}  version - version of the document to retrieve
  * @return {Promise<ResultSet>}
  */
@@ -40,16 +41,19 @@ function get({
   options = {},
   rawOutput = false,
   req,
+  runHooks = true,
   version
 }) {
   // Is this a RESTful query by ID?
   const isRestIDQuery = req && req.params && req.params.id
 
+  const hooks = runHooks ? this.settings.hooks : null
+
   return new Promise((resolve, reject) => {
     // Run any `beforeGet` hooks.
-    if (this.settings.hooks && this.settings.hooks.beforeGet) {
+    if (hooks && hooks.beforeGet) {
       async.reduce(
-        this.settings.hooks.beforeGet,
+        hooks.beforeGet,
         query,
         (current, hookConfig, callback) => {
           const hook = new Hook(hookConfig, 'beforeGet')
@@ -107,8 +111,6 @@ function get({
       })
     })
     .then(response => {
-      const {hooks} = this.settings
-
       if (hooks && hooks.afterGet) {
         return new Promise((resolve, reject) => {
           async.reduce(

@@ -559,6 +559,59 @@ describe('Hook', function() {
         })
       })
     })
+
+    it('should not run hook if the `runHooks` parameter is false', function(done) {
+      const schema = help.getModelSchema()
+
+      schema.title = {
+        type: 'String',
+        required: false
+      }
+
+      schema.slug = {
+        type: 'String',
+        required: false
+      }
+
+      const settings = {
+        database: 'testdb',
+        storeRevisions: false,
+        hooks: {
+          beforeCreate: [
+            {
+              hook: 'slug',
+              options: {
+                from: 'title',
+                to: 'slug'
+              }
+            }
+          ]
+        }
+      }
+
+      sinon.stub(hook.Hook.prototype, 'load').returns(optionsFunction)
+
+      const mod = model('testModelName', schema, null, settings)
+
+      help.whenModelsConnect([mod], () => {
+        mod
+          .create({
+            documents: [{fieldName: 'foo', title: 'Article One', slug: ''}],
+            runHooks: false
+          })
+          .then(result => {
+            hook.Hook.prototype.load.restore()
+
+            // find the obj we just created
+            mod.find({}, function(err, doc) {
+              if (err) return done(err)
+
+              doc.results[0].slug.should.eql('')
+              done()
+            })
+          })
+      })
+    })
   })
 
   describe('`afterCreate` hook', function() {
@@ -750,6 +803,67 @@ describe('Hook', function() {
         })
       })
     })
+
+    it('should modify single documents after create', function(done) {
+      const schema = help.getModelSchema()
+
+      schema.title = {
+        type: 'String',
+        required: false
+      }
+
+      schema.slug = {
+        type: 'String',
+        required: false
+      }
+
+      const settings = {
+        database: 'testdb',
+        storeRevisions: false,
+        hooks: {
+          afterCreate: [
+            {
+              hook: 'writeToLog',
+              options: {
+                filename: 'testAfterCreateHook.log'
+              }
+            }
+          ]
+        }
+      }
+
+      sinon.stub(hook.Hook.prototype, 'load').returns(logFunction)
+
+      const mod = model('testModelName', schema, null, settings)
+
+      mod
+        .create({
+          documents: [{fieldName: 'foo', title: 'Article One', slug: ''}],
+          runHooks: false
+        })
+        .then(_ => {
+          mod
+            .find({
+              query: {fieldName: 'foo'}
+            })
+            .then(doc => {
+              hook.Hook.prototype.load.restore()
+
+              doc.results[0].slug.should.eql('')
+
+              const fs = require('fs')
+              const path = require('path')
+              const file = path.resolve(
+                path.join(__dirname, 'testAfterCreateHook.log')
+              )
+
+              fs.stat(file, function(err, _) {
+                err.code.should.eql('ENOENT')
+                done()
+              })
+            })
+        })
+    })
   })
 
   describe('`beforeUpdate` hook', function() {
@@ -872,6 +986,69 @@ describe('Hook', function() {
           }, 500)
         })
       })
+    })
+
+    it('should not run hook if the `runHooks` parameter is false', function(done) {
+      const schema = help.getModelSchema()
+
+      schema.title = {
+        type: 'String',
+        required: false
+      }
+
+      schema.slug = {
+        type: 'String',
+        required: false
+      }
+
+      const settings = {
+        database: 'testdb',
+        storeRevisions: false,
+        hooks: {
+          beforeUpdate: [
+            {
+              hook: 'slug',
+              options: {
+                from: 'title',
+                to: 'slug'
+              }
+            }
+          ]
+        }
+      }
+
+      sinon.stub(hook.Hook.prototype, 'load').returns(optionsFunction)
+
+      const mod = model('testModelName', schema, null, settings)
+
+      mod
+        .create({
+          documents: [{fieldName: 'foo', title: 'Article One', slug: ''}]
+        })
+        .then(result => {
+          const id = result.results[0]._id.toString()
+
+          mod
+            .update({
+              query: {_id: id},
+              runHooks: false,
+              update: {title: 'Article Two'}
+            })
+            .then(doc => {
+              hook.Hook.prototype.load.restore()
+
+              setTimeout(function() {
+                mod
+                  .find({
+                    query: {_id: id}
+                  })
+                  .then(doc => {
+                    doc.results[0].slug.should.eql('')
+                    done()
+                  })
+              }, 500)
+            })
+        })
     })
   })
 
@@ -1001,6 +1178,69 @@ describe('Hook', function() {
           })
         })
       })
+    })
+
+    it('should not run hook if the `runHooks` parameter is false', function(done) {
+      const schema = help.getModelSchema()
+
+      schema.title = {
+        type: 'String',
+        required: false
+      }
+
+      schema.slug = {
+        type: 'String',
+        required: false
+      }
+
+      const settings = {
+        database: 'testdb',
+        storeRevisions: false,
+        hooks: {
+          afterUpdate: [
+            {
+              hook: 'writeToLog',
+              options: {
+                filename: 'testAfterUpdateHook.log'
+              }
+            }
+          ]
+        }
+      }
+
+      sinon.stub(hook.Hook.prototype, 'load').returns(logFunction)
+
+      const mod = model('testModelName', schema, null, settings)
+
+      mod
+        .create({
+          documents: [{fieldName: 'foo', title: 'Article One', slug: ''}]
+        })
+        .then(result => {
+          const id = result.results[0]._id.toString()
+
+          return mod.update({
+            query: {_id: id},
+            runHooks: false,
+            update: {title: 'Article Two'}
+          })
+        })
+        .then(doc => {
+          hook.Hook.prototype.load.restore()
+
+          doc.results[0].slug.should.eql('')
+
+          const fs = require('fs')
+          const path = require('path')
+          const file = path.resolve(
+            path.join(__dirname, 'testAfterUpdateHook.log')
+          )
+
+          fs.stat(file, function(err, _) {
+            err.code.should.eql('ENOENT')
+            done()
+          })
+        })
     })
   })
 
@@ -1206,6 +1446,79 @@ describe('Hook', function() {
         })
       })
     })
+
+    it('should not run hook if the `runHooks` parameter is false', function(done) {
+      const schema = help.getModelSchema()
+
+      schema.title = {
+        type: 'String',
+        required: false
+      }
+
+      schema.slug = {
+        type: 'String',
+        required: false
+      }
+
+      const settings = {
+        database: 'testdb',
+        storeRevisions: false,
+        hooks: {
+          beforeDelete: [
+            {
+              hook: 'writeToLog',
+              options: {
+                filename: 'testBeforeDeleteHook.log'
+              }
+            }
+          ]
+        }
+      }
+
+      sinon.stub(hook.Hook.prototype, 'load').returns(logFunction)
+
+      const mod = model('testModelName', schema, null, settings)
+
+      mod
+        .create({
+          documents: [{fieldName: 'foo', title: 'Article One', slug: ''}]
+        })
+        .then(result => {
+          const id = result.results[0]._id.toString()
+
+          return mod
+            .delete({
+              query: {_id: id},
+              runHooks: false
+            })
+            .then(_ => {
+              hook.Hook.prototype.load.restore()
+
+              setTimeout(function() {
+                // try to find the obj
+                mod
+                  .find({
+                    query: {_id: id}
+                  })
+                  .then(_ => {
+                    const fs = require('fs')
+                    const path = require('path')
+                    const file = path.resolve(
+                      path.join(__dirname, 'testBeforeDeleteHook.log')
+                    )
+
+                    fs.stat(file, function(err, _) {
+                      err.code.should.eql('ENOENT')
+                      done()
+                    })
+                  })
+                  .catch(error => {
+                    return done(error)
+                  })
+              }, 500)
+            })
+        })
+    })
   })
 
   describe('`afterDelete` hook', function() {
@@ -1403,6 +1716,74 @@ describe('Hook', function() {
         })
       })
     })
+
+    it('should not run hook if the `runHooks` parameter is false', function(done) {
+      const schema = help.getModelSchema()
+
+      schema.title = {
+        type: 'String',
+        required: false
+      }
+
+      schema.slug = {
+        type: 'String',
+        required: false
+      }
+
+      const settings = {
+        database: 'testdb',
+        storeRevisions: false,
+        hooks: {
+          afterDelete: [
+            {
+              hook: 'writeToLog',
+              options: {
+                filename: 'testBeforeDeleteHook.log'
+              }
+            }
+          ]
+        }
+      }
+
+      sinon.stub(hook.Hook.prototype, 'load').returns(logFunction)
+
+      const mod = model('testModelName', schema, null, settings)
+
+      mod
+        .create({
+          documents: [{fieldName: 'foo', title: 'Article One', slug: ''}]
+        })
+        .then(result => {
+          const id = result.results[0]._id.toString()
+
+          mod
+            .delete({
+              query: {_id: id},
+              runHooks: false
+            })
+            .then(_ => {
+              hook.Hook.prototype.load.restore()
+
+              setTimeout(function() {
+                // try to find the obj
+                mod.find({_id: id}, function(err, _) {
+                  if (err) return done(err)
+
+                  const fs = require('fs')
+                  const path = require('path')
+                  const file = path.resolve(
+                    path.join(__dirname, 'testBeforeDeleteHook.log')
+                  )
+
+                  fs.stat(file, function(err, stats) {
+                    err.code.should.eql('ENOENT')
+                    done()
+                  })
+                })
+              }, 500)
+            })
+        })
+    })
   })
 
   describe('`beforeGet` hook', function() {
@@ -1515,6 +1896,57 @@ describe('Hook', function() {
         })
       })
     })
+
+    it('should not run hook if the `runHooks` parameter is false', function(done) {
+      const schema = help.getModelSchema()
+
+      schema.title = {
+        type: 'String',
+        required: false
+      }
+
+      schema.slug = {
+        type: 'String',
+        required: false
+      }
+
+      const settings = {
+        database: 'testdb',
+        storeRevisions: false,
+        hooks: {
+          beforeGet: [
+            {
+              hook: 'slug',
+              options: {
+                field: 'title'
+              }
+            }
+          ]
+        }
+      }
+
+      sinon.stub(hook.Hook.prototype, 'load').returns(querySlugifyFunction)
+
+      const mod = model('testModelName', schema, null, settings)
+
+      mod
+        .create({
+          documents: [{fieldName: 'Some field', title: 'article-one'}]
+        })
+        .then(_ => {
+          return mod.get({
+            query: {title: 'Article One'},
+            runHooks: false
+          })
+        })
+        .then(doc => {
+          hook.Hook.prototype.load.restore()
+
+          doc.results.length.should.eql(0)
+
+          done()
+        })
+    })
   })
 
   describe('`afterGet` hook', function() {
@@ -1619,6 +2051,50 @@ describe('Hook', function() {
           done()
         })
       })
+    })
+
+    it('should not run hook if the `runHooks` parameter is false', function(done) {
+      const schema = help.getModelSchema()
+
+      schema.title = {
+        type: 'String',
+        required: false
+      }
+
+      schema.slug = {
+        type: 'String',
+        required: false
+      }
+
+      const settings = {
+        database: 'testdb',
+        storeRevisions: false,
+        hooks: {
+          afterGet: ['slug']
+        }
+      }
+
+      sinon.stub(hook.Hook.prototype, 'load').returns(hijackFunction)
+
+      const mod = model('testModelName', schema, null, settings)
+
+      mod
+        .create({
+          documents: [{fieldName: 'foo', title: 'Article One', slug: ''}]
+        })
+        .then(() => {
+          return mod.get({
+            query: {fieldName: 'foo'},
+            runHooks: false
+          })
+        })
+        .then(doc => {
+          hook.Hook.prototype.load.restore()
+
+          should.not.exist(doc.results[0].name)
+
+          done()
+        })
     })
   })
 })

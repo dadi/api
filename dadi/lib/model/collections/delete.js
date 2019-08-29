@@ -17,12 +17,15 @@ const workQueue = require('./../../workQueue')
  * @param  {String} description - optional update description
  * @param  {Object} query - query to find documents to delete
  * @param  {Object} req - request to be passed to hooks
+ * @param  {Boolean} runHooks - whether to run before/after hooks
  * @return {Promise<DeleteResult>}
  */
-function deleteFn({client, description, query, req}) {
+function deleteFn({client, description, query, req, runHooks = true}) {
   if (!this.connection.db) {
     return Promise.reject(new Error('DB_DISCONNECTED'))
   }
+
+  const hooks = runHooks ? this.settings.hooks : null
 
   // Is this a RESTful query by ID?
   const isRestIDQuery = req && req.params && req.params.id
@@ -116,10 +119,10 @@ function deleteFn({client, description, query, req}) {
         })
         .then(() => {
           // Run any `beforeDelete` hooks.
-          if (this.settings.hooks && this.settings.hooks.beforeDelete) {
+          if (hooks && hooks.beforeDelete) {
             return new Promise((resolve, reject) => {
               async.reduce(
-                this.settings.hooks.beforeDelete,
+                hooks.beforeDelete,
                 query,
                 (current, hookConfig, callback) => {
                   const hook = new Hook(hookConfig, 'beforeDelete')
@@ -163,11 +166,8 @@ function deleteFn({client, description, query, req}) {
             .then(result => {
               if (result.deletedCount > 0) {
                 // Run any `afterDelete` hooks.
-                if (
-                  this.settings.hooks &&
-                  typeof this.settings.hooks.afterDelete === 'object'
-                ) {
-                  this.settings.hooks.afterDelete.forEach(hookConfig => {
+                if (hooks && typeof hooks.afterDelete === 'object') {
+                  hooks.afterDelete.forEach(hookConfig => {
                     const hook = new Hook(hookConfig, 'afterDelete')
 
                     return hook.apply(

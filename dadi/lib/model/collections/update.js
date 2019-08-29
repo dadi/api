@@ -43,6 +43,7 @@ const workQueue = require('../../workQueue')
  * @param  {Boolean} rawOutput - whether to bypass output formatting
  * @param  {Boolean} removeInternalProperties - whether to remove internal properties
  * @param  {Object}  req - request object to pass to hooks
+ * @param  {Boolean} runHooks - whether to run before/after hooks
  * @param  {Boolean} validate - whether to run validation
  * @return {Promise<Array.ResultSet>} set of updated documents
  */
@@ -55,6 +56,7 @@ function update({
   rawOutput = false,
   removeInternalProperties = true,
   req,
+  runHooks = true,
   update,
   validate = true
 }) {
@@ -84,7 +86,7 @@ function update({
     update = this.removeInternalProperties(update)
   }
 
-  const {hooks} = this.settings
+  const hooks = runHooks ? this.settings.hooks : null
 
   // If an ACL check is performed, this variable will contain the resulting
   // access matrix.

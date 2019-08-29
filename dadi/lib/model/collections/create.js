@@ -13,6 +13,7 @@ const search = require('./../search')
  * @param {Boolean} rawOutput - whether to bypass formatting routine
  * @param {Boolean} removeInternalProperties - whether to remove internal properties
  * @param {Object} req - request
+ * @param {Boolean} runHooks - whether to run before/after hooks
  * @returns {Promise<Array>} array of created documents
  */
 async function create({
@@ -23,6 +24,7 @@ async function create({
   rawOutput = false,
   removeInternalProperties = true,
   req,
+  runHooks = true,
   validate = true
 }) {
   debug('Model create: %o %o', documents, internals)
@@ -57,7 +59,7 @@ async function create({
     return document
   })
 
-  const {hooks} = this.settings
+  const hooks = runHooks ? this.settings.hooks : null
 
   // If an ACL check is performed, this variable will contain the resulting
   // access matrix.

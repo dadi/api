@@ -207,44 +207,6 @@ Model.prototype._createValidationError = function(
   error.statusCode = 400
   error.success = false
 
-  // There's a possibility that some `ERROR_REQUIRED` errors are caused not
-  // because the client hasn't supplied a value for a given required field,
-  // but because they're blocked access to said field due to their access
-  // permissions. We detect that case here and adjust the error code and
-  // message accordingly for clarity.
-  if (access && access.create && access.create.fields && Array.isArray(data)) {
-    const fieldProjection = help.parseFieldProjection(access.create.fields)
-
-    let accessErrors = 0
-
-    if (fieldProjection) {
-      const {fields: projectionFields, type: projectionType} = fieldProjection
-
-      data.forEach(error => {
-        const {code, field} = error
-        const doesNotHaveAccessToField =
-          (projectionType === 0 && projectionFields.includes(field)) ||
-          (projectionType === 1 && !projectionFields.includes(field))
-
-        if (code === 'ERROR_REQUIRED' && doesNotHaveAccessToField) {
-          accessErrors++
-
-          error.code = 'ERROR_UNAUTHORISED'
-          error.message =
-            'is a required field which the client has no permission to write to'
-        }
-      })
-    }
-
-    // If the entirety of the errors are `ERROR_UNAUTHORISED`, then there's
-    // nothing wrong with the request per se, only with the access level of
-    // the requesting client. In those circumstances, we respond with a 403
-    // instead of a 400.
-    if (accessErrors === data.length) {
-      error.statusCode = 403
-    }
-  }
-
   if (data) {
     error.errors = data
   }
@@ -892,6 +854,8 @@ Model.prototype.validateAccess = async function({
       : Object.assign({}, query, value.filter)
   }
 
+  const isCreateOrUpdate = type === 'create' || type === 'update'
+
   if (value.fields) {
     let candidateFields = fields
 
@@ -899,7 +863,7 @@ Model.prototype.validateAccess = async function({
     // fields are not the ones sent via the `fields` URL parameter (assigned
     // to `fields`), but the fields present in the actual create/upload
     // payload.
-    if (normalisedDocuments) {
+    if (isCreateOrUpdate && normalisedDocuments) {
       candidateFields = normalisedDocuments.reduce((fields, document) => {
         if (document && typeof document === 'object') {
           Object.keys(document).forEach(field => {
@@ -917,10 +881,24 @@ Model.prototype.validateAccess = async function({
       return Promise.reject(err)
     }
 
+    // We're looking for documents containing a field that is prohibited by an
+    // ACL `fields` object. If we find such a case, we throw an error.
+    if (isCreateOrUpdate) {
+      const hasForbiddenFields = normalisedDocuments.some(document => {
+        return Object.keys(document).some(fieldName => {
+          return fieldName !== '_id' && fields[fieldName] !== 1
+        })
+      })
+
+      if (hasForbiddenFields) {
+        return Promise.reject(new Error('FORBIDDEN_PARTIAL'))
+      }
+    }
+
     // If we're dealing with a create or update request, we must filter the
     // payload to ensure that the document(s) only contain the fields which
     // the client has access to.
-    if (normalisedDocuments) {
+    if (isCreateOrUpdate && normalisedDocuments) {
       normalisedDocuments = normalisedDocuments.map(document => {
         if (!document || typeof document !== 'object') {
           return document

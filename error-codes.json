@@ -52,5 +52,11 @@
     "title": "Partial access",
     "details": "The bearer token supplied in the request only has partial access to the resource.",
     "params": []
+  },
+  "0010": {
+    "code": "API-0010",
+    "title": "Bad query",
+    "details": "The query supplied in the request is not valid.",
+    "params": []
   }
 }

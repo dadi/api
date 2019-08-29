@@ -158,6 +158,12 @@ module.exports.sendBackJSON = function(successCode, res, next) {
 
     if (err) {
       switch (err.message) {
+        case 'BAD_QUERY':
+          body = formatError.createError('api', '0010', null, ERROR_CODES)
+          statusCode = 400
+
+          break
+
         case 'DB_DISCONNECTED':
           body = formatError.createError('api', '0004', null, ERROR_CODES)
           statusCode = 503

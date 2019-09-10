@@ -98,7 +98,7 @@ module.exports.testModelProperty = function(key, val) {
 
   schema.fieldName = Object.assign({}, schema.fieldName, obj)
 
-  const m = model('testModelName', schema, null, {database: 'testdb'})
+  const m = model({name: 'testModelName', schema, property: 'testdb'})
 
   m.schema.fieldName[key].should.equal(val)
 }

@@ -980,16 +980,20 @@ Model.prototype.getVersions = require('./collections/getVersions')
 Model.prototype.update = require('./collections/update')
 
 module.exports = function(options) {
-  const {connection, isListable, name, property, schema, settings} =
-    typeof options === 'string'
-      ? {
-          connection: arguments[2],
-          name: arguments[0],
-          property: (arguments[3] || {}).database,
-          schema: arguments[1],
-          settings: arguments[3]
-        }
-      : options
+  if (typeof options === 'string') {
+    const errorMessage = `The model constructor expects an object with 'name' and 'property' properties – you supplied a String.
+  
+  Example:
+  
+  Model({
+    name: 'books',
+    property: 'library'
+  })`
+
+    throw new Error(errorMessage)
+  }
+
+  const {connection, isListable, name, property, schema, settings} = options
   const modelKey = getModelKey(name, property)
 
   // If there is already a model for this key, we return it if there was no

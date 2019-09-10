@@ -350,7 +350,12 @@ describe('Hook', function() {
 
       sinon.stub(hook.Hook.prototype, 'load').returns(inspectFunction)
 
-      const mod = model('testModelName', schema, null, settings)
+      const mod = model({
+        name: 'testModelName',
+        property: 'testdb',
+        schema,
+        settings
+      })
 
       help.whenModelsConnect([mod], () => {
         mod.create({fieldName: 'foo', title: 'Article One', slug: ''}, function(
@@ -402,7 +407,12 @@ describe('Hook', function() {
 
       sinon.stub(hook.Hook.prototype, 'load').returns(optionsFunction)
 
-      const mod = model('testModelName', schema, null, settings)
+      const mod = model({
+        name: 'testModelName',
+        property: 'testdb',
+        schema,
+        settings
+      })
 
       help.whenModelsConnect([mod], () => {
         mod.create({fieldName: 'foo', title: 'Article One', slug: ''}, function(
@@ -460,7 +470,12 @@ describe('Hook', function() {
         {fieldName: 'foo', title: 'Article Two', slug: ''}
       ]
 
-      const mod = model('testModelName', schema, null, settings)
+      const mod = model({
+        name: 'testModelName',
+        property: 'testdb',
+        schema,
+        settings
+      })
 
       help.whenModelsConnect([mod], () => {
         mod.create(docs, function(err, result) {
@@ -500,7 +515,12 @@ describe('Hook', function() {
         {fieldName: 'foo', title: 'Article Two', slug: ''}
       ]
 
-      const mod = model('testModelName', schema, null, settings)
+      const mod = model({
+        name: 'testModelName',
+        property: 'testdb',
+        schema,
+        settings
+      })
 
       help.whenModelsConnect([mod], () => {
         return mod.create(docs, function(err, result) {
@@ -541,7 +561,12 @@ describe('Hook', function() {
         {fieldName: 'foo', title: 'Article Two', slug: ''}
       ]
 
-      const mod = model('testModelName', schema, null, settings)
+      const mod = model({
+        name: 'testModelName',
+        property: 'testdb',
+        schema,
+        settings
+      })
 
       help.whenModelsConnect([mod], () => {
         return mod.create(docs, function(err, result) {
@@ -591,7 +616,12 @@ describe('Hook', function() {
 
       sinon.stub(hook.Hook.prototype, 'load').returns(optionsFunction)
 
-      const mod = model('testModelName', schema, null, settings)
+      const mod = model({
+        name: 'testModelName',
+        property: 'testdb',
+        schema,
+        settings
+      })
 
       help.whenModelsConnect([mod], () => {
         mod
@@ -655,7 +685,12 @@ describe('Hook', function() {
 
       sinon.stub(hook.Hook.prototype, 'load').returns(inspectFunction)
 
-      const mod = model('testModelName', schema, null, settings)
+      const mod = model({
+        name: 'testModelName',
+        property: 'testdb',
+        schema,
+        settings
+      })
 
       mod.create({fieldName: 'foo', title: 'Article One', slug: ''}, function(
         err,
@@ -704,7 +739,12 @@ describe('Hook', function() {
 
       sinon.stub(hook.Hook.prototype, 'load').returns(logFunction)
 
-      const mod = model('testModelName', schema, null, settings)
+      const mod = model({
+        name: 'testModelName',
+        property: 'testdb',
+        schema,
+        settings
+      })
 
       mod.create({fieldName: 'foo', title: 'Article One', slug: ''}, function(
         err,
@@ -770,7 +810,12 @@ describe('Hook', function() {
         {fieldName: 'foo', title: 'Article Two', slug: ''}
       ]
 
-      const mod = model('testModelName', schema, null, settings)
+      const mod = model({
+        name: 'testModelName',
+        property: 'testdb',
+        schema,
+        settings
+      })
 
       mod.create(docs, function(err, result) {
         if (err) return done(err)
@@ -834,7 +879,12 @@ describe('Hook', function() {
 
       sinon.stub(hook.Hook.prototype, 'load').returns(logFunction)
 
-      const mod = model('testModelName', schema, null, settings)
+      const mod = model({
+        name: 'testModelName',
+        property: 'testdb',
+        schema,
+        settings
+      })
 
       mod
         .create({
@@ -909,7 +959,12 @@ describe('Hook', function() {
 
       sinon.stub(hook.Hook.prototype, 'load').returns(inspectFunction)
 
-      const mod = model('testModelName', schema, null, settings)
+      const mod = model({
+        name: 'testModelName',
+        property: 'testdb',
+        schema,
+        settings
+      })
 
       mod.create({fieldName: 'foo', title: 'Article One', slug: ''}, function(
         err,
@@ -960,7 +1015,12 @@ describe('Hook', function() {
 
       sinon.stub(hook.Hook.prototype, 'load').returns(optionsFunction)
 
-      const mod = model('testModelName', schema, null, settings)
+      const mod = model({
+        name: 'testModelName',
+        property: 'testdb',
+        schema,
+        settings
+      })
 
       mod.create({fieldName: 'foo', title: 'Article One', slug: ''}, function(
         err,
@@ -1019,7 +1079,12 @@ describe('Hook', function() {
 
       sinon.stub(hook.Hook.prototype, 'load').returns(optionsFunction)
 
-      const mod = model('testModelName', schema, null, settings)
+      const mod = model({
+        name: 'testModelName',
+        property: 'testdb',
+        schema,
+        settings
+      })
 
       mod
         .create({
@@ -1094,7 +1159,12 @@ describe('Hook', function() {
 
       sinon.stub(hook.Hook.prototype, 'load').returns(inspectFunction)
 
-      const mod = model('testModelName', schema, null, settings)
+      const mod = model({
+        name: 'testModelName',
+        property: 'testdb',
+        schema,
+        settings
+      })
 
       mod.create({fieldName: 'foo', title: 'Article One', slug: ''}, function(
         err,
@@ -1143,7 +1213,12 @@ describe('Hook', function() {
 
       sinon.stub(hook.Hook.prototype, 'load').returns(logFunction)
 
-      const mod = model('testModelName', schema, null, settings)
+      const mod = model({
+        name: 'testModelName',
+        property: 'testdb',
+        schema,
+        settings
+      })
 
       mod.create({fieldName: 'foo', title: 'Article One', slug: ''}, function(
         err,
@@ -1210,7 +1285,12 @@ describe('Hook', function() {
 
       sinon.stub(hook.Hook.prototype, 'load').returns(logFunction)
 
-      const mod = model('testModelName', schema, null, settings)
+      const mod = model({
+        name: 'testModelName',
+        property: 'testdb',
+        schema,
+        settings
+      })
 
       mod
         .create({
@@ -1285,7 +1365,12 @@ describe('Hook', function() {
 
       sinon.stub(hook.Hook.prototype, 'load').returns(inspectFunction)
 
-      const mod = model('testModelName', schema, null, settings)
+      const mod = model({
+        name: 'testModelName',
+        property: 'testdb',
+        schema,
+        settings
+      })
 
       mod.create({fieldName: 'foo', title: 'Article One', slug: ''}, function(
         err,
@@ -1351,7 +1436,12 @@ describe('Hook', function() {
 
       sinon.stub(hook.Hook.prototype, 'load').returns(inspectFunction)
 
-      const mod = model('testModelName', schema, null, settings)
+      const mod = model({
+        name: 'testModelName',
+        property: 'testdb',
+        schema,
+        settings
+      })
 
       mod.create({fieldName: 'foo', title: 'Article One', slug: ''}, function(
         err,
@@ -1409,7 +1499,12 @@ describe('Hook', function() {
 
       sinon.stub(hook.Hook.prototype, 'load').returns(logFunction)
 
-      const mod = model('testModelName', schema, null, settings)
+      const mod = model({
+        name: 'testModelName',
+        property: 'testdb',
+        schema,
+        settings
+      })
 
       mod.create({fieldName: 'foo', title: 'Article One', slug: ''}, function(
         err,
@@ -1477,7 +1572,12 @@ describe('Hook', function() {
 
       sinon.stub(hook.Hook.prototype, 'load').returns(logFunction)
 
-      const mod = model('testModelName', schema, null, settings)
+      const mod = model({
+        name: 'testModelName',
+        property: 'testdb',
+        schema,
+        settings
+      })
 
       mod
         .create({
@@ -1562,7 +1662,12 @@ describe('Hook', function() {
 
       sinon.stub(hook.Hook.prototype, 'load').returns(inspectFunction)
 
-      const mod = model('testModelName', schema, null, settings)
+      const mod = model({
+        name: 'testModelName',
+        property: 'testdb',
+        schema,
+        settings
+      })
 
       mod.create({fieldName: 'foo', title: 'Article One', slug: ''}, function(
         err,
@@ -1621,7 +1726,12 @@ describe('Hook', function() {
 
       sinon.stub(hook.Hook.prototype, 'load').returns(inspectFunction)
 
-      const mod = model('testModelName', schema, null, settings)
+      const mod = model({
+        name: 'testModelName',
+        property: 'testdb',
+        schema,
+        settings
+      })
 
       mod.create({fieldName: 'foo', title: 'Article One', slug: ''}, function(
         err,
@@ -1679,7 +1789,12 @@ describe('Hook', function() {
 
       sinon.stub(hook.Hook.prototype, 'load').returns(logFunction)
 
-      const mod = model('testModelName', schema, null, settings)
+      const mod = model({
+        name: 'testModelName',
+        property: 'testdb',
+        schema,
+        settings
+      })
 
       mod.create({fieldName: 'foo', title: 'Article One', slug: ''}, function(
         err,
@@ -1747,7 +1862,12 @@ describe('Hook', function() {
 
       sinon.stub(hook.Hook.prototype, 'load').returns(logFunction)
 
-      const mod = model('testModelName', schema, null, settings)
+      const mod = model({
+        name: 'testModelName',
+        property: 'testdb',
+        schema,
+        settings
+      })
 
       mod
         .create({
@@ -1827,7 +1947,12 @@ describe('Hook', function() {
 
       sinon.stub(hook.Hook.prototype, 'load').returns(inspectFunction)
 
-      const mod = model('testModelName', schema, null, settings)
+      const mod = model({
+        name: 'testModelName',
+        property: 'testdb',
+        schema,
+        settings
+      })
 
       mod.create({fieldName: 'foo', title: 'Article One', slug: ''}, function(
         err,
@@ -1876,7 +2001,12 @@ describe('Hook', function() {
 
       sinon.stub(hook.Hook.prototype, 'load').returns(querySlugifyFunction)
 
-      const mod = model('testModelName', schema, null, settings)
+      const mod = model({
+        name: 'testModelName',
+        property: 'testdb',
+        schema,
+        settings
+      })
 
       mod.create({fieldName: 'Some field', title: 'article-one'}, function(
         err,
@@ -1927,7 +2057,12 @@ describe('Hook', function() {
 
       sinon.stub(hook.Hook.prototype, 'load').returns(querySlugifyFunction)
 
-      const mod = model('testModelName', schema, null, settings)
+      const mod = model({
+        name: 'testModelName',
+        property: 'testdb',
+        schema,
+        settings
+      })
 
       mod
         .create({
@@ -1990,7 +2125,12 @@ describe('Hook', function() {
 
       sinon.stub(hook.Hook.prototype, 'load').returns(inspectFunction)
 
-      const mod = model('testModelName', schema, null, settings)
+      const mod = model({
+        name: 'testModelName',
+        property: 'testdb',
+        schema,
+        settings
+      })
 
       mod.create({fieldName: 'foo', title: 'Article One', slug: ''}, function(
         err,
@@ -2032,7 +2172,12 @@ describe('Hook', function() {
 
       sinon.stub(hook.Hook.prototype, 'load').returns(hijackFunction)
 
-      const mod = model('testModelName', schema, null, settings)
+      const mod = model({
+        name: 'testModelName',
+        property: 'testdb',
+        schema,
+        settings
+      })
 
       mod.create({fieldName: 'foo', title: 'Article One', slug: ''}, function(
         err,
@@ -2076,7 +2221,12 @@ describe('Hook', function() {
 
       sinon.stub(hook.Hook.prototype, 'load').returns(hijackFunction)
 
-      const mod = model('testModelName', schema, null, settings)
+      const mod = model({
+        name: 'testModelName',
+        property: 'testdb',
+        schema,
+        settings
+      })
 
       mod
         .create({

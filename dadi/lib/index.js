@@ -69,7 +69,7 @@ Server.prototype.run = function(done) {
 
   if (!config.get('auth.tokenKey')) {
     const error = new Error(
-      'A private key for generating bearer tokens must be set via the `auth.tokenSecret` configuration property or the `TOKEN_SECRET` environment variable.'
+      'A private key for generating bearer tokens must be set via the `auth.tokenKey` configuration property or the `TOKEN_KEY` environment variable.'
     )
 
     log.error({module: 'server'}, error)

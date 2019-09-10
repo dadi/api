@@ -26,8 +26,10 @@ describe('Controller', () => {
 
   it('should export function that returns an instance', () => {
     controller.should.be.Function
-    const mod = model('testModel', help.getModelSchema(), null, {
-      database: 'testdb'
+    const mod = model({
+      name: 'testModel',
+      property: 'testdb',
+      schema: help.getModelSchema()
     })
 
     controller(mod).should.be.an.instanceOf(controller.Controller)
@@ -40,8 +42,10 @@ describe('Controller', () => {
       })
 
       it("should call the Model's get method", () => {
-        const mod = model('testModel', help.getModelSchema(), null, {
-          database: 'testdb'
+        const mod = model({
+          name: 'testModel',
+          property: 'testdb',
+          schema: help.getModelSchema()
         })
         const stub = sinon.stub(mod, 'get').resolves({})
         const req = {
@@ -56,8 +60,10 @@ describe('Controller', () => {
       })
 
       it('should not strip unknown params from the query', () => {
-        const mod = model('testModel', help.getModelSchema(), null, {
-          database: 'testdb'
+        const mod = model({
+          name: 'testModel',
+          property: 'testdb',
+          schema: help.getModelSchema()
         })
         const stub = sinon.stub(mod, 'get').resolves({})
         const req = {
@@ -78,8 +84,10 @@ describe('Controller', () => {
       })
 
       it('should allow querying for "null"', () => {
-        const mod = model('testModel', help.getModelSchema(), null, {
-          database: 'testdb'
+        const mod = model({
+          name: 'testModel',
+          property: 'testdb',
+          schema: help.getModelSchema()
         })
         const stub = sinon.stub(mod, 'get').resolves({})
         const req = {
@@ -106,7 +114,11 @@ describe('Controller', () => {
             required: false
           }
         })
-        const mod = model('testModel', schema, null, {database: 'testdb'})
+        const mod = model({
+          name: 'testModel',
+          property: 'testdb',
+          schema
+        })
         const stub = sinon.stub(mod, 'get').resolves({})
         const req = {
           collectionModel: mod,
@@ -134,7 +146,11 @@ describe('Controller', () => {
             display: {index: true, edit: true}
           }
         })
-        const mod = model('schemaTest', schema, null, {database: 'testdb'})
+        const mod = model({
+          name: 'testModel',
+          property: 'testdb',
+          schema
+        })
         const stub = sinon.stub(mod, 'get').resolves({})
         const req = {
           collectionModel: mod,
@@ -153,8 +169,10 @@ describe('Controller', () => {
       })
 
       it('should not call find() if invalid skip option is provided', done => {
-        const mod = model('testModel', help.getModelSchema(), null, {
-          database: 'testdb'
+        const mod = model({
+          name: 'testModel',
+          property: 'testdb',
+          schema: help.getModelSchema()
         })
         const stub = sinon.stub(mod, 'get').resolves({})
         const req = {
@@ -183,8 +201,10 @@ describe('Controller', () => {
       })
 
       it('should not call find() if invalid page option is provided', done => {
-        const mod = model('testModel', help.getModelSchema(), null, {
-          database: 'testdb'
+        const mod = model({
+          name: 'testModel',
+          property: 'testdb',
+          schema: help.getModelSchema()
         })
         const stub = sinon.stub(mod, 'get').resolves({})
         const req = {
@@ -213,12 +233,12 @@ describe('Controller', () => {
           database: 'testdb',
           defaultFilters: {field1: 'xxx'}
         })
-        const mod = model(
-          'testModel',
-          help.getModelSchemaWithMultipleFields(),
-          null,
+        const mod = model({
+          name: 'testModel',
+          property: 'testdb',
+          schema: help.getModelSchemaWithMultipleFields(),
           settings
-        )
+        })
         const stub = sinon.stub(mod, 'get').resolves({})
         const req = {
           collectionModel: mod,
@@ -241,12 +261,12 @@ describe('Controller', () => {
           database: 'testdb',
           fieldLimiters: {field1: 1}
         })
-        const mod = model(
-          'testModel',
-          help.getModelSchemaWithMultipleFields(),
-          null,
+        const mod = model({
+          name: 'testModel',
+          property: 'testdb',
+          schema: help.getModelSchemaWithMultipleFields(),
           settings
-        )
+        })
         const stub = sinon.stub(mod, 'get').resolves({})
         const req = {
           collectionModel: mod,
@@ -266,7 +286,11 @@ describe('Controller', () => {
       })
 
       it('should send response', done => {
-        const mod = model('testModel', help.getModelSchema())
+        const mod = model({
+          name: 'testModel',
+          property: 'testdb',
+          schema: help.getModelSchema()
+        })
         const stub = sinon.stub(mod, 'get').resolves([])
         const req = {
           collectionModel: mod,
@@ -293,8 +317,10 @@ describe('Controller', () => {
       })
 
       it("should call the Model's create method", () => {
-        const mod = model('testModel', help.getModelSchema(), null, {
-          database: 'testdb'
+        const mod = model({
+          name: 'testModel',
+          property: 'testdb',
+          schema: help.getModelSchema()
         })
         const stub = sinon.stub(mod, 'create').resolves({})
 
@@ -323,8 +349,10 @@ describe('Controller', () => {
       })
 
       it("should call the Model's update method", () => {
-        const mod = model('testModel', help.getModelSchema(), null, {
-          database: 'testdb'
+        const mod = model({
+          name: 'testModel',
+          property: 'testdb',
+          schema: help.getModelSchema()
         })
         const stub = sinon.stub(mod, 'update').resolves({})
 
@@ -354,8 +382,10 @@ describe('Controller', () => {
       })
 
       it("should call the Model's delete method", () => {
-        const mod = model('testModel', help.getModelSchema(), null, {
-          database: 'testdb'
+        const mod = model({
+          name: 'testModel',
+          property: 'testdb',
+          schema: help.getModelSchema()
         })
         const stub = sinon.stub(mod, 'delete').resolves({})
 
@@ -389,8 +419,10 @@ describe('Controller', () => {
       })
 
       it("should call the Model's stats method", () => {
-        const mod = model('testModel', help.getModelSchema(), null, {
-          database: 'testdb'
+        const mod = model({
+          name: 'testModel',
+          property: 'testdb',
+          schema: help.getModelSchema()
         })
         const stub = sinon.stub(mod, 'getStats').resolves({})
         const req = {

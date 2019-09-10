@@ -72,7 +72,7 @@ describe('Model composer', function() {
   beforeEach(done => {
     let insertedDocuments = 0
 
-    mod = model('testModelName', schema, null, {database: 'testdb'})
+    mod = model({name: 'testModelName', schema, property: 'testdb'})
 
     help.whenModelsConnect([mod]).then(() => {
       acceptanceHelper.dropDatabase('testdb', null, err => {
@@ -183,8 +183,12 @@ describe('Model composer', function() {
 
   it('should reference a document in the specified collection', () => {
     // create two models
-    const book = model('book', bookSchema, null, {database: 'testdb'})
-    const person = model('person', personSchema, null, {database: 'testdb'})
+    const book = model({name: 'book', schema: bookSchema, property: 'testdb'})
+    const person = model({
+      name: 'person',
+      schema: personSchema,
+      property: 'testdb'
+    })
 
     return help
       .whenModelsConnect([book, person])
@@ -235,13 +239,21 @@ describe('Model composer', function() {
 
   it('should allow specifying to not resolve the references via the model settings', () => {
     // create two models
-    const book = model('book', bookSchema, null, {
-      database: 'testdb',
-      compose: false
+    const book = model({
+      name: 'book',
+      schema: bookSchema,
+      property: 'testdb',
+      settings: {
+        compose: false
+      }
     })
-    const person = model('person', personSchema, null, {
-      database: 'testdb',
-      compose: false
+    const person = model({
+      name: 'person',
+      schema: personSchema,
+      property: 'testdb',
+      settings: {
+        compose: false
+      }
     })
 
     return help
@@ -292,13 +304,21 @@ describe('Model composer', function() {
 
   it('should allow specifying to resolve the references via the model settings', () => {
     // create two models
-    const book = model('book', bookSchema, null, {
-      database: 'testdb',
-      compose: true
+    const book = model({
+      name: 'book',
+      schema: bookSchema,
+      property: 'testdb',
+      settings: {
+        compose: true
+      }
     })
-    const person = model('person', personSchema, null, {
-      database: 'testdb',
-      compose: true
+    const person = model({
+      name: 'person',
+      schema: personSchema,
+      property: 'testdb',
+      settings: {
+        compose: true
+      }
     })
 
     return person
@@ -386,10 +406,16 @@ describe('Model composer', function() {
 
       bookSchemaString = bookSchemaString.replace('author', 'person')
 
-      const book = model('book', JSON.parse(bookSchemaString), null, {
-        database: 'testdb'
+      const book = model({
+        name: 'book',
+        schema: JSON.parse(bookSchemaString),
+        property: 'testdb'
       })
-      const person = model('person', personSchema, null, {database: 'testdb'})
+      const person = model({
+        name: 'person',
+        schema: personSchema,
+        property: 'testdb'
+      })
 
       let neil
       let rowling
@@ -451,10 +477,16 @@ describe('Model composer', function() {
 
       bookSchemaString = bookSchemaString.replace('author', 'person')
 
-      const book = model('book', JSON.parse(bookSchemaString), null, {
-        database: 'testdb'
+      const book = model({
+        name: 'book',
+        schema: JSON.parse(bookSchemaString),
+        property: 'testdb'
       })
-      const person = model('person', personSchema, null, {database: 'testdb'})
+      const person = model({
+        name: 'person',
+        schema: personSchema,
+        property: 'testdb'
+      })
 
       return help
         .whenModelsConnect([book, person])
@@ -537,14 +569,21 @@ describe('Model composer', function() {
         }
       }
 
-      const category = model('categories', categoriesSchema.fields, null, {
-        database: 'testdb',
-        compose: true
+      const category = model({
+        name: 'categories',
+        schema: categoriesSchema.fields,
+        property: 'testdb',
+        settings: {
+          compose: true
+        }
       })
-
-      const article = model('articles', articleSchema.fields, null, {
-        database: 'testdb',
-        compose: true
+      const article = model({
+        name: 'person',
+        schema: articleSchema.fields,
+        property: 'testdb',
+        settings: {
+          compose: true
+        }
       })
 
       const ids = {}
@@ -629,9 +668,16 @@ describe('Model composer', function() {
     })
 
     it('should allow querying nested Reference fields with a different property name', () => {
-      const book = model('book', bookSchema, null, {database: 'testdb'})
-
-      const person = model('person', personSchema, null, {database: 'testdb'})
+      const book = model({
+        name: 'book',
+        schema: bookSchema,
+        property: 'testdb'
+      })
+      const person = model({
+        name: 'person',
+        schema: personSchema,
+        property: 'testdb'
+      })
 
       let neil
       let rowling
@@ -689,8 +735,16 @@ describe('Model composer', function() {
     })
 
     it('should only return specified fields when querying nested Reference field properties', () => {
-      const book = model('book', bookSchema, null, {database: 'testdb'})
-      const person = model('person', personSchema, null, {database: 'testdb'})
+      const book = model({
+        name: 'book',
+        schema: bookSchema,
+        property: 'testdb'
+      })
+      const person = model({
+        name: 'person',
+        schema: personSchema,
+        property: 'testdb'
+      })
 
       let neil
       let rowling
@@ -754,8 +808,16 @@ describe('Model composer', function() {
     })
 
     it('should allow querying normal fields and nested Reference field properties', () => {
-      const book = model('book', bookSchema, null, {database: 'testdb'})
-      const person = model('person', personSchema, null, {database: 'testdb'})
+      const book = model({
+        name: 'book',
+        schema: bookSchema,
+        property: 'testdb'
+      })
+      const person = model({
+        name: 'person',
+        schema: personSchema,
+        property: 'testdb'
+      })
 
       let neil
       let rowling
@@ -822,8 +884,16 @@ describe('Model composer', function() {
     })
 
     it('should only return matching results when querying nested Reference field properties', () => {
-      const book = model('book', bookSchema, null, {database: 'testdb'})
-      const person = model('person', personSchema, null, {database: 'testdb'})
+      const book = model({
+        name: 'book',
+        schema: bookSchema,
+        property: 'testdb'
+      })
+      const person = model({
+        name: 'person',
+        schema: personSchema,
+        property: 'testdb'
+      })
 
       let neil
       let rowling

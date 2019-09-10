@@ -25,8 +25,10 @@ describe('Model', function() {
   })
 
   it('should export function that creates an instance of Model when passed schema', function(done) {
-    model('testModelName', help.getModelSchema(), null, {
-      database: 'testdb'
+    model({
+      name: 'testModelName',
+      schema: help.getModelSchema(),
+      property: 'testdb'
     }).should.be.an.instanceOf(model.Model)
 
     done()
@@ -41,11 +43,15 @@ describe('Model', function() {
   })
 
   it('should only create one instance of Model for a specific name/database pair', function(done) {
-    const model1 = model('testModelName', help.getModelSchema(), null, {
-      database: 'testdb'
+    const model1 = model({
+      name: 'testModelName',
+      schema: help.getModelSchema(),
+      property: 'testdb'
     })
-    const model2 = model('testModelName', help.getModelSchema(), null, {
-      database: 'testdb'
+    const model2 = model({
+      name: 'testModelName',
+      schema: help.getModelSchema(),
+      property: 'testdb'
     })
 
     model1.should.eql(model2)
@@ -54,32 +60,35 @@ describe('Model', function() {
   })
 
   describe('initialization options', function() {
-    it('should take model name and schema as arguments', function(done) {
-      model('testModelName', help.getModelSchema(), null, {
-        database: 'testdb'
+    it('should throw an error if the first parameter is a string (legacy format)', function(done) {
+      try {
+        model('testModelName', help.getModelSchema(), null, {
+          database: 'testdb'
+        })
+      } catch (error) {
+        error.message
+          .indexOf('The model constructor expects an object')
+          .should.eql(0)
+
+        done()
+      }
+    })
+
+    it('should take model name, property and schema as named parameters', function(done) {
+      model({
+        name: 'testModelName',
+        schema: help.getModelSchema(),
+        property: 'testdb'
       }).name.should.equal('testModelName')
 
       done()
     })
 
-    it('should accept model settings as fourth argument', function(done) {
-      const mod = model('testModelName', help.getModelSchema(), null, {
-        database: 'testdb',
-        cache: true,
-        count: 25
-      })
-
-      should.exist(mod.settings)
-
-      mod.settings.cache.should.be.true
-      mod.settings.count.should.equal(25)
-
-      done()
-    })
-
     it('should attach history collection by default if not specified and `storeRevisions` is not false', function(done) {
-      const mod = model('testModelName', help.getModelSchema(), null, {
-        database: 'testdb'
+      const mod = model({
+        name: 'testModelName',
+        schema: help.getModelSchema(),
+        property: 'testdb'
       })
 
       should.exist(mod.settings)
@@ -90,9 +99,13 @@ describe('Model', function() {
     })
 
     it('should attach history collection if specified (using legacy `revisionCollection` property)', function(done) {
-      const mod = model('testModelName', help.getModelSchema(), null, {
-        database: 'testdb',
-        revisionCollection: 'modelHistory'
+      const mod = model({
+        name: 'testModelName',
+        schema: help.getModelSchema(),
+        property: 'testdb',
+        settings: {
+          revisionCollection: 'modelHistory'
+        }
       })
 
       mod.history.name.should.equal('modelHistory')
@@ -101,9 +114,13 @@ describe('Model', function() {
     })
 
     it('should attach history collection if specified', function(done) {
-      const mod = model('testModelName', help.getModelSchema(), null, {
-        database: 'testdb',
-        versioningCollection: 'modelHistory'
+      const mod = model({
+        name: 'testModelName',
+        schema: help.getModelSchema(),
+        property: 'testdb',
+        settings: {
+          versioningCollection: 'modelHistory'
+        }
       })
 
       mod.history.name.should.equal('modelHistory')
@@ -112,9 +129,13 @@ describe('Model', function() {
     })
 
     it('should attach history collection if `storeRevisions` is true', function(done) {
-      const mod = model('testModelName', help.getModelSchema(), null, {
-        database: 'testdb',
-        storeRevisions: true
+      const mod = model({
+        name: 'testModelName',
+        schema: help.getModelSchema(),
+        settings: {
+          storeRevisions: true
+        },
+        property: 'testdb'
       })
 
       should.exist(mod.history)
@@ -124,10 +145,14 @@ describe('Model', function() {
     })
 
     it('should attach specified history collection if `storeRevisions` is true', function(done) {
-      const mod = model('testModelName', help.getModelSchema(), null, {
-        database: 'testdb',
-        storeRevisions: true,
-        revisionCollection: 'modelHistory'
+      const mod = model({
+        name: 'testModelName',
+        property: 'testdb',
+        schema: help.getModelSchema(),
+        settings: {
+          storeRevisions: true,
+          revisionCollection: 'modelHistory'
+        }
       })
 
       should.exist(mod.history)
@@ -137,9 +162,13 @@ describe('Model', function() {
     })
 
     it('should attach history collection if `enableVersioning` is true', function(done) {
-      const mod = model('testModelName', help.getModelSchema(), null, {
-        database: 'testdb',
-        enableVersioning: true
+      const mod = model({
+        name: 'testModelName',
+        property: 'testdb',
+        schema: help.getModelSchema(),
+        settings: {
+          enableVersioning: true
+        }
       })
 
       should.exist(mod.history)
@@ -149,10 +178,14 @@ describe('Model', function() {
     })
 
     it('should attach specified history collection if `enableVersioning` is true', function(done) {
-      const mod = model('testModelName', help.getModelSchema(), null, {
-        database: 'testdb',
-        enableVersioning: true,
-        versioningCollection: 'modelHistory'
+      const mod = model({
+        name: 'testModelName',
+        property: 'testdb',
+        schema: help.getModelSchema(),
+        settings: {
+          enableVersioning: true,
+          versioningCollection: 'modelHistory'
+        }
       })
 
       should.exist(mod.history)
@@ -162,10 +195,15 @@ describe('Model', function() {
     })
 
     it('should accept collection indexing settings', function(done) {
-      const mod1 = model('testModelName', help.getModelSchema(), null, {
-        index: {
-          enabled: true,
-          keys: {orderDate: 1}
+      const mod1 = model({
+        name: 'testModelName',
+        property: 'testdb',
+        schema: help.getModelSchema(),
+        settings: {
+          index: {
+            enabled: true,
+            keys: {orderDate: 1}
+          }
         }
       })
 
@@ -182,8 +220,13 @@ describe('Model', function() {
     })
 
     it('should accept collection indexing settings for v1.14.0 and above', function(done) {
-      const mod = model('testModelName', help.getModelSchema(), null, {
-        index: [{keys: {orderDate: 1}}]
+      const mod = model({
+        name: 'testModelName',
+        property: 'testdb',
+        schema: help.getModelSchema(),
+        settings: {
+          index: [{keys: {orderDate: 1}}]
+        }
       })
 
       should.exist(mod.settings)
@@ -196,9 +239,13 @@ describe('Model', function() {
     })
 
     it('should accept collection displayName setting', function(done) {
-      const mod = model('testModelName', help.getModelSchema(), null, {
-        database: 'testdb',
-        displayName: 'TEST MODEL'
+      const mod = model({
+        name: 'testModelName',
+        property: 'testdb',
+        schema: help.getModelSchema(),
+        settings: {
+          displayName: 'TEST MODEL'
+        }
       })
 
       should.exist(mod.settings)
@@ -258,8 +305,10 @@ describe('Model', function() {
 
   describe('`count` method', function() {
     it('should accept a query, an options object and a callback and return a metadata object', function(done) {
-      model('testModelName', help.getModelSchema(), null, {
-        database: 'testdb'
+      model({
+        name: 'testModelName',
+        schema: help.getModelSchema(),
+        property: 'testdb'
       }).count({}, {}, (err, response) => {
         response.metadata.page.should.be.Number
         response.metadata.offset.should.be.Number
@@ -271,8 +320,10 @@ describe('Model', function() {
     })
 
     it('should accept a query and an options object as named arguments and return a Promise with a metadata object', () => {
-      return model('testModelName', help.getModelSchema(), null, {
-        database: 'testdb'
+      return model({
+        name: 'testModelName',
+        schema: help.getModelSchema(),
+        property: 'testdb'
       })
         .count()
         .then(response => {
@@ -286,14 +337,18 @@ describe('Model', function() {
 
   describe('`stats` method', function() {
     it('should accept an options object', () => {
-      return model('testModelName', help.getModelSchema(), null, {
-        database: 'testdb'
+      return model({
+        name: 'testModelName',
+        schema: help.getModelSchema(),
+        property: 'testdb'
       }).getStats({})
     })
 
     it('should return an object', () => {
-      return model('testModelName', help.getModelSchema(), null, {
-        database: 'testdb'
+      return model({
+        name: 'testModelName',
+        schema: help.getModelSchema(),
+        property: 'testdb'
       })
         .getStats({})
         .then(stats => {
@@ -302,8 +357,10 @@ describe('Model', function() {
     })
 
     it('should return an error when db is disconnected', () => {
-      const mod = model('testModelName', help.getModelSchema(), null, {
-        database: 'testdb'
+      const mod = model({
+        name: 'testModelName',
+        schema: help.getModelSchema(),
+        property: 'testdb'
       })
       const connectedDb = mod.connection.db
 
@@ -320,8 +377,10 @@ describe('Model', function() {
   describe('`find` method', function() {
     describe('legacy syntax', () => {
       it('should accept query object and callback', done => {
-        model('testModelName', help.getModelSchema(), null, {
-          database: 'testdb'
+        model({
+          name: 'testModelName',
+          schema: help.getModelSchema(),
+          property: 'testdb'
         }).find({}, (err, response) => {
           response.results.should.be.Array
 
@@ -330,8 +389,10 @@ describe('Model', function() {
       })
 
       it('should accept query object, options object and callback', done => {
-        model('testModelName', help.getModelSchema(), null, {
-          database: 'testdb'
+        model({
+          name: 'testModelName',
+          schema: help.getModelSchema(),
+          property: 'testdb'
         }).find({}, {}, (err, response) => {
           response.results.should.be.Array
 
@@ -354,7 +415,11 @@ describe('Model', function() {
     })
 
     it('should accept named parameters', () => {
-      model('testModelName', help.getModelSchema(), null, {database: 'testdb'})
+      model({
+        name: 'testModelName',
+        schema: help.getModelSchema(),
+        property: 'testdb'
+      })
         .find({
           query: {}
         })
@@ -381,8 +446,10 @@ describe('Model', function() {
   describe('`get` method', function() {
     describe('legacy syntax', () => {
       it('should accept query object and callback', done => {
-        model('testModelName', help.getModelSchema(), null, {
-          database: 'testdb'
+        model({
+          name: 'testModelName',
+          schema: help.getModelSchema(),
+          property: 'testdb'
         }).get({}, (err, response) => {
           response.results.should.be.Array
 
@@ -391,8 +458,10 @@ describe('Model', function() {
       })
 
       it('should accept query object, options object and callback', done => {
-        model('testModelName', help.getModelSchema(), null, {
-          database: 'testdb'
+        model({
+          name: 'testModelName',
+          schema: help.getModelSchema(),
+          property: 'testdb'
         }).get({}, {}, (err, response) => {
           response.results.should.be.Array
 
@@ -415,7 +484,11 @@ describe('Model', function() {
     })
 
     it('should accept named parameters', () => {
-      model('testModelName', help.getModelSchema(), null, {database: 'testdb'})
+      model({
+        name: 'testModelName',
+        schema: help.getModelSchema(),
+        property: 'testdb'
+      })
         .get({
           query: {}
         })
@@ -447,15 +520,19 @@ describe('Model', function() {
     })
 
     it('should return indexes', function(done) {
-      const mod = model('testModelName', help.getModelSchema(), null, {
-        database: 'testdb',
-        index: {
-          enabled: true,
-          keys: {
-            fieldName: 1
-          },
-          options: {
-            unique: false
+      const mod = model({
+        name: 'testModelName',
+        property: 'testdb',
+        schema: help.getModelSchema(),
+        settings: {
+          index: {
+            enabled: true,
+            keys: {
+              fieldName: 1
+            },
+            options: {
+              unique: false
+            }
           }
         }
       })
@@ -483,18 +560,22 @@ describe('Model', function() {
 
   describe('`createIndex` method', function() {
     it('should create index if indexing settings are supplied', function(done) {
-      const mod = model('testModelName', help.getModelSchema(), null, {
-        database: 'testdb',
-        index: {
-          enabled: true,
-          keys: {
-            fieldName: 1
-          },
-          options: {
-            unique: false,
-            background: true,
-            dropDups: false,
-            w: 1
+      const mod = model({
+        name: 'testModelName',
+        property: 'testdb',
+        schema: help.getModelSchema(),
+        settings: {
+          index: {
+            enabled: true,
+            keys: {
+              fieldName: 1
+            },
+            options: {
+              unique: false,
+              background: true,
+              dropDups: false,
+              w: 1
+            }
           }
         }
       })
@@ -527,18 +608,23 @@ describe('Model', function() {
           required: false
         })
 
-        const mod = model('testModelName', schema.fields, null, {
-          index: {
-            enabled: true,
-            keys: {
-              fieldName: 1,
-              field2: 1
-            },
-            options: {
-              unique: false,
-              background: true,
-              dropDups: false,
-              w: 1
+        const mod = model({
+          name: 'testModelName',
+          schema: schema.fields,
+          property: 'testdb',
+          settings: {
+            index: {
+              enabled: true,
+              keys: {
+                fieldName: 1,
+                field2: 1
+              },
+              options: {
+                unique: false,
+                background: true,
+                dropDups: false,
+                w: 1
+              }
             }
           }
         })
@@ -571,14 +657,19 @@ describe('Model', function() {
           required: false
         })
 
-        const mod = model('testModelName', schema.fields, null, {
-          index: {
-            enabled: true,
-            keys: {
-              field3: 1
-            },
-            options: {
-              unique: true
+        const mod = model({
+          name: 'testModelName',
+          property: 'testdb',
+          schema: schema.fields,
+          settings: {
+            index: {
+              enabled: true,
+              keys: {
+                field3: 1
+              },
+              options: {
+                unique: true
+              }
             }
           }
         })
@@ -612,25 +703,30 @@ describe('Model', function() {
           required: false
         })
 
-        const mod = model('testModelName', schema.fields, null, {
-          index: [
-            {
-              keys: {
-                fieldName: 1
+        const mod = model({
+          name: 'testModelName',
+          property: 'testdb',
+          schema: schema.fields,
+          settings: {
+            index: [
+              {
+                keys: {
+                  fieldName: 1
+                },
+                options: {
+                  unique: true
+                }
               },
-              options: {
-                unique: true
+              {
+                keys: {
+                  field3: 1
+                },
+                options: {
+                  unique: true
+                }
               }
-            },
-            {
-              keys: {
-                field3: 1
-              },
-              options: {
-                unique: true
-              }
-            }
-          ]
+            ]
+          }
         })
 
         setTimeout(function() {
@@ -668,24 +764,30 @@ describe('Model', function() {
 
     describe('legacy syntax', () => {
       it('should accept Object and callback', function(done) {
-        const mod = model('testModelName', help.getModelSchema(), null, {
-          database: 'testdb'
+        const mod = model({
+          name: 'testModelName',
+          schema: help.getModelSchema(),
+          property: 'testdb'
         })
 
         mod.create({fieldName: 'foo'}, done)
       })
 
       it('should accept Array and callback', function(done) {
-        const mod = model('testModelName', help.getModelSchema(), null, {
-          database: 'testdb'
+        const mod = model({
+          name: 'testModelName',
+          schema: help.getModelSchema(),
+          property: 'testdb'
         })
 
         mod.create([{fieldName: 'foo'}, {fieldName: 'bar'}], done)
       })
 
       it('should save model to database', function(done) {
-        const mod = model('testModelName', help.getModelSchema(), null, {
-          database: 'testdb'
+        const mod = model({
+          name: 'testModelName',
+          schema: help.getModelSchema(),
+          property: 'testdb'
         })
 
         mod.create({fieldName: 'foo'}, err => {
@@ -704,16 +806,15 @@ describe('Model', function() {
 
       it('should pass error to callback if validation fails', function(done) {
         const schema = help.getModelSchema()
-        const mod = model(
-          'testModelName',
-          Object.assign({}, schema, {
+        const mod = model({
+          name: 'testModelName',
+          schema: Object.assign({}, schema, {
             fieldName: Object.assign({}, schema.fieldName, {
               validation: {maxLength: 5}
             })
           }),
-          null,
-          {database: 'testdb'}
-        )
+          property: 'testdb'
+        })
 
         mod.create({fieldName: '123456'}, err => {
           should.exist(err)
@@ -724,8 +825,10 @@ describe('Model', function() {
     })
 
     it('should accept Object', () => {
-      const mod = model('testModelName', help.getModelSchema(), null, {
-        database: 'testdb'
+      const mod = model({
+        name: 'testModelName',
+        schema: help.getModelSchema(),
+        property: 'testdb'
       })
 
       return mod.create({
@@ -734,8 +837,10 @@ describe('Model', function() {
     })
 
     it('should accept Array', () => {
-      const mod = model('testModelName', help.getModelSchema(), null, {
-        database: 'testdb'
+      const mod = model({
+        name: 'testModelName',
+        schema: help.getModelSchema(),
+        property: 'testdb'
       })
 
       return mod.create({
@@ -744,8 +849,10 @@ describe('Model', function() {
     })
 
     it('should save model to database', () => {
-      const mod = model('testModelName', help.getModelSchema(), null, {
-        database: 'testdb'
+      const mod = model({
+        name: 'testModelName',
+        schema: help.getModelSchema(),
+        property: 'testdb'
       })
 
       return mod
@@ -767,16 +874,15 @@ describe('Model', function() {
 
     it('should reject with error if validation fails', done => {
       const schema = help.getModelSchema()
-      const mod = model(
-        'testModelName',
-        Object.assign({}, schema, {
+      const mod = model({
+        name: 'testModelName',
+        schema: Object.assign({}, schema, {
           fieldName: Object.assign({}, schema.fieldName, {
             validation: {maxLength: 5}
           })
         }),
-        null,
-        {database: 'testdb'}
-      )
+        property: 'testdb'
+      })
 
       mod
         .create({
@@ -793,12 +899,11 @@ describe('Model', function() {
   describe('`update` method', function() {
     beforeEach(done => {
       acceptanceHelper.dropDatabase('testdb', err => {
-        const mod = model(
-          'testModelName',
-          help.getModelSchemaWithMultipleFields(),
-          null,
-          {database: 'testdb'}
-        )
+        const mod = model({
+          name: 'testModelName',
+          schema: help.getModelSchemaWithMultipleFields(),
+          property: 'testdb'
+        })
 
         // Create model to be updated by tests.
         mod
@@ -848,15 +953,14 @@ describe('Model', function() {
       })
 
       it('should create new history revision when updating an existing document and `storeRevisions` is true', done => {
-        const mod = model(
-          'testModelName',
-          help.getModelSchemaWithMultipleFields(),
-          null,
-          {
-            database: 'testdb',
+        const mod = model({
+          name: 'testModelName',
+          schema: help.getModelSchemaWithMultipleFields(),
+          property: 'testdb',
+          settings: {
             storeRevisions: true
           }
-        )
+        })
         const updateDoc = {field1: 'bar'}
 
         mod.update({field1: 'foo'}, updateDoc, (err, result) => {
@@ -889,16 +993,15 @@ describe('Model', function() {
 
       it('should pass error to callback if schema validation fails', done => {
         const schema = help.getModelSchema()
-        const mod = model(
-          'testModelName',
-          Object.assign({}, schema, {
+        const mod = model({
+          name: 'testModelName',
+          schema: Object.assign({}, schema, {
             fieldName: Object.assign({}, schema.fieldName, {
               validation: {maxLength: 5}
             })
           }),
-          null,
-          {database: 'testdb'}
-        )
+          property: 'testdb'
+        })
 
         mod.update({fieldName: 'foo'}, {fieldName: '123456'}, err => {
           should.exist(err)
@@ -953,15 +1056,14 @@ describe('Model', function() {
     })
 
     it('should create new history revision when updating an existing document and `storeRevisions` is true', done => {
-      const mod = model(
-        'testModelName',
-        help.getModelSchemaWithMultipleFields(),
-        null,
-        {
-          database: 'testdb',
+      const mod = model({
+        name: 'testModelName',
+        schema: help.getModelSchemaWithMultipleFields(),
+        property: 'testdb',
+        settings: {
           storeRevisions: true
         }
-      )
+      })
       const updateDoc = {field1: 'bar'}
 
       mod
@@ -997,16 +1099,15 @@ describe('Model', function() {
 
     it('should reject with error if schema validation fails', done => {
       const schema = help.getModelSchema()
-      const mod = model(
-        'testModelName',
-        Object.assign({}, schema, {
+      const mod = model({
+        name: 'testModelName',
+        schema: Object.assign({}, schema, {
           fieldName: Object.assign({}, schema.fieldName, {
             validation: {maxLength: 5}
           })
         }),
-        null,
-        {database: 'testdb'}
-      )
+        property: 'testdb'
+      })
 
       mod
         .update({
@@ -1040,14 +1141,14 @@ describe('Model', function() {
     describe('legacy syntax', () => {
       it('should accept a query object and callback', done => {
         const schema = help.getModelSchema()
-        const mod = model('testModelName', schema, null, {database: 'testdb'})
+        const mod = model({name: 'testModelName', schema, property: 'testdb'})
 
         mod.delete({fieldName: 'foo'}, done)
       })
 
       it('should delete a single document', done => {
         const schema = help.getModelSchema()
-        const mod = model('testModelName', schema, null, {database: 'testdb'})
+        const mod = model({name: 'testModelName', schema, property: 'testdb'})
 
         mod.create({fieldName: 'foo'}, (err, result) => {
           if (err) return done(err)
@@ -1072,7 +1173,7 @@ describe('Model', function() {
 
       it('should delete multiple documents', done => {
         const schema = help.getModelSchema()
-        const mod = model('testModelName', schema, null, {database: 'testdb'})
+        const mod = model({name: 'testModelName', schema, property: 'testdb'})
 
         mod.create(
           [{fieldName: 'foo'}, {fieldName: 'bar'}, {fieldName: 'baz'}],
@@ -1122,7 +1223,7 @@ describe('Model', function() {
 
     it('should accept a query object', () => {
       const schema = help.getModelSchema()
-      const mod = model('testModelName', schema, null, {database: 'testdb'})
+      const mod = model({name: 'testModelName', schema, property: 'testdb'})
 
       return mod.delete({
         query: {fieldName: 'foo'}
@@ -1131,7 +1232,7 @@ describe('Model', function() {
 
     it('should delete a single document', () => {
       const schema = help.getModelSchema()
-      const mod = model('testModelName', schema, null, {database: 'testdb'})
+      const mod = model({name: 'testModelName', schema, property: 'testdb'})
 
       return mod
         .create({
@@ -1156,7 +1257,7 @@ describe('Model', function() {
 
     it('should delete multiple documents', () => {
       const schema = help.getModelSchema()
-      const mod = model('testModelName', schema, null, {database: 'testdb'})
+      const mod = model({name: 'testModelName', schema, property: 'testdb'})
 
       return mod
         .create({
@@ -1204,8 +1305,10 @@ describe('Model', function() {
 
   describe('validateQuery', function() {
     it('should be attached to Model', function(done) {
-      const mod = model('testModelName', help.getModelSchema(), null, {
-        database: 'testdb'
+      const mod = model({
+        name: 'testModelName',
+        schema: help.getModelSchema(),
+        property: 'testdb'
       })
 
       mod.validateQuery.should.be.Function
@@ -1214,8 +1317,10 @@ describe('Model', function() {
 
     describe('query', function() {
       it('should not allow the use of `$where` in queries', function(done) {
-        const mod = model('testModelName', help.getModelSchema(), null, {
-          database: 'testdb'
+        const mod = model({
+          name: 'testModelName',
+          schema: help.getModelSchema(),
+          property: 'testdb'
         })
 
         mod.validateQuery({$where: 'throw new Error("Insertion Attack!")'})
@@ -1224,8 +1329,10 @@ describe('Model', function() {
       })
 
       it('should allow querying with key values', function(done) {
-        const mod = model('testModelName', help.getModelSchema(), null, {
-          database: 'testdb'
+        const mod = model({
+          name: 'testModelName',
+          schema: help.getModelSchema(),
+          property: 'testdb'
         })
 
         mod.validateQuery({fieldName: 'foo'}).success.should.be.true
@@ -1244,7 +1351,7 @@ describe('Model', function() {
           }
         })
 
-        const mod = model('schemaTest', schema, null, {database: 'testdb'})
+        const mod = model({name: 'schemaTest', schema, property: 'testdb'})
 
         mod.validateQuery({'fieldMixed.innerProperty': 'foo'}).success.should.be
           .true
@@ -1255,8 +1362,10 @@ describe('Model', function() {
 
   describe('`_mergeQueryAndAclFields` method', () => {
     it('should use the fields provided by the query if ACL does not specify any', () => {
-      const testModel = model('testModelName', help.getModelSchema(), null, {
-        database: 'testdb'
+      const testModel = model({
+        name: 'testModelName',
+        schema: help.getModelSchema(),
+        property: 'testdb'
       })
 
       const queryFields = {
@@ -1268,8 +1377,10 @@ describe('Model', function() {
     })
 
     it('should use the fields provided by the ACL filter if the query does not specify any', () => {
-      const testModel = model('testModelName', help.getModelSchema(), null, {
-        database: 'testdb'
+      const testModel = model({
+        name: 'testModelName',
+        schema: help.getModelSchema(),
+        property: 'testdb'
       })
 
       const aclFields = {
@@ -1281,8 +1392,10 @@ describe('Model', function() {
     })
 
     it('should merge the fields from the query and the ACL filter so that the ACL restrictions are respected', () => {
-      const testModel = model('testModelName', help.getModelSchema(), null, {
-        database: 'testdb'
+      const testModel = model({
+        name: 'testModelName',
+        schema: help.getModelSchema(),
+        property: 'testdb'
       })
 
       testModel

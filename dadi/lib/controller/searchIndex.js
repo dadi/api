@@ -25,7 +25,7 @@ SearchIndex.prototype.post = function(req, res, next) {
     return next()
   }
 
-  res.statusCode = 204
+  res.statusCode = 202
   res.end()
 
   const allModels = modelStore.getAll()

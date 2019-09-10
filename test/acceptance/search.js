@@ -2009,19 +2009,73 @@ describe('Search', function() {
         })
     })
 
-    it('should return 204 when calling the index endpoint', done => {
+    it('should return 202 when calling the index endpoint and index in the background', done => {
       const stub = sinon.spy(search, 'batchIndexCollections')
 
-      client
-        .post('/api/index')
-        .set('Authorization', 'Bearer ' + bearerToken)
-        .set('content-type', 'application/json')
-        .expect(204)
-        .end(err => {
-          stub.called.should.be.true
-          stub.restore()
+      config.set('search.enabled', false)
 
-          done(err)
+      const document = {
+        title: 'The Little Prince',
+        'title:pt': 'O Principezinho',
+        'title:fr': 'Le Petit Prince'
+      }
+
+      client
+        .post('/testdb/first-schema')
+        .set('Authorization', `Bearer ${bearerToken}`)
+        .send(document)
+        .expect(200)
+        .end((err, res) => {
+          if (err) return done(err)
+
+          setTimeout(() => {
+            config.set('search.enabled', true)
+
+            client
+              .get(`/testdb/first-schema/search?q=Prince`)
+              .set('Authorization', `Bearer ${bearerToken}`)
+              .expect(200)
+              .end((err, res) => {
+                if (err) return done(err)
+
+                res.body.results.length.should.eql(0)
+
+                client
+                  .post('/api/index')
+                  .set('Authorization', 'Bearer ' + bearerToken)
+                  .set('content-type', 'application/json')
+                  .expect(202)
+                  .end(err => {
+                    if (err) return done(err)
+
+                    stub.called.should.be.true
+                    stub.restore()
+
+                    setTimeout(() => {
+                      client
+                        .get(`/testdb/first-schema/search?q=Prince`)
+                        .set('Authorization', `Bearer ${bearerToken}`)
+                        .expect(200)
+                        .end((err, res) => {
+                          if (err) return done(err)
+
+                          const {results} = res.body
+
+                          results.length.should.eql(1)
+                          results[0].title.should.eql(document.title)
+                          results[0]['title:pt'].should.eql(
+                            document['title:pt']
+                          )
+                          results[0]['title:fr'].should.eql(
+                            document['title:fr']
+                          )
+
+                          done(err)
+                        })
+                    }, 800)
+                  })
+              })
+          }, 800)
         })
     })
   })

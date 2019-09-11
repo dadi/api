@@ -573,6 +573,7 @@ MediaController.prototype.processFile = function({
 }) {
   const stream = streamifier.createReadStream(data)
   let queue = Promise.resolve({
+    _storageType: config.get('media.storage'),
     contentLength: data.length,
     fileName,
     mimeType,

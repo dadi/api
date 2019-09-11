@@ -414,6 +414,12 @@ const conf = convict({
         format: String,
         default: ''
       }
+    },
+    publicUrl: {
+      doc: 'The base URL where media assets can be publicly accessed at',
+      format: 'String',
+      default: null,
+      env: 'MEDIA_PUBLIC_URL'
     }
   },
   env: {

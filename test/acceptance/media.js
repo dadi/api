@@ -1023,7 +1023,6 @@ describe('Media', function() {
 
           signAndUpload(obj, (err, res) => {
             if (err) return done(err)
-
             client
               .get(
                 `/media/?filter={"fileName":"1f525.png"}&fields={"fileName":1}`
@@ -1035,7 +1034,7 @@ describe('Media', function() {
                 res.body.results.length.should.eql(1)
                 res.body.results[0].fileName.should.eql('1f525.png')
 
-                done()
+                done(err)
               })
           })
         })
@@ -1453,7 +1452,185 @@ describe('Media', function() {
             })
         })
 
-        it('should return 200 when image is returned', function(done) {
+        it('should list images', function(done) {
+          const obj = {
+            fileName: '1f525.png',
+            mimetype: 'image/png'
+          }
+
+          const defaultBucket = config.get('media.defaultBucket')
+
+          client
+            .post(`/media/${defaultBucket}/sign`)
+            .set('Authorization', `Bearer ${bearerToken}`)
+            .set('content-type', 'application/json')
+            .send(obj)
+            .end((err, res) => {
+              if (err) return done(err)
+
+              const url = res.body.url
+
+              client
+                .post(url)
+                .set('content-type', 'application/json')
+                .attach(
+                  'avatar',
+                  'test/acceptance/temp-workspace/media/1f525.png'
+                )
+                .end((err, res) => {
+                  if (err) return done(err)
+
+                  should.exist(res.body.results)
+                  res.body.results.should.be.Array
+                  res.body.results.length.should.eql(1)
+                  res.body.results[0].fileName.should.eql(obj.fileName)
+                  res.body.results[0]._storageType.should.eql('disk')
+
+                  client
+                    .get('/media')
+                    .set('Authorization', `Bearer ${bearerToken}`)
+                    .end((err, res) => {
+                      if (err) return done(err)
+
+                      const {results} = res.body
+
+                      results.length.should.eql(1)
+                      results[0].fileName.should.eql(obj.fileName)
+                      results[0]._storageType.should.eql('disk')
+
+                      done()
+                    })
+                })
+            })
+        })
+
+        it("should show url property with the API's public URL if media.publicUrl is not defined", function(done) {
+          const obj = {
+            fileName: '1f525.png',
+            mimetype: 'image/png'
+          }
+          const defaultBucket = config.get('media.defaultBucket')
+
+          config.set('media.publicUrl', '')
+
+          client
+            .post(`/media/${defaultBucket}/sign`)
+            .set('Authorization', `Bearer ${bearerToken}`)
+            .set('content-type', 'application/json')
+            .send(obj)
+            .end((err, res) => {
+              if (err) return done(err)
+
+              const url = res.body.url
+
+              client
+                .post(url)
+                .set('content-type', 'application/json')
+                .attach(
+                  'avatar',
+                  'test/acceptance/temp-workspace/media/1f525.png'
+                )
+                .end((err, res) => {
+                  if (err) return done(err)
+
+                  should.exist(res.body.results)
+                  res.body.results.should.be.Array
+                  res.body.results.length.should.eql(1)
+                  res.body.results[0].fileName.should.eql(obj.fileName)
+                  res.body.results[0]._storageType.should.eql('disk')
+
+                  client
+                    .get(`/media/${res.body.results[0]._id}`)
+                    .set('Authorization', `Bearer ${bearerToken}`)
+                    .end((err, res) => {
+                      if (err) return done(err)
+
+                      const {results} = res.body
+
+                      results.length.should.eql(1)
+                      results[0].fileName.should.eql(obj.fileName)
+                      results[0]._storageType.should.eql('disk')
+
+                      const {host, port, protocol} = config.get('publicUrl')
+
+                      results[0].url.should.eql(
+                        `${protocol}://${host}:${port}${results[0].path}`
+                      )
+
+                      config.set(
+                        'media.publicUrl',
+                        configBackup.media.publicUrl
+                      )
+
+                      done()
+                    })
+                })
+            })
+        })
+
+        it('should show url property with the media public URL if media.publicUrl is defined', function(done) {
+          const mediaPublicUrl = 'https://my-cdn.com'
+          const obj = {
+            fileName: '1f525.png',
+            mimetype: 'image/png'
+          }
+          const defaultBucket = config.get('media.defaultBucket')
+
+          config.set('media.publicUrl', mediaPublicUrl)
+
+          client
+            .post(`/media/${defaultBucket}/sign`)
+            .set('Authorization', `Bearer ${bearerToken}`)
+            .set('content-type', 'application/json')
+            .send(obj)
+            .end((err, res) => {
+              if (err) return done(err)
+
+              const url = res.body.url
+
+              client
+                .post(url)
+                .set('content-type', 'application/json')
+                .attach(
+                  'avatar',
+                  'test/acceptance/temp-workspace/media/1f525.png'
+                )
+                .end((err, res) => {
+                  if (err) return done(err)
+
+                  should.exist(res.body.results)
+                  res.body.results.should.be.Array
+                  res.body.results.length.should.eql(1)
+                  res.body.results[0].fileName.should.eql(obj.fileName)
+                  res.body.results[0]._storageType.should.eql('disk')
+
+                  client
+                    .get(`/media/${res.body.results[0]._id}`)
+                    .set('Authorization', `Bearer ${bearerToken}`)
+                    .end((err, res) => {
+                      if (err) return done(err)
+
+                      const {results} = res.body
+
+                      results.length.should.eql(1)
+                      results[0].fileName.should.eql(obj.fileName)
+                      results[0]._storageType.should.eql('disk')
+                      results[0].url.should.eql(
+                        `${mediaPublicUrl}${results[0].path}`
+                      )
+
+                      config.set(
+                        'media.publicUrl',
+                        configBackup.media.publicUrl
+                      )
+
+                      done()
+                    })
+                })
+            })
+        })
+
+        it('should return image', function(done) {
           const obj = {
             fileName: '1f525.png',
             mimetype: 'image/png'
@@ -1500,6 +1677,25 @@ describe('Media', function() {
                     })
                 })
             })
+        })
+      })
+
+      describe('POST', () => {
+        it('should add a _storageType property', function(done) {
+          const obj = {
+            fileName: '1f525.png',
+            mimetype: 'image/png'
+          }
+
+          signAndUpload(obj, (err, res) => {
+            should.exist(res.body.results)
+            res.body.results.should.be.Array
+            res.body.results.length.should.eql(1)
+            res.body.results[0].fileName.should.eql(obj.fileName)
+            res.body.results[0]._storageType.should.eql('disk')
+
+            done(err)
+          })
         })
       })
     })
@@ -1697,6 +1893,114 @@ describe('Media', function() {
               )
               .expect(400)
               .end(done)
+          })
+        })
+
+        it('should add a _storageType property', function(done) {
+          const obj = {
+            fileName: '1f525.png',
+            mimetype: 'image/png'
+          }
+
+          AWS.mock(
+            'S3',
+            'putObject',
+            Promise.resolve({
+              path: obj.filename,
+              contentLength: 100,
+              awsUrl: `https://s3.amazonaws.com/${obj.filename}`
+            })
+          )
+
+          config.set('media.s3.bucketName', 'test-bucket')
+          config.set('media.s3.accessKey', 'xxx')
+          config.set('media.s3.secretKey', 'xyz')
+
+          signAndUpload(obj, (err, res) => {
+            const {results} = res.body
+
+            results.length.should.eql(1)
+            results[0].fileName.should.eql(obj.fileName)
+            results[0].mimeType.should.eql(obj.mimetype)
+            results[0]._storageType.should.eql('s3')
+
+            done(err)
+          })
+        })
+
+        it('should not add a url property if media.publicUrl is not defined', function(done) {
+          config.set('media.publicUrl', '')
+
+          const obj = {
+            fileName: '1f525.png',
+            mimetype: 'image/png'
+          }
+
+          AWS.mock(
+            'S3',
+            'putObject',
+            Promise.resolve({
+              path: obj.filename,
+              contentLength: 100,
+              awsUrl: `https://s3.amazonaws.com/${obj.filename}`
+            })
+          )
+
+          config.set('media.s3.bucketName', 'test-bucket')
+          config.set('media.s3.accessKey', 'xxx')
+          config.set('media.s3.secretKey', 'xyz')
+
+          signAndUpload(obj, (err, res) => {
+            const {results} = res.body
+
+            results.length.should.eql(1)
+            results[0].fileName.should.eql(obj.fileName)
+            results[0].mimeType.should.eql(obj.mimetype)
+            should.exist(results[0].path)
+            should.not.exist(results[0].url)
+
+            config.set('media.publicUrl', configBackup.media.publicUrl)
+
+            done(err)
+          })
+        })
+
+        it('should add a url property if media.publicUrl is defined', function(done) {
+          const publicUrl = 'https://my-cdn.com'
+
+          config.set('media.publicUrl', publicUrl)
+
+          const obj = {
+            fileName: '1f525.png',
+            mimetype: 'image/png'
+          }
+
+          AWS.mock(
+            'S3',
+            'putObject',
+            Promise.resolve({
+              path: obj.filename,
+              contentLength: 100,
+              awsUrl: `https://s3.amazonaws.com/${obj.filename}`
+            })
+          )
+
+          config.set('media.s3.bucketName', 'test-bucket')
+          config.set('media.s3.accessKey', 'xxx')
+          config.set('media.s3.secretKey', 'xyz')
+
+          signAndUpload(obj, (err, res) => {
+            const {results} = res.body
+
+            results.length.should.eql(1)
+            results[0].fileName.should.eql(obj.fileName)
+            results[0].mimeType.should.eql(obj.mimetype)
+            should.exist(results[0].path)
+            results[0].url.should.eql(`${publicUrl}/${results[0].path}`)
+
+            config.set('media.publicUrl', configBackup.media.publicUrl)
+
+            done(err)
           })
         })
       })

@@ -22,7 +22,7 @@ MediaModel.prototype.formatDocuments = function(input) {
 
     // The document might not have a `_storageType` property, because it wasn't
     // introduced until version 6.0.0. In such cases, we can infer the type of
-    // storage by looking at the `path` property. If it being with a trailing
+    // storage by looking at the `path` property. If it begins with a trailing
     // slash, it's a relative path to a file on disk, so we know the storage
     // type is `disk`. Otherwise, it must be `s3`, because it was the only
     // other type of storage available at the time.
@@ -31,7 +31,9 @@ MediaModel.prototype.formatDocuments = function(input) {
         document.path && document.path.indexOf('/') === 0 ? 'disk' : 's3'
     }
 
-    document.url = this.getURLForPath(document.path, storageType)
+    if (document.path) {
+      document.url = this.getURLForPath(document.path, storageType)
+    }
 
     // To maintain backwards compatibility.
     document.mimeType = document.mimeType || document.mimetype

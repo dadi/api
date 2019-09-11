@@ -1023,7 +1023,6 @@ describe('Media', function() {
 
           signAndUpload(obj, (err, res) => {
             if (err) return done(err)
-
             client
               .get(
                 `/media/?filter={"fileName":"1f525.png"}&fields={"fileName":1}`
@@ -1035,7 +1034,7 @@ describe('Media', function() {
                 res.body.results.length.should.eql(1)
                 res.body.results[0].fileName.should.eql('1f525.png')
 
-                done()
+                done(err)
               })
           })
         })

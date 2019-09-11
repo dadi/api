@@ -595,8 +595,6 @@ describe('Hooks', function() {
   })
 
   it('should not cause creation of duplicate records', function(done) {
-    config.set('query.useVersionFilter', true)
-
     const client = request(connectionString)
 
     startApp(() => {
@@ -707,8 +705,6 @@ describe('Hooks', function() {
   })
 
   it('should allow obtaining data from the request within beforeCreate & beforeGet hooks', function(done) {
-    config.set('query.useVersionFilter', true)
-
     const client = request(connectionString)
 
     startApp(() => {

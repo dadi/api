@@ -253,9 +253,6 @@ describe('DateTime Field', function() {
 
   it('should not attempt to process a null/undefined value', done => {
     const person = {name: 'Ernest Hemingway'}
-
-    config.set('query.useVersionFilter', true)
-
     const client = request(connectionString)
 
     client
@@ -305,9 +302,6 @@ describe('DateTime Field', function() {
 
   it('should format a DateTime field as ISO when no format is specified', done => {
     const person = {name: 'Ernest Hemingway'}
-
-    config.set('query.useVersionFilter', true)
-
     const client = request(connectionString)
 
     client
@@ -360,9 +354,6 @@ describe('DateTime Field', function() {
 
   it('should format a DateTime field as ISO when `iso` format is specified', done => {
     const person = {name: 'Ernest Hemingway'}
-
-    config.set('query.useVersionFilter', true)
-
     const client = request(connectionString)
 
     client
@@ -420,8 +411,6 @@ describe('DateTime Field', function() {
 
   it('should format a DateTime field when format is specified', done => {
     const person = {name: 'Ernest Hemingway'}
-
-    config.set('query.useVersionFilter', true)
     const client = request(connectionString)
 
     client
@@ -471,9 +460,6 @@ describe('DateTime Field', function() {
 
   it('should format a DateTime field as unix when `unix` format is specified', done => {
     const person = {name: 'Ernest Hemingway'}
-
-    config.set('query.useVersionFilter', true)
-
     const client = request(connectionString)
 
     client
@@ -528,9 +514,6 @@ describe('DateTime Field', function() {
 
   it('should keep a DateTime field as unix when `unix` format is specified', done => {
     const person = {name: 'Ernest Hemingway'}
-
-    config.set('query.useVersionFilter', true)
-
     const client = request(connectionString)
 
     client
@@ -600,9 +583,6 @@ describe('DateTime Field', function() {
         datetime: currentDate + 20000
       }
     ]
-
-    config.set('query.useVersionFilter', true)
-
     const client = request(connectionString)
 
     client
@@ -643,9 +623,6 @@ describe('DateTime Field', function() {
         datetime: baseDate + 3600000
       }
     ]
-
-    config.set('query.useVersionFilter', true)
-
     const client = request(connectionString)
 
     client
@@ -687,9 +664,6 @@ describe('DateTime Field', function() {
         datetime: 588992400000
       }
     ]
-
-    config.set('query.useVersionFilter', true)
-
     const client = request(connectionString)
 
     client
@@ -747,9 +721,6 @@ describe('DateTime Field', function() {
 
   it('should return an error when the value supplied is not valid', done => {
     const client = request(connectionString)
-
-    config.set('query.useVersionFilter', true)
-
     const event = {type: 'borrow', datetime: {}}
 
     client

@@ -336,14 +336,6 @@ const conf = convict({
       default: []
     }
   },
-  query: {
-    useVersionFilter: {
-      doc:
-        'If true, the API version parameter is extracted from the request URL and passed to the database query',
-      format: Boolean,
-      default: false
-    }
-  },
   media: {
     defaultBucket: {
       doc: 'The name of the default media bucket',

@@ -227,9 +227,6 @@ describe('Reference Field', () => {
       const author = {
         name: 'Author one'
       }
-
-      config.set('query.useVersionFilter', true)
-
       const client = request(connectionString)
 
       client
@@ -264,9 +261,6 @@ describe('Reference Field', () => {
         {name: 'Author two'},
         {name: 'Author three'}
       ]
-
-      config.set('query.useVersionFilter', true)
-
       const client = request(connectionString)
 
       client
@@ -301,9 +295,6 @@ describe('Reference Field', () => {
     it('should accept reference documents as an array of _collection/_data objects containing document IDs in the _data property', done => {
       const authors = [{name: 'Author one'}, {name: 'Author two'}]
       const books = [{title: 'Book one'}, {title: 'Book two'}]
-
-      config.set('query.useVersionFilter', true)
-
       const client = request(connectionString)
 
       client
@@ -534,9 +525,6 @@ describe('Reference Field', () => {
           }
         }
       }
-
-      config.set('query.useVersionFilter', true)
-
       const client = request(connectionString)
 
       client
@@ -606,9 +594,6 @@ describe('Reference Field', () => {
           }
         ]
       }
-
-      config.set('query.useVersionFilter', true)
-
       const client = request(connectionString)
 
       client
@@ -688,9 +673,6 @@ describe('Reference Field', () => {
         title: 'The Sun Also Rises',
         author: []
       }
-
-      config.set('query.useVersionFilter', true)
-
       const client = request(connectionString)
 
       client
@@ -722,9 +704,6 @@ describe('Reference Field', () => {
           }
         ]
       }
-
-      config.set('query.useVersionFilter', true)
-
       const client = request(connectionString)
 
       client
@@ -773,9 +752,6 @@ describe('Reference Field', () => {
           }
         ]
       }
-
-      config.set('query.useVersionFilter', true)
-
       const client = request(connectionString)
 
       client
@@ -823,8 +799,6 @@ describe('Reference Field', () => {
             title: 'For Whom The Bell Tolls',
             author
           }
-
-          config.set('query.useVersionFilter', true)
 
           setTimeout(() => {
             const client = request(connectionString)
@@ -874,9 +848,6 @@ describe('Reference Field', () => {
               }
             }
           }
-
-          config.set('query.useVersionFilter', true)
-
           const client = request(connectionString)
 
           client
@@ -937,8 +908,6 @@ describe('Reference Field', () => {
             author
           }
 
-          config.set('query.useVersionFilter', true)
-
           setTimeout(() => {
             const client = request(connectionString)
 
@@ -968,8 +937,6 @@ describe('Reference Field', () => {
   describe('update', () => {
     it('should compose updated document and return when history is on', done => {
       help.getBearerTokenWithAccessType('admin', function(err, token) {
-        config.set('query.useVersionFilter', true)
-
         let parent
 
         setTimeout(() => {
@@ -1013,8 +980,6 @@ describe('Reference Field', () => {
                       results.length.should.equal(1)
 
                       should.exist(results[0].children.word)
-
-                      config.set('query.useVersionFilter', false)
 
                       done()
                     })
@@ -1176,8 +1141,6 @@ describe('Reference Field', () => {
             author: [author._id.toString()]
           }
 
-          config.set('query.useVersionFilter', true)
-
           client
             .post('/library/book')
             .set('Authorization', 'Bearer ' + bearerToken)
@@ -1229,9 +1192,6 @@ describe('Reference Field', () => {
           }
         }
       }
-
-      config.set('query.useVersionFilter', true)
-
       const client = request(connectionString)
 
       client
@@ -1302,9 +1262,6 @@ describe('Reference Field', () => {
           name: 'Ernest Hemingway'
         }
       }
-
-      config.set('query.useVersionFilter', true)
-
       const client = request(connectionString)
 
       client
@@ -1354,9 +1311,6 @@ describe('Reference Field', () => {
     it('should populate a reference field containing a String', done => {
       const person = {name: 'Ernest Hemingway'}
       const book = {title: 'For Whom The Bell Tolls', author: null}
-
-      config.set('query.useVersionFilter', true)
-
       const client = request(connectionString)
 
       client
@@ -1405,9 +1359,6 @@ describe('Reference Field', () => {
     it("should populate all reference fields that aren't null", done => {
       // first person
       const gertrude = {name: 'Gertrude Stein'}
-
-      config.set('query.useVersionFilter', true)
-
       const client = request(connectionString)
 
       client
@@ -1457,9 +1408,6 @@ describe('Reference Field', () => {
     it("should populate all reference fields when optional ones aren't defined", done => {
       // first person
       const gertrude = {name: 'Gertrude Stein'}
-
-      config.set('query.useVersionFilter', true)
-
       const client = request(connectionString)
 
       client
@@ -1524,9 +1472,6 @@ describe('Reference Field', () => {
     it('should return results for a reference field containing an Array of Strings', done => {
       const person = {name: 'Ernest Hemingway'}
       const book = {title: 'For Whom The Bell Tolls', author: null}
-
-      config.set('query.useVersionFilter', true)
-
       const client = request(connectionString)
 
       client
@@ -1584,9 +1529,6 @@ describe('Reference Field', () => {
           }
         }
       }
-
-      config.set('query.useVersionFilter', true)
-
       const client = request(connectionString)
 
       client
@@ -1634,9 +1576,6 @@ describe('Reference Field', () => {
           }
         }
       }
-
-      config.set('query.useVersionFilter', true)
-
       const client = request(connectionString)
 
       client
@@ -1688,9 +1627,6 @@ describe('Reference Field', () => {
           }
         }
       }
-
-      config.set('query.useVersionFilter', true)
-
       const client = request(connectionString)
 
       client
@@ -1747,9 +1683,6 @@ describe('Reference Field', () => {
           }
         }
       }
-
-      config.set('query.useVersionFilter', true)
-
       const client = request(connectionString)
 
       client
@@ -1808,9 +1741,6 @@ describe('Reference Field', () => {
           }
         ]
       }
-
-      config.set('query.useVersionFilter', true)
-
       const client = request(connectionString)
 
       client
@@ -1901,9 +1831,6 @@ describe('Reference Field', () => {
           _data: book
         }
       ]
-
-      config.set('query.useVersionFilter', true)
-
       const client = request(connectionString)
 
       client
@@ -1949,9 +1876,6 @@ describe('Reference Field', () => {
           }
         }
       }
-
-      config.set('query.useVersionFilter', true)
-
       const client = request(connectionString)
 
       client
@@ -2011,9 +1935,6 @@ describe('Reference Field', () => {
           }
         ]
       }
-
-      config.set('query.useVersionFilter', true)
-
       const client = request(connectionString)
 
       client
@@ -2070,9 +1991,6 @@ describe('Reference Field', () => {
           author: 'id-that-does-not-exist'
         }
       ]
-
-      config.set('query.useVersionFilter', true)
-
       const client = request(connectionString)
 
       client
@@ -2162,9 +2080,6 @@ describe('Reference Field', () => {
           name: 'Justin Case'
         }
       }
-
-      config.set('query.useVersionFilter', true)
-
       const client = request(connectionString)
 
       client
@@ -2200,9 +2115,6 @@ describe('Reference Field', () => {
       it('should return unique results for a reference field containing an Array of Strings', done => {
         const book = {title: 'For Whom The Bell Tolls', author: null}
         const author = {name: 'Ernest Hemingway'}
-
-        config.set('query.useVersionFilter', true)
-
         const client = request(connectionString)
 
         client
@@ -2256,9 +2168,6 @@ describe('Reference Field', () => {
 
       it('should return unique results for a reference field when it contains an Array of Strings and Nulls', done => {
         const book = {title: 'For Whom The Bell Tolls', author: null}
-
-        config.set('query.useVersionFilter', true)
-
         const client = request(connectionString)
 
         client
@@ -2316,9 +2225,6 @@ describe('Reference Field', () => {
           title: 'For Whom The Bell Tolls',
           author: 'id-that-does-not-exist'
         }
-
-        config.set('query.useVersionFilter', true)
-
         const client = request(connectionString)
 
         client
@@ -2356,9 +2262,6 @@ describe('Reference Field', () => {
             'another-id-that-does-not-exist'
           ]
         }
-
-        config.set('query.useVersionFilter', true)
-
         const client = request(connectionString)
 
         client
@@ -2397,9 +2300,6 @@ describe('Reference Field', () => {
           title: 'For Whom The Bell Tolls',
           author: ['id-that-does-not-exist', 'another-id-that-does-not-exist']
         }
-
-        config.set('query.useVersionFilter', true)
-
         const client = request(connectionString)
 
         client
@@ -2494,9 +2394,6 @@ describe('Reference Field', () => {
       it('should return duplicate results for a reference field when it contains an Array of Strings and Nulls', done => {
         const book = {title: 'For Whom The Bell Tolls', author: null}
         const author = {name: 'Ernest Hemingway'}
-
-        config.set('query.useVersionFilter', true)
-
         const client = request(connectionString)
 
         client
@@ -2556,9 +2453,6 @@ describe('Reference Field', () => {
           title: 'For Whom The Bell Tolls',
           authorStrict: 'id-that-does-not-exist'
         }
-
-        config.set('query.useVersionFilter', true)
-
         const client = request(connectionString)
 
         client
@@ -2596,9 +2490,6 @@ describe('Reference Field', () => {
             'another-id-that-does-not-exist'
           ]
         }
-
-        config.set('query.useVersionFilter', true)
-
         const client = request(connectionString)
 
         client
@@ -2640,9 +2531,6 @@ describe('Reference Field', () => {
             'another-id-that-does-not-exist'
           ]
         }
-
-        config.set('query.useVersionFilter', true)
-
         const client = request(connectionString)
 
         client
@@ -2680,8 +2568,6 @@ describe('Reference Field', () => {
       const book = {title: 'Death in the Afternoon', author: null}
 
       book.author = []
-
-      config.set('query.useVersionFilter', true)
 
       const client = request(connectionString)
 
@@ -2768,9 +2654,6 @@ describe('Reference Field', () => {
           }
         }
       }
-
-      config.set('query.useVersionFilter', true)
-
       const client = request(connectionString)
 
       client
@@ -2863,7 +2746,6 @@ describe('Reference Field', () => {
       const originalPrefix = config.get('internalFieldsPrefix')
 
       config.set('internalFieldsPrefix', '$')
-      config.set('query.useVersionFilter', true)
 
       const client = request(connectionString)
 
@@ -2892,7 +2774,6 @@ describe('Reference Field', () => {
       const originalPrefix = config.get('internalFieldsPrefix')
 
       config.set('internalFieldsPrefix', '$')
-      config.set('query.useVersionFilter', true)
 
       const client = request(connectionString)
 
@@ -2912,8 +2793,6 @@ describe('Reference Field', () => {
             title: 'For Whom The Bell Tolls',
             author
           }
-
-          config.set('query.useVersionFilter', true)
 
           setTimeout(() => {
             const client = request(connectionString)

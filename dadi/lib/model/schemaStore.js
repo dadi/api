@@ -188,7 +188,13 @@ class SchemaStore {
       throw new Error('SCHEMA_EXISTS')
     }
 
-    await this.validate({fields, settings})
+    await this.validate({
+      fields,
+      name,
+      property,
+      requiredFields: ['name', 'property'],
+      settings
+    })
 
     const database = await this.connection
     const results = await database.insert({
@@ -471,8 +477,28 @@ class SchemaStore {
     return updatedSchema
   }
 
-  async validate({fields, settings}) {
+  async validate({fields, name, property, requiredFields = [], settings}) {
     let combinedErrors = []
+
+    try {
+      const schema = {
+        name: {
+          type: 'string',
+          required: requiredFields.includes('name')
+        },
+        property: {
+          type: 'string',
+          required: requiredFields.includes('property')
+        }
+      }
+
+      await this.validator.validateDocument({
+        document: {name, property},
+        schema
+      })
+    } catch (errors) {
+      combinedErrors = combinedErrors.concat(errors)
+    }
 
     if (settings !== undefined) {
       try {

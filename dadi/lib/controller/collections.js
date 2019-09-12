@@ -270,7 +270,7 @@ Collections.prototype.getCollection = async function(req, res, next) {
 Collections.prototype.handleError = function(error, res, next) {
   switch (error.message) {
     case 'FIELD_ALREADY_EXISTS':
-      return help.sendBackJSON(419, res, next)(null, {
+      return help.sendBackJSON(409, res, next)(null, {
         success: false,
         errors: [
           {

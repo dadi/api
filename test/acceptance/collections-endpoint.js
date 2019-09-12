@@ -755,6 +755,82 @@ describe('Collections endpoint', function() {
       })
     })
 
+    it('should return 400 if the collection name or property are missing from the request payload', done => {
+      const testClient = {
+        clientId: 'adminClient',
+        secret: 'someSecret',
+        accessType: 'admin'
+      }
+      const schema = {
+        fields: {
+          title: {
+            type: 'string'
+          }
+        }
+      }
+
+      help.createACLClient(testClient).then(() => {
+        client
+          .post(config.get('auth.tokenUrl'))
+          .set('content-type', 'application/json')
+          .send(testClient)
+          .expect(200)
+          .expect('content-type', 'application/json')
+          .end((err, res) => {
+            if (err) return done(err)
+
+            const bearerToken = res.body.accessToken
+
+            client
+              .post(`/api/collections`)
+              .send(schema)
+              .set('content-type', 'application/json')
+              .set('Authorization', `Bearer ${bearerToken}`)
+              .end((err, res) => {
+                res.statusCode.should.eql(400)
+                res.body.success.should.eql(false)
+                res.body.errors.length.should.eql(2)
+                res.body.errors[0].code.should.eql('ERROR_REQUIRED')
+                res.body.errors[0].field.should.eql('name')
+                res.body.errors[0].message.should.be.String
+                res.body.errors[1].code.should.eql('ERROR_REQUIRED')
+                res.body.errors[1].field.should.eql('property')
+                res.body.errors[1].message.should.be.String
+
+                client
+                  .post(`/api/collections`)
+                  .send(Object.assign({}, schema, {property: 'library'}))
+                  .set('content-type', 'application/json')
+                  .set('Authorization', `Bearer ${bearerToken}`)
+                  .end((err, res) => {
+                    res.statusCode.should.eql(400)
+                    res.body.success.should.eql(false)
+                    res.body.errors.length.should.eql(1)
+                    res.body.errors[0].code.should.eql('ERROR_REQUIRED')
+                    res.body.errors[0].field.should.eql('name')
+                    res.body.errors[0].message.should.be.String
+
+                    client
+                      .post(`/api/collections`)
+                      .send(Object.assign({}, schema, {name: 'books'}))
+                      .set('content-type', 'application/json')
+                      .set('Authorization', `Bearer ${bearerToken}`)
+                      .end((err, res) => {
+                        res.statusCode.should.eql(400)
+                        res.body.success.should.eql(false)
+                        res.body.errors.length.should.eql(1)
+                        res.body.errors[0].code.should.eql('ERROR_REQUIRED')
+                        res.body.errors[0].field.should.eql('property')
+                        res.body.errors[0].message.should.be.String
+
+                        done(err)
+                      })
+                  })
+              })
+          })
+      })
+    })
+
     it('should return 200 if the request contains an admin bearer token', done => {
       const testClient = {
         clientId: 'adminClient',

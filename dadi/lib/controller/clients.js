@@ -58,7 +58,7 @@ Clients.prototype.delete = function(req, res, next) {
         return Promise.reject(acl.createError(req.dadiApiClient))
       }
 
-      return model.get(req.params.clientId)
+      return model.get({clientId: req.params.clientId})
     })
     .then(clients => {
       if (clients.results.length === 0) {
@@ -121,7 +121,9 @@ Clients.prototype.deleteRole = async function(req, res, next) {
     // If the client does not have admin access, we need to ensure that
     // they have the role they are trying to remove.
     if (!model.isAdmin(req.dadiApiClient)) {
-      const {results: clients} = await model.get(req.dadiApiClient.clientId)
+      const {results: clients} = await model.get({
+        clientId: req.dadiApiClient.clientId
+      })
       const user = clients[0]
       const requestingClientHasRole = user.roles && user.roles.includes(role)
 
@@ -161,7 +163,7 @@ Clients.prototype.get = async function(req, res, next) {
       }
     }
 
-    const clients = await model.get(clientId)
+    const clients = await model.get({clientId})
 
     if (clientId && clients.results.length === 0) {
       return help.sendBackJSON(404, res, next)(null, null)
@@ -215,6 +217,18 @@ Clients.prototype.handleError = function(res, next) {
 
       case 'CLIENT_NOT_FOUND':
         return help.sendBackJSON(404, res, next)(null, null)
+
+      case 'EMAIL_EXISTS':
+        return help.sendBackJSON(409, res, next)(null, {
+          success: false,
+          errors: [
+            {
+              code: 'ERROR_EMAIL_EXISTS',
+              field: 'email',
+              message: 'email already exists'
+            }
+          ]
+        })
 
       case 'INVALID_ROLE':
         return help.sendBackJSON(400, res, next)(null, {
@@ -362,7 +376,9 @@ Clients.prototype.postRole = async function(req, res, next) {
     // If the client does not have admin access, we need to ensure that
     // they have each of the roles they are trying to assign.
     if (!model.isAdmin(req.dadiApiClient)) {
-      const {results: users} = await model.get(req.dadiApiClient.clientId)
+      const {results: users} = await model.get({
+        clientId: req.dadiApiClient.clientId
+      })
       const user = users[0]
       const forbiddenRoles = roles.filter(role => {
         return !user.roles || !user.roles.includes(role)

@@ -358,6 +358,58 @@ module.exports = () => {
       })
     })
 
+    it('should return 400 if the request body includes an invalid email address', done => {
+      const testClient = {
+        clientId: 'apiClient',
+        secret: 'someSecret',
+        accessType: 'admin'
+      }
+      const newClient = {
+        clientId: 'newClient',
+        secret: 'aNewSecret',
+        email: 'test@edit'
+      }
+
+      help.createACLClient(testClient).then(() => {
+        client
+          .post(config.get('auth.tokenUrl'))
+          .set('content-type', 'application/json')
+          .send({
+            clientId: testClient.clientId,
+            secret: testClient.secret
+          })
+          .expect(200)
+          .expect('content-type', 'application/json')
+          .end((err, res) => {
+            if (err) return done(err)
+
+            res.body.accessToken.should.be.String
+
+            const bearerToken = res.body.accessToken
+
+            client
+              .post('/api/clients')
+              .send(newClient)
+              .set('content-type', 'application/json')
+              .set('Authorization', `Bearer ${bearerToken}`)
+              .expect('content-type', 'application/json')
+              .end((err, res) => {
+                if (err) return done(err)
+
+                res.statusCode.should.eql(400)
+
+                res.body.success.should.eql(false)
+                res.body.errors.should.be.Array
+                res.body.errors[0].code.should.eql('ERROR_REGEX')
+                res.body.errors[0].field.should.eql('email')
+                res.body.errors[0].message.should.be.String
+
+                done()
+              })
+          })
+      })
+    })
+
     it('should return 400 if the request body includes an unknown property', done => {
       const testClient = {
         clientId: 'apiClient',
@@ -517,6 +569,59 @@ module.exports = () => {
           })
       })
     })
+
+    it('should return 409 if a client with the given ID already exists', done => {
+      const testClient = {
+        clientId: 'apiClient',
+        email: 'test1@edit.com',
+        secret: 'someSecret',
+        resources: {
+          clients: {
+            create: true
+          }
+        }
+      }
+
+      help.createACLClient(testClient).then(() => {
+        client
+          .post(config.get('auth.tokenUrl'))
+          .set('content-type', 'application/json')
+          .send({
+            clientId: testClient.clientId,
+            secret: testClient.secret
+          })
+          .expect(200)
+          .expect('content-type', 'application/json')
+          .end((err, res) => {
+            if (err) return done(err)
+
+            res.body.accessToken.should.be.String
+
+            const bearerToken = res.body.accessToken
+
+            client
+              .post('/api/clients')
+              .send({
+                clientId: 'someOtherClientId',
+                email: testClient.email,
+                secret: 'someOtherSecret'
+              })
+              .set('content-type', 'application/json')
+              .set('Authorization', `Bearer ${bearerToken}`)
+              .expect('content-type', 'application/json')
+              .end((err, res) => {
+                res.statusCode.should.eql(409)
+                res.body.success.should.eql(false)
+                res.body.errors.should.be.Array
+                res.body.errors[0].code.should.eql('ERROR_EMAIL_EXISTS')
+                res.body.errors[0].field.should.eql('email')
+                res.body.errors[0].message.should.be.String
+
+                done()
+              })
+          })
+      })
+    })
   })
 
   describe('success states (the client has "create" access to the "clients" resource)', () => {
@@ -654,6 +759,82 @@ module.exports = () => {
                 should.not.exist(res.body.results[0].secret)
 
                 done()
+              })
+          })
+      })
+    })
+
+    it('should create a client with an email address', done => {
+      const testClient = {
+        clientId: 'apiClient',
+        secret: 'someSecret',
+        resources: {
+          clients: {
+            create: true,
+            read: true
+          }
+        }
+      }
+      const newClient = {
+        clientId: 'newClient',
+        secret: 'aNewSecret',
+        email: 'test@edit.com'
+      }
+
+      help.createACLClient(testClient).then(() => {
+        client
+          .post(config.get('auth.tokenUrl'))
+          .set('content-type', 'application/json')
+          .send({
+            clientId: testClient.clientId,
+            secret: testClient.secret
+          })
+          .expect(200)
+          .expect('content-type', 'application/json')
+          .end((err, res) => {
+            if (err) return done(err)
+
+            res.body.accessToken.should.be.String
+
+            const bearerToken = res.body.accessToken
+
+            client
+              .post('/api/clients')
+              .send(newClient)
+              .set('content-type', 'application/json')
+              .set('Authorization', `Bearer ${bearerToken}`)
+              .expect('content-type', 'application/json')
+              .end((err, res) => {
+                res.statusCode.should.eql(201)
+
+                res.body.results.should.be.Array
+                res.body.results.length.should.eql(1)
+                res.body.results[0].clientId.should.eql(newClient.clientId)
+                res.body.results[0].accessType.should.eql('user')
+                res.body.results[0].resources.should.eql({})
+                res.body.results[0].roles.should.eql([])
+                res.body.results[0].email.should.eql(newClient.email)
+                should.not.exist(res.body.results[0].secret)
+
+                client
+                  .get(`/api/clients/${newClient.clientId}`)
+                  .set('content-type', 'application/json')
+                  .set('Authorization', `Bearer ${bearerToken}`)
+                  .expect('content-type', 'application/json')
+                  .end((err, res) => {
+                    res.statusCode.should.eql(200)
+
+                    res.body.results.should.be.Array
+                    res.body.results.length.should.eql(1)
+                    res.body.results[0].clientId.should.eql(newClient.clientId)
+                    res.body.results[0].accessType.should.eql('user')
+                    res.body.results[0].resources.should.eql({})
+                    res.body.results[0].roles.should.eql([])
+                    res.body.results[0].email.should.eql(newClient.email)
+                    should.not.exist(res.body.results[0].secret)
+
+                    done()
+                  })
               })
           })
       })

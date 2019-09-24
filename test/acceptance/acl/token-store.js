@@ -6,7 +6,6 @@ const help = require('./../help')
 const jwt = require('jsonwebtoken')
 const path = require('path')
 const request = require('supertest')
-const should = require('should')
 const sinon = require('sinon')
 
 describe('Token store', () => {
@@ -16,6 +15,7 @@ describe('Token store', () => {
   )
   const testClient = {
     clientId: 'rootClient',
+    email: 'test@edit.com',
     secret: 'superSecret',
     accessType: 'admin'
   }
@@ -101,11 +101,14 @@ describe('Token store', () => {
       })
     })
 
-    it('should return 401 if the client ID or secret contain non-string values', done => {
+    it('should return 401 if the client ID, email or secret contain non-string values', done => {
       client
         .post(tokenRoute)
         .send({
           clientId: {
+            $ne: null
+          },
+          email: {
             $ne: null
           },
           secret: {
@@ -152,11 +155,30 @@ describe('Token store', () => {
         })
     })
 
-    it('should issue a bearer token if the credentials are correct', done => {
+    it('should issue a bearer token if the clientId/secret supplied are correct', done => {
       client
         .post(tokenRoute)
         .send({
           clientId: testClient.clientId,
+          secret: testClient.secret
+        })
+        .expect('content-type', 'application/json')
+        .expect('pragma', 'no-cache')
+        .expect('Cache-Control', 'no-store')
+        .expect(200, (err, res) => {
+          res.body.accessToken.should.be.String
+          res.body.tokenType.should.eql('Bearer')
+          res.body.expiresIn.should.eql(config.get('auth.tokenTtl'))
+
+          done()
+        })
+    })
+
+    it('should issue a bearer token if the email/secret supplied are correct', done => {
+      client
+        .post(tokenRoute)
+        .send({
+          email: testClient.email,
           secret: testClient.secret
         })
         .expect('content-type', 'application/json')

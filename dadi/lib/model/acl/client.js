@@ -18,6 +18,15 @@ const Client = function() {
       type: 'string',
       required: true
     },
+    email: {
+      message: 'must be a valid email address',
+      type: 'string',
+      validation: {
+        regex: {
+          pattern: /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/
+        }
+      }
+    },
     accessType: {
       default: 'user',
       type: 'string'
@@ -105,7 +114,7 @@ Client.prototype.connect = function(acl) {
 Client.prototype.create = async function(client) {
   await this.validate(client)
 
-  const {results} = await this.model.find({
+  const {results: clientsWithId} = await this.model.find({
     options: {
       fields: {
         _id: 1
@@ -116,8 +125,25 @@ Client.prototype.create = async function(client) {
     }
   })
 
-  if (results.length > 0) {
-    return Promise.reject(new Error('CLIENT_EXISTS'))
+  if (clientsWithId.length > 0) {
+    throw new Error('CLIENT_EXISTS')
+  }
+
+  if (typeof client.email === 'string') {
+    const {results: clientsWithEmail} = await this.model.find({
+      options: {
+        fields: {
+          _id: 1
+        }
+      },
+      query: {
+        email: client.email
+      }
+    })
+
+    if (clientsWithEmail.length > 0) {
+      throw new Error('EMAIL_EXISTS')
+    }
   }
 
   client.secret = await this.hashSecret(client.secret, client)
@@ -146,7 +172,7 @@ Client.prototype.create = async function(client) {
  * @return {Promise<Object>}
  */
 Client.prototype.delete = async function(clientId) {
-  const result = await this.model.delete({
+  await this.model.delete({
     query: {
       clientId
     }
@@ -198,53 +224,54 @@ Client.prototype.formatForOutput = function(client) {
 }
 
 /**
- * Retrieves clients by ID. When a secret is supplied, it is validated
- * against the hash that is stored in the database. If they don't match,
- * an empty result set is returned.
+ * Retrieves clients by ID or email address. When a secret is supplied, it is
+ * validated against the hash that is stored in the database. If they don't
+ * match, an empty result set is returned.
  *
  * @param  {String} clientId
+ * @param  {String} email
  * @param  {String} secret
  * @return {Promise<Object>}
  */
-Client.prototype.get = function(clientId, secret) {
+Client.prototype.get = async function({clientId, email, secret}) {
   const query = {}
 
   if (typeof clientId === 'string') {
     query.clientId = clientId
+  } else if (typeof email === 'string') {
+    query.email = email
   }
 
-  return this.model
-    .find({
-      query
-    })
-    .then(response => {
-      const {results} = response
-      const mustValidateSecret =
-        results.length === 1 && typeof secret === 'string'
-      const [record] = results
-      const secretValidation = mustValidateSecret
-        ? this.validateSecret(record.secret, secret, record._hashVersion)
-        : Promise.resolve(true)
+  const response = await this.model.find({
+    query
+  })
+  const {results} = response
+  const mustValidateSecret = results.length === 1 && typeof secret === 'string'
+  const [record] = results
 
-      return secretValidation.then(secretIsValid => {
-        if (!secretIsValid) {
-          return []
-        }
+  if (mustValidateSecret) {
+    const secretIsValid = await this.validateSecret(
+      record.secret,
+      secret,
+      record._hashVersion
+    )
 
-        return results.map(result => {
-          const resources = new ACLMatrix(result.resources)
+    if (!secretIsValid) {
+      return []
+    }
+  }
 
-          return Object.assign({}, result, {
-            resources: resources.getAll()
-          })
-        })
-      })
+  const clients = results.map(result => {
+    const resources = new ACLMatrix(result.resources)
+
+    return Object.assign({}, result, {
+      resources: resources.getAll()
     })
-    .then(results => {
-      return {
-        results
-      }
-    })
+  })
+
+  return {
+    results: clients
+  }
 }
 
 /**
@@ -636,7 +663,7 @@ Client.prototype.setWriteCallback = function(callback) {
  * @param  {Object} update
  * @return {Promise<Object>}
  */
-Client.prototype.update = function(clientId, update) {
+Client.prototype.update = async function(clientId, update) {
   const {accessType, currentSecret, secret} = update
   const findQuery = {
     clientId
@@ -645,88 +672,96 @@ Client.prototype.update = function(clientId, update) {
   // It's not possible to use this endpoint to set a client's access type
   // to `admin`.
   if (accessType === 'admin') {
-    return Promise.reject(new Error('UNAUTHORISED'))
+    throw new Error('UNAUTHORISED')
+  }
+
+  if (update.email) {
+    const {results: clientsWithEmail} = await this.model.find({
+      options: {
+        fields: {
+          clientId: 1
+        }
+      },
+      query: {
+        email: update.email
+      }
+    })
+
+    if (
+      clientsWithEmail.length > 0 &&
+      clientsWithEmail[0].clientId !== clientId
+    ) {
+      throw new Error('EMAIL_EXISTS')
+    }
   }
 
   delete update.currentSecret
   delete update.secret
 
-  return this.validate(update, {
+  await this.validate(update, {
     blockedFields: ['clientId'],
     isUpdate: true
   })
-    .then(() => {
-      return this.model.find({
-        options: {
-          fields: {
-            _hashVersion: 1,
-            data: 1,
-            secret: 1
-          }
-        },
-        query: findQuery
-      })
-    })
-    .then(({results}) => {
-      if (results.length === 0) {
-        return Promise.reject(new Error('CLIENT_NOT_FOUND'))
+
+  const {results} = await this.model.find({
+    options: {
+      fields: {
+        _hashVersion: 1,
+        data: 1,
+        secret: 1
       }
+    },
+    query: findQuery
+  })
 
-      const [record] = results
+  if (results.length === 0) {
+    throw new Error('CLIENT_NOT_FOUND')
+  }
 
-      // If a `currentSecret` property was sent, we must validate it against the
-      // hashed secret in the database.
-      if (typeof currentSecret === 'string') {
-        return this.validateSecret(
-          record.secret,
-          currentSecret,
-          record._hashVersion
-        ).then(secretIsValid => {
-          if (!secretIsValid) {
-            return Promise.reject(new Error('INVALID_SECRET'))
-          }
+  const [record] = results
 
-          return results
-        })
+  // If a `currentSecret` property was sent, we must validate it against the
+  // hashed secret in the database.
+  if (typeof currentSecret === 'string') {
+    const secretIsValid = await this.validateSecret(
+      record.secret,
+      currentSecret,
+      record._hashVersion
+    )
+
+    if (!secretIsValid) {
+      throw new Error('INVALID_SECRET')
+    }
+  }
+
+  // If we're trying to update the client's secret, we must hash it
+  // before sending it to the database.
+  if (typeof secret === 'string') {
+    const hashedSecret = await this.hashSecret(secret, update)
+
+    update.secret = hashedSecret
+  }
+
+  if (update.data) {
+    const mergedData = Object.assign({}, results[0].data, update.data)
+
+    Object.keys(mergedData).forEach(key => {
+      if (mergedData[key] === null) {
+        delete mergedData[key]
       }
-
-      return results
     })
-    .then(results => {
-      // If we're trying to update the client's secret, we must hash it
-      // before sending it to the database.
-      if (typeof secret === 'string') {
-        return this.hashSecret(secret, update).then(hashedSecret => {
-          update.secret = hashedSecret
 
-          return results
-        })
-      }
+    update.data = mergedData
+  }
 
-      return results
-    })
-    .then(results => {
-      if (update.data) {
-        const mergedData = Object.assign({}, results[0].data, update.data)
-
-        Object.keys(mergedData).forEach(key => {
-          if (mergedData[key] === null) {
-            delete mergedData[key]
-          }
-        })
-
-        update.data = mergedData
-      }
-
-      return this.model.update({
-        query: {
-          clientId
-        },
-        rawOutput: true,
-        update,
-        validate: false
-      })
-    })
+  return this.model.update({
+    query: {
+      clientId
+    },
+    rawOutput: true,
+    update,
+    validate: false
+  })
 }
 
 /**

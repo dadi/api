@@ -570,7 +570,7 @@ module.exports = () => {
       })
     })
 
-    it('should return 409 if a client with the given ID already exists', done => {
+    it('should return 409 if a client with the given email address already exists', done => {
       const testClient = {
         clientId: 'apiClient',
         email: 'test1@edit.com',

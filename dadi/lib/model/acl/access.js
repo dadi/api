@@ -194,7 +194,7 @@ Access.prototype.get = async function(
  * @return {Promise<Array>}
  */
 Access.prototype.getClientRoles = function(clientId) {
-  return clientModel.get(clientId).then(({results}) => {
+  return clientModel.get({clientId}).then(({results}) => {
     if (results.length === 0) {
       return []
     }
@@ -815,7 +815,7 @@ Access.prototype.writeKeyAccess = async function({
           const client =
             clientsCache[clientId] ||
             (await clientModel
-              .get(clientId)
+              .find({clientId})
               .then(({results}) => results && results[0]))
 
           if (!client) return

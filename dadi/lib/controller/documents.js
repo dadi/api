@@ -192,7 +192,6 @@ Collection.prototype.get = workQueue.wrapForegroundJob(async function(
 
     return done(null, results, req)
   } catch (error) {
-    console.log(error)
     return done(error)
   }
 })

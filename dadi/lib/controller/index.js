@@ -9,7 +9,7 @@ Controller.prototype._addPaginationUrlsToMetadata = function(
   parsedUrl,
   metadata
 ) {
-  let urls = {}
+  const urls = {}
 
   if (metadata.nextPage) {
     const nextPageUrl = Object.assign({query: {}}, parsedUrl, {

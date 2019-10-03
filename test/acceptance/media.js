@@ -1038,6 +1038,39 @@ describe('Media', function() {
               })
           })
         })
+
+        it('should show pagination numbers and URLs in the metadata block', function(done) {
+          const obj = {
+            fileName: '1f525.png',
+            mimetype: 'image/png'
+          }
+
+          signAndUpload(obj, (err, _) => {
+            if (err) return done(err)
+
+            signAndUpload(obj, (err, _) => {
+              if (err) return done(err)
+
+              signAndUpload(obj, (err, _) => {
+                if (err) return done(err)
+                client
+                  .get(`/media/?count=1&page=2`)
+                  .set('Authorization', `Bearer ${bearerToken}`)
+                  .end((err, res) => {
+                    const {metadata} = res.body
+
+                    metadata.totalPages.should.eql(3)
+                    metadata.prevPage.should.eql(1)
+                    metadata.prevPageUrl.should.eql(`/media/?count=1&page=1`)
+                    metadata.nextPage.should.eql(3)
+                    metadata.nextPageUrl.should.eql(`/media/?count=1&page=3`)
+
+                    done(err)
+                  })
+              })
+            })
+          })
+        })
       })
 
       describe('Named bucket', function() {

@@ -1,4 +1,3 @@
-const config = require('./../../../config')
 const help = require('./../help')
 const url = require('url')
 
@@ -6,15 +5,37 @@ const ID_PATTERN = '[a-fA-F0-9-]*'
 
 const Controller = function() {}
 
-Controller.prototype._getURLParameters = function(requestUrl) {
-  const parsedUrl = url.parse(requestUrl, true)
+Controller.prototype._addPaginationUrlsToMetadata = function(
+  parsedUrl,
+  metadata
+) {
+  let urls = {}
 
-  return parsedUrl.query
+  if (metadata.nextPage) {
+    const nextPageUrl = Object.assign({query: {}}, parsedUrl, {
+      search: undefined
+    })
+
+    nextPageUrl.query.page = metadata.nextPage
+
+    urls.nextPageUrl = decodeURIComponent(url.format(nextPageUrl))
+  }
+
+  if (metadata.prevPage) {
+    const prevPageUrl = Object.assign({query: {}}, parsedUrl, {
+      search: undefined
+    })
+
+    prevPageUrl.query.page = metadata.prevPage
+
+    urls.prevPageUrl = decodeURIComponent(url.format(prevPageUrl))
+  }
+
+  return Object.assign({}, metadata, urls)
 }
 
 Controller.prototype._prepareQuery = function(req, model) {
-  const path = url.parse(req.url, true)
-  const options = this._getURLParameters(req.url)
+  const {query: options} = url.parse(req.url, true)
   let query = help.parseQuery(options.filter)
 
   // Formatting query

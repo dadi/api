@@ -9,7 +9,6 @@ const should = require('should')
 
 const connectionString =
   'http://' + config.get('server.host') + ':' + config.get('server.port')
-const client = request(connectionString)
 
 let bearerToken
 
@@ -744,11 +743,14 @@ describe('Collections API – GET', function() {
         .end(function(err, res) {
           if (err) return done(err)
 
-          res.body['metadata'].should.exist
-          res.body['metadata'].page.should.equal(1)
-          res.body['metadata'].limit.should.equal(docCount)
-          res.body['metadata'].totalPages.should.be.above(1) // Math.ceil(# documents/20 per page)
-          res.body['metadata'].nextPage.should.equal(2)
+          res.body.metadata.should.exist
+          res.body.metadata.page.should.equal(1)
+          res.body.metadata.limit.should.equal(docCount)
+          res.body.metadata.totalPages.should.be.above(1) // Math.ceil(# documents/20 per page)
+          res.body.metadata.nextPage.should.equal(2)
+          res.body.metadata.nextPageUrl.should.eql(
+            '/testdb/test-schema?page=2&count=' + docCount
+          )
 
           done()
         })
@@ -766,10 +768,16 @@ describe('Collections API – GET', function() {
         .end(function(err, res) {
           if (err) return done(err)
 
-          res.body['metadata'].should.exist
-          res.body['metadata'].page.should.equal(2)
-          res.body['metadata'].nextPage.should.equal(3)
-          res.body['metadata'].prevPage.should.equal(1)
+          res.body.metadata.should.exist
+          res.body.metadata.page.should.equal(2)
+          res.body.metadata.nextPage.should.equal(3)
+          res.body.metadata.nextPageUrl.should.eql(
+            '/testdb/test-schema?page=3&count=' + docCount
+          )
+          res.body.metadata.prevPage.should.equal(1)
+          res.body.metadata.prevPageUrl.should.eql(
+            '/testdb/test-schema?page=1&count=' + docCount
+          )
 
           done()
         })

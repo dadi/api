@@ -186,9 +186,9 @@ MediaController.prototype.delete = function(req, res, next) {
  * @return {Promise<ResultSet>}
  */
 MediaController.prototype.get = function(req, res, next) {
-  const path = url.parse(req.url, true)
+  const parsedUrl = url.parse(req.url, true)
   const query = this._prepareQuery(req, this.model)
-  const parsedOptions = this._prepareQueryOptions(path.query, this.model)
+  const parsedOptions = this._prepareQueryOptions(parsedUrl.query, this.model)
 
   if (parsedOptions.errors.length > 0) {
     return help.sendBackJSON(400, res, next)(null, parsedOptions)
@@ -205,6 +205,13 @@ MediaController.prototype.get = function(req, res, next) {
       response.results = response.results.map(document => {
         return mediaModel.formatDocuments(document)
       })
+
+      if (response.metadata) {
+        response.metadata = this._addPaginationUrlsToMetadata(
+          parsedUrl,
+          response.metadata
+        )
+      }
 
       help.sendBackJSON(200, res, next)(null, response)
     })

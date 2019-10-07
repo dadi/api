@@ -158,7 +158,8 @@ Collection.prototype.get = workQueue.wrapForegroundJob(async function(
   }
 
   const {id} = req.params
-  const options = this._getURLParameters(req.url)
+  const parsedUrl = url.parse(req.url, true)
+  const {query: options} = parsedUrl
   const callback = options.callback || model.settings.callback
 
   // Determine if the client supplied a JSONP callback.
@@ -181,6 +182,13 @@ Collection.prototype.get = workQueue.wrapForegroundJob(async function(
       req,
       version: id && options.version
     })
+
+    if (results.metadata) {
+      results.metadata = this._addPaginationUrlsToMetadata(
+        parsedUrl,
+        results.metadata
+      )
+    }
 
     return done(null, results, req)
   } catch (error) {

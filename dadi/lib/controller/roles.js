@@ -35,7 +35,9 @@ Roles.prototype.delete = async function(req, res, next) {
     // If the requesting client isn't an admin, we need to ensure they
     // have access to the role they are trying to delete.
     if (!acl.client.isAdmin(req.dadiApiClient)) {
-      const {results} = await acl.client.get(req.dadiApiClient.clientId)
+      const {results} = await acl.client.get({
+        clientId: req.dadiApiClient.clientId
+      })
       const clientRoles = results[0].roles || []
 
       if (!clientRoles.includes(req.params.role)) {
@@ -86,9 +88,9 @@ Roles.prototype.deleteResource = async function(req, res, next) {
         throw acl.createError(req.dadiApiClient)
       }
 
-      const {results: clients} = await acl.client.get(
-        req.dadiApiClient.clientId
-      )
+      const {results: clients} = await acl.client.get({
+        clientId: req.dadiApiClient.clientId
+      })
       const roles = clients[0].roles || []
 
       if (!roles.includes(req.params.role)) {
@@ -258,7 +260,9 @@ Roles.prototype.postResource = async function(req, res, next) {
         throw acl.createError(req.dadiApiClient)
       }
 
-      const {results} = await acl.client.get(req.dadiApiClient.clientId)
+      const {results} = await acl.client.get({
+        clientId: req.dadiApiClient.clientId
+      })
       const roles = results[0].roles || []
 
       if (!roles.includes(req.params.role)) {
@@ -364,9 +368,9 @@ Roles.prototype.putResource = async function(req, res, next) {
         throw acl.createError(req.dadiApiClient)
       }
 
-      const {results: clients} = await acl.client.get(
-        req.dadiApiClient.clientId
-      )
+      const {results: clients} = await acl.client.get({
+        clientId: req.dadiApiClient.clientId
+      })
       const roles = clients[0].roles || []
 
       if (!roles.includes(req.params.role)) {

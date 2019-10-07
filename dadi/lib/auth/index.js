@@ -101,18 +101,21 @@ AuthMiddleware.prototype.handleClientInNeedOfUpgrade = function(
  * @param  {Function}               next
  */
 AuthMiddleware.prototype.generateToken = function(req, res, next) {
-  const {clientId, secret} = req.body
+  const {clientId, email, secret} = req.body
 
   res.setHeader('Content-Type', 'application/json')
   res.setHeader('Cache-Control', 'no-store')
   res.setHeader('Pragma', 'no-cache')
 
-  if (typeof clientId !== 'string' || typeof secret !== 'string') {
+  if (
+    typeof secret !== 'string' ||
+    (typeof clientId !== 'string' && typeof email !== 'string')
+  ) {
     return this.handleInvalidCredentials(req, res, next)
   }
 
   clientModel
-    .get(clientId, secret)
+    .get({clientId, email, secret})
     .then(({results}) => {
       if (results.length === 0) {
         return this.handleInvalidCredentials(req, res, next)

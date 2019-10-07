@@ -386,6 +386,64 @@ module.exports = () => {
       })
     })
 
+    it('should return 400 when trying to update the email address to one that already exists', done => {
+      const testClient1 = {
+        clientId: 'apiClient1',
+        secret: 'someSecret',
+        email: 'test1@edit.com',
+        accessType: 'admin'
+      }
+      const testClient2 = {
+        clientId: 'apiClient2',
+        secret: 'someSecret',
+        email: 'test2@edit.com',
+        accessType: 'admin'
+      }
+
+      help
+        .createACLClient(testClient1)
+        .then(() => {
+          return help.createACLClient(testClient2)
+        })
+        .then(() => {
+          client
+            .post(config.get('auth.tokenUrl'))
+            .set('content-type', 'application/json')
+            .send({
+              clientId: testClient1.clientId,
+              secret: testClient1.secret
+            })
+            .expect(200)
+            .expect('content-type', 'application/json')
+            .end((err, res) => {
+              if (err) return done(err)
+
+              res.body.accessToken.should.be.String
+
+              const bearerToken = res.body.accessToken
+
+              client
+                .put(`/api/clients/${testClient2.clientId}`)
+                .send({
+                  email: testClient1.email
+                })
+                .set('content-type', 'application/json')
+                .set('Authorization', `Bearer ${bearerToken}`)
+                .expect('content-type', 'application/json')
+                .end((err, res) => {
+                  res.statusCode.should.eql(409)
+
+                  res.body.success.should.eql(false)
+                  res.body.errors[0].code.should.eql('ERROR_EMAIL_EXISTS')
+                  res.body.errors[0].field.should.eql('email')
+                  res.body.errors[0].message.should.be.String
+
+                  done(err)
+                })
+            })
+        })
+    })
+
     it('should return 400 when a client tries to write a protected data property to their record', done => {
       const testClient = {
         clientId: 'apiClient',
@@ -842,6 +900,155 @@ module.exports = () => {
                         res.body.accessToken.should.be.String
 
                         done()
+                      })
+                  })
+              })
+          })
+      })
+
+      it('should allow the email address to be updated if the address does not already exist', done => {
+        const testClient1 = {
+          clientId: 'apiClient',
+          secret: 'someSecret',
+          accessType: 'admin',
+          email: 'test1@edit.com'
+        }
+        const testClient2 = {
+          clientId: 'adminClient',
+          secret: 'someSecret',
+          accessType: 'admin',
+          email: 'test2@edit.com'
+        }
+
+        help
+          .createACLClient(testClient1)
+          .then(() => {
+            return help.createACLClient(testClient2)
+          })
+          .then(() => {
+            client
+              .post(config.get('auth.tokenUrl'))
+              .set('content-type', 'application/json')
+              .send({
+                clientId: testClient2.clientId,
+                secret: testClient2.secret
+              })
+              .expect(200)
+              .expect('content-type', 'application/json')
+              .end((err, res) => {
+                if (err) return done(err)
+
+                res.body.accessToken.should.be.String
+
+                const bearerToken = res.body.accessToken
+                const newEmail = 'test3@edit.com'
+
+                client
+                  .put(`/api/clients/${testClient1.clientId}`)
+                  .send({
+                    email: newEmail
+                  })
+                  .set('content-type', 'application/json')
+                  .set('Authorization', `Bearer ${bearerToken}`)
+                  .expect('content-type', 'application/json')
+                  .end((err, res) => {
+                    if (err) return done(err)
+
+                    res.statusCode.should.eql(200)
+
+                    res.body.results.should.be.Array
+                    res.body.results.length.should.eql(1)
+                    res.body.results[0].clientId.should.eql(
+                      testClient1.clientId
+                    )
+                    res.body.results[0].email.should.eql(newEmail)
+
+                    should.not.exist(res.body.results[0].secret)
+
+                    client
+                      .get(`/api/clients/${testClient1.clientId}`)
+                      .set('content-type', 'application/json')
+                      .set('Authorization', `Bearer ${bearerToken}`)
+                      .expect('content-type', 'application/json')
+                      .end((err, res) => {
+                        res.statusCode.should.eql(200)
+                        res.body.results[0].email.should.eql(newEmail)
+
+                        done(err)
+                      })
+                  })
+              })
+          })
+      })
+
+      it('should allow the email address to be set to the same value', done => {
+        const testClient1 = {
+          clientId: 'apiClient',
+          secret: 'someSecret',
+          accessType: 'admin',
+          email: 'test1@edit.com'
+        }
+        const testClient2 = {
+          clientId: 'adminClient',
+          secret: 'someSecret',
+          accessType: 'admin',
+          email: 'test2@edit.com'
+        }
+
+        help
+          .createACLClient(testClient1)
+          .then(() => {
+            return help.createACLClient(testClient2)
+          })
+          .then(() => {
+            client
+              .post(config.get('auth.tokenUrl'))
+              .set('content-type', 'application/json')
+              .send({
+                clientId: testClient2.clientId,
+                secret: testClient2.secret
+              })
+              .expect(200)
+              .expect('content-type', 'application/json')
+              .end((err, res) => {
+                if (err) return done(err)
+
+                res.body.accessToken.should.be.String
+
+                const bearerToken = res.body.accessToken
+
+                client
+                  .put(`/api/clients/${testClient1.clientId}`)
+                  .send({
+                    email: testClient1.email
+                  })
+                  .set('content-type', 'application/json')
+                  .set('Authorization', `Bearer ${bearerToken}`)
+                  .expect('content-type', 'application/json')
+                  .end((err, res) => {
+                    if (err) return done(err)
+
+                    res.statusCode.should.eql(200)
+
+                    res.body.results.should.be.Array
+                    res.body.results.length.should.eql(1)
+                    res.body.results[0].clientId.should.eql(
+                      testClient1.clientId
+                    )
+                    res.body.results[0].email.should.eql(testClient1.email)
+
+                    should.not.exist(res.body.results[0].secret)
+
+                    client
+                      .get(`/api/clients/${testClient1.clientId}`)
+                      .set('content-type', 'application/json')
+                      .set('Authorization', `Bearer ${bearerToken}`)
+                      .expect('content-type', 'application/json')
+                      .end((err, res) => {
+                        res.statusCode.should.eql(200)
+                        res.body.results[0].email.should.eql(testClient1.email)
+
+                        done(err)
                       })
                   })
               })

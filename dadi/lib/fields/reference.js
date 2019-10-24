@@ -389,7 +389,7 @@ module.exports.beforeQuery = function({config, field, input, options}) {
   return processTree(inputTree)
 }
 
-module.exports.beforeSave = function({
+module.exports.beforeSave = async function({
   client,
   config,
   field,
@@ -399,33 +399,40 @@ module.exports.beforeSave = function({
 }) {
   const isArray = Array.isArray(input[field])
   const values = isArray ? input[field] : [input[field]]
+  const collectionField = `${config.get('internalFieldsPrefix')}collection`
+  const dataField = `${config.get('internalFieldsPrefix')}data`
+  const ops = {
+    insertions: {},
+    updates: {}
+  }
   const idMapping = {}
-  const insertions = values.map(value => {
+
+  let isMultiCollection = false
+
+  // Do a first pass to determine which values are pre-composed documents and
+  // do validation on them, as well as grouping them into insertions/updates.
+  const firstPass = values.map(async (value, valueIndex) => {
     // This is an ID or it's falsy, there's nothing left to do.
     if (!value || typeof value === 'string') {
-      return value
+      return
     }
 
-    let needsMapping = false
-    const collectionField = `${config.get('internalFieldsPrefix')}collection`
-    const dataField = `${config.get('internalFieldsPrefix')}data`
     let referenceCollection
 
     // Are we looking at the multi-collection reference format?
     if (value[collectionField] && value[dataField]) {
+      isMultiCollection = true
       referenceCollection = value[collectionField]
       value = value[dataField]
 
-      // If the value of `_data` is a string, we assume it's an
-      // ID and therefore we just need to add the collection name
-      // to the mapping and we're done.
+      // If the value of `_data` is a string, we assume it's an ID and
+      // therefore there's no pre-composed document to process.
       if (typeof value === 'string') {
         idMapping[value] = referenceCollection
+        values[valueIndex] = value
 
-        return value
+        return
       }
-
-      needsMapping = true
     } else {
       referenceCollection = schema.settings && schema.settings.collection
     }
@@ -437,66 +444,136 @@ module.exports.beforeSave = function({
     // Augment the value with the internal properties from the parent.
     Object.assign(value, internals)
 
-    return model
-      .formatForInput(value, {internals})
-      .then(document => {
-        // The document has an ID, so it's an update.
-        if (document._id) {
-          return model
-            .update({
-              client,
-              internals: Object.assign({}, internals, {
-                _lastModifiedBy: internals._createdBy
-              }),
-              query: {
-                _id: document._id
-              },
-              rawOutput: true,
-              update: document
-            })
-            .then(() => document._id)
-        }
+    let document
 
-        return model
-          .create({
-            client,
-            documents: document,
-            internals,
-            rawOutput: true
-          })
-          .then(({results}) => {
-            return results[0]._id.toString()
-          })
+    try {
+      document = await model.formatForInput(value, {internals})
+
+      const opGroup = document._id ? ops.updates : ops.insertions
+
+      opGroup[model.name] = opGroup[model.name] || []
+      opGroup[model.name].push({
+        collection: referenceCollection,
+        document,
+        index: valueIndex,
+        model
       })
-      .then(id => {
-        if (needsMapping) {
-          idMapping[id] = referenceCollection
-        }
+    } catch (error) {
+      // Formatting the document for input has generated some errors. This can
+      // occur when there is a validation error on a nested document. In this
+      // case, `error` is a validation error object, so we just return its
+      // `errors` array.
+      return error.errors
+    }
 
-        return id
+    try {
+      await this.validator.validateDocument({
+        document,
+        isUpdate: Boolean(document._id),
+        schema: model.schema
       })
-      .catch(error => {
-        // If there is a validation error resulting from creating or updating
-        // a document, we take its error object and prepend the name of the
-        // reference field to the name of each field – e.g. `name` becomes
-        // `author.name` if we're inserting into a collection referenced by a
-        // field called `author`.
-        if (Array.isArray(error.errors)) {
-          error.errors.forEach(error => {
-            if (!error.field) return
-
-            error.field = `${field}.${error.field}`
-          })
-        }
-
-        return Promise.reject(error)
-      })
-  })
-
-  return Promise.all(insertions).then(value => {
-    return {
-      [this._getIdMappingName(field)]: idMapping,
-      [field]: isArray ? value : value[0]
+    } catch (error) {
+      return error
     }
   })
+
+  // Scan through any validation errors that occurred and group them all in a
+  // single array.
+  const validationErrors = (await Promise.all(firstPass)).reduce(
+    (globalErrors, valueErrors, index) => {
+      if (!valueErrors) return globalErrors
+
+      const formattedErrors = valueErrors.map(error => {
+        return {
+          ...error,
+          field: [field, isArray ? index.toString() : null, error.field]
+            .filter(Boolean)
+            .join('.')
+        }
+      })
+
+      return globalErrors.concat(formattedErrors)
+    },
+    []
+  )
+
+  // Abort the operation if there are any validation errors.
+  if (validationErrors.length > 0) {
+    const error = this._createValidationError(
+      'Validation Failed',
+      validationErrors
+    )
+
+    return Promise.reject(error)
+  }
+
+  // Asynchronous queue for insertions and updates.
+  const queue = []
+
+  // Processing insertions. Bypassing validation, because we've already done
+  // it.
+  Object.keys(ops.insertions).forEach(collectionName => {
+    const documents = []
+    const indexes = []
+    const {model} = ops.insertions[collectionName][0]
+
+    ops.insertions[collectionName].forEach(({document, index}) => {
+      documents.push(document)
+      indexes.push(index)
+    })
+
+    queue.push(
+      model
+        .create({
+          client,
+          documents,
+          internals,
+          rawOutput: true,
+          validate: false
+        })
+        .then(({results}) => {
+          results.forEach((result, resultIndex) => {
+            const valueId = result._id.toString()
+            const valueIndex = indexes[resultIndex]
+
+            values[valueIndex] = valueId
+            idMapping[valueId] = collectionName
+          })
+        })
+    )
+  })
+
+  // Processing updates. Bypassing validation, because we've already done
+  // it.
+  Object.keys(ops.updates).forEach(collectionName => {
+    ops.updates[collectionName].forEach(({document, index, model}) => {
+      idMapping[document._id] = collectionName
+
+      queue.push(
+        model
+          .update({
+            client,
+            internals: Object.assign({}, internals, {
+              _lastModifiedBy: internals._createdBy
+            }),
+            query: {
+              _id: document._id
+            },
+            rawOutput: true,
+            update: document,
+            validate: false
+          })
+          .then(() => {
+            values[index] = document._id
+          })
+      )
+    })
+  })
+
+  await Promise.all(queue)
+
+  return {
+    [this._getIdMappingName(field)]: isMultiCollection ? idMapping : null,
+    [field]: isArray ? values : values[0]
+  }
 }

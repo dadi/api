@@ -423,6 +423,53 @@ describe('Reference Field', () => {
         })
     })
 
+    it('should respond with 400 and an appropriate error message when the creation of some of the nested documents fails (level 1)', done => {
+      const book = {
+        title: 'For Whom The Bell Tolls',
+        author: [
+          {
+            name: 'Eduardo Hemingway',
+            invalidField: 123
+          },
+          {
+            name: 'Ernest Hemingway'
+          },
+          {
+            invalidField: 321
+          }
+        ]
+      }
+
+      const client = request(connectionString)
+
+      client
+        .post('/library/book')
+        .set('Authorization', 'Bearer ' + bearerToken)
+        .send(book)
+        .expect(400)
+        .end((err, res) => {
+          if (err) return done(err)
+
+          const {errors, success} = res.body
+
+          success.should.eql(false)
+          errors.length.should.eql(3)
+          errors[0].code.should.eql('ERROR_NOT_IN_SCHEMA')
+          errors[0].message.should.be.String
+          errors[0].field.should.eql('author.0.invalidField')
+
+          errors[1].code.should.eql('ERROR_NOT_IN_SCHEMA')
+          errors[1].message.should.be.String
+          errors[1].field.should.eql('author.2.invalidField')
+
+          errors[2].code.should.eql('ERROR_REQUIRED')
+          errors[2].message.should.be.String
+          errors[2].field.should.eql('author.2.name')
+
+          done()
+        })
+    })
+
     it('should create reference documents recursively', done => {
       const event = {
         type: 'Book release',
@@ -510,6 +557,63 @@ describe('Reference Field', () => {
           errors[0].code.should.eql('ERROR_NOT_IN_SCHEMA')
           errors[0].message.should.be.String
           errors[0].field.should.eql('book.author.invalidField')
+
+          done()
+        })
+    })
+
+    it('should respond with 400 and an appropriate error message when the creation of some of the nested documents fails (level 2)', done => {
+      const event = {
+        type: 'Book release',
+        book: [
+          {
+            title: 'Blindness',
+            author: 'José Saramago'
+          },
+          {
+            title: 'For Whom The Bell Tolls',
+            author: [
+              {
+                name: 'Eduardo Hemingway',
+                invalidField: 123
+              },
+              {
+                name: 'Ernest Hemingway'
+              },
+              {
+                invalidField: 321
+              }
+            ]
+          }
+        ]
+      }
+
+      const client = request(connectionString)
+
+      client
+        .post('/library/event')
+        .set('Authorization', 'Bearer ' + bearerToken)
+        .send(event)
+        .expect(400)
+        .end((err, res) => {
+          if (err) return done(err)
+
+          const {errors, success} = res.body
+
+          success.should.eql(false)
+          errors.length.should.eql(3)
+
+          errors[0].code.should.eql('ERROR_NOT_IN_SCHEMA')
+          errors[0].message.should.be.String
+          errors[0].field.should.eql('book.1.author.0.invalidField')
+
+          errors[1].code.should.eql('ERROR_NOT_IN_SCHEMA')
+          errors[1].message.should.be.String
+          errors[1].field.should.eql('book.1.author.2.invalidField')
+
+          errors[2].code.should.eql('ERROR_REQUIRED')
+          errors[2].message.should.be.String
+          errors[2].field.should.eql('book.1.author.2.name')
 
           done()
         })

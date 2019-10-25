@@ -1,11 +1,6 @@
 const acl = require('./../../../dadi/lib/model/acl')
 const ACL = acl.ACL
-const app = require('./../../../dadi/lib')
-const config = require('./../../../config')
-const fs = require('fs-extra')
 const help = require('./../help')
-const path = require('path')
-const request = require('supertest')
 const should = require('should')
 
 function assertAccess(access, conditions) {

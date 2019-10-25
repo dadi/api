@@ -257,7 +257,9 @@ Client.prototype.get = async function({clientId, email, secret}) {
     )
 
     if (!secretIsValid) {
-      return []
+      return {
+        results: []
+      }
     }
   }
 
@@ -324,6 +326,32 @@ Client.prototype.isKey = function(client) {
  */
 Client.prototype.isSuperUser = function(client) {
   return client && client.accessType === 'superUser'
+}
+
+/**
+ * Sets a new secret after a password reset, clearing the reset token.
+ *
+ * @param {String} clientId
+ * @param {String} secret
+ * @param {String} token
+ */
+Client.prototype.resetSecret = async function({clientId, secret, token}) {
+  const update = {
+    resetToken: null
+  }
+  const hashedSecret = await this.hashSecret(secret, update)
+
+  update.secret = hashedSecret
+
+  return this.model.update({
+    query: {
+      clientId,
+      resetToken: token
+    },
+    rawOutput: true,
+    update,
+    validate: false
+  })
 }
 
 /**
@@ -642,6 +670,25 @@ Client.prototype.roleRemove = async function(clientId, roles) {
     removed: rolesRemoved,
     results: results.map(client => this.formatForOutput(client))
   }
+}
+
+/**
+ * Sets a reset token for a given client.
+ *
+ * @param {String} clientId
+ * @param {String} token
+ */
+Client.prototype.setResetToken = function({clientId, token}) {
+  return this.model.update({
+    query: {
+      clientId
+    },
+    rawOutput: true,
+    update: {
+      resetToken: token
+    },
+    validate: false
+  })
 }
 
 /**

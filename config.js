@@ -161,6 +161,11 @@ const conf = convict({
       doc: 'The number of rounds to go through when hashing a password',
       format: Number,
       default: 10
+    },
+    resetTokenTtl: {
+      doc: 'The amount of time (in seconds) which reset tokens are valid for',
+      format: Number,
+      default: 600
     }
   },
   search: {
@@ -316,6 +321,11 @@ const conf = convict({
       doc: 'The relative or absolute path to hook specification files',
       format: String,
       default: 'workspace/hooks'
+    },
+    passwordReset: {
+      doc: 'The path to the password reset handler file',
+      format: String,
+      default: ''
     }
   },
   feedback: {

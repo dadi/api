@@ -5,6 +5,70 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## [6.0.0](2019-10-28)
+
+### Added
+
+- [#512](https://github.com/dadi/api/issues/512): add `runHooks` parameter to model methods
+- [#570](https://github.com/dadi/api/pull/570): allow customisation of page size in search results
+- [#573](https://github.com/dadi/api/pull/573): add endpoints for creating, managing and deleting collections
+- [#578](https://github.com/dadi/api/pull/578): add super user access type
+- [#583](https://github.com/dadi/api/pull/583): add access keys
+- [#586](https://github.com/dadi/api/pull/586): add media public URL
+- [#592](https://github.com/dadi/api/pull/592): add email address to client records
+- [#593](https://github.com/dadi/api/pull/593): add pagination URLs to metadata block
+- [#596](https://github.com/dadi/api/pull/596): add password reset mechanism
+
+### Changed
+
+- [#566](https://github.com/dadi/api/pull/566): store collection schemas in database
+- [#567](https://github.com/dadi/api/pull/567): remove version from collection endpoint URLs
+- [#579](https://github.com/dadi/api/pull/579): abort app start when token key is not defined
+- [#584](https://github.com/dadi/api/pull/584): respect ACL's `fields` object when creating and updating documents
+- [#588](https://github.com/dadi/api/pull/588): change status code of batch search endpoint to 202
+- [#589](https://github.com/dadi/api/pull/589): update syntax of Model constructor
+- [#590](https://github.com/dadi/api/pull/590): remove `query.useVersionFilter` config property
+
+### Fixed
+
+- [#551](https://github.com/dadi/api/issues/551): show validation errors of pre-composed documents
+- [#563](https://github.com/dadi/api/issues/563): objects not accepted as values on Boolean filters
+- [#568](https://github.com/dadi/api/issues/568): wrong page count in search metadata block
+- [#572](https://github.com/dadi/api/issues/572): use correct validation error for missing required fields
+- [#576](https://github.com/dadi/api/pull/576): updating or deleting documents fails on collections with versioning enabled when using `@dadi/api-filestore`
+- [#581](https://github.com/dadi/api/issues/581): API hangs when filter contains variable starting with `$`
+- [#587](https://github.com/dadi/api/pull/587): fix batch search index endpoint
+
+### BREAKING CHANGES
+
+#### Collection URLs
+
+The structure of collection endpoint URLs has changed from `/:version/:database/:name` to `/:property/:name`. In practice, this means that consumers must update the URLs being used to reach API collections by removing the first node (version).
+
+The `database` property was renamed to `property`, as it more accurately describes the fact that multiple applications can run on a single API instance, which does not necessarily mean the same separation in terms of databases.
+
+Consumers using [API wrapper](https://github.com/dadi/api-wrapper) must upgrade their package to version 4.
+
+#### Model constructor signature
+
+The signature of the `Model` export has changed. Rather than accepting the name of the collection as a String, it now expects an object with `property` and `name` keys, indicating the name of the property (previously called _database_) and the name of the collection, respectively.
+
+```
+const {Model} = require('@dadi/api')
+
+// Version 5 and prior
+Model('books').find({})
+
+// Version 6
+Model({property: 'library', name: 'books'}).find({})
+```
+
+#### Require auth key
+
+It is now mandatory to supply a key for signing tokens via the `auth.tokenKey` configuration properly. It can be a string of any length, as long as it's kept secret.
+
+Failing to provide this configuration property will make API throw a fatal error on startup.
+
 ## [5.0.0](2019-06-20)
 
 ### BREAKING CHANGES

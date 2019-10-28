@@ -1,107 +1,104 @@
 const path = require('path')
-const mediaModel = require(
-  path.join(__dirname, '/../model/media')
-)
+const mediaModel = require(path.join(__dirname, '/../model/media'))
 
 module.exports.type = 'media'
 
-module.exports.beforeOutput = function ({
+module.exports.beforeOutput = async function({
   client,
   config,
   field,
   input,
   schema
 }) {
-  let bucket = (schema.settings && schema.settings.mediaBucket) || config.get('media.defaultBucket')
-  let model = this.getForeignModel(bucket)
+  const bucket =
+    (schema.settings && schema.settings.mediaBucket) ||
+    config.get('media.defaultBucket')
+  const model = this.getForeignModel(bucket)
 
   if (!model) {
     return input
   }
 
-  let isArraySyntax = Array.isArray(input[field])
-  let normalisedValue = isArraySyntax ? input[field] : [input[field]]
-  let mediaObjectIDs = normalisedValue.map(value => {
-    if (value && typeof value !== 'string') {
-      return value._id.toString()
-    }
+  const isArraySyntax = Array.isArray(input[field])
+  const normalisedValue = isArraySyntax ? input[field] : [input[field]]
+  const mediaObjectIDs = normalisedValue
+    .map(value => {
+      if (value && typeof value !== 'string') {
+        return value._id.toString()
+      }
 
-    return value ? value.toString() : value
-  }).filter(Boolean)
-  let composedIDs = []
+      return value ? value.toString() : value
+    })
+    .filter(Boolean)
+  const composedIDs = []
 
   if (mediaObjectIDs.length === 0) {
     return input
   }
 
-  return model.get({
+  const {results} = await model.get({
     client,
     query: {
       _id: {
         $in: mediaObjectIDs
       }
     }
-  }).then(({results}) => {
-    return results.reduce((mediaObjects, result) => {
-      mediaObjects[result._id] = result
+  })
+  const mediaObjects = results.reduce((mediaObjects, result) => {
+    mediaObjects[result._id] = result
 
-      return mediaObjects
-    }, {})
-  }).then(mediaObjects => {
-    return mediaObjectIDs.map((id, index) => {
-      let value = typeof normalisedValue[index] === 'object'
-        ? normalisedValue[index]
-        : {}
+    return mediaObjects
+  }, {})
+  const composedValue = mediaObjectIDs.map((id, index) => {
+    const value =
+      typeof normalisedValue[index] === 'object' ? normalisedValue[index] : {}
 
-      if (mediaObjects[id]) {
-        let mergedValue = Object.assign({}, mediaObjects[id], value, {
-          _id: id
-        })
-        let sortedValue = Object.keys(mergedValue).sort().reduce((sortedValue, field) => {
+    if (mediaObjects[id]) {
+      const mergedValue = Object.assign({}, mediaObjects[id], value, {
+        _id: id
+      })
+      const sortedValue = Object.keys(mergedValue)
+        .sort()
+        .reduce((sortedValue, field) => {
           sortedValue[field] = mergedValue[field]
 
           return sortedValue
         }, {})
 
-        composedIDs.push(id)
+      composedIDs.push(id)
 
-        return sortedValue
-      }
-
-      return id
-    })
-  }).then(composedValue => {
-    let formattedValue = mediaModel.formatDocuments(composedValue)
-    let output = Object.assign(input, {
-      [field]: isArraySyntax ? formattedValue : formattedValue[0]
-    })
-
-    if (composedIDs.length > 0) {
-      output._composed = {
-        [field]: isArraySyntax ? composedIDs : composedIDs[0]
-      }
+      return sortedValue
     }
 
-    return output
+    return id
   })
+  const formattedValue = mediaModel.formatDocuments(composedValue)
+  const output = Object.assign(input, {
+    [field]: isArraySyntax ? formattedValue : formattedValue[0]
+  })
+
+  if (composedIDs.length > 0) {
+    output._composed = {
+      [field]: isArraySyntax ? composedIDs : composedIDs[0]
+    }
+  }
+
+  return output
 }
 
-module.exports.beforeSave = function ({
-  config,
-  field,
-  input,
-  schema
-}) {
-  let isArraySyntax = Array.isArray(input[field])
-  let normalisedValue = (isArraySyntax ? input[field] : [input[field]]).map(value => {
-    if (typeof value === 'string') {
-      return {
-        _id: value
+module.exports.beforeSave = function({config, field, input, schema}) {
+  const isArraySyntax = Array.isArray(input[field])
+  const normalisedValue = (isArraySyntax ? input[field] : [input[field]])
+    .map(value => {
+      if (typeof value === 'string') {
+        return {
+          _id: value
+        }
       }
-    }
 
-    return value
-  }).filter(Boolean)
+      return value
+    })
+    .filter(Boolean)
 
   // Are we just setting the field to null?
   if (normalisedValue.length === 0) {
@@ -122,41 +119,48 @@ module.exports.beforeSave = function ({
   //    type or has one that isn't included in the list of valid MIME types;
   // 4) Reject the request if the list produced in 3) is not empty.
   if (schema.validation && Array.isArray(schema.validation.mimeTypes)) {
-    let allowedMimeTypes = schema.validation.mimeTypes
-    let bucketName = (schema.settings && schema.settings.mediaBucket) ||
+    const allowedMimeTypes = schema.validation.mimeTypes
+    const bucketName =
+      (schema.settings && schema.settings.mediaBucket) ||
       config.get('media.defaultBucket')
-    let model = this.getForeignModel(bucketName)
+    const model = this.getForeignModel(bucketName)
 
     queue = queue.then(() => {
-      return model.find({
-        query: {
-          _id: {
-            $in: normalisedValue.map(item => item._id)
+      return model
+        .find({
+          query: {
+            _id: {
+              $in: normalisedValue.map(item => item._id)
+            }
           }
-        }
-      }).then(({results}) => {
-        if (results.length < normalisedValue.length) {
-          let error = new Error('has one or more values that do not match valid media objects')
-
-          error.code = 'ERROR_INVALID_ID'
-
-          return Promise.reject(error)
-        }
-
-        let invalidResults = results.find(result => {
-          let mimeType = result.mimeType || result.mimetype
-
-          return !mimeType || !allowedMimeTypes.includes(mimeType)
         })
+        .then(({results}) => {
+          if (results.length < normalisedValue.length) {
+            const error = new Error(
+              'has one or more values that do not match valid media objects'
+            )
 
-        if (invalidResults) {
-          let error = new Error(`has invalid MIME type. Expected: ${allowedMimeTypes.join(', ')}`)
+            error.code = 'ERROR_INVALID_ID'
 
-          error.code = 'ERROR_INVALID_MIME_TYPE'
+            return Promise.reject(error)
+          }
 
-          return Promise.reject(error)
-        }
-      })
+          const invalidResults = results.find(result => {
+            const mimeType = result.mimeType || result.mimetype
+
+            return !mimeType || !allowedMimeTypes.includes(mimeType)
+          })
+
+          if (invalidResults) {
+            const error = new Error(
+              `has invalid MIME type. Expected: ${allowedMimeTypes.join(', ')}`
+            )
+
+            error.code = 'ERROR_INVALID_MIME_TYPE'
+
+            return Promise.reject(error)
+          }
+        })
     })
   }
 

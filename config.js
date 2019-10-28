@@ -1,7 +1,6 @@
-var convict = require('convict')
-var fs = require('fs')
+const convict = require('convict')
 
-var conf = convict({
+const conf = convict({
   app: {
     name: {
       doc: 'The applicaton name',
@@ -111,7 +110,8 @@ var conf = convict({
     tokenKey: {
       doc: 'The private key used to sign JWT tokens',
       format: String,
-      default: 'YOU-MUST-CHANGE-ME!'
+      default: '',
+      env: 'TOKEN_KEY'
     },
     accessCollection: {
       doc:
@@ -123,6 +123,17 @@ var conf = convict({
       doc: 'The name of the internal collection used to store clients',
       format: String,
       default: 'clientStore'
+    },
+    keyAccessCollection: {
+      doc:
+        'The name of the internal collection used to store aggregate permissions data for keys',
+      format: String,
+      default: 'keyAccessStore'
+    },
+    keyCollection: {
+      doc: 'The name of the internal collection used to store access keys',
+      format: String,
+      default: 'keyStore'
     },
     roleCollection: {
       doc: 'The name of the internal collection used to store roles',
@@ -150,6 +161,11 @@ var conf = convict({
       doc: 'The number of rounds to go through when hashing a password',
       format: Number,
       default: 10
+    },
+    resetTokenTtl: {
+      doc: 'The amount of time (in seconds) which reset tokens are valid for',
+      format: Number,
+      default: 600
     }
   },
   search: {
@@ -305,6 +321,11 @@ var conf = convict({
       doc: 'The relative or absolute path to hook specification files',
       format: String,
       default: 'workspace/hooks'
+    },
+    passwordReset: {
+      doc: 'The path to the password reset handler file',
+      format: String,
+      default: ''
     }
   },
   feedback: {
@@ -323,14 +344,6 @@ var conf = convict({
         'An array of routes to test. Each route object must contain properties `route` and `expectedResponseTime`.',
       format: Array,
       default: []
-    }
-  },
-  query: {
-    useVersionFilter: {
-      doc:
-        'If true, the API version parameter is extracted from the request URL and passed to the database query',
-      format: Boolean,
-      default: false
     }
   },
   media: {
@@ -403,6 +416,12 @@ var conf = convict({
         format: String,
         default: ''
       }
+    },
+    publicUrl: {
+      doc: 'The base URL where media assets can be publicly accessed at',
+      format: 'String',
+      default: null,
+      env: 'MEDIA_PUBLIC_URL'
     }
   },
   env: {
@@ -474,25 +493,34 @@ var conf = convict({
       format: Number,
       default: 200
     }
+  },
+  schemas: {
+    collection: {
+      doc: 'The name of the internal collection to store collection schemas',
+      format: String,
+      default: 'schemas'
+    },
+    loadSeeds: {
+      doc: 'Whether to scan the workspace directory for collection seed files',
+      format: Boolean,
+      default: true
+    }
   }
 })
 
 // Load environment dependent configuration
-var env = conf.get('env')
+const env = conf.get('env')
+
 conf.loadFile('./config/config.' + env + '.json')
 
 // Load domain-specific configuration
 conf.updateConfigDataForDomain = function(domain) {
-  var domainConfig = './config/' + domain + '.json'
+  const domainConfig = './config/' + domain + '.json'
 
   try {
-    var stats = fs.statSync(domainConfig)
-    // no error, file exists
     conf.loadFile(domainConfig)
   } catch (err) {
-    if (err.code === 'ENOENT') {
-      // console.log('No domain-specific configuration file: ' + domainConfig)
-    } else {
+    if (err.code !== 'ENOENT') {
       console.log(err)
     }
   }

@@ -2,9 +2,10 @@ const acl = require('../model/acl')
 const config = require('../../../config')
 const help = require('../help')
 const log = require('@dadi/logger')
+const modelStore = require('../model/')
 const search = require('../model/search')
 
-const SearchIndex = function (server) {
+const SearchIndex = function(server) {
   this.server = server
 
   server.app.routeMethods('/api/index', {
@@ -12,7 +13,7 @@ const SearchIndex = function (server) {
   })
 }
 
-SearchIndex.prototype.post = function (req, res, next) {
+SearchIndex.prototype.post = function(req, res, next) {
   if (!req.dadiApiClient.clientId) {
     return help.sendBackJSON(null, res, next)(
       acl.createError(req.dadiApiClient)
@@ -24,21 +25,16 @@ SearchIndex.prototype.post = function (req, res, next) {
     return next()
   }
 
-  res.statusCode = 204
+  res.statusCode = 202
   res.end()
 
-  const models = Object.keys(this.server.components)
-    .map(key => {
-      const component = this.server.components[key]
-      const hasModel = component.model &&
-        component.model.constructor.name === 'Model'
-
-      return hasModel ? component.model : null
-    })
-    .filter(Boolean)
+  const allModels = modelStore.getAll()
+  const listableModels = Object.keys(allModels)
+    .filter(key => allModels[key].isListable)
+    .map(key => allModels[key])
 
   try {
-    search.batchIndexCollections(models)
+    search.batchIndexCollections(listableModels)
   } catch (error) {
     log.error({module: 'batch index'}, error)
   }

@@ -3,36 +3,50 @@
 const path = require('path')
 const config = require(path.join(__dirname, '/../../../config'))
 
-const MediaModel = function (document) {
+const MediaModel = function(document) {
   this.document = document
 }
 
-MediaModel.prototype.formatDocuments = function (documents) {
-  const multiple = documents instanceof Array
-  const output = (multiple ? documents : [documents]).map(document => {
-    const formattedDocument = Object.assign({}, document)
+MediaModel.prototype.formatDocuments = function(input) {
+  const documents = Array.isArray(input) ? input : [input]
+  const output = documents.map(rawDocument => {
+    if (!rawDocument || typeof rawDocument !== 'object') {
+      return rawDocument
+    }
 
-    // Is this a relative path to a file in the disk? If so, we need to prepend
-    // the API URL.
-    if (formattedDocument.path && formattedDocument.path.indexOf('/') === 0) {
-      formattedDocument.url = this.getURLForPath(formattedDocument.path)
+    const document = Object.assign({}, rawDocument, {
+      _apiVersion: undefined
+    })
+
+    let storageType = document._storageType
+
+    // The document might not have a `_storageType` property, because it wasn't
+    // introduced until version 6.0.0. In such cases, we can infer the type of
+    // storage by looking at the `path` property. If it begins with a trailing
+    // slash, it's a relative path to a file on disk, so we know the storage
+    // type is `disk`. Otherwise, it must be `s3`, because it was the only
+    // other type of storage available at the time.
+    if (!storageType) {
+      storageType =
+        document.path && document.path.indexOf('/') === 0 ? 'disk' : 's3'
+    }
+
+    if (document.path) {
+      document.url = this.getURLForPath(document.path, storageType)
     }
 
     // To maintain backwards compatibility.
-    formattedDocument.mimeType = formattedDocument.mimeType ||
-      formattedDocument.mimetype
+    document.mimeType = document.mimeType || document.mimetype
 
-    delete formattedDocument._apiVersion
-
-    return formattedDocument
+    return document
   })
 
-  return multiple ? output : output[0]
+  return Array.isArray(input) ? output : output[0]
 }
 
 // At some point we'll return a different schema based on MIME type, but for
 // now we hardcode this one.
-MediaModel.prototype.getSchema = function () {
+MediaModel.prototype.getSchema = function() {
   return {
     fields: {
       fileName: {
@@ -84,17 +98,33 @@ MediaModel.prototype.getSchema = function () {
   }
 }
 
-MediaModel.prototype.getURLForPath = function (path) {
-  const portString = config.get('publicUrl.port')
-    ? `:${config.get('publicUrl.port')}`
-    : ''
+MediaModel.prototype.getURLForPath = function(path, storageType) {
+  const mediaPublicUrl = config.get('media.publicUrl')
 
-  return `${config.get('publicUrl.protocol')}://${config.get('publicUrl.host')}${portString}${path}`
+  // We normalise the path by removing any trailing slash.
+  const normalisedPath = path.indexOf('/') === 0 ? path.slice(1) : path
+
+  if (mediaPublicUrl) {
+    return `${mediaPublicUrl}/${normalisedPath}`
+  }
+
+  // If we don't have a public media URL but the storage type is the local
+  // disk, we can still provide a public URL for the file, using API's own
+  // public URL.
+  if (storageType === 'disk') {
+    const portString = config.get('publicUrl.port')
+      ? `:${config.get('publicUrl.port')}`
+      : ''
+
+    return `${config.get('publicUrl.protocol')}://${config.get(
+      'publicUrl.host'
+    )}${portString}/${normalisedPath}`
+  }
 }
 
-MediaModel.prototype.isValidUpdate = function (update) {
-  let reservedProperties = Object.keys(this.getSchema().fields)
-  let hasReservedFields = Object.keys(update).some(field => {
+MediaModel.prototype.isValidUpdate = function(update) {
+  const reservedProperties = Object.keys(this.getSchema().fields)
+  const hasReservedFields = Object.keys(update).some(field => {
     if (field.indexOf(config.get('internalFieldsPrefix')) === 0) {
       return true
     }

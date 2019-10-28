@@ -1,11 +1,8 @@
 const acl = require('./../model/acl/index')
 const help = require('./../help')
 
-const Roles = function (server) {
-  acl.registerResource(
-    'roles',
-    'API roles'
-  )
+const Roles = function(server) {
+  acl.registerResource('roles', 'API roles')
 
   server.app.routeMethods('/api/roles', {
     post: this.post.bind(this)
@@ -27,130 +24,121 @@ const Roles = function (server) {
   })
 }
 
-Roles.prototype.delete = function (req, res, next) {
-  return acl.access.get(req.dadiApiClient, 'roles').then(access => {
-    if (access.delete !== true) {
-      return Promise.reject(
-        acl.createError(req.dadiApiClient)
-      )
+Roles.prototype.delete = async function(req, res, next) {
+  try {
+    const rolesAccess = await acl.access.get(req.dadiApiClient, 'roles')
+
+    if (rolesAccess.delete !== true) {
+      throw acl.createError(req.dadiApiClient)
     }
 
     // If the requesting client isn't an admin, we need to ensure they
     // have access to the role they are trying to delete.
     if (!acl.client.isAdmin(req.dadiApiClient)) {
-      return acl.client.get(req.dadiApiClient.clientId).then(({results}) => {
-        let clientRoles = results[0].roles || []
-
-        if (!clientRoles.includes(req.params.role)) {
-          return Promise.reject(
-            acl.createError(req.dadiApiClient)
-          )
-        }
+      const {results} = await acl.client.get({
+        clientId: req.dadiApiClient.clientId
       })
-    }
-  }).then(() => {
-    return acl.role.get(req.params.role)
-  }).then(roles => {
-    if (roles.results.length === 0) {
-      return Promise.reject(
-        new Error('ROLE_NOT_FOUND')
-      )
+      const clientRoles = results[0].roles || []
+
+      if (!clientRoles.includes(req.params.role)) {
+        throw acl.createError(req.dadiApiClient)
+      }
     }
 
-    return acl.role.delete(req.params.role)
-  }).then(response => {
-    help.sendBackJSON(204, res, next)(null, null)
-  }).catch(this.handleError(res, next))
+    const {results: roles} = await acl.role.get(req.params.role)
+
+    if (roles.length === 0) {
+      throw new Error('ROLE_NOT_FOUND')
+    }
+
+    await acl.role.delete(req.params.role)
+
+    return help.sendBackJSON(204, res, next)(null, null)
+  } catch (error) {
+    return this.handleError(res, next)(error)
+  }
 }
 
-Roles.prototype.deleteResource = function (req, res, next) {
-  // To remove a resource from a role, the requesting client
-  // needs to have "update" access to the "roles" resource
-  // as well as full access to the given resource.
-  return acl.access.get(req.dadiApiClient, 'roles').then(access => {
-    if (access.update !== true) {
-      return Promise.reject(
-        acl.createError(req.dadiApiClient)
-      )
+Roles.prototype.deleteResource = async function(req, res, next) {
+  try {
+    // To remove a resource from a role, the requesting client
+    // needs to have "update" access to the "roles" resource
+    // as well as full access to the given resource.
+    const rolesAccess = await acl.access.get(req.dadiApiClient, 'roles')
+
+    if (rolesAccess.update !== true) {
+      throw acl.createError(req.dadiApiClient)
     }
 
     if (!acl.client.isAdmin(req.dadiApiClient)) {
-      return acl.access.get(req.dadiApiClient, req.params.resource, {
-        resolveOwnTypes: false
-      }).then(access => {
-        if (
-          access.create !== true ||
-          access.delete !== true ||
-          access.read !== true ||
-          access.update !== true
-        ) {
-          return Promise.reject(
-            acl.createError(req.dadiApiClient)
-          )
+      const resourceAccess = await acl.access.get(
+        req.dadiApiClient,
+        req.params.resource,
+        {
+          resolveOwnTypes: false
         }
+      )
 
-        return acl.client.get(req.dadiApiClient.clientId).then(({results}) => {
-          let roles = results[0].roles || []
+      if (
+        resourceAccess.create !== true ||
+        resourceAccess.delete !== true ||
+        resourceAccess.read !== true ||
+        resourceAccess.update !== true
+      ) {
+        throw acl.createError(req.dadiApiClient)
+      }
 
-          if (!roles.includes(req.params.role)) {
-            return Promise.reject(
-              acl.createError(req.dadiApiClient)
-            )
-          }
+      const {results: clients} = await acl.client.get({
+        clientId: req.dadiApiClient.clientId
+      })
+      const roles = clients[0].roles || []
+
+      if (!roles.includes(req.params.role)) {
+        throw acl.createError(req.dadiApiClient)
+      }
+    }
+
+    await acl.role.resourceRemove(req.params.role, req.params.resource)
+
+    return help.sendBackJSON(204, res, next)(null, null)
+  } catch (error) {
+    return this.handleError(res, next)(error)
+  }
+}
+
+Roles.prototype.get = async function(req, res, next) {
+  try {
+    const roleNames =
+      typeof req.params.role === 'string' ? [req.params.role] : null
+    const rolesAccess = await acl.access.get(req.dadiApiClient, 'roles')
+
+    if (rolesAccess.read !== true) {
+      throw acl.createError(req.dadiApiClient)
+    }
+
+    const {results: roles} = await acl.role.get(roleNames)
+
+    if (req.params.role && roles.length === 0) {
+      throw new Error('ROLE_NOT_FOUND')
+    }
+
+    return help.sendBackJSON(200, res, next)(null, {
+      results: roles
+        .map(client => {
+          return acl.role.formatForOutput(client)
         })
-      })
-    }
-  }).then(() => {
-    return acl.role.resourceRemove(
-      req.params.role,
-      req.params.resource
-    )
-  }).then(({results}) => {
-    help.sendBackJSON(204, res, next)(null, null)
-  }).catch(this.handleError(res, next))
-}
-
-Roles.prototype.get = function (req, res, next) {
-  let roleNames = typeof req.params.role === 'string'
-    ? [req.params.role]
-    : null
-
-  return acl.access.get(req.dadiApiClient, 'roles').then(access => {
-    if (access.read !== true) {
-      return Promise.reject(
-        acl.createError(req.dadiApiClient)
-      )
-    }
-
-    return acl.role.get(roleNames)
-  }).then(roles => {
-    if (req.params.role && (roles.results.length === 0)) {
-      return Promise.reject(
-        new Error('ROLE_NOT_FOUND')
-      )
-    }
-
-    help.sendBackJSON(200, res, next)(null, {
-      results: roles.results.map(client => {
-        return acl.role.formatForOutput(client)
-      }).sort((a, b) => {
-        return a.name < b.name
-          ? -1
-          : 1
-      })
+        .sort((a, b) => {
+          return a.name < b.name ? -1 : 1
+        })
     })
-  }).catch(this.handleError(res, next))
+  } catch (error) {
+    return this.handleError(res, next)(error)
+  }
 }
 
-Roles.prototype.handleError = function (res, next) {
+Roles.prototype.handleError = function(res, next) {
   return err => {
     switch (err.message) {
-      case 'INVALID_FIELDS':
-        return help.sendBackJSON(400, res, next)(null, {
-          success: false,
-          errors: err.data.map(field => `Invalid field: ${field}`)
-        })
-
       case 'FORBIDDEN':
       case 'UNAUTHORISED':
         return help.sendBackJSON(null, res, next)(err)
@@ -161,187 +149,186 @@ Roles.prototype.handleError = function (res, next) {
       case 'ROLE_EXISTS':
         return help.sendBackJSON(409, res, next)(null, {
           success: false,
-          errors: ['The role already exists']
+          errors: [
+            {
+              code: 'ERROR_ROLE_EXISTS',
+              field: err.data,
+              message: 'already exists'
+            }
+          ]
         })
 
       case 'ROLE_HAS_RESOURCE':
         return help.sendBackJSON(409, res, next)(null, {
           success: false,
-          errors: ['The role already has access to resource']
+          errors: [
+            {
+              code: 'ERROR_ROLE_HAS_RESOURCE',
+              field: err.data,
+              message: 'is already assigned to the role'
+            }
+          ]
         })
 
       case 'ROLE_NOT_FOUND':
         return help.sendBackJSON(404, res, next)(null, null)
 
-      case 'INVALID_PARENT_ROLE':
+      case 'VALIDATION_ERROR':
         return help.sendBackJSON(400, res, next)(null, {
           success: false,
-          errors: ['The specified parent role does not exist']
+          errors: err.data
         })
 
       default:
         return help.sendBackJSON(400, res, next)(null, {
-          success: false,
-          errors: ['Could not perform operation']
+          success: false
         })
     }
   }
 }
 
-Roles.prototype.post = function (req, res, next) {
-  if (typeof req.body.name !== 'string') {
-    return help.sendBackJSON(400, res, next)(null, {
-      success: false,
-      errors: ['Invalid input. Expected: {"name": String}']
-    })
-  }
+Roles.prototype.post = async function(req, res, next) {
+  try {
+    const role = req.body
+    const rolesAccess = await acl.access.get(req.dadiApiClient, 'roles')
 
-  return acl.access.get(req.dadiApiClient, 'roles').then(access => {
-    if (access.create !== true) {
-      return Promise.reject(
-        acl.createError(req.dadiApiClient)
-      )
+    if (rolesAccess.create !== true) {
+      throw acl.createError(req.dadiApiClient)
     }
 
     // If there is a role being extended and the requesting client does
     // not have admin access, we need to ensure they have the role in
     // question *or* some other role that extends it.
-    if (req.body.extends && !acl.client.isAdmin(req.dadiApiClient)) {
-      return acl.access.getClientRoles(req.dadiApiClient.clientId).then(roles => {
-        if (!roles.includes(req.body.extends)) {
-          return Promise.reject(
-            acl.createError(req.dadiApiClient)
-          )
-        }
-      })
+    if (role.extends && !acl.client.isAdmin(req.dadiApiClient)) {
+      const roles = await acl.access.getClientRoles(req.dadiApiClient.clientId)
+
+      if (!roles.includes(role.extends)) {
+        throw acl.createError(req.dadiApiClient)
+      }
     }
-  }).then(() => {
-    return acl.role.create(req.body)
-  }).then(({results}) => {
-    help.sendBackJSON(201, res, next)(null, {
-      results: [
-        acl.role.formatForOutput(results[0])
-      ]
+
+    if (role.resources) {
+      await acl.validateResourcesObject(role.resources, req.dadiApiClient)
+    }
+
+    const {results} = await acl.role.create(role)
+
+    return help.sendBackJSON(201, res, next)(null, {
+      results: [acl.role.formatForOutput(results[0])]
     })
-  }).catch(this.handleError(res, next))
+  } catch (error) {
+    return this.handleError(res, next)(error)
+  }
 }
 
-Roles.prototype.postResource = function (req, res, next) {
-  if (
-    typeof req.body.name !== 'string' ||
-    typeof req.body.access !== 'object'
-  ) {
-    return help.sendBackJSON(400, res, next)(null, {
-      success: false,
-      errors: ['Invalid input. Expected: {"name": String, "access": Object}']
-    })
-  }
+Roles.prototype.postResource = async function(req, res, next) {
+  try {
+    const {access: resourceAccess, name: resourceName} = req.body
 
-  if (!acl.hasResource(req.body.name)) {
-    return help.sendBackJSON(400, res, next)(null, {
-      success: false,
-      errors: [`Invalid resource: ${req.body.name}`]
-    })
-  }
+    if (resourceName && !acl.hasResource(resourceName)) {
+      const error = new Error('VALIDATION_ERROR')
 
-  // To add a resource to a role, the requesting client needs to have
-  // "update" access to the "roles" resource, access to the role being
-  // updated as well as access to the resource in question.
-  return acl.access.get(req.dadiApiClient, 'roles').then(access => {
-    if (access.update !== true) {
-      return Promise.reject(
-        acl.createError(req.dadiApiClient)
-      )
+      error.data = [
+        {
+          code: 'ERROR_INVALID_RESOURCE',
+          field: 'name',
+          message: 'is not a valid resource'
+        }
+      ]
+
+      throw error
+    }
+
+    // To add a resource to a role, the requesting client needs to have
+    // "update" access to the "roles" resource, access to the role being
+    // updated as well as access to the resource in question.
+    const rolesAccess = await acl.access.get(req.dadiApiClient, 'roles')
+
+    if (rolesAccess.update !== true) {
+      throw acl.createError(req.dadiApiClient)
     }
 
     if (!acl.client.isAdmin(req.dadiApiClient)) {
-      return acl.access.get(req.dadiApiClient, req.body.name, {
+      const access = await acl.access.get(req.dadiApiClient, resourceName, {
         resolveOwnTypes: false
-      }).then(access => {
-        let forbiddenType = Object.keys(req.body.access).find(type => {
-          return Boolean(req.body.access[type]) && access[type] !== true
-        })
-
-        if (forbiddenType) {
-          return Promise.reject(
-            acl.createError(req.dadiApiClient)
-          )
-        }
-
-        return acl.client.get(req.dadiApiClient.clientId).then(({results}) => {
-          let roles = results[0].roles || []
-
-          if (!roles.includes(req.params.role)) {
-            return Promise.reject(
-              acl.createError(req.dadiApiClient)
-            )
-          }
-        })
       })
+      const forbiddenType = Object.keys(resourceAccess).find(type => {
+        return Boolean(resourceAccess[type]) && access[type] !== true
+      })
+
+      if (forbiddenType) {
+        throw acl.createError(req.dadiApiClient)
+      }
+
+      const {results} = await acl.client.get({
+        clientId: req.dadiApiClient.clientId
+      })
+      const roles = results[0].roles || []
+
+      if (!roles.includes(req.params.role)) {
+        throw acl.createError(req.dadiApiClient)
+      }
     }
-  }).then(() => {
-    return acl.role.resourceAdd(
+
+    const {results} = await acl.role.resourceAdd(
       req.params.role,
-      req.body.name,
-      req.body.access
+      resourceName,
+      resourceAccess
     )
-  }).then(({results}) => {
-    help.sendBackJSON(201, res, next)(null, {results})
-  }).catch(this.handleError(res, next))
+
+    return help.sendBackJSON(201, res, next)(null, {results})
+  } catch (error) {
+    return this.handleError(res, next)(error)
+  }
 }
 
-Roles.prototype.put = function (req, res, next) {
-  if (
-    typeof req.params.role !== 'string' ||
-    typeof req.body !== 'object'
-  ) {
-    return help.sendBackJSON(400, res, next)(null, {
-      success: false,
-      errors: ['Invalid input. Expected: {"extends": String|null}']
-    })
-  }
+Roles.prototype.put = async function(req, res, next) {
+  try {
+    if (req.body.name !== undefined && req.body.name !== req.params.role) {
+      const error = new Error('VALIDATION_ERROR')
 
-  if ((req.body.name !== undefined) && (req.body.name !== req.params.role)) {
-    return help.sendBackJSON(400, res, next)(null, {
-      success: false,
-      errors: ['Role names cannot be changed']
-    })
-  }
+      error.data = [
+        {
+          code: 'ERROR_INVALID_FIELD',
+          field: 'name',
+          message: 'cannot be updated'
+        }
+      ]
 
-  return acl.access.get(req.dadiApiClient, 'roles').then(access => {
-    if (access.update !== true) {
-      return Promise.reject(
-        acl.createError(req.dadiApiClient)
-      )
+      throw error
+    }
+
+    const rolesAccess = await acl.access.get(req.dadiApiClient, 'roles')
+
+    if (rolesAccess.update !== true) {
+      throw acl.createError(req.dadiApiClient)
     }
 
     // We need to ensure the requesting client has access to the role
     // being updated as well as to any role being extended after the
     // update.
     if (!acl.client.isAdmin(req.dadiApiClient)) {
-      return acl.access.getClientRoles(req.dadiApiClient.clientId).then(roles => {
-        if (
-          !roles.includes(req.params.role) ||
-          (req.body.extends && !roles.includes(req.body.extends))
-        ) {
-          return Promise.reject(
-            acl.createError(req.dadiApiClient)
-          )
-        }
-      })
+      const roles = await acl.access.getClientRoles(req.dadiApiClient.clientId)
+
+      if (
+        !roles.includes(req.params.role) ||
+        (req.body.extends && !roles.includes(req.body.extends))
+      ) {
+        throw acl.createError(req.dadiApiClient)
+      }
     }
-  }).then(() => {
-    return acl.role.update(req.params.role, req.body)
-  }).then(({results}) => {
-    help.sendBackJSON(200, res, next)(null, {
-      results: [
-        acl.role.formatForOutput(results[0])
-      ]
+
+    const {results} = await acl.role.update(req.params.role, req.body)
+
+    return help.sendBackJSON(200, res, next)(null, {
+      results: [acl.role.formatForOutput(results[0])]
     })
-  }).catch(this.handleError(res, next))
+  } catch (error) {
+    return this.handleError(res, next)(error)
+  }
 }
 
-Roles.prototype.putResource = function (req, res, next) {
+Roles.prototype.putResource = async function(req, res, next) {
   if (
     typeof req.params.role !== 'string' ||
     typeof req.params.resource !== 'string' ||
@@ -349,54 +336,58 @@ Roles.prototype.putResource = function (req, res, next) {
   ) {
     return help.sendBackJSON(400, res, next)(null, {
       success: false,
-      errors: ['Invalid input. Expected Object with access types (e.g. {"read": true, "update": false}']
+      errors: [
+        'Invalid input. Expected Object with access types (e.g. {"read": true, "update": false}'
+      ]
     })
   }
 
-  // To update a resource on a role, the requesting client needs to have
-  // "update" access to the "roles" resource, access to the role being
-  // updated as well as access to the resource in question.
-  return acl.access.get(req.dadiApiClient, 'roles').then(access => {
-    if (access.update !== true) {
-      return Promise.reject(
-        acl.createError(req.dadiApiClient)
-      )
+  try {
+    // To update a resource on a role, the requesting client needs to have
+    // "update" access to the "roles" resource, access to the role being
+    // updated as well as access to the resource in question.
+    const rolesAccess = await acl.access.get(req.dadiApiClient, 'roles')
+
+    if (rolesAccess.update !== true) {
+      throw acl.createError(req.dadiApiClient)
     }
 
     if (!acl.client.isAdmin(req.dadiApiClient)) {
-      return acl.access.get(req.dadiApiClient, req.params.resource, {
-        resolveOwnTypes: false
-      }).then(access => {
-        let forbiddenType = Object.keys(req.body).find(type => {
-          return access[type] !== true
-        })
-
-        if (forbiddenType) {
-          return Promise.reject(
-            acl.createError(req.dadiApiClient)
-          )
+      const resourceAccess = await acl.access.get(
+        req.dadiApiClient,
+        req.params.resource,
+        {
+          resolveOwnTypes: false
         }
-
-        return acl.client.get(req.dadiApiClient.clientId).then(({results}) => {
-          let roles = results[0].roles || []
-
-          if (!roles.includes(req.params.role)) {
-            return Promise.reject(
-              acl.createError(req.dadiApiClient)
-            )
-          }
-        })
+      )
+      const forbiddenType = Object.keys(req.body).find(type => {
+        return resourceAccess[type] !== true
       })
+
+      if (forbiddenType) {
+        throw acl.createError(req.dadiApiClient)
+      }
+
+      const {results: clients} = await acl.client.get({
+        clientId: req.dadiApiClient.clientId
+      })
+      const roles = clients[0].roles || []
+
+      if (!roles.includes(req.params.role)) {
+        throw acl.createError(req.dadiApiClient)
+      }
     }
-  }).then(() => {
-    return acl.role.resourceUpdate(
+
+    const {results} = await acl.role.resourceUpdate(
       req.params.role,
       req.params.resource,
       req.body
     )
-  }).then(({results}) => {
-    help.sendBackJSON(200, res, next)(null, {results})
-  }).catch(this.handleError(res, next))
+
+    return help.sendBackJSON(200, res, next)(null, {results})
+  } catch (error) {
+    return this.handleError(res, next)(error)
+  }
 }
 
 module.exports = server => new Roles(server)

@@ -1,7 +1,7 @@
 const config = require('../../config')
 
 class WorkQueue {
-  constructor () {
+  constructor() {
     this.debounceTime = config.get('workQueue.debounceTime')
     this.pollingTime = config.get('workQueue.pollingTime')
 
@@ -11,13 +11,13 @@ class WorkQueue {
     this.startBackgroundQueue()
   }
 
-  clearDebounceTimer () {
+  clearDebounceTimer() {
     clearInterval(this.debounceTimer)
 
     this.debounceTimer = undefined
   }
 
-  dequeueBackgroundJob () {
+  dequeueBackgroundJob() {
     if (this.debounceTimer) {
       return
     }
@@ -33,15 +33,15 @@ class WorkQueue {
     }, this.debounceTime)
   }
 
-  finishForegroundJob (key) {
+  finishForegroundJob(key) {
     return this.foregroundPool.delete(key)
   }
 
-  queueBackgroundJob (callback) {
+  queueBackgroundJob(callback) {
     this.backgroundPool.push(callback)
   }
 
-  startBackgroundQueue () {
+  startBackgroundQueue() {
     this.pollingTimer = setInterval(() => {
       if (this.foregroundPool.size > 0) {
         return
@@ -51,7 +51,7 @@ class WorkQueue {
     }, this.pollingTime)
   }
 
-  startForegroundJob () {
+  startForegroundJob() {
     const key = process.hrtime().join('.')
 
     this.clearDebounceTimer()
@@ -61,23 +61,23 @@ class WorkQueue {
     return key
   }
 
-  wrapForegroundJob (wrappedFunction) {
+  wrapForegroundJob(wrappedFunction) {
     const context = this
 
-    return function () {
+    return function() {
       const jobId = context.startForegroundJob()
 
-      return Promise.resolve(
-        wrappedFunction.apply(this, arguments)
-      ).then(result => {
-        context.finishForegroundJob(jobId)
+      return Promise.resolve(wrappedFunction.apply(this, arguments))
+        .then(result => {
+          context.finishForegroundJob(jobId)
 
-        return result
-      }).catch(error => {
-        context.finishForegroundJob(jobId)
+          return result
+        })
+        .catch(error => {
+          context.finishForegroundJob(jobId)
 
-        return Promise.reject(error)
-      })
+          return Promise.reject(error)
+        })
     }
   }
 }

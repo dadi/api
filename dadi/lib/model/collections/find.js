@@ -32,17 +32,9 @@ const debug = require('debug')('api:model')
  * @param  {Number}  version - version of the document to retrieve
  * @return {Promise<ResultSet>}
  */
-function find ({
-  client,
-  isRestIDQuery,
-  query = {},
-  options = {},
-  version
-} = {}) {
+function find({client, isRestIDQuery, query = {}, options = {}, version} = {}) {
   if (!this.connection.db) {
-    return Promise.reject(
-      new Error('DB_DISCONNECTED')
-    )
+    return Promise.reject(new Error('DB_DISCONNECTED'))
   }
 
   debug('Model find: %o %o', query, options)
@@ -54,14 +46,14 @@ function find ({
   // as well as language variations of fields.
   if (options.fields && Object.keys(options.fields).length) {
     Object.keys(options.fields).forEach(field => {
-      let baseField = field.split('.')[0]
-      let [name, collection] = baseField.split('@')
+      const baseField = field.split('.')[0]
+      const [name, collection] = baseField.split('@')
 
       // If the projected field specifies a collection to search on
       // (e.g. author@people.name) and that collection is not the
       // one we're operating one, we exclude the field from the
       // projection.
-      if (collection && (collection !== this.name)) {
+      if (collection && collection !== this.name) {
         return
       }
 
@@ -75,7 +67,8 @@ function find ({
       // include a field and request a certain language, we must also include
       // that corresponding variation).
       config.get('i18n.languages').forEach(supportedLanguage => {
-        let langField = name + config.get('i18n.fieldCharacter') + supportedLanguage
+        const langField =
+          name + config.get('i18n.fieldCharacter') + supportedLanguage
 
         queryFields[langField] = options.fields[field]
       })
@@ -87,7 +80,7 @@ function find ({
         this.getFieldType(name) === 'reference' &&
         options.fields[field] === 1
       ) {
-        let mappingField = this._getIdMappingName(name)
+        const mappingField = this._getIdMappingName(name)
 
         queryFields[mappingField] = 1
       }
@@ -95,7 +88,7 @@ function find ({
   }
 
   // Run validation.
-  let validation = this.validateQuery(query)
+  const validation = this.validateQuery(query)
 
   if (!validation.success) {
     const err = this._createValidationError('Bad Query')
@@ -114,10 +107,7 @@ function find ({
     // If merging the request query with ACL data resulted in
     // an impossible query, we can simply return an empty result
     // set without even going to the database.
-    if (
-      query instanceof Error &&
-      query.message === 'EMPTY_RESULT_SET'
-    ) {
+    if (query instanceof Error && query.message === 'EMPTY_RESULT_SET') {
       return this._buildEmptyResponse(options)
     }
 
@@ -127,6 +117,8 @@ function find ({
       fields: queryFields
     })
 
+    // If we're looking for a specific version of a document, we retrieve it
+    // from the History module.
     if (isRestIDQuery && version && this.history) {
       return this.history.getVersion(version, queryOptions)
     }
@@ -143,12 +135,12 @@ function find ({
   })
 }
 
-module.exports = function () {
+module.exports = function() {
   // Compatibility with legacy model API.
   // Signature: query, options, done
   if (arguments.length > 1) {
     let callback
-    let legacyArguments = {
+    const legacyArguments = {
       query: arguments[0]
     }
 
@@ -160,7 +152,8 @@ module.exports = function () {
       legacyArguments.options = arguments[1]
     }
 
-    find.call(this, legacyArguments)
+    find
+      .call(this, legacyArguments)
       .then(response => callback && callback(null, response))
       .catch(error => callback && callback(error))
 

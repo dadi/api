@@ -1,46 +1,46 @@
-var config = require(__dirname + '/../../config.js')
-var model = require(__dirname + '/../../dadi/lib/model')
-var connection = require(__dirname + '/../../dadi/lib/model/connection')
+const config = require(__dirname + '/../../config.js')
+const model = require(__dirname + '/../../dadi/lib/model')
+const connection = require(__dirname + '/../../dadi/lib/model/connection')
 
 // return valid model definition object
-module.exports.getModelSchema = function () {
+module.exports.getModelSchema = function() {
   return {
-    'fieldName': {
-      'type': 'String',
-      'label': 'Title',
-      'comments': 'The title of the entry',
-      'validation': {},
-      'required': false,
-      'message': ''
+    fieldName: {
+      type: 'String',
+      label: 'Title',
+      comments: 'The title of the entry',
+      validation: {},
+      required: false,
+      message: ''
     }
   }
 }
 
-module.exports.getSearchModelSchema = function () {
+module.exports.getSearchModelSchema = function() {
   return {
-    'fieldName': {
-      'type': 'String',
-      'label': 'Title',
-      'comments': 'The title of the entry',
-      'validation': {},
-      'required': false
+    fieldName: {
+      type: 'String',
+      label: 'Title',
+      comments: 'The title of the entry',
+      validation: {},
+      required: false
     },
-    'invalidSearchableFieldName': {
-      'type': 'String',
-      'label': 'Title',
-      'comments': 'The title of the entry',
-      'validation': {},
-      'required': false,
-      'search': true
+    invalidSearchableFieldName: {
+      type: 'String',
+      label: 'Title',
+      comments: 'The title of the entry',
+      validation: {},
+      required: false,
+      search: true
     },
-    'searchableFieldName': {
-      'type': 'String',
-      'label': 'Title',
-      'comments': 'The title of the entry',
-      'validation': {},
-      'required': false,
-      'search': {
-        'weight': 2
+    searchableFieldName: {
+      type: 'String',
+      label: 'Title',
+      comments: 'The title of the entry',
+      validation: {},
+      required: false,
+      search: {
+        weight: 2
       }
     }
   }
@@ -54,7 +54,7 @@ module.exports.getSampleSearchDocument = () => {
   }
 }
 
-module.exports.getModelSettings = function () {
+module.exports.getModelSettings = function() {
   return {
     cache: true,
     cacheTTL: 300,
@@ -67,47 +67,49 @@ module.exports.getModelSettings = function () {
   }
 }
 
-module.exports.getModelSchemaWithMultipleFields = function () {
+module.exports.getModelSchemaWithMultipleFields = function() {
   return {
-    'field1': {
-      'type': 'String',
-      'label': 'Title',
-      'comments': 'The title of the entry',
-      'validation': {},
-      'required': false,
-      'message': ''
+    field1: {
+      type: 'String',
+      label: 'Title',
+      comments: 'The title of the entry',
+      validation: {},
+      required: false,
+      message: ''
     },
-    'field2': {
-      'type': 'String',
-      'label': 'Title',
-      'comments': 'The title of the entry',
-      'validation': {},
-      'required': false,
-      'message': ''
+    field2: {
+      type: 'String',
+      label: 'Title',
+      comments: 'The title of the entry',
+      validation: {},
+      required: false,
+      message: ''
     }
   }
 }
 
 // sync test that a property is correctly attached to a model
-module.exports.testModelProperty = function (key, val) {
-  var obj = {}
+module.exports.testModelProperty = function(key, val) {
+  const obj = {}
+
   obj[key] = val
 
-  var schema = module.exports.getModelSchema()
+  const schema = module.exports.getModelSchema()
+
   schema.fieldName = Object.assign({}, schema.fieldName, obj)
 
-  let m = model('testModelName', schema, null, { database: 'testdb' })
+  const m = model({name: 'testModelName', schema, property: 'testdb'})
 
   m.schema.fieldName[key].should.equal(val)
 }
 
-module.exports.cleanUpDB = function (done) {
-  module.exports.clearCollection('testModelName', (err) => {
-    module.exports.clearCollection('testModelNameHistory', (err) => {
-      module.exports.clearCollection('articles', (err) => {
-        module.exports.clearCollection('categories', (err) => {
-          module.exports.clearCollection('book', (err) => {
-            module.exports.clearCollection('person', (err) => {
+module.exports.cleanUpDB = function(done) {
+  module.exports.clearCollection('testModelName', err => {
+    module.exports.clearCollection('testModelNameHistory', err => {
+      module.exports.clearCollection('articles', err => {
+        module.exports.clearCollection('categories', err => {
+          module.exports.clearCollection('book', err => {
+            module.exports.clearCollection('person', err => {
               done()
             })
           })
@@ -159,16 +161,23 @@ module.exports.cleanUpDB = function (done) {
   // }, 100)
 }
 
-module.exports.clearCollection = function (collectionName, done) {
-  var conn = connection({database: 'testdb', collection: collectionName}, null, config.get('datastore'))
+module.exports.clearCollection = function(collectionName, done) {
+  const conn = connection(
+    {database: 'testdb', collection: collectionName},
+    null,
+    config.get('datastore')
+  )
 
   if (conn.datastore.dropDatabase) {
-    conn.datastore.dropDatabase(collectionName).then(() => {
-      return done()
-    }).catch((err) => {
-      // console.log('clearCollection error:', err)
-      done(err)
-    })
+    conn.datastore
+      .dropDatabase(collectionName)
+      .then(() => {
+        return done()
+      })
+      .catch(err => {
+        // console.log('clearCollection error:', err)
+        done(err)
+      })
   } else {
     return done()
   }
@@ -198,10 +207,10 @@ module.exports.clearCollection = function (collectionName, done) {
 
 // Listens for the `connect` event on each of the models supplied
 // and fires `callback` when all of them have fired.
-module.exports.whenModelsConnect = function (models, callback) {
+module.exports.whenModelsConnect = function(models, callback) {
   return new Promise((resolve, reject) => {
     let modelsConnected = 0
-    let processModel = () => {
+    const processModel = () => {
       if (++modelsConnected === models.length) {
         if (typeof callback === 'function') {
           callback()

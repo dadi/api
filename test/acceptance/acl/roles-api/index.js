@@ -1,18 +1,81 @@
 const app = require('./../../../../dadi/lib')
-const config = require('./../../../../config')
 const help = require('./../../help')
-const request = require('supertest')
-const should = require('should')
 
 describe('Roles API', () => {
-  let configBackup = config.get()
-  let client = request(`http://${config.get('server.host')}:${config.get('server.port')}`)
-
   before(done => {
     app.start(err => {
       if (err) return done(err)
 
-      setTimeout(done, 300)
+      setTimeout(() => {
+        help
+          .createSchemas([
+            {
+              fields: {
+                title: {
+                  type: 'String',
+                  required: true
+                },
+                author: {
+                  type: 'Reference',
+                  settings: {
+                    collection: 'person',
+                    fields: ['name', 'spouse']
+                  }
+                },
+                booksInSeries: {
+                  type: 'Reference',
+                  settings: {
+                    collection: 'book',
+                    multiple: true
+                  }
+                }
+              },
+              name: 'book',
+              property: 'library',
+              settings: {
+                cache: false,
+                authenticate: true,
+                count: 40,
+                lastModifiedAt: 1496029984527
+              },
+              version: '1.0'
+            },
+
+            {
+              fields: {
+                name: {
+                  type: 'String',
+                  required: true
+                },
+                occupation: {
+                  type: 'String',
+                  required: false
+                },
+                nationality: {
+                  type: 'String',
+                  required: false
+                },
+                education: {
+                  type: 'String',
+                  required: false
+                },
+                spouse: {
+                  type: 'Reference'
+                }
+              },
+              name: 'person',
+              property: 'library',
+              settings: {
+                cache: false,
+                authenticate: true,
+                count: 40,
+                lastModifiedAt: 1496029984536
+              },
+              version: '1.0'
+            }
+          ])
+          .then(() => done())
+      }, 300)
     })
   })
 
@@ -22,7 +85,9 @@ describe('Roles API', () => {
 
   after(done => {
     help.removeACLData(() => {
-      app.stop(done)
+      help.dropSchemas().then(() => {
+        app.stop(done)
+      })
     })
   })
 

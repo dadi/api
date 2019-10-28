@@ -5,7 +5,7 @@ const langs = require('langs')
 
 const FORBIDDEN_FIELD_CHARACTERS = ['.', '@']
 
-const Languages = function (server) {
+const Languages = function(server) {
   FORBIDDEN_FIELD_CHARACTERS.forEach(character => {
     if (config.get('i18n.fieldCharacter').includes(character)) {
       throw new Error(
@@ -19,10 +19,10 @@ const Languages = function (server) {
   })
 }
 
-Languages.prototype._getLanguageDetails = function (code) {
-  let defaultLanguage = config.get('i18n.defaultLanguage')
-  let match = langs.where('1', code)
-  let language = {
+Languages.prototype._getLanguageDetails = function(code) {
+  const defaultLanguage = config.get('i18n.defaultLanguage')
+  const match = langs.where('1', code)
+  const language = {
     code,
     default: defaultLanguage === code
   }
@@ -35,22 +35,22 @@ Languages.prototype._getLanguageDetails = function (code) {
   return language
 }
 
-Languages.prototype.get = function (req, res, next) {
+Languages.prototype.get = function(req, res, next) {
   if (!req.dadiApiClient.clientId) {
     return help.sendBackJSON(null, res, next)(
       acl.createError(req.dadiApiClient)
     )
   }
 
-  let supportedLanguages = config.get('i18n.languages')
-  let defaultLanguage = config.get('i18n.defaultLanguage')
+  const supportedLanguages = config.get('i18n.languages')
+  const defaultLanguage = config.get('i18n.defaultLanguage')
 
   if (!supportedLanguages.includes(defaultLanguage)) {
     supportedLanguages.unshift(defaultLanguage)
   }
 
-  let languages = supportedLanguages.map(this._getLanguageDetails)
-  let metadata = {
+  const languages = supportedLanguages.map(this._getLanguageDetails)
+  const metadata = {
     defaultLanguage: this._getLanguageDetails(defaultLanguage),
     fieldCharacter: config.get('i18n.fieldCharacter'),
     totalCount: supportedLanguages.length

@@ -1,10 +1,10 @@
-var should = require('should')
-var sinon = require('sinon')
-var server = require(__dirname + '/../../dadi/lib')
-var fs = require('fs')
+const should = require('should')
+const sinon = require('sinon')
+const server = require(__dirname + '/../../dadi/lib')
+const fs = require('fs')
 
-describe('Server', function () {
-  it('should export an instance', function (done) {
+describe('Server', function() {
+  it('should export an instance', function(done) {
     server.start.should.be.Function
     server.stop.should.be.Function
     server.addComponent.should.be.Function
@@ -12,10 +12,13 @@ describe('Server', function () {
     done()
   })
 
-  describe('start', function () {
-    it('should set readyState', function (done) {
-      var fakeFn = function () { return [] }
-      var stub = sinon.stub(fs, 'readdirSync').callsFake(fakeFn)
+  describe('start', function() {
+    it('should set readyState', function(done) {
+      const fakeFn = function() {
+        return []
+      }
+
+      const stub = sinon.stub(fs, 'readdirSync').callsFake(fakeFn)
 
       server.start()
 
@@ -27,12 +30,15 @@ describe('Server', function () {
     })
   })
 
-  describe('stop', function () {
-    it('should set readyState', function (done) {
-      var fakeFn = function (cb) { cb() }
-      var stub = sinon.stub(server.server, 'close').callsFake(fakeFn)
+  describe('stop', function() {
+    it('should set readyState', function(done) {
+      const fakeFn = function(cb) {
+        cb()
+      }
 
-      server.stop(function (err) {
+      const stub = sinon.stub(server.server, 'close').callsFake(fakeFn)
+
+      server.stop(function(err) {
         if (err) return done(err)
 
         server.readyState.should.equal(0)
@@ -44,13 +50,14 @@ describe('Server', function () {
     })
   })
 
-  describe('addComponent', function () {
-    it('should keep reference to component', function (done) {
-      var options = {
+  describe('addComponent', function() {
+    it('should keep reference to component', function(done) {
+      const options = {
         name: 'test-component',
-        component: function () {},
+        component() {},
         route: '/server-acceptance-test-route'
       }
+
       server.addComponent(options)
 
       server.components[options.route].should.equal(options.component)

@@ -10,7 +10,7 @@ const logger = require('@dadi/logger')
  *
  * @return {Promise<Array.Index>}
  */
-function getIndexes () {
+function getIndexes() {
   const getIndexesFromDatabase = database => {
     return database.getIndexes(this.name)
   }
@@ -26,13 +26,14 @@ function getIndexes () {
   return getIndexesFromDatabase(this.connection.db)
 }
 
-module.exports = function () {
+module.exports = function() {
   // Compatibility with legacy model API.
   // Signature: done
   if (arguments.length > 0) {
-    let callback = arguments[0]
+    const callback = arguments[0]
 
-    getIndexes.call(this)
+    getIndexes
+      .call(this)
       .then(response => callback && callback(response))
       .catch(error => {
         logger.error({module: 'model'}, error)

@@ -6,18 +6,20 @@ const help = require('./../help')
 const jwt = require('jsonwebtoken')
 const path = require('path')
 const request = require('supertest')
-const should = require('should')
 const sinon = require('sinon')
 
 describe('Token store', () => {
-  let configBackup = config.get()
-  let client = request(`http://${config.get('server.host')}:${config.get('server.port')}`)
-  let testClient = {
+  const configBackup = config.get()
+  const client = request(
+    `http://${config.get('server.host')}:${config.get('server.port')}`
+  )
+  const testClient = {
     clientId: 'rootClient',
+    email: 'test@edit.com',
     secret: 'superSecret',
     accessType: 'admin'
   }
-  let tokenRoute = config.get('auth.tokenUrl')
+  const tokenRoute = config.get('auth.tokenUrl')
 
   describe('Bearer token issuing', () => {
     before(done => {
@@ -51,8 +53,12 @@ describe('Token store', () => {
         .expect('pragma', 'no-cache')
         .expect('Cache-Control', 'no-store')
         .expect(401, (err, res) => {
-          res.headers['www-authenticate'].includes('error="invalid_credentials"').should.eql(true)
-          res.headers['www-authenticate'].includes('error_description="Invalid credentials supplied"').should.eql(true)
+          res.headers['www-authenticate']
+            .includes('error="invalid_credentials"')
+            .should.eql(true)
+          res.headers['www-authenticate']
+            .includes('error_description="Invalid credentials supplied"')
+            .should.eql(true)
 
           done(err)
         })
@@ -70,30 +76,39 @@ describe('Token store', () => {
 
       help.createClient(unhashedClient, () => {
         client
-        .post(tokenRoute)
-        .send({
-          clientId: unhashedClient.clientId,
-          secret: unhashedClient.secret
-        })
-        .expect('content-type', 'application/json')
-        .expect('pragma', 'no-cache')
-        .expect('Cache-Control', 'no-store')
-        .expect(401, (err, res) => {
-          res.headers['www-authenticate'].includes('error="client_needs_upgrade"').should.eql(true)
-          res.headers['www-authenticate'].includes('error_description="The client record on the server must be upgraded"').should.eql(true)
+          .post(tokenRoute)
+          .send({
+            clientId: unhashedClient.clientId,
+            secret: unhashedClient.secret
+          })
+          .expect('content-type', 'application/json')
+          .expect('pragma', 'no-cache')
+          .expect('Cache-Control', 'no-store')
+          .expect(401, (err, res) => {
+            res.headers['www-authenticate']
+              .includes('error="client_needs_upgrade"')
+              .should.eql(true)
+            res.headers['www-authenticate']
+              .includes(
+                'error_description="The client record on the server must be upgraded"'
+              )
+              .should.eql(true)
 
-          config.set('auth.hashSecrets', configBackup.auth.hashSecrets)
+            config.set('auth.hashSecrets', configBackup.auth.hashSecrets)
 
-          done(err)
-        })
+            done(err)
+          })
       })
     })
 
-    it('should return 401 if the client ID or secret contain non-string values', done => {
+    it('should return 401 if the client ID, email or secret contain non-string values', done => {
       client
         .post(tokenRoute)
         .send({
           clientId: {
+            $ne: null
+          },
+          email: {
             $ne: null
           },
           secret: {
@@ -135,12 +150,12 @@ describe('Token store', () => {
                 .expect('content-type', 'application/json')
                 .expect('pragma', 'no-cache')
                 .expect('Cache-Control', 'no-store')
-                .expect(401, done)                
-            })            
+                .expect(401, done)
+            })
         })
     })
 
-    it('should issue a bearer token if the credentials are correct', done => {
+    it('should issue a bearer token if the clientId/secret supplied are correct', done => {
       client
         .post(tokenRoute)
         .send({
@@ -153,9 +168,26 @@ describe('Token store', () => {
         .expect(200, (err, res) => {
           res.body.accessToken.should.be.String
           res.body.tokenType.should.eql('Bearer')
-          res.body.expiresIn.should.eql(
-            config.get('auth.tokenTtl')
-          )
+          res.body.expiresIn.should.eql(config.get('auth.tokenTtl'))
+
+          done()
+        })
+    })
+
+    it('should issue a bearer token if the email/secret supplied are correct', done => {
+      client
+        .post(tokenRoute)
+        .send({
+          email: testClient.email,
+          secret: testClient.secret
+        })
+        .expect('content-type', 'application/json')
+        .expect('pragma', 'no-cache')
+        .expect('Cache-Control', 'no-store')
+        .expect(200, (err, res) => {
+          res.body.accessToken.should.be.String
+          res.body.tokenType.should.eql('Bearer')
+          res.body.expiresIn.should.eql(config.get('auth.tokenTtl'))
 
           done()
         })
@@ -180,7 +212,7 @@ describe('Token store', () => {
                 return done(err)
               }
 
-              let now = Math.floor(Date.now() / 1000)
+              const now = Math.floor(Date.now() / 1000)
 
               decoded.clientId.should.eql(testClient.clientId)
               decoded.accessType.should.eql(testClient.accessType)
@@ -194,7 +226,7 @@ describe('Token store', () => {
     })
 
     it('should encode the access type as "user" in the JWT if the client record does not have one set', done => {
-      let nonAdminUser = {
+      const nonAdminUser = {
         clientId: 'soldier',
         secret: 'nobody'
       }
@@ -218,7 +250,7 @@ describe('Token store', () => {
                   return done(err)
                 }
 
-                let now = Math.floor(Date.now() / 1000)
+                const now = Math.floor(Date.now() / 1000)
 
                 decoded.clientId.should.eql(nonAdminUser.clientId)
                 decoded.accessType.should.eql('user')
@@ -230,11 +262,11 @@ describe('Token store', () => {
             )
           })
       })
-    })    
+    })
   })
 
   describe('Endpoint customisation', () => {
-    let newTokenUrl = '/my-custom-endpoint'
+    const newTokenUrl = '/my-custom-endpoint'
 
     before(done => {
       config.set('auth.tokenUrl', newTokenUrl)
@@ -269,9 +301,7 @@ describe('Token store', () => {
         .expect(200, (err, res) => {
           res.body.accessToken.should.be.String
           res.body.tokenType.should.eql('Bearer')
-          res.body.expiresIn.should.eql(
-            config.get('auth.tokenTtl')
-          )
+          res.body.expiresIn.should.eql(config.get('auth.tokenTtl'))
 
           done()
         })
@@ -289,14 +319,14 @@ describe('Token store', () => {
   })
 
   describe('Validating requests', () => {
-    let endpointPath = path.resolve(
+    const endpointPath = path.resolve(
       __dirname,
       './../../acceptance/temp-workspace/endpoints/v1/endpoint.intercept-client.js'
     )
     let testClientHash
 
     before(done => {
-      let endpointSource = `
+      const endpointSource = `
         module.exports.get = function (req, res, next) {
           res.setHeader('content-type', 'application/json')
           res.statusCode = 200
@@ -310,15 +340,17 @@ describe('Token store', () => {
         }
       `
 
-      fs.writeFile(endpointPath, endpointSource).then(() => {
-        help.createClient(testClient, (err, client) => {
-          app.start(err => {
-            if (err) return done(err)
+      fs.writeFile(endpointPath, endpointSource)
+        .then(() => {
+          help.createClient(testClient, (err, client) => {
+            app.start(err => {
+              if (err) return done(err)
 
-            setTimeout(done, 500)
+              setTimeout(done, 500)
+            })
           })
         })
-      }).catch(done)
+        .catch(done)
     })
 
     after(done => {
@@ -339,37 +371,37 @@ describe('Token store', () => {
           accessType: 'admin'
         }
         const spy = sinon.spy(bcrypt, 'compare')
-  
+
         help.createClient(newClient, (err, clientRecord) => {
           client
-          .post(tokenRoute)
-          .send({
-            clientId: newClient.clientId,
-            secret: newClient.secret
-          })
-          .expect('content-type', 'application/json')
-          .expect('pragma', 'no-cache')
-          .expect('Cache-Control', 'no-store')
-          .expect(200, (err, res) => {
-            res.body.accessToken.should.be.String
-  
-            spy.getCall(0).args[0].should.eql(newClient.secret)
-            spy.getCall(0).args[1].should.eql(clientRecord.secret)
-            spy.restore()
-  
-            client
-              .get('/v1/intercept-client')
-              .set('Authorization', `Bearer ${res.body.accessToken}`)
-              .expect('content-type', 'application/json')
-              .expect(200, (err, res) => {
-                res.body.clientId.should.eql(newClient.clientId)
-                res.body.accessType.should.eql(newClient.accessType)
+            .post(tokenRoute)
+            .send({
+              clientId: newClient.clientId,
+              secret: newClient.secret
+            })
+            .expect('content-type', 'application/json')
+            .expect('pragma', 'no-cache')
+            .expect('Cache-Control', 'no-store')
+            .expect(200, (err, res) => {
+              res.body.accessToken.should.be.String
 
-                config.set('auth.hashSecrets', configBackup.auth.hashSecrets)
-  
-                done()
-              })
-          })
+              spy.getCall(0).args[0].should.eql(newClient.secret)
+              spy.getCall(0).args[1].should.eql(clientRecord.secret)
+              spy.restore()
+
+              client
+                .get('/v1/intercept-client')
+                .set('Authorization', `Bearer ${res.body.accessToken}`)
+                .expect('content-type', 'application/json')
+                .expect(200, (err, res) => {
+                  res.body.clientId.should.eql(newClient.clientId)
+                  res.body.accessType.should.eql(newClient.accessType)
+
+                  config.set('auth.hashSecrets', configBackup.auth.hashSecrets)
+
+                  done()
+                })
+            })
         })
       })
     })

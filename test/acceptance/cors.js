@@ -9,20 +9,20 @@ const ORIGINAL_CORS = config.get('cors')
 describe('CORS', () => {
   let client
 
-  before(function (done) {
-    help.createClient(null, function () {
-      app.start(function (err) {
+  before(function(done) {
+    help.createClient(null, function() {
+      app.start(function(err) {
         if (err) return done(err)
 
-        setTimeout(function () {
+        setTimeout(function() {
           done()
         }, 500)
       })
     })
   })
 
-  after(function (done) {
-    help.removeTestClients(function () {
+  after(function(done) {
+    help.removeTestClients(function() {
       app.stop(done)
     })
   })
@@ -36,7 +36,9 @@ describe('CORS', () => {
   })
 
   beforeEach(() => {
-    client = request('http://' + config.get('server.host') + ':' + config.get('server.port'))
+    client = request(
+      'http://' + config.get('server.host') + ':' + config.get('server.port')
+    )
   })
 
   it('should respond to OPTIONS requests with a 204', done => {
@@ -94,38 +96,40 @@ describe('CORS', () => {
   })
 
   it('should not expose the feature support header if disabled in config', done => {
-    let featureQueryEnabled = config.get('featureQuery.enabled')
+    const featureQueryEnabled = config.get('featureQuery.enabled')
 
     config.set('featureQuery.enabled', false)
 
     client
-    .get('/hello')
-    .set('Access-Control-Request-Headers', 'authorization,content-type')
-    .set('X-DADI-Requires', 'aclv1')
-    .end((err, res) => {
-      should.not.exist(res.headers['access-control-expose-headers'])
+      .get('/hello')
+      .set('Access-Control-Request-Headers', 'authorization,content-type')
+      .set('X-DADI-Requires', 'aclv1')
+      .end((err, res) => {
+        should.not.exist(res.headers['access-control-expose-headers'])
 
-      config.set('featureQuery.enabled', featureQueryEnabled)
+        config.set('featureQuery.enabled', featureQueryEnabled)
 
-      done()
-    })
+        done()
+      })
   })
 
   it('should expose the feature support header if enabled in config', done => {
-    let featureQueryEnabled = config.get('featureQuery.enabled')
+    const featureQueryEnabled = config.get('featureQuery.enabled')
 
     config.set('featureQuery.enabled', true)
 
     client
-    .get('/hello')
-    .set('Access-Control-Request-Headers', 'authorization,content-type')
-    .set('X-DADI-Requires', 'aclv1')
-    .end((err, res) => {
-      res.headers['access-control-expose-headers'].includes('X-DADI-Supports').should.eql(true)
+      .get('/hello')
+      .set('Access-Control-Request-Headers', 'authorization,content-type')
+      .set('X-DADI-Requires', 'aclv1')
+      .end((err, res) => {
+        res.headers['access-control-expose-headers']
+          .includes('X-DADI-Supports')
+          .should.eql(true)
 
-      config.set('featureQuery.enabled', featureQueryEnabled)
+        config.set('featureQuery.enabled', featureQueryEnabled)
 
-      done()
-    })
+        done()
+      })
   })
 })

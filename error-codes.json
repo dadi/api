@@ -1,4 +1,4 @@
-  {
+{
   "0001": {
     "code": "API-0001",
     "title": "Missing Index Key",
@@ -45,6 +45,18 @@
     "code": "API-0008",
     "title": "Current secret not valid",
     "details": "The supplied current secret is not valid.",
+    "params": []
+  },
+  "0009": {
+    "code": "API-0009",
+    "title": "Partial access",
+    "details": "The bearer token supplied in the request only has partial access to the resource.",
+    "params": []
+  },
+  "0010": {
+    "code": "API-0010",
+    "title": "Bad query",
+    "details": "The query supplied in the request is not valid.",
     "params": []
   }
 }

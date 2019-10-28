@@ -1,29 +1,29 @@
-var util = require('util')
-var EventEmitter = require('events').EventEmitter
-var fs = require('fs')
+const EventEmitter = require('events').EventEmitter
+const fs = require('fs')
+const util = require('util')
 
-var Monitor = function (path) {
+const Monitor = function(path) {
   if (!path) throw new Error('Must provide path to instantiate Monitor')
 
   this.path = path
 
-  var self = this
-  this.watcher = fs.watch(this.path, function (eventName, filename) {
-    setTimeout(function () {
-      self.emit('change', filename)
+  this.watcher = fs.watch(this.path, (_, filename) => {
+    clearTimeout(this.timer)
+
+    this.timer = setTimeout(() => {
+      this.emit('change', filename)
     }, 50)
   })
 }
 
-// inherits from EventEmitter
 util.inherits(Monitor, EventEmitter)
 
-Monitor.prototype.close = function () {
+Monitor.prototype.close = function() {
   this.watcher.close.apply(this.watcher, arguments)
 }
 
 // exports
-module.exports = function (path) {
+module.exports = function(path) {
   return new Monitor(path)
 }
 

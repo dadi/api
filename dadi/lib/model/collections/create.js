@@ -13,9 +13,10 @@ const search = require('./../search')
  * @param {Boolean} rawOutput - whether to bypass formatting routine
  * @param {Boolean} removeInternalProperties - whether to remove internal properties
  * @param {Object} req - request
+ * @param {Boolean} runHooks - whether to run before/after hooks
  * @returns {Promise<Array>} array of created documents
  */
-function create ({
+async function create({
   client,
   compose = true,
   documents,
@@ -23,14 +24,13 @@ function create ({
   rawOutput = false,
   removeInternalProperties = true,
   req,
+  runHooks = true,
   validate = true
 }) {
   debug('Model create: %o %o', documents, internals)
 
   if (!this.connection.db) {
-    return Promise.reject(
-      new Error('DB_DISCONNECTED')
-    )
+    return Promise.reject(new Error('DB_DISCONNECTED'))
   }
 
   // Add `createdAt` internal field.
@@ -59,8 +59,7 @@ function create ({
     return document
   })
 
-  let {hooks} = this.settings
-  let originalDocuments = documents
+  const hooks = runHooks ? this.settings.hooks : null
 
   // If an ACL check is performed, this variable will contain the resulting
   // access matrix.
@@ -70,137 +69,163 @@ function create ({
     client,
     documents,
     type: 'create'
-  }).then(({access, documents: newDocuments, fields, schema}) => {
-    if (!validate) return
-
-    // Storing the access matrix in a variable that is global to the method.
-    aclAccess = access
-
-    // This is now the filtered documents object, containing only the fields
-    // which the client has access to.
-    documents = newDocuments
-
-    return this.validator.validateDocuments({
-      documents,
-      schema
-    }).catch(errors => {
-      let error = this._createValidationError('Validation Failed', errors, {
-        originalDocuments
-      })
-
-      return Promise.reject(error)
-    })
-  }).then(() => {
-    let transformQueue = Promise.all(documents.map(document => {
-      // Add internal properties to documents
-      if (typeof internals === 'object' && internals !== null) {
-        Object.assign(document, internals)
-      }
-
-      return Object.keys(document).reduce((documentTransform, field) => {
-        if (field === '_id') {
-          return documentTransform
-        }
-
-        return documentTransform.then(transformedDocument => {
-          return this.runFieldHooks({
-            data: {
-              client,
-              internals
-            },
-            field,
-            input: {
-              [field]: document[field]
-            },
-            name: 'beforeSave'
-          }).then(subDocument => {
-            return Object.assign({}, transformedDocument, subDocument)
-          })
-        })
-      }, Promise.resolve({}))
-    }))
-
-    return transformQueue
-  }).then(documents => {
-    // Run any `beforeCreate` hooks.
-    if (hooks && hooks.beforeCreate) {
-      return new Promise((resolve, reject) => {
-        let processedDocuments = 0
-
-        documents.forEach(doc => {
-          async.reduce(hooks.beforeCreate, doc, (current, hookConfig, callback) => {
-            let hook = new Hook(hookConfig, 'beforeCreate')
-
-            Promise.resolve(hook.apply(current, this.schema, this.name, req))
-              .then(newDoc => {
-                callback((newDoc === null) ? {} : null, newDoc)
-              })
-              .catch(err => {
-                callback(hook.formatError(err))
-              })
-          }, (err, result) => {
-            processedDocuments++
-
-            if (processedDocuments === documents.length) {
-              if (err) {
-                return reject(err)
-              }
-
-              resolve(documents)
-            }
-          })
-        })
-      })
-    }
-
-    return documents
-  }).then(documents => {
-    return this.connection.db.insert({
-      data: documents,
-      collection: this.name,
-      schema: this.schema,
-      settings: this.settings
-    }).then(results => {
-      // Index all the created documents for search, as a background job.
-      if (search.isEnabled()) {
-        search.indexDocumentsInTheBackground({
-          documents: results,
-          model: this
-        })
-      }
-
-      // Run any `afterCreate` hooks.
-      if (hooks && Array.isArray(hooks.afterCreate)) {
-        results.forEach(document => {
-          hooks.afterCreate.forEach(hookConfig => {
-            let hook = new Hook(hookConfig, 'afterCreate')
-
-            return hook.apply(document, this.schema, this.name)
-          })
-        })
-      }
-
-      // If `rawOutput` is truthy, we don't need to worry about formatting
-      // the result set for output. We return it as is.
-      if (rawOutput) {
-        return {results}
-      }
-
-      return this.formatForOutput(results, {
-        access: aclAccess && aclAccess.read,
-        client,
-        composeOverride: compose
-      }).then(results => ({results}))
-    })
   })
+    .then(({access, documents: newDocuments, owner = {}, schema}) => {
+      if (!validate) return
+
+      // Adding metadata about who is creating the document.
+      if (owner.clientId) {
+        internals._createdBy = owner.clientId
+      } else if (owner.keyId) {
+        internals._createdByKey = owner.keyId
+      }
+
+      // Storing the access matrix in a variable that is global to the method.
+      aclAccess = access
+
+      // This is now the filtered documents object, containing only the fields
+      // which the client has access to.
+      documents = newDocuments
+
+      return this.validator
+        .validateDocuments({
+          documents,
+          schema
+        })
+        .catch(errors => {
+          const error = this._createValidationError(
+            'Validation Failed',
+            errors,
+            {access}
+          )
+
+          return Promise.reject(error)
+        })
+    })
+    .then(() => {
+      const transformQueue = Promise.all(
+        documents.map(document => {
+          // Add internal properties to documents
+          if (typeof internals === 'object' && internals !== null) {
+            Object.assign(document, internals)
+          }
+
+          return Object.keys(document).reduce((documentTransform, field) => {
+            if (field === '_id') {
+              return documentTransform
+            }
+
+            return documentTransform.then(transformedDocument => {
+              return this.runFieldHooks({
+                data: {
+                  client,
+                  internals
+                },
+                field,
+                input: {
+                  [field]: document[field]
+                },
+                name: 'beforeSave'
+              }).then(subDocument => {
+                return Object.assign({}, transformedDocument, subDocument)
+              })
+            })
+          }, Promise.resolve({}))
+        })
+      )
+
+      return transformQueue
+    })
+    .then(documents => {
+      // Run any `beforeCreate` hooks.
+      if (hooks && hooks.beforeCreate) {
+        return new Promise((resolve, reject) => {
+          let processedDocuments = 0
+
+          documents.forEach(doc => {
+            async.reduce(
+              hooks.beforeCreate,
+              doc,
+              (current, hookConfig, callback) => {
+                const hook = new Hook(hookConfig, 'beforeCreate')
+
+                Promise.resolve(
+                  hook.apply(current, this.schema, this.name, req)
+                )
+                  .then(newDoc => {
+                    callback(newDoc === null ? {} : null, newDoc)
+                  })
+                  .catch(err => {
+                    callback(hook.formatError(err))
+                  })
+              },
+              (err, result) => {
+                processedDocuments++
+
+                if (processedDocuments === documents.length) {
+                  if (err) {
+                    return reject(err)
+                  }
+
+                  resolve(documents)
+                }
+              }
+            )
+          })
+        })
+      }
+
+      return documents
+    })
+    .then(documents => {
+      return this.connection.db
+        .insert({
+          data: documents,
+          collection: this.name,
+          schema: this.schema,
+          settings: this.settings
+        })
+        .then(results => {
+          // Index all the created documents for search, as a background job.
+          if (search.isEnabled()) {
+            search.indexDocumentsInTheBackground({
+              documents: results,
+              model: this
+            })
+          }
+
+          // Run any `afterCreate` hooks.
+          if (hooks && Array.isArray(hooks.afterCreate)) {
+            results.forEach(document => {
+              hooks.afterCreate.forEach(hookConfig => {
+                const hook = new Hook(hookConfig, 'afterCreate')
+
+                return hook.apply(document, this.schema, this.name)
+              })
+            })
+          }
+
+          // If `rawOutput` is truthy, we don't need to worry about formatting
+          // the result set for output. We return it as is.
+          if (rawOutput) {
+            return {results}
+          }
+
+          return this.formatForOutput(results, {
+            access: aclAccess && aclAccess.read,
+            client,
+            composeOverride: compose
+          }).then(results => ({results}))
+        })
+    })
 }
 
-module.exports = function () {
+module.exports = function() {
   // Compatibility with legacy model API.
   // Signature: documents, internals, done, req, bypassOutputFormatting
   if (arguments.length > 1) {
     let callback
-    let legacyArguments = {
+    const legacyArguments = {
       documents: arguments[0],
       rawOutput: arguments[4],
       req: arguments[3]
@@ -214,7 +239,8 @@ module.exports = function () {
       legacyArguments.internals = arguments[1]
     }
 
-    create.call(this, legacyArguments)
+    create
+      .call(this, legacyArguments)
       .then(response => callback && callback(null, response))
       .catch(error => callback && callback(error))
 

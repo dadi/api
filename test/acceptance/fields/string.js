@@ -1,98 +1,118 @@
-const should = require('should')
-const sinon = require('sinon')
-const fs = require('fs')
-const path = require('path')
+const app = require('../../../dadi/lib/')
+const config = require('../../../config')
+const help = require('../help')
 const request = require('supertest')
-const config = require(__dirname + '/../../../config')
-const help = require(__dirname + '/../help')
-const app = require(__dirname + '/../../../dadi/lib/')
-const Model = require('./../../../dadi/lib/model')
+
+const connectionString =
+  'http://' + config.get('server.host') + ':' + config.get('server.port')
 
 let bearerToken
-let configBackup = config.get()
-let connectionString = 'http://' + config.get('server.host') + ':' + config.get('server.port')
 
 describe('String Field', () => {
   beforeEach(done => {
-    config.set('paths.collections', 'test/acceptance/temp-workspace/collections')
-
     help.dropDatabase('library', 'misc', err => {
       app.start(() => {
-        help.getBearerToken(function (err, token) {
-          if (err) return done(err)
-          bearerToken = token
-          done()
-        })
+        help
+          .createSchemas([
+            {
+              version: 'v1',
+              property: 'library',
+              name: 'misc',
+              fields: {
+                boolean: {
+                  type: 'Boolean'
+                },
+                string: {
+                  type: 'String'
+                },
+                mixed: {
+                  type: 'Mixed'
+                },
+                object: {
+                  type: 'Object'
+                },
+                multiReference: {
+                  type: 'Reference'
+                }
+              },
+              settings: {
+                cache: false,
+                authenticate: false,
+                count: 40,
+                sort: 'string',
+                sortOrder: 1,
+                storeRevisions: false
+              }
+            }
+          ])
+          .then(() => {
+            help.getBearerToken(function(err, token) {
+              bearerToken = token
+
+              done(err)
+            })
+          })
       })
     })
   })
 
   afterEach(done => {
-    config.set('paths.collections', configBackup.paths.collections)
-    app.stop(done)
+    help.dropSchemas().then(() => {
+      app.stop(done)
+    })
   })
 
   describe('query filtering', () => {
-    it('should transform string to regex when at root', done => {
-      let client = request(connectionString)
-      let value = 'Hello world'
+    it('should transform string to case-insensitive regex when at root', done => {
+      const client = request(connectionString)
+      const value = 'Hello world'
 
       client
-      .post('/v1/library/misc')
-      .set('Authorization', 'Bearer ' + bearerToken)
-      .send({string: value})
-      .expect(200)
-      .end((err, res) => {
-        if (err) return done(err)
-
-        let model = Model('misc')
-        let spy = sinon.spy(model.connection.db, 'find')
-
-        client
-        .get(`/v1/library/misc?filter={"string":"${value}"}`)
+        .post('/library/misc')
         .set('Authorization', 'Bearer ' + bearerToken)
+        .send({string: value})
         .expect(200)
         .end((err, res) => {
-          spy.getCall(0).args[0].query.string.should.eql({
-            $regex: [`^${value}$`, 'i']
-          })
+          if (err) return done(err)
 
-          spy.restore()
+          client
+            .get(`/library/misc?filter={"string":"${value.toUpperCase()}"}`)
+            .set('Authorization', 'Bearer ' + bearerToken)
+            .expect(200)
+            .end((err, res) => {
+              res.body.results.length.should.eql(1)
+              res.body.results[0].string.should.eql(value)
 
-          done()
+              done(err)
+            })
         })
-      })
     })
 
-    it('should not transform string to regex when nested inside operator', done => {
-      let client = request(connectionString)
-      let value = 'Hello world'
+    it('should not transform string to case-insensitive regex when nested inside operator', done => {
+      const client = request(connectionString)
+      const value = 'Hello world'
 
       client
-      .post('/v1/library/misc')
-      .set('Authorization', 'Bearer ' + bearerToken)
-      .send({string: value})
-      .expect(200)
-      .end((err, res) => {
-        if (err) return done(err)
-
-        let model = Model('misc')
-        let spy = sinon.spy(model.connection.db, 'find')
-
-        client
-        .get(`/v1/library/misc?filter={"string":{"$ne":"${value}"}}`)
+        .post('/library/misc')
         .set('Authorization', 'Bearer ' + bearerToken)
+        .send({string: value})
         .expect(200)
         .end((err, res) => {
-          spy.getCall(0).args[0].query.string.should.eql({
-            $ne: value
-          })
+          if (err) return done(err)
 
-          spy.restore()
+          client
+            .get(
+              `/library/misc?filter={"string":{"$ne":"${value.toUpperCase()}"}}`
+            )
+            .set('Authorization', 'Bearer ' + bearerToken)
+            .expect(200)
+            .end((err, res) => {
+              res.body.results.length.should.eql(1)
+              res.body.results[0].string.should.eql(value)
 
-          done()
+              done()
+            })
         })
-      })
     })
   })
 })

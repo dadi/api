@@ -2,17 +2,14 @@ const moment = require('moment')
 
 module.exports.type = 'datetime'
 
-function convertDateTimeInQuery (input, schema, recursive) {
+function convertDateTimeInQuery(input, schema, recursive) {
   if (input === null) return input
 
   if (input === '$now') {
     return Date.now()
   }
 
-  if (
-    typeof input === 'string' ||
-    typeof input === 'number'
-  ) {
+  if (typeof input === 'string' || typeof input === 'number') {
     let format
 
     if (
@@ -23,8 +20,8 @@ function convertDateTimeInQuery (input, schema, recursive) {
       format = schema.format
     }
 
-    let dateTime = moment.utc(input, format)
-    let timestamp = dateTime.valueOf()
+    const dateTime = moment.utc(input, format)
+    const timestamp = dateTime.valueOf()
 
     if (Number.isNaN(timestamp)) {
       throw new Error('Not a valid DateTime value')
@@ -37,7 +34,7 @@ function convertDateTimeInQuery (input, schema, recursive) {
     throw new Error('Not a valid DateTime value')
   }
 
-  let output = {}
+  const output = {}
 
   Object.keys(input).forEach(key => {
     output[key] = convertDateTimeInQuery(input[key], schema, true)
@@ -46,14 +43,14 @@ function convertDateTimeInQuery (input, schema, recursive) {
   return output
 }
 
-module.exports.beforeOutput = function ({field, input, schema}) {
+module.exports.beforeOutput = function({field, input, schema}) {
   if (!input[field]) {
     return {
       [field]: null
     }
   }
 
-  let dateTime = moment.utc(input[field])
+  const dateTime = moment.utc(input[field])
   let value
 
   switch (schema.format) {
@@ -79,11 +76,11 @@ module.exports.beforeOutput = function ({field, input, schema}) {
   }
 }
 
-module.exports.beforeQuery = function ({field, input, schema}) {
+module.exports.beforeQuery = function({field, input, schema}) {
   return convertDateTimeInQuery(input, schema, true)
 }
 
-module.exports.beforeSave = function ({field, input, schema}) {
+module.exports.beforeSave = function({field, input, schema}) {
   return {
     [field]: convertDateTimeInQuery(input[field], schema, false)
   }

@@ -21,7 +21,7 @@ const config = require(path.join(__dirname, '/../../../config'))
  * @return Hook
  * @api public
  */
-const Hook = function (data, type) {
+const Hook = function(data, type) {
   if (typeof data === 'string') {
     this.name = data
   } else {
@@ -29,7 +29,7 @@ const Hook = function (data, type) {
     this.options = data.options
   }
 
-  this.hook = function (obj, type) {
+  this.hook = function(obj, type) {
     let result
 
     try {
@@ -41,9 +41,7 @@ const Hook = function (data, type) {
     }
 
     if (result === undefined && type.indexOf('before') === 0) {
-      return Promise.reject(
-        `Missing return statement on ${type} hook`
-      )
+      return Promise.reject(`Missing return statement on ${type} hook`)
     }
 
     return result
@@ -60,7 +58,7 @@ const Hook = function (data, type) {
  * @return Obj
  * @api public
  */
-Hook.prototype.apply = function () {
+Hook.prototype.apply = function() {
   switch (this.type) {
     case 'beforeCreate':
       return this.hook(arguments[0], this.type, {
@@ -138,7 +136,7 @@ Hook.prototype.apply = function () {
  * @return Object
  * @api public
  */
-Hook.prototype.formatError = function (error) {
+Hook.prototype.formatError = function(error) {
   const errorCode = error.code ? error : '0002'
 
   let errorMessage
@@ -149,7 +147,7 @@ Hook.prototype.formatError = function (error) {
     errorMessage = error
   } else {
     errorMessage = error.message || ''
-    errorMessage += (error.stack ? '\n' + error.stack.split('\n')[1] : '')
+    errorMessage += error.stack ? '\n' + error.stack.split('\n')[1] : ''
 
     // If this is a custom error, we attach the name of the hook.
     if (error.dadiCustomError && !error.dadiCustomError.hookName) {
@@ -157,11 +155,13 @@ Hook.prototype.formatError = function (error) {
     }
   }
 
-  return [formatError.createApiError(errorCode, {
-    error: error,
-    errorMessage: errorMessage,
-    hookName: this.getName()
-  })]
+  return [
+    formatError.createApiError(errorCode, {
+      error,
+      errorMessage,
+      hookName: this.getName()
+    })
+  ]
 }
 
 /**
@@ -170,7 +170,7 @@ Hook.prototype.formatError = function (error) {
  * @return String
  * @api public
  */
-Hook.prototype.getName = function () {
+Hook.prototype.getName = function() {
   return this.name
 }
 
@@ -180,11 +180,13 @@ Hook.prototype.getName = function () {
  * @return Hook module
  * @api public
  */
-Hook.prototype.load = function () {
-  return require(require('path').resolve(config.get('paths.hooks')) + '/' + this.name)
+Hook.prototype.load = function() {
+  return require(require('path').resolve(config.get('paths.hooks')) +
+    '/' +
+    this.name)
 }
 
-module.exports = function (data, type) {
+module.exports = function(data, type) {
   return new Hook(data, type)
 }
 

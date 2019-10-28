@@ -1,30 +1,29 @@
 const acl = require('./../model/acl')
 const help = require('./../help')
 
-const Resources = function (server) {
+const Resources = function(server) {
   server.app.routeMethods('/api/resources', {
     get: this.get.bind(this)
   })
 }
 
-Resources.prototype.get = function (req, res, next) {
+Resources.prototype.get = async function(req, res, next) {
   if (!req.dadiApiClient.clientId) {
     return help.sendBackJSON(null, res, next)(
       acl.createError(req.dadiApiClient)
     )
   }
 
-  let clientIsAdmin = acl.client.isAdmin(req.dadiApiClient)
-
-  return acl.access.get(req.dadiApiClient).then(access => {
-    return Object.keys(access).filter(resource => {
+  try {
+    const clientIsAdmin = acl.client.isAdmin(req.dadiApiClient)
+    const access = await acl.access.get(req.dadiApiClient)
+    const allowedResources = Object.keys(access).filter(resource => {
       return Object.keys(access[resource]).some(accessType => {
         return Boolean(access[resource][accessType])
       })
     })
-  }).then(allowedResources => {
-    let resources = acl.getResources()
-    let results = Object.keys(resources)
+    const resources = acl.getResources()
+    const results = Object.keys(resources)
       .filter(resource => {
         return clientIsAdmin || allowedResources.includes(resource)
       })
@@ -35,7 +34,9 @@ Resources.prototype.get = function (req, res, next) {
     return help.sendBackJSON(200, res, next)(null, {
       results
     })
-  })
+  } catch (error) {
+    return help.sendBackJSON(500, res, next)(error)
+  }
 }
 
 module.exports = server => new Resources(server)

@@ -1,10 +1,10 @@
 module.exports.type = 'string'
 
-function escapeRegExp (string) {
+function escapeRegExp(string) {
   return string.replace(/([.?*+^$[\]\\(){}|-])/g, '\\$1')
 }
 
-function sanitise (input, schema = {}) {
+function sanitise(input, schema = {}) {
   if (typeof input === 'string') {
     switch (schema.matchType) {
       case undefined:
@@ -26,7 +26,7 @@ function sanitise (input, schema = {}) {
   return input
 }
 
-module.exports.beforeOutput = function ({
+module.exports.beforeOutput = function({
   config,
   document,
   field,
@@ -41,8 +41,8 @@ module.exports.beforeOutput = function ({
 
   let value
   let valueLanguage
-  let languageField = field + config.get('i18n.fieldCharacter') + language
-  let supportedLanguages = config.get('i18n.languages')
+  const languageField = field + config.get('i18n.fieldCharacter') + language
+  const supportedLanguages = config.get('i18n.languages')
 
   // If the language requested is one of the supported languages
   // and the document contains a field translation for it, we'll
@@ -72,7 +72,7 @@ module.exports.beforeQuery = ({field, input, schema}) => {
     return input
   }
 
-  let sanitisedInput = Object.keys(input).reduce((result, key) => {
+  const sanitisedInput = Object.keys(input).reduce((result, key) => {
     result[key] = sanitise(input[key], schema)
 
     return result

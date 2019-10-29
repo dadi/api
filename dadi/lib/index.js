@@ -531,7 +531,14 @@ Server.prototype.scanDirectoryForCollections = function(directory, callback) {
 
   directoryFiles.forEach(item => {
     const itemPath = path.join(directory, item)
-    const subItems = fs.readdirSync(itemPath)
+
+    let subItems
+
+    try {
+      subItems = fs.readdirSync(itemPath)
+    } catch (_) {
+      return
+    }
 
     // We don't know whether `item` is a property or a version (legacy). We
     // determine that by checking whether there is a sub-directory inside it,

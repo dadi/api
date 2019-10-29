@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## [6.0.1](2019-10-29)
+
+### Fixed
+
+- [3ce11f6](https://github.com/dadi/api/commit/3ce11f628772260d85f4204ca8516f5c8434e093): fix error with non-directory files in collections directory
+
 ## [6.0.0](2019-10-28)
 
 ### Added

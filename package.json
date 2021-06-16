@@ -60,7 +60,7 @@
     "semver": "^5.5.0",
     "serve-static": "^1.13.2",
     "sha1": "latest",
-    "stack-trace": "latest",
+    "stack-trace": "0.0.10",
     "stream-cache": "0.0.2",
     "streamifier": "^0.1.1",
     "vary": "^1.1.2"

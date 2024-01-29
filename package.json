@@ -24,7 +24,7 @@
     "@dadi/cache": "^3.0.0",
     "@dadi/et": "^2.0.0",
     "@dadi/format-error": "^1.7.0",
-    "@dadi/logger": "^1.4.1",
+    "@dadi/logger": "^1.5.0",
     "@dadi/metadata": "^2.0.0",
     "@dadi/status": "^1.0.4",
     "async": "^2.6.1",

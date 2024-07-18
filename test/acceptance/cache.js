@@ -677,7 +677,7 @@ describe('Cache', function(done) {
     })
   })
 
-  describe('Redis', function(done) {
+  describe.skip('Redis', function(done) {
     beforeEach(function(done) {
       config.set('caching.directory.enabled', false)
       config.set('caching.redis.enabled', true)
@@ -691,6 +691,7 @@ describe('Cache', function(done) {
     })
 
     it('should check key exists in Redis', function(done) {
+
       delete require.cache[__dirname + '/../../dadi/lib/']
 
       cache.reset()

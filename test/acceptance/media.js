@@ -537,7 +537,7 @@ describe('Media', function() {
               'test/acceptance/temp-workspace/media/a girl on a bridge.jpg'
             )
             .end((err, res) => {
-              if (err) return err
+              if (err) return done(err)
 
               res.body.results.length.should.eql(1)
               res.body.results[0].fileName.should.eql('a_girl_on_a_bridge.jpg')

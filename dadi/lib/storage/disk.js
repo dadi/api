@@ -35,16 +35,18 @@ DiskStorage.prototype.get = function(filePath, route, req, res, next) {
   // serve, but we're not serving files from the root. To get around this, we
   // pass it a modified version of the URL, where the root URL becomes just the
   // filename parameter.
-  const modifiedReq = Object.assign({}, req, {
-    url: `${route}/${req.params.filename}`
-  })
+  const origUrl = req.url
+
+  req.url = `${route}/${req.params.filename}`
 
   return new Promise((resolve, reject) => {
     try {
-      serveStatic(config.get('media.basePath'))(modifiedReq, res, next)
+      serveStatic(config.get('media.basePath'))(req, res, next)
       resolve()
     } catch (err) {
       return reject(err)
+    } finally {
+      req.url = origUrl
     }
   })
 }

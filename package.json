@@ -58,7 +58,7 @@
     "recovery": "^0.2.6",
     "require-directory": "^2.1.1",
     "semver": "^5.5.0",
-    "serve-static": "^1.13.2",
+    "serve-static": "^1.15.0",
     "sha1": "latest",
     "stack-trace": "0.0.10",
     "stream-cache": "0.0.2",
@@ -89,7 +89,7 @@
     "should": "4.0.4",
     "sinon": "2.3.2",
     "snyk": "^1.147.3",
-    "supertest": "^3.1.0",
+    "supertest": "^7.0.0",
     "uuid": "^3.3.2"
   },
   "dataConnectorDependencies": {

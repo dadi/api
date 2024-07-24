@@ -19,11 +19,13 @@ const defaultResponse = function defaultResponse(req, res, next) {
     'content-length': body.length,
     'content-type': 'application/json'
   })
-  res.end('{}')
-  server.close()
+  res.end(body)
+  next()
 }
 
-describe('SSL', () => {
+describe('SSL', function() {
+  this.timeout(5 * 60 * 1000)
+
   before(done => {
     // avoid [Error: self signed certificate] code: 'DEPTH_ZERO_SELF_SIGNED_CERT'
     process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0'

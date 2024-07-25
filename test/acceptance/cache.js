@@ -677,7 +677,7 @@ describe('Cache', function(done) {
     })
   })
 
-  describe.skip('Redis', function(done) {
+  describe('Redis', function(done) {
     beforeEach(function(done) {
       config.set('caching.directory.enabled', false)
       config.set('caching.redis.enabled', true)

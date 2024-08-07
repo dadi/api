@@ -5,6 +5,7 @@ cache/**/*
 log/**/*
 coverage/
 dump.rdb
+package-lock.json
 
 # Config
 config.json

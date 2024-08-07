@@ -1,4 +1,3 @@
---bail
 --full-trace
 --timeout=4000
 --ui bdd

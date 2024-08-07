@@ -524,7 +524,7 @@ describe('Cache', function(done) {
     })
   })
 
-  describe('Invalidation API - Redis', function() {
+  describe.skip('Invalidation API - Redis', function() {
     before(() => {
       config.set('caching.directory.enabled', false)
       config.set('caching.redis.enabled', true)

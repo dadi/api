@@ -29,7 +29,7 @@
     "@dadi/status": "^1.0.4",
     "async": "^2.6.1",
     "aws-sdk": "2.249.1",
-    "bcrypt": "^3.0.3",
+    "bcrypt": "^5.1.1",
     "body-parser": "^1.18.3",
     "busboy": "^0.2.13",
     "chokidar": "^2.0.3",
@@ -58,7 +58,7 @@
     "recovery": "^0.2.6",
     "require-directory": "^2.1.1",
     "semver": "^5.5.0",
-    "serve-static": "^1.13.2",
+    "serve-static": "^1.15.0",
     "sha1": "latest",
     "stack-trace": "0.0.10",
     "stream-cache": "0.0.2",
@@ -89,7 +89,7 @@
     "should": "4.0.4",
     "sinon": "2.3.2",
     "snyk": "^1.147.3",
-    "supertest": "^3.1.0",
+    "supertest": "^7.0.0",
     "uuid": "^3.3.2"
   },
   "dataConnectorDependencies": {

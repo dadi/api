@@ -132,7 +132,7 @@ Clients.prototype.deleteRole = async function(req, res, next) {
       }
     }
 
-    const {removed, results} = await model.roleRemove(req.params.clientId, [
+    const {removed} = await model.roleRemove(req.params.clientId, [
       role
     ])
 
@@ -140,7 +140,7 @@ Clients.prototype.deleteRole = async function(req, res, next) {
       return help.sendBackJSON(404, res, next)(null)
     }
 
-    return help.sendBackJSON(204, res, next)(null, {results})
+    return help.sendBackJSON(204, res, next)(null, null)
   } catch (error) {
     return this.handleError(res, next)(error)
   }

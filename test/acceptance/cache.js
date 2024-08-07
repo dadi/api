@@ -691,6 +691,7 @@ describe('Cache', function(done) {
     })
 
     it('should check key exists in Redis', function(done) {
+
       delete require.cache[__dirname + '/../../dadi/lib/']
 
       cache.reset()
